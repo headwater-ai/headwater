@@ -171,17 +171,31 @@ do by hand.
 
 | Option | For | Against |
 |---|---|---|
-| Adopt LinkML as the structural substrate | Meta-schema, validator, and multi-format output for free; a standard others already read | Half-LinkML, half-ours may author worse than either alone; its tooling is Python, pulling against a Rust core (Q1) |
-| Borrow the design, stay independent | One coherent language; full control of authoring ergonomics | We rebuild a validator and a compiler that exist |
-| Adopt SHACL as the internal check representation | Standard, expressive, well-understood | Violation reports are famously hard to read, and [spec 4](04-assurance-model.md) commits to findings an author can act on — a translation layer may cost more than it saves |
+| 1. Author in LinkML | Meta-schema, validator, and multi-format output for free; a standard others already read | Everything docgov-specific lands in untyped `annotations` that LinkML never validates, so the meta-schema benefit disappears for exactly our half; two languages in one file; its Python tooling pulls against a Rust core (Q1) |
+| 2. Borrow the design, stay independent | One coherent language; full control of authoring ergonomics | We rebuild a validator and a compiler that already exist, and forfeit interoperability |
+| 3. **Author in docgov's language, emit LinkML** | One validated authoring surface; LinkML's generators then produce JSON Schema, SHACL, OWL and Pydantic for free; reversible, since a generator can be changed or dropped; dissolves the Q1 tension | A generator to build and maintain, plus fidelity tests proving the emitted schema accepts exactly what docgov accepts |
 
-**Leaning:** none yet, deliberately. Settle it with the same
-cognitive-dimensions walkthrough as Q2, adding one scenario — *express a voice regime
-and a sequence expectation* — since that is precisely where LinkML stops and where a
-seam would fall. Note the counter-evidence in
-[spec 11](11-adjacent-work.md#e-opengeo--same-substrate-opposite-direction): OpenGEO
+A [worked example](../evaluations/linkml-worked-example.md) settles two things that
+were guesses when this question was raised.
+
+**LinkML already ships more than expected.** `recommended` is advisory severity;
+`designates_type` is our heterogeneous-shelf discriminator; SKOS mapping slots and
+PROV `slot_uri` alignment are native — three of the twenty research-derived changes,
+for free.
+
+**The boundary is not structural-versus-governance.** *Reciprocity* is not
+expressible in LinkML, and reciprocity is as structural as anything in spec 2. The
+real line is that LinkML, SHACL and JSON Schema all validate **one instance against a
+shape**, whereas everything docgov does that they cannot — reciprocity, satellite
+inheritance, cross-endpoint conflict rules, sequence expectations — is a property of
+the **whole graph or of the corpus over time**.
+
+**Leaning:** option 3, to be confirmed by the Q2 walkthrough. It makes the shape/graph
+split an explicit architectural seam rather than an accident, and every mature
+validation stack in this space already has that shape. Counter-evidence worth keeping
+in view: [OpenGEO](11-adjacent-work.md#e-opengeo--same-substrate-opposite-direction)
 solves a neighbouring problem on Markdown and YAML while explicitly declining
-RDF/OWL/SHACL, so the standards-based route is not self-evidently correct.
+RDF/OWL/SHACL, so a standards-based route is not self-evidently correct.
 
 ## Q14 — Discovery surface
 

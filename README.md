@@ -59,6 +59,11 @@ instruction context, publishing, and the evidence that the whole thing is workin
 | 10 | [Theoretical foundations](docs/spec/10-theoretical-foundations.md) | The research the design rests on, and the 20 changes it forced — all applied |
 | 11 | [Adjacent work](docs/spec/11-adjacent-work.md) | Existing tools and patterns that overlap — what to adopt, and what we already specified twice |
 
+Evidence gathered for specific open questions lives in
+[`docs/evaluations/`](docs/evaluations/) — currently a
+[worked example](docs/evaluations/linkml-worked-example.md) of the taxonomy expressed
+in LinkML, feeding Q13.
+
 Start at 0 and 2 if you only read two. Spec 10 is where the design gets tested
 against the literature; the five structural changes it called for are applied.
 

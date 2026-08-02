@@ -145,9 +145,19 @@ Where it stops:
 | Sequences, projections, overlays, core | No equivalent |
 | Compatibility measurement | No equivalent |
 
-So LinkML plausibly covers the **structural half** of the TBox and none of the
-**governance half**. Two honest readings follow, and the choice between them is a
-real fork rather than a detail:
+**That table is wrong, and a [worked example](../evaluations/linkml-worked-example.md)
+shows why.** Expressing the taxonomy in real LinkML establishes two things the guess
+above missed. LinkML already ships three of the twenty research-derived changes —
+SKOS mappings, PROV alignment, and `recommended` as advisory severity — and its
+`designates_type` is our heterogeneous-shelf discriminator under another name. But
+the boundary is not structural-versus-governance: *reciprocity* fails, and reciprocity
+is as structural as anything in spec 2. The real line is that LinkML, SHACL, and JSON
+Schema all validate **one instance against a shape**, while everything docgov does
+that they cannot is a property of the **whole graph, or of the corpus over time**.
+
+That reframes the question from "does LinkML cover enough?" to "is a two-layer
+architecture — standard shape layer plus docgov graph layer — better than one custom
+layer?" Three readings follow:
 
 1. **Adopt it as the substrate.** Author the structural core as LinkML, layer
    docgov's governance declarations alongside, and inherit the meta-schema, the
@@ -159,9 +169,22 @@ real fork rather than a detail:
    either alone. The cognitive-dimensions walkthrough (Q2) is the instrument for
    deciding, and "two languages in one file" scores badly on role-expressiveness.
 
+3. **Emit it, do not author in it.** Author in docgov's language and compile the
+   shape layer *to* LinkML, which then generates JSON Schema, SHACL, OWL and Pydantic
+   through LinkML's own toolchain. One authoring surface, fully validated, with a
+   standards-based export. This option only became visible by writing the example out,
+   and it is now the leading candidate.
+
+The deciding evidence against option 1 is mundane: everything docgov-specific lands
+in LinkML `annotations`, which are untyped pass-through. LinkML carries them and
+validates none of them — so for exactly the half that is ours, the meta-schema benefit
+disappears, and authors face two languages in one file with no visual cue for which
+half is checked.
+
 I am not settling this unilaterally: it changes what gets built, it is close to
-irreversible once the schema format is chosen, and it interacts with the language
-decision in Q1 — LinkML's tooling is Python, which pulls against a Rust core.
+irreversible under option 1, and it interacts with the language decision in Q1 —
+LinkML's tooling is Python, which pulls against a Rust core. Option 3 dissolves that
+tension, which is part of its appeal.
 
 > **Recorded as [Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate).**
 
