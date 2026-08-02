@@ -22,8 +22,17 @@ The highest-value moment, and the one usually missed. An agent that reads the
 governing standard *before* writing code produces different code; an agent that
 finds it afterwards produces an apology.
 
-Routing is a deterministic projection over the graph — summaries, facets, relations,
-and code-path anchors — not a semantic search. A task description resolves to a
+Routing matches the **declared purpose** of each kind against the intent of the task
+before it matches any text: "why is it like this?" resolves to kinds serving
+`rationale`, "what does it do?" to kinds serving `behaviour`. That is a search over
+the corpus's intentional structure rather than over its prose — cheaper and more
+precise than lexical ranking, and it degrades gracefully because purposes are a
+small closed set. Lexical ranking then orders results *within* the matched purpose,
+and **dominance** breaks ties: where two linked documents both match, the dominant
+end is offered first.
+
+Routing is otherwise a deterministic projection over the graph — summaries, facets,
+relations, and code-path anchors — not a semantic search. A task description resolves to a
 ranked, budget-capped set of **pointers**: paths and one-line summaries, never
 content. Pointers keep the corpus as the single source of truth and keep the
 context cost near zero.
@@ -49,6 +58,12 @@ its rule cannot disagree.
 Rules obey a **size regime**. Always-loaded context is metered on every request, so
 budgets are enforced per file and in aggregate, and an over-budget rule is a finding
 that names the layer responsible for trimming it.
+
+When a budget binds, **satellites are dropped before nuclei**. A generated rule is a
+satellite of the standard it derives from; dropping the standard and keeping its
+teaser is exactly backwards, and without declared nuclearity the engine has no basis
+for choosing. Relation nuclearity makes context pruning a structural operation
+rather than a heuristic one.
 
 ### Write-time hooks
 

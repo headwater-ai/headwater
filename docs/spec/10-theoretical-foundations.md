@@ -9,6 +9,10 @@ Each entry states what the theory claims, what it gives us, and what changes as 
 result. Entries that change nothing are still worth having: they tell us which
 decisions are defensible rather than merely ours.
 
+> **Status.** The five structural changes (2, 4, 12, 13, 15) and their dependency
+> (3) have been applied to the specification. The table in
+> [§G](#g-summary-of-changes-this-document-proposes) records the state of all twenty.
+
 ---
 
 ## A. Coherence
@@ -319,10 +323,10 @@ separation between evolution and versioning, and **compatibility is multi-dimens
 — instance-data preservation, consequence preservation, and consistency preservation
 are distinct properties, and a change can preserve one while breaking another.
 
-Spec 2's version table (minor for additive, major for anything else) is the naive
-schema-evolution model this paper argues against. Adding an optional facet is
-"additive" and yet can change which documents a projection includes, or make a
-previously valid corpus fail a completeness check.
+Spec 2 originally carried a version table (minor for additive, major for anything
+else) — precisely the naive schema-evolution model this paper argues against. Adding
+an optional facet is "additive" and yet can change which documents a projection
+includes, or make a previously valid corpus fail a completeness check.
 
 > **Change:** replace the coarse semver table with declared **compatibility
 > dimensions**, evaluated against a real corpus. `docgov taxonomy diff` should report
@@ -460,31 +464,46 @@ default, at the cost of two indexes to keep in step.
 
 ## G. Summary of changes this document proposes
 
-| # | Change | Spec affected | Source |
-|---|---|---|---|
-| 1 | Separate cohesion (checkable) from coherence (sampled) as distinct obligation classes | 4 | Halliday & Hasan |
-| 2 | Add `nuclearity` to relation declarations | 2 | RST |
-| 3 | Group relation types into a small fixed set of families | 2 | Hobbs, Kehler |
-| 4 | Make purpose first-class; relation families carry dominance | 2, 5 | Grosz & Sidner |
-| 5 | Advisory transition-continuity check over relation edges | 4 | Centering Theory |
-| 6 | Adopt Kruchten's decision-relation vocabulary, incl. `conflicts with` | 2 | Kruchten |
-| 7 | Facet acceptance tests: orthogonality, ascertainability, permanence | 2, 6 | Ranganathan, Vickery |
-| 8 | Validator check: no kind may name a lifecycle state | 2, 6 | OntoClean |
-| 9 | Federate via SKOS-style mapping relations; optional SKOS export | 7, Q9 | SKOS / ISO 25964 |
-| 10 | Every relation declares what creates it and who pays | 2 | Traceability grand challenge |
-| 11 | Align lineage with PROV; record generating agent | 2, 3 | W3C PROV |
-| 12 | Add sequence expectations between kinds (genre systems) | 2, 4 | Yates & Orlikowski |
-| 13 | Taxonomy packages declare an immutable core | 7 | Star & Griesemer |
-| 14 | Track author capture cost as a metric | 3, 5 | Grudin |
-| 15 | Replace semver rules with measured compatibility dimensions | 2, 7 | Noy & Klein |
-| 16 | Require confluence of overlay application, statically checked | 2 | Delta modelling |
-| 17 | Treat `summary` as the scent surface; frame the routing gate in scent terms | 5 | Pirolli & Card |
-| 18 | Settle the schema-format question by cognitive-dimensions walkthrough | Q2 | Green & Petre |
-| 19 | Derive default obligations from an empirical defect taxonomy | 4 | Aghajani et al. |
-| 20 | Add `reconstructed` as a third provenance value | 3 | Parnas & Clements |
+| # | Change | Spec affected | Source | Status |
+|---|---|---|---|---|
+| 1 | Separate cohesion (checkable) from coherence (sampled) as distinct obligation classes | 4 | Halliday & Hasan | proposed |
+| 2 | Add `nuclearity` to relation declarations | 2 | RST | **applied** |
+| 3 | Group relation types into a small fixed set of families | 2 | Hobbs, Kehler | **applied** |
+| 4 | Make purpose first-class; relation families carry dominance | 2, 5 | Grosz & Sidner | **applied** |
+| 5 | Advisory transition-continuity check over relation edges | 4 | Centering Theory | proposed |
+| 6 | Adopt Kruchten's decision-relation vocabulary, incl. `conflicts with` | 2 | Kruchten | partial |
+| 7 | Facet acceptance tests: orthogonality, ascertainability, permanence | 2, 6 | Ranganathan, Vickery | proposed |
+| 8 | Validator check: no kind may name a lifecycle state | 2, 6 | OntoClean | proposed |
+| 9 | Federate via SKOS-style mapping relations; optional SKOS export | 7, Q9 | SKOS / ISO 25964 | proposed |
+| 10 | Every relation declares what creates it and who pays | 2 | Traceability grand challenge | partial |
+| 11 | Align lineage with PROV; record generating agent | 2, 3 | W3C PROV | proposed |
+| 12 | Add sequence expectations between kinds (genre systems) | 2, 4 | Yates & Orlikowski | **applied** |
+| 13 | Taxonomy packages declare an immutable core | 7 | Star & Griesemer | **applied** |
+| 14 | Track author capture cost as a metric | 3, 5 | Grudin | proposed |
+| 15 | Replace semver rules with measured compatibility dimensions | 2, 7 | Noy & Klein | **applied** |
+| 16 | Require confluence of overlay application, statically checked | 2 | Delta modelling | proposed |
+| 17 | Treat `summary` as the scent surface; frame the routing gate in scent terms | 5 | Pirolli & Card | partial |
+| 18 | Settle the schema-format question by cognitive-dimensions walkthrough | Q2 | Green & Petre | proposed |
+| 19 | Derive default obligations from an empirical defect taxonomy | 4 | Aghajani et al. | proposed |
+| 20 | Add `reconstructed` as a third provenance value | 3 | Parnas & Clements | proposed |
 
-Changes 2, 4, 12, 13 and 15 are structural — they alter the schema and should be
-settled before it is frozen. The rest are additive.
+Changes 2, 4, 12, 13 and 15 were structural — they altered the schema itself — and
+are now **applied** to [spec 2](02-taxonomy-model.md), with consequences propagated
+to specs 1, 4, 5 and 7. Change 3 (relation families) came with them: change 4 places
+dominance on families, so families had to exist first.
+
+Three entries are marked **partial**, meaning the structural work landed but the
+change itself is not complete:
+
+- **6** — `conflicts_with` is in the default relation set, since sequence and core
+  work needed a worked `association`-family example. The remaining ten Kruchten
+  relation types are not yet adopted.
+- **10** — relations carry a `created_by` field, so the question "who pays for this
+  edge?" is now askable. Nothing yet *enforces* an answer, or reviews it.
+- **17** — `summary` carries an explicit `scent` role, which the routing layer reads.
+  Scent quality is still unmeasured.
+
+The remaining twelve are additive and can land against the schema as it now stands.
 
 ## H. Theory considered and set aside
 

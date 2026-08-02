@@ -58,8 +58,8 @@ instruction context, publishing, and the evidence that the whole thing is workin
 | 9 | [Open questions](docs/spec/09-open-questions.md) | Decisions deliberately deferred to the design phase |
 | 10 | [Theoretical foundations](docs/spec/10-theoretical-foundations.md) | The research the design rests on, and the 20 changes it forces |
 
-Start at 0 and 2 if you only read two. Read 10 before the schema is frozen — it
-proposes five structural changes to the taxonomy model.
+Start at 0 and 2 if you only read two. Spec 10 is where the design gets tested
+against the literature; the five structural changes it called for are applied.
 
 ## Provenance
 

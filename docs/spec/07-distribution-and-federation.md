@@ -66,6 +66,31 @@ archetype owns, and the engine prunes accordingly: a repository never carries a 
 glob, or projection targeting a shelf it does not have. Dead configuration is
 noise that teaches readers to ignore configuration.
 
+## The invariant core
+
+A package declares a **core**: the semantics an overlay may extend but never remove
+or redefine ([spec 2](02-taxonomy-model.md#the-immutable-core)). Without one,
+"the same taxonomy" is not a meaningful claim — if a consumer may override anything,
+two consumers of one package can share no structure at all.
+
+The core is **semantic, not lexical**. It constrains roles and purposes, never names
+or paths. A consumer may rename every shelf, relocate every directory, replace every
+identifier pattern and every lifecycle value, and still satisfy it — provided that
+after resolution some facet still carries the state role, some kind still serves the
+`rationale` purpose, and lineage remains expressible and lifecycle-sensitive.
+
+That is what makes the package a workable boundary object: plastic enough to adapt
+to local practice, robust enough to keep a common identity across sites. Local form
+is entirely negotiable; shared meaning is not.
+
+Satisfaction is evaluated on the **resolved** taxonomy, not by forbidding particular
+overlay operations. An overlay is rejected when the result fails a core requirement,
+naming which requirement and which operation removed its last satisfier.
+
+**Conformance checks the core, not the whole taxonomy.** A consumer that has renamed
+and rearranged everything while keeping the core is conformant, and should be told
+so. This is the difference between a method and a monoculture.
+
 ## Upgrading
 
 ```
@@ -75,10 +100,20 @@ docgov taxonomy diff --to 4.0.0
 reports, against the *local* corpus rather than in the abstract:
 
 - what changed in the base;
+- **measured compatibility across the five declared dimensions** — classification,
+  instance validity, consequence, projection, identifier
+  ([spec 2](02-taxonomy-model.md#versioning-by-measured-compatibility));
 - which overlay entries the change invalidates (an override addressing a removed
   path is an error, not a silent no-op);
+- whether the new base still satisfies the core under the local overlay;
 - which local documents violate the new schema;
 - which migration steps apply, split into mechanical and judgment-bearing.
+
+The publisher measures compatibility against its own reference corpora and attaches
+the result to the release as a claim. The consumer's run **verifies that claim
+against documents the publisher has never seen** — and a claim that holds upstream
+but fails locally is the interesting case, not an anomaly: it means the local corpus
+exercises something the reference corpora do not.
 
 `docgov migrate --to 4.0.0` applies the mechanical steps and emits the rest as a
 task list with the affected documents attached — ready for a human or a coding

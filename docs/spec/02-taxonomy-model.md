@@ -2,6 +2,13 @@
 
 **This is the central design of the system.** Everything else is downstream of it.
 
+> **Revision note.** This document incorporates the five structural changes proposed
+> by [theoretical foundations](10-theoretical-foundations.md): nuclearity on
+> relations, purpose as a first-class declaration with dominance carried by relation
+> families, sequence expectations between kinds, an immutable semantic core, and
+> versioning by measured compatibility. Relation families arrived as a dependency of
+> the dominance change.
+
 ## The problem being solved
 
 In the systems this replaces, the taxonomy exists in at least three places at once:
@@ -32,8 +39,23 @@ version: 3.2.0
 extends: docgov/standard@2.1.0        # base package, or null for from-scratch
 
 vocabularies:                          # named, reusable value sets
-  lifecycle_state: [draft, current, superseded, deprecated]
-  audience:        [engineer, operator, integrator, auditor]
+  lifecycle_state:
+    - {value: draft,      role: initial}
+    - {value: current,    role: live}
+    - {value: superseded, role: terminal-retained}
+    - {value: deprecated, role: terminal-retained}
+  audience: [engineer, operator, integrator, auditor]
+
+purposes:                              # reader intents the corpus serves
+  rationale:
+    intent: explain why a choice was made and what it forecloses
+    answers: ["why is it this way", "what was rejected", "what does this constrain"]
+  behaviour:
+    intent: state what the system does, as it is now
+    answers: ["what does this component do", "what may I rely on"]
+  procedure:
+    intent: enable a reader to carry out a task correctly
+    answers: ["how do I do this", "what do I do when X happens"]
 
 facets:
   status:
@@ -44,6 +66,10 @@ facets:
     role: freshness
     type: date
     stale_after_days: 180
+  summary:
+    role: scent                        # what routing and indexes surface
+    type: string
+    required: true
   owner:
     type: string
     required: false
@@ -68,19 +94,54 @@ regimes:
 
 relations:
   supersedes:
+    family: succession
     from: [decision]
     to:   [decision]
     inverse: superseded_by
     reciprocal: required
+    nuclearity: multinuclear           # both ends stand alone
+    dominance: source                  # the successor governs the reading
     on_target: {set_state: superseded}
+    created_by: scaffold               # who pays for this edge
+
+  derives_from:
+    family: derivation
+    from: [agent_rule]
+    to:   [standard]
+    nuclearity: nucleus-satellite
+    nucleus: to                        # the standard is the nucleus
+    inherits: [status, last_verified]  # the satellite tracks its nucleus
+    created_by: generator
+
   governs:
+    family: governance
     from: [standard, specification]
     to:   [code_path]                  # an external anchor kind
     cardinality: many
-  verifies:
-    from: [control]
-    to:   [obligation]
-    reciprocal: derived
+    dominance: source
+    created_by: author
+
+  conflicts_with:
+    family: association
+    from: [decision]
+    to:   [decision]
+    reciprocal: symmetric
+    nuclearity: multinuclear
+    invalid_when: {both: {status: current}}   # two live conflicting decisions
+
+sequences:                             # expected chains between kinds
+  - id: decision-realised
+    when:   {kind: decision, where: {status: current}}
+    expect: {relation: implemented_by, to_kind: specification}
+    within: 90d
+    severity: warn
+    rationale: a decision nothing implements is either not a decision or not done
+
+  - id: incident-learned-from
+    when:   {kind: incident}
+    expect: {relation: analysed_by, to_kind: postmortem}
+    within: 14d
+    severity: warn
 
 shelves:
   decisions:
@@ -101,6 +162,7 @@ shelves:
 
 kinds:
   decision:
+    purpose: rationale                 # required; a kind without one is invalid
     identifier: {scheme: decision_id}
     voice: declarative
     lifecycle: standard
@@ -111,13 +173,26 @@ kinds:
       require: [Context, Decision, Consequences]
       optional: [Alternatives considered, Related]
     relations:
-      may: [supersedes, superseded_by, refines]
+      may: [supersedes, superseded_by, refines, conflicts_with]
 
 identifier_schemes:
   decision_id:
     pattern: "DR-{namespace}-{seq:04d}"
     namespace: repo                    # globally unique when vendored
     allocation: reconcile-first        # never reuse; scan before minting
+
+core:                                  # what overlays may never remove or redefine
+  requires:
+    - facet_role: state
+    - facet_role: freshness
+    - facet_role: scent
+    - purpose: rationale               # some kind must serve it
+    - purpose: behaviour
+    - relation_family: succession
+      lifecycle_sensitive: true
+
+compatibility:
+  dimensions: [classification, instance_validity, consequence, projection, identifier]
 
 projections:
   - kind: shelf_index
@@ -135,21 +210,185 @@ profiles:                              # named subsets for repo archetypes
     shelves: [governance, architecture, domain]
 ```
 
-## The eight declarations
+## The eleven declarations
 
 | Declaration | Answers |
 |---|---|
 | `vocabularies` | What controlled value sets exist, reusable across facets |
+| `purposes` | What reader intents the corpus serves |
 | `facets` | What metadata documents carry, its shape, and how hard it is enforced |
 | `regimes` | Reusable rule bundles: voice, lifecycle, freshness, size |
-| `relations` | What typed links exist, their endpoints, cardinality, and reciprocity |
+| `relations` | What typed links exist, their family, endpoints, nuclearity, and reciprocity |
+| `sequences` | What chains of kinds are expected to follow one another |
 | `shelves` | How the corpus is partitioned, and what each partition means |
 | `kinds` | What each species of document is, requires, and may link to |
 | `identifier_schemes` | How stable identifiers are shaped, namespaced, and allocated |
-| `projections` | What derived artefacts the corpus emits |
+| `core` | What an overlay may never remove or redefine |
+| `compatibility` | Which dimensions a version change is measured against |
 
-Plus `profiles`, which name subsets for repositories that hold only part of the
-taxonomy.
+Plus `projections` (derived artefacts) and `profiles` (subsets for repositories that
+hold only part of the taxonomy).
+
+## Purpose is declared, not implied
+
+**Every kind declares the reader intent it serves.** A kind without a purpose fails
+schema validation.
+
+This is the genre-theoretic definition made operational: a genre is a socially
+recognised type characterised by shared *purpose* and *form*. The rest of a kind
+declaration — sections, facets, voice — is form. Without purpose, a kind is a shape
+with no reason, and the first question anyone asks about a corpus ("what is this
+shelf *for*?") has no answer in the schema.
+
+Purposes are declared once, at the taxonomy level, and referenced by kinds. Several
+kinds may serve one purpose — a decision record and an architecture note can both
+serve `rationale` — but a kind serving two unrelated purposes is a signal that it
+should be split, and the validator says so.
+
+Purpose does real work downstream:
+
+- **Routing** ([spec 5](05-ai-integration.md)) matches a task's intent against
+  declared purposes before it matches text. "Why is it like this?" resolves to
+  `rationale` kinds; "what does it do?" resolves to `behaviour` kinds. This is a
+  search over intentional structure rather than over prose, and it is far cheaper
+  and more precise than lexical ranking alone.
+- **`docgov explain`** states a document's purpose alongside its kind, so a reader
+  who lands on a document knows what it is *for* before reading it.
+- **The core** (below) is expressed in terms of purposes, which is what lets an
+  adopter rename everything and still be recognisably running the same method.
+
+## Relation families, nuclearity, and dominance
+
+Three properties every relation type declares. Together they turn a flat link set
+into a structure the engine can reason about.
+
+### Family
+
+Every relation belongs to exactly one of six families:
+
+| Family | Meaning | Default nuclearity | Lifecycle-sensitive |
+|---|---|---|---|
+| `succession` | One artefact replaces or revises another | multinuclear | yes |
+| `derivation` | One artefact is generated or distilled from another | nucleus–satellite | yes |
+| `governance` | One artefact constrains another, or constrains code | — | yes |
+| `evidence` | One artefact substantiates a claim in another | — | no |
+| `composition` | One artefact is part of another | nucleus–satellite | yes |
+| `association` | Related, with no stronger claim | multinuclear | no |
+
+The fixed family set is deliberate. Open relation vocabularies sprawl, and readers
+apply them inconsistently once the list passes about a dozen entries — the
+consistent finding from decades of discourse annotation. A family supplies default
+semantics, so a new relation type inherits sensible checking without declaring it,
+and the validator can flag a taxonomy that has grown five near-synonymous relations
+inside one family.
+
+### Nuclearity
+
+A relation is **multinuclear** (both ends stand alone) or **nucleus–satellite** (one
+end supports the other and cannot stand without it). Nucleus–satellite relations
+name which end is the nucleus.
+
+This asymmetry pays for itself in four places:
+
+- **Lifecycle inheritance.** A satellite inherits declared facets from its nucleus.
+  A generated rule derived from a superseded standard is stale the moment the
+  standard is superseded — detected structurally, with no separate check.
+- **Context pruning.** When an agent's context budget binds, satellites are dropped
+  before nuclei ([spec 5](05-ai-integration.md)). Dropping the standard and keeping
+  its teaser is exactly backwards, and without nuclearity the engine cannot tell.
+- **Orphan detection.** An unlinked nucleus is a real finding: something exists that
+  nothing points at. An unlinked satellite is a *generation* bug — different
+  severity, different owner, different fix. Conflating them produces noise that gets
+  suppressed wholesale.
+- **Deletion safety.** Removing a nucleus that still has live satellites is a
+  finding; removing a satellite is free.
+
+### Dominance
+
+`dominance: source | target | none` records whose purpose subordinates whose — which
+document a reader should treat as governing when two are linked.
+
+Dominance is not the same as nuclearity. Nuclearity is *structural* (can this stand
+alone?); dominance is *intentional* (which one's purpose is in charge?). A successor
+decision and its predecessor are both nuclei — neither is a fragment — but the
+successor dominates: it is the one that governs behaviour now.
+
+The engine uses dominance to order routing results, to choose which document a
+conflict is reported against, and to decide reading order in generated indexes.
+
+## Sequence expectations
+
+A taxonomy may declare **sequences**: chains of kinds where one is expected to
+follow another within a window.
+
+```yaml
+- id: decision-realised
+  when:   {kind: decision, where: {status: current}}
+  expect: {relation: implemented_by, to_kind: specification}
+  within: 90d
+  severity: warn
+```
+
+This models what genre theory calls a *genre system* — a sequence of interrelated
+communicative actions that structures work. Proposal → decision → specification →
+evidence is one. Incident → postmortem → standard change is another.
+
+Sequences catch a failure class nothing else does. Every check in
+[spec 4](04-assurance-model.md) validates artefacts that exist. A sequence check
+finds the artefact that **should exist and does not**: the accepted proposal nobody
+implemented, the incident with no postmortem, the decision that never reached a
+specification. That is the drift people actually complain about, and it is invisible
+to link and front-matter validation because there is nothing malformed to find.
+
+Three constraints keep them honest:
+
+- **Detective only.** A sequence expectation is never blocking. The work may
+  legitimately be in flight, deferred, or abandoned for good reason.
+- **A window is required.** An expectation with no time bound is a wish. The window
+  is what makes the finding actionable.
+- **A rationale is required.** If you cannot say why the sequence is expected, it is
+  a convention, not an expectation, and it will generate noise.
+
+Sequence findings are reported against the *originating* document, because that is
+where the reader who can act will look.
+
+## The immutable core
+
+A taxonomy package declares a **core**: the semantics that overlays may extend but
+never remove or redefine.
+
+```yaml
+core:
+  requires:
+    - facet_role: state
+    - facet_role: freshness
+    - facet_role: scent
+    - purpose: rationale
+    - purpose: behaviour
+    - relation_family: succession
+      lifecycle_sensitive: true
+```
+
+Without this, "the same taxonomy" means nothing. If a consumer may override or
+remove anything, two consumers of one package can end up sharing no structure at
+all, and the publisher has no answer to "are they still using the method?"
+
+**The core is semantic, not lexical.** It constrains *roles and purposes*, never
+names or paths. An adopter may rename every shelf, relocate every directory, change
+every identifier pattern, and replace the lifecycle vocabulary — and still satisfy
+the core, provided that after resolution *some* facet carries the state role, *some*
+kind serves the `rationale` purpose, and lineage remains expressible and
+lifecycle-sensitive.
+
+That is the boundary-object property stated precisely: plastic enough to adapt to
+local practice, robust enough to keep a common identity across sites. Local form is
+entirely negotiable; shared meaning is not.
+
+Core satisfaction is checked **after** overlay resolution, against the resolved
+taxonomy — not by forbidding particular operations. An overlay is rejected when the
+*result* fails to satisfy a core requirement, with an error naming which requirement
+and which operation removed its last satisfier. Conformance ([spec
+7](07-distribution-and-federation.md)) checks the core, not the whole taxonomy.
 
 ## Kind resolution
 
@@ -165,8 +404,9 @@ Given a document path and its front matter, the engine resolves a kind by:
    component directory).
 
 `docgov explain <path>` prints this derivation — which shelf matched, which rule
-fired, which facets and sections are consequently required, and which relations are
-permitted. Classification is never a black box, for a human or an agent.
+fired, the kind's declared purpose, which facets and sections are consequently
+required, and which relations are permitted. Classification is never a black box,
+for a human or an agent.
 
 ### Placement is primary; metadata fills the gap
 
@@ -189,20 +429,29 @@ extends: docgov/standard@2.1.0
 
 override:
   shelves.decisions.path: docs/adr/**            # we call them ADRs
-  facets.status.values: [draft, active, retired] # our lifecycle
   identifier_schemes.decision_id.pattern: "ADR-{seq:03d}"
+  vocabularies.lifecycle_state:                  # our lifecycle, our names
+    - {value: draft,   role: initial}
+    - {value: active,  role: live}
+    - {value: retired, role: terminal-retained}
 
 add:
   shelves.playbooks:
     path: docs/playbooks/**
     homogeneous: true
     kind: playbook
-  kinds.playbook: {...}
+  kinds.playbook: {purpose: procedure, ...}
 
 remove:
   - shelves.proposals            # we do not do time-boxed proposals
   - relations.refines
 ```
+
+Note what the lifecycle override does *not* break. The names change completely;
+the roles survive; the core is satisfied. Had the overlay dropped the
+`terminal-retained` role entirely, resolution would fail — not because a key went
+missing, but because succession could no longer retain lineage, which the core
+requires.
 
 Merge semantics are strict and total:
 
@@ -216,6 +465,8 @@ Merge semantics are strict and total:
 - Resolution is **order-independent** for disjoint paths and an **error** for
   conflicting ones: two overlays touching the same path is a conflict to resolve,
   not a last-writer-wins race.
+- The resolved taxonomy must satisfy the `core`. This is checked last, on the
+  result.
 
 The resolved taxonomy is written to a lock file with a content hash. The engine
 checks the corpus against the lock, so a resolution result is reproducible and
@@ -227,47 +478,82 @@ The taxonomy language has a formal schema, published with the engine and version
 with it. `docgov taxonomy validate` checks:
 
 - structural conformance to the meta-schema;
-- referential integrity — every referenced vocabulary, regime, kind, and facet
-  exists; no dangling relation endpoints;
+- referential integrity — every referenced vocabulary, regime, kind, facet, and
+  purpose exists; no dangling relation endpoints;
 - coverage — every shelf resolves to at least one kind; every kind is reachable
   from at least one shelf, or is explicitly marked abstract;
+- **purpose completeness** — every kind declares a purpose, and every declared
+  purpose is served by at least one kind;
 - determinism — no two shelf patterns can match the same path ambiguously;
 - role uniqueness — at most one facet claims each engine-significant role;
 - lifecycle soundness — the state machine is connected, has an initial state, and
   its terminal states are declared;
+- **relation coherence** — every relation names a valid family; nucleus–satellite
+  relations name their nucleus; `inherits` names facets that exist on both ends;
+  a family's default is not contradicted without explicit override;
+- **sequence well-formedness** — every sequence names an existing relation and
+  reachable kinds, carries a window, and carries a rationale;
+- **core satisfiability** — the resolved taxonomy satisfies every core requirement;
 - projection targets — every projection writes inside the corpus and does not
   collide with an authored path.
 
 A taxonomy that does not validate is never applied. There is no partial-load mode.
 
-## Versioning and migration
+## Versioning by measured compatibility
 
-A taxonomy is a released, semantically versioned package.
+A taxonomy is a released, semantically versioned package — but the version number is
+**derived from measured impact**, not chosen from a table of change categories.
 
-| Change | Version | Migration |
-|---|---|---|
-| Add optional facet, add a kind, add a projection | minor | none |
-| Widen an enum, relax a requirement | minor | none |
-| Rename a shelf, narrow an enum, require a previously optional facet | major | required |
-| Change an identifier scheme | major | required, with an identifier map |
+The naive model (additive changes are minor, everything else is major) is
+straightforwardly wrong for a schema carrying semantics. Adding an *optional* facet
+is additive and can still change which documents a projection includes. Widening an
+enum is additive and can still cause a completeness check to start failing.
+Structural change and semantic consequence are not the same thing, and only one of
+them matters to a consumer.
 
-A major version ships a **migration payload**: machine-readable steps declaring
-what moved, what was renamed, and what must be re-stated, split into what the
-engine can apply mechanically (`docgov migrate --apply`) and what needs human or
-agent judgment (emitted as a task list with the affected documents attached).
-Adopting a new major version without running its migration is a hard failure, not a
-warning — the lock file records the taxonomy version each corpus was validated
-against.
+So compatibility is evaluated along five declared dimensions, against a real corpus:
+
+| Dimension | Question |
+|---|---|
+| `classification` | Does every existing document still resolve to the same kind? |
+| `instance_validity` | Does every existing document still validate? |
+| `consequence` | Does every check that passed still pass, and every failing check still fail? |
+| `projection` | Does every projection produce identical output? |
+| `identifier` | Does every identifier still resolve to the same document? |
+
+`docgov taxonomy diff --to <version>` runs all five and reports per dimension. The
+required version bump is a *consequence* of the result: any dimension broken forces
+a major version.
+
+The publisher and the consumer play different roles here, and both are necessary:
+
+- The **publisher** measures against its own reference corpora and publishes the
+  result as a compatibility claim attached to the release. That is the best it can
+  do; it does not have anyone else's documents.
+- The **consumer** measures against its own corpus before upgrading. This
+  *verifies* the publisher's claim rather than trusting it — and a claim that fails
+  locally is exactly the interesting case, because it means the consumer's corpus
+  uses something the publisher's reference corpora do not.
+
+A major version ships a **migration payload**: machine-readable steps declaring what
+moved, what was renamed, and what must be re-stated, split into what the engine can
+apply mechanically (`docgov migrate --apply`) and what needs human or agent judgment
+(emitted as a task list with the affected documents attached). Adopting a new major
+version without running its migration is a hard failure, not a warning — the lock
+file records the taxonomy version and the measured compatibility result each corpus
+was validated against.
 
 ## Worked example: three taxonomies, one engine
 
 | | Small team | Product suite | Regulated platform |
 |---|---|---|---|
 | Shelves | `decisions`, `guides` | + `specifications`, `standards`, `proposals`, `evidence` | + `controls`, `audits`, `risk` |
+| Purposes | `rationale`, `procedure` | + `behaviour`, `constraint` | + `attestation` |
 | Lifecycle | `draft` → `current` | + `superseded`, `deprecated` | + `approved`, with an approver facet |
 | Identifiers | none | decision + requirement ids | + control ids, mapped to an external framework |
 | Voice regime | unconstrained | declarative on specs and standards | + mandatory normative keyword usage |
-| Relations | `supersedes` | + `governs`, `verifies` | + `mitigates`, `attests` |
+| Relations | `supersedes` | + `governs`, `verifies`, `conflicts_with` | + `mitigates`, `attests` |
+| Sequences | none | decision → spec; incident → postmortem | + control → audit → attestation |
 | Engine changes | none | none | none |
 
 The third column is the real test. If a regulated adopter can express control
@@ -283,3 +569,8 @@ cannot be expressed declaratively are implemented as **check plugins** with a
 documented interface (see [engine architecture](06-engine-architecture.md)), and
 that boundary is defended: the moment the schema grows an `if`, the drift between
 declared and actual structure comes back.
+
+The relation family set is **closed**. An adopter may declare any number of relation
+types, but every one must belong to one of the six families. A taxonomy that needs a
+seventh family is telling us something about the model, and that conversation should
+happen upstream rather than being settled locally by an escape hatch.

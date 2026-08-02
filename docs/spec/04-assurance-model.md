@@ -112,6 +112,28 @@ paper trail rather than an argument about someone's tolerance for red builds. Th
 inverse is also specified: a blocking check whose false-positive rate rises past
 the threshold is demoted, not endured.
 
+## Absence is a finding class of its own
+
+Every mechanism above validates something that exists. None of them can see the
+document that should exist and does not — the accepted proposal nobody implemented,
+the incident with no postmortem, the decision that never reached a specification.
+
+**Sequence expectations** ([spec 2](02-taxonomy-model.md#sequence-expectations)) close
+that gap. A sequence declares that a document of one kind, in a given state, is
+expected to acquire a relation to a document of another kind within a window; the
+engine reports the ones that did not.
+
+They are constrained deliberately:
+
+- **detective only, never blocking** — the work may legitimately be in flight,
+  deferred, or abandoned for good reason, and none of those are defects;
+- **windowed** — an expectation with no time bound is a wish, not a control;
+- **reported against the originating document** — that is where the person who can
+  act will look.
+
+This is the drift readers complain about most, and it is invisible to link and
+front-matter validation because there is nothing malformed to find.
+
 ## Findings
 
 Every finding, from every mechanism, has one shape:

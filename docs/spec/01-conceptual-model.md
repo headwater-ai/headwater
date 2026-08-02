@@ -39,6 +39,9 @@ whether documents on the shelf must carry a kind discriminator (see
 What a document *is*: a decision record, a component specification, a runbook, an
 incident record, a standard. A kind carries:
 
+- the **purpose** it serves — the reader intent it exists to satisfy, declared, not
+  implied. A kind without one is invalid: purpose plus form is what makes a kind a
+  genre rather than a shape;
 - the **section contract** — headings the document must or may have;
 - the **facet schema** — which metadata it must, may, and must not carry;
 - the **voice regime** and **lifecycle regime** it obeys;
@@ -66,6 +69,12 @@ A **typed, named, directed link** between documents (or from a document to an
 anchor), declared in front matter. Relations are the system's connective tissue and
 its main source of checkable structure. A relation type declares:
 
+- **family** — one of six fixed families (`succession`, `derivation`, `governance`,
+  `evidence`, `composition`, `association`) supplying default semantics;
+- **nuclearity** — whether both ends stand alone (multinuclear) or one end supports
+  the other and cannot stand without it (nucleus–satellite), and if so which end is
+  the nucleus;
+- **dominance** — which end's purpose governs the reading when the two are linked;
 - **endpoints** — which kinds may sit at each end;
 - **cardinality** — how many are allowed, and whether one is required;
 - **reciprocity** — whether the target must acknowledge the source, and with which
@@ -81,7 +90,23 @@ a linter.
 
 Relation types an adopter is likely to want (all defined in the default taxonomy,
 none hard-coded in the engine): `supersedes` / `superseded_by`, `derives_from`,
-`governs`, `verifies`, `implements`, `cites`, `owns`, `refines`.
+`governs`, `verifies`, `implements`, `cites`, `owns`, `refines`, `conflicts_with`.
+
+Nuclearity and dominance are distinct, and the difference matters. Nuclearity is
+**structural** — can this document stand alone? Dominance is **intentional** — whose
+purpose is in charge? A superseded decision and its successor are both nuclei;
+neither is a fragment. But the successor dominates, because it is the one that
+governs behaviour now.
+
+### Sequence expectation
+
+A declared chain between kinds: a document of one kind, in a given state, is
+expected to acquire a relation to a document of another kind within a window. These
+model what genre theory calls a *genre system* — proposal → decision →
+specification → evidence.
+
+Sequence expectations are the only construct that finds a document which **should
+exist and does not**. Every other check validates artefacts that are present.
 
 ### Facet
 

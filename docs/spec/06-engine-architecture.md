@@ -55,7 +55,7 @@ A check is a pure function `(graph, config) → findings`. Three tiers:
 
 | Tier | Source | Example |
 |---|---|---|
-| **Schema-derived** | Generated from the taxonomy | Required facets present, enum values valid, sections present, relation cardinality, reciprocity, lifecycle transitions, identifier format |
+| **Schema-derived** | Generated from the taxonomy | Required facets present, enum values valid, sections present, relation cardinality, reciprocity, nuclearity and satellite inheritance, lifecycle transitions, sequence expectations, identifier format |
 | **Built-in** | Shipped with the engine, configured by taxonomy | Voice regime, link resolution, staleness, size budgets, projection freshness, orphan detection, reference directionality |
 | **Plugin** | Adopter-supplied | Anything organisation-specific — an internal identifier format, a compliance mapping, a house rule |
 
