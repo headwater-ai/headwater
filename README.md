@@ -58,6 +58,7 @@ instruction context, publishing, and the evidence that the whole thing is workin
 | 9 | [Open questions](docs/spec/09-open-questions.md) | Decisions deliberately deferred to the design phase |
 | 10 | [Theoretical foundations](docs/spec/10-theoretical-foundations.md) | The research the design rests on, and the 20 changes it forced — all applied |
 | 11 | [Adjacent work](docs/spec/11-adjacent-work.md) | Existing tools and patterns that overlap — what to adopt, and what we already specified twice |
+| 12 | [The check layer](docs/spec/12-check-layer.md) | Where checks come from, how scope makes caching and change-scoping sound |
 
 Evidence gathered for specific open questions lives in
 [`docs/evaluations/`](docs/evaluations/) — currently worked examples of the taxonomy in

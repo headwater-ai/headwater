@@ -43,7 +43,10 @@ not interpret. Classification assigns a kind by the declared resolution rules an
 records the derivation for `explain`.
 
 **Graph build** resolves relations into edges, indexes identifiers, binds external
-anchors (code paths, work items, URLs), and reports what could not be resolved.
+anchors (code paths, work items, URLs), and reports what could not be resolved. It also
+emits a **census** — every file under the corpus root and what became of it — which fixes
+the denominator for coverage before any check runs, so a document that failed to classify
+is visibly unchecked rather than silently absent.
 
 **Cache** is content-addressed per file plus taxonomy hash, so incremental runs are
 proportional to the change, not the corpus. The change-scoped mode used by CI and
@@ -51,24 +54,28 @@ hooks is the same code path with a smaller working set.
 
 ## Checks
 
-A check is a pure function `(graph, config) → findings`. Three tiers:
+A check is a pure function from a **scoped view** of the graph to findings. Checks come
+from five origins:
 
-| Tier | Source | Example |
+| Origin | Comes from | Exportable as |
 |---|---|---|
-| **Schema-derived** | Generated from the taxonomy | Required facets present, enum values valid, sections present, relation cardinality, reciprocity, nuclearity and satellite inheritance, lifecycle transitions, sequence expectations, identifier format |
-| **Built-in** | Shipped with the engine, configured by taxonomy | Voice regime, link resolution, staleness, size budgets, projection freshness, orphan detection, reference directionality, transition continuity, summary scent |
-| **Plugin** | Adopter-supplied | Anything organisation-specific — an internal identifier format, a compliance mapping, a house rule |
+| **Shape** | the taxonomy, generated | LinkML + SHACL |
+| **Graph** | relation declarations, generated | SHACL |
+| **Corpus** | declarations needing many documents at once | — |
+| **Document** | regimes applied to the body, which is not in the graph | — |
+| **Plugin** | adopter code | — |
 
-Most of what an adopter wants is tier one, and tier one costs nothing to add: a new
-relation type in the schema brings its cardinality, endpoint, and reciprocity checks
-with it.
+The first two are *generated*: a new facet or relation brings its checks with no code,
+which is the point of taxonomy-as-data and where most of the check count lives. The
+last three are why a native engine exists at all — they are precisely what LinkML and
+SHACL cannot express.
 
-### Plugin interface
+Every check declares its **scope** (document, edge, neighbourhood, shelf, corpus), and
+the engine enforces it: a check sees only what it declared. Scope is what makes
+change-scoped evaluation exact, cache keys sound, and parallelism safe.
 
-Deliberately narrow. A plugin receives the built graph and returns findings. It gets
-no file-system walk, no parsing, and no ability to mutate the graph. That
-constraint keeps plugins fast, cacheable, and incapable of introducing the
-divergence the single-engine design exists to prevent.
+The design — scope semantics, instances and coverage, the two-phase census, fixability,
+determinism, and the plugin contract — is [spec 12](12-check-layer.md).
 
 ## Projections
 
