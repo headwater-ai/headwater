@@ -57,6 +57,7 @@ instruction context, publishing, and the evidence that the whole thing is workin
 | 8 | [Prior art and departures](docs/spec/08-prior-art-and-departures.md) | What the reference system got right, and what we change |
 | 9 | [Open questions](docs/spec/09-open-questions.md) | Decisions deliberately deferred to the design phase |
 | 10 | [Theoretical foundations](docs/spec/10-theoretical-foundations.md) | The research the design rests on, and the 20 changes it forced — all applied |
+| 11 | [Adjacent work](docs/spec/11-adjacent-work.md) | Existing tools and patterns that overlap — what to adopt, and what we already specified twice |
 
 Start at 0 and 2 if you only read two. Spec 10 is where the design gets tested
 against the literature; the five structural changes it called for are applied.

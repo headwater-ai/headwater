@@ -107,7 +107,12 @@ that is removed catches nothing.
 
 ### `taxonomy validate` versus `taxonomy audit`
 
-Two commands because two kinds of question. **`validate`** decides the schema alone:
+Two commands because two kinds of question — and the distinction is the standard
+one between reasoning over a **TBox** (the terminology) and reasoning over an
+**ABox** (the assertions) against it
+([spec 1](01-conceptual-model.md#two-layers-terminology-and-assertions)).
+
+**`validate`** decides the schema alone:
 referential integrity, determinism, purpose completeness, kind rigidity, edge
 provenance, overlay confluence, core satisfiability. It needs no documents, always
 terminates in a verdict, and gates everything.

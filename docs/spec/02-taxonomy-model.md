@@ -386,6 +386,83 @@ It also brings PROV's agent dimension, which now matters: documents are drafted 
 humans, by agents, and by both. See
 [authoring and lifecycle](03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed).
 
+### Authority: when documents disagree
+
+`dominance` says whose *purpose* governs. It does not say who is *right*.
+
+Two documents can both be current, both be well-formed, and disagree on a fact — a
+standard says one thing, a specification another; a normative source and an observed
+convention diverge. Nothing in the corpus currently resolves that, which means a
+reader guesses and an agent picks one and sounds confident about it.
+
+Kinds therefore declare an **authority rank**, and relation types may declare how
+disagreement across them is handled:
+
+```yaml
+kinds:
+  standard:      {authority: 10, ...}
+  specification: {authority: 20, ...}    # more specific, higher authority in its scope
+  guide:         {authority: 50, ...}
+
+relations:
+  documents_convention:
+    family: association
+    on_disagreement: prefer_higher_authority + flag
+```
+
+Two rules make it useful rather than decorative:
+
+- **Higher authority wins within its scope, and the disagreement is still
+  reported.** Silently preferring one source hides the drift; the point is to
+  resolve the reader's question *and* raise the inconsistency, not to pick and move
+  on.
+- **Authority is scoped, not global.** A specification outranks a standard about its
+  own component and is silent about anything else. A global ordering would make the
+  most general document the most authoritative everywhere, which is backwards.
+
+For agents this becomes an explicit instruction rather than an inference: where
+sources conflict, prefer the higher-authority one, cite both, and flag the conflict
+([spec 5](05-ai-integration.md)). An agent left to resolve contradictions on its own
+judgement will do so invisibly.
+
+## Contract sidecars: the specification as oracle
+
+Prose is canonical for meaning and hopeless for precision. A component may therefore
+carry a **contract sidecar** — machine-verifiable artefacts beside the prose:
+schemas, interface descriptions, metric definitions, and structured acceptance
+criteria carrying stable identifiers.
+
+```
+specifications/ingest/parser/
+  functional.md          # prose: what it does and why — canonical for meaning
+  technical.md           # prose: how it is realised
+  contracts/
+    input.schema.json    # canonical for shape
+    acceptance.yml       # identified, structured criteria
+```
+
+The prose stays canonical for intent; the sidecar is canonical for the exact shape,
+and the prose references it rather than restating it. This is decomposition by
+**validation regime** — the two halves are checked by different means — not a new
+shelf and not a file split for its own sake.
+
+What this unlocks is the more interesting part. Structured acceptance criteria with
+stable identifiers are a **test oracle**: a conformance check can be derived from
+the specification rather than written alongside it and drifting from it. The check
+asks the corpus what should be true, so coverage follows the specification
+automatically instead of being maintained in parallel.
+
+That closes the loop the whole system is built around. A specification that can
+generate the check that proves it is a specification that cannot quietly stop being
+true — the strongest available form of "documentation describes what is". It also
+sets a boundary worth stating: a generated check confirms *structure*, never
+meaning. A criterion can be present, well-formed, mechanically satisfied, and still
+describe the wrong behaviour. Structural conformance is a floor, and the audit layer
+([spec 4](04-assurance-model.md)) is the ceiling.
+
+Sidecars are optional. A component with nothing mechanically checkable carries none,
+and the taxonomy declares which kinds may have them.
+
 ## Sequence expectations
 
 A taxonomy may declare **sequences**: chains of kinds where one is expected to

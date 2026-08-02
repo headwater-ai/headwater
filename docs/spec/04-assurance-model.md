@@ -179,6 +179,32 @@ paper trail rather than an argument about someone's tolerance for red builds. Th
 inverse is also specified: a blocking check whose false-positive rate rises past
 the threshold is demoted, not endured.
 
+### Discharging coherence obligations: the assisted sweep
+
+Naming a coherence class is easy; discharging it is the hard part, and structural
+checks cannot. A periodic **LLM-assisted coherence sweep** is the mechanism: an agent
+reads a bounded slice of the corpus and reports what no linter can see —
+
+- pages that contradict each other while both remain current;
+- claims a newer source has quietly superseded;
+- concepts referenced throughout and defined nowhere;
+- documents whose declared audience could not actually use them.
+
+Three constraints keep this inside the rules the rest of the system obeys:
+
+1. **It produces findings, never verdicts.** "No LLM in the validation path"
+   ([spec 5](05-ai-integration.md#what-we-do-not-do)) governs decisions that gate.
+   A coherence finding is a prompt for human attention, and is marked as one.
+2. **It is sampled and detective**, like every coherence control — bounded slices on
+   a schedule, never a blocking gate.
+3. **Findings cite evidence.** Each names the documents it compared and quotes the
+   passages it believes conflict, so a human can adjudicate in seconds. An
+   unfalsifiable finding is noise, and noise gets the whole sweep switched off.
+
+This is the same division the system draws everywhere: deterministic tooling for
+what is decidable, judgement for what is not, and no pretence that either does the
+other's job.
+
 ## Measuring coherence where we can: continuity across links
 
 Coherence resists mechanisation, but one component of it does not.

@@ -156,3 +156,75 @@ half-conformant corpus — which is a design constraint, not a feature request.
 **Leaning:** `docgov infer` (propose a taxonomy from an existing tree) and a
 `--since <ref>` mode are first-release. Adoption friction is the thing most likely
 to kill this, and both of these directly attack it.
+
+## Q13 — LinkML and SHACL as substrate
+
+**Blocks:** Q1 and Q2, and it is close to irreversible once the schema format ships.
+
+[LinkML](https://linkml.io/) is a YAML-authored schema language that compiles to JSON
+Schema, SHACL, RDF/OWL, Pydantic, and SQL DDL. It covers a substantial part of what
+[spec 2](02-taxonomy-model.md) specifies structurally — classes, slots, ranges,
+cardinality, enums, inheritance — and none of the governance half (regimes,
+sequences, overlays, core, compatibility). SHACL, similarly, is the standard for
+validating a graph against declared shapes, which is what our schema-derived checks
+do by hand.
+
+| Option | For | Against |
+|---|---|---|
+| Adopt LinkML as the structural substrate | Meta-schema, validator, and multi-format output for free; a standard others already read | Half-LinkML, half-ours may author worse than either alone; its tooling is Python, pulling against a Rust core (Q1) |
+| Borrow the design, stay independent | One coherent language; full control of authoring ergonomics | We rebuild a validator and a compiler that exist |
+| Adopt SHACL as the internal check representation | Standard, expressive, well-understood | Violation reports are famously hard to read, and [spec 4](04-assurance-model.md) commits to findings an author can act on — a translation layer may cost more than it saves |
+
+**Leaning:** none yet, deliberately. Settle it with the same
+cognitive-dimensions walkthrough as Q2, adding one scenario — *express a voice regime
+and a sequence expectation* — since that is precisely where LinkML stops and where a
+seam would fall. Note the counter-evidence in
+[spec 11](11-adjacent-work.md#e-opengeo--same-substrate-opposite-direction): OpenGEO
+solves a neighbouring problem on Markdown and YAML while explicitly declining
+RDF/OWL/SHACL, so the standards-based route is not self-evidently correct.
+
+## Q14 — Discovery surface
+
+**Blocks:** nothing yet; becomes urgent the moment a corpus is consumed by anything
+that did not clone the repository.
+
+[Spec 7](07-distribution-and-federation.md) covers distribution to repositories that
+already know about the publisher. Nothing covers an agent or tool encountering a
+corpus cold: how it discovers that a corpus exists, what taxonomy governs it, what
+version, and where to start reading.
+
+Prior art worth copying from rather than reinventing: a well-known file at a
+predictable path, link relations from rendered pages, and an MCP server advertising
+the corpus as a capability. All three are cheap, and the first two work without any
+docgov installation at all.
+
+**Leaning:** a small machine-readable descriptor at a fixed path — taxonomy identity
+and version, corpus root, entry points, and the graph export location — plus the MCP
+surface for agents that can use it. Defer until the graph export format is stable,
+because the descriptor should point at it.
+
+## Q15 — A synthesised content tier
+
+**Blocks:** the provenance model, if the answer is yes.
+
+docgov recognises two kinds of content: **authored** (a human wrote it; it is
+canonical) and **generated** (a projection; verified by regenerating it and
+comparing). Karpathy's LLM Wiki pattern
+([spec 11](11-adjacent-work.md#f2-karpathys-llm-wiki)) is built on a third:
+**synthesised** — an agent's evolving interpretation of sources, revised as new ones
+arrive.
+
+It fits neither existing tier, and the difference is not cosmetic: a projection is
+verifiable by regeneration, a synthesis is not. Two runs over the same sources
+produce different prose, both defensible.
+
+Open: whether docgov admits synthesised content at all; if so, whether it needs its
+own staleness rules, how it is prevented from ever becoming canonical for anything,
+and whether a human acceptance step promotes it to authored or whether it stays
+permanently second-class.
+
+**Leaning:** admit it, permanently non-canonical, clearly marked, never a valid
+target for a `governs` or `verifies` relation — with promotion to authored requiring
+an explicit human acceptance that changes its provenance record. It is how most
+organisations will actually want to use this, and refusing to model it just means it
+happens unmarked.

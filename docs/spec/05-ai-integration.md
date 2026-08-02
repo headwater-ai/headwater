@@ -136,6 +136,53 @@ across a change: which documents this touched, what is now stale, what decision
 lacks evidence. It runs with a scoped instruction subset — its own bounded context —
 rather than inflating every session's always-on prompt.
 
+## What structured knowledge buys
+
+The reason to build any of this is more predictable machine behaviour, and the claim
+has to be stated accurately or it will shape the work wrongly.
+
+**A governed corpus does not make a language model deterministic.** Sampling is
+stochastic, identical prompts produce different outputs, and no amount of schema
+changes that. Anyone claiming otherwise is selling something.
+
+What it does buy:
+
+| Mechanism | Effect |
+|---|---|
+| **Ambiguity removal** | Fewer legitimate readings of the input, so fewer defensible-but-divergent outputs. Variance narrows; it does not vanish |
+| **Oracles** | Output can be checked against a declared expectation ([spec 2](02-taxonomy-model.md#contract-sidecars-the-specification-as-oracle)) rather than judged by eye |
+| **Attribution** | When output deviates, the artefact that licensed it is identifiable, so the fix lands on the corpus or the prompt rather than on a hunch |
+| **Reproducible comparison** | A pinned corpus and a pinned model give a baseline later runs can be diffed against |
+
+The achievable target is **bounded, auditable non-determinism**: output varying
+within a space the corpus defines, deviations visible, causes attributable.
+
+That is not a lesser goal, and it sets the investment priority. Effort belongs in
+oracles and traceability — checkable expectations, and citation of what licensed each
+decision — not in prompt engineering aimed at coaxing a model into repeating itself.
+The first compounds and is measurable; the second is a treadmill.
+
+### Generated artefacts cite what licensed them
+
+Any artefact an agent produces under the corpus's direction — a document, a
+generated test, an implementation written against a specification — cites the
+identifiers of the artefacts that governed it, inline, at the point of the decision.
+
+```python
+# per REQ-INGEST-014 (specifications/ingest/parser/functional.md)
+# version 5 and 6 swap these two fields
+```
+
+This is cheap, it survives refactoring better than a link in a commit message, and
+it converts "why does the code do this?" from an investigation into a lookup. It is
+also what makes attribution work in practice: when generated output is wrong, the
+citation says whether the corpus misled the agent or the agent ignored the corpus.
+Those have opposite fixes, and without the citation they are indistinguishable.
+
+Where sources conflict, the agent prefers the higher-authority one, cites **both**,
+and flags the conflict ([spec 2](02-taxonomy-model.md#authority-when-documents-disagree)).
+An agent silently resolving a contradiction destroys the evidence that one existed.
+
 ## The stop rules
 
 Explicit behaviours an assistant working in the corpus must exhibit:
@@ -193,8 +240,17 @@ where the corpus is tuned to the probe suite instead of to its readers.
 ## What we do not do
 
 - No LLM in the validation path. Verdicts are deterministic and reproducible.
-- No vector index as the primary retrieval mechanism. The graph is precise, cheap,
-  and explainable; embeddings are at most a fallback for genuinely fuzzy lookup,
-  and never the authority.
+- No retrieval-augmented generation as the primary mechanism. The precision argument
+  matters — the graph is exact, cheap, and explainable where embeddings are none of
+  those — but the deeper objection is that **RAG accumulates nothing**. Every query
+  re-derives its answer from fragments chosen by similarity, and the synthesis is
+  discarded; ask again next week and the work happens again. A governed corpus
+  compiles knowledge *once* — validated, related, projected — and keeps it current,
+  so retrieval reads a standing answer rather than reconstructing one. Chunking
+  strategies exist to manage the structural loss that embedding introduces; we
+  decline the loss instead of managing it. Embeddings remain acceptable as a
+  fallback for genuinely fuzzy lookup, and never as the authority. An external RAG
+  system consuming the corpus is a separate integration question, not a change to
+  this.
 - No agent-authored documents merged without review. The agent drafts and links;
   a human accepts.
