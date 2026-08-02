@@ -210,7 +210,7 @@ profiles:                              # named subsets for repo archetypes
     shelves: [governance, architecture, domain]
 ```
 
-## The eleven declarations
+## The twelve declarations
 
 | Declaration | Answers |
 |---|---|
@@ -225,6 +225,7 @@ profiles:                              # named subsets for repo archetypes
 | `identifier_schemes` | How stable identifiers are shaped, namespaced, and allocated |
 | `core` | What an overlay may never remove or redefine |
 | `compatibility` | Which dimensions a version change is measured against |
+| `mappings` | How this taxonomy's concepts correspond to another's |
 
 Plus `projections` (derived artefacts) and `profiles` (subsets for repositories that
 hold only part of the taxonomy).
@@ -316,6 +317,75 @@ successor dominates: it is the one that governs behaviour now.
 The engine uses dominance to order routing results, to choose which document a
 conflict is reported against, and to decide reading order in generated indexes.
 
+### The decision-relation vocabulary
+
+Succession is the temporal axis, and on its own it is not enough. Two decisions can
+both be current and contradict each other; one decision can constrain another
+without replacing it. Neither is expressible with `supersedes` alone, and neither is
+detectable by any reciprocity check.
+
+The default taxonomy therefore adopts the decision-relation set from Kruchten's
+ontology of architectural design decisions, each assigned to a family:
+
+| Relation | Family | Claim |
+|---|---|---|
+| `supersedes` | succession | Replaces a prior decision |
+| `overrides` | succession | Displaces a prior decision's effect without retiring it |
+| `constrains` | governance | Narrows what the target may decide |
+| `forbids` | governance | Rules out an option in the target's space |
+| `enables` | governance | Makes the target decidable — the weak form of `constrains` |
+| `does_not_comply_with` | governance | Records a known, deliberate violation |
+| `subsumes` | composition | Is wider than, and implies, the target |
+| `comprises` | composition | Is made up of the target decisions |
+| `conflicts_with` | association | Contradicts the target |
+| `is_alternative_to` | association | Was a considered alternative |
+| `is_bound_to` | association | Must change together with the target |
+| `traces_to` | evidence | Derives from a requirement, driver, or source |
+
+Adopting a published vocabulary rather than inventing one is deliberate: this set
+has been used and criticised for two decades, and the arguments about where its
+edges sit have already been had.
+
+Four checks come with it, none of which succession alone can express:
+
+- two `current` decisions joined by `conflicts_with` — an incoherent corpus state;
+- a decision `constrains`-linked to a superseded one — the constraint may be void;
+- `forbids` and `enables` edges asserting opposite things about one option;
+- a `does_not_comply_with` edge pointing at a `current` standard, which is a
+  registered deviation and must carry an owner and an expiry.
+
+A taxonomy may enable a subset. The default enables all twelve; a small team's
+overlay will typically remove most of them, which is what `remove` is for.
+
+### Who creates each edge
+
+**Every relation declares `created_by`**, from a closed set: `author`, `scaffold`,
+`generator`, `hook`, `agent`, `import`. It is required, and a taxonomy that omits it
+fails validation.
+
+This exists because of the single most consistent finding in the traceability
+literature: trace links decay when creating them costs the author and benefits
+someone else later. The field forces the question at design time — *what creates
+this edge, and who pays?* — rather than after the corpus has quietly stopped
+maintaining it.
+
+It is also measurable after the fact. `docgov taxonomy audit` reports edge counts
+and staleness by creator, so a relation declared `created_by: author` that is
+present on 4% of eligible documents is visibly not being maintained. The remedy is
+usually to move it to `scaffold` or `generator`, not to exhort authors harder.
+
+### Lineage aligns with PROV
+
+The `derivation` and `succession` families map onto W3C PROV: `derives_from` to
+`prov:wasDerivedFrom`, `supersedes` to `prov:wasRevisionOf`, and generated
+projections to `prov:wasGeneratedBy`. Alignment is deliberate — provenance is a
+solved modelling problem, and matching a standard costs nothing while making the
+graph interoperable with tooling that already exists.
+
+It also brings PROV's agent dimension, which now matters: documents are drafted by
+humans, by agents, and by both. See
+[authoring and lifecycle](03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed).
+
 ## Sequence expectations
 
 A taxonomy may declare **sequences**: chains of kinds where one is expected to
@@ -390,6 +460,38 @@ taxonomy — not by forbidding particular operations. An overlay is rejected whe
 and which operation removed its last satisfier. Conformance ([spec
 7](07-distribution-and-federation.md)) checks the core, not the whole taxonomy.
 
+## Mapping between taxonomies
+
+Two divisions with different taxonomies do not need a merged one. They need declared
+correspondences, and that is a solved problem: SKOS mapping relations.
+
+```yaml
+mappings:
+  - to: platform/docgov-taxonomy@2.0.0
+    kinds:
+      decision:     {relation: exactMatch,  target: adr}
+      specification:{relation: broadMatch,  target: component_spec}
+      runbook:      {relation: closeMatch,  target: operational_procedure}
+    facet_values:
+      status.current: {relation: exactMatch, target: state.active}
+```
+
+Four relations, with their standard meanings: `exactMatch` (interchangeable in
+practice), `closeMatch` (interchangeable for retrieval, not for inference),
+`broadMatch` / `narrowMatch` (one is wider than the other), `relatedMatch`
+(associated, neither wider nor equivalent).
+
+Mappings are what let a cross-repository aggregator answer "show me every decision
+in the organisation" across taxonomies that share no vocabulary. They are declared
+by whoever needs the correspondence — usually the aggregating tier — and are
+directional, versioned, and validated: a mapping naming a kind that neither
+taxonomy has is a finding.
+
+The engine can also emit the resolved taxonomy as SKOS (`docgov export --format
+skos`). That is partly interoperability with knowledge-organization tooling that
+already exists, and partly a sanity check: a taxonomy that cannot be expressed in a
+standard concept-scheme vocabulary has probably grown something idiosyncratic.
+
 ## Kind resolution
 
 Given a document path and its front matter, the engine resolves a kind by:
@@ -418,6 +520,48 @@ This produces one rule with real teeth: **a homogeneous shelf forbids the
 discriminator facet.** If the directory already says what a document is, restating
 it in front matter creates a second truth that will eventually disagree with the
 first. The schema enforces the prohibition rather than trusting authors to notice.
+
+## Facet acceptance tests
+
+"Is this a good facet?" is usually settled by taste. Faceted-classification practice
+supplies actual tests, and the engine applies them.
+
+| Canon | Test | Where checked |
+|---|---|---|
+| **Relevance** | The facet is read by at least one check, projection, routing rule, or sequence | schema |
+| **Ascertainability** | Every enum value carries guidance stating when it applies | schema |
+| **Permanence** | The facet declares `volatility`; a `mutable` facet may not appear in an identifier, a path, or a shelf pattern | schema |
+| **Differentiation** | The facet actually partitions the corpus — a value found on nearly every document distinguishes nothing | corpus |
+| **Orthogonality** | No two facets are near-perfectly correlated across the corpus | corpus |
+
+The first three are decidable from the schema alone and run under `docgov taxonomy
+validate`. The last two require documents to measure against and run under `docgov
+taxonomy audit`, which is advisory by construction: a young corpus will fail
+differentiation simply for being small.
+
+Orthogonality is the one worth dwelling on. If knowing a document's `shelf` tells
+you its `doc_type` with near-certainty, one of them is doing no work — and the
+redundant one will eventually disagree with the other. The audit reports correlated
+facet pairs rather than rejecting them, because the right fix is a judgement:
+sometimes you delete a facet, sometimes you discover the shelf split was wrong.
+
+## Kinds are rigid; states are not
+
+A kind is a property a document cannot lose while remaining the same document — a
+specification does not stop being a specification. A lifecycle state is a phase
+every document passes through. Formal-ontology practice calls the first **rigid**
+and the second **anti-rigid**, and holds that an anti-rigid class may never subsume
+a rigid one.
+
+The practical rule: **lifecycle state must never be modelled as a kind, a shelf, or
+a directory.** The validator enforces it — a kind whose name collides with a value
+in the state vocabulary is rejected, as is a kind named with a bare phase adjective
+(`draft`, `pending`, `proposed`, `deprecated`, `legacy`, `temporary`, `obsolete`).
+
+This is the most common taxonomy mistake there is, it always looks reasonable at the
+time (`docs/drafts/`, a `deprecated-standard` kind), and it is expensive to undo
+because it forces a document to change identity as it matures. Naming the underlying
+principle gives the argument a resolution instead of a stand-off.
 
 ## Customisation by composition
 
@@ -465,8 +609,23 @@ Merge semantics are strict and total:
 - Resolution is **order-independent** for disjoint paths and an **error** for
   conflicting ones: two overlays touching the same path is a conflict to resolve,
   not a last-writer-wins race.
+- Overlay application must be **confluent**: applying a set of overlays in any
+  legal order yields the same resolved taxonomy. This is checked statically, before
+  anything is applied.
 - The resolved taxonomy must satisfy the `core`. This is checked last, on the
   result.
+
+Confluence is what makes order-independence a guarantee rather than a hope. The
+resolver builds the set of paths each overlay addresses and checks pairwise
+commutativity: two `add`s at disjoint paths commute; an `override` and a `remove`
+on the same subtree do not; two `override`s on one path do not. Any non-commuting
+pair is rejected at resolve time, naming both overlays and the contested path.
+
+Delta-oriented software product lines worked this ground thoroughly, and the
+requirement is theirs. Without it, a three-tier federation
+([spec 7](07-distribution-and-federation.md#federation)) has a resolution order that
+someone must remember, which is a bug waiting for the day two tiers are upgraded in
+the wrong sequence.
 
 The resolved taxonomy is written to a lock file with a content hash. The engine
 checks the corpus against the lock, so a resolution result is reproducible and
@@ -494,6 +653,14 @@ with it. `docgov taxonomy validate` checks:
 - **sequence well-formedness** — every sequence names an existing relation and
   reachable kinds, carries a window, and carries a rationale;
 - **core satisfiability** — the resolved taxonomy satisfies every core requirement;
+- **facet canons** — relevance, ascertainability, and permanence hold for every
+  facet (the corpus-measured canons run under `taxonomy audit`);
+- **kind rigidity** — no kind collides with a lifecycle-state value or is named with
+  a bare phase adjective;
+- **edge provenance** — every relation declares a `created_by` from the closed set;
+- **overlay confluence** — the overlay set commutes;
+- **mapping integrity** — every mapping names kinds and facet values that exist in
+  both taxonomies, with a valid SKOS relation;
 - projection targets — every projection writes inside the corpus and does not
   collide with an authored path.
 

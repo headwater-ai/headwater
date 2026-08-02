@@ -9,9 +9,11 @@ Each entry states what the theory claims, what it gives us, and what changes as 
 result. Entries that change nothing are still worth having: they tell us which
 decisions are defensible rather than merely ours.
 
-> **Status.** The five structural changes (2, 4, 12, 13, 15) and their dependency
-> (3) have been applied to the specification. The table in
-> [§G](#g-summary-of-changes-this-document-proposes) records the state of all twenty.
+> **Status.** All twenty changes have been applied to the specification — the five
+> structural ones first, then the additive remainder. The table in
+> [§G](#g-summary-of-changes-this-document-proposes) records where each landed. This
+> document is now a record of *why* the design is shaped as it is, not a list of
+> pending work.
 
 ---
 
@@ -466,44 +468,62 @@ default, at the cost of two indexes to keep in step.
 
 | # | Change | Spec affected | Source | Status |
 |---|---|---|---|---|
-| 1 | Separate cohesion (checkable) from coherence (sampled) as distinct obligation classes | 4 | Halliday & Hasan | proposed |
+| 1 | Separate cohesion (checkable) from coherence (sampled) as distinct obligation classes | 4 | Halliday & Hasan | **applied** |
 | 2 | Add `nuclearity` to relation declarations | 2 | RST | **applied** |
 | 3 | Group relation types into a small fixed set of families | 2 | Hobbs, Kehler | **applied** |
 | 4 | Make purpose first-class; relation families carry dominance | 2, 5 | Grosz & Sidner | **applied** |
-| 5 | Advisory transition-continuity check over relation edges | 4 | Centering Theory | proposed |
-| 6 | Adopt Kruchten's decision-relation vocabulary, incl. `conflicts with` | 2 | Kruchten | partial |
-| 7 | Facet acceptance tests: orthogonality, ascertainability, permanence | 2, 6 | Ranganathan, Vickery | proposed |
-| 8 | Validator check: no kind may name a lifecycle state | 2, 6 | OntoClean | proposed |
-| 9 | Federate via SKOS-style mapping relations; optional SKOS export | 7, Q9 | SKOS / ISO 25964 | proposed |
-| 10 | Every relation declares what creates it and who pays | 2 | Traceability grand challenge | partial |
-| 11 | Align lineage with PROV; record generating agent | 2, 3 | W3C PROV | proposed |
+| 5 | Advisory transition-continuity check over relation edges | 4 | Centering Theory | **applied** |
+| 6 | Adopt Kruchten's decision-relation vocabulary, incl. `conflicts with` | 2 | Kruchten | **applied** |
+| 7 | Facet acceptance tests: orthogonality, ascertainability, permanence | 2, 6 | Ranganathan, Vickery | **applied** |
+| 8 | Validator check: no kind may name a lifecycle state | 2, 6 | OntoClean | **applied** |
+| 9 | Federate via SKOS-style mapping relations; optional SKOS export | 7, Q9 | SKOS / ISO 25964 | **applied** |
+| 10 | Every relation declares what creates it and who pays | 2 | Traceability grand challenge | **applied** |
+| 11 | Align lineage with PROV; record generating agent | 2, 3 | W3C PROV | **applied** |
 | 12 | Add sequence expectations between kinds (genre systems) | 2, 4 | Yates & Orlikowski | **applied** |
 | 13 | Taxonomy packages declare an immutable core | 7 | Star & Griesemer | **applied** |
-| 14 | Track author capture cost as a metric | 3, 5 | Grudin | proposed |
+| 14 | Track author capture cost as a metric | 3, 5 | Grudin | **applied** |
 | 15 | Replace semver rules with measured compatibility dimensions | 2, 7 | Noy & Klein | **applied** |
-| 16 | Require confluence of overlay application, statically checked | 2 | Delta modelling | proposed |
-| 17 | Treat `summary` as the scent surface; frame the routing gate in scent terms | 5 | Pirolli & Card | partial |
-| 18 | Settle the schema-format question by cognitive-dimensions walkthrough | Q2 | Green & Petre | proposed |
-| 19 | Derive default obligations from an empirical defect taxonomy | 4 | Aghajani et al. | proposed |
-| 20 | Add `reconstructed` as a third provenance value | 3 | Parnas & Clements | proposed |
+| 16 | Require confluence of overlay application, statically checked | 2 | Delta modelling | **applied** |
+| 17 | Treat `summary` as the scent surface; frame the routing gate in scent terms | 5 | Pirolli & Card | **applied** |
+| 18 | Settle the schema-format question by cognitive-dimensions walkthrough | Q2 | Green & Petre | **applied** |
+| 19 | Derive default obligations from an empirical defect taxonomy | 4 | Aghajani et al. | **applied** |
+| 20 | Add `reconstructed` as a third provenance value | 3 | Parnas & Clements | **applied** |
 
-Changes 2, 4, 12, 13 and 15 were structural — they altered the schema itself — and
-are now **applied** to [spec 2](02-taxonomy-model.md), with consequences propagated
-to specs 1, 4, 5 and 7. Change 3 (relation families) came with them: change 4 places
-dominance on families, so families had to exist first.
+All twenty are applied. The five structural changes (2, 4, 12, 13, 15) landed first,
+because they altered the schema itself; change 3 came with them, since change 4
+places dominance on relation families and families had to exist to carry it. The
+remaining fourteen were additive and landed against the schema as it then stood.
 
-Three entries are marked **partial**, meaning the structural work landed but the
-change itself is not complete:
+Where they ended up:
 
-- **6** — `conflicts_with` is in the default relation set, since sequence and core
-  work needed a worked `association`-family example. The remaining ten Kruchten
-  relation types are not yet adopted.
-- **10** — relations carry a `created_by` field, so the question "who pays for this
-  edge?" is now askable. Nothing yet *enforces* an answer, or reviews it.
-- **17** — `summary` carries an explicit `scent` role, which the routing layer reads.
-  Scent quality is still unmeasured.
+| Spec | What these changes added |
+|---|---|
+| [1 — Conceptual model](01-conceptual-model.md) | Purpose on kinds; family, nuclearity and dominance on relations; sequence expectations as a concept |
+| [2 — Taxonomy model](02-taxonomy-model.md) | The five structural changes, plus the decision-relation vocabulary, `created_by`, PROV alignment, facet acceptance tests, the rigidity rule, overlay confluence, and cross-taxonomy mappings |
+| [3 — Authoring](03-authoring-and-lifecycle.md) | Three-state evidence basis, recorded provenance with `accepted_by`, and the assisted-fraction metric |
+| [4 — Assurance](04-assurance-model.md) | The cohesion/coherence split, defect-derived obligations, transition continuity, absence findings, and cost-aware adaptive reporting |
+| [5 — AI integration](05-ai-integration.md) | Purpose-first routing, satellite-first pruning, and scent measurement |
+| [6 — Engine](06-engine-architecture.md) | The `validate` / `audit` split and the enlarged check inventory |
+| [7 — Distribution](07-distribution-and-federation.md) | The invariant core, measured compatibility, and federation by mapping |
+| [9 — Open questions](09-open-questions.md) | A decision procedure for Q2; the cross-taxonomy half of Q9 closed |
 
-The remaining twelve are additive and can land against the schema as it now stands.
+### What the theory did not settle
+
+Applying every change does not mean the design is finished. Three things the
+literature sharpened but could not decide, all still open in
+[spec 9](09-open-questions.md):
+
+- **Whether the assisted fraction actually rises.** The strongest claim in the
+  design — that agent-assisted authoring answers the capture-cost objection that
+  killed every prior rationale system — is now falsifiable, measured, and untested.
+  Nothing here proves it.
+- **Whether the taxonomy language survives contact with authors.** Q2 has a
+  procedure now, not an answer, and the cognitive-dimensions walkthrough may well
+  reject the format the rest of the spec is written in.
+- **Whether coherence measurement is worth its noise.** Transition continuity is a
+  proxy, defensible in theory, unvalidated in practice. If its distribution turns
+  out to be stable across healthy and unhealthy corpora alike, it measures nothing
+  and should be cut.
 
 ## H. Theory considered and set aside
 

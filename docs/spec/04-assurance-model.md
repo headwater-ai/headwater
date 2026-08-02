@@ -18,6 +18,39 @@ Most systems build the first two and claim the set. The adaptive layer is the on
 that decides whether the other three are worth their cost, and it is specified here
 as a first-class obligation rather than an aspiration.
 
+## Cohesion and coherence are different obligations
+
+Linguistics draws a distinction this model needs. **Cohesion** is the set of surface
+ties that bind a text — references that resolve, links that land, vocabulary used
+consistently. **Coherence** is the reader's experience of the whole hanging
+together. Cohesion is a property of the artefact; coherence is a property of the
+encounter.
+
+Almost everything the engine checks is cohesion: links resolve, relations are
+reciprocal, identifiers bind, enums are respected, sections are present. All of it
+is decidable, deterministic, and blocking-eligible.
+
+**A corpus can pass every one of those checks and still not add up.** Each document
+well-formed, the set incoherent: two standards teaching different things, a shelf
+whose documents share a schema and no purpose, a specification technically accurate
+and unusable by the person who needs it. Cohesion is necessary, nowhere near
+sufficient, and — the important part — the only half that is mechanically decidable.
+
+So obligations declare which they are, and the two are discharged by different
+mechanisms:
+
+| | Cohesion obligations | Coherence obligations |
+|---|---|---|
+| Decidable | Yes, deterministically | No — requires judgement |
+| Mechanism | Engine checks | Sampled audit, efficacy probes, reader feedback |
+| Coverage | Total (every document, every run) | Sampled (a subset, periodically) |
+| Posture | Advisory → blocking | Detective, always |
+| Failure mode | False positives | Sampling misses things |
+
+The system does not pretend one covers the other, and a green check run is never
+reported as "the corpus is coherent". It means the corpus is *cohesive*, which is a
+real and useful thing to know, and a smaller claim.
+
 ## Obligations are data
 
 An obligation is a stable, identified invariant the corpus commits to, recorded in
@@ -29,12 +62,46 @@ obligations:
   - id: OB-001
     statement: Behaviour-changing code updates its governing specification in the same change
     rationale: A stale specification actively misleads humans, agents, and auditors
+    class: cohesion
+    prevents: content.outdated          # observed defect class
     severity: high
   - id: OB-014
     statement: Every live decision is reachable from at least one artefact it constrains
     rationale: Rationale nobody can find from the thing it explains is rationale nobody reads
+    class: cohesion
+    prevents: process.traceability
     severity: medium
+  - id: OB-022
+    statement: A document is usable by its declared audience without tacit context
+    rationale: Form-correct prose can still be unusable, and nothing structural detects it
+    class: coherence
+    prevents: content.incomplete
+    severity: high
 ```
+
+### Obligations are derived from observed defects, not invented
+
+`prevents:` is required, and it names a class in a **documentation-defect
+taxonomy** — an empirically derived one, from mining real documentation problems and
+surveying practitioners, rather than a list assembled from our own experience.
+
+The default register is built by walking that taxonomy: content defects (incorrect,
+incomplete, outdated, inconsistent), presentation defects (readability,
+organisation), and process defects (maintenance, traceability, contribution
+friction). For each class, the question is what obligation would prevent it, and
+whether we can discharge that obligation at acceptable cost.
+
+Two benefits, and the second is the one that matters in practice:
+
+1. Coverage becomes assessable against something external. "Which observed defect
+   classes does our register not address?" has an answer.
+2. Every rule can answer *"why are you making me do this?"* with an observed failure
+   rather than an assertion of taste. An obligation whose `prevents:` field cannot be
+   filled in is one nobody has seen go wrong, and it should be cut under "every rule
+   earns its place" rather than kept because it sounds prudent.
+
+A validator check enforces it: an obligation with no cited defect class is a
+finding.
 
 ## Controls are data
 
@@ -112,6 +179,32 @@ paper trail rather than an argument about someone's tolerance for red builds. Th
 inverse is also specified: a blocking check whose false-positive rate rises past
 the threshold is demoted, not endured.
 
+## Measuring coherence where we can: continuity across links
+
+Coherence resists mechanisation, but one component of it does not.
+
+Centering Theory models local coherence as continuity of focus: adjacent utterances
+that keep the same entity in view are easy to follow, and each shift of focus
+imposes inference cost on the reader. The corpus analogue is direct. For every
+relation edge, the engine computes what the two endpoints share — a component, a
+domain, an identifier, a code-path anchor, a facet value. An edge whose endpoints
+share nothing is a **focus shift**: the reader must reorient on arrival.
+
+Individual shifts are fine and often necessary. The **distribution** is the signal:
+
+- a shelf whose outbound edges are mostly focus shifts is one a reader cannot
+  traverse without re-orienting at every hop;
+- a relation type that is nearly always a shift is probably being used as a generic
+  "see also" and should be either narrowed or demoted to `association`;
+- a rising shift ratio over time means the corpus is fragmenting faster than its
+  links are being maintained.
+
+Advisory, permanently. There is no threshold at which a focus shift is *wrong*, and
+gating on it would produce link-padding — authors adding shared keywords to satisfy
+a check, which destroys the measure. It is reported as a corpus-health metric
+alongside coverage, and it is the first thing we have that measures coherence rather
+than cohesion.
+
 ## Absence is a finding class of its own
 
 Every mechanism above validates something that exists. None of them can see the
@@ -163,6 +256,23 @@ Suppression is allowed, bounded, and observable: scoped to a file or block, it m
 state a reason, and it may carry an expiry. Suppressions are inventoried in the
 coverage report, because a rule with fifty suppressions is not a rule — it is a
 finding about the taxonomy.
+
+## The adaptive layer reports cost, not just coverage
+
+The adaptive class exists to decide whether the other three are worth what they
+cost, which requires measuring the cost. Three metrics, reported together:
+
+| Metric | Source | Question it answers |
+|---|---|---|
+| **Coverage** | Obligation register | What fraction of obligations are discharged, by severity? |
+| **Assisted fraction** | Scaffolder and agent instrumentation | How much of authoring is the tooling carrying, and is that rising or falling? ([spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric)) |
+| **Efficacy** | Probe suite | Does the instruction surface change agent behaviour at all? ([spec 5](05-ai-integration.md)) |
+
+Coverage alone is a number that only goes up, and a system optimising it will
+happily add obligations nobody can satisfy. Read against capture cost and efficacy,
+it becomes a trade: this much assurance, at this much author burden, with this much
+demonstrated effect. A rule that raises cost and moves neither of the others is a
+rule to delete — and deletion is a success, recorded as one.
 
 ## Conformance audit
 

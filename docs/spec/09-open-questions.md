@@ -31,6 +31,30 @@ be able to read and write it without learning a language — with the resolved l
 a stricter representation. Investigate whether CUE can be an *optional* authoring
 front-end for organisations that want it.
 
+**How this gets settled.** Not by preference. The cognitive-dimensions framework is
+the standard instrument for evaluating a notation, and this question is exactly what
+it is for. Walk each candidate through five authoring scenarios — add a kind; rename
+a shelf; split one facet into two; add a relation type to an existing family;
+upgrade across a major version with a live overlay — and score each on:
+
+| Dimension | Question |
+|---|---|
+| Viscosity | How much editing does a small conceptual change require? |
+| Hidden dependencies | When I change this, what else changes that I cannot see? |
+| Premature commitment | What must I decide before I have enough information? |
+| Role-expressiveness | Can a reader tell what each part is *for*? |
+| Error-proneness | Which mistakes does the notation invite? |
+| Progressive evaluation | Can I check partial work, or only a complete schema? |
+| Abstraction gradient | What must a beginner learn before writing anything at all? |
+
+Viscosity and hidden dependencies will decide it, and the framework makes explicit
+something the design has already chosen: **overlays deliberately trade viscosity for
+hidden dependencies.** Customising by overlay makes change cheap (low viscosity) at
+the cost of a resolved result no one authored directly (hidden dependencies). That
+trade is defensible — but it means the schema format must claw back visibility, so
+`explain`, `resolve`, and a readable lock file are not conveniences here. They are
+the mitigation.
+
 ## Q3 — How much of the default taxonomy ships in the box
 
 A taxonomy that is too opinionated repels adopters with an existing culture; one
@@ -103,6 +127,12 @@ repositories, both push against that.
 *federation* concern — an aggregator that merges exported graphs — not a change to
 the corpus model. Confirm before the graph export format is frozen, because that
 format is the aggregator's input.
+
+The cross-*taxonomy* half of this is now answered: declared SKOS mapping relations
+([spec 2](02-taxonomy-model.md#mapping-between-taxonomies)), not a merge. What
+remains open is the aggregator itself — whether it is part of this project at all,
+where merged graphs live, and how a query fans out across repositories that are not
+all checked out at once.
 
 ## Q10 — Naming
 

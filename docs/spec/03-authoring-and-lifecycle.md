@@ -130,17 +130,91 @@ policy. Three properties matter:
    terminal-state documents) for the highest allocated value before minting. A
    deleted document does not free its number.
 
-## Evidence
+## Evidence has three honest states, not two
 
 A decision recorded without evidence outside the document that records it is a
 rationalisation. The system asks for a pointer — a work item, a substantive commit,
-a recorded discussion, a measurement — and where none exists, the honest outcome is
-a registered gap rather than an invented justification.
+a recorded discussion, a measurement.
 
-This is enforced socially and by agent behaviour rather than by a linter (see
-[AI integration](05-ai-integration.md)), because the check is semantic. What *is*
-mechanical: an evidence facet that is present, well-formed, and resolvable, and a
-gap register that accounts for the documents that lack one.
+Where none exists, the earlier design offered two outcomes: evidenced, or a
+registered gap. That is one short. The real design process is never as rational as
+the record makes it look, and documenting it *as if* it were is both legitimate and
+valuable — provided the reconstruction is labelled as one. Forcing every
+after-the-fact account into "gap" pushes authors to overstate what they have, which
+is the failure the rule existed to prevent.
+
+| `evidence_basis` | Means | Obligation |
+|---|---|---|
+| `evidenced` | An external, auditable artefact supports this | The pointer resolves |
+| `reconstructed` | Written after the fact from memory and inference | Must state what it was reconstructed from, and by whom |
+| `gap` | No evidence exists and none is claimed | Appears in the gap register |
+
+`reconstructed` is not a soft `evidenced`. It never silently promotes: moving a
+document to `evidenced` requires adding a resolving pointer, and the transition is
+recorded. A corpus where most rationale is reconstructed is telling you something
+real about how decisions get made there, and hiding that behind a binary would waste
+the signal.
+
+The semantic judgement — *is this evidence actually about this decision?* — stays
+with the author and the agent stop rules ([spec 5](05-ai-integration.md)). What is
+mechanical: the facet is present and valid, pointers resolve, `reconstructed`
+carries its basis, and the gap register accounts for every `gap`.
+
+## Provenance is recorded, not assumed
+
+Documents are now drafted by humans, by agents, and by both, and "who wrote this and
+who accepted it?" should be a query rather than an archaeology exercise.
+
+Every document carries provenance aligned with W3C PROV:
+
+```yaml
+provenance:
+  agency: agent            # human | agent | mixed
+  drafted_by: claude-opus-5
+  activity: scaffold+draft
+  accepted_by: j.baxter    # a human is always named here
+  evidence_basis: reconstructed
+  reconstructed_from: "commit 4a2f1c, ADO 1441575, design session 2026-07-15"
+```
+
+`accepted_by` is the load-bearing field. An agent may draft; acceptance is a human
+act, and the record says who performed it. Generated projections are exempt — they
+are `wasGeneratedBy` a tool and are checked against regeneration rather than
+accepted.
+
+This makes real questions answerable: which parts of the corpus are agent-drafted,
+whether agent-drafted documents drift faster than hand-written ones, and whether
+reconstruction correlates with agency. None of those can be asked of a corpus that
+does not record the answer.
+
+## Capture cost is a tracked metric
+
+Every design-rationale system of the last fifty years — IBIS, gIBIS, QOC — produced
+a rich model and almost no sustained adoption, for one reason: **capture costs the
+author and benefits someone else, later.** Our evidence rules increase author cost.
+That trade may be right, but it is the trade that historically kills these systems,
+so it is measured rather than assumed.
+
+The engine records, per document created, the **assisted fraction**: of the required
+front matter, sections, identifiers, and relations, how much was scaffolded, derived,
+or agent-drafted versus hand-entered. It is cheap to compute — the scaffolder knows
+what it supplied — and it trends.
+
+Two ways it is used:
+
+- **As a design budget.** A rising hand-entered fraction means the taxonomy is
+  demanding more than the tooling supports. The remedy is to derive more, or to
+  require less; adding a lint that nags authors is the wrong move and the metric
+  makes that visible.
+- **As the test of the agent-authoring claim.** [Spec 5](05-ai-integration.md)
+  argues that an agent drafting from evidence already present in the commit, the
+  ticket, and the conversation shifts capture cost off the author — the first
+  genuinely new answer to that objection in thirty years. Either the assisted
+  fraction rises when agent authoring is enabled, or the claim is wrong. This is how
+  we find out.
+
+Reported in the adaptive layer of the [assurance model](04-assurance-model.md),
+alongside efficacy results.
 
 ## Authoring surfaces
 

@@ -160,7 +160,28 @@ a repository overlay that extends that. Two rules keep the stack coherent:
 
 2. **Overlays compose in one direction.** Each tier may override, add, or remove
    against the tier above it. A tier never reaches past its parent. Conflicts are
-   resolution errors, not precedence puzzles.
+   resolution errors, not precedence puzzles — and overlay application must be
+   confluent ([spec 2](02-taxonomy-model.md#customisation-by-composition)), so a
+   three-tier stack has no resolution order anyone needs to remember.
+
+### Across taxonomies, not under them
+
+A layered stack only helps organisations that share a root. Two divisions that
+adopted different taxonomies independently — after an acquisition, or simply by
+arriving separately — have no common ancestor to overlay against, and merging them
+is a political project rather than a technical one.
+
+They do not need to merge. They need **declared correspondences**: SKOS-style
+mapping relations between their concept schemes
+([spec 2](02-taxonomy-model.md#mapping-between-taxonomies)). `exactMatch` where two
+kinds are interchangeable, `closeMatch` where they are interchangeable for retrieval
+but not inference, `broadMatch` / `narrowMatch` where one is wider.
+
+With mappings declared, an aggregator answers "every decision in the organisation"
+across taxonomies that share no vocabulary, without either division giving up its
+own. Neither taxonomy changes; a third artefact records how they correspond, owned
+by whoever needs the correspondence. That is the standard answer to this problem in
+knowledge organization, and there is no reason to invent a worse one.
 
 ## Upstream awareness
 

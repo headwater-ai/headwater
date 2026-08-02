@@ -40,6 +40,33 @@ context cost near zero.
 It is **confidence-gated and fails open**: below the threshold it says nothing. A
 wrong pointer costs more than a missing one, because an agent will follow it.
 
+#### Scent is the thing being engineered
+
+Information-foraging theory names what routing actually trades in: **scent** — the
+proximal cue that predicts distal value. A reader or agent follows scent and
+abandons a patch when it weakens, so scent quality, not corpus quality, decides
+whether anything is found. A perfect document with a vague summary is invisible.
+
+That makes the `summary` facet the corpus's entire scent surface, and it is
+measured rather than assumed:
+
+| Measure | What it catches |
+|---|---|
+| **Distinctiveness** | A summary sharing no discriminating term with its siblings cannot separate them; the shelf reads as undifferentiated |
+| **Non-restatement** | A summary that only rephrases the title carries no information the path did not |
+| **Length band** | Too short to discriminate, or too long to scan in a pointer list |
+| **Routing precision** | Of the pointers offered, how often the top one was opened and sufficed |
+| **Abandonment** | Pointers offered and never opened — scent that promised and did not pay |
+
+The first three are static and run as advisory checks. The last two come from probe
+transcripts, which is the only place the corpus can observe foraging behaviour
+rather than infer it.
+
+The confidence gate is a scent threshold: the engine stays silent when the strongest
+available cue is weak, because a misleading cue is worse than an absent one. That is
+the same asymmetry stated in foraging terms, and it is why the gate errs toward
+silence.
+
 ```
 docgov route "add rate limiting to the ingest API"
   docs/standards/api-design.md      — API surface conventions, versioning, error shapes
@@ -95,6 +122,14 @@ go through the same validation as a human edit.
 decision record, running a corpus-wide sweep, proposing a taxonomy change. Skills
 carry the doctrine an agent needs and call the deterministic engine for everything
 mechanical, so the LLM does the reasoning and never the arithmetic.
+
+This is also the system's answer to the capture-cost problem that killed every prior
+design-rationale tool ([spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric)).
+An agent that drafts a decision record from evidence already sitting in the commit,
+the ticket, and the conversation moves the cost off the author — who was never the
+beneficiary. The claim is falsifiable and is tracked as the assisted fraction: if
+enabling agent authoring does not raise it, the argument fails and we should expect
+gIBIS's adoption curve.
 
 **A maintainer subagent.** A context-isolated agent that owns documentation upkeep
 across a change: which documents this touched, what is now stale, what decision

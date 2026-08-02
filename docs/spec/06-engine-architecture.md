@@ -56,7 +56,7 @@ A check is a pure function `(graph, config) → findings`. Three tiers:
 | Tier | Source | Example |
 |---|---|---|
 | **Schema-derived** | Generated from the taxonomy | Required facets present, enum values valid, sections present, relation cardinality, reciprocity, nuclearity and satellite inheritance, lifecycle transitions, sequence expectations, identifier format |
-| **Built-in** | Shipped with the engine, configured by taxonomy | Voice regime, link resolution, staleness, size budgets, projection freshness, orphan detection, reference directionality |
+| **Built-in** | Shipped with the engine, configured by taxonomy | Voice regime, link resolution, staleness, size budgets, projection freshness, orphan detection, reference directionality, transition continuity, summary scent |
 | **Plugin** | Adopter-supplied | Anything organisation-specific — an internal identifier format, a compliance mapping, a house rule |
 
 Most of what an adopter wants is tier one, and tier one costs nothing to add: a new
@@ -96,7 +96,7 @@ docgov new        <kind> [--title ...]
 docgov route      <task description>
 docgov query      <expression>
 docgov explain    <path|identifier>
-docgov taxonomy   validate | resolve | diff | migrate
+docgov taxonomy   validate | resolve | diff | migrate | audit
 docgov coverage   [--format ...]
 docgov probe      [--category ...]
 ```
@@ -104,6 +104,23 @@ docgov probe      [--category ...]
 Advisory by default (exit 0 with findings on stdout); `--strict` for gates. The
 default is deliberate: a tool that blocks on first contact gets removed, and a tool
 that is removed catches nothing.
+
+### `taxonomy validate` versus `taxonomy audit`
+
+Two commands because two kinds of question. **`validate`** decides the schema alone:
+referential integrity, determinism, purpose completeness, kind rigidity, edge
+provenance, overlay confluence, core satisfiability. It needs no documents, always
+terminates in a verdict, and gates everything.
+
+**`audit`** measures the schema *against a corpus*: facet differentiation and
+orthogonality, edge counts and staleness by `created_by`, transition-continuity
+distribution, scent quality. Its findings are advisory by construction — a young or
+small corpus fails differentiation for reasons that are not defects — and they are
+about the taxonomy, not the documents. A facet nothing distinguishes is a schema
+problem that only documents can reveal.
+
+Keeping them apart matters: `validate` must stay fast and total because it gates,
+while `audit` is a periodic design review with a tool attached.
 
 ### Library
 
