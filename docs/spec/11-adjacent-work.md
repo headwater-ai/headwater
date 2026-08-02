@@ -197,13 +197,22 @@ reports. If the corpus graph is expressible as RDF — and it is, being typed no
 with typed edges — then SHACL shapes could *be* the check layer rather than something
 we hand-write.
 
-The reservation is not theoretical. SHACL's violation reports are famously hard for
-non-specialists to read, and [spec 4](04-assurance-model.md) commits to findings that
-carry a remediation an author can act on. A check layer whose output must be
-translated before anyone can use it has moved the work rather than removed it.
+A [worked example](../evaluations/shacl-worked-example.md) confirms it reaches the
+whole-graph layer LinkML cannot: reciprocity, conflict between two live decisions,
+satellite inheritance, and windowed sequence expectations are all expressible — every one
+of them by dropping to SPARQL, because SHACL Core can traverse but cannot refer back to
+the focus node from the far end of a traversal.
 
-Worth evaluating as an *internal* representation with a docgov-authored presentation
-layer over the top. Folded into Q13.
+My reservation here — that SHACL's reports are hard to read — was too strong and is
+withdrawn: `sh:message` with variable interpolation makes messages as good as they are
+authored. The objections that survive are sharper. **Line numbers, remediation and
+fixability do not survive the RDF round trip**, and [spec 4](04-assurance-model.md)
+requires all three to make a finding actionable. Temporal checks also need evaluation
+time injected rather than read from the clock, or determinism breaks — a constraint that
+applies to whatever engine we build, not just to this one.
+
+Same conclusion as LinkML, by a different route: a compilation target, not an authoring
+surface. Folded into Q13.
 
 ## E. OpenGEO — same substrate, opposite direction
 

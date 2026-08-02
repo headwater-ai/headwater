@@ -60,9 +60,9 @@ instruction context, publishing, and the evidence that the whole thing is workin
 | 11 | [Adjacent work](docs/spec/11-adjacent-work.md) | Existing tools and patterns that overlap — what to adopt, and what we already specified twice |
 
 Evidence gathered for specific open questions lives in
-[`docs/evaluations/`](docs/evaluations/) — currently a
-[worked example](docs/evaluations/linkml-worked-example.md) of the taxonomy expressed
-in LinkML, feeding Q13.
+[`docs/evaluations/`](docs/evaluations/) — currently worked examples of the taxonomy in
+[LinkML](docs/evaluations/linkml-worked-example.md) and the checks in
+[SHACL](docs/evaluations/shacl-worked-example.md), both feeding Q13.
 
 Start at 0 and 2 if you only read two. Spec 10 is where the design gets tested
 against the literature; the five structural changes it called for are applied.

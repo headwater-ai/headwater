@@ -190,9 +190,35 @@ shape**, whereas everything docgov does that they cannot — reciprocity, satell
 inheritance, cross-endpoint conflict rules, sequence expectations — is a property of
 the **whole graph or of the corpus over time**.
 
-**Leaning:** option 3, to be confirmed by the Q2 walkthrough. It makes the shape/graph
-split an explicit architectural seam rather than an accident, and every mature
-validation stack in this space already has that shape. Counter-evidence worth keeping
+**SHACL reaches the layer LinkML cannot.** A second
+[worked example](../evaluations/shacl-worked-example.md) shows reciprocity — the
+constraint that defeated LinkML — is routine in SHACL, along with cross-node conflict
+detection, satellite inheritance, and even windowed sequence expectations. All of them
+require dropping to SPARQL, because SHACL Core can traverse but cannot refer back to the
+focus node from the far end of a traversal.
+
+Two corrections to what this question originally recorded. The **error-message objection
+is withdrawn**: `sh:message` with variable interpolation makes messages as good as they
+are authored, and generated shapes would be as good as our generator. The **SPARQL-engine
+objection is weaker than stated**: embeddable Rust SPARQL engines exist, so it needs
+measuring against the change-scoped budget rather than assuming. The objections that
+survive are different and sharper — **line numbers, remediation and fixability do not
+survive the RDF round trip**, and those are what make a finding actionable under
+[spec 4](04-assurance-model.md#findings).
+
+**Leaning:** option 3, to be confirmed by the Q2 walkthrough — and extended: emit
+**LinkML for the shape layer and SHACL for the graph layer**, so an external consumer can
+validate a docgov corpus to useful depth without installing docgov. It makes the
+shape/graph split an explicit architectural seam rather than an accident, and every
+mature validation stack in this space already has that shape.
+
+The decisive argument is the same for both, and stronger for SHACL: every interesting
+constraint is embedded SPARQL, which is *less* readable hand-authored than an engine
+predicate — but generated, nobody reads it, and readability stops being a cost. What
+stays docgov-native either way: schema operations, statistical measures, instrumentation,
+and the finding shape. The emitted shape set is deliberately a **subset**, and must
+declare itself as one — an external validator reporting a clean run while believing it
+checked everything is worse than one that knows what it skipped. Counter-evidence worth keeping
 in view: [OpenGEO](11-adjacent-work.md#e-opengeo--same-substrate-opposite-direction)
 solves a neighbouring problem on Markdown and YAML while explicitly declining
 RDF/OWL/SHACL, so a standards-based route is not self-evidently correct.
