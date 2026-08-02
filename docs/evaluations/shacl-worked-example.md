@@ -203,6 +203,95 @@ Two things this exposes that no amount of SHACL fixes:
    That is a real design constraint on any temporal check, and it is not
    SHACL-specific: it applies to whatever engine we build.
 
+## Does this help with the actual documents?
+
+The sharper question, and the answer is narrower than the sections above suggest.
+
+SHACL validates **RDF**. docgov's instances are Markdown files with YAML front matter.
+So nothing above touches a document directly — it touches a *projection* of one, and
+everything depends on what that projection contains.
+
+### What is in the graph, and what is not
+
+| In the projection — SHACL sees it | Not in the projection — SHACL is blind |
+|---|---|
+| Front-matter facets: status, dates, ids, enums | The section contract — required headings |
+| Declared relations and their endpoints | Voice regime — declarative present-state |
+| Identifier format and uniqueness | Normative language usage and its boilerplate |
+| Graph invariants: reciprocity, conflicts, inheritance | Prose links, as distinct from declared relations |
+| Kind, shelf, provenance | Summary distinctiveness against siblings |
+| | Size and token budgets |
+| | The prose itself |
+
+For a typical decision record that is roughly ten lines of front matter against two
+hundred of body. **SHACL covers the ten.**
+
+That is not as damning as it sounds — the ten lines are where the *graph* lives, and
+graph invariants are the checks that are hardest to hand-write and most valuable to
+have. It is the small half by volume and a valuable half by weight. But it is decidedly
+not "document validation", and calling it that would mislead.
+
+You *could* lift more in: project headings as triples and `sh:qualifiedValueShape` can
+check a section contract. Each lift makes the projection larger, lossier, and more of a
+parallel re-encoding of the document that has to be kept in step. Projecting the body as
+a literal and running `sh:pattern` over it is technically possible and a bad idea — that
+is regex over prose with extra steps.
+
+### Problem one: the projection is load-bearing and SHACL does not check it
+
+The Markdown-to-RDF projector becomes the most trusted component in the pipeline, and
+nothing in SHACL validates it. A projector that drops a document, mistypes it, or
+misparses front matter produces a graph that does not represent the corpus — and SHACL
+will happily report that graph as conformant.
+
+This is a new trust boundary that did not exist when checks read the documents directly,
+and it needs its own fidelity tests. It also bears on
+[Q6](../spec/09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest): if RDF is
+a derived view, the derivation is a component; if it is stored, it is a second copy that
+can drift from the Markdown.
+
+### Problem two: silent passes
+
+This is the serious one. The SHACL specification is explicit that it **provides no
+mechanism to report coverage gaps or detect unvalidated nodes** — the language has no
+concept of completeness. Conformance means "no validation results were produced", and a
+node that no target selects produces none.
+
+Combine that with `sh:targetClass` requiring explicit `rdf:type` triples in the data
+graph, and the failure mode writes itself:
+
+> A document whose front matter fails to parse, or whose kind cannot be resolved,
+> yields no type triple → is selected by no target → produces no violations →
+> **the corpus conforms.**
+
+For an assurance system that is the worst available failure mode, because absence of
+data is indistinguishable from absence of problems, and it fails *quiet* and *green*.
+The document that is most broken is the one most likely to escape.
+
+The fix is not in SHACL. docgov must establish, before validation runs, that every file
+in the corpus was classified and routed to at least one check — and treat a document
+that matched nothing as a finding in its own right. That guarantee generalises past
+SHACL to any check layer, so it belongs in the assurance model rather than here.
+
+> **Applied:** every-document-accounted-for as an explicit obligation in
+> [spec 4](../spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for).
+
+### Problem three: change-scoped validation cuts across graph constraints
+
+[Spec 6](../spec/06-engine-architecture.md) budgets under 200 ms for a change-scoped
+hook. SHACL targets are graph-wide, and the graph constraints need neighbours: checking
+only the touched document is not sound.
+
+Worse, *which* node reports a violation depends on how the constraint was written. The
+reciprocity shape above is authored on the superseding decision, so editing **A** to add
+`supersedes B` surfaces the violation on A. Author it the other way — as a shape on the
+target requiring an inbound link — and the same edit surfaces it on B, which was not
+touched and would not be in a naive changed-files set.
+
+So change-scoped validation needs the affected *subgraph*, and its extent is a function
+of the constraint set rather than of the diff. That is tractable, and it is a real design
+constraint that only becomes visible at instance level.
+
 ## Where SHACL stops
 
 | docgov capability | SHACL |

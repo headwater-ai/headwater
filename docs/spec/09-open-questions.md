@@ -93,9 +93,18 @@ Options: rebuilt from cache each run (simplest, no sync problem); persisted to a
 committed JSON artefact (reviewable in diffs, enables tooling without the engine);
 or an embedded database (fast queries, another thing to keep in step).
 
+A fourth option arrived with Q13: an **RDF projection**, which is what SHACL validation
+would consume. It carries a question the others do not — *fidelity*. Once checks read a
+projection rather than the documents, the projector becomes the most trusted component in
+the pipeline and nothing downstream can detect its mistakes; a projector that drops or
+mistypes a document yields a graph that validates cleanly and does not represent the
+corpus ([evaluation](../evaluations/shacl-worked-example.md#problem-one-the-projection-is-load-bearing-and-shacl-does-not-check-it)).
+
 **Leaning:** cache by default, with `docgov export` producing a committed JSON graph
 for anyone who wants to build on it. Avoid a database until a query workload
-justifies it.
+justifies it. If RDF is emitted, it is a **derived view and never canonical**, and it
+ships with round-trip fidelity tests — the Markdown is the corpus, and any projection
+that disagrees with it is the projection's bug.
 
 ## Q7 — Scope of the MCP surface
 

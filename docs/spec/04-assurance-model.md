@@ -253,6 +253,45 @@ They are constrained deliberately:
 This is the drift readers complain about most, and it is invisible to link and
 front-matter validation because there is nothing malformed to find.
 
+## No silent passes: every document is accounted for
+
+Every check discussed so far reports what it found. None of them reports what it never
+looked at, and that gap is where an assurance system quietly stops working.
+
+The failure mode is general, not specific to any check engine. A document whose front
+matter fails to parse, whose kind cannot be resolved, or which sits outside every
+declared shelf pattern is not *checked and passed* — it is **never checked**, and a run
+that produces no findings for it is indistinguishable from a run that cleared it. The
+most broken document in the corpus is the one most likely to escape, because breakage is
+often what stops it being classified in the first place.
+
+This is not hypothetical for standards-based validation in particular: SHACL's
+conformance is defined as "no validation results were produced", and it has no notion of
+completeness at all — a node no target selects simply conforms
+([evaluation](../evaluations/shacl-worked-example.md#problem-two-silent-passes)).
+
+So the engine establishes coverage as a **separate, prior guarantee**:
+
+| Obligation | Statement |
+|---|---|
+| OB-COV-1 | Every file under the corpus root is classified, or reported as unclassifiable |
+| OB-COV-2 | Every classified document is routed to at least one check |
+| OB-COV-3 | Every run reports its coverage: documents seen, classified, checked, and skipped — with reasons |
+
+Three consequences worth stating plainly:
+
+- **A document that matched no check is a finding**, not a silent success. Usually it
+  means a shelf pattern is wrong or a file is misplaced, and both are worth knowing.
+- **Coverage is reported on clean runs too.** "No findings across 412 of 412 documents"
+  and "no findings across 380 of 412" are entirely different results, and a report
+  that cannot distinguish them is not trustworthy.
+- **Parse failures are findings, never omissions.** A file the engine cannot read is
+  reported as such and counted, rather than dropping out of the denominator.
+
+This is the assurance model applied to itself: the system that insists every obligation
+carries a disposition, and that visible incompleteness beats apparent completeness, owes
+the same discipline to its own coverage.
+
 ## Findings
 
 Every finding, from every mechanism, has one shape:
