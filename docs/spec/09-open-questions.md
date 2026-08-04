@@ -232,6 +232,35 @@ in view: [OpenGEO](11-adjacent-work.md#e-opengeo--same-substrate-opposite-direct
 solves a neighbouring problem on Markdown and YAML while explicitly declining
 RDF/OWL/SHACL, so a standards-based route is not self-evidently correct.
 
+### The OKF question is a different layer
+
+The question above is about the **TBox**: whether an external language expresses our
+schema and our checks. [OKF](11-adjacent-work.md#i1-okf--the-same-substrate-arrived-at-independently)
+— LeanCTX's Markdown-plus-front-matter knowledge format — is about the **ABox**:
+whether the *corpus itself* is exportable to something another tool already reads. The
+two share the word "export" and nothing else, and conflating them would import the
+substrate question's weight onto a decision that does not carry it.
+
+It does not carry it for three reasons. It is **additive**: an emitter that nobody uses
+costs a generator and a fidelity test, and deleting it later breaks nothing upstream.
+It is **already most of the way done**: OKF is a directory of Markdown files with YAML
+front matter, `type` required, and relations as Markdown links, which describes what we
+already write. And it is **lossless in the direction that matters** — OKF carries
+unrecognised front-matter keys through a parse-emit cycle untouched, so docgov facets
+with no OKF meaning ride along under a `docgov_*` prefix rather than being dropped.
+
+Two constraints if it is built. The emitted bundle is a **projection and never
+canonical**, on the same terms Q6 sets for any RDF view: the Markdown corpus is the
+truth, and a disagreement is the projector's bug. And OKF's own conformance checking
+is four advisory warnings, so a consumer validating an exported bundle has verified
+almost nothing about it — the export must not be mistaken for a second opinion on the
+corpus. That is the same "declare yourself a subset" obligation the emitted shape set
+carries above, for the same reason.
+
+**Leaning:** yes, but late — after the graph export format is stable
+([Q9](#q9--multi-repository-corpora)) and well after the substrate decision. It is a
+day of work at the right moment and a distraction at the wrong one.
+
 ## Q14 — Discovery surface
 
 **Blocks:** nothing yet; becomes urgent the moment a corpus is consumed by anything
@@ -277,3 +306,49 @@ target for a `governs` or `verifies` relation — with promotion to authored req
 an explicit human acceptance that changes its provenance record. It is how most
 organisations will actually want to use this, and refusing to model it just means it
 happens unmarked.
+
+## Q16 — Public presence
+
+**Blocks:** nothing technical. Blocks adoption entirely, and later than is
+comfortable — by the time it obviously matters, the first impressions have been made.
+
+[Q14](#q14--discovery-surface) covers how a *machine* finds a corpus cold. This is the
+human half, and it is currently unplanned: there is no site, no sitemap, no positioning
+for someone who has heard the name once and has four minutes.
+
+[LeanCTX](11-adjacent-work.md#i5-the-presentation-is-the-lesson) is the standard to
+match, and it is a useful standard precisely because it is not a large company — it is
+one developer's project with a site that nonetheless assembles, coherently, what most
+open specifications never manage:
+
+| Facet | What it answers |
+|---|---|
+| How it works, architecture | What is this, and what is the shape of it? |
+| Benchmarks, metrics | Does it do what it claims, in numbers someone can re-run? |
+| Comparisons | Why this and not the adjacent thing I already know? |
+| Use cases | Which of these is *me*? |
+| Compatibility, integrations | Will it fit what I already run? |
+| Docs, getting started | Can I have it working before I lose interest? |
+| Pricing, enterprise, consulting | How does this survive, and what does it cost me? |
+| Compliance, audits, self-assessment | What can I show the person who has to approve it? |
+| Changelog, community, open-source posture | Is it alive, and is anyone else here? |
+| `llms.txt`, AI-crawler-friendly `robots.txt` | Can a machine reader find and cite it? |
+
+The last row is where this question touches Q14, and it is the one an ordinary
+marketing site would omit. For a project whose entire thesis is that machines are
+first-class readers, being unreadable to the machines that would recommend it is a
+self-inflicted wound.
+
+Two constraints particular to docgov. The site should be **generated from the corpus
+that documents docgov** — anything else is a governance system whose own public
+documentation is ungoverned, and that is the first thing a sceptical reader will check.
+And the benchmark and self-assessment rows have to be **honest before they are
+impressive**: §I.4 records claims that move between README versions as the thing that
+made an otherwise strong project harder to trust, and a governance tool caught inflating
+its own numbers has nothing left to sell.
+
+**Leaning:** deferred, deliberately, until there is an engine worth visiting a site
+about — but the sitemap is worth drafting early, because it is a forcing function for
+positioning, and every column above is a question the specification should be able to
+answer already. Where it cannot, that is a gap in the design rather than in the
+marketing.

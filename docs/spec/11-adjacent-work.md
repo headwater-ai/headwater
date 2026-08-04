@@ -329,7 +329,7 @@ this.
 
 > **Recorded as [Q15](09-open-questions.md#q15--a-synthesised-content-tier).**
 
-
+## G. Knowledge-graph chunking for RAG — a problem we do not have
 
 The TBox/ABox framing (§A) is the valuable half and stands independently of
 retrieval. The chunking half — how to slice a knowledge graph into embeddable pieces,
@@ -383,6 +383,121 @@ second is a treadmill.
 
 > **Applied:** stated in [spec 5](05-ai-integration.md#what-structured-knowledge-buys).
 
+## I. LeanCTX — our file format, none of our TBox
+
+[LeanCTX](https://github.com/yvgude/lean-ctx) is a context-engineering layer for
+coding agents: a local Rust binary that sits between an agent and the model and
+compresses what passes through. Apache-2.0, ~3.5k stars, created March 2026, shipping
+near-daily releases. Its pitch is token economics — read modes, AST-aware
+compression, a shell hook that compresses `git` and `docker` output, a proxy that
+compresses every request, and a property graph over *code* (imports, calls, exports).
+
+It is not a documentation system, and its own `VISION.md` confirms this rather than
+merely omitting it: no documentation corpora, no taxonomy, no schema validation. Where
+it says **governance** it means governance *of the agent* — policy over what an agent
+may see, signed evidence of what it saw, compliance reports — not governance of a
+corpus. That distinction is worth holding onto, because the word is about to be
+contested and the two meanings have almost nothing in common.
+
+### I.1 OKF — the same substrate, arrived at independently
+
+The point of contact is the **Open Knowledge Format**, which LeanCTX defines itself
+and exports to:
+
+- a directory of Markdown files, one concept per file
+- YAML front matter, with `type` as the only required field
+- relations as Markdown links — `- depends_on: [category/key](path.md)`
+- a relation vocabulary of `depends_on`, `related_to`, `supports`, `contradicts`,
+  `supersedes`
+- written into the user's repository, byte-deterministic so exports diff cleanly
+
+Typed nodes, typed edges, Markdown in the repository. That is docgov's substrate,
+reached from an entirely different starting problem — which makes it a third
+independent arrival at the same choice, after OpenGEO (§E) and the LLM Wiki (§F.2).
+Three is enough to stop treating it as a preference.
+
+### I.2 The arrow points the other way, and that is the whole difference
+
+OKF is an **export**. The durable store is a `knowledge.json` under the user's config
+directory — the only format that round-trips losslessly — and Markdown is a projection
+*out* of it, for portability and hand-editing. docgov is the exact inverse: the
+Markdown is the corpus, and the graph, indexes and rules are projections out of *that*
+([Q6](09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest) exists precisely
+to keep it that way).
+
+The inversion explains their validation, which is worth stating concretely because it
+is the sharpest available illustration of what a taxonomy is *for*. `lint_okf_bundle`
+returns warnings only — its own doc comment says the checks are advisory and "a
+partially-malformed bundle should still import what it can" — and the complete set is:
+not a directory, unreadable, missing front matter, missing `type`, empty body. Four
+checks. The importer then does `get_str(fm, "type").unwrap_or("fact")`.
+
+**`type` is a free string with a default.** There is no closed vocabulary, no
+per-type required facets, no cardinality, no reciprocity, nothing whole-graph.
+
+This is not a criticism. For an export format, lenience is correct engineering: the
+obligation is to survive a round trip, and a format that rejects its own bundles
+serves nobody. But it settles the overlap question. LeanCTX has our file format and
+none of our TBox — and since [§C](#c-linkml--the-uncomfortable-one) established that
+everything docgov does beyond one-instance-against-a-shape is the interesting part,
+sharing a serialisation costs us nothing and threatens nothing.
+
+### I.3 What transfers
+
+**OKF as an export target.** We already emit Markdown with typed front matter; an OKF
+bundle is close to free, and it buys interoperation with a tool a large number of
+people have already installed. Their `leanctx_*` convention — producer-owned prefixed
+keys that a consumer carries but never validates — is the right pattern for the
+reverse direction too, and their round-trip test asserts exactly that unknown keys
+survive a parse-emit cycle.
+
+> **Folded into [Q13](09-open-questions.md#the-okf-question-is-a-different-layer),
+> as a separate and much smaller question than the substrate one.**
+
+**`contradicts` as a declared edge.** [Spec 4](04-assurance-model.md#cohesion-and-coherence-are-different-obligations)
+classes contradiction as coherence — undecidable structurally, requiring judgement.
+OKF carrying `contradicts` as a first-class relation exposes a middle case we have not
+named: a contradiction an author has *declared* is structurally checkable even though
+detecting undeclared ones is not. A `contradicts` edge with no resolving decision
+record is an ordinary cohesion finding. Worth folding into spec 4's control set when
+that document is next opened.
+
+### I.4 Two things to be careful about
+
+**The Context Governance Benchmark.** LeanCTX publishes a self-assessment against a
+32-control, 6-family, 3-tier benchmark and claims "C2 — Managed". The structure is
+recognisably [spec 4](04-assurance-model.md)'s — named controls, families, maturity
+tiers, a published assessment — and if our control catalogue ever wants an existing
+numbering to point at, it is a candidate. But the spec lives on a private GitLab
+instance belonging to the same author, and its independence is **unverified**; it
+should be read as self-published until shown otherwise. The controls themselves govern
+agent behaviour rather than corpus quality, so little of the content transfers even if
+the framing does.
+
+**The claims move.** The repository description, the README and cached earlier
+versions give the MCP tool count as 76, 82 and 62 respectively; the compression
+percentages and the "4-layer verification engine" are unmeasured by anyone outside the
+project. Roughly nine-tenths of the commits are from one author in under five months.
+The OKF specification itself is small, legible and backed by round-trip tests, and can
+be depended on directly — that judgement does not extend to the surrounding numbers.
+
+### I.5 The presentation is the lesson
+
+The most transferable thing here is not technical. LeanCTX ships a product site that
+covers, coherently and in eighteen languages, what most open specifications never
+assemble: how-it-works, architecture, benchmarks, compatibility, competitor
+comparisons, six use-case pages, pricing, an enterprise tier, docs, changelog,
+community, and a compliance self-assessment. Its `robots.txt` explicitly welcomes AI
+crawlers under a "GEO" heading and it serves an `llms.txt` describing itself to
+machine readers.
+
+That last detail is not decoration — it is [Q14](09-open-questions.md#q14--discovery-surface)
+already shipped by someone else, and it is evidence that the discovery surface has a
+human half we have not planned for at all. A corpus nobody can evaluate from the
+outside does not get adopted, however well it validates.
+
+> **Recorded as [Q16](09-open-questions.md#q16--public-presence).**
+
 ---
 
 ## Summary
@@ -397,3 +512,4 @@ second is a treadmill.
 | KG chunking for RAG | Framing useful, chunking not applicable | Non-adoption reasoned and recorded |
 | r/OntologyEngineering | Ontology-first methodology, further than we go | Noted; oracle work is the shared ground |
 | Karpathy, *LLM Wiki* | Best anti-RAG argument; independent capture-cost confirmation | Applied — coherence sweep (spec 4); **Q15** raised |
+| LeanCTX / OKF | Same substrate, opposite arrow; no taxonomy to collide with | OKF export folded into **Q13**; presentation gap raised as **Q16** |
