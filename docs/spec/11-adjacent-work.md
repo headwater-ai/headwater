@@ -454,13 +454,27 @@ survive a parse-emit cycle.
 > **Folded into [Q13](09-open-questions.md#the-okf-question-is-a-different-layer),
 > as a separate and much smaller question than the substrate one.**
 
-**`contradicts` as a declared edge.** [Spec 4](04-assurance-model.md#cohesion-and-coherence-are-different-obligations)
-classes contradiction as coherence — undecidable structurally, requiring judgement.
-OKF carrying `contradicts` as a first-class relation exposes a middle case we have not
-named: a contradiction an author has *declared* is structurally checkable even though
-detecting undeclared ones is not. A `contradicts` edge with no resolving decision
-record is an ordinary cohesion finding. Worth folding into spec 4's control set when
-that document is next opened.
+**`contradicts` as a declared edge — and an inconsistency it exposed in our own
+specification.** OKF carries `contradicts` as a first-class relation, which prompted
+the question of where a declared contradiction sits on the cohesion/coherence line.
+The answer turned out to be embarrassing rather than novel:
+[spec 2](02-taxonomy-model.md#the-decision-relation-vocabulary) has had
+`conflicts_with` with `invalid_when: {both: {status: current}}` all along — a
+deterministic, blocking-eligible check — while
+[spec 4](04-assurance-model.md#discharging-coherence-obligations-the-assisted-sweep)
+listed "pages that contradict each other while both remain current" as work for the
+sampled LLM sweep. Two documents assigning the same job to two different mechanisms,
+one of them needlessly the expensive one.
+
+The fix generalises past the bug. What decides whether an obligation is cohesion or
+coherence is not its subject but **whether the judgement it requires has been recorded
+as data** — so a coherence concern that recurs is a prompt to ask what an author could
+declare, rather than how to detect it better. That reframes the sweep's purpose: its
+best output is not a finding but a declared edge, after which the engine owns the
+constraint permanently.
+
+> **Applied:** the declaration boundary, the corrected sweep scope, and a fourth sweep
+> constraint, in [spec 4](04-assurance-model.md#declaration-moves-the-boundary).
 
 ### I.4 Two things to be careful about
 
@@ -512,4 +526,4 @@ outside does not get adopted, however well it validates.
 | KG chunking for RAG | Framing useful, chunking not applicable | Non-adoption reasoned and recorded |
 | r/OntologyEngineering | Ontology-first methodology, further than we go | Noted; oracle work is the shared ground |
 | Karpathy, *LLM Wiki* | Best anti-RAG argument; independent capture-cost confirmation | Applied — coherence sweep (spec 4); **Q15** raised |
-| LeanCTX / OKF | Same substrate, opposite arrow; no taxonomy to collide with | OKF export folded into **Q13**; presentation gap raised as **Q16** |
+| LeanCTX / OKF | Same substrate, opposite arrow; no taxonomy to collide with | Applied — declaration boundary (spec 4); OKF export → **Q13**; presentation gap → **Q16** |

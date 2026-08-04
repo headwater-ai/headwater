@@ -51,6 +51,40 @@ The system does not pretend one covers the other, and a green check run is never
 reported as "the corpus is coherent". It means the corpus is *cohesive*, which is a
 real and useful thing to know, and a smaller claim.
 
+### Declaration moves the boundary
+
+The line between the two is not fixed by subject matter. It is fixed by whether a
+claim has been *declared in the graph*, and that means an author can move it.
+
+Contradiction is the clearest case. Detecting that two documents disagree is
+undecidable structurally — it requires reading both and judging. But a
+`conflicts_with` edge between two decisions is an assertion already in the front
+matter, and everything downstream of it is ordinary graph work: spec 2's rule that
+[two `current` decisions joined by `conflicts_with`](02-taxonomy-model.md#the-decision-relation-vocabulary)
+is an invalid state is deterministic, total, and blocking-eligible. The judgement
+happened once, when the author declared the edge. The check is cohesion thereafter.
+
+This generalises, and it is worth stating as a design rule rather than an
+observation about one relation:
+
+> **A coherence obligation becomes a cohesion obligation the moment the judgement it
+> requires is recorded as data.** Where a coherence concern recurs, the question to
+> ask is not "how do we detect this?" but "what could an author declare that would
+> make detecting it unnecessary?"
+
+Two consequences the rest of this document depends on.
+
+**The sweep hunts the undeclared half only.** Anything the graph already asserts is
+the engine's job, and a sampled LLM pass that re-derives it is slower, dearer, and
+less reliable than the check that already exists.
+
+**Declared coverage is partial, and stays that way.** `conflicts_with` is
+`decision`-to-`decision`; two standards that contradict each other have no way to say
+so, and until they do, that contradiction is coherence work. Widening the relation's
+endpoints would move more of it across the line — worth doing when there is evidence
+of the need, and not worth pre-emptively, since a relation authors do not use buys
+nothing and an unused relation is itself a finding about the taxonomy.
+
 ## Obligations are data
 
 An obligation is a stable, identified invariant the corpus commits to, recorded in
@@ -185,12 +219,14 @@ Naming a coherence class is easy; discharging it is the hard part, and structura
 checks cannot. A periodic **LLM-assisted coherence sweep** is the mechanism: an agent
 reads a bounded slice of the corpus and reports what no linter can see —
 
-- pages that contradict each other while both remain current;
+- pages that contradict each other while both remain current *and neither declares
+  it* — a declared conflict is already a deterministic check, and the sweep's value
+  is entirely in the contradictions nobody has noticed yet;
 - claims a newer source has quietly superseded;
 - concepts referenced throughout and defined nowhere;
 - documents whose declared audience could not actually use them.
 
-Three constraints keep this inside the rules the rest of the system obeys:
+Four constraints keep this inside the rules the rest of the system obeys:
 
 1. **It produces findings, never verdicts.** "No LLM in the validation path"
    ([spec 5](05-ai-integration.md#what-we-do-not-do)) governs decisions that gate.
@@ -200,6 +236,17 @@ Three constraints keep this inside the rules the rest of the system obeys:
 3. **Findings cite evidence.** Each names the documents it compared and quotes the
    passages it believes conflict, so a human can adjudicate in seconds. An
    unfalsifiable finding is noise, and noise gets the whole sweep switched off.
+4. **It never re-derives what the graph declares.** The sweep runs against the
+   undeclared half by construction, and a finding restating an edge already in the
+   front matter is a defect in the sweep rather than a finding about the corpus.
+
+The best outcome of a sweep is therefore not a finding but an **edge**: a
+contradiction it surfaces should end as a declared `conflicts_with`, after which the
+engine owns it permanently and the sweep never needs to find it again. A coherence
+control whose findings never convert into declarations is doing the same work every
+cycle — which is the accumulation failure that
+[spec 5](05-ai-integration.md#what-we-do-not-do) rejects RAG for, appearing in our own
+assurance layer.
 
 This is the same division the system draws everywhere: deterministic tooling for
 what is decidable, judgement for what is not, and no pretence that either does the
