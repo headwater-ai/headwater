@@ -65,6 +65,14 @@ Evidence gathered for specific open questions lives in
 [LinkML](docs/evaluations/linkml-worked-example.md) and the checks in
 [SHACL](docs/evaluations/shacl-worked-example.md), both feeding Q13.
 
+Design reviews and the prompts that commission them live in
+[`docs/reviews/`](docs/reviews/) — currently a
+[core-concepts review](docs/reviews/core-concepts-review-prompt.md) aimed at
+simplification and robustness. The prompts are committed alongside their findings on
+purpose: a review whose instrument is unrecorded cannot be repeated against a later
+draft, and comparing two runs of the same instrument is the only way to tell whether
+the design improved or the reviewer changed.
+
 Start at 0 and 2 if you only read two. Spec 10 is where the design gets tested
 against the literature; the five structural changes it called for are applied.
 
