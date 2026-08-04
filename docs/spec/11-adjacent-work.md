@@ -45,6 +45,38 @@ than in a footnote someone discovers later.
 > **Applied:** TBox/ABox vocabulary adopted in specs 1, 2 and 6, with the ABox
 > boundary stated explicitly.
 
+### A.1 The solution layer presses on that boundary
+
+The boundary above is easy to hold while every node is a document. A cross-repository
+**solution layer** ([Q9](09-open-questions.md#the-aggregator-authors-its-own-facts))
+is where it comes under pressure, and it does so quietly enough to be crossed by
+accident.
+
+Model the estate above individual repositories and the temptation is immediate: nodes
+for services, interfaces, data flows, capabilities — not documents *about* those
+things, but the things. That is a different system. A `Service` node asserting a
+service's properties has left the corpus and started modelling the world, and the
+obligation follows the assertion: **model the world and you will be asked to keep it
+true.** Nothing in the current design carries that obligation, and the drift failure
+mode is worse than stale prose, because a wrong node looks structural rather than
+editorial.
+
+The middle position is available and is probably right. Solution-layer nodes are
+**declared anchors** — identified things that documents may point at, carrying an
+identifier, a name, and ownership, with no claim that any further property is accurate
+and no pretence that the set is complete. That buys the cross-estate edges the layer
+exists for while keeping every substantive assertion inside a document, where the
+freshness and authority machinery already reaches it. It is the same move `code_path`
+already makes: an external anchor kind that is referenced, never described.
+
+The decision belongs in the specification rather than in whichever schema someone
+writes first. §F.1's ontology-first thesis argues for going further, and an
+architecture layer is exactly where that would pay — so this is a genuine choice, not
+a formality.
+
+> **Recorded in [Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer),
+> alongside the access question the same layer raises.**
+
 ## B. Specification → ontology → implementation (testerstories)
 
 Two posts working a Z-Machine header specification into an RDF/Turtle ontology, then

@@ -143,6 +143,36 @@ remains open is the aggregator itself — whether it is part of this project at 
 where merged graphs live, and how a query fans out across repositories that are not
 all checked out at once.
 
+### The aggregator authors its own facts
+
+"An aggregator that merges exported graphs" understates it, and the omission matters
+once anyone tries to build one.
+
+Some facts belong to no repository. That two services share an interface, that one
+system's failure mode is another's operating assumption, that a capability is
+implemented across four estates and owned by none of them — these are claims about the
+*space between* repositories, and there is no repository whose export could carry
+them. An aggregator restricted to merging can never state one.
+
+So the federation layer is not only a merge target. It is a **corpus at a higher
+altitude**, authoring the facts that genuinely live there and consuming exports for
+everything else. Once that is admitted, the model is unchanged rather than strained:
+it is still one corpus per repository, and the solution layer is one more corpus that
+happens to be about other corpora. It has a taxonomy, its documents are Markdown, and
+its cross-estate edges are declared in front matter like any other.
+
+This also settles where authority sits, in the terms
+[principle 2](00-vision-and-scope.md#design-principles) already sets: one source of
+truth **per fact**, not per store. A document's content is canonical in its own
+repository; a cross-estate edge is canonical in the solution corpus that declares it;
+the merged graph is canonical for nothing. The question "is the graph or the Markdown
+authoritative?" has no answer because it is the wrong question — nothing is
+authoritative *as a store*.
+
+**Leaning:** the solution layer is in scope and is an ordinary corpus, not a new
+mechanism. Its access rules, however, are not ordinary — see
+[Q17](#q17--governed-access-and-the-solution-layer).
+
 ## Q10 — Naming
 
 `docgov` is a working name. The name matters for adoption and for the CLI verb
@@ -352,3 +382,137 @@ about — but the sitemap is worth drafting early, because it is a forcing funct
 positioning, and every column above is a question the specification should be able to
 answer already. Where it cannot, that is a gap in the design rather than in the
 marketing.
+
+## Q17 — Governed access and the solution layer
+
+**Blocks:** the graph export format ([Q9](#q9--multi-repository-corpora)) and the
+discovery surface ([Q14](#q14--discovery-surface)), both of which currently assume a
+reader entitled to see everything. It becomes urgent the first time an adopter wants a
+contractor to read one shelf and not another.
+
+Three proposals arrive bundled and separate cleanly. Keeping them apart is most of the
+analysis, because they have very different merits and only one of them is hard.
+
+| Proposal | Verdict |
+|---|---|
+| A cross-repository **solution layer** | Yes — [Q9](#the-aggregator-authors-its-own-facts)'s aggregator, extended to author its own facts |
+| **Access control** over it | Yes — the substantive question, and the one this entry is about |
+| **Graph authoritative, Markdown projected** | No — and unnecessary for either of the above |
+
+### Why authority does not move
+
+The case for inverting is that access control cannot be enforced on files someone has
+already cloned. That is true and it is the right instinct pointed at the wrong layer.
+
+Inverting costs four things the design currently gets free. **Capture cost**: spec 3's
+survival argument is that authoring is a file edit in the same change as the code, and
+routing it through a graph store rebuilds the tool-mediated capture step that killed
+gIBIS. **Review**: [spec 4](04-assurance-model.md)'s controls trigger on pull requests
+because documents diff there; a graph store does not. **Detectability**: Q6 already
+warns that a projector nothing can check becomes the most trusted component in the
+pipeline — today a projector bug is caught by comparing against the Markdown, and
+inverting removes the thing it would be compared against, so the bug corrupts what
+humans read instead. **Provenance**: blame, history and signed commits are free from
+git and would have to be rebuilt.
+
+Against that, inverting buys nothing the serving boundary does not already give, below.
+
+There is a coherent version of the proposal, and it should be named so it is not
+adopted by accident: an organisation for whom a repository clone is *itself* the leak
+wants documentation never committed to the repository at all. That is a real market. It
+also abandons "documents are files in the repository, next to the code they describe",
+which is [spec 0](00-vision-and-scope.md)'s central bet and the reason capture is cheap.
+It is a **pivot, not an extension**.
+
+### Access control is a property of the serving boundary
+
+Enforcement belongs where a reader is *served*, not where an author writes. Per-repository
+Markdown stays canonical and carries the host platform's repository permissions; the
+federated graph is a filtered view, and filtering happens there.
+
+This puts the control exactly where the need is and nowhere else. Someone who can clone a
+repository reading that repository is intended behaviour. Every case that motivates the
+question — contractor, partner, adjacent business unit, "show the topology but not the
+internals" — is cross-corpus, which is the federated layer by definition. Sensitive
+material lives in a tightly-permissioned repository and is federated in; the graph serves
+filtered views over the union.
+
+The declaration surface already exists: `confidentiality` is a named facet
+([spec 1](01-conceptual-model.md)). This promotes it from descriptive metadata to a
+load-bearing security control — a small schema change carrying a large change in
+obligation, since a mislabelled facet stops being a lint and becomes a leak.
+
+### Four constraints, if it is built
+
+**A filtered view must be legibly filtered.** The doctrine already exists twice — spec 4's
+[no silent passes](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+and Q13's declare-yourself-a-subset rule. Redaction obeys it: tombstones, never silent
+omission, so a view reports *3 documents withheld* rather than looking complete. Without
+this an agent traverses a redacted graph, finds nothing, and reports absence with
+confidence — which is the failure [spec 5](05-ai-integration.md) opens by naming, caused
+this time by our own security layer.
+
+**Checks are privileged and total; serving is filtered.** Reciprocity cannot be evaluated
+on a partial graph without inventing findings. Validation therefore runs at full
+visibility regardless of who triggered it, and only results are filtered on the way out.
+That seam is clean, and stating it prevents the obvious mistake of running checks as the
+requesting user.
+
+**Topology leaks even when content does not.** Shelf and kind names leak organisational
+structure; node counts and edge shapes leak product structure; hiding a document while
+keeping an inbound edge leaks its existence, and hiding both changes the graph's shape in
+ways a determined reader can difference. This is the multi-level-security inference
+problem and it has no clean solution. What the specification owes is honesty that this is
+mitigation rather than a guarantee.
+
+**Do not invent an identity system.** Derive from the platform's existing identity and
+team model. Two permission systems that disagree means the documentation one is wrong,
+and it is the one that leaks. Spec 7 already has the pattern for rules it cannot decide
+from the repository tree — degrade to a recorded attestation with an owner and a date.
+
+### The one place "visibility before blocking" cannot apply
+
+[Principle 4](00-vision-and-scope.md#design-principles) says a new rule ships advisory and
+earns its way to blocking. Access control is the single mechanism in the system where that
+is wrong: shipping it advisory means shipping it broken, and every other control is allowed
+to be wrong for a while precisely because being wrong is recoverable. A leak is not.
+
+This exception belongs in the specification rather than in someone's judgement, because
+the promotion machinery is otherwise uniform and will happily process a permission check
+like any other.
+
+### The sub-question that arrives silently: what may be a node
+
+Access is the loud half of the solution layer. The quiet half is what the layer is
+allowed to contain, and it is decided the moment someone writes its schema rather than
+when anyone argues about it.
+
+[Spec 11 §A](11-adjacent-work.md#a1-the-solution-layer-presses-on-that-boundary) sets
+out the choice. The ABox currently stops at the document boundary: the corpus knows a
+document exists, its kind and what it governs, never what it asserts. A solution layer
+with a `Service` node describing an actual service has crossed that line and taken on
+an obligation to stay true to the estate — which nothing in the design currently
+carries, and whose drift is worse than stale prose because a wrong node reads as
+structural rather than editorial.
+
+**Leaning:** declared anchors. A solution-layer node carries an identifier, a name and
+an owner, and asserts nothing further; every substantive claim stays inside a document
+where freshness, authority and the check layer already reach it. This is what
+`code_path` already does — an external anchor kind that is referenced and never
+described — and generalising it costs no new machinery. Revisit only against a
+concrete need the anchor form cannot meet.
+
+### What it changes about the project
+
+Worth stating plainly, because it is a category change rather than a feature. Documentation
+tooling with no access model is a developer tool. Documentation tooling with one is security
+software: it acquires a threat model, an audit obligation, a disclosure process, and a class
+of bug that cannot be fixed forward. That is a defensible business and it is the natural
+shape of an enterprise tier ([Q16](#q16--public-presence)) — but it is not a facet someone
+adds on a quiet afternoon.
+
+**Leaning:** the solution layer proceeds now as an ordinary corpus; access control is
+specified now and built late, after the graph export format is stable, and never as a
+side effect of shipping federation. The four constraints above are the acceptance criteria
+for the design, not a wish list — a filtered view that does not announce its filtering is
+not a partial implementation of this, it is a defect.
