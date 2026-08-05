@@ -368,8 +368,19 @@ Four checks come with it, none of which succession alone can express:
 - a `does_not_comply_with` edge pointing at a `current` standard, which is a
   registered deviation and must carry an owner and an expiry.
 
-A taxonomy may enable a subset. The default enables all twelve; a small team's
-overlay will typically remove most of them, which is what `remove` is for.
+A taxonomy may enable any subset. The default enables four: `supersedes`,
+`conflicts_with`, `constrains`, and `traces_to` — which keeps the live-conflict
+and void-constraint checks, at the cost of the `forbids`/`enables` and
+`does_not_comply_with` checks, which belong to the regulated column of the
+worked example anyway and arrive with the regulated platform's overlay as
+*additions*. An earlier draft enabled all twelve and expected a small team's
+overlay to remove most of them. That was backwards twice over: defaults are the
+learnability surface for exactly the adopter
+([spec 0](00-vision-and-scope.md#who-this-is-for)) with no taxonomist on staff,
+and the design's own sprawl warning — readers apply relation sets inconsistently
+past about a dozen entries — was aimed at its own default. A first taxonomy
+experience that consists of writing `remove:` lines is friction spent deleting
+things nobody asked for.
 
 ### Who creates each edge
 
@@ -387,6 +398,14 @@ It is also measurable after the fact. `docgov taxonomy audit` reports edge count
 and staleness by creator, so a relation declared `created_by: author` that is
 present on 4% of eligible documents is visibly not being maintained. The remedy is
 usually to move it to `scaffold` or `generator`, not to exhort authors harder.
+
+The default taxonomy assumes that remedy from the start: every relation it
+enables is creatable by scaffold, generator, or hook, and `created_by: author`
+is reserved for overlay additions an adopter explicitly chooses. The claim that
+assisted authoring raises edge capture is the strongest and least-tested in the
+system ([spec 10](10-theoretical-foundations.md#what-the-theory-did-not-settle));
+a default that only works if the claim holds is a bet, and a default that
+survives the claim failing is a design.
 
 ### Lineage aligns with PROV
 
