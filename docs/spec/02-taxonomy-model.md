@@ -571,6 +571,39 @@ expectation whose origin facet is not required on the declaring kind fails
 `taxonomy validate`. This keeps the check pure ([spec 12](12-check-layer.md)):
 origin date plus injected clock, no history walk, no git archaeology.
 
+**The origin is maintained, not merely present.** A window computed from a date
+nothing defends is a window that silently never starts, so the stamp carries a
+contract of its own:
+
+- Its correct value is the date the transition *landed*, not the date someone
+  noticed. Whatever performs the transition stamps it — scaffold, hook, agent,
+  or author — and a generated change-scoped check
+  ([`needs_prior`](12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version))
+  enforces the pairing: a diff that moves the state facet without moving the
+  state-entry date is a finding, as is a stamp in the future or earlier than the
+  prior stamp. The contract is checked at the only moment it is cheaply
+  fixable — while the transition is still in the diff.
+- `check --fix` stamps the date only when the transition sits in the same diff.
+  It never reconstructs a missing date after the fact: an invented origin
+  silently rewrites every window measured from it, so a lost entry date is
+  entered by a human or stays a finding.
+- State changes caused by edges stamp too. `on_target: {set_state: superseded}`
+  sets the target's state-entry date in the same operation; a state change with
+  no stamp is a defect regardless of what caused the change.
+- **Re-entering a state resets the window, deliberately.** The state-entry date
+  describes the current state's entry, so a lifecycle machine with a cycle
+  re-arms any expectation conditioned on the re-entered state. That is usually
+  the right semantics — re-acceptance restarts the clock on realisation — and
+  it is a gaming route, so the churn is visible: `taxonomy audit`'s state-dwell
+  and transition-count distributions make flip-flopping to re-arm a window a
+  reportable pattern.
+- A document that lacks its origin facet — the normal condition of an adopted
+  corpus at first contact — does not have a window invented for it. Expectation
+  instances against it are skipped with reason `missing-origin` and counted in
+  coverage ([spec 4](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for));
+  the missing required facet is already its own finding, so the absence is loud
+  while the window stays honest.
+
 Four constraints keep expectations honest:
 
 - **Detective only.** An expectation is never blocking. The work may

@@ -14,11 +14,13 @@ Four facets do structural work in the default taxonomy:
 
 - **state** (`status:`) — where the document sits in its lifecycle;
 - **state-entry date** (`status_since:`) — when it entered that state, stamped by
-  the transition (scaffolding and `check --fix` maintain it). This is the origin
-  that windowed participation expectations are measured from
-  ([spec 2](02-taxonomy-model.md#participation-expectations)), and it makes dwell
-  time observable: a document parked in `draft` for a year is a fact the corpus
-  can now state;
+  whatever performs the transition and enforced in the same diff: a change that
+  moves `status` without moving `status_since` is a finding, and so is a stamp
+  in the future or before its predecessor. This is the origin that windowed
+  participation expectations are measured from, under a declared maintenance
+  contract ([spec 2](02-taxonomy-model.md#participation-expectations)), and it
+  makes dwell time observable: a document parked in `draft` for a year is a fact
+  the corpus can now state;
 - **freshness** (`last_verified:`) — the date a human last confirmed the document
   matches reality, deliberately *not* the last-edited date, which git already knows
   and which says nothing about truth;
