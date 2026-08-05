@@ -179,8 +179,8 @@ also what makes attribution work in practice: when generated output is wrong, th
 citation says whether the corpus misled the agent or the agent ignored the corpus.
 Those have opposite fixes, and without the citation they are indistinguishable.
 
-Where sources conflict, the agent prefers the higher-authority one, cites **both**,
-and flags the conflict ([spec 2](02-taxonomy-model.md#authority-when-documents-disagree)).
+Where sources conflict, the agent cites **both** and flags the conflict
+([spec 2](02-taxonomy-model.md#disagreement-is-adjudicated-not-ranked)).
 An agent silently resolving a contradiction destroys the evidence that one existed.
 
 ## The stop rules

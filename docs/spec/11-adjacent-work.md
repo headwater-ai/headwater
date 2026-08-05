@@ -66,7 +66,7 @@ The middle position is available and is probably right. Solution-layer nodes are
 identifier, a name, and ownership, with no claim that any further property is accurate
 and no pretence that the set is complete. That buys the cross-estate edges the layer
 exists for while keeping every substantive assertion inside a document, where the
-freshness and authority machinery already reaches it. It is the same move `code_path`
+freshness machinery and the check layer already reach it. It is the same move `code_path`
 already makes: an external anchor kind that is referenced, never described.
 
 The decision belongs in the specification rather than in whichever schema someone
@@ -122,8 +122,14 @@ nothing in the corpus says which one a reader should believe. That is a genuine 
 and it is precisely the situation where an agent will otherwise pick arbitrarily and
 sound confident.
 
-> **Applied:** an `authority` ordering on kinds, with disagreement handling, in
-> [spec 2](02-taxonomy-model.md#authority-when-documents-disagree).
+> **Applied, then cut.** An `authority` ordering on kinds was adopted here and
+> removed by the core-concepts review: the trigger (detecting factual disagreement)
+> is a judgement the ABox boundary forswears, and a global scalar cannot carry the
+> scoped precedence their prompt actually encodes. What docgov keeps is the part of
+> their design that works — the *decision rule* ("note the discrepancy") as an agent
+> instruction, and the adjudication recorded as data
+> ([spec 2](02-taxonomy-model.md#disagreement-is-adjudicated-not-ranked),
+> [Q18](09-open-questions.md#q18--recording-adjudicated-disagreements)).
 
 ### B.3 Generated artefacts cite their source
 
@@ -551,7 +557,7 @@ outside does not get adopted, however well it validates.
 | Source | Verdict | Outcome |
 |---|---|---|
 | TBox/ABox framing | Adopt the vocabulary | Applied — specs 1, 2, 6 |
-| testerstories, spec → ontology → implementation | Strongest supporting evidence found | Applied — oracle, authority, citation (specs 2, 4, 5) |
+| testerstories, spec → ontology → implementation | Strongest supporting evidence found | Applied — oracle and citation (specs 2, 4, 5); authority adopted, then cut by review |
 | LinkML | May already be half of spec 2 | **Open — Q13**, needs a decision |
 | SHACL | May already be the check layer | **Open — Q13** |
 | OpenGEO | Different direction, same substrate | Discovery gap recorded — **Q14** |

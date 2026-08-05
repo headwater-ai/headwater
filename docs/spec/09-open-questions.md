@@ -497,7 +497,7 @@ structural rather than editorial.
 
 **Leaning:** declared anchors. A solution-layer node carries an identifier, a name and
 an owner, and asserts nothing further; every substantive claim stays inside a document
-where freshness, authority and the check layer already reach it. This is what
+where freshness and the check layer already reach it. This is what
 `code_path` already does — an external anchor kind that is referenced and never
 described — and generalising it costs no new machinery. Revisit only against a
 concrete need the anchor form cannot meet.
@@ -516,3 +516,30 @@ specified now and built late, after the graph export format is stable, and never
 side effect of shipping federation. The four constraints above are the acceptance criteria
 for the design, not a wish list — a filtered view that does not announce its filtering is
 not a partial implementation of this, it is a defect.
+
+## Q18 — Recording adjudicated disagreements
+
+**Blocks:** nothing yet; becomes live the first time an agent must choose between two
+current sources that a human has already judged.
+
+Spec 2 formerly assigned kinds a scalar authority rank, consumed by an
+`on_disagreement` rule. The core-concepts review cut it
+([spec 2](02-taxonomy-model.md#disagreement-is-adjudicated-not-ranked)): the trigger
+is a judgement the ABox boundary says the system cannot make, the rank pre-answers a
+question that has not been asked, and a global scalar cannot express the scoped
+precedence the prose demanded.
+
+What the cut leaves open is the *positive* half: once a human (or a coherence-sweep
+finding a human accepted) has adjudicated a specific disagreement, where does that
+judgement live so agents and readers inherit it instead of re-deciding? Options: a
+resolution recorded on the `conflicts_with` edge itself; a correction or succession
+of the losing document; or a dedicated scoped-precedence declaration. The last is the
+one to be suspicious of — it re-grows authority rank with more syntax.
+
+This belongs beside [Q15](#q15--a-synthesised-content-tier)'s provenance questions:
+both are about recording who vouched for what, and an adjudication without a named
+adjudicator is a rank with extra steps.
+
+**Leaning:** record adjudication per-conflict as data on the declared edge, with the
+adjudicator named; no per-kind ranks, and no new declaration until a real corpus
+shows the edge form failing.

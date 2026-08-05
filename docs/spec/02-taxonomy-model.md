@@ -386,44 +386,32 @@ It also brings PROV's agent dimension, which now matters: documents are drafted 
 humans, by agents, and by both. See
 [authoring and lifecycle](03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed).
 
-### Authority: when documents disagree
-
-`dominance` says whose *purpose* governs. It does not say who is *right*.
+### Disagreement is adjudicated, not ranked
 
 Two documents can both be current, both be well-formed, and disagree on a fact — a
-standard says one thing, a specification another; a normative source and an observed
-convention diverge. Nothing in the corpus currently resolves that, which means a
-reader guesses and an agent picks one and sounds confident about it.
+standard says one thing, a specification another. An earlier draft answered this
+with a per-kind **authority rank** consumed by an `on_disagreement` rule. It is cut,
+for three reasons that survive any rewording:
 
-Kinds therefore declare an **authority rank**, and relation types may declare how
-disagreement across them is handled:
+- **The trigger is unobservable.** Detecting that two documents disagree *on a
+  fact* is reasoning about what prose asserts, which
+  [spec 1](01-conceptual-model.md#two-layers-terminology-and-assertions) explicitly
+  forswears and [spec 4](04-assurance-model.md#declaration-moves-the-boundary)
+  confirms is undecidable structurally. The rule could only ever fire *after* a
+  human or a coherence-sweep finding had already identified the disagreement.
+- **At that point, the adjudication is the data.** Whoever identified the
+  disagreement knows which side is right for this case. Spec 4's design rule says
+  to record that judgement — as a declared edge, a correction, or a succession —
+  not to pre-answer it with a scalar someone chose before the question existed.
+- **A scalar cannot express the semantics the prose demanded.** "A specification
+  outranks a standard about its own component and is silent about anything else"
+  is scoped precedence; `authority: 20` is a global ordering, which is exactly the
+  backwards behaviour the old prose warned against.
 
-```yaml
-kinds:
-  standard:      {authority: 10, ...}
-  specification: {authority: 20, ...}    # more specific, higher authority in its scope
-  guide:         {authority: 50, ...}
-
-relations:
-  documents_convention:
-    family: association
-    on_disagreement: prefer_higher_authority + flag
-```
-
-Two rules make it useful rather than decorative:
-
-- **Higher authority wins within its scope, and the disagreement is still
-  reported.** Silently preferring one source hides the drift; the point is to
-  resolve the reader's question *and* raise the inconsistency, not to pick and move
-  on.
-- **Authority is scoped, not global.** A specification outranks a standard about its
-  own component and is silent about anything else. A global ordering would make the
-  most general document the most authoritative everywhere, which is backwards.
-
-For agents this becomes an explicit instruction rather than an inference: where
-sources conflict, prefer the higher-authority one, cite both, and flag the conflict
-([spec 5](05-ai-integration.md)). An agent left to resolve contradictions on its own
-judgement will do so invisibly.
+What survives needs no numbers: where sources conflict and no declared
+adjudication exists, an agent cites both and flags the conflict
+([spec 5](05-ai-integration.md)). Whether adjudications eventually need their own
+declaration is reopened as [Q18](09-open-questions.md#q18--recording-adjudicated-disagreements).
 
 ## Contract sidecars: the specification as oracle
 
