@@ -141,6 +141,34 @@ across a change: which documents this touched, what is now stale, what decision
 lacks evidence. It runs with a scoped instruction subset — its own bounded context —
 rather than inflating every session's always-on prompt.
 
+### The machinery is the adoption model
+
+These surfaces read as conveniences, and they are not: they are the supply chain
+for the graph. Everything distinctive — routing, lifecycle propagation, impact
+detection, absence findings — degrades together when edge density stays low, and
+the traceability literature the design cites
+([spec 10](10-theoretical-foundations.md#b5-traceability-information-models--our-idea-has-a-name-and-a-literature))
+says author-maintained links decay because the payer is not the beneficiary. A
+release without the authoring skills, the hooks that invoke them at intent,
+write, and review time, and the telemetry that watches them is a release whose
+central bet is untested — which is why [spec 0](00-vision-and-scope.md#what-we-are-building)
+puts them in the first release rather than after it.
+
+Three commitments make the machinery governable rather than merely present:
+
+- **Judgement stays human.** Skills propose kinds, relations, summaries, and
+  lifecycle changes from the artefacts already in the change; a human accepts,
+  and classification a skill cannot justify is refused, not guessed
+  ([the stop rules](#the-stop-rules)).
+- **Every required datum is attributed.** `created_by` and the assisted fraction
+  say whether the machinery is actually maintaining the graph, and a *declining*
+  assisted fraction is an assurance finding — evidence the adoption model is
+  failing — not a dashboard curiosity.
+- **Generated context is checked before it is trusted.** Agent-facing
+  projections carry freshness policy and size budgets like anything else, and
+  they are verified before loading: stale governance instructions delivered
+  efficiently are an efficient source of wrong behaviour.
+
 ## What structured knowledge buys
 
 The reason to build any of this is more predictable machine behaviour, and the claim

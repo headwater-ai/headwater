@@ -223,7 +223,9 @@ Two ways it is used:
 - **As a design budget.** A rising hand-entered fraction means the taxonomy is
   demanding more than the tooling supports. The remedy is to derive more, or to
   require less; adding a lint that nags authors is the wrong move and the metric
-  makes that visible.
+  makes that visible. A *declining* assisted fraction is an assurance finding in
+  its own right — the adoption model failing, measurably — not a trend line to
+  glance at.
 - **As the test of the agent-authoring claim.** [Spec 5](05-ai-integration.md)
   argues that an agent drafting from evidence already present in the commit, the
   ticket, and the conversation shifts capture cost off the author — the first

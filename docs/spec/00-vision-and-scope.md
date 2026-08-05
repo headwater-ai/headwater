@@ -46,7 +46,13 @@ ours. The taxonomy is theirs to define; the engine is ours.
 
 4. **An AI integration surface** spanning the four moments an assistant touches
    documentation — planning, reading, writing, reviewing — plus a probe harness
-   that measures whether the surface actually works.
+   that measures whether the surface actually works. The authoring half of this —
+   scaffolding, the information-architecture and authoring skills, the harness
+   hooks that invoke them — ships with the first release, not after it: the
+   graph's edges are what everything distinctive runs on, the capture-cost
+   thesis ([spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric))
+   is untestable without the machinery, and a validator shipped ahead of the
+   machinery would measure a corpus nothing is helping to maintain.
 
 5. **A distribution model** so one organisation can publish a taxonomy (and the
    doctrine that explains it) and many repositories can consume it, customise it by
