@@ -301,8 +301,10 @@ inside one family.
 A relation is **multinuclear** (both ends stand alone) or **nucleus–satellite** (one
 end supports the other and cannot stand without it). The family supplies the
 default; a relation type that contradicts its family's default must say so
-explicitly, and `taxonomy audit` reports every override, because a family whose
-members mostly override it is misassigned.
+explicitly, and `taxonomy audit` reports every override. A family more often
+overridden than followed is reported as misassigned, against the family
+declaration itself — a finding with an owner and a remediation (reassign the
+members, or change the default), not an observation left in a report.
 
 One thing the family cannot supply is *which end* is the nucleus, because relation
 direction is the taxonomy author's choice: a derivation may be spelled
@@ -459,8 +461,15 @@ the family, not with adopter code.
   mutual succession, or a longer cycle leaves a corpus with no live end; a
   `derives_from` loop makes satellite inheritance non-terminating; a `comprises`
   cycle is nonsense. All three families reject self-reference and cycles.
-  Association may legitimately cycle; evidence and governance edges are not
-  ordered, so the question does not arise.
+  Association may legitimately cycle. Governance and evidence edges are
+  directed, so their cycles are expressible — and **legal**: two decisions
+  genuinely can constrain each other, and evidence can be mutual. Nothing
+  downstream depends on ordering these families — no inheritance, no live end,
+  no part-of hierarchy — so a cycle breaks no semantics. Acyclicity is confined
+  to the three families where a cycle destroys what the family means, not
+  applied wherever it sounds hygienic. Self-reference stays invalid in every
+  family except association: a document constraining or evidencing itself is a
+  modelling error, not a relationship.
 - **Duplicate edges collapse to one, with a finding.** Two identical declarations
   of one relation between the same endpoints are a single edge and an advisory
   finding — usually a merge artefact, never a stronger claim.
