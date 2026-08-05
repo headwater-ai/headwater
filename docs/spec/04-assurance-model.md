@@ -230,6 +230,21 @@ toward promotion and demotion statistics. Nobody is asked to label findings as a
 separate chore — the label rides on the escape hatch authors already use, which
 is the only place the judgement is actually made.
 
+That mechanism has a blind spot exactly where promotion looks, and it is named
+rather than papered over: an advisory finding blocks nothing, so nobody is
+forced to suppress it — the rational response to advisory noise is to ignore
+it. Suppression-derived labels therefore measure the biased subset of findings
+that annoyed someone enough to act, and an advisory check can hold a
+catastrophic real false-positive rate behind a clean measured one. So the two
+directions use different evidence. **Demotion** runs on suppression labels
+alone, because a blocking check forces engagement and its labels are dense.
+**Promotion** additionally requires an adjudicated sample: during the declared
+observation window, a fixed random sample of the candidate check's unsuppressed
+findings is put in front of a human — at review, or in the periodic triage the
+conformance audit already schedules — and dispositioned with the same two
+labels. A check whose sample was never adjudicated has not finished its
+observation window, however long it has been advisory.
+
 ### Discharging coherence obligations: the assisted sweep
 
 Naming a coherence class is easy; discharging it is the hard part, and structural
@@ -396,7 +411,18 @@ something downstream. Expiry was optional here while waiver expiry
 local mechanism an individual author reaches for at a red check the leakier of
 the two, which is backwards. And an undifferentiated reason field conflated
 "wrong" with "tolerated", which made the false-positive rate — the number the
-promotion machinery below runs on — unmeasurable.
+promotion machinery above runs on — unmeasurable.
+
+A finding can now fall under more than one escape mechanism at once — a waived
+rule, a `migration-pending` document
+([spec 7](07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)),
+and a file-scoped suppression. Coverage accounting applies one, by fixed
+precedence — **waiver, then migration-pending, then suppression** — and counts
+the finding in exactly that bucket, so the three inventories partition the
+escaped findings rather than triple-counting them. The wider mechanism wins
+because it carries the wider accountability: a waiver has an owner and is
+visible to the publisher, a migration state has an expiry and a task list, and
+a suppression is one author's local judgement.
 
 ## The adaptive layer reports cost, not just coverage
 
