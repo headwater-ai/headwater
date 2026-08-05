@@ -88,6 +88,13 @@ otherwise-dangling references first-class, so the engine can check them, travers
 them, and answer "what governs this code path?" without special-casing every kind
 of pointer.
 
+An anchor carries an identifier, a name, and an owner — never a purpose or a
+lifecycle; every substantive claim about the thing itself lives in a document.
+Anchor identity is declared, not guessed: each anchor type is owned by exactly one
+resolver, anchor strings normalise before comparison so two spellings of one
+target are one node, and an anchor no resolver claims is a finding
+([spec 2](02-taxonomy-model.md#behaviour-at-the-limits)).
+
 ## Edges
 
 ### Relation

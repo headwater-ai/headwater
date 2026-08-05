@@ -404,6 +404,43 @@ It also brings PROV's agent dimension, which now matters: documents are drafted 
 humans, by agents, and by both. See
 [authoring and lifecycle](03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed).
 
+### Behaviour at the limits
+
+A real corpus finds the edges of this machinery quickly, and every case below is
+declared here rather than left for an implementation accident to settle. All of
+them are generated Graph checks ([spec 12](12-check-layer.md)) — they come with
+the family, not with adopter code.
+
+- **Succession, derivation, and composition are acyclic.** `A supersedes A`, a
+  mutual succession, or a longer cycle leaves a corpus with no live end; a
+  `derives_from` loop makes satellite inheritance non-terminating; a `comprises`
+  cycle is nonsense. All three families reject self-reference and cycles.
+  Association may legitimately cycle; evidence and governance edges are not
+  ordered, so the question does not arise.
+- **Duplicate edges collapse to one, with a finding.** Two identical declarations
+  of one relation between the same endpoints are a single edge and an advisory
+  finding — usually a merge artefact, never a stronger claim.
+- **Disagreeing inverses are a finding, not a choice.** Where both ends author
+  their half and the halves disagree — B names a successor that is not the
+  document naming B — neither side is preferred. The pair is reported, and the
+  corpus is incoherent there until an author resolves it.
+- **A satellite with two nuclei inherits nothing contested.** Where the inherited
+  facet values agree, inheritance proceeds. Where they disagree — one nucleus
+  `current`, the other `superseded` — no value is silently picked; the conflict
+  is a finding against the satellite. A satellite that declares a value its
+  nucleus also supplies keeps its local value, and the divergence is itself a
+  finding: silent shadowing is how inherited staleness disappears.
+- **Anchors are endpoints without document semantics.** Nuclearity, reading
+  precedence, and lifecycle interaction are defined between documents. A relation
+  ending on an external anchor carries none of them — an anchor has no purpose
+  and no lifecycle, which is why the family table's nuclearity cells are blank
+  for governance and evidence. What an anchor endpoint does carry is **identity**:
+  each anchor type is owned by exactly one resolver, anchor strings are
+  normalised before comparison so two spellings of one target are one node, and
+  an anchor no resolver claims is a finding. Write-time impact detection
+  ([spec 5](05-ai-integration.md)) fires on these identities, so anchor
+  resolution is a correctness root, not an edge case.
+
 ### Disagreement is adjudicated, not ranked
 
 Two documents can both be current, both be well-formed, and disagree on a fact — a
