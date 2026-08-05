@@ -90,9 +90,12 @@ of pointer.
 
 An anchor carries an identifier, a name, and an owner — never a purpose or a
 lifecycle; every substantive claim about the thing itself lives in a document.
-Anchor identity is declared, not guessed: each anchor type is owned by exactly one
-resolver, anchor strings normalise before comparison so two spellings of one
-target are one node, and an anchor no resolver claims is a finding
+Anchor kinds are declared like everything else: the taxonomy's `anchors`
+declaration names each type and the single resolver that owns it, so a relation
+endpoint is always either a declared kind or a declared anchor kind — never a
+bare string. Anchor identity is declared, not guessed: anchor strings normalise
+before comparison so two spellings of one target are one node, and an anchor no
+resolver claims is a finding
 ([spec 2](02-taxonomy-model.md#behaviour-at-the-limits)).
 
 ## Edges
@@ -122,9 +125,12 @@ Because relation semantics live in the schema, the checks over them are generic.
 Adding a new relation type to a taxonomy adds validation for free; it does not add
 a linter.
 
-Relation types an adopter is likely to want (all defined in the default taxonomy,
-none hard-coded in the engine): `supersedes` / `superseded_by`, `derives_from`,
-`governs`, `verifies`, `implements`, `cites`, `owns`, `refines`, `conflicts_with`.
+Relation types an adopter is likely to want (all shipped with the default
+package, none hard-coded in the engine): `supersedes` / `superseded_by`,
+`derives_from`, `governs`, `verifies`, `implements`, `cites`, `owns`, `refines`,
+`conflicts_with`. Shipped is not enabled: the default *enables* a minimal four,
+and the rest are complete declarations an overlay pulls in by reference
+([spec 2](02-taxonomy-model.md#the-decision-relation-vocabulary)).
 
 A kind may also declare a participation **expectation**: its documents, in a given
 state, are expected to acquire a named relation within a window measured from a

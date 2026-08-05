@@ -134,6 +134,15 @@ relations:
     nuclearity: multinuclear
     invalid_when: {both: {status: current}}   # two live conflicting decisions
 
+  implemented_by:
+    family: evidence
+    from: [decision]
+    to:   [specification]
+    created_by: hook                   # proposed at review time from the change
+
+anchors:                               # non-document node types relations may target
+  code_path: {resolver: source-tree}
+
 shelves:
   decisions:
     path: docs/decisions/**
@@ -158,13 +167,13 @@ kinds:
     voice: declarative
     lifecycle: standard
     facets:
-      require: [status, last_verified, domain, summary]
+      require: [status, status_since, last_verified, domain, summary]
       forbid:  [doc_type]              # placement already states the kind
     sections:
       require: [Context, Decision, Consequences]
       optional: [Alternatives considered, Related]
     relations:
-      may: [supersedes, superseded_by, refines, conflicts_with]
+      may: [supersedes, superseded_by, conflicts_with, implemented_by]
       expect:                          # windowed participation: finds what should exist and does not
         - id: decision-realised
           relation: implemented_by
@@ -201,7 +210,7 @@ projections:
     output: .docgov/nav.yml
 ```
 
-## The ten declarations
+## The eleven declarations
 
 | Declaration | Answers |
 |---|---|
@@ -209,6 +218,7 @@ projections:
 | `facets` | What metadata documents carry, its shape, and how hard it is enforced |
 | `regimes` | Reusable rule bundles: voice and lifecycle |
 | `relations` | What typed links exist, their family, endpoints, nuclearity, and reciprocity |
+| `anchors` | What non-document node types exist, and which resolver owns each |
 | `shelves` | How the corpus is partitioned, and what each partition means |
 | `kinds` | What each species of document is, requires, may link to, and is expected in time to link to |
 | `identifier_schemes` | How stable identifiers are shaped, namespaced, and allocated |
@@ -226,6 +236,12 @@ taxonomy could legally vary — a declaration with one legal value is an engine
 constant; and `vocabularies` remains as authoring syntax — a named value set
 that facets reference — validated as part of `facets`, not a concept anyone
 must learn first.
+
+One declaration is here that no earlier draft had: `anchors`. Relation
+endpoints referenced anchor kinds (`code_path`) that nothing ever declared —
+identity, resolver ownership, and referential integrity for anchors all hung on
+a name used but never defined. The count went up because a real corner of the
+model was missing, which is the one honest reason it may.
 
 ## Purpose is declared, not implied
 
@@ -382,6 +398,19 @@ past about a dozen entries — was aimed at its own default. A first taxonomy
 experience that consists of writing `remove:` lines is friction spent deleting
 things nobody asked for.
 
+**Defined and enabled are distinct states, and both have semantics.** The
+*package* defines the full vocabulary — endpoints, family, generated checks,
+doctrine — as a library of complete, named declarations. A *taxonomy* enables a
+relation by carrying its declaration in the resolved result; the base pulls in
+four, and an overlay enables another by reference
+(`add: {relations.forbids: $package.optional.forbids}`) without restating
+anything, the same `$`-reference syntax vocabularies already use. A
+defined-but-unenabled relation does not exist as far as a corpus is concerned:
+an edge naming it is an ordinary unknown-relation finding, it generates no
+checks, and it appears in no template. This is what makes the minimal default
+nearly free for the regulated adopter — enabling the rest is a line per
+relation, not a redeclaration.
+
 ### Who creates each edge
 
 **Every relation declares `created_by`**, from a closed set: `author`, `scaffold`,
@@ -450,7 +479,8 @@ the family, not with adopter code.
   ending on an external anchor carries none of them — an anchor has no purpose
   and no lifecycle, which is why the family table's nuclearity cells are blank
   for governance and evidence. What an anchor endpoint does carry is **identity**:
-  each anchor type is owned by exactly one resolver, anchor strings are
+  each anchor type is declared in `anchors` and owned by exactly one resolver,
+  anchor strings are
   normalised before comparison so two spellings of one target are one node, and
   an anchor no resolver claims is a finding. Write-time impact detection
   ([spec 5](05-ai-integration.md)) fires on these identities, so anchor
@@ -851,7 +881,10 @@ with it. `docgov taxonomy validate` checks:
 
 - structural conformance to the meta-schema;
 - referential integrity — every referenced vocabulary, regime, kind, facet, and
-  purpose exists; no dangling relation endpoints;
+  purpose exists; every relation endpoint is a declared kind or a declared
+  anchor kind;
+- **anchor integrity** — every anchor kind names exactly one resolver, and no
+  two anchor kinds claim the same resolver namespace;
 - coverage — every shelf resolves to at least one kind; every kind is reachable
   from at least one shelf, or is explicitly marked abstract;
 - **purpose completeness** — every kind declares a purpose, and every declared
@@ -945,7 +978,7 @@ was validated against.
 | Lifecycle | `draft` → `current` | + `superseded`, `deprecated` | + `approved`, with an approver facet |
 | Identifiers | none | decision + requirement ids | + control ids, mapped to an external framework |
 | Voice regime | unconstrained | declarative on specs and standards | + mandatory normative keyword usage |
-| Relations | `supersedes` | + `governs`, `verifies`, `conflicts_with` | + `mitigates`, `attests` |
+| Relations | the default four | + `governs`, `verifies`, `implemented_by` | + `mitigates`, `attests`, `forbids`, `does_not_comply_with` |
 | Expectations | none | decision → spec; incident → postmortem | + control → audit → attestation |
 | Engine changes | none | none | none |
 
