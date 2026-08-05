@@ -145,9 +145,19 @@ this ([spec 2](02-taxonomy-model.md#reading-precedence-is-derived)).
 ### Facet
 
 A named metadata dimension attached to documents. A facet declares its value space
-(free scalar, date, enum with a controlled vocabulary, reference to another node,
-or list of any of those), where it applies, whether it is required, and how
-strictly it is enforced.
+(free scalar, date, enum with a controlled vocabulary, or list of any of those),
+where it applies, whether it is required, and how strictly it is enforced.
+
+A facet value is never a reference to another node. An earlier draft permitted
+that, and it was a second, ungoverned edge mechanism: a reference-valued facet
+asserts exactly what a relation asserts — this document is connected to that
+node — while carrying no family, no nuclearity, no reciprocity, no lifecycle
+interaction, no `created_by`, and generating none of the graph checks. The same
+fact would get two levels of governance depending on which syntax a taxonomy
+author happened to reach for, and the ungoverned syntax is the cheaper one, so
+under deadline pressure it wins. A connection is a relation; an opaque external
+identifier (a ticket number, a framework control id) is a scalar, and resolving
+it into the graph is what external anchors are for.
 
 Facets are how a taxonomy expresses everything the directory cannot: lifecycle
 state, freshness, ownership, scope, audience, provenance, confidentiality, kind
