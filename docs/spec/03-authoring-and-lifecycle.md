@@ -40,7 +40,13 @@ draft ──▶ current ──┬──▶ superseded
 
 Rules the engine enforces from the declaration alone:
 
-- transitions not in the declared machine are rejected;
+- transitions not in the declared machine are rejected **when they land**: an
+  illegal transition is only visible against the prior state, which lives in the
+  diff rather than the graph, so hooks and change-scoped CI receive the prior
+  version as a declared check input
+  ([spec 12](12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version)).
+  A full-corpus run sees only current states and reports transition instances as
+  change-scoped rather than silently passing them;
 - terminal states marked `retain: true` may never be deleted — lineage is the point;
 - a live document may not depend on a terminal one through a relation declared
   `lifecycle_sensitive`, so a current specification citing a superseded decision is

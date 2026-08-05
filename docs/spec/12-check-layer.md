@@ -63,6 +63,7 @@ Scope =
 
   + needs_body:  bool
   + needs_clock: bool
+  + needs_prior: bool        // change-scoped only: the prior committed version
 ```
 
 Scope buys four things, and the fourth is what makes the other three trustworthy.
@@ -90,6 +91,30 @@ scope declared. A `Document`-scoped check physically cannot read a sibling. So a
 declaration cannot quietly rot into a lie — and a declared-but-unenforced scope would
 silently corrupt every cache key derived from it. The enforcement is the feature; the
 declaration alone would be a comment.
+
+## Temporal inputs: the clock and the prior version
+
+Two inputs are about time, and both are injected, never fetched.
+
+**The clock** (`needs_clock`) is a bound value. Windowed participation
+expectations read a declared origin date from the document
+([spec 2](02-taxonomy-model.md#participation-expectations)) and compare it
+against `ctx.now` — no history walk, no repository archaeology.
+
+**The prior version** (`needs_prior`) is the input transition legality actually
+requires and the earlier draft silently lacked: an illegal lifecycle transition
+is invisible in the current graph, because one `status` value cannot say how it
+was reached. A check that declares `needs_prior` receives the previously
+committed version of the changed document, and its content hash joins the cache
+key like any other input. It is available **only in change-scoped evaluation** —
+the diff is what supplies it. In a full-corpus run, instances of such a check are
+counted and reported as skipped with reason `change-scoped-only`: visible, never
+silent ([spec 4](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)).
+
+That is a deliberately reduced guarantee, stated rather than implied: transitions
+are verified when they land, not re-derived from history later. Git history is
+not a check input — vendoring and squash merges destroy it, and a guarantee that
+depends on repository archaeology is not a guarantee.
 
 ## Instances, and why coverage needs them
 
