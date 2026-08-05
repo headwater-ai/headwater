@@ -180,7 +180,7 @@ Where it stops:
 | Kinds, facets, vocabularies, cardinality | Direct fit — this is what LinkML is |
 | Relations with endpoints and cardinality | Direct fit |
 | Nuclearity, family | Expressible as annotations; not native semantics |
-| Voice, lifecycle, freshness regimes | Not a data-shape concern; outside its model |
+| Voice and lifecycle regimes, freshness policy | Not a data-shape concern; outside its model |
 | Sequences, projections, overlays, core | No equivalent |
 | Compatibility measurement | No equivalent |
 

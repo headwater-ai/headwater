@@ -399,7 +399,7 @@ evaluation.
 
 Carroll's minimalist doctrine (*The Nurnberg Funnel*, 1990) — cut everything that
 does not support action, start from the reader's task — is the research behind spec
-0's "every rule earns its place", and behind the size regimes of spec 5. Worth
+0's "every rule earns its place", and behind the size budgets of spec 5. Worth
 citing precisely because that principle is the one people push back on.
 
 ---

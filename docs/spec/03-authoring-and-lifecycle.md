@@ -63,7 +63,7 @@ makes the second path cheap and the first path honest.
 ## Freshness and staleness
 
 `last_verified` is an assertion by a human: *on this date I checked that this
-document is true*. The freshness regime turns that into signal:
+document is true*. The freshness facet's declared policy turns that into signal:
 
 - format and plausibility are validated (no future dates);
 - documents past the staleness threshold are reported, weighted by the shelf's

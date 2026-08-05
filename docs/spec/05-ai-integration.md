@@ -84,9 +84,12 @@ pointer to the standard it derives from, carrying only enough content to make th
 agent stop and read the source. Regeneration is checked in CI, so a standard and
 its rule cannot disagree.
 
-Rules obey a **size regime**. Always-loaded context is metered on every request, so
-budgets are enforced per file and in aggregate, and an over-budget rule is a finding
-that names the layer responsible for trimming it.
+Rules obey a **size budget** declared on the kind or projection that produces
+them. Always-loaded context is metered on every request, so budgets are enforced
+per file and in aggregate, and an over-budget rule is a finding that names the
+layer responsible for trimming it. The budget is not optional: an agent-facing
+projection with no applicable budget fails `taxonomy validate`
+([spec 2](02-taxonomy-model.md#the-meta-schema)).
 
 When a budget binds, **satellites are dropped before nuclei**. A generated rule is a
 satellite of the standard it derives from; dropping the standard and keeping its

@@ -207,7 +207,7 @@ projections:
 |---|---|
 | `purposes` | What reader intents the corpus serves |
 | `facets` | What metadata documents carry, its shape, and how hard it is enforced |
-| `regimes` | Reusable rule bundles: voice, lifecycle, freshness, size |
+| `regimes` | Reusable rule bundles: voice and lifecycle |
 | `relations` | What typed links exist, their family, endpoints, nuclearity, and reciprocity |
 | `shelves` | How the corpus is partitioned, and what each partition means |
 | `kinds` | What each species of document is, requires, may link to, and is expected in time to link to |
@@ -803,6 +803,10 @@ with it. `docgov taxonomy validate` checks:
 - **kind rigidity** — no kind collides with a lifecycle-state value or is named with
   a bare phase adjective;
 - **edge provenance** — every relation declares a `created_by` from the closed set;
+- **context safety** — every agent-facing kind or projection has an applicable
+  size budget, and every facet carrying the freshness role has applicable
+  staleness policy. The regimes that once wrapped these are gone; the mandates
+  are not;
 - **overlay confluence** — the overlay set commutes;
 - **mapping integrity** — every mapping names kinds and facet values that exist in
   both taxonomies, with a valid SKOS relation;

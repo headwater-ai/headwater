@@ -176,10 +176,14 @@ exist so that rules are declared once and referenced many times.
 - **Lifecycle regime** — a state machine over the state facet: states, legal
   transitions, terminal states, and what each state implies (e.g. superseded
   documents are retained and delinked from live dependency paths).
-- **Freshness regime** — how a document declares it was last confirmed true, the
-  staleness threshold, and what happens on expiry.
-- **Size regime** — token or byte budgets, applied mainly to agent-facing
-  instruction files where context is metered.
+
+An earlier draft had two more regimes, and each was one parameter wearing a
+wrapper. **Freshness policy** — the staleness threshold, drift weighting, and
+posture — lives on the freshness facet itself, and is mandatory: a facet carrying
+the freshness role without applicable policy is invalid. **Size budgets** live on
+the agent-facing kinds and projections they meter, and are mandatory there: an
+agent-facing projection without an applicable budget is invalid. The protections
+moved to their enforcement points; only the wrappers were deleted.
 
 ## Obligations and controls
 
