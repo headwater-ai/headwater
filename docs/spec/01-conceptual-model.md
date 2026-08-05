@@ -212,10 +212,15 @@ verifies, when it runs, and its **posture** — advisory, blocking, or detective
 
 ### The register
 
-The binding of obligations to controls, plus explicit dispositions for those with
-none: *gap* (tracked, wanted) or *unverifiable* (no mechanism can exist; accepted).
-Every obligation carries exactly one disposition. Coverage claims are generated
-from the register, never asserted in prose.
+The generated, checked view of how obligations and controls bind: which controls
+discharge which obligations, and the explicit disposition of every obligation
+with none — *gap* (tracked, wanted) or *unverifiable* (no mechanism can exist;
+accepted). Every obligation carries exactly one disposition.
+
+Obligations and controls are authored; the register never is. The binding lives
+on the control (`discharges:`) and the disposition on the obligation, so the
+register is a projection of the other two — mandatory, regenerated, failed in CI
+when it differs. Coverage claims are generated from it, never asserted in prose.
 
 See [assurance model](04-assurance-model.md).
 

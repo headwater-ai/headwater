@@ -237,6 +237,41 @@ That keeps "no LLM in the validation path" literally true — the validation pat
 one that produces verdicts — while letting coherence findings flow through the same
 tooling a human already reads.
 
+## The correctness roots
+
+Fixture discipline (below) covers checks. It does not cover the components every
+check silently trusts — and a defect in any of these produces systematically
+green or misdirected results, which is the silent-pass failure one level up.
+Each therefore owes conformance fixtures of its own, in the same spirit as "a
+check without a failing fixture does not ship":
+
+- **The overlay resolver and the lock.** Every downstream verdict reads the lock;
+  a resolver bug corrupts every check, projection, and conformance claim at once.
+  The lock being committed and diffable mitigates but does not test — the
+  resolver carries its own round-trip and confluence fixtures, the way Q6 already
+  demands fidelity tests for the RDF projection.
+- **Scope enforcement.** A leak silently corrupts every cache key (stated above),
+  making the enforcer the correctness root for all caching and change-scoped CI —
+  and a leak reproduces deterministically, so it looks like correct behaviour.
+- **The census walker.** Every coverage guarantee (OB-COV-1..3) assumes the walk
+  enumerates the corpus root correctly; a glob or symlink bug quietly shrinks the
+  denominator — the exact failure the census exists to prevent. The walker ships
+  with a fixture tree of the pathological cases.
+- **The parser's span retention.** Section contracts, voice checks, and
+  prose-link extraction all trust one parse; a heading mis-parse green-lights a
+  section contract with no finding anywhere. A parser conformance corpus is part
+  of the engine's own test surface.
+- **The scaffolder.** Edges marked `created_by: scaffold` are corpus facts nobody
+  reviews individually; a scaffolder bug manufactures wrong edges at exactly the
+  scale the assisted-fraction metric celebrates. Scaffolder output goes through
+  the same validation pipeline as authored input — generated is never a reason to
+  trust.
+- **External-anchor resolvers.** Write-time impact detection fires on anchor
+  identity ([spec 2](02-taxonomy-model.md#behaviour-at-the-limits)); a resolver
+  that mis-normalises makes `governs` edges silently miss.
+- **Kind resolution and the graph projector**, the two already named in
+  [Q6](09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest).
+
 ## Testing: a check without a failing fixture does not ship
 
 Every check ships with at least one fixture it fails and one it passes. This is the floor,

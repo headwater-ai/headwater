@@ -87,8 +87,8 @@ nothing and an unused relation is itself a finding about the taxonomy.
 
 ## Obligations are data
 
-An obligation is a stable, identified invariant the corpus commits to, recorded in
-a machine-readable register — not a bullet in a strategy document that no tool can
+An obligation is a stable, identified invariant the corpus commits to, declared
+as machine-readable data — not a bullet in a strategy document that no tool can
 read.
 
 ```yaml
@@ -171,10 +171,19 @@ This is the rule that keeps the register honest:
 | **Gap** | No control yet; wanted; tracked with an owner and, ideally, a target |
 | **Unverifiable** | No mechanism can exist — accepted, with the reasoning recorded |
 
-There is no fourth state and no silence. An obligation absent from the register is
+There is no fourth state and no silence. An obligation with no disposition is
 itself a finding. This is the check that stops an assurance model from decaying
 into a list of good intentions: the register is complete by construction or the
 build fails.
+
+**The register is generated, never authored.** The binding lives on the control
+(`discharges:`), the disposition on the obligation, and the register — coverage,
+control health, suppressions, waivers — is a projection of the two, regenerated
+and checked like any other. An earlier draft treated it as a third authored
+artefact; two sources of truth for one binding is exactly the drift this system
+exists to kill. What does not change is its standing: the register is mandatory
+and inspectable, and an uncovered or degrading control cannot hide because the
+view surfacing it is not optional.
 
 The **coverage report** — what fraction of obligations are verified, by severity,
 with the gap list — is generated from the register. It is never written by hand,
@@ -212,6 +221,14 @@ The criteria are recorded with the control, so promotion is a decision with a
 paper trail rather than an argument about someone's tolerance for red builds. The
 inverse is also specified: a blocking check whose false-positive rate rises past
 the threshold is demoted, not endured.
+
+A false-positive rate needs a collection mechanism, or every criterion above is
+unfalsifiable in practice. The mechanism is the suppression reason
+([below](#suppression)): `false_positive` labels a finding wrong,
+`accepted_deviation` labels it right but tolerated, and only the former counts
+toward promotion and demotion statistics. Nobody is asked to label findings as a
+separate chore — the label rides on the escape hatch authors already use, which
+is the only place the judgement is actually made.
 
 ### Discharging coherence obligations: the assisted sweep
 
@@ -366,10 +383,20 @@ earned its place.
 
 ## Suppression
 
-Suppression is allowed, bounded, and observable: scoped to a file or block, it must
-state a reason, and it may carry an expiry. Suppressions are inventoried in the
-coverage report, because a rule with fifty suppressions is not a rule — it is a
-finding about the taxonomy.
+Suppression is allowed, bounded, and observable: scoped to a file or block, it
+carries an expiry, and it states a reason from a closed set — `false_positive`
+(the finding is wrong) or `accepted_deviation` (the finding is right and
+tolerated for now). Suppressions are inventoried in the coverage report, because
+a rule with fifty suppressions is not a rule — it is a finding about the
+taxonomy.
+
+Both constraints were looser in an earlier draft, and each looseness broke
+something downstream. Expiry was optional here while waiver expiry
+([spec 7](07-distribution-and-federation.md#waivers)) was mandatory — making the
+local mechanism an individual author reaches for at a red check the leakier of
+the two, which is backwards. And an undifferentiated reason field conflated
+"wrong" with "tolerated", which made the false-positive rate — the number the
+promotion machinery below runs on — unmeasurable.
 
 ## The adaptive layer reports cost, not just coverage
 
