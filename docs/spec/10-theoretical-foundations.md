@@ -98,7 +98,11 @@ reader most needs when deciding what to read, and the one an agent needs when
 deciding what to load.
 
 > **Change:** treat purpose as first-class — every kind declares the reader intent
-> it serves, and relation families carry dominance semantics. This is the theoretical
+> it serves, and reading precedence between linked documents is derived from
+> nuclearity and succession. (As first applied this was a per-relation `dominance`
+> declaration; the core-concepts review found it redundant wherever those two
+> already determined it and unused elsewhere, so it is now derived, not declared.)
+> This is the theoretical
 > justification for the routing layer in spec 5: routing is a search over intentional
 > structure, not over text. It also reframes context budgeting as attentional-state
 > management, which is a better-posed problem than "fit under N tokens".
@@ -471,7 +475,7 @@ default, at the cost of two indexes to keep in step.
 | 1 | Separate cohesion (checkable) from coherence (sampled) as distinct obligation classes | 4 | Halliday & Hasan | **applied** |
 | 2 | Add `nuclearity` to relation declarations | 2 | RST | **applied** |
 | 3 | Group relation types into a small fixed set of families | 2 | Hobbs, Kehler | **applied** |
-| 4 | Make purpose first-class; relation families carry dominance | 2, 5 | Grosz & Sidner | **applied** |
+| 4 | Make purpose first-class; derive reading precedence from nuclearity and succession | 2, 5 | Grosz & Sidner | **applied, revised** |
 | 5 | Advisory transition-continuity check over relation edges | 4 | Centering Theory | **applied** |
 | 6 | Adopt Kruchten's decision-relation vocabulary, incl. `conflicts with` | 2 | Kruchten | **applied** |
 | 7 | Facet acceptance tests: orthogonality, ascertainability, permanence | 2, 6 | Ranganathan, Vickery | **applied** |
@@ -490,15 +494,15 @@ default, at the cost of two indexes to keep in step.
 | 20 | Add `reconstructed` as a third provenance value | 3 | Parnas & Clements | **applied** |
 
 All twenty are applied. The five structural changes (2, 4, 12, 13, 15) landed first,
-because they altered the schema itself; change 3 came with them, since change 4
-places dominance on relation families and families had to exist to carry it. The
-remaining fourteen were additive and landed against the schema as it then stood.
+because they altered the schema itself; change 3 came with them, since change 4's
+precedence semantics needed families to exist first. The remaining fourteen were
+additive and landed against the schema as it then stood.
 
 Where they ended up:
 
 | Spec | What these changes added |
 |---|---|
-| [1 — Conceptual model](01-conceptual-model.md) | Purpose on kinds; family, nuclearity and dominance on relations; sequence expectations as a concept |
+| [1 — Conceptual model](01-conceptual-model.md) | Purpose on kinds; family and nuclearity on relations; sequence expectations as a concept |
 | [2 — Taxonomy model](02-taxonomy-model.md) | The five structural changes, plus the decision-relation vocabulary, `created_by`, PROV alignment, facet acceptance tests, the rigidity rule, overlay confluence, and cross-taxonomy mappings |
 | [3 — Authoring](03-authoring-and-lifecycle.md) | Three-state evidence basis, recorded provenance with `accepted_by`, and the assisted-fraction metric |
 | [4 — Assurance](04-assurance-model.md) | The cohesion/coherence split, defect-derived obligations, transition continuity, absence findings, and cost-aware adaptive reporting |

@@ -28,8 +28,10 @@ before it matches any text: "why is it like this?" resolves to kinds serving
 the corpus's intentional structure rather than over its prose — cheaper and more
 precise than lexical ranking, and it degrades gracefully because purposes are a
 small closed set. Lexical ranking then orders results *within* the matched purpose,
-and **dominance** breaks ties: where two linked documents both match, the dominant
-end is offered first.
+and derived reading precedence breaks ties
+([spec 2](02-taxonomy-model.md#reading-precedence-is-derived)): where two linked
+documents both match, a nucleus is offered before its satellite and a successor
+before what it superseded.
 
 Routing is otherwise a deterministic projection over the graph — summaries, facets,
 relations, and code-path anchors — not a semantic search. A task description resolves to a

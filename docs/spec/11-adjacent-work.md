@@ -116,7 +116,8 @@ conventional practice disagree, prefer the normative one **and note the
 discrepancy**. The ontology carries `hasSourceAuthority`; the prompt turns it into a
 decision rule.
 
-docgov has no such ordering. `dominance` records whose *purpose* governs, which is
+docgov has no such ordering. Derived reading precedence records whose *purpose*
+governs, which is
 not the same question — when a standard and a specification disagree on a fact,
 nothing in the corpus says which one a reader should believe. That is a genuine hole,
 and it is precisely the situation where an agent will otherwise pick arbitrarily and
@@ -178,7 +179,7 @@ Where it stops:
 |---|---|
 | Kinds, facets, vocabularies, cardinality | Direct fit — this is what LinkML is |
 | Relations with endpoints and cardinality | Direct fit |
-| Nuclearity, dominance, family | Expressible as annotations; not native semantics |
+| Nuclearity, family | Expressible as annotations; not native semantics |
 | Voice, lifecycle, freshness regimes | Not a data-shape concern; outside its model |
 | Sequences, projections, overlays, core | No equivalent |
 | Compatibility measurement | No equivalent |

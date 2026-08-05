@@ -100,8 +100,8 @@ its main source of checkable structure. A relation type declares:
   `evidence`, `composition`, `association`) supplying default semantics;
 - **nuclearity** — whether both ends stand alone (multinuclear) or one end supports
   the other and cannot stand without it (nucleus–satellite), and if so which end is
-  the nucleus;
-- **dominance** — which end's purpose governs the reading when the two are linked;
+  the nucleus. The family supplies the default; a relation that contradicts it says
+  so explicitly, and the override is reported by `taxonomy audit`;
 - **endpoints** — which kinds may sit at each end;
 - **cardinality** — how many are allowed, and whether one is required;
 - **reciprocity** — whether the target must acknowledge the source, and with which
@@ -119,11 +119,13 @@ Relation types an adopter is likely to want (all defined in the default taxonomy
 none hard-coded in the engine): `supersedes` / `superseded_by`, `derives_from`,
 `governs`, `verifies`, `implements`, `cites`, `owns`, `refines`, `conflicts_with`.
 
-Nuclearity and dominance are distinct, and the difference matters. Nuclearity is
-**structural** — can this document stand alone? Dominance is **intentional** — whose
-purpose is in charge? A superseded decision and its successor are both nuclei;
-neither is a fragment. But the successor dominates, because it is the one that
-governs behaviour now.
+Which end governs the *reading* when two documents are linked is derived, never
+declared. On a nucleus–satellite relation the nucleus governs: a document that
+cannot stand alone cannot govern the reading of the one it depends on. On
+succession the successor governs — that is what succession means. Other
+multinuclear relations carry no reading order, and none has yet needed one; a
+routing or projection outcome that demands it is the evidence that would reopen
+this ([spec 2](02-taxonomy-model.md#reading-precedence-is-derived)).
 
 ### Sequence expectation
 

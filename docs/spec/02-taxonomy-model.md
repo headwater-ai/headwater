@@ -4,10 +4,13 @@
 
 > **Revision note.** This document incorporates the five structural changes proposed
 > by [theoretical foundations](10-theoretical-foundations.md): nuclearity on
-> relations, purpose as a first-class declaration with dominance carried by relation
-> families, sequence expectations between kinds, an immutable semantic core, and
-> versioning by measured compatibility. Relation families arrived as a dependency of
-> the dominance change.
+> relations, purpose as a first-class declaration with reading precedence derived
+> from nuclearity and succession, sequence expectations between kinds, an immutable
+> semantic core, and versioning by measured compatibility. Relation families arrived
+> as a dependency of the precedence change. The
+> [core-concepts review](../reviews/) subsequently cut the per-relation `dominance`
+> declaration — redundant where nuclearity or succession already determined it,
+> unused where they did not.
 
 ## The problem being solved
 
@@ -100,7 +103,6 @@ relations:
     inverse: superseded_by
     reciprocal: required
     nuclearity: multinuclear           # both ends stand alone
-    dominance: source                  # the successor governs the reading
     on_target: {set_state: superseded}
     created_by: scaffold               # who pays for this edge
 
@@ -118,7 +120,6 @@ relations:
     from: [standard, specification]
     to:   [code_path]                  # an external anchor kind
     cardinality: many
-    dominance: source
     created_by: author
 
   conflicts_with:
@@ -258,10 +259,10 @@ Purpose does real work downstream:
 - **The core** (below) is expressed in terms of purposes, which is what lets an
   adopter rename everything and still be recognisably running the same method.
 
-## Relation families, nuclearity, and dominance
+## Relation families and nuclearity
 
-Three properties every relation type declares. Together they turn a flat link set
-into a structure the engine can reason about.
+Two properties every relation type carries — one chosen, one usually inherited.
+Together they turn a flat link set into a structure the engine can reason about.
 
 ### Family
 
@@ -286,8 +287,16 @@ inside one family.
 ### Nuclearity
 
 A relation is **multinuclear** (both ends stand alone) or **nucleus–satellite** (one
-end supports the other and cannot stand without it). Nucleus–satellite relations
-name which end is the nucleus.
+end supports the other and cannot stand without it). The family supplies the
+default; a relation type that contradicts its family's default must say so
+explicitly, and `taxonomy audit` reports every override, because a family whose
+members mostly override it is misassigned.
+
+One thing the family cannot supply is *which end* is the nucleus, because relation
+direction is the taxonomy author's choice: a derivation may be spelled
+`derives_from` or in the opposite direction, a composition `part_of` or
+`comprises`, and the family is the same in both spellings. Nucleus–satellite
+relation types therefore always name their nucleus end.
 
 This asymmetry pays for itself in four places:
 
@@ -304,18 +313,27 @@ This asymmetry pays for itself in four places:
 - **Deletion safety.** Removing a nucleus that still has live satellites is a
   finding; removing a satellite is free.
 
-### Dominance
+### Reading precedence is derived
 
-`dominance: source | target | none` records whose purpose subordinates whose — which
-document a reader should treat as governing when two are linked.
+Which document a reader should treat as governing when two are linked is not a
+declaration — it is entailed by properties already declared, and an earlier
+per-relation `dominance` field was cut when the entailment was noticed:
 
-Dominance is not the same as nuclearity. Nuclearity is *structural* (can this stand
-alone?); dominance is *intentional* (which one's purpose is in charge?). A successor
-decision and its predecessor are both nuclei — neither is a fragment — but the
-successor dominates: it is the one that governs behaviour now.
+- **On a nucleus–satellite relation, the nucleus governs.** A satellite supports
+  the other end and cannot stand without it; a document that cannot stand alone
+  cannot have its purpose govern the reading of the document it depends on.
+- **On succession, the successor governs.** That is the whole meaning of the
+  family: the successor is the one that governs behaviour now.
+- **Other multinuclear relations carry no reading order.** `conflicts_with` and
+  `is_alternative_to` assert exactly that neither end subordinates the other, and
+  imposing an order would misstate the relation.
 
-The engine uses dominance to order routing results, to choose which document a
-conflict is reported against, and to decide reading order in generated indexes.
+The engine uses the derived precedence to order routing results, to choose which
+document a conflict is reported against, and to decide reading order in generated
+indexes — nothing downstream changed when the declaration was removed, which is
+the evidence it declared nothing. If a real corpus produces a multinuclear,
+non-succession relation whose ends genuinely need an ordering, that outcome is
+the case for reintroducing a declaration, and it should be argued then.
 
 ### The decision-relation vocabulary
 
