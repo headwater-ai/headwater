@@ -222,17 +222,15 @@ A mechanism that discharges an obligation: an engine check, a CI job, a git hook
 an agent behaviour, a scheduled scan, a human audit. A control declares what it
 verifies, when it runs, and its **posture** — advisory, blocking, or detective.
 
-### The register
-
-The generated, checked view of how obligations and controls bind: which controls
-discharge which obligations, and the explicit disposition of every obligation
-with none — *gap* (tracked, wanted) or *unverifiable* (no mechanism can exist;
-accepted). Every obligation carries exactly one disposition.
-
-Obligations and controls are authored; the register never is. The binding lives
-on the control (`discharges:`) and the disposition on the obligation, so the
-register is a projection of the other two — mandatory, regenerated, failed in CI
-when it differs. Coverage claims are generated from it, never asserted in prose.
+These are the section's only two concepts. Their binding is visible in the
+**register projection**: the generated, checked view of which controls discharge
+which obligations, the explicit disposition of every obligation with none —
+*gap* (tracked, wanted) or *unverifiable* (no mechanism can exist; accepted) —
+control health, suppressions, and waivers. Every obligation carries exactly one
+disposition. It is a projection like any other (below), distinguished only by
+being engine-defined and non-optional: the binding lives on the control
+(`discharges:`), the disposition on the obligation, the view is never authored,
+and coverage claims are generated from it, never asserted in prose.
 
 See [assurance model](04-assurance-model.md).
 
