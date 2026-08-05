@@ -34,7 +34,7 @@ ours. The taxonomy is theirs to define; the engine is ours.
 
 1. **A taxonomy schema language** — a declarative, versioned, validated description
    of a documentation corpus's structure: shelves, document kinds, metadata facets,
-   relations, voice and lifecycle regimes, identifier schemes, and profiles.
+   relations, voice and lifecycle regimes, identifier schemes, and overlays.
 
 2. **An engine** that reads a corpus plus its taxonomy, builds a typed graph, and
    evaluates constraints over it — one parse, many checks, machine- and

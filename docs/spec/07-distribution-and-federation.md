@@ -59,12 +59,17 @@ taxonomy:
 writes the lock. The lock is committed: the corpus is checked against a resolved,
 reviewable, reproducible taxonomy, and CI needs no network to check anything.
 
-### Profiles
+### Profiles are publisher overlays
 
-Not every repository holds every shelf. A profile names the subset a repository
-archetype owns, and the engine prunes accordingly: a repository never carries a rule,
-glob, or projection targeting a shelf it does not have. Dead configuration is
-noise that teaches readers to ignore configuration.
+Not every repository holds every shelf. A profile is a **named overlay the
+publisher ships** — `remove` operations for the shelves a repository archetype
+does not carry — selected by name in the consumer declaration above. It is not a
+separate mechanism: the overlay resolver already implements every part of it
+(dependent-key deletion, confluence, core satisfaction on the result), and an
+earlier draft that listed profiles as their own declaration was maintaining two
+names for a subset of one. The effect is unchanged: a repository never carries a
+rule, glob, or projection targeting a shelf it does not have, because dead
+configuration is noise that teaches readers to ignore configuration.
 
 ## The invariant core
 
@@ -100,7 +105,7 @@ docgov taxonomy diff --to 4.0.0
 reports, against the *local* corpus rather than in the abstract:
 
 - what changed in the base;
-- **measured compatibility across the five declared dimensions** — classification,
+- **measured compatibility across the engine's five dimensions** — classification,
   instance validity, consequence, projection, identifier
   ([spec 2](02-taxonomy-model.md#versioning-by-measured-compatibility));
 - which overlay entries the change invalidates (an override addressing a removed

@@ -279,7 +279,11 @@ Three consequences:
 > control we currently lack: decisions with no downstream specification, incidents
 > with no postmortem, proposals that were accepted and then never implemented. That
 > is drift the cohesion checks cannot see, and it is the failure mode people
-> complain about most.
+> complain about most. (As first applied these were a separate top-level
+> declaration; the core-concepts review showed every declared chain was a single
+> windowed hop and folded them into
+> [relation participation](02-taxonomy-model.md#participation-expectations),
+> which also forced the window-origin definition the mechanism had been missing.)
 
 ### C.2 Boundary objects — publisher and consumer
 
@@ -483,7 +487,7 @@ default, at the cost of two indexes to keep in step.
 | 9 | Federate via SKOS-style mapping relations; optional SKOS export | 7, Q9 | SKOS / ISO 25964 | **applied** |
 | 10 | Every relation declares what creates it and who pays | 2 | Traceability grand challenge | **applied** |
 | 11 | Align lineage with PROV; record generating agent | 2, 3 | W3C PROV | **applied** |
-| 12 | Add sequence expectations between kinds (genre systems) | 2, 4 | Yates & Orlikowski | **applied** |
+| 12 | Windowed participation expectations (genre systems) | 2, 4 | Yates & Orlikowski | **applied, revised** |
 | 13 | Taxonomy packages declare an immutable core | 7 | Star & Griesemer | **applied** |
 | 14 | Track author capture cost as a metric | 3, 5 | Grudin | **applied** |
 | 15 | Replace semver rules with measured compatibility dimensions | 2, 7 | Noy & Klein | **applied** |
@@ -502,7 +506,7 @@ Where they ended up:
 
 | Spec | What these changes added |
 |---|---|
-| [1 — Conceptual model](01-conceptual-model.md) | Purpose on kinds; family and nuclearity on relations; sequence expectations as a concept |
+| [1 — Conceptual model](01-conceptual-model.md) | Purpose on kinds; family and nuclearity on relations; windowed participation expectations |
 | [2 — Taxonomy model](02-taxonomy-model.md) | The five structural changes, plus the decision-relation vocabulary, `created_by`, PROV alignment, facet acceptance tests, the rigidity rule, overlay confluence, and cross-taxonomy mappings |
 | [3 — Authoring](03-authoring-and-lifecycle.md) | Three-state evidence basis, recorded provenance with `accepted_by`, and the assisted-fraction metric |
 | [4 — Assurance](04-assurance-model.md) | The cohesion/coherence split, defect-derived obligations, transition continuity, absence findings, and cost-aware adaptive reporting |

@@ -284,16 +284,18 @@ Every mechanism above validates something that exists. None of them can see the
 document that should exist and does not — the accepted proposal nobody implemented,
 the incident with no postmortem, the decision that never reached a specification.
 
-**Sequence expectations** ([spec 2](02-taxonomy-model.md#sequence-expectations)) close
-that gap. A sequence declares that a document of one kind, in a given state, is
-expected to acquire a relation to a document of another kind within a window; the
-engine reports the ones that did not.
+**Participation expectations**
+([spec 2](02-taxonomy-model.md#participation-expectations)) close that gap. A kind
+declares that its documents, in a given state, are expected to acquire a relation
+to a document of another kind within a window; the engine reports the ones that
+did not.
 
 They are constrained deliberately:
 
 - **detective only, never blocking** — the work may legitimately be in flight,
   deferred, or abandoned for good reason, and none of those are defects;
-- **windowed** — an expectation with no time bound is a wish, not a control;
+- **windowed, from a declared origin** — an expectation with no time bound is a
+  wish, not a control, and a window with no origin is not a window;
 - **reported against the originating document** — that is where the person who can
   act will look.
 

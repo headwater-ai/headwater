@@ -204,7 +204,7 @@ to kill this, and both of these directly attack it.
 Schema, SHACL, RDF/OWL, Pydantic, and SQL DDL. It covers a substantial part of what
 [spec 2](02-taxonomy-model.md) specifies structurally — classes, slots, ranges,
 cardinality, enums, inheritance — and none of the governance half (regimes,
-sequences, overlays, core, compatibility). SHACL, similarly, is the standard for
+expectations, overlays, core). SHACL, similarly, is the standard for
 validating a graph against declared shapes, which is what our schema-derived checks
 do by hand.
 
@@ -226,7 +226,7 @@ for free.
 expressible in LinkML, and reciprocity is as structural as anything in spec 2. The
 real line is that LinkML, SHACL and JSON Schema all validate **one instance against a
 shape**, whereas everything docgov does that they cannot — reciprocity, satellite
-inheritance, cross-endpoint conflict rules, sequence expectations — is a property of
+inheritance, cross-endpoint conflict rules, participation expectations — is a property of
 the **whole graph or of the corpus over time**.
 
 **SHACL reaches the layer LinkML cannot.** A second

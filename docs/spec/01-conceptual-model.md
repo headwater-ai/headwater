@@ -126,6 +126,14 @@ Relation types an adopter is likely to want (all defined in the default taxonomy
 none hard-coded in the engine): `supersedes` / `superseded_by`, `derives_from`,
 `governs`, `verifies`, `implements`, `cites`, `owns`, `refines`, `conflicts_with`.
 
+A kind may also declare a participation **expectation**: its documents, in a given
+state, are expected to acquire a named relation within a window measured from a
+declared origin date ([spec 2](02-taxonomy-model.md#participation-expectations)).
+Expectations are the only construct that finds a document which **should exist and
+does not** — every other check validates artefacts that are present. They model
+what genre theory calls a *genre system*: proposal → decision → specification →
+evidence.
+
 Which end governs the *reading* when two documents are linked is derived, never
 declared. On a nucleus–satellite relation the nucleus governs: a document that
 cannot stand alone cannot govern the reading of the one it depends on. On
@@ -133,16 +141,6 @@ succession the successor governs — that is what succession means. Other
 multinuclear relations carry no reading order, and none has yet needed one; a
 routing or projection outcome that demands it is the evidence that would reopen
 this ([spec 2](02-taxonomy-model.md#reading-precedence-is-derived)).
-
-### Sequence expectation
-
-A declared chain between kinds: a document of one kind, in a given state, is
-expected to acquire a relation to a document of another kind within a window. These
-model what genre theory calls a *genre system* — proposal → decision →
-specification → evidence.
-
-Sequence expectations are the only construct that finds a document which **should
-exist and does not**. Every other check validates artefacts that are present.
 
 ### Facet
 
@@ -156,9 +154,11 @@ state, freshness, ownership, scope, audience, provenance, confidentiality, kind
 discriminators on heterogeneous shelves. The vocabulary of an enum facet is part of
 the schema, so extending it is a deliberate, reviewable, versioned change.
 
-Two facets are structurally special because the engine reasons about them:
+Three facet roles are structurally special because the engine reasons about them:
 
 - the **state facet**, which the lifecycle regime interprets;
+- the **state-entry date**, stamped by each transition — the origin that windowed
+  participation expectations are measured from;
 - the **freshness facet**, which staleness detection interprets.
 
 Which facet plays each role is declared, not assumed — a corpus may call its state

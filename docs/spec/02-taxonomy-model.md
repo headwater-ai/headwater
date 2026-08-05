@@ -5,7 +5,7 @@
 > **Revision note.** This document incorporates the five structural changes proposed
 > by [theoretical foundations](10-theoretical-foundations.md): nuclearity on
 > relations, purpose as a first-class declaration with reading precedence derived
-> from nuclearity and succession, sequence expectations between kinds, an immutable
+> from nuclearity and succession, windowed participation expectations, an immutable
 > semantic core, and versioning by measured compatibility. Relation families arrived
 > as a dependency of the precedence change. The
 > [core-concepts review](../reviews/) subsequently cut the per-relation `dominance`
@@ -41,7 +41,7 @@ taxonomy: acme-engineering
 version: 3.2.0
 extends: docgov/standard@2.1.0        # base package, or null for from-scratch
 
-vocabularies:                          # named, reusable value sets
+vocabularies:                          # authoring sugar: named value sets facets reference
   lifecycle_state:
     - {value: draft,      role: initial}
     - {value: current,    role: live}
@@ -64,6 +64,10 @@ facets:
   status:
     role: state                        # engine-significant role
     values: $vocabularies.lifecycle_state
+    required: true
+  status_since:
+    role: state_entered                # stamped on transition; the origin windows are measured from
+    type: date
     required: true
   last_verified:
     role: freshness
@@ -130,20 +134,6 @@ relations:
     nuclearity: multinuclear
     invalid_when: {both: {status: current}}   # two live conflicting decisions
 
-sequences:                             # expected chains between kinds
-  - id: decision-realised
-    when:   {kind: decision, where: {status: current}}
-    expect: {relation: implemented_by, to_kind: specification}
-    within: 90d
-    severity: warn
-    rationale: a decision nothing implements is either not a decision or not done
-
-  - id: incident-learned-from
-    when:   {kind: incident}
-    expect: {relation: analysed_by, to_kind: postmortem}
-    within: 14d
-    severity: warn
-
 shelves:
   decisions:
     path: docs/decisions/**
@@ -175,6 +165,15 @@ kinds:
       optional: [Alternatives considered, Related]
     relations:
       may: [supersedes, superseded_by, refines, conflicts_with]
+      expect:                          # windowed participation: finds what should exist and does not
+        - id: decision-realised
+          relation: implemented_by
+          to_kind: specification
+          when: {status: current}
+          within: 90d
+          since: state_entered         # window origin: the state-entry date facet
+          severity: warn
+          rationale: a decision nothing implements is either not a decision or not done
 
 identifier_schemes:
   decision_id:
@@ -192,9 +191,6 @@ core:                                  # what overlays may never remove or redef
     - relation_family: succession
       lifecycle_sensitive: true
 
-compatibility:
-  dimensions: [classification, instance_validity, consequence, projection, identifier]
-
 projections:
   - kind: shelf_index
     for: [decisions, governance]
@@ -203,33 +199,33 @@ projections:
     output: .agent/rules/
   - kind: site_nav
     output: .docgov/nav.yml
-
-profiles:                              # named subsets for repo archetypes
-  service-repo:
-    shelves: [decisions, specifications, governance]
-  docs-only:
-    shelves: [governance, architecture, domain]
 ```
 
-## The twelve declarations
+## The ten declarations
 
 | Declaration | Answers |
 |---|---|
-| `vocabularies` | What controlled value sets exist, reusable across facets |
 | `purposes` | What reader intents the corpus serves |
 | `facets` | What metadata documents carry, its shape, and how hard it is enforced |
 | `regimes` | Reusable rule bundles: voice, lifecycle, freshness, size |
 | `relations` | What typed links exist, their family, endpoints, nuclearity, and reciprocity |
-| `sequences` | What chains of kinds are expected to follow one another |
 | `shelves` | How the corpus is partitioned, and what each partition means |
-| `kinds` | What each species of document is, requires, and may link to |
+| `kinds` | What each species of document is, requires, may link to, and is expected in time to link to |
 | `identifier_schemes` | How stable identifiers are shaped, namespaced, and allocated |
 | `core` | What an overlay may never remove or redefine |
-| `compatibility` | Which dimensions a version change is measured against |
 | `mappings` | How this taxonomy's concepts correspond to another's |
+| `projections` | What derived artefacts are generated, and where they land |
 
-Plus `projections` (derived artefacts) and `profiles` (subsets for repositories that
-hold only part of the taxonomy).
+An earlier draft counted twelve and then added two more in the next sentence.
+Four of those fourteen are gone deliberately, and what each protected survives
+without its name: `sequences` folded into windowed relation participation on
+kinds (below); `profiles` are publisher-shipped overlays
+([spec 7](07-distribution-and-federation.md#profiles-are-publisher-overlays));
+`compatibility` named the engine's fixed measurement dimensions, which no
+taxonomy could legally vary — a declaration with one legal value is an engine
+constant; and `vocabularies` remains as authoring syntax — a named value set
+that facets reference — validated as part of `facets`, not a concept anyone
+must learn first.
 
 ## Purpose is declared, not implied
 
@@ -506,41 +502,69 @@ describe the wrong behaviour. Structural conformance is a floor, and the audit l
 Sidecars are optional. A component with nothing mechanically checkable carries none,
 and the taxonomy declares which kinds may have them.
 
-## Sequence expectations
+## Participation expectations
 
-A taxonomy may declare **sequences**: chains of kinds where one is expected to
-follow another within a window.
+A kind may declare that its documents are **expected to participate** in a
+relation: a document of this kind, in a given state, should acquire the named
+relation to a document of another kind within a window.
 
 ```yaml
-- id: decision-realised
-  when:   {kind: decision, where: {status: current}}
-  expect: {relation: implemented_by, to_kind: specification}
-  within: 90d
-  severity: warn
+kinds:
+  decision:
+    relations:
+      expect:
+        - id: decision-realised
+          relation: implemented_by
+          to_kind: specification
+          when: {status: current}
+          within: 90d
+          since: state_entered
+          severity: warn
+          rationale: a decision nothing implements is either not a decision or not done
 ```
 
-This models what genre theory calls a *genre system* — a sequence of interrelated
-communicative actions that structures work. Proposal → decision → specification →
-evidence is one. Incident → postmortem → standard change is another.
+An earlier draft declared these as a separate top-level concept, `sequences`,
+sold as chains — and every declared chain was in fact a single hop: *kind + state
+⇒ expected relation, within window*. A chain is three expectations that share
+endpoints. A single hop is a state-conditional, windowed, detective-posture
+participation constraint — the `required` end of the cardinality spectrum a
+relation already has, plus a clock. So it is declared where `may:` already
+lives, and the separate concept is gone. What it models is unchanged: genre
+theory's *genre system* — proposal → decision → specification → evidence;
+incident → postmortem → standard change.
 
-Sequences catch a failure class nothing else does. Every check in
-[spec 4](04-assurance-model.md) validates artefacts that exist. A sequence check
-finds the artefact that **should exist and does not**: the accepted proposal nobody
-implemented, the incident with no postmortem, the decision that never reached a
-specification. That is the drift people actually complain about, and it is invisible
-to link and front-matter validation because there is nothing malformed to find.
+Expectations catch a failure class nothing else does. Every check in
+[spec 4](04-assurance-model.md) validates artefacts that exist. An expectation
+finds the artefact that **should exist and does not**: the accepted proposal
+nobody implemented, the incident with no postmortem, the decision that never
+reached a specification. That is the drift people actually complain about, and it
+is invisible to link and front-matter validation because there is nothing
+malformed to find.
 
-Three constraints keep them honest:
+**The window has a declared origin.** `within: 90d` is meaningless until the
+question *ninety days from what?* has an answer in the graph, and the earlier
+draft had none — no state-entry or creation date existed anywhere, which made the
+flagship absence check uncomputable from declared data. So the origin is now
+part of the declaration: `since:` names an engine-significant date role —
+`state_entered` (stamped by the transition that put the document in the
+triggering state) or `created` for expectations with no state condition. An
+expectation whose origin facet is not required on the declaring kind fails
+`taxonomy validate`. This keeps the check pure ([spec 12](12-check-layer.md)):
+origin date plus injected clock, no history walk, no git archaeology.
 
-- **Detective only.** A sequence expectation is never blocking. The work may
+Four constraints keep expectations honest:
+
+- **Detective only.** An expectation is never blocking. The work may
   legitimately be in flight, deferred, or abandoned for good reason.
-- **A window is required.** An expectation with no time bound is a wish. The window
-  is what makes the finding actionable.
-- **A rationale is required.** If you cannot say why the sequence is expected, it is
-  a convention, not an expectation, and it will generate noise.
+- **A window is required.** An expectation with no time bound is a wish. The
+  window is what makes the finding actionable.
+- **An origin is required.** A window that cannot say where it starts is not a
+  window; it is a mood.
+- **A rationale is required.** If you cannot say why the participation is
+  expected, it is a convention, not an expectation, and it will generate noise.
 
-Sequence findings are reported against the *originating* document, because that is
-where the reader who can act will look.
+Expectation findings are reported against the *originating* document, because
+that is where the reader who can act will look.
 
 ## The immutable core
 
@@ -648,7 +672,7 @@ supplies actual tests, and the engine applies them.
 
 | Canon | Test | Where checked |
 |---|---|---|
-| **Relevance** | The facet is read by at least one check, projection, routing rule, or sequence | schema |
+| **Relevance** | The facet is read by at least one check, projection, routing rule, or expectation | schema |
 | **Ascertainability** | Every enum value carries guidance stating when it applies | schema |
 | **Permanence** | The facet declares `volatility`; a `mutable` facet may not appear in an identifier, a path, or a shelf pattern | schema |
 | **Differentiation** | The facet actually partitions the corpus — a value found on nearly every document distinguishes nothing | corpus |
@@ -770,8 +794,9 @@ with it. `docgov taxonomy validate` checks:
 - **relation coherence** — every relation names a valid family; nucleus–satellite
   relations name their nucleus; `inherits` names facets that exist on both ends;
   a family's default is not contradicted without explicit override;
-- **sequence well-formedness** — every sequence names an existing relation and
-  reachable kinds, carries a window, and carries a rationale;
+- **expectation well-formedness** — every participation expectation names an
+  existing relation and reachable kinds, carries a window, a rationale, and an
+  origin role that is required on the declaring kind;
 - **core satisfiability** — the resolved taxonomy satisfies every core requirement;
 - **facet canons** — relevance, ascertainability, and permanence hold for every
   facet (the corpus-measured canons run under `taxonomy audit`);
@@ -798,7 +823,11 @@ enum is additive and can still cause a completeness check to start failing.
 Structural change and semantic consequence are not the same thing, and only one of
 them matters to a consumer.
 
-So compatibility is evaluated along five declared dimensions, against a real corpus:
+So compatibility is evaluated along five dimensions, against a real corpus. The
+dimension set is the engine's, fixed and identical for every taxonomy — an
+earlier draft made it a `compatibility` declaration, which every taxonomy would
+have stated identically, and a declaration with one legal value declares
+nothing:
 
 | Dimension | Question |
 |---|---|
@@ -840,7 +869,7 @@ was validated against.
 | Identifiers | none | decision + requirement ids | + control ids, mapped to an external framework |
 | Voice regime | unconstrained | declarative on specs and standards | + mandatory normative keyword usage |
 | Relations | `supersedes` | + `governs`, `verifies`, `conflicts_with` | + `mitigates`, `attests` |
-| Sequences | none | decision → spec; incident → postmortem | + control → audit → attestation |
+| Expectations | none | decision → spec; incident → postmortem | + control → audit → attestation |
 | Engine changes | none | none | none |
 
 The third column is the real test. If a regulated adopter can express control

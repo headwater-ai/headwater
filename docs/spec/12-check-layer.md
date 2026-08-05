@@ -28,8 +28,8 @@ boundary the two standards evaluations found rather than from guesswork.
 | Origin | Comes from | Examples | Exportable as |
 |---|---|---|---|
 | **Shape** | the TBox, generated | required facet, enum membership, identifier pattern, cardinality, unknown-facet detection | LinkML + SHACL |
-| **Graph** | relation declarations, generated | reciprocity, endpoint kinds, lifecycle-sensitivity, satellite inheritance, live conflicts | SHACL (via SPARQL) |
-| **Corpus** | declarations needing many documents | sequence expectations, facet orthogonality, continuity distribution, scent distinctiveness | — |
+| **Graph** | relation declarations, generated | reciprocity, endpoint kinds, lifecycle-sensitivity, satellite inheritance, live conflicts, windowed participation expectations | SHACL (via SPARQL) |
+| **Corpus** | declarations needing many documents | facet orthogonality, continuity distribution, scent distinctiveness | — |
 | **Document** | regimes, applied to the body | voice, section contract, normative language, size budgets, prose-link resolution | — |
 | **Plugin** | adopter code | anything organisation-specific | — |
 
