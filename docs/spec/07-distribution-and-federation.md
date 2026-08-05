@@ -34,7 +34,7 @@ contents:
   doctrine: doctrine/          # prose explaining the method, vendored to consumers
   templates: templates/
   plugins: plugins/            # organisation-specific checks
-profiles: [service-repo, docs-only, platform]
+profiles: [service-repo, docs-only, platform]   # named overlays the package ships
 migrations: migrations/
 ```
 
