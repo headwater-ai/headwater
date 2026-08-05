@@ -135,12 +135,22 @@ lock points at 4.0.0 or it does not; spec 2's no-partial-load rule governs the
 schema alone) and is not atomic for the *corpus*, and a spec written as if it
 were would make every real upgrade a lie.
 
-So the migration state is recorded in the lock: from-version, to-version, and
-the open task list. While tasks remain open, checks run against the new schema,
-and a finding attributable to a document named in an open task is reported as
-`migration-pending` — counted, visible in coverage, never blocking, never
-suppressed individually. Closing the last task ends the state, and a migration
-state with no recent activity is itself a staleness finding. Waivers are
+So the migration state is recorded in the lock: from-version, to-version, an
+owner, an expiry, and the open task list. While tasks remain open, checks run
+against the new schema, and a finding is reported as `migration-pending` when
+its **(document, rule) pair is one the migration payload expects to fail** —
+the payload declared what moved and what must be re-stated, so it knows which
+rules it broke for which documents, and each open task carries that pair set.
+Labelling by document alone would blanket every finding on a named document
+for the whole migration, letting defects introduced yesterday read as expected
+breakage; the pair grain keeps yesterday's regression loud while the declared
+debt stays patient. `migration-pending` findings are counted, visible in
+coverage, never blocking, and never suppressed individually.
+
+Closing the last task ends the state. The expiry is the anti-parking device,
+on the same terms as a waiver's: a migration state past its expiry is a
+finding against the owner, renewable only by explicitly moving the date — a
+decision with a paper trail, not a timeout nobody notices. Waivers are
 per-rule and suppressions per-file; neither fits a corpus that is half-way
 across, which is why the state is its own mechanism rather than a pile of
 either.
