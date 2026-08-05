@@ -111,6 +111,24 @@ the diff is what supplies it. In a full-corpus run, instances of such a check ar
 counted and reported as skipped with reason `change-scoped-only`: visible, never
 silent ([spec 4](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)).
 
+**"Prior" is anchored, not assumed.** The prior version is the document as it
+stands on the branch the change is landing on: the merge-base version for a
+proposed change, the committed `HEAD` version for a working-tree hook. It is
+never an intermediate commit inside the incoming branch — a branch lands on the
+mainline as one state movement, whatever route it took internally, so intermediate
+flips are invisible by construction rather than by accident. Two consequences
+are stated so nobody discovers them:
+
+- **Legality is path-reachability, not edge membership.** A compound movement
+  (`draft` at the merge-base, `superseded` in the result, via `current` inside
+  the branch) is legal iff a path between the two states exists in the declared
+  machine. Checking single-edge membership against the merge-base would reject
+  movements the machine permits.
+- **Hook and CI can disagree only when the mainline moved** between the hook
+  running and the merge landing — the ordinary race every merge check has. The
+  evaluation that counts is the one against the final merge-base, which is the
+  deterministic answer: same merge-base, same incoming tree, same verdict.
+
 That is a deliberately reduced guarantee, stated rather than implied: transitions
 are verified when they land, not re-derived from history later. Git history is
 not a check input — vendoring and squash merges destroy it, and a guarantee that
