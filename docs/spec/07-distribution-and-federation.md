@@ -126,6 +126,25 @@ agent. The distinction is the whole point: moving files is mechanical, and rewri
 a document to fit a new kind's section contract is not. Pretending the second is
 automatable produces plausible, wrong documents at scale.
 
+### Between majors, the corpus is legitimately between valid states
+
+A migration with judgment-bearing tasks creates a period in which the corpus
+fully satisfies neither the old schema nor the new one. That is an ordinary
+major upgrade, not an anomaly — the upgrade is atomic for the *taxonomy* (the
+lock points at 4.0.0 or it does not; spec 2's no-partial-load rule governs the
+schema alone) and is not atomic for the *corpus*, and a spec written as if it
+were would make every real upgrade a lie.
+
+So the migration state is recorded in the lock: from-version, to-version, and
+the open task list. While tasks remain open, checks run against the new schema,
+and a finding attributable to a document named in an open task is reported as
+`migration-pending` — counted, visible in coverage, never blocking, never
+suppressed individually. Closing the last task ends the state, and a migration
+state with no recent activity is itself a staleness finding. Waivers are
+per-rule and suppressions per-file; neither fits a corpus that is half-way
+across, which is why the state is its own mechanism rather than a pile of
+either.
+
 ## Conformance
 
 Vendoring content is not adoption. A consumer can hold a perfect copy of the
@@ -185,8 +204,11 @@ but not inference, `broadMatch` / `narrowMatch` where one is wider.
 With mappings declared, an aggregator answers "every decision in the organisation"
 across taxonomies that share no vocabulary, without either division giving up its
 own. Neither taxonomy changes; a third artefact records how they correspond, owned
-by whoever needs the correspondence. That is the standard answer to this problem in
-knowledge organization, and there is no reason to invent a worse one.
+by the aggregating tier — normatively, not conveniently, since pairwise mappings
+between peers grow quadratically and go stale on every publisher release
+([spec 2](02-taxonomy-model.md#mapping-between-taxonomies)). That is the standard
+answer to this problem in knowledge organization, and there is no reason to
+invent a worse one.
 
 ## Upstream awareness
 

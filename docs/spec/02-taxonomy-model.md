@@ -646,9 +646,15 @@ practice), `closeMatch` (interchangeable for retrieval, not for inference),
 
 Mappings are what let a cross-repository aggregator answer "show me every decision
 in the organisation" across taxonomies that share no vocabulary. They are declared
-by whoever needs the correspondence — usually the aggregating tier — and are
-directional, versioned, and validated: a mapping naming a kind that neither
-taxonomy has is a finding.
+by whoever needs the correspondence, and they are directional, versioned, and
+validated: a mapping naming a kind that neither taxonomy has is a finding.
+
+Past a handful of taxonomies, "whoever needs the correspondence" is only ever
+the aggregating tier, and that is the normative topology, not a tendency:
+pairwise mappings between fifty independent taxonomies permit 1,225 unordered
+pairs before direction and versions multiply them, every one going stale on
+every publisher release. Peers do not map to peers at scale; the aggregator
+owns the correspondences, because it is the only party that reads them.
 
 The engine can also emit the resolved taxonomy as SKOS (`docgov export --format
 skos`). That is partly interoperability with knowledge-organization tooling that
@@ -683,6 +689,17 @@ This produces one rule with real teeth: **a homogeneous shelf forbids the
 discriminator facet.** If the directory already says what a document is, restating
 it in front matter creates a second truth that will eventually disagree with the
 first. The schema enforces the prohibition rather than trusting authors to notice.
+
+Heterogeneous shelves carry the inverse risk, named here so audits watch it:
+the discriminator is self-asserted, and kind determines every obligation
+downstream — sections, facets, voice, relations, expectations. An author who
+types `doc_type: reference` instead of `standard` has bought out of the
+standard's entire contract, and no check can cross-examine prose genre without
+crossing the semantic boundary [spec 1](01-conceptual-model.md) draws. The
+mitigation is structural, not detective: kinds sharing a shelf should not
+diverge so far in obligation cost that arbitrage pays, and `taxonomy audit`
+reports the discriminator distribution and its drift, so a shelf quietly
+migrating toward its cheapest kind is visible.
 
 ## Facet acceptance tests
 
@@ -832,7 +849,11 @@ with it. `docgov taxonomy validate` checks:
 - projection targets — every projection writes inside the corpus and does not
   collide with an authored path.
 
-A taxonomy that does not validate is never applied. There is no partial-load mode.
+A taxonomy that does not validate is never applied. There is no partial-load
+mode. That sentence governs the taxonomy, not the corpus: a corpus may be
+legitimately between valid states during a major migration, and the tolerance
+mechanism is the migration state
+([spec 7](07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)).
 
 ## Versioning by measured compatibility
 

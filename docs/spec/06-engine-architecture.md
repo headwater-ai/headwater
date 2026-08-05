@@ -125,7 +125,9 @@ provenance, overlay confluence, core satisfiability. It needs no documents, alwa
 terminates in a verdict, and gates everything.
 
 **`audit`** measures the schema *against a corpus*: facet differentiation and
-orthogonality, edge counts and staleness by `created_by`, transition-continuity
+orthogonality, edge counts and staleness by `created_by`, relation-choice drift
+by family, discriminator distribution on heterogeneous shelves, state-dwell
+distribution, transition-continuity
 distribution, scent quality. Its findings are advisory by construction — a young or
 small corpus fails differentiation for reasons that are not defects — and they are
 about the taxonomy, not the documents. A facet nothing distinguishes is a schema

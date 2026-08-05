@@ -196,6 +196,14 @@ half-conformant corpus — which is a design constraint, not a feature request.
 `--since <ref>` mode are first-release. Adoption friction is the thing most likely
 to kill this, and both of these directly attack it.
 
+The between-majors half of this question is no longer open: the core-concepts
+review established that it constrains the validity model itself, not migration
+UX, and the lock now records a migration state with `migration-pending` findings
+([spec 7](07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)).
+What remains open here is first contact — a corpus that has never been valid,
+which the migration state (defined against a known-good starting point) does not
+cover.
+
 ## Q13 — LinkML and SHACL as substrate
 
 **Blocks:** Q1 and Q2, and it is close to irreversible once the schema format ships.

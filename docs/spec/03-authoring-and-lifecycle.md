@@ -52,7 +52,13 @@ Rules the engine enforces from the declaration alone:
   `lifecycle_sensitive`, so a current specification citing a superseded decision is
   a finding, automatically, for every such relation;
 - entering a state may require facets (a `superseded` document must name its
-  successor) or trigger reciprocal updates on the target.
+  successor) or trigger reciprocal updates on the target;
+- dwell in a non-terminal state is observable, not policed: `status_since` makes
+  "parked in `draft` for a year" a fact, `taxonomy audit` reports the dwell
+  distribution per state, and a shelf whose documents sit indefinitely in the
+  state that carries the fewest obligations is a finding about the shelf. A
+  document evading live-state obligations by never going live is the same
+  absence class participation expectations catch, one level down.
 
 **Correction versus succession** is a distinction the system takes seriously. A
 document is edited in place when it was wrong about the present. A *successor* is
