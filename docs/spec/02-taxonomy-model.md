@@ -890,7 +890,12 @@ with it. `docgov taxonomy validate` checks:
 - **purpose completeness** — every kind declares a purpose, and every declared
   purpose is served by at least one kind;
 - determinism — no two shelf patterns can match the same path ambiguously;
-- role uniqueness — at most one facet claims each engine-significant role;
+- role uniqueness — at most one facet claims each engine-significant role, and
+  the role registry is closed and lives here: `state`, `state_entered`,
+  `created`, `freshness`, `scent`. Every `role:` in a taxonomy and every list
+  of "special" facets elsewhere in this specification draws from this line; a
+  role outside it is a validation error, and adding one is a meta-schema
+  change, not a taxonomy change;
 - lifecycle soundness — the state machine is connected, has an initial state, and
   its terminal states are declared;
 - **relation coherence** — every relation names a valid family; nucleus–satellite

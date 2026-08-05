@@ -170,15 +170,21 @@ state, freshness, ownership, scope, audience, provenance, confidentiality, kind
 discriminators on heterogeneous shelves. The vocabulary of an enum facet is part of
 the schema, so extending it is a deliberate, reviewable, versioned change.
 
-Three facet roles are structurally special because the engine reasons about them:
+Five facet roles are engine-significant, and the registry is closed
+([spec 2](02-taxonomy-model.md#the-meta-schema) owns it):
 
-- the **state facet**, which the lifecycle regime interprets;
-- the **state-entry date**, stamped by each transition — the origin that windowed
-  participation expectations are measured from;
-- the **freshness facet**, which staleness detection interprets.
+- **`state`** — the lifecycle regime interprets it;
+- **`state_entered`** — stamped by each transition; the origin for
+  state-conditional participation windows;
+- **`created`** — set at scaffold time; the origin for windows with no state
+  condition;
+- **`freshness`** — staleness detection interprets it;
+- **`scent`** — what routing, indexes, and agent-facing pointers surface (the
+  `summary` facet in the default taxonomy).
 
 Which facet plays each role is declared, not assumed — a corpus may call its state
-facet `status`, `stage`, or `état`.
+facet `status`, `stage`, or `état` — but the roles themselves come only from the
+registry.
 
 ## Regimes
 
