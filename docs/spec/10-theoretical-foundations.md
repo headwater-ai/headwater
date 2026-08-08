@@ -1,19 +1,10 @@
 # 10 — Theoretical foundations
 
-The design so far was derived from practice. This document tests it against the
-research literature — mainly discourse linguistics, knowledge organization, and
-architecture-knowledge management — and records where the theory **confirms**,
-**sharpens**, or **contradicts** what specs 0–9 say.
+The design so far was derived from practice. This document tests it against the research literature — mainly discourse linguistics, knowledge organization, and architecture-knowledge management — and records where the theory **confirms**, **sharpens**, or **contradicts** what specs 0–9 say.
 
-Each entry states what the theory claims, what it gives us, and what changes as a
-result. Entries that change nothing are still worth having: they tell us which
-decisions are defensible rather than merely ours.
+Each entry states what the theory claims, what it gives us, and what changes as a result. Entries that change nothing are still worth having: they tell us which decisions are defensible rather than merely ours.
 
-> **Status.** All twenty changes have been applied to the specification — the five
-> structural ones first, then the additive remainder. The table in
-> [§G](#g-summary-of-changes-this-document-proposes) records where each landed. This
-> document is now a record of *why* the design is shaped as it is, not a list of
-> pending work.
+> **Status.** All twenty changes have been applied to the specification — the five structural ones first, then the additive remainder. The table in [§G](#g-summary-of-changes-this-document-proposes) records where each landed. This document is now a record of *why* the design is shaped as it is, not a list of pending work.
 
 ---
 
@@ -21,126 +12,53 @@ decisions are defensible rather than merely ours.
 
 ### A.1 Cohesion is not coherence — and we have been conflating them
 
-Halliday and Hasan (*Cohesion in English*, 1976) draw the distinction the whole
-design rests on. **Cohesion** is the set of surface ties that bind a text —
-reference, substitution, ellipsis, conjunction, lexical repetition. **Coherence**
-is the reader's experience of the text hanging together. Cohesion is a property of
-the artefact; coherence is a property of the encounter. Cohesion is necessary,
-nowhere near sufficient, and — importantly — *mechanically checkable* in a way
-coherence is not.
+Halliday and Hasan (*Cohesion in English*, 1976) draw the distinction the whole design rests on. **Cohesion** is the set of surface ties that bind a text — reference, substitution, ellipsis, conjunction, lexical repetition. **Coherence** is the reader's experience of the text hanging together. Cohesion is a property of the artefact; coherence is a property of the encounter. Cohesion is necessary, nowhere near sufficient, and — importantly — *mechanically checkable* in a way coherence is not.
 
-Everything spec 4 currently checks is cohesion: links resolve, relations are
-reciprocal, identifiers bind, vocabularies are respected. A corpus can pass all of
-it and remain incoherent — the documents can each be well-formed and collectively
-fail to add up.
+Everything spec 4 currently checks is cohesion: links resolve, relations are reciprocal, identifiers bind, vocabularies are respected. A corpus can pass all of it and remain incoherent — the documents can each be well-formed and collectively fail to add up.
 
-> **Change:** name the distinction explicitly in the assurance model, and stop
-> implying that a clean check run means a coherent corpus. Cohesion checks are
-> deterministic and blocking; coherence assessment is sampled, semantic, and belongs
-> to the audit and probe layers. Two obligations, two mechanisms, no pretending one
-> covers the other.
+> **Change:** name the distinction explicitly in the assurance model, and stop implying that a clean check run means a coherent corpus. Cohesion checks are deterministic and blocking; coherence assessment is sampled, semantic, and belongs to the audit and probe layers. Two obligations, two mechanisms, no pretending one covers the other.
 
 ### A.2 Nuclearity — some relations have a load-bearing end
 
-Rhetorical Structure Theory (Mann & Thompson, 1988) analyses text as a hierarchy of
-spans joined by coherence relations, and makes a distinction we lack: relations are
-either **nucleus–satellite** (hypotactic — the satellite supports the nucleus and
-can be removed without destroying the point) or **multinuclear** (paratactic — the
-spans are co-equal). RST's ~23 relations are less important than that structural
-asymmetry.
+Rhetorical Structure Theory (Mann & Thompson, 1988) analyses text as a hierarchy of spans joined by coherence relations, and makes a distinction we lack: relations are either **nucleus–satellite** (hypotactic — the satellite supports the nucleus and can be removed without destroying the point) or **multinuclear** (paratactic — the spans are co-equal). RST's ~23 relations are less important than that structural asymmetry.
 
-Our relations are currently flat: `supersedes`, `governs`, `derives_from`, `cites`
-all look alike to the engine. But they are not alike. A derived AI rule is a
-*satellite* of the standard it points at — delete it and nothing is lost that the
-nucleus does not still carry. A specification is a *nucleus*; its contract sidecar
-is a satellite. Two specifications describing halves of one seam are *multinuclear*.
+Our relations are currently flat: `supersedes`, `governs`, `derives_from`, `cites` all look alike to the engine. But they are not alike. A derived AI rule is a *satellite* of the standard it points at — delete it and nothing is lost that the nucleus does not still carry. A specification is a *nucleus*; its contract sidecar is a satellite. Two specifications describing halves of one seam are *multinuclear*.
 
-> **Change:** add `nuclearity` to the relation declaration. It pays for itself
-> immediately: satellite documents inherit lifecycle from their nucleus (a satellite
-> of a superseded document is itself stale, automatically); pruning for context
-> budgets drops satellites before nuclei; orphan detection distinguishes "unlinked
-> nucleus" (a real problem) from "unlinked satellite" (a bug in generation).
+> **Change:** add `nuclearity` to the relation declaration. It pays for itself immediately: satellite documents inherit lifecycle from their nucleus (a satellite of a superseded document is itself stale, automatically); pruning for context budgets drops satellites before nuclei; orphan detection distinguishes "unlinked nucleus" (a real problem) from "unlinked satellite" (a bug in generation).
 
 ### A.3 Coherence relations cluster into a few families
 
-Hobbs (1985) and Kehler (*Coherence, Reference, and the Theory of Grammar*, 2002)
-both argue that the sprawling relation inventories collapse to a small number of
-families — Kehler's are **Resemblance**, **Cause–Effect**, and **Contiguity**. The
-practical lesson from decades of RST annotation is that large flat relation sets
-produce poor inter-annotator agreement: humans cannot reliably choose between forty
-labels.
+Hobbs (1985) and Kehler (*Coherence, Reference, and the Theory of Grammar*, 2002) both argue that the sprawling relation inventories collapse to a small number of families — Kehler's are **Resemblance**, **Cause–Effect**, and **Contiguity**. The practical lesson from decades of RST annotation is that large flat relation sets produce poor inter-annotator agreement: humans cannot reliably choose between forty labels.
 
-An open relation vocabulary in a taxonomy will sprawl the same way, and adopters
-will apply it inconsistently.
+An open relation vocabulary in a taxonomy will sprawl the same way, and adopters will apply it inconsistently.
 
-> **Change:** relation types declare a **family** from a small fixed set
-> (`succession`, `derivation`, `governance`, `evidence`, `composition`,
-> `association`). Families carry default checking semantics, so a new relation type
-> inherits sensible behaviour, and the schema validator can flag a taxonomy that has
-> grown twelve near-synonymous relations in one family.
+> **Change:** relation types declare a **family** from a small fixed set (`succession`, `derivation`, `governance`, `evidence`, `composition`, `association`). Families carry default checking semantics, so a new relation type inherits sensible behaviour, and the schema validator can flag a taxonomy that has grown twelve near-synonymous relations in one family.
 
 ### A.4 Intentional structure — the missing dimension
 
-Grosz and Sidner ("Attention, Intentions, and the Structure of Discourse",
-*Computational Linguistics*, 1986) decompose discourse into three interacting
-components: **linguistic structure** (the utterances), **intentional structure**
-(the purposes behind segments, and the dominance and satisfaction-precedence
-relations between them), and **attentional state** (what is in focus now).
+Grosz and Sidner ("Attention, Intentions, and the Structure of Discourse", *Computational Linguistics*, 1986) decompose discourse into three interacting components: **linguistic structure** (the utterances), **intentional structure** (the purposes behind segments, and the dominance and satisfaction-precedence relations between them), and **attentional state** (what is in focus now).
 
-Mapped onto a corpus: linguistic structure is the file tree we model well; the
-intentional structure is *purpose and the subordination of purposes*, which we model
-only weakly (a shelf implies purpose, a `type:` facet refines it); attentional state
-is exactly the agent context-window problem of spec 5.
+Mapped onto a corpus: linguistic structure is the file tree we model well; the intentional structure is *purpose and the subordination of purposes*, which we model only weakly (a shelf implies purpose, a `type:` facet refines it); attentional state is exactly the agent context-window problem of spec 5.
 
-The gap is dominance. We record that document A supersedes B, but not that A's
-*purpose* subordinates B's — that B exists in service of A. That is the relation a
-reader most needs when deciding what to read, and the one an agent needs when
-deciding what to load.
+The gap is dominance. We record that document A supersedes B, but not that A's *purpose* subordinates B's — that B exists in service of A. That is the relation a reader most needs when deciding what to read, and the one an agent needs when deciding what to load.
 
-> **Change:** treat purpose as first-class — every kind declares the reader intent
-> it serves, and reading precedence between linked documents is derived from
-> nuclearity and succession. (As first applied this was a per-relation `dominance`
-> declaration; the core-concepts review found it redundant wherever those two
-> already determined it and unused elsewhere, so it is now derived, not declared.)
-> This is the theoretical
-> justification for the routing layer in spec 5: routing is a search over intentional
-> structure, not over text. It also reframes context budgeting as attentional-state
-> management, which is a better-posed problem than "fit under N tokens".
+> **Change:** treat purpose as first-class — every kind declares the reader intent it serves, and reading precedence between linked documents is derived from nuclearity and succession. (As first applied this was a per-relation `dominance` declaration; the core-concepts review found it redundant wherever those two already determined it and unused elsewhere, so it is now derived, not declared.) This is the theoretical justification for the routing layer in spec 5: routing is a search over intentional structure, not over text. It also reframes context budgeting as attentional-state management, which is a better-posed problem than "fit under N tokens".
 
 ### A.5 Local coherence: continuity of focus
 
-Centering Theory (Grosz, Joshi & Weinstein, *Computational Linguistics*, 1995)
-models local coherence as continuity of the entity in focus across adjacent
-utterances, and ranks transition types by the inference cost they impose.
+Centering Theory (Grosz, Joshi & Weinstein, *Computational Linguistics*, 1995) models local coherence as continuity of the entity in focus across adjacent utterances, and ranks transition types by the inference cost they impose.
 
-The corpus analogue is cheap and useful: a link between two documents with no shared
-subject — no common component, domain, identifier, or anchor — is a **focus shift**,
-and a shelf full of them is a corpus a reader cannot traverse without re-orienting
-at every hop.
+The corpus analogue is cheap and useful: a link between two documents with no shared subject — no common component, domain, identifier, or anchor — is a **focus shift**, and a shelf full of them is a corpus a reader cannot traverse without re-orienting at every hop.
 
-> **Change:** an advisory *transition-continuity* check. For each relation edge,
-> compute shared facets and anchors; report edges with no continuity. Advisory
-> forever — some shifts are legitimate — but the *distribution* is a genuine
-> corpus-health metric, and the first one we have that measures coherence rather
-> than cohesion.
+> **Change:** an advisory *transition-continuity* check. For each relation edge, compute shared facets and anchors; report edges with no continuity. Advisory forever — some shifts are legitimate — but the *distribution* is a genuine corpus-health metric, and the first one we have that measures coherence rather than cohesion.
 
 ### A.6 Hypertext already learned this
 
-Thüring, Hannemann and Haake ("Hypermedia and Cognition: Designing for
-Comprehension", *CACM* 38(8), 1995) studied comprehension in networked documents
-and identified two forces: coherence as the positive influence, **cognitive
-overhead** as the negative one — the cost of deciding where to go, and of holding
-your place while you go there. Their design principles: make relations explicit and
-typed, preserve context across transitions, and provide overview maps.
+Thüring, Hannemann and Haake ("Hypermedia and Cognition: Designing for Comprehension", *CACM* 38(8), 1995) studied comprehension in networked documents and identified two forces: coherence as the positive influence, **cognitive overhead** as the negative one — the cost of deciding where to go, and of holding your place while you go there. Their design principles: make relations explicit and typed, preserve context across transitions, and provide overview maps.
 
-This is the closest prior art to what we are building, and it validates three
-choices: typed relations over bare links, generated overview projections, and
-pointers-with-summaries rather than content in the routing layer (each pointer is a
-navigation decision, and every navigation decision costs).
+This is the closest prior art to what we are building, and it validates three choices: typed relations over bare links, generated overview projections, and pointers-with-summaries rather than content in the routing layer (each pointer is a navigation decision, and every navigation decision costs).
 
-> **Change:** none — but adopt cognitive overhead as an explicit design budget.
-> Every added navigation hop needs a justification, and "the taxonomy is elegant" is
-> not one.
+> **Change:** none — but adopt cognitive overhead as an explicit design budget. Every added navigation hop needs a justification, and "the taxonomy is elegant" is not one.
 
 ---
 
@@ -148,107 +66,48 @@ navigation decision, and every navigation decision costs).
 
 ### B.1 Kruchten's decision-relationship ontology
 
-Kruchten ("An Ontology of Architectural Design Decisions in Software-Intensive
-Systems", 2004) enumerates relationships between design decisions: *constrains,
-forbids, enables, subsumes, conflicts with, overrides, comprises, is bound to, is an
-alternative to, is related to, traces to, does not comply with.*
+Kruchten ("An Ontology of Architectural Design Decisions in Software-Intensive Systems", 2004) enumerates relationships between design decisions: *constrains, forbids, enables, subsumes, conflicts with, overrides, comprises, is bound to, is an alternative to, is related to, traces to, does not comply with.*
 
-Our decision relations are `supersedes` / `superseded_by` / `refines` — the temporal
-axis only. Kruchten's set is mostly *logical*: `conflicts with` and `constrains` say
-things about simultaneously live decisions that succession cannot express. A corpus
-holding two current decisions that conflict is incoherent in a way no reciprocity
-check will ever detect.
+Our decision relations are `supersedes` / `superseded_by` / `refines` — the temporal axis only. Kruchten's set is mostly *logical*: `conflicts with` and `constrains` say things about simultaneously live decisions that succession cannot express. A corpus holding two current decisions that conflict is incoherent in a way no reciprocity check will ever detect.
 
-> **Change:** ship Kruchten's set (or a defensible subset) as the default
-> taxonomy's decision-relation vocabulary, rather than inventing our own. `conflicts
-> with` and `constrains` in particular buy real checks: a conflict between two
-> `current` decisions is a finding, and a decision constrained by a superseded one
-> needs review.
+> **Change:** ship Kruchten's set (or a defensible subset) as the default taxonomy's decision-relation vocabulary, rather than inventing our own. `conflicts with` and `constrains` in particular buy real checks: a conflict between two `current` decisions is a finding, and a decision constrained by a superseded one needs review.
 
 ### B.2 Faceted classification — the discipline behind facets
 
-Ranganathan's facet analysis and its later formalisation (Vickery, 1960) is the
-grounding for spec 2's facet model. The transferable rules: facets should be
-**orthogonal** (a document's value on one facet must not determine its value on
-another), each facet needs a stated **principle of division**, and Ranganathan's
-canons give real acceptance tests — *differentiation* (the facet must actually
-separate documents), *relevance* (to the purpose of the scheme), *ascertainability*
-(an author must be able to determine the value without ambiguity), and *permanence*
-(the value must not change for incidental reasons).
+Ranganathan's facet analysis and its later formalisation (Vickery, 1960) is the grounding for spec 2's facet model. The transferable rules: facets should be **orthogonal** (a document's value on one facet must not determine its value on another), each facet needs a stated **principle of division**, and Ranganathan's canons give real acceptance tests — *differentiation* (the facet must actually separate documents), *relevance* (to the purpose of the scheme), *ascertainability* (an author must be able to determine the value without ambiguity), and *permanence* (the value must not change for incidental reasons).
 
-> **Change:** add these as schema-validation checks. Orthogonality is measurable
-> over an existing corpus — if two facets' values are near-perfectly correlated, one
-> is redundant and the validator should say so. Ascertainability becomes a
-> requirement that every enum facet's value document how to choose. This turns
-> "is this a good facet?" from taste into a test.
+> **Change:** add these as schema-validation checks. Orthogonality is measurable over an existing corpus — if two facets' values are near-perfectly correlated, one is redundant and the validator should say so. Ascertainability becomes a requirement that every enum facet's value document how to choose. This turns "is this a good facet?" from taste into a test.
 
 ### B.3 OntoClean — why kind and state must stay separate
 
-Guarino and Welty's OntoClean validates taxonomies using meta-properties: **rigidity**
-(does the property hold for an instance in every possible world?), **identity**,
-**unity**, and **dependence**. Its central rule is that an anti-rigid class cannot
-subsume a rigid one.
+Guarino and Welty's OntoClean validates taxonomies using meta-properties: **rigidity** (does the property hold for an instance in every possible world?), **identity**, **unity**, and **dependence**. Its central rule is that an anti-rigid class cannot subsume a rigid one.
 
-Apply it to us: *specification* is rigid — a specification cannot stop being one and
-remain the same document. *Draft* is anti-rigid — a document passes through it.
-Therefore lifecycle state must never be modelled as a kind. Spec 3 already separates
-them; OntoClean explains **why**, which matters the next time someone proposes a
-`docs/drafts/` shelf, or a kind called "deprecated standard".
+Apply it to us: *specification* is rigid — a specification cannot stop being one and remain the same document. *Draft* is anti-rigid — a document passes through it. Therefore lifecycle state must never be modelled as a kind. Spec 3 already separates them; OntoClean explains **why**, which matters the next time someone proposes a `docs/drafts/` shelf, or a kind called "deprecated standard".
 
-> **Change:** none to the model — but adopt the meta-properties as the
-> taxonomy-review vocabulary, and add a validator check that flags kinds whose names
-> match state-facet values. Cheap, and it catches the single most common taxonomy
-> mistake.
+> **Change:** none to the model — but adopt the meta-properties as the taxonomy-review vocabulary, and add a validator check that flags kinds whose names match state-facet values. Cheap, and it catches the single most common taxonomy mistake.
 
 ### B.4 SKOS and ISO 25964 — the federation answer already exists
 
-SKOS (W3C, 2009) and ISO 25964 standardise exactly what spec 2 defines ad hoc:
-concept schemes, hierarchical (broader/narrower), associative (related), and
-equivalence relations — plus, critically, **mapping relations between schemes**
-(`exactMatch`, `closeMatch`, `broadMatch`, `narrowMatch`).
+SKOS (W3C, 2009) and ISO 25964 standardise exactly what spec 2 defines ad hoc: concept schemes, hierarchical (broader/narrower), associative (related), and equivalence relations — plus, critically, **mapping relations between schemes** (`exactMatch`, `closeMatch`, `broadMatch`, `narrowMatch`).
 
-That mapping vocabulary is the unsolved part of Q9 (multi-repository corpora). Two
-divisions with different taxonomies do not need a merged taxonomy; they need
-declared mappings between their concept schemes, which is a solved problem with a
-standard.
+That mapping vocabulary is the unsolved part of Q9 (multi-repository corpora). Two divisions with different taxonomies do not need a merged taxonomy; they need declared mappings between their concept schemes, which is a solved problem with a standard.
 
-> **Change:** model cross-taxonomy federation as SKOS-style mapping relations rather
-> than as a merge. Consider emitting the resolved taxonomy as SKOS/RDF alongside the
-> native lock — free interoperability with existing KOS tooling, and a sanity check
-> that our model is expressible in a standard one.
+> **Change:** model cross-taxonomy federation as SKOS-style mapping relations rather than as a merge. Consider emitting the resolved taxonomy as SKOS/RDF alongside the native lock — free interoperability with existing KOS tooling, and a sanity check that our model is expressible in a standard one.
 
 ### B.5 Traceability information models — our idea has a name and a literature
 
-A **Traceability Information Model** declares permitted artefact types, link types,
-and their directions, and the tracing tools are driven by it. That is precisely
-"taxonomy as configuration". Ramesh and Jarke ("Toward reference models for
-requirements traceability", *IEEE TSE*, 2001) derived reference models empirically
-from practice — including the finding that organisations cluster into low-end and
-high-end traceability users, which is exactly our "small team vs regulated platform"
-split in spec 2.
+A **Traceability Information Model** declares permitted artefact types, link types, and their directions, and the tracing tools are driven by it. That is precisely "taxonomy as configuration". Ramesh and Jarke ("Toward reference models for requirements traceability", *IEEE TSE*, 2001) derived reference models empirically from practice — including the finding that organisations cluster into low-end and high-end traceability users, which is exactly our "small team vs regulated platform" split in spec 2.
 
 The Grand Challenge of Traceability work (Gotel, Cleland-Huang et al., 2012; revisited
-2017) carries the harder lesson: traceability fails not on modelling but on
-**creation and maintenance cost**. Manually created links decay because the person
-paying the cost is not the person receiving the benefit.
+2017) carries the harder lesson: traceability fails not on modelling but on **creation and maintenance cost**. Manually created links decay because the person paying the cost is not the person receiving the benefit.
 
-> **Change:** adopt the reference-model framing and — more importantly — treat link
-> creation cost as a first-class design constraint. Every relation in the default
-> taxonomy must be derivable from work the author is already doing (a commit, a
-> template field, a scaffolded document) or it will not survive contact with a
-> deadline. Add "what creates this edge, and who pays?" to the relation declaration
-> review checklist.
+> **Change:** adopt the reference-model framing and — more importantly — treat link creation cost as a first-class design constraint. Every relation in the default taxonomy must be derivable from work the author is already doing (a commit, a template field, a scaffolded document) or it will not survive contact with a deadline. Add "what creates this edge, and who pays?" to the relation declaration review checklist.
 
 ### B.6 Provenance has a standard model
 
-W3C PROV (entities, activities, agents; `wasDerivedFrom`, `wasRevisionOf`,
-`wasGeneratedBy`) already models what our lineage relations approximate — including
-the agent dimension, which matters now that documents are drafted by both humans and
-LLMs.
+W3C PROV (entities, activities, agents; `wasDerivedFrom`, `wasRevisionOf`, `wasGeneratedBy`) already models what our lineage relations approximate — including the agent dimension, which matters now that documents are drafted by both humans and LLMs.
 
-> **Change:** align lineage relation semantics with PROV, and record the generating
-> agent on derived artefacts. "Which of these documents were agent-drafted, and did
-> a human accept them?" becomes a query rather than an archaeology exercise.
+> **Change:** align lineage relation semantics with PROV, and record the generating agent on derived artefacts. "Which of these documents were agent-drafted, and did a human accept them?" becomes a query rather than an archaeology exercise.
 
 ---
 
@@ -256,70 +115,31 @@ LLMs.
 
 ### C.1 Genre theory grounds "kind" — and warns us
 
-Yates and Orlikowski (*Academy of Management Review*, 1992; *ASQ*, 1994; *Journal of
-Business Communication*, 2002) define **genres** as socially recognised types of
-communicative action characterised by shared *purpose* and *form*, define a
-**genre repertoire** as the set a community actually enacts, and define **genre
-systems** as sequences of interrelated genres that structure work.
+Yates and Orlikowski (*Academy of Management Review*, 1992; *ASQ*, 1994; *Journal of Business Communication*, 2002) define **genres** as socially recognised types of communicative action characterised by shared *purpose* and *form*, define a **genre repertoire** as the set a community actually enacts, and define **genre systems** as sequences of interrelated genres that structure work.
 
 Three consequences:
 
-1. Our "kind" is a genre. Purpose plus form is exactly the kind declaration —
-   theoretically solid, and it confirms that a kind without a stated purpose is
-   incoherent by construction.
-2. Genres are **emergent and social**, not imposed. A taxonomy handed down and
-   frozen will be worked around. This is the strongest theoretical argument for
-   overlays and versioned evolution — and against a single blessed taxonomy.
-3. **Genre systems are sequences**, and we do not model sequence at all. Proposal →
-   decision → specification → evidence is a genre system; so is incident → postmortem
-   → standard change.
+1. Our "kind" is a genre. Purpose plus form is exactly the kind declaration — theoretically solid, and it confirms that a kind without a stated purpose is incoherent by construction.
+2. Genres are **emergent and social**, not imposed. A taxonomy handed down and frozen will be worked around. This is the strongest theoretical argument for overlays and versioned evolution — and against a single blessed taxonomy.
+3. **Genre systems are sequences**, and we do not model sequence at all. Proposal → decision → specification → evidence is a genre system; so is incident → postmortem → standard change.
 
-> **Change:** add optional **sequence expectations** to the taxonomy — declared
-> chains of kinds where one is expected to follow another. This yields the detective
-> control we currently lack: decisions with no downstream specification, incidents
-> with no postmortem, proposals that were accepted and then never implemented. That
-> is drift the cohesion checks cannot see, and it is the failure mode people
-> complain about most. (As first applied these were a separate top-level
-> declaration; the core-concepts review showed every declared chain was a single
-> windowed hop and folded them into
-> [relation participation](02-taxonomy-model.md#participation-expectations),
-> which also forced the window-origin definition the mechanism had been missing.)
+> **Change:** add optional **sequence expectations** to the taxonomy — declared chains of kinds where one is expected to follow another. This yields the detective control we currently lack: decisions with no downstream specification, incidents with no postmortem, proposals that were accepted and then never implemented. That is drift the cohesion checks cannot see, and it is the failure mode people complain about most. (As first applied these were a separate top-level declaration; the core-concepts review showed every declared chain was a single windowed hop and folded them into [relation participation](02-taxonomy-model.md#participation-expectations), which also forced the window-origin definition the mechanism had been missing.)
 
 ### C.2 Boundary objects — publisher and consumer
 
-Star and Griesemer (*Social Studies of Science*, 1989) define **boundary objects** as
-artefacts "plastic enough to adapt to local needs… yet robust enough to maintain a
-common identity across sites", weakly structured in common use and strongly
-structured in local use.
+Star and Griesemer (*Social Studies of Science*, 1989) define **boundary objects** as artefacts "plastic enough to adapt to local needs… yet robust enough to maintain a common identity across sites", weakly structured in common use and strongly structured in local use.
 
-That is the taxonomy package, stated better than spec 7 states it. But it carries a
-requirement we have not met: for identity to hold across sites, something must be
-*invariant*. Our overlay algebra currently lets a consumer override or remove almost
-anything, which means two consumers of "the same" taxonomy may share nothing.
+That is the taxonomy package, stated better than spec 7 states it. But it carries a requirement we have not met: for identity to hold across sites, something must be *invariant*. Our overlay algebra currently lets a consumer override or remove almost anything, which means two consumers of "the same" taxonomy may share nothing.
 
-> **Change:** the taxonomy package declares a **core** — the kinds, relations, and
-> facets that overlays may extend but never remove or redefine. Conformance checks
-> the core, not the whole. This gives the publisher a real answer to "are they still
-> using our method?" and gives the consumer a bounded, legible customisation surface.
+> **Change:** the taxonomy package declares a **core** — the kinds, relations, and facets that overlays may extend but never remove or redefine. Conformance checks the core, not the whole. This gives the publisher a real answer to "are they still using our method?" and gives the consumer a bounded, legible customisation surface.
 
 ### C.3 The design-rationale capture bottleneck
 
-The design-rationale tradition — IBIS (Kunz & Rittel, 1970), gIBIS (Conklin &
-Begeman, 1988), QOC (MacLean et al., 1991), Toulmin's argument structure (1958) —
-produced rich models and almost no sustained adoption. Grudin's analysis of why is
-the durable result: **capture costs the author and benefits someone else, later.**
-Every system that ignored that asymmetry died.
+The design-rationale tradition — IBIS (Kunz & Rittel, 1970), gIBIS (Conklin & Begeman, 1988), QOC (MacLean et al., 1991), Toulmin's argument structure (1958) — produced rich models and almost no sustained adoption. Grudin's analysis of why is the durable result: **capture costs the author and benefits someone else, later.** Every system that ignored that asymmetry died.
 
-Our decision records inherit the entire problem, and our evidence stop rule
-*increases* author cost in exchange for corpus quality. That trade may well be right,
-but it is the trade that historically kills these systems.
+Our decision records inherit the entire problem, and our evidence stop rule *increases* author cost in exchange for corpus quality. That trade may well be right, but it is the trade that historically kills these systems.
 
-> **Change:** treat author cost as a tracked metric, not an afterthought. This is
-> the strongest argument in the whole document for the agent-assisted authoring path
-> of spec 5: an agent that drafts the record from the evidence already in the commit,
-> the ticket, and the conversation shifts the cost off the author — which is the
-> first genuinely new answer to Grudin's objection in thirty years. If we cannot
-> demonstrate that shift, we should expect the same adoption curve as gIBIS.
+> **Change:** treat author cost as a tracked metric, not an afterthought. This is the strongest argument in the whole document for the agent-assisted authoring path of spec 5: an agent that drafts the record from the evidence already in the commit, the ticket, and the conversation shifts the cost off the author — which is the first genuinely new answer to Grudin's objection in thirty years. If we cannot demonstrate that shift, we should expect the same adoption curve as gIBIS.
 
 ---
 
@@ -327,37 +147,17 @@ but it is the trade that historically kills these systems.
 
 ### D.1 Ontology evolution is not schema evolution
 
-Noy and Klein ("Ontology Evolution: Not the Same as Schema Evolution", *KAIS*, 2004)
-show that ontology change differs from database schema change: there is no clean
-separation between evolution and versioning, and **compatibility is multi-dimensional**
-— instance-data preservation, consequence preservation, and consistency preservation
-are distinct properties, and a change can preserve one while breaking another.
+Noy and Klein ("Ontology Evolution: Not the Same as Schema Evolution", *KAIS*, 2004) show that ontology change differs from database schema change: there is no clean separation between evolution and versioning, and **compatibility is multi-dimensional** — instance-data preservation, consequence preservation, and consistency preservation are distinct properties, and a change can preserve one while breaking another.
 
-Spec 2 originally carried a version table (minor for additive, major for anything
-else) — precisely the naive schema-evolution model this paper argues against. Adding
-an optional facet is "additive" and yet can change which documents a projection
-includes, or make a previously valid corpus fail a completeness check.
+Spec 2 originally carried a version table (minor for additive, major for anything else) — precisely the naive schema-evolution model this paper argues against. Adding an optional facet is "additive" and yet can change which documents a projection includes, or make a previously valid corpus fail a completeness check.
 
-> **Change:** replace the coarse semver table with declared **compatibility
-> dimensions**, evaluated against a real corpus. `docgov taxonomy diff` should report
-> per dimension: does every existing document still classify to the same kind (identity
-> preservation)? does every check that passed still pass (consequence preservation)?
-> do projections produce the same outputs? The version number becomes a *consequence*
-> of the measured impact, not a publisher's guess about it.
+> **Change:** replace the coarse semver table with declared **compatibility dimensions**, evaluated against a real corpus. `docgov taxonomy diff` should report per dimension: does every existing document still classify to the same kind (identity preservation)? does every check that passed still pass (consequence preservation)? do projections produce the same outputs? The version number becomes a *consequence* of the measured impact, not a publisher's guess about it.
 
 ### D.2 Overlays are a variability problem with prior art
 
-Software product line research — feature models (Kang et al., 1990), staged
-configuration (Czarnecki et al.), and delta-oriented programming (Schaefer et al.) —
-has thoroughly worked the "base plus modifications" ground. Delta modelling in
-particular formalises exactly our add/override/remove operations, including
-application-order constraints and the conditions under which a delta set is
-confluent.
+Software product line research — feature models (Kang et al., 1990), staged configuration (Czarnecki et al.), and delta-oriented programming (Schaefer et al.) — has thoroughly worked the "base plus modifications" ground. Delta modelling in particular formalises exactly our add/override/remove operations, including application-order constraints and the conditions under which a delta set is confluent.
 
-> **Change:** borrow the confluence requirement explicitly. Spec 2 says conflicting
-> overlays are an error; the delta literature says how to *decide* that statically.
-> Adopt the check rather than deriving it again, and state that overlay application
-> must be confluent as a schema-validation property.
+> **Change:** borrow the confluence requirement explicitly. Spec 2 says conflicting overlays are an error; the delta literature says how to *decide* that statically. Adopt the check rather than deriving it again, and state that overlay application must be confluent as a schema-validation property.
 
 ---
 
@@ -365,42 +165,23 @@ confluent.
 
 ### E.1 Information foraging — routing has a theory
 
-Pirolli and Card (*Psychological Review*, 1999) model information seeking as
-foraging: readers follow **information scent** — proximal cues that predict distal
-value — and abandon a patch when the scent weakens. Scent quality, not corpus
-quality, determines whether anything is found.
+Pirolli and Card (*Psychological Review*, 1999) model information seeking as foraging: readers follow **information scent** — proximal cues that predict distal value — and abandon a patch when the scent weakens. Scent quality, not corpus quality, determines whether anything is found.
 
-This is the theoretical justification for spec 5's pointers-with-summaries design,
-and it relocates where the effort should go: the `summary` facet is the corpus's
-entire scent surface. A perfect document with a vague summary is invisible.
+This is the theoretical justification for spec 5's pointers-with-summaries design, and it relocates where the effort should go: the `summary` facet is the corpus's entire scent surface. A perfect document with a vague summary is invisible.
 
-> **Change:** treat summary quality as a first-class assurance concern rather than a
-> front-matter formality, and frame the routing confidence gate in scent terms — the
-> engine stays silent when scent is weak, because a misleading cue costs more than an
-> absent one. Probe categories map directly onto foraging outcomes.
+> **Change:** treat summary quality as a first-class assurance concern rather than a front-matter formality, and frame the routing confidence gate in scent terms — the engine stays silent when scent is weak, because a misleading cue costs more than an absent one. Probe categories map directly onto foraging outcomes.
 
 ### E.2 Cognitive dimensions — how to evaluate the schema language
 
-Green and Petre's **cognitive dimensions of notations** framework (1996) is the
-standard instrument for evaluating a notation: viscosity (cost of change), hidden
-dependencies, premature commitment, role-expressiveness, error-proneness, abstraction
-gradient, and others.
+Green and Petre's **cognitive dimensions of notations** framework (1996) is the standard instrument for evaluating a notation: viscosity (cost of change), hidden dependencies, premature commitment, role-expressiveness, error-proneness, abstraction gradient, and others.
 
-Q2 (schema format) is currently an argument about YAML versus CUE. It should be an
-evaluation.
+Q2 (schema format) is currently an argument about YAML versus CUE. It should be an evaluation.
 
-> **Change:** settle Q2 with a cognitive-dimensions walkthrough over concrete
-> authoring scenarios (add a kind; rename a shelf; split a facet). Hidden
-> dependencies and viscosity are the dimensions that will decide it — and note that
-> our overlay design *deliberately trades* viscosity for hidden dependencies, which
-> is exactly the trade-off the framework exists to make visible.
+> **Change:** settle Q2 with a cognitive-dimensions walkthrough over concrete authoring scenarios (add a kind; rename a shelf; split a facet). Hidden dependencies and viscosity are the dimensions that will decide it — and note that our overlay design *deliberately trades* viscosity for hidden dependencies, which is exactly the trade-off the framework exists to make visible.
 
 ### E.3 Minimalism
 
-Carroll's minimalist doctrine (*The Nurnberg Funnel*, 1990) — cut everything that
-does not support action, start from the reader's task — is the research behind spec
-0's "every rule earns its place", and behind the size budgets of spec 5. Worth
-citing precisely because that principle is the one people push back on.
+Carroll's minimalist doctrine (*The Nurnberg Funnel*, 1990) — cut everything that does not support action, start from the reader's task — is the research behind spec 0's "every rule earns its place", and behind the size budgets of spec 5. Worth citing precisely because that principle is the one people push back on.
 
 ---
 
@@ -408,67 +189,38 @@ citing precisely because that principle is the one people push back on.
 
 ### F.1 Ground the obligations in observed defects
 
-Aghajani et al. ("Software Documentation Issues Unveiled", ICSE 2019; "Software
-Documentation: The Practitioners' Perspective", ICSE 2020) derived a taxonomy of
-documentation defects from mining and from practitioner surveys, spanning
-information content (incorrect, incomplete, outdated), presentation, and process.
+Aghajani et al. ("Software Documentation Issues Unveiled", ICSE 2019; "Software Documentation: The Practitioners' Perspective", ICSE 2020) derived a taxonomy of documentation defects from mining and from practitioner surveys, spanning information content (incorrect, incomplete, outdated), presentation, and process.
 
-Our obligation set in spec 4 was invented from experience. There is no reason for
-that when an empirically derived defect taxonomy exists.
+Our obligation set in spec 4 was invented from experience. There is no reason for that when an empirically derived defect taxonomy exists.
 
-> **Change:** derive the default obligation set from a published defect taxonomy,
-> and record the mapping. Every obligation then answers "which observed defect class
-> does this prevent?" — which is both a better filter than intuition and a real
-> answer to "why are you making me do this?".
+> **Change:** derive the default obligation set from a published defect taxonomy, and record the mapping. Every obligation then answers "which observed defect class does this prevent?" — which is both a better filter than intuition and a real answer to "why are you making me do this?".
 
 ### F.2 Stale documentation is still used
 
-Lethbridge, Singer and Forward (*IEEE Software*, 2003) found engineers rely on
-documentation known to be out of date, using it as an imperfect but valuable guide.
+Lethbridge, Singer and Forward (*IEEE Software*, 2003) found engineers rely on documentation known to be out of date, using it as an imperfect but valuable guide.
 
-> **Change:** none — this is direct empirical support for spec 3's decision that
-> staleness is detective and never blocking. Gating on freshness would remove
-> artefacts that are demonstrably still useful.
+> **Change:** none — this is direct empirical support for spec 3's decision that staleness is detective and never blocking. Gating on freshness would remove artefacts that are demonstrably still useful.
 
 ### F.3 Rational reconstruction is legitimate
 
 Parnas and Clements ("A Rational Design Process: How and Why to Fake It", *IEEE TSE*,
-1986) argue that the real process is never rational, and that documenting it *as if*
-it were is both honest and valuable, provided the reconstruction is labelled.
+1986) argue that the real process is never rational, and that documenting it *as if* it were is both honest and valuable, provided the reconstruction is labelled.
 
-This sits in productive tension with our evidence stop rule. Reconstructing rationale
-after the fact is legitimate; *fabricating* it is not, and the line between them is
-whether the reconstruction is grounded in auditable evidence and marked as
-reconstructed.
+This sits in productive tension with our evidence stop rule. Reconstructing rationale after the fact is legitimate; *fabricating* it is not, and the line between them is whether the reconstruction is grounded in auditable evidence and marked as reconstructed.
 
-> **Change:** the stop rule stays, but a **reconstructed** provenance value is added
-> alongside evidence-backed and gap. That is the honest third option, and its absence
-> currently pushes authors toward one of the other two.
+> **Change:** the stop rule stays, but a **reconstructed** provenance value is added alongside evidence-backed and gap. That is the honest third option, and its absence currently pushes authors toward one of the other two.
 
 ### F.4 Agent context files drift — measured, not assumed
 
-Recent empirical work on agent context files ("Agent READMEs: An Empirical Study of
-Context Files for Agentic Coding", 2025, and the 2026 studies of rule taxonomies in
-AI IDEs) finds that these files grow over time, are inconsistently maintained, and
-drift from the codebase they describe — the same decay curve as any other
-documentation, on a shorter timescale.
+Recent empirical work on agent context files ("Agent READMEs: An Empirical Study of Context Files for Agentic Coding", 2025, and the 2026 studies of rule taxonomies in AI IDEs) finds that these files grow over time, are inconsistently maintained, and drift from the codebase they describe — the same decay curve as any other documentation, on a shorter timescale.
 
-> **Change:** none — this is empirical support for the two things spec 5 already
-> insists on: rule files are *generated projections* checked in CI rather than
-> hand-maintained prose, and they are size-budgeted. The literature says hand-written
-> agent context is a decaying asset; our design already refuses to hand-write it.
+> **Change:** none — this is empirical support for the two things spec 5 already insists on: rule files are *generated projections* checked in CI rather than hand-maintained prose, and they are size-budgeted. The literature says hand-written agent context is a decaying asset; our design already refuses to hand-write it.
 
 ### F.5 Structured retrieval versus embeddings
 
-Current GraphRAG and KG-RAG work reports that graph-structured retrieval outperforms
-pure vector similarity on multi-hop and relational queries, while vector retrieval
-remains stronger for fuzzy lexical matching — with hybrid designs the practical
-default, at the cost of two indexes to keep in step.
+Current GraphRAG and KG-RAG work reports that graph-structured retrieval outperforms pure vector similarity on multi-hop and relational queries, while vector retrieval remains stronger for fuzzy lexical matching — with hybrid designs the practical default, at the cost of two indexes to keep in step.
 
-> **Change:** none — this supports spec 5's "graph first, embeddings at most a
-> fallback". Worth noting the literature's operational warning in Q6: a second index
-> is a second thing to keep fresh, and our corpus is small enough that the graph
-> should win outright.
+> **Change:** none — this supports spec 5's "graph first, embeddings at most a fallback". Worth noting the literature's operational warning in Q6: a second index is a second thing to keep fresh, and our corpus is small enough that the graph should win outright.
 
 ---
 
@@ -497,10 +249,7 @@ default, at the cost of two indexes to keep in step.
 | 19 | Derive default obligations from an empirical defect taxonomy | 4 | Aghajani et al. | **applied** |
 | 20 | Add `reconstructed` as a third provenance value | 3 | Parnas & Clements | **applied** |
 
-All twenty are applied. The five structural changes (2, 4, 12, 13, 15) landed first,
-because they altered the schema itself; change 3 came with them, since change 4's
-precedence semantics needed families to exist first. The remaining fourteen were
-additive and landed against the schema as it then stood.
+All twenty are applied. The five structural changes (2, 4, 12, 13, 15) landed first, because they altered the schema itself; change 3 came with them, since change 4's precedence semantics needed families to exist first. The remaining fourteen were additive and landed against the schema as it then stood.
 
 Where they ended up:
 
@@ -517,74 +266,33 @@ Where they ended up:
 
 ### What the theory did not settle
 
-Applying every change does not mean the design is finished. Three things the
-literature sharpened but could not decide, all still open in
-[spec 9](09-open-questions.md):
+Applying every change does not mean the design is finished. Three things the literature sharpened but could not decide, all still open in [spec 9](09-open-questions.md):
 
-- **Whether the assisted fraction actually rises.** The strongest claim in the
-  design — that agent-assisted authoring answers the capture-cost objection that
-  killed every prior rationale system — is now falsifiable, measured, and untested.
-  Nothing here proves it.
-- **Whether the taxonomy language survives contact with authors.** Q2 has a
-  procedure now, not an answer, and the cognitive-dimensions walkthrough may well
-  reject the format the rest of the spec is written in.
-- **Whether coherence measurement is worth its noise.** Transition continuity is a
-  proxy, defensible in theory, unvalidated in practice. If its distribution turns
-  out to be stable across healthy and unhealthy corpora alike, it measures nothing
-  and should be cut.
+- **Whether the assisted fraction actually rises.** The strongest claim in the design — that agent-assisted authoring answers the capture-cost objection that killed every prior rationale system — is now falsifiable, measured, and untested. Nothing here proves it.
+- **Whether the taxonomy language survives contact with authors.** Q2 has a procedure now, not an answer, and the cognitive-dimensions walkthrough may well reject the format the rest of the spec is written in.
+- **Whether coherence measurement is worth its noise.** Transition continuity is a proxy, defensible in theory, unvalidated in practice. If its distribution turns out to be stable across healthy and unhealthy corpora alike, it measures nothing and should be cut.
 
 ## H. Theory considered and set aside
 
-- **Diátaxis** (tutorial / how-to / reference / explanation). Elegant and widely
-  adopted, but it classifies by *reader mode* for end-user documentation, and our
-  corpus is organised by *authority and lifecycle*. Values statements, registers,
-  and decision records do not map onto the four modes without distortion. Available
-  as an optional facet for adopters who want it; not the spine.
-- **Formal argumentation frameworks** (Dung, 1995). A rigorous account of attack and
-  defeat between arguments, and genuinely applicable to conflicting decisions — but
-  it demands a formalisation cost no author will pay. Revisit only if `conflicts
-  with` edges become common enough to need automated resolution.
-- **Full OWL/description-logic semantics.** Reasoning power we do not need, at a
-  cost in authoring difficulty and validation time we cannot afford. SKOS is
-  deliberately the weaker, cheaper standard, and it is the right one here.
-- **Speech act theory** for normative language. Attractive framing for MUST/SHOULD/
-  MAY, but RFC 2119 already gives us the operational subset, and the deeper theory
-  adds no checks.
+- **Diátaxis** (tutorial / how-to / reference / explanation). Elegant and widely adopted, but it classifies by *reader mode* for end-user documentation, and our corpus is organised by *authority and lifecycle*. Values statements, registers, and decision records do not map onto the four modes without distortion. Available as an optional facet for adopters who want it; not the spine.
+- **Formal argumentation frameworks** (Dung, 1995). A rigorous account of attack and defeat between arguments, and genuinely applicable to conflicting decisions — but it demands a formalisation cost no author will pay. Revisit only if `conflicts with` edges become common enough to need automated resolution.
+- **Full OWL/description-logic semantics.** Reasoning power we do not need, at a cost in authoring difficulty and validation time we cannot afford. SKOS is deliberately the weaker, cheaper standard, and it is the right one here.
+- **Speech act theory** for normative language. Attractive framing for MUST/SHOULD/ MAY, but RFC 2119 already gives us the operational subset, and the deeper theory adds no checks.
 
 ## References
 
-Discourse and coherence — Halliday & Hasan, *Cohesion in English* (1976) ·
-[Mann & Thompson, *Rhetorical Structure Theory* (1988)](https://www.semanticscholar.org/paper/Rhetorical-Structure-Theory:-Toward-a-functional-of-Mann-Thompson/af5100605a3b6bfd0adf9a30e69a47d1b98340ba) ·
-Hobbs, *On the Coherence and Structure of Discourse* (1985) ·
-Kehler, *Coherence, Reference, and the Theory of Grammar* (2002) ·
-Grosz & Sidner, *Attention, Intentions, and the Structure of Discourse* (1986) ·
-Grosz, Joshi & Weinstein, *Centering* (1995) ·
-[Thüring, Hannemann & Haake, *Hypermedia and Cognition* (1995)](https://dl.acm.org/doi/10.1145/208344.208348)
+Discourse and coherence — Halliday & Hasan, *Cohesion in English* (1976) · [Mann & Thompson, *Rhetorical Structure Theory* (1988)](https://www.semanticscholar.org/paper/Rhetorical-Structure-Theory:-Toward-a-functional-of-Mann-Thompson/af5100605a3b6bfd0adf9a30e69a47d1b98340ba) · Hobbs, *On the Coherence and Structure of Discourse* (1985) · Kehler, *Coherence, Reference, and the Theory of Grammar* (2002) · Grosz & Sidner, *Attention, Intentions, and the Structure of Discourse* (1986) · Grosz, Joshi & Weinstein, *Centering* (1995) · [Thüring, Hannemann & Haake, *Hypermedia and Cognition* (1995)](https://dl.acm.org/doi/10.1145/208344.208348)
 
-Knowledge organization — [Kruchten, *An Ontology of Architectural Design Decisions* (2004)](https://philippe.kruchten.com/wp-content/uploads/2009/07/kruchten-2004-design-decisions.pdf) ·
-Ranganathan, facet analysis · Vickery, *Faceted Classification* (1960) ·
-[Guarino & Welty, *An Overview of OntoClean*](https://www.loa.istc.cnr.it/old/Papers/GuarinoWeltyOntoCleanv3.pdf) ·
-SKOS (W3C, 2009) · ISO 25964 · W3C PROV-O
+Knowledge organization — [Kruchten, *An Ontology of Architectural Design Decisions* (2004)](https://philippe.kruchten.com/wp-content/uploads/2009/07/kruchten-2004-design-decisions.pdf) · Ranganathan, facet analysis · Vickery, *Faceted Classification* (1960) · [Guarino & Welty, *An Overview of OntoClean*](https://www.loa.istc.cnr.it/old/Papers/GuarinoWeltyOntoCleanv3.pdf) · SKOS (W3C, 2009) · ISO 25964 · W3C PROV-O
 
-Traceability — Gotel & Finkelstein (1994) · Ramesh & Jarke, *Reference models for requirements traceability* (2001) ·
-[Gotel, Cleland-Huang et al., *The Grand Challenge of Traceability*](https://arxiv.org/abs/1710.03129)
+Traceability — Gotel & Finkelstein (1994) · Ramesh & Jarke, *Reference models for requirements traceability* (2001) · [Gotel, Cleland-Huang et al., *The Grand Challenge of Traceability*](https://arxiv.org/abs/1710.03129)
 
-Social and organizational — [Yates & Orlikowski, *Genres of Organizational Communication* (1992)](https://www.semanticscholar.org/paper/Genres-of-Organizational-Communication:-A-Approach-Yates-Orlikowski/bbe0a59e50ae8d4cb25124eaa157db807988ea9e) ·
-[Orlikowski & Yates, *Genre Repertoire* (1994)](https://www.semanticscholar.org/paper/Genre-Repertoire:-The-Structuring-of-Communicative-Orlikowski-Yates/d6de1ae4f0cadbf088894a04b38aecaf704ee787) ·
-[Yates & Orlikowski, *Genre Systems* (2002)](https://journals.sagepub.com/doi/10.1177/002194360203900102) ·
-[Star & Griesemer, *Institutional Ecology, 'Translations' and Boundary Objects* (1989)](https://journals.sagepub.com/doi/10.1177/030631289019003001)
+Social and organizational — [Yates & Orlikowski, *Genres of Organizational Communication* (1992)](https://www.semanticscholar.org/paper/Genres-of-Organizational-Communication:-A-Approach-Yates-Orlikowski/bbe0a59e50ae8d4cb25124eaa157db807988ea9e) · [Orlikowski & Yates, *Genre Repertoire* (1994)](https://www.semanticscholar.org/paper/Genre-Repertoire:-The-Structuring-of-Communicative-Orlikowski-Yates/d6de1ae4f0cadbf088894a04b38aecaf704ee787) · [Yates & Orlikowski, *Genre Systems* (2002)](https://journals.sagepub.com/doi/10.1177/002194360203900102) · [Star & Griesemer, *Institutional Ecology, 'Translations' and Boundary Objects* (1989)](https://journals.sagepub.com/doi/10.1177/030631289019003001)
 
-Design rationale — Kunz & Rittel, *IBIS* (1970) · Toulmin, *The Uses of Argument* (1958) ·
-Conklin & Begeman, *gIBIS* (1988) · MacLean et al., *QOC* (1991) · Grudin, *Evaluating opportunities for design capture* (1996)
+Design rationale — Kunz & Rittel, *IBIS* (1970) · Toulmin, *The Uses of Argument* (1958) · Conklin & Begeman, *gIBIS* (1988) · MacLean et al., *QOC* (1991) · Grudin, *Evaluating opportunities for design capture* (1996)
 
-Evolution and variability — [Noy & Klein, *Ontology Evolution: Not the Same as Schema Evolution* (2004)](https://link.springer.com/content/pdf/10.1007/s10115-003-0137-2.pdf) ·
-Kang et al., *FODA* (1990) · Schaefer et al., delta-oriented programming
+Evolution and variability — [Noy & Klein, *Ontology Evolution: Not the Same as Schema Evolution* (2004)](https://link.springer.com/content/pdf/10.1007/s10115-003-0137-2.pdf) · Kang et al., *FODA* (1990) · Schaefer et al., delta-oriented programming
 
-Cognition — Pirolli & Card, *Information Foraging* (1999) · Green & Petre, *Cognitive Dimensions* (1996) ·
-Carroll, *The Nurnberg Funnel* (1990)
+Cognition — Pirolli & Card, *Information Foraging* (1999) · Green & Petre, *Cognitive Dimensions* (1996) · Carroll, *The Nurnberg Funnel* (1990)
 
-Empirical software engineering — [Aghajani et al., *Software Documentation Issues Unveiled* (ICSE 2019)](https://2019.icse-conferences.org/details/icse-2019-Technical-Papers/49/Software-Documentation-Issues-Unveiled) ·
-Aghajani et al., *Software Documentation: The Practitioners' Perspective* (ICSE 2020) ·
-Lethbridge, Singer & Forward (2003) · Parnas & Clements, *A Rational Design Process* (1986) ·
-[*Agent READMEs: An Empirical Study of Context Files for Agentic Coding* (2025)](https://arxiv.org/pdf/2511.12884) ·
-[*Rule Taxonomy and Evolution in AI IDEs* (2026)](https://arxiv.org/pdf/2606.12231)
+Empirical software engineering — [Aghajani et al., *Software Documentation Issues Unveiled* (ICSE 2019)](https://2019.icse-conferences.org/details/icse-2019-Technical-Papers/49/Software-Documentation-Issues-Unveiled) · Aghajani et al., *Software Documentation: The Practitioners' Perspective* (ICSE 2020) · Lethbridge, Singer & Forward (2003) · Parnas & Clements, *A Rational Design Process* (1986) · [*Agent READMEs: An Empirical Study of Context Files for Agentic Coding* (2025)](https://arxiv.org/pdf/2511.12884) · [*Rule Taxonomy and Evolution in AI IDEs* (2026)](https://arxiv.org/pdf/2606.12231)

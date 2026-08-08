@@ -1,15 +1,10 @@
 # The docgov taxonomy in LinkML — a worked example
 
-Evidence for [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate).
-[Spec 11](../spec/11-adjacent-work.md#c-linkml--the-uncomfortable-one) claimed LinkML
-covers the "structural half" of [spec 2](../spec/02-taxonomy-model.md) and none of the
-"governance half". Writing it out shows that framing was wrong — and the real boundary
-is more useful than the one I guessed.
+Evidence for [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate). [Spec 11](../spec/11-adjacent-work.md#c-linkml--the-uncomfortable-one) claimed LinkML covers the "structural half" of [spec 2](../spec/02-taxonomy-model.md) and none of the "governance half". Writing it out shows that framing was wrong — and the real boundary is more useful than the one I guessed.
 
 ## The schema
 
-A meaningful subset of the default taxonomy: three kinds, the core facets, four
-relations, one heterogeneous shelf, identifiers, and profiles.
+A meaningful subset of the default taxonomy: three kinds, the core facets, four relations, one heterogeneous shelf, identifiers, and profiles.
 
 ```yaml
 id: https://docgov.dev/taxonomy/standard
@@ -244,58 +239,31 @@ Four of these were genuinely surprising — not "can be encoded" but "is the sam
 | Lineage semantics | `slot_uri: prov:wasRevisionOf` | PROV alignment, natively — change #11, for free |
 | Relation endpoints and cardinality | `range` to a class, `multivalued` | Direct |
 
-Three of the twenty research-derived changes (SKOS mappings, PROV alignment, advisory
-severity) are things LinkML already ships. That is a real argument for adoption, and
-also mild evidence the modelling instincts in spec 2 were conventional rather than
-eccentric.
+Three of the twenty research-derived changes (SKOS mappings, PROV alignment, advisory severity) are things LinkML already ships. That is a real argument for adoption, and also mild evidence the modelling instincts in spec 2 were conventional rather than eccentric.
 
 ## Where it stops — and the boundary is not the one I claimed
 
-Spec 11 said the split was **structural versus governance**. It is not. Look at what
-actually fails:
+Spec 11 said the split was **structural versus governance**. It is not. Look at what actually fails:
 
-- **Reciprocity.** `supersedes` requires the target to link back. LinkML cannot say
-  this. Neither can SHACL without dropping to SPARQL.
-- **`conflicts_with` invalid when both endpoints are current.** The rule above
-  enforces the one constraint whose slots live on a single instance. The constraint
-  we actually want reads *the target's* `status` — and per-instance validation does
-  not see it.
-- **Satellite inheritance.** "A satellite's freshness follows its nucleus" is a
-  statement about a pair, resolved by traversal.
-- **Sequence expectations.** "A current decision acquires an implementing
-  specification within 90 days" is a query over the graph *and over time*.
-- **Overlays, core, compatibility.** Operations on the schema itself, not statements
-  in it.
+- **Reciprocity.** `supersedes` requires the target to link back. LinkML cannot say this. Neither can SHACL without dropping to SPARQL.
+- **`conflicts_with` invalid when both endpoints are current.** The rule above enforces the one constraint whose slots live on a single instance. The constraint we actually want reads *the target's* `status` — and per-instance validation does not see it.
+- **Satellite inheritance.** "A satellite's freshness follows its nucleus" is a statement about a pair, resolved by traversal.
+- **Sequence expectations.** "A current decision acquires an implementing specification within 90 days" is a query over the graph *and over time*.
+- **Overlays, core, compatibility.** Operations on the schema itself, not statements in it.
 
-None of that is "governance" as opposed to "structure". Reciprocity is as structural
-as anything in spec 2. The actual line is:
+None of that is "governance" as opposed to "structure". Reciprocity is as structural as anything in spec 2. The actual line is:
 
-> **LinkML, SHACL, and JSON Schema all validate one instance against a shape.
-> Everything docgov does that they cannot is a property of the graph as a whole, or
-> of the corpus over time.**
+> **LinkML, SHACL, and JSON Schema all validate one instance against a shape. Everything docgov does that they cannot is a property of the graph as a whole, or of the corpus over time.**
 
-That reframing matters, because it turns Q13 from *"does LinkML cover enough?"* into
-a better question: **is a two-layer architecture — a standard shape layer plus a
-docgov graph layer — better than one custom layer?** Every mature validation stack in
-this space has that shape. It is not a compromise; it is the normal answer.
+That reframing matters, because it turns Q13 from *"does LinkML cover enough?"* into a better question: **is a two-layer architecture — a standard shape layer plus a docgov graph layer — better than one custom layer?** Every mature validation stack in this space has that shape. It is not a compromise; it is the normal answer.
 
 ## The annotations problem
 
-Everything docgov-specific above sits in `annotations`, and annotations are untyped
-pass-through. LinkML carries them and does nothing with them: no validation, no
-generator output, no error when `docgov:nuclearity` is misspelled or set to a value
-that does not exist.
+Everything docgov-specific above sits in `annotations`, and annotations are untyped pass-through. LinkML carries them and does nothing with them: no validation, no generator output, no error when `docgov:nuclearity` is misspelled or set to a value that does not exist.
 
-So for precisely the half that is ours, the meta-schema benefit — the main reason to
-adopt LinkML — evaporates. We would still write a validator for the annotation
-vocabulary, and authors would face two languages in one file with no visual
-distinction between the half that is checked and the half that is not. That scores
-badly on role-expressiveness and error-proneness, which is exactly what the
-cognitive-dimensions walkthrough in [Q2](../spec/09-open-questions.md#q2--schema-format)
-is meant to catch.
+So for precisely the half that is ours, the meta-schema benefit — the main reason to adopt LinkML — evaporates. We would still write a validator for the annotation vocabulary, and authors would face two languages in one file with no visual distinction between the half that is checked and the half that is not. That scores badly on role-expressiveness and error-proneness, which is exactly what the cognitive-dimensions walkthrough in [Q2](../spec/09-open-questions.md#q2--schema-format) is meant to catch.
 
-Writing it out is what made this concrete. It reads fine until you notice that a
-third of the semantics is inert.
+Writing it out is what made this concrete. It reads fine until you notice that a third of the semantics is inert.
 
 ## The option this exercise surfaced
 
@@ -303,29 +271,17 @@ Neither "adopt LinkML" nor "stay independent" is right. A third option:
 
 > **Author in docgov's language; emit LinkML as a compilation target.**
 
-The resolved taxonomy compiles to a LinkML schema covering the shape layer — which
-then compiles onward to JSON Schema, SHACL, OWL, and Pydantic through LinkML's own
-generators. The graph and temporal layers stay in the docgov engine, where they were
-always going to live.
+The resolved taxonomy compiles to a LinkML schema covering the shape layer — which then compiles onward to JSON Schema, SHACL, OWL, and Pydantic through LinkML's own generators. The graph and temporal layers stay in the docgov engine, where they were always going to live.
 
-That gets the interoperability without the two-languages problem: one authoring
-surface, fully validated, with a standards-based export that other tooling can
-consume. It also inverts the risk. Adopting LinkML as the authoring surface is close
-to irreversible; emitting it is a generator we can add, change, or drop.
+That gets the interoperability without the two-languages problem: one authoring surface, fully validated, with a standards-based export that other tooling can consume. It also inverts the risk. Adopting LinkML as the authoring surface is close to irreversible; emitting it is a generator we can add, change, or drop.
 
-Worth noting how this rhymes with the position already taken on distribution: a
-resolved artefact, emitted, not authored.
+Worth noting how this rhymes with the position already taken on distribution: a resolved artefact, emitted, not authored.
 
 ## Recommendation
 
-Take **option 3** into the Q2 walkthrough as the leading candidate, with these
-consequences to weigh:
+Take **option 3** into the Q2 walkthrough as the leading candidate, with these consequences to weigh:
 
-- it removes the Q1 tension entirely — a Rust core emitting LinkML YAML has no
-  dependency on LinkML's Python tooling;
-- the SHACL question resolves itself: SHACL becomes an output artefact for external
-  consumers, so its poor error messages never reach a docgov author;
-- the cost is a generator plus fidelity tests proving the emitted schema accepts
-  exactly the documents docgov accepts, which is a real and ongoing cost;
-- and the shape/graph boundary needs to be stated in [spec 6](../spec/06-engine-architecture.md)
-  as an architectural seam, because it is one.
+- it removes the Q1 tension entirely — a Rust core emitting LinkML YAML has no dependency on LinkML's Python tooling;
+- the SHACL question resolves itself: SHACL becomes an output artefact for external consumers, so its poor error messages never reach a docgov author;
+- the cost is a generator plus fidelity tests proving the emitted schema accepts exactly the documents docgov accepts, which is a real and ongoing cost;
+- and the shape/graph boundary needs to be stated in [spec 6](../spec/06-engine-architecture.md) as an architectural seam, because it is one.

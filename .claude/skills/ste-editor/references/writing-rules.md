@@ -1,8 +1,6 @@
 # ASD-STE100 Issue 9 — Part 1 writing rules (summary)
 
-Rule statements below are the verbatim "Summary of the rules" blocks from each
-section of ASD-STE100 Issue 9 (January 2025). For explanatory text and examples,
-grep `ste-spec-full.txt` (if present) for the rule number.
+Rule statements below are the verbatim "Summary of the rules" blocks from each section of ASD-STE100 Issue 9 (January 2025). For explanatory text and examples, grep `ste-spec-full.txt` (if present) for the rule number.
 
 ## Quick numeric limits
 
@@ -36,9 +34,7 @@ grep `ste-spec-full.txt` (if present) for the rule number.
 - **2.1** Write multi-word nouns of no more than three words.
 - **2.2** When a technical noun has more than three words, write it in full. Then make it clear with a shorter form, or hyphens between words used as one unit.
 
-To shorten multi-word nouns, unpack them with prepositions: "runway light
-connection resistance calibration" → "calibration of the resistance of the
-runway light connection."
+To shorten multi-word nouns, unpack them with prepositions: "runway light connection resistance calibration" → "calibration of the resistance of the runway light connection."
 
 ## Section 3 — Verbs
 
@@ -58,8 +54,7 @@ runway light connection."
 - **4.4** Use connecting words and connecting phrases to connect sentences that contain related topics.
 - **4.5** When applicable, use an article (the, a, an) or a demonstrative adjective (this, these) before a noun or a multi-word noun.
 
-Descriptive sentences: one topic per sentence; build information gradually
-across following sentences.
+Descriptive sentences: one topic per sentence; build information gradually across following sentences.
 
 ## Section 5 — Procedural writing
 
@@ -101,8 +96,4 @@ across following sentences.
 - **9.3** When you use two words together, do not make phrasal verbs.
 - **9.4** When you select terminology or wording, always use a consistent style.
 
-General recommendations (not rules): use the conjunction "that" to open
-subordinate clauses ("Make sure **that** the valve is open"); re-read sentences
-with "with" for ambiguity; give pronouns clear antecedents; avoid bare "this"
-without a noun; avoid false friends, Latin abbreviations (e.g., i.e., etc.), and
-the possessive apostrophe-s on inanimate objects; use inclusive language.
+General recommendations (not rules): use the conjunction "that" to open subordinate clauses ("Make sure **that** the valve is open"); re-read sentences with "with" for ambiguity; give pronouns clear antecedents; avoid bare "this" without a noun; avoid false friends, Latin abbreviations (e.g., i.e., etc.), and the possessive apostrophe-s on inanimate objects; use inclusive language.
