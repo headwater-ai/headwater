@@ -18,7 +18,7 @@ Look at the text and decide (or ask) which profile applies:
 
 ## Core rules (both profiles)
 
-Full rule text: `references/writing-rules.md`. The load-bearing subset:
+Full rule text: `references/writing-rules.md`. The subset that does most of the work:
 
 1. **Sentence limits**: ≤ 20 words in instructions, ≤ 25 in descriptive text. Count numbers, abbreviations, and parenthetical text as one word each.
 2. **One thing per sentence**: one instruction (procedures) or one topic (descriptive). Build information gradually across sentences.

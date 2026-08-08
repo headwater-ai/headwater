@@ -206,7 +206,7 @@ That is not as damning as it sounds — the ten lines are where the *graph* live
 
 You *could* lift more in: project headings as triples and `sh:qualifiedValueShape` can check a section contract. Each lift makes the projection larger, lossier, and more of a parallel re-encoding of the document that has to be kept in step. Projecting the body as a literal and running `sh:pattern` over it is technically possible and a bad idea — that is regex over prose with extra steps.
 
-### Problem one: the projection is load-bearing and SHACL does not check it
+### Problem one: everything downstream trusts the projection and SHACL does not check it
 
 The Markdown-to-RDF projector becomes the most trusted component in the pipeline, and nothing in SHACL validates it. A projector that drops a document, mistypes it, or misparses front matter produces a graph that does not represent the corpus — and SHACL will happily report that graph as conformant.
 

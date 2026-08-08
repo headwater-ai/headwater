@@ -13,7 +13,7 @@ Enforcement implies a gate that stops bad things. Real documentation systems nee
 | **Corrective** | Repairs what was found | Auto-fix, generated remediation tasks, agent-raised change proposals |
 | **Adaptive** | Retunes the mechanisms | Efficacy probes, false-positive tracking, promotion decisions |
 
-Most systems build the first two and claim the set. The adaptive layer is the one that decides whether the other three are worth their cost, and it is specified here as a first-class obligation rather than an aspiration.
+Most systems build the first two and claim the set. The adaptive layer is the one that decides whether the other three are worth their cost, and it is specified here as a binding obligation rather than an aspiration.
 
 ## Cohesion and coherence are different obligations
 

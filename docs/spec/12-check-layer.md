@@ -82,7 +82,7 @@ A check is a template. The engine instantiates it per target: `facet_required` i
 
 Coverage accounting ([spec 4](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)) then falls out rather than being bolted on. Each run records, per document, which instances were created, which ran, which were served from cache, and which were skipped with a reason. **A document with zero instances is a finding** — it means a shelf pattern is wrong or a file is misplaced, and both are worth knowing.
 
-## Two phases, and why the order is load-bearing
+## Two phases, and why the order matters
 
 **Phase A — classify and build.** Parse every file, resolve its kind, build edges, index identifiers. Failures here are structural findings: unparseable file, unclassifiable path, dangling edge, ambiguous shelf match.
 
@@ -147,7 +147,7 @@ Requiring `obligation()` is what stops the plugin surface becoming the place rul
 
 ## Where the LLM coherence sweep fits
 
-It is **not a check**, and the distinction is load-bearing.
+It is **not a check**, and every guarantee in this document depends on that distinction.
 
 The sweep ([spec 4](04-assurance-model.md#discharging-coherence-obligations-the-assisted-sweep)) is non-deterministic, so it cannot live in the cached reproducible path without destroying every guarantee above. It runs as a separate **sampler**: same finding shape, same reporting pipeline, provenance marked `agent`, never gating, never cached as though reproducible.
 

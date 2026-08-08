@@ -13,7 +13,7 @@ Everything in this specification follows from that premise.
 
 ## Who this is for
 
-**Primary:** an engineering organisation that wants documentation that is load-bearing. Humans use it at review time, and coding agents use it at work time. The organisation accepts structure in exchange for trust.
+**Primary:** an engineering organisation that wants documentation that people and tools rely on. Humans use it at review time, and coding agents use it at work time. The organisation accepts structure in exchange for trust.
 
 **Secondary:** a single team or a solo maintainer who wants a strong default documentation system, but does not want to invent one. The tool must not dictate a taxonomy that does not match how they think.
 
@@ -80,4 +80,4 @@ The system works when:
 - **Markdown with YAML front matter** is the document format. There is no proprietary store.
 - **The corpus is valid without the tool.** Everything degrades to readable Markdown in a browser or a text editor.
 - **No network dependency at check time.** Validation runs offline, in a container or on a laptop, with the same result as CI.
-- **Deterministic core.** For the same corpus and schema, the output of the engine is byte-identical. LLMs only help with authoring and supply the efficacy probes. They are never load-bearing for a verdict.
+- **Deterministic core.** For the same corpus and schema, the output of the engine is byte-identical. LLMs only help with authoring and supply the efficacy probes. A verdict never depends on an LLM.

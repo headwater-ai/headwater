@@ -1,6 +1,6 @@
 # 1 — Conceptual model
 
-The vocabulary the rest of the specification uses. Each term is a first-class concept in the schema and in the engine; where they differ, this document says so.
+The vocabulary the rest of the specification uses. Each term is a named concept in the schema and in the engine; where they differ, this document says so.
 
 ## Two layers: terminology and assertions
 
@@ -52,7 +52,7 @@ A kind is resolved from a document's position (shelf + path pattern) and, on het
 
 ### External anchor
 
-A node representing something outside the corpus that documents point at: a source path, a component, a work item, a service, a released artefact, a URL. Anchors make otherwise-dangling references first-class, so the engine can check them, traverse them, and answer "what governs this code path?" without special-casing every kind of pointer.
+A node representing something outside the corpus that documents point at: a source path, a component, a work item, a service, a released artefact, a URL. Anchors turn otherwise-dangling references into typed nodes, so the engine can check them, traverse them, and answer "what governs this code path?" without special-casing every kind of pointer.
 
 An anchor carries an identifier, a name, and an owner — never a purpose or a lifecycle; every substantive claim about the thing itself lives in a document. Anchor kinds are declared like everything else: the taxonomy's `anchors` declaration names each type and the single resolver that owns it, so a relation endpoint is always either a declared kind or a declared anchor kind — never a bare string. Anchor identity is declared, not guessed: anchor strings normalise before comparison so two spellings of one target are one node, and an anchor no resolver claims is a finding ([spec 2](02-taxonomy-model.md#behaviour-at-the-limits)).
 

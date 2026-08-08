@@ -2,7 +2,7 @@
 
 **This is the central design of the system.** Everything else is downstream of it.
 
-> **Revision note.** This document incorporates the five structural changes proposed by [theoretical foundations](10-theoretical-foundations.md): nuclearity on relations, purpose as a first-class declaration with reading precedence derived from nuclearity and succession, windowed participation expectations, an immutable semantic core, and versioning by measured compatibility. Relation families arrived as a dependency of the precedence change. The [core-concepts review](../reviews/) subsequently cut the per-relation `dominance` declaration — redundant where nuclearity or succession already determined it, unused where they did not.
+> **Revision note.** This document incorporates the five structural changes proposed by [theoretical foundations](10-theoretical-foundations.md): nuclearity on relations, purpose as an explicit declaration with reading precedence derived from nuclearity and succession, windowed participation expectations, an immutable semantic core, and versioning by measured compatibility. Relation families arrived as a dependency of the precedence change. The [core-concepts review](../reviews/) subsequently cut the per-relation `dominance` declaration — redundant where nuclearity or succession already determined it, unused where they did not.
 
 ## The problem being solved
 

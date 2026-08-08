@@ -18,7 +18,7 @@ Everything spec 4 currently checks is cohesion: links resolve, relations are rec
 
 > **Change:** name the distinction explicitly in the assurance model, and stop implying that a clean check run means a coherent corpus. Cohesion checks are deterministic and blocking; coherence assessment is sampled, semantic, and belongs to the audit and probe layers. Two obligations, two mechanisms, no pretending one covers the other.
 
-### A.2 Nuclearity — some relations have a load-bearing end
+### A.2 Nuclearity — some relations have an end the other depends on
 
 Rhetorical Structure Theory (Mann & Thompson, 1988) analyses text as a hierarchy of spans joined by coherence relations, and makes a distinction we lack: relations are either **nucleus–satellite** (hypotactic — the satellite supports the nucleus and can be removed without destroying the point) or **multinuclear** (paratactic — the spans are co-equal). RST's ~23 relations are less important than that structural asymmetry.
 
@@ -42,7 +42,7 @@ Mapped onto a corpus: linguistic structure is the file tree we model well; the i
 
 The gap is dominance. We record that document A supersedes B, but not that A's *purpose* subordinates B's — that B exists in service of A. That is the relation a reader most needs when deciding what to read, and the one an agent needs when deciding what to load.
 
-> **Change:** treat purpose as first-class — every kind declares the reader intent it serves, and reading precedence between linked documents is derived from nuclearity and succession. (As first applied this was a per-relation `dominance` declaration; the core-concepts review found it redundant wherever those two already determined it and unused elsewhere, so it is now derived, not declared.) This is the theoretical justification for the routing layer in spec 5: routing is a search over intentional structure, not over text. It also reframes context budgeting as attentional-state management, which is a better-posed problem than "fit under N tokens".
+> **Change:** treat purpose as an explicit declaration — every kind declares the reader intent it serves, and reading precedence between linked documents is derived from nuclearity and succession. (As first applied this was a per-relation `dominance` declaration; the core-concepts review found it redundant wherever those two already determined it and unused elsewhere, so it is now derived, not declared.) This is the theoretical justification for the routing layer in spec 5: routing is a search over intentional structure, not over text. It also reframes context budgeting as attentional-state management, which is a better-posed problem than "fit under N tokens".
 
 ### A.5 Local coherence: continuity of focus
 
@@ -101,7 +101,7 @@ A **Traceability Information Model** declares permitted artefact types, link typ
 The Grand Challenge of Traceability work (Gotel, Cleland-Huang et al., 2012; revisited
 2017) carries the harder lesson: traceability fails not on modelling but on **creation and maintenance cost**. Manually created links decay because the person paying the cost is not the person receiving the benefit.
 
-> **Change:** adopt the reference-model framing and — more importantly — treat link creation cost as a first-class design constraint. Every relation in the default taxonomy must be derivable from work the author is already doing (a commit, a template field, a scaffolded document) or it will not survive contact with a deadline. Add "what creates this edge, and who pays?" to the relation declaration review checklist.
+> **Change:** adopt the reference-model framing and — more importantly — treat link creation cost as an explicit design constraint. Every relation in the default taxonomy must be derivable from work the author is already doing (a commit, a template field, a scaffolded document) or it will not survive contact with a deadline. Add "what creates this edge, and who pays?" to the relation declaration review checklist.
 
 ### B.6 Provenance has a standard model
 
@@ -169,7 +169,7 @@ Pirolli and Card (*Psychological Review*, 1999) model information seeking as for
 
 This is the theoretical justification for spec 5's pointers-with-summaries design, and it relocates where the effort should go: the `summary` facet is the corpus's entire scent surface. A perfect document with a vague summary is invisible.
 
-> **Change:** treat summary quality as a first-class assurance concern rather than a front-matter formality, and frame the routing confidence gate in scent terms — the engine stays silent when scent is weak, because a misleading cue costs more than an absent one. Probe categories map directly onto foraging outcomes.
+> **Change:** treat summary quality as an assurance concern in its own right rather than a front-matter formality, and frame the routing confidence gate in scent terms — the engine stays silent when scent is weak, because a misleading cue costs more than an absent one. Probe categories map directly onto foraging outcomes.
 
 ### E.2 Cognitive dimensions — how to evaluate the schema language
 
@@ -231,7 +231,7 @@ Current GraphRAG and KG-RAG work reports that graph-structured retrieval outperf
 | 1 | Separate cohesion (checkable) from coherence (sampled) as distinct obligation classes | 4 | Halliday & Hasan | **applied** |
 | 2 | Add `nuclearity` to relation declarations | 2 | RST | **applied** |
 | 3 | Group relation types into a small fixed set of families | 2 | Hobbs, Kehler | **applied** |
-| 4 | Make purpose first-class; derive reading precedence from nuclearity and succession | 2, 5 | Grosz & Sidner | **applied, revised** |
+| 4 | Declare purpose explicitly; derive reading precedence from nuclearity and succession | 2, 5 | Grosz & Sidner | **applied, revised** |
 | 5 | Advisory transition-continuity check over relation edges | 4 | Centering Theory | **applied** |
 | 6 | Adopt Kruchten's decision-relation vocabulary, incl. `conflicts with` | 2 | Kruchten | **applied** |
 | 7 | Facet acceptance tests: orthogonality, ascertainability, permanence | 2, 6 | Ranganathan, Vickery | **applied** |

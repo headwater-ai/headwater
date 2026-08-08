@@ -57,7 +57,7 @@ Lexical pattern matching is cheap, explainable, and imprecise. A small local cla
 
 Options: rebuilt from cache each run (simplest, no sync problem); persisted to a committed JSON artefact (reviewable in diffs, enables tooling without the engine); or an embedded database (fast queries, another thing to keep in step).
 
-A fourth option arrived with Q13: an **RDF projection**, which is what SHACL validation would consume. It carries a question the others do not — *fidelity*. Once checks read a projection rather than the documents, the projector becomes the most trusted component in the pipeline and nothing downstream can detect its mistakes; a projector that drops or mistypes a document yields a graph that validates cleanly and does not represent the corpus ([evaluation](../evaluations/shacl-worked-example.md#problem-one-the-projection-is-load-bearing-and-shacl-does-not-check-it)).
+A fourth option arrived with Q13: an **RDF projection**, which is what SHACL validation would consume. It carries a question the others do not — *fidelity*. Once checks read a projection rather than the documents, the projector becomes the most trusted component in the pipeline and nothing downstream can detect its mistakes; a projector that drops or mistypes a document yields a graph that validates cleanly and does not represent the corpus ([evaluation](../evaluations/shacl-worked-example.md#problem-one-everything-downstream-trusts-the-projection-and-shacl-does-not-check-it)).
 
 **Leaning:** cache by default, with `docgov export` producing a committed JSON graph for anyone who wants to build on it. Avoid a database until a query workload justifies it. If RDF is emitted, it is a **derived view and never canonical**, and it ships with round-trip fidelity tests — the Markdown is the corpus, and any projection that disagrees with it is the projection's bug.
 
@@ -188,7 +188,7 @@ Open: whether docgov admits synthesised content at all; if so, whether it needs 
 | Changelog, community, open-source posture | Is it alive, and is anyone else here? |
 | `llms.txt`, AI-crawler-friendly `robots.txt` | Can a machine reader find and cite it? |
 
-The last row is where this question touches Q14, and it is the one an ordinary marketing site would omit. For a project whose entire thesis is that machines are first-class readers, being unreadable to the machines that would recommend it is a self-inflicted wound.
+The last row is where this question touches Q14, and it is the one an ordinary marketing site would omit. For a project whose entire thesis is that machines are readers in their own right, being unreadable to the machines that would recommend it is a self-inflicted wound.
 
 Two constraints particular to docgov. The site should be **generated from the corpus that documents docgov** — anything else is a governance system whose own public documentation is ungoverned, and that is the first thing a sceptical reader will check. And the benchmark and self-assessment rows have to be **honest before they are impressive**: §I.4 records claims that move between README versions as the thing that made an otherwise strong project harder to trust, and a governance tool caught inflating its own numbers has nothing left to sell.
 
@@ -222,7 +222,7 @@ Enforcement belongs where a reader is *served*, not where an author writes. Per-
 
 This puts the control exactly where the need is and nowhere else. Someone who can clone a repository reading that repository is intended behaviour. Every case that motivates the question — contractor, partner, adjacent business unit, "show the topology but not the internals" — is cross-corpus, which is the federated layer by definition. Sensitive material lives in a tightly-permissioned repository and is federated in; the graph serves filtered views over the union.
 
-The declaration surface already exists: `confidentiality` is a named facet ([spec 1](01-conceptual-model.md)). This promotes it from descriptive metadata to a load-bearing security control — a small schema change carrying a large change in obligation, since a mislabelled facet stops being a lint and becomes a leak.
+The declaration surface already exists: `confidentiality` is a named facet ([spec 1](01-conceptual-model.md)). This promotes it from descriptive metadata to an enforced security control — a small schema change carrying a large change in obligation, since a mislabelled facet stops being a lint and becomes a leak.
 
 ### Four constraints, if it is built
 

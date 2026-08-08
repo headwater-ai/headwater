@@ -113,7 +113,7 @@ provenance:
   reconstructed_from: "commit 4a2f1c, ADO 1441575, design session 2026-07-15"
 ```
 
-`accepted_by` is the load-bearing field. An agent may draft; acceptance is a human act, and the record says who performed it. Generated projections are exempt — they are `wasGeneratedBy` a tool and are checked against regeneration rather than accepted.
+`accepted_by` is the field that enforces the boundary. An agent may draft; acceptance is a human act, and the record says who performed it. Generated projections are exempt — they are `wasGeneratedBy` a tool and are checked against regeneration rather than accepted.
 
 This makes real questions answerable: which parts of the corpus are agent-drafted, whether agent-drafted documents drift faster than hand-written ones, and whether reconstruction correlates with agency. None of those can be asked of a corpus that does not record the answer.
 

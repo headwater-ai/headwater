@@ -18,7 +18,7 @@ docgov's premise: **make the structure of the corpus a machine-readable contract
 
 2. **The corpus is a graph.** Documents are typed nodes; front-matter references are typed edges. Every validation rule is a constraint on that graph, every query is a traversal of it, and every derived artefact (indexes, site navigation, AI rules, agent context) is a projection of it.
 
-3. **AI assistants are first-class readers, and measured ones.** The corpus feeds agents at intent time, read time, write time, and review time — and the system probes whether that context actually changes agent behaviour, rather than assuming it does.
+3. **AI assistants are readers in their own right, and measured ones.** The corpus feeds agents at intent time, read time, write time, and review time — and the system probes whether that context actually changes agent behaviour, rather than assuming it does.
 
 ## Read the specification
 
@@ -46,6 +46,6 @@ Start at 0 and 2 if you only read two. Spec 10 is where the design gets tested a
 
 ## Provenance
 
-This is an independent, clean-room implementation. It is informed by a study of a prior internal governance framework — the concepts it proved out, and the specific places its architecture became load-bearing in ways that resisted change. That study is summarised, in design terms only, in [prior art and departures](docs/spec/08-prior-art-and-departures.md). No code, prose, or configuration is carried across.
+This is an independent, clean-room implementation. It is informed by a study of a prior internal governance framework — the concepts it proved out, and the specific places where so much came to depend on its architecture that it resisted change. That study is summarised, in design terms only, in [prior art and departures](docs/spec/08-prior-art-and-departures.md). No code, prose, or configuration is carried across.
 
 `docgov` is a working name.
