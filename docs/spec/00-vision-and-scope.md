@@ -3,74 +3,79 @@
 ## The thesis
 
 A documentation corpus is a **structured artefact with invariants**, not a pile of
-prose. Once its structure is declared in a form a machine can read, four things
-become possible that are impossible otherwise:
+prose. When you declare that structure in a form that a machine can read, four
+things become possible that were not possible before:
 
-- the corpus can be **validated** — not for spelling, but for truthfulness signals,
-  completeness, lineage, and internal consistency;
-- it can be **navigated deterministically** — a task, a code path, or a concept
-  resolves to the documents that govern it, without search or luck;
-- it can be **projected** — indexes, site navigation, agent instruction files, and
-  reader-facing summaries are generated, never hand-maintained;
-- it can **hold itself accountable** — the system records which mechanism discharges
-  which obligation, and where it currently has none.
+- You can **validate** the corpus — not for spelling, but for truthfulness
+  signals, completeness, lineage, and internal consistency.
+- You can **navigate** it deterministically. A task, a code path, or a concept
+  resolves to the documents that govern it, without search or luck.
+- You can **project** it. The system generates indexes, site navigation, agent
+  instruction files, and reader-facing summaries. No person maintains them by
+  hand.
+- The corpus can **hold itself accountable**. The system records which mechanism
+  discharges which obligation, and where it currently has none.
 
-Everything in this specification follows from taking that seriously.
+Everything in this specification follows from that premise.
 
 ## Who this is for
 
-**Primary:** an engineering organisation that wants its documentation to be
-load-bearing — used by humans at review time and by coding agents at work time —
-and is willing to accept structure in exchange for trust.
+**Primary:** an engineering organisation that wants documentation that is
+load-bearing. Humans use it at review time, and coding agents use it at work
+time. The organisation accepts structure in exchange for trust.
 
-**Secondary:** a single team or solo maintainer who wants a strong default
-documentation system without inventing one, and without the tool dictating a
-taxonomy that does not match how they think.
+**Secondary:** a single team or a solo maintainer who wants a strong default
+documentation system, but does not want to invent one. The tool must not
+dictate a taxonomy that does not match how they think.
 
 **Explicitly served:** organisations whose documentation culture does **not** match
-ours. The taxonomy is theirs to define; the engine is ours.
+ours. The taxonomy is theirs to define. The engine is ours.
 
-## What we are building
+## What we build
 
-1. **A taxonomy schema language** — a declarative, versioned, validated description
-   of a documentation corpus's structure: shelves, document kinds, metadata facets,
-   relations, voice and lifecycle regimes, identifier schemes, and overlays.
+1. **A taxonomy schema language** — a declarative, versioned, and validated
+   description of the structure of a corpus. That structure includes shelves,
+   document kinds, metadata facets, relations, voice and lifecycle regimes,
+   identifier schemes, and overlays.
 
-2. **An engine** that reads a corpus plus its taxonomy, builds a typed graph, and
-   evaluates constraints over it — one parse, many checks, machine- and
-   human-readable output, advisory by default and blocking on request.
+2. **An engine** that reads a corpus and its taxonomy, builds a typed graph, and
+   evaluates constraints over that graph. It parses once and checks many times.
+   Its output is machine-readable and human-readable. It is advisory by default
+   and blocking on request.
 
 3. **A projection layer** that generates every derived artefact from that graph:
-   shelf indexes, decision-lineage views, traceability matrices, site navigation,
-   and the AI instruction surface.
+   shelf indexes, decision-lineage views, traceability matrices, site
+   navigation, and the AI instruction surface.
 
-4. **An AI integration surface** spanning the four moments an assistant touches
-   documentation — planning, reading, writing, reviewing — plus a probe harness
-   that measures whether the surface actually works. The authoring half of this —
-   scaffolding, the information-architecture and authoring skills, the harness
-   hooks that invoke them — ships with the first release, not after it: the
-   graph's edges are what everything distinctive runs on, the capture-cost
-   thesis ([spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric))
-   is untestable without the machinery, and a validator shipped ahead of the
-   machinery would measure a corpus nothing is helping to maintain.
+4. **An AI integration surface** for the four moments when an assistant touches
+   documentation: planning, reading, writing, and reviewing. A probe harness
+   measures whether the surface works. The authoring half — scaffolding, the
+   information-architecture and authoring skills, and the harness hooks that
+   invoke them — ships with the first release, not after it. Three facts make
+   this necessary. Everything distinctive runs on the edges of the graph. The
+   capture-cost thesis
+   ([spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric))
+   is not testable without this machinery. And a validator that ships before
+   the machinery would measure a corpus that nothing helps to maintain.
 
-5. **A distribution model** so one organisation can publish a taxonomy (and the
-   doctrine that explains it) and many repositories can consume it, customise it by
-   overlay, upgrade it deliberately, and prove they are still conformant.
+5. **A distribution model** that lets one organisation publish a taxonomy and
+   the doctrine that explains it. Many repositories can then consume that
+   taxonomy. They can customise it by overlay, upgrade it deliberately, and
+   prove that they are still conformant.
 
-6. **A doctrine starter kit** — an opinionated default taxonomy and the prose that
-   explains it, shipped as a package that a new adopter can take wholesale, take
-   partially, or ignore.
+6. **A doctrine starter kit** — an opinionated default taxonomy and the prose
+   that explains it. It ships as a package that a new adopter can take fully,
+   take partially, or ignore.
 
-## What we are explicitly not building
+## What we do not build
 
 | Not building | Why | What to use instead |
 |---|---|---|
-| A documentation renderer | Static-site generation is solved | Emit navigation config for MkDocs / Docusaurus / Astro |
+| A documentation renderer | Static-site generators already solve this | Emit navigation config for MkDocs / Docusaurus / Astro |
 | A wiki or an editor | Documents are files in the repository, next to the code they describe | Any editor; the corpus is Markdown |
 | A code-analysis tool | We check documents and their declared links to code, never the code's meaning | Language-specific tooling |
-| A prose style checker | Voice and structure are in scope; grammar and readability are not | Vale, textlint — composable alongside |
-| A ticketing or workflow system | We reference work items; we do not manage them | Whatever tracker is in use |
+| A prose style checker | Voice and structure are in scope. Grammar and readability are not | Vale, textlint — composable alongside |
+| A ticketing or workflow system | We refer to work items. We do not manage them | Whatever tracker is in use |
 | An LLM product | The engine is deterministic. LLMs are consumers of the corpus, and one optional authoring surface | — |
 | A general knowledge base | The corpus documents a system, for people who change that system | — |
 
@@ -78,59 +83,65 @@ ours. The taxonomy is theirs to define; the engine is ours.
 
 These are the tie-breakers when a design decision is genuinely contested.
 
-1. **Configuration over code.** Anything an adopter might reasonably want different
-   belongs in the schema. If a change to taxonomy requires a change to the engine,
-   the design has failed.
+1. **Configuration over code.** Anything that an adopter might reasonably want
+   different belongs in the schema. If a change to the taxonomy requires a
+   change to the engine, the design is wrong.
 
-2. **One source of truth per fact, many paths to it.** A fact — including a fact
-   *about the corpus's structure* — is declared once. Prose that restates the schema
-   is generated from it or validated against it, never maintained in parallel.
+2. **One source of truth per fact, many paths to it.** You declare a fact once —
+   including a fact *about the structure of the corpus*. Prose that restates
+   the schema is generated from it or validated against it. No one maintains
+   that prose in parallel.
 
-3. **Derived artefacts are always regenerable.** If a human can hand-edit a
-   generated file without the system noticing, it will drift and be trusted while
-   wrong. Generation is checked, not merely offered.
+3. **Derived artefacts are always regenerable.** If a person can change a
+   generated file by hand, and the system does not see the change, that file
+   will drift. Readers will then trust a file that is wrong. Thus, the system
+   checks that generated files agree with their sources. It does not only
+   offer to regenerate them.
 
-4. **Visibility before blocking.** A new rule ships advisory, accumulates evidence
-   about its false-positive rate, and is promoted to blocking on that evidence. The
-   promotion criteria are recorded, not improvised.
+4. **Visibility before blocking.** A new rule ships as advisory. It collects
+   evidence about its false-positive rate. Only that evidence promotes the
+   rule to blocking. The promotion criteria are recorded, not improvised.
 
-5. **Explicit incompleteness.** The system records what it does not check. A gap
-   that is registered is triageable; a gap that is invisible compounds.
+5. **Explicit incompleteness.** The system records what it does not check. You
+   can triage a gap that the system registers. A gap that stays invisible
+   becomes worse over time.
 
 6. **Every rule earns its place.** Context is finite for humans and metered for
-   agents. A rule with no enforcement, no observed violation, and no stated cost of
-   failure is removed, not tolerated.
+   agents. We remove a rule that has no enforcement, no observed violation,
+   and no stated cost of failure. We do not tolerate it.
 
-7. **Fail open at the edges, closed at the core.** Agent-facing helpers degrade
-   silently when they cannot answer (a missing hint is better than a wrong one);
-   corpus validation does not.
+7. **Fail open at the edges, closed at the core.** When agent-facing helpers
+   cannot answer, they degrade silently, because a missing hint is better than
+   a wrong one. Corpus validation never degrades silently.
 
-8. **The system governs itself.** docgov's own documentation is a docgov corpus,
-   validated by docgov in its own CI. A change that is painful to dogfood is a
-   change we have not finished designing.
+8. **The system governs itself.** The documentation of docgov is itself a
+   docgov corpus, and docgov validates it in its own CI. If a change is
+   painful to dogfood, its design is not complete.
 
 ## Success criteria
 
-The system is working when:
+The system works when:
 
-- a new document's correct location, template, metadata, and required links are
-  determined by the schema, not by asking someone;
-- an organisation with a different taxonomy adopts it by writing a schema, not by
-  patching code;
-- an agent given a task retrieves the governing documents before reading source,
-  and measurably follows them more often than an agent without the corpus;
-- a taxonomy change propagates to consumers as a reviewable, verifiable migration
-  rather than a broadcast request;
-- every stated invariant either names the control that discharges it or appears in
-  the gap register, with no third category.
+- The schema determines the correct location, template, metadata, and required
+  links of a new document. No one has to ask.
+- An organisation with a different taxonomy adopts the system when it writes a
+  schema. It does not patch code.
+- An agent that receives a task retrieves the governing documents before it
+  reads source code. It measurably obeys them more often than an agent without
+  the corpus.
+- A taxonomy change propagates to consumers as a reviewable, verifiable
+  migration, not as a broadcast request.
+- Every stated invariant names the control that discharges it, or appears in
+  the gap register. There is no third category.
 
 ## Non-negotiables
 
-- **Markdown with YAML front matter** is the document format. No proprietary store.
+- **Markdown with YAML front matter** is the document format. There is no
+  proprietary store.
 - **The corpus is valid without the tool.** Everything degrades to readable
   Markdown in a browser or a text editor.
-- **No network dependency at check time.** Validation runs offline, in a container
-  or on a laptop, with the same result as CI.
-- **Deterministic core.** Given the same corpus and schema, the engine's output is
-  byte-identical. LLM involvement is confined to authoring assistance and to the
-  efficacy probes, and is never load-bearing for a verdict.
+- **No network dependency at check time.** Validation runs offline, in a
+  container or on a laptop, with the same result as CI.
+- **Deterministic core.** For the same corpus and schema, the output of the
+  engine is byte-identical. LLMs only help with authoring and supply the
+  efficacy probes. They are never load-bearing for a verdict.

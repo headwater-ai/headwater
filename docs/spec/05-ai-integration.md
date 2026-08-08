@@ -151,7 +151,7 @@ the traceability literature the design cites
 says author-maintained links decay because the payer is not the beneficiary. A
 release without the authoring skills, the hooks that invoke them at intent,
 write, and review time, and the telemetry that watches them is a release whose
-central bet is untested — which is why [spec 0](00-vision-and-scope.md#what-we-are-building)
+central bet is untested — which is why [spec 0](00-vision-and-scope.md#what-we-build)
 puts them in the first release rather than after it.
 
 Three commitments make the machinery governable rather than merely present:
