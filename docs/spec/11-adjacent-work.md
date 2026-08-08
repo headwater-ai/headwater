@@ -10,9 +10,9 @@ The question here is narrower and more uncomfortable: *what have we specified th
 
 Description logic separates a knowledge base into two parts. The **TBox** (terminology box) holds the schema: classes, their hierarchy, the relations that may hold between them. The **ABox** (assertion box) holds instances: individuals, their attributes, and the actual relations asserted between them.
 
-That is exactly docgov's split, and we have been describing it in invented vocabulary:
+That is exactly headwater's split, and we have been describing it in invented vocabulary:
 
-| docgov | Description logic |
+| headwater | Description logic |
 |---|---|
 | Taxonomy (kinds, facets, relations, regimes) | TBox |
 | Resolved taxonomy lock file | Compiled TBox |
@@ -22,7 +22,7 @@ That is exactly docgov's split, and we have been describing it in invented vocab
 
 Adopting the standard names costs nothing and buys precision. It also explains why the `validate` / `audit` split arrived at [spec 6](06-engine-architecture.md#taxonomy-validate-versus-taxonomy-audit) — that split is TBox reasoning versus ABox reasoning, which is a real distinction with decades of theory behind it, not a convenience we invented.
 
-**One boundary worth stating plainly.** docgov's ABox is the graph of *documents and their declared edges* — not the claims made inside the prose. "This service returns 404 on a missing key" is a sentence in a document; the system knows the document exists, what kind it is, and what it governs, but not what it asserts. Pretending otherwise would promise semantic consistency checking we cannot deliver. The ABox stops at the document boundary, and that limit belongs in the specification rather than in a footnote someone discovers later.
+**One boundary worth stating plainly.** headwater's ABox is the graph of *documents and their declared edges* — not the claims made inside the prose. "This service returns 404 on a missing key" is a sentence in a document; the system knows the document exists, what kind it is, and what it governs, but not what it asserts. Pretending otherwise would promise semantic consistency checking we cannot deliver. The ABox stops at the document boundary, and that limit belongs in the specification rather than in a footnote someone discovers later.
 
 > **Applied:** TBox/ABox vocabulary adopted in specs 1, 2 and 6, with the ABox boundary stated explicitly.
 
@@ -50,7 +50,7 @@ Four things transfer directly.
 
 Their tests do not hardcode expectations; they ask the ontology what fields should exist for the version found in the file. Coverage adapts because the schema is queried, not copied.
 
-docgov has the ingredients and has not connected them: acceptance criteria carry stable identifiers ([spec 3](03-authoring-and-lifecycle.md#identifiers)), and contract sidecars were credited as prior art but never actually specified. Connected, they give the strongest possible form of "the specification describes what is" — the specification *generates the check that proves it*.
+headwater has the ingredients and has not connected them: acceptance criteria carry stable identifiers ([spec 3](03-authoring-and-lifecycle.md#identifiers)), and contract sidecars were credited as prior art but never actually specified. Connected, they give the strongest possible form of "the specification describes what is" — the specification *generates the check that proves it*.
 
 > **Applied:** contract sidecars specified in [spec 2](02-taxonomy-model.md), with identified acceptance criteria as an oracle source.
 
@@ -58,9 +58,9 @@ docgov has the ingredients and has not connected them: acceptance criteria carry
 
 Their system prompt states a precedence: where the normative specification and the conventional practice disagree, prefer the normative one **and note the discrepancy**. The ontology carries `hasSourceAuthority`; the prompt turns it into a decision rule.
 
-docgov has no such ordering. Derived reading precedence records whose *purpose* governs, which is not the same question — when a standard and a specification disagree on a fact, nothing in the corpus says which one a reader should believe. That is a genuine hole, and it is precisely the situation where an agent will otherwise pick arbitrarily and sound confident.
+headwater has no such ordering. Derived reading precedence records whose *purpose* governs, which is not the same question — when a standard and a specification disagree on a fact, nothing in the corpus says which one a reader should believe. That is a genuine hole, and it is precisely the situation where an agent will otherwise pick arbitrarily and sound confident.
 
-> **Applied, then cut.** An `authority` ordering on kinds was adopted here and removed by the core-concepts review: the trigger (detecting factual disagreement) is a judgement the ABox boundary forswears, and a global scalar cannot carry the scoped precedence their prompt actually encodes. What docgov keeps is the part of their design that works — the *decision rule* ("note the discrepancy") as an agent instruction, and the adjudication recorded as data ([spec 2](02-taxonomy-model.md#disagreement-is-adjudicated-not-ranked), [Q18](09-open-questions.md#q18--recording-adjudicated-disagreements)).
+> **Applied, then cut.** An `authority` ordering on kinds was adopted here and removed by the core-concepts review: the trigger (detecting factual disagreement) is a judgement the ABox boundary forswears, and a global scalar cannot carry the scoped precedence their prompt actually encodes. What headwater keeps is the part of their design that works — the *decision rule* ("note the discrepancy") as an agent instruction, and the adjudication recorded as data ([spec 2](02-taxonomy-model.md#disagreement-is-adjudicated-not-ranked), [Q18](09-open-questions.md#q18--recording-adjudicated-disagreements)).
 
 ### B.3 Generated artefacts cite their source
 
@@ -88,7 +88,7 @@ Read [spec 2](02-taxonomy-model.md) and then read LinkML's documentation, and th
 
 Where it stops:
 
-| docgov declaration | LinkML |
+| headwater declaration | LinkML |
 |---|---|
 | Kinds, facets, vocabularies, cardinality | Direct fit — this is what LinkML is |
 | Relations with endpoints and cardinality | Direct fit |
@@ -97,16 +97,16 @@ Where it stops:
 | Sequences, projections, overlays, core | No equivalent |
 | Compatibility measurement | No equivalent |
 
-**That table is wrong, and a [worked example](../evaluations/linkml-worked-example.md) shows why.** Expressing the taxonomy in real LinkML establishes two things the guess above missed. LinkML already ships three of the twenty research-derived changes — SKOS mappings, PROV alignment, and `recommended` as advisory severity — and its `designates_type` is our heterogeneous-shelf discriminator under another name. But the boundary is not structural-versus-governance: *reciprocity* fails, and reciprocity is as structural as anything in spec 2. The real line is that LinkML, SHACL, and JSON Schema all validate **one instance against a shape**, while everything docgov does that they cannot is a property of the **whole graph, or of the corpus over time**.
+**That table is wrong, and a [worked example](../evaluations/linkml-worked-example.md) shows why.** Expressing the taxonomy in real LinkML establishes two things the guess above missed. LinkML already ships three of the twenty research-derived changes — SKOS mappings, PROV alignment, and `recommended` as advisory severity — and its `designates_type` is our heterogeneous-shelf discriminator under another name. But the boundary is not structural-versus-governance: *reciprocity* fails, and reciprocity is as structural as anything in spec 2. The real line is that LinkML, SHACL, and JSON Schema all validate **one instance against a shape**, while everything headwater does that they cannot is a property of the **whole graph, or of the corpus over time**.
 
-That reframes the question from "does LinkML cover enough?" to "is a two-layer architecture — standard shape layer plus docgov graph layer — better than one custom layer?" Three readings follow:
+That reframes the question from "does LinkML cover enough?" to "is a two-layer architecture — standard shape layer plus headwater graph layer — better than one custom layer?" Three readings follow:
 
-1. **Adopt it as the substrate.** Author the structural core as LinkML, layer docgov's governance declarations alongside, and inherit the meta-schema, the validator, and SHACL/JSON-Schema/OWL output. Less to build; a standard others already read; automatic interoperability.
+1. **Adopt it as the substrate.** Author the structural core as LinkML, layer headwater's governance declarations alongside, and inherit the meta-schema, the validator, and SHACL/JSON-Schema/OWL output. Less to build; a standard others already read; automatic interoperability.
 2. **Stay independent, borrow the design.** LinkML's target is data models for research and biomedical data; a documentation taxonomy is a different animal, and a bolted-together schema — half LinkML, half ours — may be worse to author than either alone. The cognitive-dimensions walkthrough (Q2) is the instrument for deciding, and "two languages in one file" scores badly on role-expressiveness.
 
-3. **Emit it, do not author in it.** Author in docgov's language and compile the shape layer *to* LinkML, which then generates JSON Schema, SHACL, OWL and Pydantic through LinkML's own toolchain. One authoring surface, fully validated, with a standards-based export. This option only became visible by writing the example out, and it is now the leading candidate.
+3. **Emit it, do not author in it.** Author in headwater's language and compile the shape layer *to* LinkML, which then generates JSON Schema, SHACL, OWL and Pydantic through LinkML's own toolchain. One authoring surface, fully validated, with a standards-based export. This option only became visible by writing the example out, and it is now the leading candidate.
 
-The deciding evidence against option 1 is mundane: everything docgov-specific lands in LinkML `annotations`, which are untyped pass-through. LinkML carries them and validates none of them — so for exactly the half that is ours, the meta-schema benefit disappears, and authors face two languages in one file with no visual cue for which half is checked.
+The deciding evidence against option 1 is mundane: everything headwater-specific lands in LinkML `annotations`, which are untyped pass-through. LinkML carries them and validates none of them — so for exactly the half that is ours, the meta-schema benefit disappears, and authors face two languages in one file with no visual cue for which half is checked.
 
 I am not settling this unilaterally: it changes what gets built, it is close to irreversible under option 1, and it interacts with the language decision in Q1 — LinkML's tooling is Python, which pulls against a Rust core. Option 3 dissolves that tension, which is part of its appeal.
 
@@ -131,7 +131,7 @@ Two points of contact:
 - **The substrate is identical.** Markdown plus YAML front matter as a semantic contract for machine readers, deliberately *not* RDF/OWL/SHACL. That is an independent data point that the heavyweight stack is not required for this class of problem — useful evidence when weighing Q13, and a caution against assuming the standards-based route is obviously correct.
 - **Assurance is not a layer.** Their framing — provenance, authorship, freshness, auditability and ownership as oversight around the whole chain rather than a stage within it — matches [spec 4](04-assurance-model.md) and is a cleaner statement of it than ours.
 
-But the direction is opposite. OpenGEO points **outward**: a publisher declaring meaning to third-party engines it does not control, with execution explicitly out of scope. docgov points **inward**: an organisation governing its own corpus, for its own agents, where we control the whole pipeline and can therefore *check* things rather than merely declare them. Their context layer (tone, persona, interpretation envelope) follows from not controlling the consumer; we do control it, so we constrain behaviour directly instead of requesting it.
+But the direction is opposite. OpenGEO points **outward**: a publisher declaring meaning to third-party engines it does not control, with execution explicitly out of scope. headwater points **inward**: an organisation governing its own corpus, for its own agents, where we control the whole pipeline and can therefore *check* things rather than merely declare them. Their context layer (tone, persona, interpretation envelope) follows from not controlling the consumer; we do control it, so we constrain behaviour directly instead of requesting it.
 
 The transferable gap is **discovery**. OpenGEO takes seriously how a machine reader arrives cold and finds out what a corpus is. [Spec 7](07-distribution-and-federation.md) covers distribution to repositories that already know about us, and says nothing about an agent encountering the corpus for the first time.
 
@@ -145,7 +145,7 @@ Two related sources: the r/OntologyEngineering community, and Karpathy's *LLM Wi
 
 The community's stated position is that ontology should come **first** — that you build the model of the domain and let agents derive the stack that supports it, treating implementation as a consequence of the model rather than the other way round. Documentation generates the system; it does not describe one that already exists.
 
-That is the testerstories pipeline (§B) generalised into a methodology, and it is further than docgov currently goes. Our specs *describe* a system that exists; theirs *generate* one. The two meet at the oracle idea in §B.1 — a specification precise enough to test an implementation is most of the way to one precise enough to generate it — and it is worth being clear that docgov's design does not preclude the stronger position, but does not currently claim it either.
+That is the testerstories pipeline (§B) generalised into a methodology, and it is further than headwater currently goes. Our specs *describe* a system that exists; theirs *generate* one. The two meet at the oracle idea in §B.1 — a specification precise enough to test an implementation is most of the way to one precise enough to generate it — and it is worth being clear that headwater's design does not preclude the stronger position, but does not currently claim it either.
 
 ### F.2 Karpathy's LLM Wiki
 
@@ -153,7 +153,7 @@ The pattern: raw sources stay immutable; an LLM incrementally builds and maintai
 
 Four things in it matter here, and one of them is a correction to something I wrote.
 
-**The anti-RAG argument, better than mine.** The objection raised is not that retrieval is imprecise — it is that retrieval *accumulates nothing*. Every question re-derives its answer from fragments; the synthesis is thrown away; ask again tomorrow and the work is done again from scratch. Knowledge should be **compiled once and kept current**, not reconstructed per query. That is a stronger and more durable argument than the precision one I gave in [spec 5](05-ai-integration.md#what-we-do-not-do), and it is the argument docgov's whole design rests on: validation, relations, and projections are all compilation steps whose results persist.
+**The anti-RAG argument, better than mine.** The objection raised is not that retrieval is imprecise — it is that retrieval *accumulates nothing*. Every question re-derives its answer from fragments; the synthesis is thrown away; ask again tomorrow and the work is done again from scratch. Knowledge should be **compiled once and kept current**, not reconstructed per query. That is a stronger and more durable argument than the precision one I gave in [spec 5](05-ai-integration.md#what-we-do-not-do), and it is the argument headwater's whole design rests on: validation, relations, and projections are all compilation steps whose results persist.
 
 Also worth noting as a data point: the pattern reports that a maintained index file works well into the hundreds of pages *without* embedding infrastructure. A governed documentation corpus is squarely in that range.
 
@@ -165,19 +165,19 @@ An LLM lint pass is therefore a legitimate **coherence control** — sampled, de
 
 > **Applied:** LLM-assisted coherence sweep added as a control class in spec 4.
 
-**The gap it exposes: a third content tier.** The pattern's wiki is neither hand-authored nor mechanically generated. It is *synthesised* — an agent's evolving interpretation of sources, revised as new ones arrive. docgov recognises only two tiers: authored documents and deterministic projections. Synthesised content fits neither, and the difference matters, because a projection can be verified by regenerating it and a synthesis cannot.
+**The gap it exposes: a third content tier.** The pattern's wiki is neither hand-authored nor mechanically generated. It is *synthesised* — an agent's evolving interpretation of sources, revised as new ones arrive. headwater recognises only two tiers: authored documents and deterministic projections. Synthesised content fits neither, and the difference matters, because a projection can be verified by regenerating it and a synthesis cannot.
 
-Whether docgov should admit a synthesised tier is a genuine question — it would need its own provenance, its own staleness rules, and a clear statement that it is never canonical for anything. It is also how most organisations will actually want to use this.
+Whether headwater should admit a synthesised tier is a genuine question — it would need its own provenance, its own staleness rules, and a clear statement that it is never canonical for anything. It is also how most organisations will actually want to use this.
 
 > **Recorded as [Q15](09-open-questions.md#q15--a-synthesised-content-tier).**
 
 ## G. Knowledge-graph chunking for RAG — a problem we do not have
 
-The TBox/ABox framing (§A) is the valuable half and stands independently of retrieval. The chunking half — how to slice a knowledge graph into embeddable pieces, and the trade between class-based and instance-based strategies — is solving a problem docgov does not have, and the reasoning is worth recording because it also explains *why* we do not have it.
+The TBox/ABox framing (§A) is the valuable half and stands independently of retrieval. The chunking half — how to slice a knowledge graph into embeddable pieces, and the trade between class-based and instance-based strategies — is solving a problem headwater does not have, and the reasoning is worth recording because it also explains *why* we do not have it.
 
 Chunking exists because embedding retrieval must reconstitute meaning at query time from fragments chosen by similarity. Every strategy in that article is managing a loss that the approach introduces: class-based chunking orphans cross-class relations, instance-based chunking fragments schema reasoning, and hybrid approaches are recommended because neither loss is acceptable alone.
 
-docgov never incurs the loss. Retrieval returns *identified documents reached along declared edges*, so structure is not something to be reconstructed — it was never dissolved. There is nothing to chunk because nothing is being embedded.
+headwater never incurs the loss. Retrieval returns *identified documents reached along declared edges*, so structure is not something to be reconstructed — it was never dissolved. There is nothing to chunk because nothing is being embedded.
 
 This is the position stated properly rather than assumed, and it is recorded in [spec 5](05-ai-integration.md#what-we-do-not-do).
 
@@ -218,17 +218,17 @@ The point of contact is the **Open Knowledge Format**, which LeanCTX defines its
 - a relation vocabulary of `depends_on`, `related_to`, `supports`, `contradicts`, `supersedes`
 - written into the user's repository, byte-deterministic so exports diff cleanly
 
-Typed nodes, typed edges, Markdown in the repository. That is docgov's substrate, reached from an entirely different starting problem — which makes it a third independent arrival at the same choice, after OpenGEO (§E) and the LLM Wiki (§F.2). Three is enough to stop treating it as a preference.
+Typed nodes, typed edges, Markdown in the repository. That is headwater's substrate, reached from an entirely different starting problem — which makes it a third independent arrival at the same choice, after OpenGEO (§E) and the LLM Wiki (§F.2). Three is enough to stop treating it as a preference.
 
 ### I.2 The arrow points the other way, and that is the whole difference
 
-OKF is an **export**. The durable store is a `knowledge.json` under the user's config directory — the only format that round-trips losslessly — and Markdown is a projection *out* of it, for portability and hand-editing. docgov is the exact inverse: the Markdown is the corpus, and the graph, indexes and rules are projections out of *that* ([Q6](09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest) exists precisely to keep it that way).
+OKF is an **export**. The durable store is a `knowledge.json` under the user's config directory — the only format that round-trips losslessly — and Markdown is a projection *out* of it, for portability and hand-editing. headwater is the exact inverse: the Markdown is the corpus, and the graph, indexes and rules are projections out of *that* ([Q6](09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest) exists precisely to keep it that way).
 
 The inversion explains their validation, which is worth stating concretely because it is the sharpest available illustration of what a taxonomy is *for*. `lint_okf_bundle` returns warnings only — its own doc comment says the checks are advisory and "a partially-malformed bundle should still import what it can" — and the complete set is: not a directory, unreadable, missing front matter, missing `type`, empty body. Four checks. The importer then does `get_str(fm, "type").unwrap_or("fact")`.
 
 **`type` is a free string with a default.** There is no closed vocabulary, no per-type required facets, no cardinality, no reciprocity, nothing whole-graph.
 
-This is not a criticism. For an export format, lenience is correct engineering: the obligation is to survive a round trip, and a format that rejects its own bundles serves nobody. But it settles the overlap question. LeanCTX has our file format and none of our TBox — and since [§C](#c-linkml--the-uncomfortable-one) established that everything docgov does beyond one-instance-against-a-shape is the interesting part, sharing a serialisation costs us nothing and threatens nothing.
+This is not a criticism. For an export format, lenience is correct engineering: the obligation is to survive a round trip, and a format that rejects its own bundles serves nobody. But it settles the overlap question. LeanCTX has our file format and none of our TBox — and since [§C](#c-linkml--the-uncomfortable-one) established that everything headwater does beyond one-instance-against-a-shape is the interesting part, sharing a serialisation costs us nothing and threatens nothing.
 
 ### I.3 What transfers
 

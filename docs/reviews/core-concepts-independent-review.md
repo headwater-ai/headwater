@@ -37,7 +37,7 @@ This makes two advertised checks impossible while preserving the appearance of d
 
 `02-taxonomy-model.md` assigns scalar authority to kinds while also saying authority is scoped: a specification outranks a standard only within its component. No scope operand appears in the declaration.
 
-More fundamentally, `01-conceptual-model.md` says docgov does not model claims inside prose, and `04-assurance-model.md` says semantic disagreement requires judgement. `on_disagreement` therefore cannot fire until a human or coherence sweep has already identified the disagreement. At that point a global kind rank is a poorer representation than the adjudication itself.
+More fundamentally, `01-conceptual-model.md` says headwater does not model claims inside prose, and `04-assurance-model.md` says semantic disagreement requires judgement. `on_disagreement` therefore cannot fire until a human or coherence sweep has already identified the disagreement. At that point a global kind rank is a poorer representation than the adjudication itself.
 
 Removing authority rank loses no currently executable check. Conflict reporting and the instruction to cite both sources survive. This settled part of spec 2 should be reopened. (Confidence: high.)
 

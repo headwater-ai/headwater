@@ -42,7 +42,7 @@ The first three are static and run as advisory checks. The last two come from pr
 The confidence gate is a scent threshold: the engine stays silent when the strongest available cue is weak, because a misleading cue is worse than an absent one. That is the same asymmetry stated in foraging terms, and it is why the gate errs toward silence.
 
 ```
-docgov route "add rate limiting to the ingest API"
+headwater route "add rate limiting to the ingest API"
   docs/standards/api-design.md      — API surface conventions, versioning, error shapes
   docs/specifications/ingest/...    — ingest service behaviour and SLOs
   docs/decisions/dr-0031.md         — why throttling is applied at the edge, not per-service

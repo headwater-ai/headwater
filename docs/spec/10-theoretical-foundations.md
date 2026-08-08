@@ -151,7 +151,7 @@ Noy and Klein ("Ontology Evolution: Not the Same as Schema Evolution", *KAIS*, 2
 
 Spec 2 originally carried a version table (minor for additive, major for anything else) — precisely the naive schema-evolution model this paper argues against. Adding an optional facet is "additive" and yet can change which documents a projection includes, or make a previously valid corpus fail a completeness check.
 
-> **Change:** replace the coarse semver table with declared **compatibility dimensions**, evaluated against a real corpus. `docgov taxonomy diff` should report per dimension: does every existing document still classify to the same kind (identity preservation)? does every check that passed still pass (consequence preservation)? do projections produce the same outputs? The version number becomes a *consequence* of the measured impact, not a publisher's guess about it.
+> **Change:** replace the coarse semver table with declared **compatibility dimensions**, evaluated against a real corpus. `headwater taxonomy diff` should report per dimension: does every existing document still classify to the same kind (identity preservation)? does every check that passed still pass (consequence preservation)? do projections produce the same outputs? The version number becomes a *consequence* of the measured impact, not a publisher's guess about it.
 
 ### D.2 Overlays are a variability problem with prior art
 

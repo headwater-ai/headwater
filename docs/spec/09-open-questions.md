@@ -37,7 +37,7 @@ Viscosity and hidden dependencies will decide it, and the framework makes explic
 
 ## Q3 — How much of the default taxonomy ships in the box
 
-A taxonomy that is too opinionated repels adopters with an existing culture; one that is too thin leaves them facing a blank schema. Options: minimal core plus optional packages; one batteries-included default; or a `docgov init` interview that composes a taxonomy from answers.
+A taxonomy that is too opinionated repels adopters with an existing culture; one that is too thin leaves them facing a blank schema. Options: minimal core plus optional packages; one batteries-included default; or a `headwater init` interview that composes a taxonomy from answers.
 
 **Leaning:** a small core (decisions, standards, guides) plus optional packages (specifications, evidence, operations, compliance), with an interview that composes them. The interview matters more than the packages — the blank-schema problem is a first-run problem.
 
@@ -59,7 +59,7 @@ Options: rebuilt from cache each run (simplest, no sync problem); persisted to a
 
 A fourth option arrived with Q13: an **RDF projection**, which is what SHACL validation would consume. It carries a question the others do not — *fidelity*. Once checks read a projection rather than the documents, the projector becomes the most trusted component in the pipeline and nothing downstream can detect its mistakes; a projector that drops or mistypes a document yields a graph that validates cleanly and does not represent the corpus ([evaluation](../evaluations/shacl-worked-example.md#problem-one-everything-downstream-trusts-the-projection-and-shacl-does-not-check-it)).
 
-**Leaning:** cache by default, with `docgov export` producing a committed JSON graph for anyone who wants to build on it. Avoid a database until a query workload justifies it. If RDF is emitted, it is a **derived view and never canonical**, and it ships with round-trip fidelity tests — the Markdown is the corpus, and any projection that disagrees with it is the projection's bug.
+**Leaning:** cache by default, with `headwater export` producing a committed JSON graph for anyone who wants to build on it. Avoid a database until a query workload justifies it. If RDF is emitted, it is a **derived view and never canonical**, and it ships with round-trip fidelity tests — the Markdown is the corpus, and any projection that disagrees with it is the projection's bug.
 
 ## Q7 — Scope of the MCP surface
 
@@ -95,7 +95,7 @@ This also settles where authority sits, in the terms [principle 2](00-vision-and
 
 ## Q10 — Naming
 
-`docgov` is a working name. The name matters for adoption and for the CLI verb people type dozens of times a day.
+`headwater` is a working name. The name matters for adoption and for the CLI verb people type dozens of times a day.
 
 ## Q11 — Licence and distribution posture
 
@@ -105,7 +105,7 @@ Open source, source-available, or internal-only; and whether the default taxonom
 
 An organisation already running a comparable framework needs an on-ramp: a taxonomy inferred from an existing corpus, a report of what does not fit, and an incremental adoption mode where checks apply only to newly touched documents. Whether this is a first-release feature or a follow-on determines how much the schema must tolerate a half-conformant corpus — which is a design constraint, not a feature request.
 
-**Leaning:** `docgov infer` (propose a taxonomy from an existing tree) and a `--since <ref>` mode are first-release. Adoption friction is the thing most likely to kill this, and both of these directly attack it.
+**Leaning:** `headwater infer` (propose a taxonomy from an existing tree) and a `--since <ref>` mode are first-release. Adoption friction is the thing most likely to kill this, and both of these directly attack it.
 
 The between-majors half of this question is no longer open: the core-concepts review established that it constrains the validity model itself, not migration UX, and the lock now records a migration state with `migration-pending` findings ([spec 7](07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)). What remains open here is first contact — a corpus that has never been valid, which the migration state (defined against a known-good starting point) does not cover.
 
@@ -117,29 +117,29 @@ The between-majors half of this question is no longer open: the core-concepts re
 
 | Option | For | Against |
 |---|---|---|
-| 1. Author in LinkML | Meta-schema, validator, and multi-format output for free; a standard others already read | Everything docgov-specific lands in untyped `annotations` that LinkML never validates, so the meta-schema benefit disappears for exactly our half; two languages in one file; its Python tooling pulls against a Rust core (Q1) |
+| 1. Author in LinkML | Meta-schema, validator, and multi-format output for free; a standard others already read | Everything headwater-specific lands in untyped `annotations` that LinkML never validates, so the meta-schema benefit disappears for exactly our half; two languages in one file; its Python tooling pulls against a Rust core (Q1) |
 | 2. Borrow the design, stay independent | One coherent language; full control of authoring ergonomics | We rebuild a validator and a compiler that already exist, and forfeit interoperability |
-| 3. **Author in docgov's language, emit LinkML** | One validated authoring surface; LinkML's generators then produce JSON Schema, SHACL, OWL and Pydantic for free; reversible, since a generator can be changed or dropped; dissolves the Q1 tension | A generator to build and maintain, plus fidelity tests proving the emitted schema accepts exactly what docgov accepts |
+| 3. **Author in headwater's language, emit LinkML** | One validated authoring surface; LinkML's generators then produce JSON Schema, SHACL, OWL and Pydantic for free; reversible, since a generator can be changed or dropped; dissolves the Q1 tension | A generator to build and maintain, plus fidelity tests proving the emitted schema accepts exactly what headwater accepts |
 
 A [worked example](../evaluations/linkml-worked-example.md) settles two things that were guesses when this question was raised.
 
 **LinkML already ships more than expected.** `recommended` is advisory severity; `designates_type` is our heterogeneous-shelf discriminator; SKOS mapping slots and PROV `slot_uri` alignment are native — three of the twenty research-derived changes, for free.
 
-**The boundary is not structural-versus-governance.** *Reciprocity* is not expressible in LinkML, and reciprocity is as structural as anything in spec 2. The real line is that LinkML, SHACL and JSON Schema all validate **one instance against a shape**, whereas everything docgov does that they cannot — reciprocity, satellite inheritance, cross-endpoint conflict rules, participation expectations — is a property of the **whole graph or of the corpus over time**.
+**The boundary is not structural-versus-governance.** *Reciprocity* is not expressible in LinkML, and reciprocity is as structural as anything in spec 2. The real line is that LinkML, SHACL and JSON Schema all validate **one instance against a shape**, whereas everything headwater does that they cannot — reciprocity, satellite inheritance, cross-endpoint conflict rules, participation expectations — is a property of the **whole graph or of the corpus over time**.
 
 **SHACL reaches the layer LinkML cannot.** A second [worked example](../evaluations/shacl-worked-example.md) shows reciprocity — the constraint that defeated LinkML — is routine in SHACL, along with cross-node conflict detection, satellite inheritance, and even windowed sequence expectations. All of them require dropping to SPARQL, because SHACL Core can traverse but cannot refer back to the focus node from the far end of a traversal.
 
 Two corrections to what this question originally recorded. The **error-message objection is withdrawn**: `sh:message` with variable interpolation makes messages as good as they are authored, and generated shapes would be as good as our generator. The **SPARQL-engine objection is weaker than stated**: embeddable Rust SPARQL engines exist, so it needs measuring against the change-scoped budget rather than assuming. The objections that survive are different and sharper — **line numbers, remediation and fixability do not survive the RDF round trip**, and those are what make a finding actionable under [spec 4](04-assurance-model.md#findings).
 
-**Leaning:** option 3, to be confirmed by the Q2 walkthrough — and extended: emit **LinkML for the shape layer and SHACL for the graph layer**, so an external consumer can validate a docgov corpus to useful depth without installing docgov. It makes the shape/graph split an explicit architectural seam rather than an accident, and every mature validation stack in this space already has that shape.
+**Leaning:** option 3, to be confirmed by the Q2 walkthrough — and extended: emit **LinkML for the shape layer and SHACL for the graph layer**, so an external consumer can validate a headwater corpus to useful depth without installing headwater. It makes the shape/graph split an explicit architectural seam rather than an accident, and every mature validation stack in this space already has that shape.
 
-The decisive argument is the same for both, and stronger for SHACL: every interesting constraint is embedded SPARQL, which is *less* readable hand-authored than an engine predicate — but generated, nobody reads it, and readability stops being a cost. What stays docgov-native either way: schema operations, statistical measures, instrumentation, and the finding shape. The emitted shape set is deliberately a **subset**, and must declare itself as one — an external validator reporting a clean run while believing it checked everything is worse than one that knows what it skipped. Counter-evidence worth keeping in view: [OpenGEO](11-adjacent-work.md#e-opengeo--same-substrate-opposite-direction) solves a neighbouring problem on Markdown and YAML while explicitly declining RDF/OWL/SHACL, so a standards-based route is not self-evidently correct.
+The decisive argument is the same for both, and stronger for SHACL: every interesting constraint is embedded SPARQL, which is *less* readable hand-authored than an engine predicate — but generated, nobody reads it, and readability stops being a cost. What stays headwater-native either way: schema operations, statistical measures, instrumentation, and the finding shape. The emitted shape set is deliberately a **subset**, and must declare itself as one — an external validator reporting a clean run while believing it checked everything is worse than one that knows what it skipped. Counter-evidence worth keeping in view: [OpenGEO](11-adjacent-work.md#e-opengeo--same-substrate-opposite-direction) solves a neighbouring problem on Markdown and YAML while explicitly declining RDF/OWL/SHACL, so a standards-based route is not self-evidently correct.
 
 ### The OKF question is a different layer
 
 The question above is about the **TBox**: whether an external language expresses our schema and our checks. [OKF](11-adjacent-work.md#i1-okf--the-same-substrate-arrived-at-independently) — LeanCTX's Markdown-plus-front-matter knowledge format — is about the **ABox**: whether the *corpus itself* is exportable to something another tool already reads. The two share the word "export" and nothing else, and conflating them would import the substrate question's weight onto a decision that does not carry it.
 
-It does not carry it for three reasons. It is **additive**: an emitter that nobody uses costs a generator and a fidelity test, and deleting it later breaks nothing upstream. It is **already most of the way done**: OKF is a directory of Markdown files with YAML front matter, `type` required, and relations as Markdown links, which describes what we already write. And it is **lossless in the direction that matters** — OKF carries unrecognised front-matter keys through a parse-emit cycle untouched, so docgov facets with no OKF meaning ride along under a `docgov_*` prefix rather than being dropped.
+It does not carry it for three reasons. It is **additive**: an emitter that nobody uses costs a generator and a fidelity test, and deleting it later breaks nothing upstream. It is **already most of the way done**: OKF is a directory of Markdown files with YAML front matter, `type` required, and relations as Markdown links, which describes what we already write. And it is **lossless in the direction that matters** — OKF carries unrecognised front-matter keys through a parse-emit cycle untouched, so headwater facets with no OKF meaning ride along under a `headwater_*` prefix rather than being dropped.
 
 Two constraints if it is built. The emitted bundle is a **projection and never canonical**, on the same terms Q6 sets for any RDF view: the Markdown corpus is the truth, and a disagreement is the projector's bug. And OKF's own conformance checking is four advisory warnings, so a consumer validating an exported bundle has verified almost nothing about it — the export must not be mistaken for a second opinion on the corpus. That is the same "declare yourself a subset" obligation the emitted shape set carries above, for the same reason.
 
@@ -151,7 +151,7 @@ Two constraints if it is built. The emitted bundle is a **projection and never c
 
 [Spec 7](07-distribution-and-federation.md) covers distribution to repositories that already know about the publisher. Nothing covers an agent or tool encountering a corpus cold: how it discovers that a corpus exists, what taxonomy governs it, what version, and where to start reading.
 
-Prior art worth copying from rather than reinventing: a well-known file at a predictable path, link relations from rendered pages, and an MCP server advertising the corpus as a capability. All three are cheap, and the first two work without any docgov installation at all.
+Prior art worth copying from rather than reinventing: a well-known file at a predictable path, link relations from rendered pages, and an MCP server advertising the corpus as a capability. All three are cheap, and the first two work without any headwater installation at all.
 
 **Leaning:** a small machine-readable descriptor at a fixed path — taxonomy identity and version, corpus root, entry points, and the graph export location — plus the MCP surface for agents that can use it. Defer until the graph export format is stable, because the descriptor should point at it.
 
@@ -159,11 +159,11 @@ Prior art worth copying from rather than reinventing: a well-known file at a pre
 
 **Blocks:** the provenance model, if the answer is yes.
 
-docgov recognises two kinds of content: **authored** (a human wrote it; it is canonical) and **generated** (a projection; verified by regenerating it and comparing). Karpathy's LLM Wiki pattern ([spec 11](11-adjacent-work.md#f2-karpathys-llm-wiki)) is built on a third: **synthesised** — an agent's evolving interpretation of sources, revised as new ones arrive.
+headwater recognises two kinds of content: **authored** (a human wrote it; it is canonical) and **generated** (a projection; verified by regenerating it and comparing). Karpathy's LLM Wiki pattern ([spec 11](11-adjacent-work.md#f2-karpathys-llm-wiki)) is built on a third: **synthesised** — an agent's evolving interpretation of sources, revised as new ones arrive.
 
 It fits neither existing tier, and the difference is not cosmetic: a projection is verifiable by regeneration, a synthesis is not. Two runs over the same sources produce different prose, both defensible.
 
-Open: whether docgov admits synthesised content at all; if so, whether it needs its own staleness rules, how it is prevented from ever becoming canonical for anything, and whether a human acceptance step promotes it to authored or whether it stays permanently second-class.
+Open: whether headwater admits synthesised content at all; if so, whether it needs its own staleness rules, how it is prevented from ever becoming canonical for anything, and whether a human acceptance step promotes it to authored or whether it stays permanently second-class.
 
 **Leaning:** admit it, permanently non-canonical, clearly marked, never a valid target for a `governs` or `verifies` relation — with promotion to authored requiring an explicit human acceptance that changes its provenance record. It is how most organisations will actually want to use this, and refusing to model it just means it happens unmarked.
 
@@ -190,7 +190,7 @@ Open: whether docgov admits synthesised content at all; if so, whether it needs 
 
 The last row is where this question touches Q14, and it is the one an ordinary marketing site would omit. For a project whose entire thesis is that machines are readers in their own right, being unreadable to the machines that would recommend it is a self-inflicted wound.
 
-Two constraints particular to docgov. The site should be **generated from the corpus that documents docgov** — anything else is a governance system whose own public documentation is ungoverned, and that is the first thing a sceptical reader will check. And the benchmark and self-assessment rows have to be **honest before they are impressive**: §I.4 records claims that move between README versions as the thing that made an otherwise strong project harder to trust, and a governance tool caught inflating its own numbers has nothing left to sell.
+Two constraints particular to headwater. The site should be **generated from the corpus that documents headwater** — anything else is a governance system whose own public documentation is ungoverned, and that is the first thing a sceptical reader will check. And the benchmark and self-assessment rows have to be **honest before they are impressive**: §I.4 records claims that move between README versions as the thing that made an otherwise strong project harder to trust, and a governance tool caught inflating its own numbers has nothing left to sell.
 
 **Leaning:** deferred, deliberately, until there is an engine worth visiting a site about — but the sitemap is worth drafting early, because it is a forcing function for positioning, and every column above is a question the specification should be able to answer already. Where it cannot, that is a gap in the design rather than in the marketing.
 

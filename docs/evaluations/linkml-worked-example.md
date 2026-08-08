@@ -1,4 +1,4 @@
-# The docgov taxonomy in LinkML — a worked example
+# The headwater taxonomy in LinkML — a worked example
 
 Evidence for [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate). [Spec 11](../spec/11-adjacent-work.md#c-linkml--the-uncomfortable-one) claimed LinkML covers the "structural half" of [spec 2](../spec/02-taxonomy-model.md) and none of the "governance half". Writing it out shows that framing was wrong — and the real boundary is more useful than the one I guessed.
 
@@ -7,21 +7,21 @@ Evidence for [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substra
 A meaningful subset of the default taxonomy: three kinds, the core facets, four relations, one heterogeneous shelf, identifiers, and profiles.
 
 ```yaml
-id: https://docgov.dev/taxonomy/standard
-name: docgov_standard
-title: docgov standard taxonomy
+id: https://headwater.dev/taxonomy/standard
+name: headwater_standard
+title: headwater standard taxonomy
 description: >-
   The default documentation taxonomy, expressed in LinkML. Governance semantics
-  that LinkML has no metaslot for are carried in `annotations` under the docgov
+  that LinkML has no metaslot for are carried in `annotations` under the headwater
   prefix; see the analysis for which of those it can and cannot act on.
 license: https://creativecommons.org/publicdomain/zero/1.0/
 
 prefixes:
   linkml: https://w3id.org/linkml/
-  docgov: https://docgov.dev/taxonomy/
+  headwater: https://headwater.dev/taxonomy/
   prov: http://www.w3.org/ns/prov#
   skos: http://www.w3.org/2004/02/skos/core#
-default_prefix: docgov
+default_prefix: headwater
 default_range: string
 
 imports:
@@ -40,19 +40,19 @@ enums:
       draft:
         description: Being written; not yet authoritative.
         annotations:
-          docgov:role: initial
+          headwater:role: initial
       current:
         description: Authoritative and believed true.
         annotations:
-          docgov:role: live
+          headwater:role: live
       superseded:
         description: Replaced by a successor; retained for lineage.
         annotations:
-          docgov:role: terminal-retained
+          headwater:role: terminal-retained
       deprecated:
         description: No longer applicable; retained.
         annotations:
-          docgov:role: terminal-retained
+          headwater:role: terminal-retained
 
   EvidenceBasis:
     description: How the rationale in a document is grounded.
@@ -84,21 +84,21 @@ slots:
     range: LifecycleState
     required: true
     annotations:
-      docgov:role: state
+      headwater:role: state
 
   last_verified:
     description: The date a human last confirmed this document is true.
     range: date
     required: true
     annotations:
-      docgov:role: freshness
-      docgov:stale_after_days: 180
+      headwater:role: freshness
+      headwater:stale_after_days: 180
 
   summary:
     description: One sentence. The corpus's scent surface — routing and indexes show this.
     required: true
     annotations:
-      docgov:role: scent
+      headwater:role: scent
 
   audience:
     description: Who this is written for.
@@ -121,12 +121,12 @@ slots:
     multivalued: true
     slot_uri: prov:wasRevisionOf
     annotations:
-      docgov:family: succession
-      docgov:nuclearity: multinuclear
-      docgov:dominance: source
-      docgov:inverse: superseded_by
-      docgov:reciprocal: required
-      docgov:created_by: scaffold
+      headwater:family: succession
+      headwater:nuclearity: multinuclear
+      headwater:dominance: source
+      headwater:inverse: superseded_by
+      headwater:reciprocal: required
+      headwater:created_by: scaffold
 
   superseded_by:
     range: Decision
@@ -137,28 +137,28 @@ slots:
     range: Decision
     multivalued: true
     annotations:
-      docgov:family: association
-      docgov:reciprocal: symmetric
-      docgov:invalid_when: both_current
+      headwater:family: association
+      headwater:reciprocal: symmetric
+      headwater:invalid_when: both_current
 
   derives_from:
     description: A generated artefact and the canonical source it projects.
     range: Standard
     slot_uri: prov:wasDerivedFrom
     annotations:
-      docgov:family: derivation
-      docgov:nuclearity: nucleus-satellite
-      docgov:nucleus: target
-      docgov:inherits: "status, last_verified"
-      docgov:created_by: generator
+      headwater:family: derivation
+      headwater:nuclearity: nucleus-satellite
+      headwater:nucleus: target
+      headwater:inherits: "status, last_verified"
+      headwater:created_by: generator
 
   governs:
     description: Source paths this document is authoritative for.
     multivalued: true
     annotations:
-      docgov:family: governance
-      docgov:dominance: source
-      docgov:created_by: author
+      headwater:family: governance
+      headwater:dominance: source
+      headwater:created_by: author
 
 # ------------------------------------------------------------------------ kinds
 classes:
@@ -174,16 +174,16 @@ classes:
   Decision:
     is_a: Document
     description: Why a choice was made and what it forecloses.
-    class_uri: docgov:Decision
+    class_uri: headwater:Decision
     exact_mappings:  [adr:ArchitectureDecisionRecord]   # SKOS mapping, natively
     close_mappings:  [platform:DesignRecord]
     slots: [supersedes, superseded_by, conflicts_with, evidence_basis]
     annotations:
-      docgov:purpose: rationale
-      docgov:voice: declarative
-      docgov:lifecycle: standard
-      docgov:authority: 20
-      docgov:sections_required: "Context, Decision, Consequences"
+      headwater:purpose: rationale
+      headwater:voice: declarative
+      headwater:lifecycle: standard
+      headwater:authority: 20
+      headwater:sections_required: "Context, Decision, Consequences"
     rules:
       - description: >-
           A superseded decision must name its successor. This one LinkML can
@@ -200,10 +200,10 @@ classes:
     description: What a component does, as it is now.
     slots: [governs]
     annotations:
-      docgov:purpose: behaviour
-      docgov:voice: declarative
-      docgov:authority: 10
-      docgov:contracts_allowed: "true"
+      headwater:purpose: behaviour
+      headwater:voice: declarative
+      headwater:authority: 10
+      headwater:contracts_allowed: "true"
 
   Standard:
     is_a: Document
@@ -211,8 +211,8 @@ classes:
     slots: [doc_type, governs]
     in_subset: [service_repo, docs_only]
     annotations:
-      docgov:purpose: constraint
-      docgov:authority: 15
+      headwater:purpose: constraint
+      headwater:authority: 15
 
 # --------------------------------------------------------------------- profiles
 subsets:
@@ -226,7 +226,7 @@ subsets:
 
 Four of these were genuinely surprising — not "can be encoded" but "is the same concept, already named".
 
-| docgov concept | LinkML | Note |
+| headwater concept | LinkML | Note |
 |---|---|---|
 | Kind | `classes` with `is_a`, `abstract` | Direct |
 | Facet | `slots` with `range`, `required`, `pattern` | Direct |
@@ -253,13 +253,13 @@ Spec 11 said the split was **structural versus governance**. It is not. Look at 
 
 None of that is "governance" as opposed to "structure". Reciprocity is as structural as anything in spec 2. The actual line is:
 
-> **LinkML, SHACL, and JSON Schema all validate one instance against a shape. Everything docgov does that they cannot is a property of the graph as a whole, or of the corpus over time.**
+> **LinkML, SHACL, and JSON Schema all validate one instance against a shape. Everything headwater does that they cannot is a property of the graph as a whole, or of the corpus over time.**
 
-That reframing matters, because it turns Q13 from *"does LinkML cover enough?"* into a better question: **is a two-layer architecture — a standard shape layer plus a docgov graph layer — better than one custom layer?** Every mature validation stack in this space has that shape. It is not a compromise; it is the normal answer.
+That reframing matters, because it turns Q13 from *"does LinkML cover enough?"* into a better question: **is a two-layer architecture — a standard shape layer plus a headwater graph layer — better than one custom layer?** Every mature validation stack in this space has that shape. It is not a compromise; it is the normal answer.
 
 ## The annotations problem
 
-Everything docgov-specific above sits in `annotations`, and annotations are untyped pass-through. LinkML carries them and does nothing with them: no validation, no generator output, no error when `docgov:nuclearity` is misspelled or set to a value that does not exist.
+Everything headwater-specific above sits in `annotations`, and annotations are untyped pass-through. LinkML carries them and does nothing with them: no validation, no generator output, no error when `headwater:nuclearity` is misspelled or set to a value that does not exist.
 
 So for precisely the half that is ours, the meta-schema benefit — the main reason to adopt LinkML — evaporates. We would still write a validator for the annotation vocabulary, and authors would face two languages in one file with no visual distinction between the half that is checked and the half that is not. That scores badly on role-expressiveness and error-proneness, which is exactly what the cognitive-dimensions walkthrough in [Q2](../spec/09-open-questions.md#q2--schema-format) is meant to catch.
 
@@ -269,9 +269,9 @@ Writing it out is what made this concrete. It reads fine until you notice that a
 
 Neither "adopt LinkML" nor "stay independent" is right. A third option:
 
-> **Author in docgov's language; emit LinkML as a compilation target.**
+> **Author in headwater's language; emit LinkML as a compilation target.**
 
-The resolved taxonomy compiles to a LinkML schema covering the shape layer — which then compiles onward to JSON Schema, SHACL, OWL, and Pydantic through LinkML's own generators. The graph and temporal layers stay in the docgov engine, where they were always going to live.
+The resolved taxonomy compiles to a LinkML schema covering the shape layer — which then compiles onward to JSON Schema, SHACL, OWL, and Pydantic through LinkML's own generators. The graph and temporal layers stay in the headwater engine, where they were always going to live.
 
 That gets the interoperability without the two-languages problem: one authoring surface, fully validated, with a standards-based export that other tooling can consume. It also inverts the risk. Adopting LinkML as the authoring surface is close to irreversible; emitting it is a generator we can add, change, or drop.
 
@@ -282,6 +282,6 @@ Worth noting how this rhymes with the position already taken on distribution: a 
 Take **option 3** into the Q2 walkthrough as the leading candidate, with these consequences to weigh:
 
 - it removes the Q1 tension entirely — a Rust core emitting LinkML YAML has no dependency on LinkML's Python tooling;
-- the SHACL question resolves itself: SHACL becomes an output artefact for external consumers, so its poor error messages never reach a docgov author;
-- the cost is a generator plus fidelity tests proving the emitted schema accepts exactly the documents docgov accepts, which is a real and ongoing cost;
+- the SHACL question resolves itself: SHACL becomes an output artefact for external consumers, so its poor error messages never reach a headwater author;
+- the cost is a generator plus fidelity tests proving the emitted schema accepts exactly the documents headwater accepts, which is a real and ongoing cost;
 - and the shape/graph boundary needs to be stated in [spec 6](../spec/06-engine-architecture.md) as an architectural seam, because it is one.

@@ -24,7 +24,7 @@ A taxonomy is one logical document, assembled from a base package plus zero or m
 ```yaml
 taxonomy: acme-engineering
 version: 3.2.0
-extends: docgov/standard@2.1.0        # base package, or null for from-scratch
+extends: headwater/standard@2.1.0        # base package, or null for from-scratch
 
 vocabularies:                          # authoring sugar: named value sets facets reference
   lifecycle_state:
@@ -192,7 +192,7 @@ projections:
   - kind: agent_rules
     output: .agent/rules/
   - kind: site_nav
-    output: .docgov/nav.yml
+    output: .headwater/nav.yml
 ```
 
 ## The eleven declarations
@@ -226,7 +226,7 @@ Purposes are declared once, at the taxonomy level, and referenced by kinds. Seve
 Purpose does real work downstream:
 
 - **Routing** ([spec 5](05-ai-integration.md)) matches a task's intent against declared purposes before it matches text. "Why is it like this?" resolves to `rationale` kinds; "what does it do?" resolves to `behaviour` kinds. This is a search over intentional structure rather than over prose, and it is far cheaper and more precise than lexical ranking alone.
-- **`docgov explain`** states a document's purpose alongside its kind, so a reader who lands on a document knows what it is *for* before reading it.
+- **`headwater explain`** states a document's purpose alongside its kind, so a reader who lands on a document knows what it is *for* before reading it.
 - **The core** (below) is expressed in terms of purposes, which is what lets an adopter rename everything and still be recognisably running the same method.
 
 ## Relation families and nuclearity
@@ -311,7 +311,7 @@ A taxonomy may enable any subset. The default enables four: `supersedes`, `confl
 
 This exists because of the single most consistent finding in the traceability literature: trace links decay when creating them costs the author and benefits someone else later. The field forces the question at design time — *what creates this edge, and who pays?* — rather than after the corpus has quietly stopped maintaining it.
 
-It is also measurable after the fact. `docgov taxonomy audit` reports edge counts and staleness by creator, so a relation declared `created_by: author` that is present on 4% of eligible documents is visibly not being maintained. The remedy is usually to move it to `scaffold` or `generator`, not to exhort authors harder.
+It is also measurable after the fact. `headwater taxonomy audit` reports edge counts and staleness by creator, so a relation declared `created_by: author` that is present on 4% of eligible documents is visibly not being maintained. The remedy is usually to move it to `scaffold` or `generator`, not to exhort authors harder.
 
 The default taxonomy assumes that remedy from the start: every relation it enables is creatable by scaffold, generator, or hook, and `created_by: author` is reserved for overlay additions an adopter explicitly chooses. The claim that assisted authoring raises edge capture is the strongest and least-tested in the system ([spec 10](10-theoretical-foundations.md#what-the-theory-did-not-settle)); a default that only works if the claim holds is a bet, and a default that survives the claim failing is a design.
 
@@ -434,7 +434,7 @@ Two divisions with different taxonomies do not need a merged one. They need decl
 
 ```yaml
 mappings:
-  - to: platform/docgov-taxonomy@2.0.0
+  - to: platform/headwater-taxonomy@2.0.0
     kinds:
       decision:     {relation: exactMatch,  target: adr}
       specification:{relation: broadMatch,  target: component_spec}
@@ -449,7 +449,7 @@ Mappings are what let a cross-repository aggregator answer "show me every decisi
 
 Past a handful of taxonomies, "whoever needs the correspondence" is only ever the aggregating tier, and that is the normative topology, not a tendency: pairwise mappings between fifty independent taxonomies permit 1,225 unordered pairs before direction and versions multiply them, every one going stale on every publisher release. Peers do not map to peers at scale; the aggregator owns the correspondences, because it is the only party that reads them.
 
-The engine can also emit the resolved taxonomy as SKOS (`docgov export --format skos`). That is partly interoperability with knowledge-organization tooling that already exists, and partly a sanity check: a taxonomy that cannot be expressed in a standard concept-scheme vocabulary has probably grown something idiosyncratic.
+The engine can also emit the resolved taxonomy as SKOS (`headwater export --format skos`). That is partly interoperability with knowledge-organization tooling that already exists, and partly a sanity check: a taxonomy that cannot be expressed in a standard concept-scheme vocabulary has probably grown something idiosyncratic.
 
 ## Kind resolution
 
@@ -460,7 +460,7 @@ Given a document path and its front matter, the engine resolves a kind by:
 3. if heterogeneous, reading the discriminator facet; a missing or unrecognised value is a finding whose severity the shelf declares;
 4. applying any path-pattern refinement the shelf declares (for instance `functional.md` and `technical.md` resolving to different kinds within one component directory).
 
-`docgov explain <path>` prints this derivation — which shelf matched, which rule fired, the kind's declared purpose, which facets and sections are consequently required, and which relations are permitted. Classification is never a black box, for a human or an agent.
+`headwater explain <path>` prints this derivation — which shelf matched, which rule fired, the kind's declared purpose, which facets and sections are consequently required, and which relations are permitted. Classification is never a black box, for a human or an agent.
 
 ### Placement is primary; metadata fills the gap
 
@@ -482,7 +482,7 @@ Heterogeneous shelves carry the inverse risk, named here so audits watch it: the
 | **Differentiation** | The facet actually partitions the corpus — a value found on nearly every document distinguishes nothing | corpus |
 | **Orthogonality** | No two facets are near-perfectly correlated across the corpus | corpus |
 
-The first three are decidable from the schema alone and run under `docgov taxonomy validate`. The last two require documents to measure against and run under `docgov taxonomy audit`, which is advisory by construction: a young corpus will fail differentiation simply for being small.
+The first three are decidable from the schema alone and run under `headwater taxonomy validate`. The last two require documents to measure against and run under `headwater taxonomy audit`, which is advisory by construction: a young corpus will fail differentiation simply for being small.
 
 Orthogonality is the one worth dwelling on. If knowing a document's `shelf` tells you its `doc_type` with near-certainty, one of them is doing no work — and the redundant one will eventually disagree with the other. The audit reports correlated facet pairs rather than rejecting them, because the right fix is a judgement: sometimes you delete a facet, sometimes you discover the shelf split was wrong.
 
@@ -500,7 +500,7 @@ An adopter never edits a base taxonomy. They declare an overlay:
 
 ```yaml
 taxonomy: acme-engineering
-extends: docgov/standard@2.1.0
+extends: headwater/standard@2.1.0
 
 override:
   shelves.decisions.path: docs/adr/**            # we call them ADRs
@@ -542,7 +542,7 @@ The resolved taxonomy is written to a lock file with a content hash. The engine 
 
 ## The meta-schema
 
-The taxonomy language has a formal schema, published with the engine and versioned with it. `docgov taxonomy validate` checks:
+The taxonomy language has a formal schema, published with the engine and versioned with it. `headwater taxonomy validate` checks:
 
 - structural conformance to the meta-schema;
 - referential integrity — every referenced vocabulary, regime, kind, facet, and purpose exists; every relation endpoint is a declared kind or a declared anchor kind;
@@ -581,14 +581,14 @@ So compatibility is evaluated along five dimensions, against a real corpus. The 
 | `projection` | Does every projection produce identical output? |
 | `identifier` | Does every identifier still resolve to the same document? |
 
-`docgov taxonomy diff --to <version>` runs all five and reports per dimension. The required version bump is a *consequence* of the result: any dimension broken forces a major version.
+`headwater taxonomy diff --to <version>` runs all five and reports per dimension. The required version bump is a *consequence* of the result: any dimension broken forces a major version.
 
 The publisher and the consumer play different roles here, and both are necessary:
 
 - The **publisher** measures against its own reference corpora and publishes the result as a compatibility claim attached to the release. That is the best it can do; it does not have anyone else's documents.
 - The **consumer** measures against its own corpus before upgrading. This *verifies* the publisher's claim rather than trusting it — and a claim that fails locally is exactly the interesting case, because it means the consumer's corpus uses something the publisher's reference corpora do not.
 
-A major version ships a **migration payload**: machine-readable steps declaring what moved, what was renamed, and what must be re-stated, split into what the engine can apply mechanically (`docgov migrate --apply`) and what needs human or agent judgment (emitted as a task list with the affected documents attached). Adopting a new major version without running its migration is a hard failure, not a warning — the lock file records the taxonomy version and the measured compatibility result each corpus was validated against.
+A major version ships a **migration payload**: machine-readable steps declaring what moved, what was renamed, and what must be re-stated, split into what the engine can apply mechanically (`headwater migrate --apply`) and what needs human or agent judgment (emitted as a task list with the affected documents attached). Adopting a new major version without running its migration is a hard failure, not a warning — the lock file records the taxonomy version and the measured compatibility result each corpus was validated against.
 
 ## Worked example: three taxonomies, one engine
 

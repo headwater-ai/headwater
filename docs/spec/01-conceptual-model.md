@@ -6,7 +6,7 @@ The vocabulary the rest of the specification uses. Each term is a named concept 
 
 The split this model rests on is the one description logic already names. A knowledge base has a **TBox** — the terminology: what kinds of thing exist, what relations may hold between them, what values are permitted — and an **ABox** — the assertions: the actual individuals and the relations actually asserted.
 
-| docgov | Description logic |
+| headwater | Description logic |
 |---|---|
 | Taxonomy | TBox |
 | Resolved taxonomy lock | Compiled TBox |
@@ -16,7 +16,7 @@ The split this model rests on is the one description logic already names. A know
 
 Using the standard names is not decoration: it is why validating a taxonomy and checking a corpus are genuinely different operations rather than two halves of one ([spec 6](06-engine-architecture.md#taxonomy-validate-versus-taxonomy-audit)).
 
-**Where the ABox stops.** docgov's assertions are about *documents* — this document exists, is of this kind, governs that code path, supersedes that other document. They are not about the claims *inside* the prose. "The service returns 404 on a missing key" is a sentence; the system knows the document that contains it and what that document governs, but not what it asserts about the world. Reasoning stops at the document boundary, and any promise of semantic consistency checking beyond it would be a promise we cannot keep.
+**Where the ABox stops.** headwater's assertions are about *documents* — this document exists, is of this kind, governs that code path, supersedes that other document. They are not about the claims *inside* the prose. "The service returns 404 on a missing key" is a sentence; the system knows the document that contains it and what that document governs, but not what it asserts about the world. Reasoning stops at the document boundary, and any promise of semantic consistency checking beyond it would be a promise we cannot keep.
 
 ## The corpus
 

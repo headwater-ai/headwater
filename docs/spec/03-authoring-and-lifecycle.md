@@ -64,7 +64,7 @@ This exists because unmarked requirements are the ones that get argued about lat
 Each kind declares a template. The template is not a suggestion file for humans to copy; it is generated from the kind declaration, so the required sections and the required front matter always match what will be validated. A template that has drifted from its kind is impossible by construction.
 
 ```
-docgov new decision --title "Adopt overlay-based taxonomy customisation"
+headwater new decision --title "Adopt overlay-based taxonomy customisation"
 ```
 
 resolves the kind, allocates an identifier, seeds front matter, emits required sections with prompts, places the file where the shelf layout dictates, and prints which relations the new document is expected to declare.
@@ -134,8 +134,8 @@ Reported in the adaptive layer of the [assurance model](04-assurance-model.md), 
 
 | Surface | Use |
 |---|---|
-| `docgov new <kind>` | Scaffold a document with correct placement, metadata, sections, identifier |
-| `docgov check --fix` | Apply mechanical corrections: format front matter, add missing reciprocal links, regenerate projections |
+| `headwater new <kind>` | Scaffold a document with correct placement, metadata, sections, identifier |
+| `headwater check --fix` | Apply mechanical corrections: format front matter, add missing reciprocal links, regenerate projections |
 | Editor integration | Schema-driven completion and inline validation via a language server over front matter |
 | Agent-assisted authoring | The judgment-bearing path: drafting, evidence checks, cross-linking (spec 5) |
 

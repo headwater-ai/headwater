@@ -1,6 +1,6 @@
-# Review the core concepts of docgov: simplification and robustness
+# Review the core concepts of headwater: simplification and robustness
 
-You are reviewing the conceptual design of `docgov`, a documentation governance system. It is a **specification, pre-implementation** — roughly 5,000 lines of spec and nothing built. That is precisely why this review is worth doing now: concepts are free to delete today and expensive to delete once they have a schema, a CLI verb, and adopters.
+You are reviewing the conceptual design of `headwater`, a documentation governance system. It is a **specification, pre-implementation** — roughly 5,000 lines of spec and nothing built. That is precisely why this review is worth doing now: concepts are free to delete today and expensive to delete once they have a schema, a CLI verb, and adopters.
 
 The specification is written to be argued with. Treat its self-justifications as claims to test, not as settled. Several arguments in it are internally consistent and still wrong.
 

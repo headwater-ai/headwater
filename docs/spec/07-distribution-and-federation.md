@@ -20,7 +20,7 @@ The distinction that makes this tractable: **the taxonomy is a package, not a co
 A publisher repository declares a **taxonomy package**:
 
 ```yaml
-package: acme/docgov-taxonomy
+package: acme/headwater-taxonomy
 version: 3.2.0
 requires_engine: ">=1.4 <2"
 contents:
@@ -40,13 +40,13 @@ A consumer declares what it takes and how it differs:
 
 ```yaml
 taxonomy:
-  package: acme/docgov-taxonomy
+  package: acme/headwater-taxonomy
   version: 3.2.0
   profile: service-repo
-  overlay: .docgov/overlay.yml
+  overlay: .headwater/overlay.yml
 ```
 
-`docgov taxonomy resolve` fetches, verifies, merges the overlay, validates, and writes the lock. The lock is committed: the corpus is checked against a resolved, reviewable, reproducible taxonomy, and CI needs no network to check anything.
+`headwater taxonomy resolve` fetches, verifies, merges the overlay, validates, and writes the lock. The lock is committed: the corpus is checked against a resolved, reviewable, reproducible taxonomy, and CI needs no network to check anything.
 
 ### Profiles are publisher overlays
 
@@ -67,7 +67,7 @@ Satisfaction is evaluated on the **resolved** taxonomy, not by forbidding partic
 ## Upgrading
 
 ```
-docgov taxonomy diff --to 4.0.0
+headwater taxonomy diff --to 4.0.0
 ```
 
 reports, against the *local* corpus rather than in the abstract:
@@ -81,7 +81,7 @@ reports, against the *local* corpus rather than in the abstract:
 
 The publisher measures compatibility against its own reference corpora and attaches the result to the release as a claim. The consumer's run **verifies that claim against documents the publisher has never seen** — and a claim that holds upstream but fails locally is the interesting case, not an anomaly: it means the local corpus exercises something the reference corpora do not.
 
-`docgov migrate --to 4.0.0` applies the mechanical steps and emits the rest as a task list with the affected documents attached — ready for a human or a coding agent. The distinction is the whole point: moving files is mechanical, and rewriting a document to fit a new kind's section contract is not. Pretending the second is automatable produces plausible, wrong documents at scale.
+`headwater migrate --to 4.0.0` applies the mechanical steps and emits the rest as a task list with the affected documents attached — ready for a human or a coding agent. The distinction is the whole point: moving files is mechanical, and rewriting a document to fit a new kind's section contract is not. Pretending the second is automatable produces plausible, wrong documents at scale.
 
 ### Between majors, the corpus is legitimately between valid states
 
@@ -96,7 +96,7 @@ Closing the last task ends the state. The expiry is the anti-parking device, on 
 Vendoring content is not adoption. A consumer can hold a perfect copy of the taxonomy and wire none of it. Conformance is a separate, evaluated question:
 
 ```
-docgov conformance
+headwater conformance
 ```
 
 evaluates the repository against rules the taxonomy package ships — checks wired in CI, gates required on the default branch, projections regenerated, hooks installed, pin current — and reports gaps with remediation. Because the rules ship *with the package*, advancing a pin brings newly-added requirements into force automatically: improve the method, and every consumer's next upgrade surfaces the new gap. That loop is what turns a published method into an adopted one.

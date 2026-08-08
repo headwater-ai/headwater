@@ -1,4 +1,4 @@
-# docgov
+# headwater
 
 A **documentation governance system**: a typed, validated, self-describing corpus of documentation that machines can check and agents can navigate — where the taxonomy itself is configuration, not code.
 
@@ -10,7 +10,7 @@ Documentation rots because nothing holds it accountable. Specs drift from code, 
 
 The usual answers are a style guide (unenforced), a wiki (unstructured), or a static-site generator (renders whatever you feed it). None of them can answer *"is this corpus still true?"*, because none of them know what kind of document anything is.
 
-docgov's premise: **make the structure of the corpus a machine-readable contract**, then derive everything else from it — validation, navigation, templates, AI instruction context, publishing, and the evidence that the whole thing is working.
+headwater's premise: **make the structure of the corpus a machine-readable contract**, then derive everything else from it — validation, navigation, templates, AI instruction context, publishing, and the evidence that the whole thing is working.
 
 ## The three commitments
 
@@ -48,4 +48,4 @@ Start at 0 and 2 if you only read two. Spec 10 is where the design gets tested a
 
 This is an independent, clean-room implementation. It is informed by a study of a prior internal governance framework — the concepts it proved out, and the specific places where so much came to depend on its architecture that it resisted change. That study is summarised, in design terms only, in [prior art and departures](docs/spec/08-prior-art-and-departures.md). No code, prose, or configuration is carried across.
 
-`docgov` is a working name.
+`headwater` is a working name.

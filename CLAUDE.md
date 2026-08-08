@@ -1,4 +1,4 @@
-# docgov authoring conventions
+# headwater authoring conventions
 
 ## No arbitrary line breaks in Markdown
 

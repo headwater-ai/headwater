@@ -63,7 +63,7 @@ These are the tie-breakers when a design decision is genuinely contested.
 
 7. **Fail open at the edges, closed at the core.** When agent-facing helpers cannot answer, they degrade silently, because a missing hint is better than a wrong one. Corpus validation never degrades silently.
 
-8. **The system governs itself.** The documentation of docgov is itself a docgov corpus, and docgov validates it in its own CI. If a change is painful to dogfood, its design is not complete.
+8. **The system governs itself.** The documentation of headwater is itself a headwater corpus, and headwater validates it in its own CI. If a change is painful to dogfood, its design is not complete.
 
 ## Success criteria
 

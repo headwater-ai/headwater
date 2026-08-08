@@ -6,7 +6,7 @@ One parse, one graph, many consumers.
 
 The obvious decomposition — a separate linter per concern — is the wrong one. Each tool re-walks the tree, re-parses front matter, re-implements path matching, and re-derives what kind each document is. That is slow, and worse, it is *divergent*: two tools disagreeing about what a document is produces contradictory findings and an unfixable bug report.
 
-docgov parses once, builds one typed graph, and runs every check against it. Checks become small predicates over a shared model instead of programs.
+headwater parses once, builds one typed graph, and runs every check against it. Checks become small predicates over a shared model instead of programs.
 
 ## Pipeline
 
@@ -59,8 +59,8 @@ The design — scope semantics, instances and coverage, the two-phase census, fi
 Generated artefacts, each declared in the taxonomy, each with the same contract:
 
 ```
-docgov generate            # write
-docgov generate --check    # fail if any committed output differs
+headwater generate            # write
+headwater generate --check    # fail if any committed output differs
 ```
 
 Projection kinds the engine implements: shelf indexes, relation views (decision lineage, traceability matrices), agent rule files, site navigation, graph export, coverage reports, and templates. A projection carries a generated-file marker; the engine refuses to overwrite a file that lacks one and did not come from a previous run, so a projection can never silently eat an authored document.
@@ -70,15 +70,15 @@ Projection kinds the engine implements: shelf indexes, relation views (decision 
 ### CLI
 
 ```
-docgov check      [--changed-only] [--strict] [--format text|json|sarif|markdown]
-docgov generate   [--check]
-docgov new        <kind> [--title ...]
-docgov route      <task description>
-docgov query      <expression>
-docgov explain    <path|identifier>
-docgov taxonomy   validate | resolve | diff | migrate | audit
-docgov coverage   [--format ...]
-docgov probe      [--category ...]
+headwater check      [--changed-only] [--strict] [--format text|json|sarif|markdown]
+headwater generate   [--check]
+headwater new        <kind> [--title ...]
+headwater route      <task description>
+headwater query      <expression>
+headwater explain    <path|identifier>
+headwater taxonomy   validate | resolve | diff | migrate | audit
+headwater coverage   [--format ...]
+headwater probe      [--category ...]
 ```
 
 Advisory by default (exit 0 with findings on stdout); `--strict` for gates. The default is deliberate: a tool that blocks on first contact gets removed, and a tool that is removed catches nothing.

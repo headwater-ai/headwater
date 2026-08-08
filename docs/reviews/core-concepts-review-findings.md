@@ -135,7 +135,7 @@ The design is unusually honest here: agent-assisted capture cost, summary scent,
 
 ### 13. Learnability gradient
 
-- **(a) File a conforming document:** with `docgov new`, three concepts — kind (choose it), facets (fill `status`, `summary`, `last_verified`), sections (write them). Within the prompt's budget, *provided the scaffolder exists in the first release*; without it, add shelf, identifier, and relation declaration and the budget is blown. The scaffolder is not optional tooling; it is what makes the concept count claim true. (Confidence: high.)
+- **(a) File a conforming document:** with `headwater new`, three concepts — kind (choose it), facets (fill `status`, `summary`, `last_verified`), sections (write them). Within the prompt's budget, *provided the scaffolder exists in the first release*; without it, add shelf, identifier, and relation declaration and the budget is blown. The scaffolder is not optional tooling; it is what makes the concept count claim true. (Confidence: high.)
 - **(b) Extend a taxonomy** (add a kind to an existing one): kind, purpose, shelf, facet, regime (voice + lifecycle), relation + family (+ today: nuclearity, dominance, `created_by`, reciprocity, lifecycle interaction), sections, overlay semantics, core. Roughly twelve concepts, and the relation cluster is half the cliff — argument 1 cuts it to family + endpoints and brings (b) near eight.
 - **(c) Author from scratch:** the full set, ~24 including mappings, compatibility, profiles, sidecars, authority. After the cuts and merges above, ~16. (c) is rare and can be expensive; (b) is the adoption path and is currently the steep step.
 
