@@ -46,6 +46,6 @@ Start at 0 and 2 if you only read two. Spec 10 is where the design gets tested a
 
 ## Provenance
 
-This is an independent, clean-room implementation. It is informed by a study of a prior internal governance framework — the concepts it proved out, and the specific places where so much came to depend on its architecture that it resisted change. That study is summarised, in design terms only, in [prior art and departures](docs/spec/08-prior-art-and-departures.md). No code, prose, or configuration is carried across.
+This design is informed by a study of a prior internal governance framework — the concepts it proved out, and the specific places where so much came to depend on its architecture that it resisted change. That study is summarised, in design terms only, in [prior art and departures](docs/spec/08-prior-art-and-departures.md).
 
 `headwater` is a working name.
