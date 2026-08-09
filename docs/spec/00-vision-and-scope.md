@@ -65,6 +65,8 @@ These are the tie-breakers when a design decision is genuinely contested.
 
 8. **The system governs itself.** The documentation of headwater is itself a headwater corpus, and headwater validates it in its own CI. If a change is painful to dogfood, its design is not complete.
 
+9. **Better together.** headwater does not stand alone. Other projects solve adjacent problems, and some solve them well. When a complementary project exists, we build an integration with it before we build a replacement for it. Shared formats and emitted configurations let the corpus serve tools that we do not own. [Spec 11](11-adjacent-work.md) records the current candidates.
+
 ## Success criteria
 
 The system works when:

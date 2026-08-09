@@ -256,6 +256,22 @@ That last detail is not decoration — it is [Q14](09-open-questions.md#q14--dis
 
 > **Recorded as [Q16](09-open-questions.md#q16--public-presence).**
 
+## J. TrustGraph — the same pitch, the opposite mechanism
+
+[TrustGraph](https://github.com/trustgraph-ai/trustgraph) (Apache-2.0; v1.2 shipped August 2025) is a containerised context-engineering platform. Documents flow through configurable pipelines in which **LLM agents extract entities and relationships** into a graph store (Cassandra, Neo4j, Memgraph or FalkorDB), with embeddings in Qdrant, messaging over Pulsar, and retrieval served back to agents as document-, graph- or ontology-driven RAG. Its semantic layer is the standards stack — RDF, OWL, SKOS, SHACL — and every answer carries a per-fact provenance receipt: source document, ingestion timestamp, extraction method.
+
+The pitch overlaps ours almost word for word — typed graphs grounding agents in verifiable knowledge, with provenance — and the implementations are close to opposites. In headwater, authors declare the graph: documents are the nodes, front-matter references are the typed edges, and no LLM issues a verdict. In TrustGraph, an LLM extracts the graph: documents are feedstock, dissolved into triples, and the 1.2 release headline is an agent that "autonomously populates the knowledge graph". Nothing in the platform governs the source documents — it mines them. Its retrieval modes are managing exactly the reconstitution loss §G describes, which makes TrustGraph that section's subject, built out and running in production. The overlap is at the slogan, not the layer beneath it.
+
+Three things worth keeping:
+
+- **Evidence the other way on Q13.** §E cites OpenGEO declining RDF/OWL/SHACL as evidence that the standards stack is not required for this class of problem. TrustGraph is the counterweight: a production open-source system that chose that stack and ships it. One data point on each side is a more honest input to the decision than one.
+- **A preview of Q15's provenance burden.** TrustGraph's extracted graph is precisely the synthesised tier Q15 asks about — LLM-maintained, never verifiable by regeneration — and its per-fact receipts (source, timestamp, derivation method) are a concrete, running design for the provenance record such a tier would need.
+- **Attribution, implemented.** The receipt model — every answer traceable to the facts and the traversal that licensed it — is §H's attribution row in production form, and independent confirmation that oracles and traceability are where a shipping system also put its effort.
+
+And one relationship to record as complementary rather than rival. Extraction quality is bounded by source quality, so a governed corpus is an unusually good input to an extraction platform: kinds, facets and declared edges arrive as structure the extractor would otherwise have to guess at. Under spec 0's [better-together principle](00-vision-and-scope.md#design-principles), that makes TrustGraph ingestion a candidate integration — a headwater corpus fed in as pre-structured source material — in the same family as the OKF export, and equally cheap to hold: the arrow points out of the corpus, and nothing flows back in.
+
+> **Recorded:** counterweight evidence added to [Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate); provenance precedent added to [Q15](09-open-questions.md#q15--a-synthesised-content-tier).
+
 ---
 
 ## Summary
@@ -271,3 +287,4 @@ That last detail is not decoration — it is [Q14](09-open-questions.md#q14--dis
 | r/OntologyEngineering | Ontology-first methodology, further than we go | Noted; oracle work is the shared ground |
 | Karpathy, *LLM Wiki* | Best anti-RAG argument; independent capture-cost confirmation | Applied — coherence sweep (spec 4); **Q15** raised |
 | LeanCTX / OKF | Same substrate, opposite arrow; no taxonomy to collide with | Applied — declaration boundary (spec 4); OKF export → **Q13**; presentation gap → **Q16** |
+| TrustGraph | Same pitch, opposite mechanism — extracts the graph we declare | Standards-stack counterweight → **Q13**; provenance precedent → **Q15**; ingestion integration candidate |
