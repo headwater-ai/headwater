@@ -1,6 +1,6 @@
 # 8 — Prior art and departures
 
-This is a clean-room implementation, informed by a study of a prior internal governance framework. That system was unusually complete for its category, and many of its choices were correct. This document records what carries forward as *concept*. It also records where so much depended on its architecture that it resisted the change that we now want. Nothing is carried across as code, prose, or configuration.
+This design is informed by a study of a prior internal governance framework. That system was unusually complete for its category, and many of its choices were correct. This document records what carries forward as *concept*. It also records where so much depended on its architecture that it resisted the change that we now want.
 
 ## What the reference system proved
 
