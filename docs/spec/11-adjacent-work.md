@@ -403,6 +403,63 @@ The second is the instructive one. The documentation states that an ignored memo
 
 **The closest part is the unmeasured part.** Serena publishes a real evaluation, with a methodology, a fixed prompt, five agent and model combinations, and a classification that admits neutral and negative results. It evaluates the code tools. It does not evaluate the memory system, which is the part that resembles Headwater. Reported user feedback is what carries that layer. The method is also agent-as-evaluator, where [spec 5](05-ai-integration.md#measuring-whether-any-of-this-works) grades from the tool-call transcript instead. Above all, no counterfactual run compares agent behavior with the memories present against the same behavior without them. Spec 5 names the counterfactual as the category that matters most, and the one most often skipped. The most widely adopted example of this pattern skips it.
 
+## M — What the survey shows as a whole: convergence is not evidence
+
+The entries above arrived one at a time, and each settled a local question. Read together they say something that no single entry says, and it raises the standard that this project owes its own claims.
+
+### M.1 The convergence argument, and the question it cannot answer
+
+This document leans on independent arrival repeatedly. §B.4 calls it "the strongest evidence available that the line is real". §F.2 rests the capture-cost thesis on two derivations, one from the literature and one from practice. §I.1 counts a third arrival at the substrate, and concludes that we can no longer treat it as a preference. §L.1 counts a fourth.
+
+That argument is sound for one question, and it is worth stating which. Four projects that chose Markdown in a repository establish that the choice is ordinary, cheap and unsurprising. They lower the risk of a substrate decision that would be expensive to reverse.
+
+They establish nothing about whether any of it works.
+
+Convergence counts as evidence only when the arrivals are independent. These arrivals share a decade of tooling and a common set of posts and talks. They also share one blunt constraint: agents read text files, and git stores text files. A shared prior is not four measurements. Correlated error looks exactly like agreement, and it looks more convincing as it accumulates.
+
+So the survey licenses a **substrate** conclusion, where a wrong answer costs a migration. It does not license an **efficacy** conclusion, where a wrong answer costs a project built on a belief. §F.2 already hedged toward this, with "the best support that it will get, short of measurement". This section states the limit for the whole document instead of one entry.
+
+### M.2 What the field has actually measured
+
+The claim under review is the one that every source here shares in some form. Structured knowledge improves machine output. The evidence offered for it:
+
+| Source | The efficacy claim | What stands behind it |
+|---|---|---|
+| testerstories (§B) | An ontology yields better generated implementations | Tests that the generated code matches the ontology. No run without the ontology |
+| LLM Wiki (§F.2) | A maintained wiki serves agents into the hundreds of pages | Reported experience |
+| LeanCTX (§I) | Compression ratios, a verification engine, a maturity tier | Self-assessment, against a benchmark published by the same author (§I.4) |
+| TrustGraph (§J) | Agents grounded in verifiable knowledge | Provenance receipts are implemented. This survey found no published effect on answer quality |
+| OpenGEO (§E) | Declared meaning steers third-party engines | This survey found none published |
+| Serena (§L) | Memory improves long-lived agent workflows | User feedback. The published evaluation covers other tools, grades with agents, and runs no counterfactual |
+
+Two of those rows say "this survey found none", and that phrasing is deliberate. Absence of a result in a search is weaker than a null result. A section about rigor should not help itself to the stronger reading.
+
+The pattern still holds across the rest. Not one source compares behavior with its structure present against the same behavior without it.
+
+### M.3 The grader decides the answer, and the literature proves it
+
+A systematic comparison of RAG and graph-based RAG supplies the finding that turns this from suspicion into evidence. The authors report that their reference-based evaluation **contradicted** the original graph-based RAG study. The stated cause is not the systems. It is the grading method. The earlier work used an LLM as judge with no ground-truth reference, and the later work scored against human-written summaries.
+
+The same authors then tested the instrument itself. An LLM judge shows position bias. A reversal of the order in which two summaries are presented produces "substantially different, and in some cases opposite, judgments".
+
+Read that against the table above. Serena grades with agents. LeanCTX grades itself against a benchmark it publishes. Both use an instrument that the reversal above discredits, and both apply it to a result they have an interest in.
+
+The conclusion is not that these projects are dishonest. It is worse than that, and more ordinary. A weak instrument returns the answer that the author expected, and no one involved has to notice.
+
+### M.4 What this obliges Headwater to do
+
+[Spec 5](05-ai-integration.md#measuring-whether-any-of-this-works) already grades from the tool-call transcript rather than from any model's self-report. It already names the counterfactual as the category that matters most. §M.3 does not change that design. It changes its status. Those two choices are no longer hygiene. They are the part of the design with no prior art to copy, because every source above either skipped them or failed them.
+
+Three requirements follow. Each is cheap to state now and expensive to retrofit.
+
+- **The grader is never the system under test.** A probe verdict comes from the transcript and from a declared expectation. No model judges whether the corpus helped. The field has already published what that instrument returns.
+- **A published efficacy claim carries its counterfactual.** Corpus present against corpus absent, with a pinned model and a recorded probe selection. Without that pair, Headwater holds an opinion of exactly the class tabulated in §M.2.
+- **Unmeasured claims are declared as unmeasured.** [Principle 5](00-vision-and-scope.md#design-principles) requires the system to record what it does not check. The same rule binds what we have not measured. The evidence register of [spec 4](04-assurance-model.md) is where that mark belongs, so that a reader can separate a tested claim from an intended one.
+
+One statement keeps this section honest. Headwater has no measurements either. It has a design for them, an unbuilt engine, and now a written obligation not to claim more than the design has earned.
+
+> **Applied:** the grader constraint and the counterfactual obligation in [spec 5](05-ai-integration.md#measuring-whether-any-of-this-works), and the efficacy limit of prior-art agreement in [principle 10](00-vision-and-scope.md#design-principles).
+
 ---
 
 ## Summary
@@ -421,3 +478,4 @@ The second is the instructive one. The documentation states that an ignored memo
 | TrustGraph | Same pitch, opposite mechanism — extracts the graph we declare | Standards-stack counterweight → **Q13**. Provenance precedent → **Q15**. Ingestion integration candidate |
 | Modern Requirements / Azure DevOps | First inbound candidate — the arrow reverses | Model already fits. Import semantics open — **Q19** |
 | Serena | Fourth arrival at the substrate. The first to disagree with us | Applied — third anti-retrieval argument (spec 5). Scent placement → **Q20**. Evidence → **Q15**, **Q17** |
+| **The survey as a whole** | Convergence on the substrate, and near-zero measurement of the claim | Applied — grader and counterfactual constraints (spec 5), efficacy limit of prior-art agreement (principle 10) |

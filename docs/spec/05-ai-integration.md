@@ -149,6 +149,11 @@ A **probe suite** runs scenarios against the corpus in a controlled session. It 
 
 The counterfactual category is the one that matters most, and it is the one most often skipped. An A/B run — corpus present versus absent — is the only evidence that the instruction surface earns its context cost. Without it, "the AI reads our docs" is a belief.
 
+Two constraints protect the instrument, and [spec 11 §M](11-adjacent-work.md#m--what-the-survey-shows-as-a-whole-convergence-is-not-evidence) records why both are needed. Every adjacent project that claims this benefit either graded itself or skipped the counterfactual. The literature shows what a weak grader does to a result. A systematic comparison of RAG and graph-based RAG reached the opposite conclusion to the original study. The cause was the grading method rather than the systems. The same authors found that an LLM judge reverses its verdict when the order of two candidates is reversed.
+
+- **The grader is never the system under test.** A verdict comes from the tool-call transcript and a declared expectation. No model judges whether the corpus helped, and no probe accepts an agent's account of its own behavior.
+- **A published claim carries its counterfactual.** Corpus present against corpus absent, with a pinned model and a recorded probe selection. A claim with no such pair is reported as unmeasured rather than as supported, and the [evidence register](04-assurance-model.md) carries that mark.
+
 Probes run on a schedule, with a pinned model, deterministic probe selection, and a cost envelope. Results feed the adaptive layer of the [assurance model](04-assurance-model.md): a rule that measurably changes nothing is a candidate for deletion, and deletion is a success.
 
 ## Anti-overfitting
