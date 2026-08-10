@@ -50,7 +50,7 @@ A check is a pure function from a **scoped view** of the graph to findings. Chec
 
 The first two are *generated*: a new facet or relation brings its checks with no code. That is the point of taxonomy-as-data, and most of the check count is there. The last three are why a native engine exists at all. They are exactly what LinkML and SHACL cannot express.
 
-Every check declares its **scope** (document, edge, neighbourhood, shelf, corpus), and the engine enforces it. A check sees only what it declared. Scope is what makes change-scoped evaluation exact, cache keys sound, and parallelism safe.
+Every check declares its **scope** (document, edge, neighborhood, shelf, corpus), and the engine enforces it. A check sees only what it declared. Scope is what makes change-scoped evaluation exact, cache keys sound, and parallelism safe.
 
 The design — scope semantics, instances and coverage, the two-phase census, fixability, determinism, and the plugin contract — is [spec 12](12-check-layer.md).
 

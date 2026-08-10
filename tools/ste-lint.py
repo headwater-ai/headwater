@@ -82,12 +82,14 @@ BRITISH.update(
         "analysing": "analyzing", "paralyse": "paralyze", "catalyse": "catalyze",
         "behaviour": "behavior", "behaviours": "behaviors",
         "behavioural": "behavioral", "behaviourally": "behaviorally",
-        "colour": "color", "colours": "colors", "coloured": "colored",
-        "favour": "favor", "favours": "favors", "favoured": "favored",
-        "honour": "honor", "labour": "labor", "neighbour": "neighbor",
-        "endeavour": "endeavor", "flavour": "flavor", "rumour": "rumor",
-        "humour": "humor", "vapour": "vapor", "armour": "armor",
-        "harbour": "harbor", "savour": "savor",
+        # -our words take suffixes too: "neighbouring" slipped past a list that
+        # only carried the base form.
+        **{stem + suffix: stem.replace("our", "or") + suffix
+           for stem in ("colour", "favour", "honour", "labour", "neighbour",
+                        "endeavour", "flavour", "rumour", "humour", "vapour",
+                        "armour", "harbour", "savour", "behaviour")
+           for suffix in ("", "s", "ed", "ing", "ful", "less", "ly", "hood",
+                          "ing", "ers", "er")},
         "artefact": "artifact", "artefacts": "artifacts",
         "centre": "center", "centres": "centers", "centred": "centered",
         "fibre": "fiber", "litre": "liter", "metre": "meter", "metres": "meters",

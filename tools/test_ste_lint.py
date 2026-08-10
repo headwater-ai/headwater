@@ -44,6 +44,10 @@ check("contraction",
       "The engine doesn't read the file.\n", ["contraction"])
 check("british spelling",
       "The organisation records its behaviour.\n", ["british-spelling"])
+check("british spelling in an inflected -our word",
+      "OpenGEO solves a neighbouring problem on Markdown.\n", ["british-spelling"])
+check("american -or words are left alone",
+      "The neighboring color of the labor it favors.\n", [], ["british-spelling"])
 check("stock phrase",
       "The identifier is load-bearing for the corpus.\n", ["stock-phrase"])
 check("leverage as a verb",
