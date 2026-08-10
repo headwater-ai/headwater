@@ -89,6 +89,13 @@ regimes:
     default:
       tag: en-US                       # BCP 47: language and variant in one tag
       controlled: ste-house            # none | ste-house | ste-strict
+      retired_terms:                   # a term this corpus no longer uses
+        - term: reference system
+          reason: the design stands on its own, and the attribution added risk
+        # replacement is optional; with one, the fix is mechanical
+        - term: docgov
+          replacement: Headwater
+          reason: the name was settled in Q10
 
 relations:
   supersedes:
@@ -260,6 +267,18 @@ The three axes are different decisions, and a taxonomy must not conflate them:
 - **Controlled profile** — none, or a named profile such as STE house (structural rules) or STE strict (closed dictionary). A profile is a promise about the text, so checks can read it.
 
 Language is the third regime family. The corpus declares one default, and a kind may bind a different profile — runbooks in the strict profile, specifications in the house profile. Checks parameterize on the declaration: the spelling lexicon, the sentence-length limits, and the controlled-vocabulary check all read the regime instead of a hard-coded assumption. A check that cannot state its language assumption is not portable between corpora.
+
+### The language regime carries the terms that the corpus retired
+
+A judgment that a corpus no longer uses a term is a promise about the text, on the same terms as a spelling lexicon. Today that judgment exists only as prose and a diff, so no mechanism inherits it. `retired_terms` is where it becomes data ([evaluation](../evaluations/what-a-check-can-know.md)). Each entry carries the term, a required reason, and an optional replacement.
+
+**The reason is required, because a retirement with no recorded reason is an authority rank with extra steps.** [Q18](09-open-questions.md#q18--recording-adjudicated-disagreements) refused that shape for adjudication, and it does not improve here.
+
+**The replacement decides fixability.** With one, the fix is a substitution, which meets the mechanical-and-total bar of [spec 12](12-check-layer.md#fixability), and the check offers a patch. Without one, the finding carries remediation prose and no patch. A retired term is the usual case for the first shape. A retired *framing* is the usual case for the second, and no lexicon repairs it for the author.
+
+**The lexicon belongs to the language regime and never to a voice regime.** A voice regime binds per kind, and the `narrative` value exempts a kind from voice rules entirely. A term that this corpus retired is retired in a proposal as much as in a specification. The declaration count stays at eleven, for the reason that it stayed at eleven for an export profile. A use of an existing mechanism earns no name of its own.
+
+**A new entry forces a major version, and the migration state absorbs the existing text.** A retired term makes checks that passed fail, which breaks the `consequence` dimension below. So the release ships a migration payload, and the payload already knows which rules it broke for which documents. Those findings are `migration-pending` at `(document, rule)` grain, with an owner and an expiry ([spec 7](07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)). No separate grandfathering mechanism is needed, and a mechanism with no owner and no expiry would be worse than this one.
 
 A monolingual corpus declares no `language` facet on documents. Such a facet has one value everywhere, and no check varies on it, so it fails the every-rule-earns-its-place test ([spec 0](00-vision-and-scope.md#design-principles)). A multilingual corpus promotes language to a facet, and the promotion pays for itself at once. Checks select their lexicon per document. The AI surface knows what language it reads and answers in. And a `translation_of` relation becomes declarable, with the standard expectation machinery behind it. When a source document changes, its translations fall stale. That is the ordinary freshness check, not a new mechanism.
 

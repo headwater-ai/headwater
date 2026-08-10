@@ -190,6 +190,8 @@ The MCP server is the agent-facing surface of the same library ([AI integration]
 
 The engine emits findings. Adapters translate them to the native vocabulary of a platform: annotations, check runs, job summaries, review comments. Adapters are thin and swappable so that no forge is privileged in the core. Portability is a requirement, not an aspiration. Coupling of the core to one CI platform is a stated failure mode that we correct ([spec 8](08-design-departures.md)).
 
+**A run emits what it evaluated, and never orders what lands.** Every run reports the corpus tree, the taxonomy lock hash, and its [read set](12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) beside the findings. A gate that holds the merge result can then decide, without a full re-run, whether the verdict still applies ([spec 4](04-assurance-model.md#a-verdict-is-about-one-state-of-the-corpus)). What the engine does not do is hold a queue, choose a landing order, speculate on a future state, or block a merge. A merge queue answers the merge question completely and pays for it with a serialized landing, and that trade belongs to the forge. This is the boundary that [Q7](09-open-questions.md#q7--scope-of-the-mcp-surface) drew for the write path, at a second place.
+
 ## Performance targets
 
 | Operation | Target |

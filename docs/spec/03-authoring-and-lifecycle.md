@@ -59,6 +59,18 @@ Some kinds describe the world as it is. Some narrate change. A mix of the two is
 
 Enforcement is lexical and thus imperfect. It uses a curated pattern set for each forbidden category, with per-file and per-block escape hatches that must state a reason. The escape hatch is itself a signal. A shelf that collects exemptions is a shelf whose kind assignment is wrong, and the engine reports that concentration.
 
+**The escape hatch takes a reason from the closed set that [spec 4](04-assurance-model.md#suppression) declares**, and free prose beside it. `false_positive` and `accepted_deviation` are what the promotion statistics run on. A reason field that only holds prose collects no statistic at all.
+
+### What a lexical rule gets wrong, and where posture comes from
+
+Enforcement is lexical, and the measured errors of a lexical checker do not fall where intuition puts them ([evaluation](../evaluations/what-a-check-can-know.md)). Three rulings follow, and two of them constrain the parser rather than the rules.
+
+**A voice check reads author-owned text only.** A quotation, a code span, a citation line, and a generated block are outside every voice rule by construction. This is not an exemption that a rule declares. It is a property of what the parser hands a `Document`-scoped check, and [spec 12](12-check-layer.md#the-correctness-roots) holds it there with sentence segmentation.
+
+**Posture per category comes from fixability and never from precision.** A category may become blocking only when its remediation is mechanical and total, which is the bar that [spec 12](12-check-layer.md#fixability) already sets for a patch. A category whose remediation is a rewrite stays advisory permanently, whatever its false-positive rate turns out to be ([spec 4](04-assurance-model.md#where-promotion-cannot-finish)). Phased-rollout language is the most likely candidate for a mechanical fix. Nobody has built one.
+
+**The precision of the pattern set is not the thing to tune first.** Segmentation and span produced most of the observed errors of the checker that this repository runs on itself. A pattern set that a better tokenizer feeds is a different rule from the same pattern set on raw lines.
+
 ## Normative language
 
 Where a document states requirements, the strength of each statement is explicit (RFC 2119 keywords, or the set that the taxonomy declares). Each statement also has a distinct format. Three parts are checkable. Keywords appear in the declared casing. Documents that use them contain the interpretation boilerplate. The engine flags hedged pseudo-requirements ("should probably", "ideally must").
