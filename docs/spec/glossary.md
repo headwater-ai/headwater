@@ -33,6 +33,10 @@ The assertion layer of the knowledge base: the documents and the edges that they
 
 A report that a document which should exist does not. [Participation expectations](#participation-expectation) are the only construct that produces one. See [spec 4](04-assurance-model.md#absence-is-a-finding-class-of-its-own).
 
+### Abstract kind
+
+A [kind](#kind) that no document ever is. It carries what a group of concrete kinds share, and a concrete kind inherits from it with `is_a`. Relation endpoints may name one, and kind resolution never returns one. See [spec 2](02-taxonomy-model.md#abstract-kinds).
+
 ### Accuracy audit
 
 A periodic human or supervised-agent sample that asks one semantic question: does this specification still describe the system? Its output is a typed, tracked document inside the corpus. It was called a conformance audit until the name collided with [conformance](#conformance). See [spec 4](04-assurance-model.md#accuracy-audit).

@@ -224,7 +224,7 @@ One declaration is here that no earlier draft had: `anchors`. Relation endpoints
 
 ## Purpose is declared, not implied
 
-**Every kind declares the reader intent that it serves.** A kind without a purpose fails schema validation.
+**Every concrete kind declares the reader intent that it serves**, or inherits it from an [abstract parent](#abstract-kinds). A concrete kind with no purpose fails schema validation.
 
 This makes the genre-theoretic definition operational: a genre is a socially recognized type, defined by a shared *purpose* and *form*. The rest of a kind declaration — sections, facets, voice — is form. Without purpose, a kind is a shape with no reason. The first question that anyone asks about a corpus ("what is this shelf *for*?") then has no answer in the schema.
 
@@ -522,6 +522,41 @@ The first three are decidable from the schema alone and run under `headwater tax
 
 Orthogonality is the one that deserves attention. If a document's `shelf` tells you its `doc_type` with near-certainty, one of them does no work. The redundant one will eventually disagree with the other. The audit reports correlated facet pairs and does not reject them, because the right fix is a judgment. Sometimes you delete a facet, and sometimes you discover that the shelf split was wrong.
 
+## Abstract kinds
+
+The meta-schema already admitted these, in one clause and with no semantics anywhere. The coverage rule says that every kind is reachable from a shelf, "or it is explicitly marked abstract". Nothing said what an abstract kind was, or what it was for. The [schema-format walkthrough](../evaluations/schema-format-walkthrough.md) found two independent scenarios that need exactly it, so it is defined here.
+
+**An abstract kind is a kind that no document ever is.** It declares what a group of concrete kinds share. A concrete kind names its parent with `is_a`, and inherits from it.
+
+```yaml
+kinds:
+  governed_document:
+    abstract: true
+    facets:
+      require: [status, status_since, last_verified, summary]
+  playbook:
+    is_a: governed_document
+    purpose: procedure
+    lifecycle: standard
+    facets:
+      require: [owner]                 # added to what the parent already requires
+```
+
+Two costs disappear with it, and the walkthrough measured both. To add a kind no longer edits every relation that the kind participates in, because an endpoint may name an abstract kind. That endpoint reaches every concrete kind below it. And a change to a shared facet requirement is one edit rather than one edit for each kind.
+
+The rules are deliberately few.
+
+- **A kind names at most one parent, and a parent may name a parent.** Inheritance is a chain and never a lattice. Several parents bring back the contested-value problem that satellite inheritance already had to solve, and no case yet demands them.
+- **No document resolves to an abstract kind.** It may never be a shelf's declared kind, and never a discriminator value. [Kind resolution](#kind-resolution) is unchanged, because it resolves to concrete kinds only.
+- **Facet and section requirements union down the chain.** A child adds to what its parent requires. A child may never un-require what a parent requires, because that voids the parent's contract for a reader who trusts it. A parent that requires a facet that the child forbids is a validation error.
+- **Purpose is required on every concrete kind, and it may arrive by inheritance.** An abstract kind may declare the purpose for its group. A concrete kind with no purpose of its own, under no parent that declares one, fails validation exactly as before.
+- **Endpoints resolve through the chain.** `supersedes: {from: [governed_document]}` permits every concrete kind that has `governed_document` above it.
+- **An abstract kind is rigid.** The [rigidity rules](#kinds-are-rigid-states-are-not) apply to it in full. An abstract kind named `draft_document` is as wrong as a concrete one.
+
+**`is_a` is not `subsumes`.** One is a statement about kinds and the other is a statement about documents, and [spec 1](01-conceptual-model.md#two-layers-terminology-and-assertions) holds those layers apart. `is_a` says that every playbook is a governed document, which is a fact about the schema. `subsumes` says that one decision is wider than another, which is a claim that an author makes about two documents. To confuse them lets the TBox leak into the ABox through a naming accident.
+
+The declaration count stays at eleven. `abstract` and `is_a` are attributes on `kinds`, not a new declaration, and an adopter who needs neither meets neither.
+
 ## Kinds are rigid; states are not
 
 A kind is a property that a document cannot lose while it is still the same document — a specification stays a specification. A lifecycle state is a phase that every document passes through. Formal-ontology practice calls the first **rigid** and the second **anti-rigid**, and holds that an anti-rigid class may never subsume a rigid one.
@@ -583,8 +618,9 @@ The taxonomy language has a formal schema, published with the engine and version
 - structural conformance to the meta-schema.
 - referential integrity — every referenced vocabulary, regime, kind, facet, and purpose exists. Every relation endpoint is a declared kind or a declared anchor kind.
 - **anchor integrity** — every anchor kind names exactly one resolver, and no two anchor kinds claim the same resolver namespace.
-- coverage — every shelf resolves to at least one kind. Every kind is reachable from at least one shelf, or it is explicitly marked abstract.
-- **purpose completeness** — every kind declares a purpose, and every declared purpose is served by at least one kind.
+- coverage — every shelf resolves to at least one kind. Every concrete kind is reachable from at least one shelf. An abstract kind is reachable from none, and says so.
+- **kind inheritance** — `is_a` names a declared abstract kind. The chain terminates and holds no cycle. No child un-requires what a parent requires, and no child forbids a facet that a parent requires.
+- **purpose completeness** — every concrete kind has a purpose, declared or inherited, and every declared purpose is served by at least one concrete kind.
 - determinism — no two shelf patterns can match the same path ambiguously.
 - role uniqueness — at most one facet claims each engine-significant role, and the role registry is closed and lives here: `state`, `state_entered`, `created`, `freshness`, `scent`. Every `role:` in a taxonomy and every list of "special" facets elsewhere in this specification draws from this line. A role outside it is a validation error. To add a role is a meta-schema change, not a taxonomy change.
 - lifecycle soundness — the state machine is connected, has an initial state, and its terminal states are declared.
