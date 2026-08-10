@@ -139,9 +139,27 @@ That answers the trust problem that the [SHACL evaluation](../evaluations/shacl-
 
 ## Q7 — Scope of the MCP surface
 
-Read-only tools are obviously right. May an agent *write* through the MCP server — for example, create a decision record or update a facet? That is a question of trust and workflow as much as a technical question.
+This question is closed. One [evaluation](../evaluations/the-serving-boundary.md) settles it with [Q14](#q14--discovery-surface) and [Q17](#q17--governed-access-and-the-solution-layer). All three are about one boundary, where a corpus meets a reader that it does not control.
 
-**Leaning:** read-only in the first release. Writes arrive later, behind explicit opt-in, and they produce a change proposal rather than a commit.
+**The entry's axis is wrong, and that is why the leaning came out half right.** It asks whether an agent may write, and calls that "a question of trust and workflow". `headwater check --fix` writes files today and nobody calls it a write surface, because the result lands in a diff that a human commits. The axis is **whose review the result passes through**, not whether bytes move.
+
+**The decision.** Three classes of tool, and the boundary between the second and the third is where the whole question lived ([spec 5](05-ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it)).
+
+| Class | Ships | Why |
+|---|---|---|
+| Query | first release | It changes nothing |
+| Working-tree write (`new`, `fix`) | first release, off by default per server | The human reviews at commit, and the [fixability bar](12-check-layer.md#fixability) forbids a judgment-bearing patch |
+| Landed write | never | Acceptance is a human act, and no forge is privileged in the core |
+
+**The specification had already answered the commit half, and the entry did not cite it.** [Spec 3](03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed) requires `accepted_by` and states that acceptance is a human act. [Spec 5](05-ai-integration.md#what-we-do-not-do) forbids an agent-authored document merged without review. A server-side commit produces a document with no `accepted_by`, or an invented one. No judgment about trust is needed to reach that.
+
+**So the third row is a refusal and not a deferral.** "Writes arrive later" describes a thing that never arrives. Headwater emits what a change proposal needs, and an adapter opens the proposal ([spec 7](07-distribution-and-federation.md#upstream-awareness)). That is the boundary that keeps the engine out of the merge-queue business ([Q21](#q21--terminological-succession-and-validity-under-merge)).
+
+**And the second row corrects the leaning the other way.** "Read-only in the first release" would ship the agent surface without the authoring half. [Spec 0](00-vision-and-scope.md#what-we-build) puts that half in the first release for a stated reason. The two working-tree tools are the mechanical, total operations that the fixability bar already admits.
+
+**Three findings from the prior art change how this is stated** ([spec 11 §O](11-adjacent-work.md#o--the-serving-boundary-descriptors-redaction-and-the-write-path)). The protocol's own annotations are hints, and a client must not trust one from an untrusted server. So the enforcement is an unregistered tool and never a flag. The published attacks arrive at discovery time, before any call, so a confirmation prompt at each call is not a safety argument. And an observed exploit used a write tool as an exfiltration channel, which makes this entry an access-control ruling as well as a workflow one.
+
+**What stays open.** What a hosted server is, operationally: who runs it, and how it is deployed. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. Working-tree write tools should raise the assisted fraction ([spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric)), and that metric is the instrument.
 
 ## Q8 — Probe cost and cadence
 
@@ -175,11 +193,11 @@ This also decides where authority sits, in the terms that [principle 2](00-visio
 
 Backstage is this shape in production. Its catalog re-derives entities from descriptors that live beside the code, and it generates the `relations` field rather than accepting one. It also admits entities registered as static configuration ([spec 11 §N.3](11-adjacent-work.md#n3-backstage--the-catalog-is-a-read-model-that-authors-its-own-entries)).
 
-### What this fixes for Q17, and what it leaves there
+### What this fixed for Q17
 
-The harvest ruling constrains [Q17](#q17--governed-access-and-the-solution-layer) in three ways, and decides none of it.
+The harvest ruling constrained [Q17](#q17--governed-access-and-the-solution-layer) in three ways, and Q17 has since closed on them.
 
-The export is the serving artifact, so a filter acts at export and never at graph build. Checks therefore stay privileged and total, which Q17 required and could not point at. The projection census is the mechanism for Q17's tombstone rule. A redaction is a loss with a reason, and the census already reports that shape. And a harvesting tier holds bytes that a publishing corpus gave it. A filter applied when the tier *reads* is a filter applied after the bytes crossed the boundary. Filtering belongs to the publishing corpus's export step.
+The export is the serving artifact, so a filter acts at export and never at graph build. Checks therefore stay privileged and total, which Q17 required and could not point at. The projection census is the mechanism for Q17's tombstone rule. A redaction is a loss with a reason, and the census already reports that shape. And a harvesting tier holds bytes that a publishing corpus gave it. A filter applied when the tier *reads* is a filter applied after the bytes crossed the boundary. Filtering belongs to the publishing corpus's export step. That third constraint changed Q17's answer rather than confirming it, because Q17 had placed the boundary at the tier.
 
 **What stays open.** Whether a solution corpus vendors each source export or references it. A vendored copy keeps checks offline and grows the repository, and a reference does the reverse. The size of one real harvest is the evidence that closes it, and no such tier exists yet. Also open: whether a harvesting tier owes conformance rules of its own, because `headwater conformance` evaluates one repository. One claim is unmeasured. Harvest should keep a solution-tier route query inside the same 100 ms budget, and route latency at that tier is the instrument.
 
@@ -191,7 +209,9 @@ The casing has two forms, and they do not mix. In prose, the name of the system 
 
 ## Q11 — License and distribution posture
 
-The options are open source, source-available, or internal-only. A related question is whether the base package, the bundles, and the doctrine ship under the same terms as the engine. That half of [Q3](#q3--how-much-of-the-default-taxonomy-ships-in-the-box) is now the only part of it left open, and it also affects Q7. Decide it early, because it is easier to open something later than to close it.
+The options are open source, source-available, or internal-only. A related question is whether the base package, the bundles, and the doctrine ship under the same terms as the engine. That half of [Q3](#q3--how-much-of-the-default-taxonomy-ships-in-the-box) is now the only part of it left open. Decide it early, because it is easier to open something later than to close it.
+
+The link to [Q7](#q7--scope-of-the-mcp-surface) that this entry used to name is gone. Q7 closed on the ruling that a landed write never ships, and no license term changes that.
 
 ## Q12 — Migration path for an existing corpus
 
@@ -246,15 +266,23 @@ That placement makes the standing worry concrete rather than hypothetical. OKF's
 
 ## Q14 — Discovery surface
 
-**Blocks:** nothing yet. It becomes urgent when a corpus is consumed by anything that did not clone the repository.
+This question is closed. One [evaluation](../evaluations/the-serving-boundary.md) settles it with [Q17](#q17--governed-access-and-the-solution-layer) and [Q7](#q7--scope-of-the-mcp-surface), because the three describe one boundary from three sides.
 
-[Spec 7](07-distribution-and-federation.md) covers distribution to repositories that already know about the publisher. Nothing covers an agent or tool that encounters a corpus cold. Open: how it discovers that a corpus exists, what taxonomy governs it, what version, and where to start to read.
+**The entry bundled two questions, and only one of them is ours.** It asked how a machine "discovers that a corpus exists, what taxonomy governs it, what version, and where to start to read". **Registration** is how a machine learns of a corpus when it holds no pointer at all. No file inside a corpus answers that, and none ever has. Every convention in the field presumes a client that already resolved a name. Three package ecosystems put a capability document inside an index and discover the index in none of them. The human half of registration is [Q16](#q16--public-presence), and the machine half is the publisher's own channel. **Resolution** is what closes: a machine holds a location and learns what governs it.
 
-Prior art exists to copy rather than reinvent. Examples: a well-known file at a predictable path, link relations from rendered pages, and an MCP server that advertises the corpus as a capability. All three are cheap, and the first two work without any Headwater installation at all.
+**The decision.** The **corpus descriptor** is a projection ([spec 7](07-distribution-and-federation.md#arriving-at-a-corpus-cold)). `generate --check` holds it to regeneration. It names every corpus root in the repository, with the taxonomy identity, the version, the lock hash, the entry points, and each export profile. One descriptor serves several transports. A file at a fixed path *plus* a separate MCP statement is two copies of one fact ([principle 2](00-vision-and-scope.md#design-principles)).
 
-**Leaning:** a small machine-readable descriptor at a fixed path, plus the MCP surface for agents that can use it. The descriptor holds: taxonomy identity and version, corpus root, entry points, and the graph export location.
+**Its path is the engine's and not the taxonomy's, and the entry did not notice that it had to be.** Every other projection takes its output path from the schema. Apply that rule here and the descriptor is unreachable, because a reader who must read the taxonomy to find it already knows what it says. So the descriptor is engine-defined and non-optional, at `.headwater/corpus.json` relative to the repository root. The [register projection](04-assurance-model.md#every-obligation-has-exactly-one-disposition) already holds that standing for a different reason.
 
-**The reason to defer is gone.** This entry deferred until the graph export format was stable, because the descriptor points at it. [Q6](#q6--where-the-corpus-graph-lives-at-rest) fixed that format, and [Q13](#q13--linkml-and-shacl-as-substrate) fixed the emitter set. Two things follow for whoever takes this entry up. A repository holds one or more corpora ([spec 1](01-conceptual-model.md#the-corpus)), so a descriptor at one fixed path must be able to name several roots. And the export carries its own coverage statement ([spec 12](12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule)). The descriptor points at an artifact that already declares its own limits, so it does not repeat them.
+**The canonical location is inside the repository, and that is a ruling.** A reserved path at the root of an origin fixes one service to one site. It also misdescribes a host that serves several publishers, and it needs control of the apex. A corpus meets all three objections, so a pointer reaches the served copy instead.
+
+**Three rules make it usable.** A version carries a stated client behavior, because a version with no rule attached is a string. A success response that does not parse to the declared shape means **absent** rather than malformed. The reason is that a host which answers every path with a default page is the ordinary case. And a filter reaches the descriptor first, which is the real dependency that this entry had on Q17.
+
+**The descriptor is a disclosure, not only a convenience.** It names roots, entry points and profiles, which is organizational structure. The robots convention states the same thing about itself in its own standard. The file grants no authorization, and a path becomes discoverable by being named.
+
+**What the prior art contributes, including against us.** Four conventions that resemble this keep the index bare and put identity on each collection. They do so to avoid a central file that describes roots which somebody else edits. Headwater centralizes anyway, and may, because the descriptor is generated and regeneration catches drift. The sharper warning is `llms.txt`: about 137,000 domains measured, 97% of valid files unread in a month, and no provider obliged to read one. A descriptor is worth what its obliged consumer is worth, and Headwater's first consumer is its own tooling ([spec 11 §O](11-adjacent-work.md#o--the-serving-boundary-descriptors-redaction-and-the-write-path)).
+
+**What stays open.** Registration. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. A descriptor should let a cold agent reach a governing document that it otherwise misses, and the Discovery and Navigability probe categories are the instrument.
 
 ## Q15 — A synthesized content tier
 
@@ -272,13 +300,15 @@ The tier is not hypothetical. [TrustGraph](11-adjacent-work.md#j-trustgraph--the
 
 Open: whether Headwater admits synthesized content at all. If it does, more questions follow. Does it need its own staleness rules? How does the system make sure that it can never become canonical for anything? Does a human acceptance step promote it to authored, or does it stay permanently second-class?
 
+[Q17](#q17--governed-access-and-the-solution-layer) adds one constraint on any answer here. The mark that separates synthesized content from authored content has to survive an export. An emitter whose target cannot carry the mark declares that in its loss set. The reader of that export then learns that the distinction is missing, rather than losing it silently ([spec 6](06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped)). Serena's failure is exactly a mark that never existed. An export that drops one is the same outcome, reached later.
+
 **Leaning:** admit it, permanently non-canonical, clearly marked, and never a valid target for a `governs` or `verifies` relation. Promotion to authored requires an explicit human acceptance that changes its provenance record. It is how most organizations will actually want to use this, and a refusal to model it just means that it happens unmarked.
 
 ## Q16 — Public presence
 
 **Blocks:** nothing technical. It blocks adoption entirely, and later than is comfortable. By the time that it obviously matters, the first impressions are already made.
 
-[Q14](#q14--discovery-surface) covers how a *machine* finds a corpus cold. This is the human half, and it is currently unplanned. There is no site and no sitemap. There is no positioning for someone who heard the name once and has four minutes.
+[Q14](#q14--discovery-surface) has closed, and it left this entry more work rather than less. Q14 answers **resolution**: a machine that holds a location learns what governs it. It refuses **registration**, because no file inside a corpus makes that corpus findable. Registration is therefore wholly this entry's problem, on both the human and the machine side. There is no site and no sitemap. There is no positioning for someone who heard the name once and has four minutes.
 
 [LeanCTX](11-adjacent-work.md#i5-the-presentation-is-the-lesson) is the standard to match. It is a useful standard precisely because it is not a large company. It is one developer's project, with a site that nonetheless assembles, coherently, what most open specifications never manage:
 
@@ -295,7 +325,7 @@ Open: whether Headwater admits synthesized content at all. If it does, more ques
 | Changelog, community, open-source posture | Is it alive, and is anyone else here? |
 | `llms.txt`, AI-crawler-friendly `robots.txt` | Can a machine reader find and cite it? |
 
-The last row is where this question touches Q14, and it is the one that an ordinary marketing site omits. The entire thesis of this project is that machines are readers in their own right. For such a project, unreadability to the machines that can recommend it is a self-inflicted wound.
+The last row is where this question touches Q14, and it is the one that an ordinary marketing site omits. The entire thesis of this project is that machines are readers in their own right. For such a project, unreadability to the machines that can recommend it is a self-inflicted wound. One caution came out of Q14 and belongs here. About 137,000 domains publish an `llms.txt`, and 97% of the valid files went unread for a month. A file that nobody promised to read is not a discovery surface, however cheap it is to write.
 
 Two constraints are particular to Headwater. The site should be **generated from the corpus that documents Headwater**. Anything else is a governance system whose own public documentation is ungoverned — the first thing that a skeptical reader will check. And the benchmark and self-assessment rows must be **honest before they are impressive**. §I.4 records claims that move between README versions as the thing that made an otherwise strong project harder to trust. A governance tool that inflates its own numbers and is caught has nothing left to sell.
 
@@ -303,75 +333,97 @@ Two constraints are particular to Headwater. The site should be **generated from
 
 ## Q17 — Governed access and the solution layer
 
-**Blocks:** the discovery surface ([Q14](#q14--discovery-surface)), which currently assumes a reader entitled to see everything. It becomes urgent the first time that an adopter wants a contractor to read one shelf and not another.
+This question is closed. One [evaluation](../evaluations/the-serving-boundary.md) settles it with [Q14](#q14--discovery-surface) and [Q7](#q7--scope-of-the-mcp-surface). The constraint that [Q9](#q9--multi-repository-corpora) handed this entry changed its answer rather than confirming it.
 
-**The graph export format no longer waits on this entry, and it gave this entry three things.** [Q6](#q6--where-the-corpus-graph-lives-at-rest), [Q13](#q13--linkml-and-shacl-as-substrate) and [Q9](#q9--multi-repository-corpora) closed together. The export is the serving artifact, so a filter acts there and never at graph build. That is the seam that "checks are privileged and total" needed. The projection census is the tombstone mechanism, because a redaction is a loss with a reason and the census reports exactly that. And the harvesting tier holds bytes that a publishing corpus gave it. A filter at the reading end arrives after the bytes crossed the boundary. Filtering belongs to the publishing corpus's export step, and that is a constraint on any design that this entry produces.
-
-Three proposals arrive bundled and separate cleanly. To keep them apart is most of the analysis, because they have very different merits and only one of them is hard.
+**The three proposals still separate cleanly, and two of the three verdicts stand.**
 
 | Proposal | Verdict |
 |---|---|
 | A cross-repository **solution layer** | Yes — [Q9](#the-aggregator-authors-its-own-facts)'s aggregator, extended to author its own facts |
-| **Access control** over it | Yes — the substantive question, and the one that this entry is about |
+| **Access control** over it | Yes, and much smaller than this entry expected |
 | **Graph authoritative, Markdown projected** | No — and unnecessary for either of the above |
 
 ### Why authority does not move
 
-The case for inversion is that no one can enforce access control on files that someone already cloned. That is true, and it is the right instinct pointed at the wrong layer.
-
-Inversion costs four things that the design currently gets free.
-
-**Capture cost**: spec 3's survival argument is that authoring is a file edit in the same change as the code. A route through a graph store rebuilds the tool-mediated capture step that killed gIBIS.
-
-**Review**: [spec 4](04-assurance-model.md)'s controls trigger on pull requests, because documents diff there. A graph store does not.
-
-**Detectability**: Q6 already warns that a projector that nothing can check becomes the most trusted component in the pipeline. Today a projector bug is caught by comparison against the Markdown. Inversion removes the comparison target, so the bug corrupts what humans read instead.
-
-**Provenance**: blame, history and signed commits are free from git. An inverted design must rebuild them.
-
-Against that, inversion buys nothing that the serving boundary, below, does not already give.
+The case for inversion is that no one can enforce access control on files that someone already cloned. That is true, and it is the right instinct pointed at the wrong layer. Inversion costs four things that the design gets free. The low capture cost of spec 3. Review on a pull request, where documents diff. The detectability of a projector defect against the Markdown. And provenance from git. Against that it buys nothing that the ruling below does not give.
 
 There is a coherent version of the proposal. Name it, so that no one adopts it by accident. An organization for whom a repository clone is *itself* the leak wants documentation that is never committed to the repository at all. That is a real market. It also abandons "documents are files in the repository, next to the code they describe". That is [spec 0](00-vision-and-scope.md)'s central bet, and the reason that capture is cheap. It is a **pivot, not an extension**.
 
-### Access control is a property of the serving boundary
+### The boundary is the export step, not the tier
 
-Enforcement belongs where a reader is *served*, not where an author writes. Per-repository Markdown stays canonical and carries the host platform's repository permissions. The federated graph is a filtered view, and the filtering happens there.
+The entry placed enforcement at the federated layer: "the federated graph is a filtered view, and the filtering happens there". That is one tier too far out, on the entry's own argument. A harvesting tier holds pinned, committed exports, so a filter that the tier applies acts on bytes that already crossed the boundary. That is [Serena's failure](11-adjacent-work.md#l6-a-filter-in-the-tool-layer-is-advisory-and-the-documentation-says-so) at one remove, and this entry diagnosed that failure and then reproduced it.
 
-[Serena](11-adjacent-work.md#l6-a-filter-in-the-tool-layer-is-advisory-and-the-documentation-says-so) demonstrates the failure of the other placement. Its `ignored_memory_patterns` hides a memory from every memory tool, and its own documentation then explains how to read the file with a general file tool. The filter sits in the tool surface while the bytes sit in the repository, so it controls one reading path and no other. Serena states the limit plainly for a related feature: the trust gate is "a functionality boundary, not a containment boundary". Any filter that Headwater places short of the serving boundary inherits the same weakness.
+So the serving boundary is the **export step of each publishing corpus** ([spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter)). A corpus decides what leaves it, and what reaches a tier is already what that tier may hold.
 
-This puts the control exactly where the need is and nowhere else. When someone who can clone a repository reads that repository, that is intended behavior. Every case that motivates the question — contractor, partner, adjacent business unit, "show the topology but not the internals" — is cross-corpus, which is the federated layer by definition. Sensitive material lives in a tightly-permissioned repository and is federated in. The graph serves filtered views over the union.
+### The unit is a destination, and there are no principals
 
-The declaration surface already exists: `confidentiality` is a named facet ([spec 1](01-conceptual-model.md)). This promotes it from descriptive metadata to an enforced security control. That is a small schema change that carries a large change in obligation. A mislabelled facet is no longer a lint — it becomes a leak.
+A filter that runs at export runs when nobody is reading. There is no request, no session, and no reader to identify. So a corpus filters for an **audience** and never for a person, and Headwater has no principals.
 
-### Four constraints, if it is built
+That is the model with an enforcement story rather than a limitation accepted reluctantly. The bytes of a filtered export live in a repository. The platform's permissions on that repository decide who reads them, exactly as they do for the Markdown. Two permission systems become one, which is what this entry asked for and could not reach while it imagined a filter at request time. The identity branch closes with it. Capability systems and centralized authorization services answer whether a principal may act on an object now, and Headwater never asks that ([spec 11 §O](11-adjacent-work.md#o--the-serving-boundary-descriptors-redaction-and-the-write-path)).
 
-**A filtered view must be legibly filtered.** The doctrine already exists twice — spec 4's [no silent passes](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for) and Q13's declare-yourself-a-subset rule. Redaction obeys it: tombstones, never silent omission, so that a view reports *3 documents withheld* and does not look complete. Without this, an agent traverses a redacted graph, finds nothing, and reports absence with confidence. That is the failure that [spec 5](05-ai-integration.md) names at its start, caused this time by our own security layer.
+### The mechanism, and what it did not need
 
-**Checks are privileged and total. Serving is filtered.** An evaluation of reciprocity on a partial graph invents findings. Validation therefore runs at full visibility regardless of who triggered it, and only the results are filtered on the way out. That seam is clean, and a written statement of it prevents the obvious mistake: checks that run as the user who made the request.
+An **export profile** names an audience, an emitter target, an output path, a filter over facet values, and a tombstone grain. It is an entry under `projections`, so the declaration count stays at eleven. Six rules make it honest, and three already hold elsewhere. Carried and withheld partition the corpus and the engine generates both. A withholding is a census reason. A document is withheld whole. The filter is default-deny over classes, so a later schema addition does not widen a profile that nobody re-read. Every projection inside a profile regenerates from the filtered graph. And the declaration travels with the artifact, along with the time that the export ran.
 
-**Topology leaks even when content does not.** Shelf and kind names leak organizational structure, and node counts and edge shapes leak product structure. A hidden document with a kept inbound edge leaks its existence. When both are hidden, the graph's shape changes in ways that a determined reader can difference. This is the multi-level-security inference problem, and it has no clean solution. What the specification owes is honesty that this is mitigation rather than a guarantee.
+**Two of those six came from the prior art rather than from the argument.** The attenuating-credential literature records that a credential which lists what it forbids widens silently the first time its target grows an operation. And one observed case had a correct text redaction defeated by an alphabetized word index that shipped beside it. A shelf index built at full visibility is that failure, in our own artifact set.
 
-**Do not invent an identity system.** Derive from the platform's existing identity and team model. Two permission systems that disagree mean that the documentation system is the wrong one, and it is the one that leaks. Spec 7 already has the pattern for rules that it cannot decide from the repository tree. The pattern: degrade to a recorded attestation with an owner and a date.
+**No facet role was needed.** This entry said that `confidentiality` is a named facet and proposed to promote it to an enforced control. [Spec 1](01-conceptual-model.md) lists it as an example of what facets express, and no role carries it. A filter that names its own facet and values inside the profile is [principle 1](00-vision-and-scope.md#design-principles) working, and the closed role registry stays closed. What survives is this entry's best observation, sharpened. A facet that a filter reads is a facet whose every change is a disclosure decision.
 
-### The one place "visibility before blocking" cannot apply
+### The tension that this entry stated twice and never noticed
 
-[Principle 4](00-vision-and-scope.md#design-principles) says that a new rule ships advisory and earns its way to blocking. Access control is the single mechanism in the system where that is wrong. To ship it advisory is to ship it broken. Every other control may be wrong for a while, precisely because that state is recoverable. A leak is not.
+The entry requires a view that reports "3 documents withheld" and does not look complete. Four paragraphs later it reports that node counts leak product structure. A count of withheld documents is a node count. The tombstone that the first constraint demands is the leak that the second one reports, and the inference literature says that no design reconciles them.
 
-This exception belongs in the specification rather than in someone's judgment. The promotion machinery is otherwise uniform, and it will happily process a permission check like any other.
+So the grain is declared per profile. `sealed` gives only the fact of the filter. `counted` puts a placeholder where each withheld node would have sat, carrying the identifier of the rule that withheld it. That shape is not ours. Freedom-of-information law asks for the amount, the position, and the rule, marked at the site of the cut. It omits the marking only where that would harm the interest which the exemption protects. That is the same conditional that the inference literature reached, a century apart. A reason comes from a closed set, because free prose in a tombstone is a second channel.
 
-### The sub-question that arrives silently: what may be a node
+**What no profile may declare is a view that presents as total.** That invariant holds under both grains because it leaks nothing, and it is what prevents the harm. The harm is an agent that traverses a filtered graph, finds nothing, and reports absence.
 
-Access is the loud half of the solution layer. The quiet half is what the layer may contain. That decision occurs at the moment that someone writes its schema, not when anyone argues about it.
+### Checks stay privileged and total, and one outcome is new
 
-[Spec 11 §A](11-adjacent-work.md#a1-the-solution-layer-presses-on-that-boundary) sets out the choice. The ABox currently stops at the document boundary: the corpus knows that a document exists, its kind, and what it governs — never what it asserts. A solution layer with a `Service` node that describes an actual service crosses that line. It takes on an obligation to stay true to the estate. Nothing in the design currently carries that obligation. Its drift is worse than stale prose, because a wrong node reads as structural rather than editorial.
+A check runs inside the publishing repository, over the full graph, on a runner that holds every byte. Filtering is strictly downstream, in a projection, so no configuration exists in which a check sees a partial graph. This entry's worry about "checks that run as the user who made the request" dissolves along with the request.
 
-**Leaning:** declared anchors. A solution-layer node carries an identifier, a name and an owner, and asserts nothing further. Every substantive claim stays inside a document, where freshness and the check layer already reach it. This is what `code_path` already does — an external anchor kind that is referenced and never described — and its generalization costs no new machinery. Revisit only against a concrete need that the anchor form cannot meet.
+What is new is a third resolution outcome. An anchor whose target a profile withheld is **withheld**, not unresolved ([spec 2](02-taxonomy-model.md#behavior-at-the-limits)). Without that distinction, every filtered harvest produces a wall of dangling-anchor findings, and operators learn to ignore the class that also carries real defects.
 
-### What it changes about the project
+### Why "visibility before blocking" cannot apply, derived
 
-This is worth a plain statement, because it is a category change rather than a feature. Documentation tooling with no access model is a developer tool. Documentation tooling with one is security software. It acquires a threat model, an audit obligation, a disclosure process, and a class of bug that no one can fix forward. That is a defensible business, and it is the natural shape of an enterprise tier ([Q16](#q16--public-presence)). But it is not a facet that someone adds on a quiet afternoon.
+[Principle 4](00-vision-and-scope.md#design-principles) is right to except this, and the exception follows from an error asymmetry rather than from the subject matter. A withholding that fires wrongly is visible, cheap and reversible. A withholding that fails to fire is invisible to both promotion instruments, and it is not reversible at all. So the general rule lands in [spec 4](04-assurance-model.md#where-promotion-does-not-apply). A control walks the promotion path when both error classes are recoverable, and otherwise it ships at its final posture. A withholding rule is the one instance today, it is not suppressible, and it is not waivable.
 
-**Leaning:** the solution layer proceeds now as an ordinary corpus. Access control is specified now and built late. The export format that it waited on is now fixed. The remaining reason to wait is the category change stated above, and not a missing dependency. It never arrives as a side effect when federation ships. The four constraints above are the acceptance criteria for the design, not a wish list. A filtered view that does not announce its filtering is not a partial implementation of this — it is a defect.
+[Principle 7](00-vision-and-scope.md#design-principles) resolves the same way. Its positional form is shorthand for a rule about cost, so an exporter that cannot evaluate its filter emits nothing and fails the run.
+
+### Topology, stated as mitigation
+
+Shelf and kind names leak organizational structure. Counts and edge shapes leak product structure. A hidden document with a kept inbound edge leaks its existence. None of this is fixable, and the field that spent decades on it under a larger budget reached the same verdict. `sealed` removes the count, and withholding a document's inbound edges removes the dangling reference. Neither is a guarantee. The honest instruction is the one that this entry implied and did not state. A fact whose *existence* is the secret does not belong in a corpus that is exported at all.
+
+**Revocation is late, and the specification says how late.** A harvesting tier reads a pinned export, so a document withheld today stays in the tier's copy until the next harvest. The authorization systems that solve this in the other direction carry a freshness token on every answer for exactly this reason. A pinned export has none, so the export carries its generation time and the harvest cadence is declared. The lag is then a number rather than a surprise.
+
+### What may be a node
+
+**Declared anchors, and there are now two arguments.** The first is this entry's, and it is about truth. A node that asserts a service's properties takes on an obligation to stay true, and nothing in the design carries it. Its drift then reads as structural rather than editorial ([spec 11 §A.1](11-adjacent-work.md#a1-the-solution-layer-presses-on-that-boundary)).
+
+The second is about enforcement, and it did not exist before the ruling above. A filter has nothing to attach to on a node that carries properties. A document has facets that a predicate reads, and an anchor is carried whole or withheld whole. Declared anchors are what make a solution-layer export filterable at all ([spec 7](07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)). Revisit only against a concrete need that the anchor form cannot meet, argued as the model change that it would be.
+
+### What the project takes on, and what it declines
+
+This entry says that documentation tooling with an access model is security software. Four things follow, by its account: a threat model, an audit obligation, a disclosure process, and a class of bug that nobody can fix forward. Under the destination model the first three shrink and the fourth stays whole.
+
+Headwater authenticates nobody, holds no session, evaluates no policy at request time, issues and revokes no credential, and records no read. Those obligations stay with the platform that already discharges them for the Markdown. [Spec 0](00-vision-and-scope.md#what-we-do-not-build) now says so in the table of what we do not build. What Headwater does is generate an artifact from a declared rule and account for what it left out. That is a redaction tool, and it keeps the worst property of an authorization system. A leak cannot be fixed forward.
+
+So the project takes on three things, and they arrive with the first filtered profile.
+
+| Obligation | What discharges it |
+|---|---|
+| The exporter emits exactly the declared set | The projection census, plus a differential fixture set per profile ([spec 12](12-check-layer.md#the-correctness-roots)) |
+| Somebody outside the project can report a defect | A stated coordinated-disclosure process |
+| The control never ships in a state where it may be wrong for a while | The [principle 4](00-vision-and-scope.md#design-principles) exception, recorded in the register |
+
+**The trigger is a published claim, which is more useful than a category.** One vendor's servicing criteria decide whether a report earns a security fix by asking whether it violates a **published** boundary. The same document lists what is deliberately not one. A project does not become security software by writing a filter. It becomes security software by publishing a sentence that says a boundary holds. So [spec 6](06-engine-architecture.md#what-a-filtered-export-claims-and-what-it-does-not) states one claim and five non-claims. The non-claims are the more useful half, because they turn the tombstone channel, the shape leak and the revocation lag into stated limits.
+
+**One hole under the premise, recorded rather than answered.** Enforcement rests on the platform's repository permissions, and commits in a fork network stay reachable across that network by the platform's own account ([spec 11 §O.12](11-adjacent-work.md#o12-the-platform-permission-that-this-design-leans-on-has-a-documented-hole)). The premise holds for the current tip of a repository that was never forked and never changed visibility. It is qualified otherwise, and no alternative placement is better.
+
+**Sub-repository filtering is refused, not deferred.** Within one repository a clone is total, so any filter placed there controls one reading path while the bytes stay readable along another. An adopter who needs a contractor to read one shelf and not another puts the other shelf in a second repository and federates it in. The cost is real and stated. The alternative is a control that we would have to call advisory in the one place where advisory is a defect.
+
+**What stays open.** Whether any corpus ever needs a second profile. The first release ships one, unfiltered, and a real adopter with a real second audience is what builds the rest. Also open: what a hosted server is operationally, and whether a withheld anchor needs a class beside its count. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. A `counted` tombstone should stop an agent reporting absence with confidence, and a probe over a withheld answer is the instrument.
+
+This entry's closing sentence survives and belongs in the specification. A filtered view that does not announce its filtering is not a partial implementation of this. It is a defect.
 
 ## Q18 — Recording adjudicated disagreements
 
@@ -402,6 +454,7 @@ Open, in order of consequence, least first:
 - **Snapshot format and home.** ReqIF (an OMG standard, tool-neutral, verbose) or the native JSON of the API (simpler, vendor-specific)? And does the snapshot live inside the governed repository or beside it? The snapshot is an input to anchor resolution, so its format is a compatibility surface, not an implementation detail.
 - **Does imported prose enter the corpus at all?** The minimal integration imports identities and edges only. Documents point at requirement anchors, and a reader follows the pointer into the RM tool. The larger integration materializes requirement text as marked, read-only documents. Then the corpus is self-contained for offline readers and agents. The larger integration is more useful, and it imports a maintenance obligation with the text.
 - **What is an imported edge worth?** May a `traces_to` edge that an importer created satisfy a participation expectation, or let a document claim `evidenced`? If yes, a system that nobody here governs discharges obligations in a corpus that claims to be checkable. If no, imports are decoration. The honest middle: imported edges satisfy nothing blocking until the fidelity of the importer has an evidence trail. That is [principle 4](00-vision-and-scope.md#design-principles), applied to a pipeline instead of a rule.
+- **Whether imported text may leave again.** [Q17](#q17--governed-access-and-the-solution-layer) makes the export the point where a corpus decides what leaves it, and imported prose is content that an upstream owns. An export profile that carries it republishes somebody else's material to an audience that the upstream never chose. The filter is where that decision lives, and this entry has to say whether the default carries imported text or withholds it.
 - **The tier question.** Imported text is regenerable against the pinned snapshot, so it fails the [Q15](#q15--a-synthesized-content-tier) definition of synthesized. But its source is ungoverned, so it is not a projection in the spec-6 sense either. Whether that is a fourth tier or a qualifier on `generated` decides what its provenance record carries. The per-fact receipts of TrustGraph (source, timestamp, method) fit as they are. The addition is the snapshot pin.
 
 **Leaning:** reference-first. Anchors and imported edges ship first — they change no content and are cheap to audit. Imported requirement text arrives later, clearly marked and never canonical, under whatever rule Q15 lands on. The snapshot pin goes into its provenance. Imported edges start advisory and walk the same evidence-driven promotion path as every other control. And the importer is an adapter in the sense that [spec 6](06-engine-architecture.md#ci-adapters) already uses: thin, swappable, and with no RM vendor privileged in the core.
