@@ -73,9 +73,17 @@ The measured share of required front matter, sections, identifiers, and relation
 
 A write-time hook. At creation, when it is cheap, the engine completes the front matter, identifier, and required sections of a new document. See [spec 5](05-ai-integration.md#write-time-hooks).
 
+### Base package
+
+The minimal taxonomy that everything else composes over, derived from the [core](#core) rather than chosen. Nobody is expected to run it bare. See the [first-run walkthrough](../evaluations/default-taxonomy-first-run.md).
+
 ### Blocking
 
 A posture. The finding fails the build. A check reaches it only through [promotion](#promotion) against evidence. See [spec 4](04-assurance-model.md#promotion-advisory-to-blocking).
+
+### Bundle
+
+A named overlay that the publisher ships, which adds optional content and declares its dependency closure. It holds no `override` and no `remove`, so any subset of bundles resolves. Compare a [profile](#profile), which is the same mechanism pointed the other way. See [spec 7](07-distribution-and-federation.md#bundles-are-publisher-overlays-in-the-other-direction).
 
 ### Cache
 
@@ -297,6 +305,10 @@ The declared pattern, namespace, and allocation policy of a stable identifier. I
 
 A write-time hook. An edit to code that a document governs raises an advisory prompt that names the documents at risk. It stays advisory, because a gate here teaches people to write "no doc impact" by reflex. See [spec 5](05-ai-integration.md#write-time-hooks).
 
+### Interview
+
+The first-run surface. `headwater init` composes a [bundle](#bundle) selection from answers about the corpus, and emits an overlay. It is declared as package data, and it is `headwater infer` with a second evidence source. See [spec 7](07-distribution-and-federation.md#the-interview).
+
 ### Kind
 
 What a document *is*. A kind carries a purpose, a section contract, a facet schema, voice and lifecycle regimes, an identifier scheme, and a template. Its permitted relations are derived from relation endpoints and never declared on the kind. See [spec 1](01-conceptual-model.md#kind).
@@ -419,7 +431,7 @@ Scenarios run against the corpus in a controlled session, graded from the tool-c
 
 ### Profile
 
-A named overlay that the publisher ships for a repository archetype. It is a use of the overlay mechanism, not a mechanism of its own. See [spec 7](07-distribution-and-federation.md#profiles-are-publisher-overlays).
+A named overlay that the publisher ships for a repository archetype, which removes what that archetype does not have. It is a use of the overlay mechanism, not a mechanism of its own. Compare a [bundle](#bundle), which adds. See [spec 7](07-distribution-and-federation.md#profiles-are-publisher-overlays).
 
 ### Projection
 
@@ -525,6 +537,10 @@ The declared context limit on an agent-facing kind or projection. It is mandator
 
 The condition of a document past its freshness threshold, weighted by drift risk rather than by calendar time alone. Detective, never blocking. See [spec 3](03-authoring-and-lifecycle.md#freshness-and-staleness).
 
+### Starter kit
+
+The [base package](#base-package), a named [bundle](#bundle) selection over it, and the doctrine prose that explains the selection. It is what an adopter gets who answers nothing. See [spec 7](07-distribution-and-federation.md#the-starter-kit-is-a-selection).
+
 ### State
 
 The facet role that the lifecycle regime interprets. The default taxonomy calls it `status`, and a corpus may call it anything, because the role is declared. See [spec 1](01-conceptual-model.md#facet).
@@ -555,7 +571,7 @@ The declared structure of a corpus, in eleven declarations: purposes, facets, re
 
 ### Taxonomy package
 
-The released, versioned unit that a publisher ships: taxonomy, doctrine, templates, plugins, profiles, and migrations. The taxonomy is a package, not a copy. See [spec 7](07-distribution-and-federation.md#publishing).
+The released, versioned unit that a publisher ships: taxonomy, doctrine, templates, plugins, profiles, bundles, an interview, and migrations. The taxonomy is a package, not a copy. See [spec 7](07-distribution-and-federation.md#publishing).
 
 ### TBox
 

@@ -71,9 +71,21 @@ One point stays open in this entry. The `$`-reference sublanguage has three uses
 
 ## Q3 — How much of the default taxonomy ships in the box
 
-A taxonomy that is too opinionated repels adopters that have an existing culture. A taxonomy that is too thin leaves them with a blank schema. The options are: a minimal core plus optional packages, one batteries-included default, or a `headwater init` interview that composes a taxonomy from answers.
+This question is closed. The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md) wrote the candidate base package out as real YAML, then ran five adopters through their first day against it.
 
-**Leaning:** a small core (decisions, standards, guides) plus optional packages (specifications, evidence, operations, compliance), with an interview that composes them. The interview matters more than the packages — the blank-schema problem is a first-run problem.
+**The decision.** The base package is minimal and derived from the core: two concrete kinds under one abstract kind, four facets, five relations, one anchor, two shelves. Optional content ships as **bundles**, and a bundle is a publisher overlay that only adds. The doctrine starter kit is a named bundle selection over that base, plus the prose that explains the selection. The interview composes a different selection, and it is `headwater infer` with a second evidence source ([spec 7](07-distribution-and-federation.md#the-interview)).
+
+**The three options never competed.** This entry named a minimal core, a batteries-included default, and an interview as alternatives. All three survive as layers, and each one needs the layer below it. The minimal core is the base. Batteries-included is a selection over it. The interview reaches every other selection. What does not survive is the framing that made them compete.
+
+**Nothing new was needed to package this.** [Spec 7](07-distribution-and-federation.md#profiles-are-publisher-overlays) already ruled that a profile is a publisher overlay rather than a mechanism. An optional package is the same mechanism pointed the other way. Spec 2 removed the `profiles` declaration for this reason, and a `packages` declaration would repeat the mistake under a new name.
+
+**The reason for a minimal base is the resolver, not adoption feel.** Add-only overlays over disjoint addresses commute, so the existing confluence check proves that every subset of bundles resolves. Only a minimal base lets every bundle stay add-only. A large base forces bundles and profiles to remove, and `remove` carries dependent-key deletion and the most failure modes. The size of the base is thus a property of the resolver.
+
+**The leaning here failed the core.** It named decisions, standards, and guides as the small core. Those serve `rationale`, `constraint`, and `procedure`, and the [immutable core](02-taxonomy-model.md#the-immutable-core) requires `behavior`. What that list actually describes is the starter kit, which the walkthrough shows is a different artifact.
+
+**What it found on the way.** Six defects, and three of them sit in [spec 2](02-taxonomy-model.md) with one cause between them. The smallest column of the worked example was drawn as an impression and never derived from the core beside it. So it omits the `behavior` purpose that the core requires. Its four default relations all run between decisions, so no default edge attaches the corpus to code. And two of those four have no mechanical creator, which contradicts what spec 2 claims for its own default set. All six are applied, and the [walkthrough](../evaluations/default-taxonomy-first-run.md#consequences-for-the-specification) records where each one landed.
+
+**What stays open.** The bundle set is a guess about how adopters cluster, and no adopter exists yet. It is data in a package, so the first real adopter revises it at the cost of a release. The license half of this question belongs to [Q11](#q11--license-and-distribution-posture), and nothing above depends on the answer.
 
 ## Q4 — Relation storage
 
@@ -135,13 +147,15 @@ The casing has two forms, and they do not mix. In prose, the name of the system 
 
 ## Q11 — License and distribution posture
 
-The options are open source, source-available, or internal-only. A related question is whether the default taxonomy package ships under the same terms as the engine. This affects Q3 and Q7. Decide it early, because it is easier to open something later than to close it.
+The options are open source, source-available, or internal-only. A related question is whether the base package, the bundles, and the doctrine ship under the same terms as the engine. That half of [Q3](#q3--how-much-of-the-default-taxonomy-ships-in-the-box) is now the only part of it left open, and it also affects Q7. Decide it early, because it is easier to open something later than to close it.
 
 ## Q12 — Migration path for an existing corpus
 
 An organization that already runs a comparable framework needs an on-ramp. The on-ramp includes a taxonomy inferred from an existing corpus, and a report of what does not fit. It also includes an incremental adoption mode, where checks apply only to newly touched documents. Whether this is a first-release feature or a follow-on determines how much the schema must tolerate a half-conformant corpus. That tolerance is a design constraint, not a feature request.
 
 **Leaning:** `headwater infer` (propose a taxonomy from an existing tree) and a `--since <ref>` mode are first-release. Adoption friction is the thing most likely to kill this, and both of these directly attack it.
+
+[Q3](#q3--how-much-of-the-default-taxonomy-ships-in-the-box) settled the shape of `infer` while it settled the first-run surface. `infer` and the `init` interview emit the same artifact, so they are one command with two evidence sources: the tree, and the answers. An empty repository is then the degenerate case rather than a second code path.
 
 The between-majors half of this question is no longer open. The core-concepts review established that it constrains the validity model itself, not the migration UX. The lock now records a migration state with `migration-pending` findings ([spec 7](07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)). What remains open here is first contact — a corpus that was never valid, which the migration state (defined against a known-good starting point) does not cover.
 

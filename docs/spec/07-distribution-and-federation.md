@@ -28,7 +28,9 @@ contents:
   doctrine: doctrine/          # prose explaining the method, vendored to consumers
   templates: templates/
   plugins: plugins/            # organization-specific checks
-profiles: [service-repo, docs-only, platform]   # named overlays the package ships
+profiles: [service-repo, docs-only, platform]   # named overlays that remove
+bundles: bundles/            # named overlays that add, selected at init
+interview: interview.yml     # the questions init asks, and the bundle each answer selects
 migrations: migrations/
 ```
 
@@ -53,6 +55,48 @@ taxonomy:
 Not every repository holds every shelf. A profile is a **named overlay that the publisher ships**. It contains `remove` operations for the shelves that a repository archetype does not have, and it is selected by name in the consumer declaration above. It is not a separate mechanism. The overlay resolver already implements every part of it (dependent-key deletion, confluence, core satisfaction on the result).
 
 An earlier draft listed profiles as their own declaration, and thus kept two names for a subset of one mechanism. The effect is unchanged. A repository never has a rule, glob, or projection that targets a shelf that is not present. Dead configuration is noise that teaches readers to ignore configuration.
+
+### Bundles are publisher overlays in the other direction
+
+A **bundle** is a named overlay that the publisher ships, which holds `add` operations for optional content. A profile removes what an archetype does not have. A bundle adds what an adopter needs. One mechanism, two conventional directions, and neither one is new.
+
+```yaml
+bundles:
+  procedure:  {requires: []}
+  standards:  {requires: []}
+  evidence:   {requires: []}
+  proposals:  {requires: []}
+  operations: {requires: [procedure]}
+  compliance: {requires: [standards, evidence]}
+```
+
+Two rules keep this cheap, and both run on machinery that exists.
+
+**A bundle holds no `override` and no `remove`.** If a bundle needs to change the base, the base declared something that it should not have. Add-only overlays over disjoint addresses commute, so the resolver's static confluence check proves that every subset of bundles resolves. The publisher runs that check once per release, and no adopter can then select a combination that fails.
+
+**A bundle declares its closure, and the publisher checks it at release.** Enabling a bundle is one operation for the adopter, whatever it contains. The dependency list above is data, not documentation.
+
+This is what fixes the size of the base package. A large base forces bundles and profiles to remove, and `remove` carries dependent-key deletion and the most failure modes of the three operations. A minimal base lets every bundle stay add-only. The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md) derives the base from the core on those terms, and it measures what each of five adopters authors and deletes.
+
+### The starter kit is a selection
+
+[Spec 0](00-vision-and-scope.md#what-we-build) promises a doctrine starter kit, and [spec 2](02-taxonomy-model.md) refers to a base package. These are two artifacts, and an earlier reading of [Q3](09-open-questions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) treated them as one. They answer opposite requirements. The base has to be minimal so that bundles stay add-only. The starter kit has to be opinionated so that a new adopter does not face a blank schema.
+
+So `headwater/starter` is the base package, a named bundle selection, and the doctrine prose that explains the selection. Nobody is expected to run the base bare. Everything composes over it.
+
+### The interview
+
+`headwater init` composes a bundle selection from answers. It is the first-run surface, and the blank-schema problem is a first-run problem. Five rules govern it, and the walkthrough derives each one.
+
+- **It emits an overlay, never a resolved taxonomy.** A tool that writes a complete taxonomy file forks the adopter from the base before they write a document. Every later upgrade is then a merge. Spec 2 requires customization by overlay and never by fork, and this is the one place where a breach of that rule stays invisible.
+- **It is package data, not engine code.** [Principle 1](00-vision-and-scope.md#design-principles) puts anything an adopter might want different into the schema. An interview compiled into the engine cannot ship with a third-party package, and a publisher with its own bundles needs its own questions. The interview sits beside profiles and templates in the package. It is not a taxonomy declaration, because it describes the package rather than the corpus, so the count of declarations stays at eleven.
+- **It is `headwater infer` with a second evidence source.** [Q12](09-open-questions.md#q12--migration-path-for-an-existing-corpus) makes `infer` propose a taxonomy from a tree that already exists. Both emit the same artifact, so they are one command with two inputs. On an empty repository the tree contributes nothing and the interview asks everything. The blank-schema case is thus the degenerate one rather than a special one.
+- **Every question is about the corpus, and none is about the taxonomy.** "Do you write runbooks?" needs no model in the reader's head. "Do you want a `procedure` purpose?" needs the whole of spec 2 first. Each answer selects a bundle, and no answer exposes a declaration name.
+- **A question that an existing ruling answers is deleted rather than asked.** [Spec 3](03-authoring-and-lifecycle.md#identifiers) rules that an identifier always carries a namespace, so the interview never asks whether the adopter wants identifiers.
+
+The interview asks only what changes the selection. Everything else waits for a corpus that `taxonomy audit` can measure, because a day-one guess about facet orthogonality is worse than a day-thirty measurement of it.
+
+The cost is the one that overlays already carry, one level up. A resolved taxonomy is an artifact that nobody authored directly, and an interview adds a step where nobody authored the answers as configuration either. So the generated overlay carries a comment above each block that names the question and the answer which produced it. Re-running `init` re-asks with the current answers as defaults and rewrites the same blocks. An adopter who changes their mind edits an answer, not a taxonomy.
 
 ## The invariant core
 
