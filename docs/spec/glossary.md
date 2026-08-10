@@ -335,7 +335,7 @@ The formal schema of the taxonomy language, published and versioned with the eng
 
 ### Migration payload
 
-The machine-readable steps that ship with a major version, split into what the engine applies mechanically and what needs human or agent judgment. See [spec 7](07-distribution-and-federation.md#upgrading).
+The machine-readable steps that ship with a major version, split into what the engine applies mechanically and what needs human or agent judgment. It covers the consumer's overlay as well as the corpus, and carries the rename map that an overlay rewrite reads. See [spec 7](07-distribution-and-federation.md#upgrading).
 
 ### Migration state
 
@@ -383,7 +383,7 @@ The declared date role that a participation window measures from: `state_entered
 
 ### Overlay
 
-The declared customization of a base taxonomy, through `override`, `add`, and `remove`. An adopter never edits a base taxonomy. Merge semantics are strict, total, and order-independent. See [spec 2](02-taxonomy-model.md#customization-by-composition).
+The declared customization of a base taxonomy, through `override`, `add`, and `remove`. An adopter never edits a base taxonomy. Merge semantics are strict, total, and order-independent, and each operation asserts a precondition about the base that an upgrade can falsify. See [spec 2](02-taxonomy-model.md#customization-by-composition).
 
 ### Participation expectation
 

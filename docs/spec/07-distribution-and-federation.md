@@ -83,7 +83,7 @@ reports, against the *local* corpus rather than in the abstract:
 
 The publisher measures compatibility against its own reference corpora and reference overlays, and attaches the result to the release as a claim. The consumer's run **verifies that claim against documents that the publisher never saw**. A claim that holds upstream but fails locally is the interesting case, not an anomaly. It means that the local corpus exercises something that the reference corpora do not.
 
-`headwater migrate --to 4.0.0` applies the mechanical steps. It emits the rest as a task list with the affected documents attached, ready for a human or a coding agent. The distinction is the whole point. To move files is mechanical. To rewrite a document to fit the section contract of a new kind is not. To pretend that the second is automatable produces plausible, wrong documents at scale.
+`headwater migrate --to 4.0.0` applies the mechanical steps, and those include the overlay rewrite. Addresses that the payload renamed are rewritten in place, and each `add` collision with the new base becomes a judgment task ([spec 2](02-taxonomy-model.md#customization-by-composition)). It emits the rest as a task list with the affected documents attached, ready for a human or a coding agent. The distinction is the whole point. To move files is mechanical. To rewrite a document to fit the section contract of a new kind is not. To pretend that the second is automatable produces plausible, wrong documents at scale.
 
 ### Between majors, the corpus is legitimately between valid states
 

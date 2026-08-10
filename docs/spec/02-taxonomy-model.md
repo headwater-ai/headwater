@@ -606,11 +606,15 @@ Merge semantics are strict and total:
 
 - **`override`** replaces a value at an addressed path. The path must already exist.
 - **`add`** introduces a new key. The key must not already exist.
-- **`remove`** deletes a key and everything that depends on it — and the resolver **fails** if a declaration that survives still references the removed key. To remove a shelf that a projection targets is an error at resolve time, not a mystery later.
+- **`remove`** deletes a key and everything that depends on it — and the resolver **fails** if a declaration that survives still references the removed key. To remove a shelf that a projection targets is an error at resolve time, not a mystery later. The key must already exist.
 - Lists never silently merge. An overlay either replaces a list or uses explicit `add_to` / `remove_from` operations.
 - Resolution is **order-independent** for disjoint paths and an **error** for paths in conflict. Two overlays that touch the same path are a conflict to resolve, not a last-writer-wins race.
 - Overlay application must be **confluent**: the application of a set of overlays in any legal order yields the same resolved taxonomy. The resolver checks this statically, before it applies anything.
 - The resolved taxonomy must satisfy the `core`. The resolver checks this last, on the result.
+
+**Every operation asserts a precondition about the base, and a failed precondition is always an error.** `override` needs the path to exist. `add` needs the key to be absent. `remove` needs the key to be present. The symmetry is deliberate. An overlay states what it believes about the base, and an upgrade that falsifies the belief must say so rather than proceed.
+
+So an upgrade can break an overlay in three ways, and the third is the one that surprises people. A base release that *adds* a key which the overlay already added is a collision, and the overlay stops resolving. **A collision is always a task for a human, never an automatic promotion to `override`.** The two operations differ in what the consumer inherits. `add` states the whole value. `override` keeps every upstream field that the consumer did not restate, so a silent promotion would import upstream decisions that nobody read.
 
 Confluence is what makes order-independence a guarantee rather than a hope. The resolver builds the set of paths that each overlay addresses, and it checks pairwise commutativity. Two `add`s at disjoint paths commute. An `override` and a `remove` on the same subtree do not, and two `override`s on one path do not. At resolve time, the resolver rejects any pair that does not commute, and it names both overlays and the contested path.
 
@@ -673,6 +677,8 @@ The publisher and the consumer play different roles here, and both are necessary
 - The **consumer** measures against its own corpus before an upgrade. This *verifies* the publisher's claim rather than trusts it. A claim that fails locally is exactly the interesting case. It means that the consumer's corpus uses something that the publisher's reference corpora do not.
 
 A major version ships a **migration payload**: machine-readable steps that declare what moved, what was renamed, and what must be re-stated. The steps are split into what the engine can apply mechanically (`headwater migrate --apply`) and what needs human or agent judgment (emitted as a task list with the affected documents attached). To adopt a new major version without a run of its migration is a hard failure, not a warning. The lock file records the taxonomy version and the measured compatibility result that each corpus was validated against.
+
+**The payload migrates overlays, not only documents.** Every word of the paragraph above was written for documents. The overlay is the artifact most likely to break, and least likely to have a test. The rename map that the payload already carries is exactly what an overlay rewrite needs. `headwater migrate --apply` rewrites overlay addresses from that map. It emits each `add` collision as a judgment task that shows both definitions together. Without this, a consumer reads a resolver error and reconstructs by hand what the publisher already knew.
 
 ## Worked example: three taxonomies, one engine
 
