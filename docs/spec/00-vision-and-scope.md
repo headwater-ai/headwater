@@ -9,7 +9,7 @@ A documentation corpus is a **structured artifact with invariants**, not a pile 
 - You can **project** it. The system generates indexes, site navigation, agent instruction files, and reader-facing summaries. No person maintains them by hand.
 - The corpus can **hold itself accountable**. The system records which mechanism discharges which obligation, and where it currently has none.
 
-Three qualities are the aim throughout: **robustness** — the guarantees hold under change, partial adoption, and neglect; **coherence** — the documents add up to one account of the system, not a set of individually well-formed fragments; **self-maintenance** — the corpus detects its own drift and repairs or reports it, instead of waiting for a reader to notice.
+Three qualities are the aim throughout. **Robustness** — the guarantees hold under change, partial adoption, and neglect. **Coherence** — the documents add up to one account of the system, not a set of individually well-formed fragments. **Self-maintenance** — the corpus detects its own drift, then repairs or reports it, and does not wait for a reader to notice.
 
 Everything in this specification follows from that premise.
 
@@ -69,7 +69,7 @@ These are the tie-breakers when a design decision is genuinely contested.
 
 9. **Better together.** headwater does not stand alone. Other projects solve adjacent problems, and some solve them well. When a complementary project exists, we build an integration with it before we build a replacement for it. Shared formats and emitted configurations let the corpus serve tools that we do not own. [Spec 11](11-adjacent-work.md) records the current candidates.
 
-10. **Tested against theory and practice.** A structural design decision is not settled on intuition alone. It is checked against the research literature and against at least one observed industry application, and the confrontation is recorded: what the sources confirm, what they sharpen, what they contradict. [Spec 8](08-prior-art-and-departures.md), [spec 10](10-theoretical-foundations.md), and [spec 11](11-adjacent-work.md) are that record for the current design. A future decision of the same weight owes the same test before it is fixed.
+10. **Tested against theory and practice.** A structural design decision is not settled on intuition alone. We check it against the research literature, and against at least one observed industry application. We record the confrontation: what the sources confirm, what they sharpen, what they contradict. [Spec 8](08-prior-art-and-departures.md), [spec 10](10-theoretical-foundations.md), and [spec 11](11-adjacent-work.md) are that record for the current design. A future decision of the same weight owes the same test before it is fixed.
 
 ## Success criteria
 
