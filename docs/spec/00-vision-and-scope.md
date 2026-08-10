@@ -71,6 +71,8 @@ These are the tie-breakers when a design decision is genuinely contested.
 
 10. **Tested against theory and practice.** A structural design decision is not settled on intuition alone. We check it against the research literature, and against at least one observed industry application. We record the confrontation: what the sources confirm, what they sharpen, what they contradict. [Spec 10](10-theoretical-foundations.md) and [spec 11](11-adjacent-work.md) are that record for the current design. A future decision of the same weight owes the same test before it is fixed.
 
+11. **Efficacy is measured, not inherited.** Principle 10 settles whether a design is sound. It never settles whether the design works, and the two are separate claims. Adjacent projects converge on this substrate, and almost none of them measured it ([spec 11 §M](11-adjacent-work.md#m--what-the-survey-shows-as-a-whole-convergence-is-not-evidence)). Their agreement is a shared prior rather than a body of results, so we inherit no efficacy from it. A claim that the corpus changes what a reader or an agent does rests on a counterfactual run. That run compares corpus present against corpus absent, with a pinned model and a recorded probe selection. The grader is never the system under test, because the literature already shows what that instrument returns. Until such a run exists, we publish the claim as unmeasured. Principle 5 governs the gaps in what we check. This principle governs the gaps in what we have shown.
+
 ## Success criteria
 
 The system works when:

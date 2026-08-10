@@ -41,6 +41,8 @@ The first three are static and run as advisory checks. The last two come from pr
 
 The confidence gate is a scent threshold. The engine stays silent when the strongest available cue is weak, because a cue that misleads is worse than a missing cue. That is the same asymmetry stated in foraging terms, and it is why the gate errs toward silence.
 
+One caution on the word *entire* above. The summary is the whole scent surface for routing, where a pointer list answers a query and no referring edge exists. A reader who follows a relation meets a different proximal cue first, which is the referring text. [Q20](09-open-questions.md#q20--where-scent-lives) asks whether a relation should carry a cue of its own, and until it is settled this section describes one of the two moments.
+
 ```
 headwater route "add rate limiting to the ingest API"
   docs/standards/api-design.md      — API surface conventions, versioning, error shapes
@@ -147,6 +149,11 @@ A **probe suite** runs scenarios against the corpus in a controlled session. It 
 
 The counterfactual category is the one that matters most, and it is the one most often skipped. An A/B run — corpus present versus absent — is the only evidence that the instruction surface earns its context cost. Without it, "the AI reads our docs" is a belief.
 
+Two constraints protect the instrument, and [spec 11 §M](11-adjacent-work.md#m--what-the-survey-shows-as-a-whole-convergence-is-not-evidence) records why both are needed. Every adjacent project that claims this benefit either graded itself or skipped the counterfactual. The literature shows what a weak grader does to a result. A systematic comparison of RAG and graph-based RAG reached the opposite conclusion to the original study. The cause was the grading method rather than the systems. The same authors found that an LLM judge reverses its verdict when the order of two candidates is reversed.
+
+- **The grader is never the system under test.** A verdict comes from the tool-call transcript and a declared expectation. No model judges whether the corpus helped, and no probe accepts an agent's account of its own behavior.
+- **A published claim carries its counterfactual.** Corpus present against corpus absent, with a pinned model and a recorded probe selection. A claim with no such pair is reported as unmeasured rather than as supported, and the [evidence register](04-assurance-model.md) carries that mark.
+
 Probes run on a schedule, with a pinned model, deterministic probe selection, and a cost envelope. Results feed the adaptive layer of the [assurance model](04-assurance-model.md): a rule that measurably changes nothing is a candidate for deletion, and deletion is a success.
 
 ## Anti-overfitting
@@ -156,5 +163,5 @@ Probes are written against **behavior**, not against phrasings. A probe that pas
 ## What we do not do
 
 - No LLM in the validation path. Verdicts are deterministic and reproducible.
-- No retrieval-augmented generation as the primary mechanism. The precision argument matters: the graph is exact, cheap, and explainable, and embeddings are none of those. But the deeper objection is that **RAG accumulates nothing**. Every query re-derives its answer from fragments chosen by similarity, and the synthesis is discarded. Ask again next week, and the work happens again. A governed corpus compiles knowledge *once* — validated, related, projected — and keeps it current, so retrieval reads a standing answer and does not reconstruct one. Chunking strategies exist to manage the structural loss that embedding introduces — we decline the loss rather than manage it. Embeddings remain permitted as a fallback for genuinely fuzzy lookup, and never as the authority. An external RAG system that consumes the corpus is a separate integration question, not a change to this.
+- No retrieval-augmented generation as the primary mechanism. The precision argument matters: the graph is exact, cheap, and explainable, and embeddings are none of those. But the deeper objection is that **RAG accumulates nothing**. Every query re-derives its answer from fragments chosen by similarity, and the synthesis is discarded. Ask again next week, and the work happens again. A governed corpus compiles knowledge *once* — validated, related, projected — and keeps it current, so retrieval reads a standing answer and does not reconstruct one. Chunking strategies exist to manage the structural loss that embedding introduces — we decline the loss rather than manage it. A third objection, which [spec 11 §L.2](11-adjacent-work.md#l2-prefer-references-to-search--a-third-argument-against-retrieval) takes from Serena's memory design, is that every retrieval method carries both error modes at once. Lexical and semantic search each return false positives and false negatives, and a named edge returns neither. Retrieval is therefore a source of variance, and a declared edge removes it. Embeddings remain permitted as a fallback for genuinely fuzzy lookup, and never as the authority. An external RAG system that consumes the corpus is a separate integration question, not a change to this.
 - No agent-authored documents merged without review. The agent drafts and links. A human accepts.
