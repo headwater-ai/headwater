@@ -38,6 +38,8 @@ headwater's premise: **make the structure of the corpus a machine-readable contr
 | 11 | [Adjacent work](docs/spec/11-adjacent-work.md) | Existing tools and patterns that overlap — what to adopt, and what we already specified twice |
 | 12 | [The check layer](docs/spec/12-check-layer.md) | Where checks come from, how scope makes caching and change-scoping sound |
 
+The [glossary](docs/spec/glossary.md) lists every named concept in one place, with a link to the section that defines it. It also marks the eight terms that an author needs to file a document, which is the whole of the vocabulary that most readers meet.
+
 Evidence gathered for specific open questions lives in [`docs/evaluations/`](docs/evaluations/) — currently worked examples of the taxonomy in [LinkML](docs/evaluations/linkml-worked-example.md) and the checks in [SHACL](docs/evaluations/shacl-worked-example.md), both feeding Q13.
 
 Design reviews and the prompts that commission them live in [`docs/reviews/`](docs/reviews/) — currently a [core-concepts review](docs/reviews/core-concepts-review-prompt.md) aimed at simplification and robustness. The prompts are committed alongside their findings on purpose: a review whose instrument is unrecorded cannot be repeated against a later draft, and comparing two runs of the same instrument is the only way to tell whether the design improved or the reviewer changed.

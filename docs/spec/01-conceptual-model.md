@@ -2,6 +2,8 @@
 
 This document gives the vocabulary that the rest of the specification uses. Each term is a named concept in the schema and in the engine. Where they differ, this document says so.
 
+The [glossary](glossary.md) indexes every term in the specification, including the ones that later documents introduce. It gives one line for each and points back to the section that owns the definition.
+
 ## Two layers: terminology and assertions
 
 The split that this model rests on is the one that description logic already names. A knowledge base has a **TBox** and an **ABox**. The **TBox** is the terminology: which kinds of thing exist, which relations may hold between them, and which values are legal. The **ABox** is the assertions: the actual individuals and the relations actually asserted.
