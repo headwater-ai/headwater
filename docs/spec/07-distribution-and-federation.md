@@ -75,15 +75,15 @@ headwater taxonomy diff --to 4.0.0
 reports, against the *local* corpus rather than in the abstract:
 
 - what changed in the base.
-- **measured compatibility across the engine's five dimensions** — classification, instance validity, consequence, projection, identifier ([spec 2](02-taxonomy-model.md#versioning-by-measured-compatibility)).
-- which overlay entries the change invalidates (an override that addresses a removed path is an error, not a silent no-op).
+- **measured compatibility across the engine's six dimensions** — classification, instance validity, consequence, projection, identifier, addressability ([spec 2](02-taxonomy-model.md#versioning-by-measured-compatibility)).
+- which overlay entries the change invalidates (an override that addresses a removed path is an error, not a silent no-op). This is the `addressability` dimension, reported here at the grain that a consumer can act on.
 - whether the new base still satisfies the core under the local overlay.
 - which local documents violate the new schema.
 - which migration steps apply, split into mechanical and judgment-bearing.
 
-The publisher measures compatibility against its own reference corpora and attaches the result to the release as a claim. The consumer's run **verifies that claim against documents that the publisher never saw**. A claim that holds upstream but fails locally is the interesting case, not an anomaly. It means that the local corpus exercises something that the reference corpora do not.
+The publisher measures compatibility against its own reference corpora and reference overlays, and attaches the result to the release as a claim. The consumer's run **verifies that claim against documents that the publisher never saw**. A claim that holds upstream but fails locally is the interesting case, not an anomaly. It means that the local corpus exercises something that the reference corpora do not.
 
-`headwater migrate --to 4.0.0` applies the mechanical steps. It emits the rest as a task list with the affected documents attached, ready for a human or a coding agent. The distinction is the whole point. To move files is mechanical. To rewrite a document to fit the section contract of a new kind is not. To pretend that the second is automatable produces plausible, wrong documents at scale.
+`headwater migrate --to 4.0.0` applies the mechanical steps, and those include the overlay rewrite. Addresses that the payload renamed are rewritten in place, and each `add` collision with the new base becomes a judgment task ([spec 2](02-taxonomy-model.md#customization-by-composition)). It emits the rest as a task list with the affected documents attached, ready for a human or a coding agent. The distinction is the whole point. To move files is mechanical. To rewrite a document to fit the section contract of a new kind is not. To pretend that the second is automatable produces plausible, wrong documents at scale.
 
 ### Between majors, the corpus is legitimately between valid states
 

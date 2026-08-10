@@ -33,6 +33,10 @@ The assertion layer of the knowledge base: the documents and the edges that they
 
 A report that a document which should exist does not. [Participation expectations](#participation-expectation) are the only construct that produces one. See [spec 4](04-assurance-model.md#absence-is-a-finding-class-of-its-own).
 
+### Abstract kind
+
+A [kind](#kind) that no document ever is. It carries what a group of concrete kinds share, and a concrete kind inherits from it with `is_a`. Relation endpoints may name one, and kind resolution never returns one. See [spec 2](02-taxonomy-model.md#abstract-kinds).
+
 ### Accuracy audit
 
 A periodic human or supervised-agent sample that asks one semantic question: does this specification still describe the system? Its output is a typed, tracked document inside the corpus. It was called a conformance audit until the name collided with [conformance](#conformance). See [spec 4](04-assurance-model.md#accuracy-audit).
@@ -115,7 +119,7 @@ The surface ties that bind the corpus: links that land, relations that reciproca
 
 ### Compatibility dimensions
 
-The five measures that decide a version bump: classification, instance validity, consequence, projection, and identifier. The set belongs to the engine, and no taxonomy may vary it. See [spec 2](02-taxonomy-model.md#versioning-by-measured-compatibility).
+The six measures that decide a version bump: classification, instance validity, consequence, projection, identifier, and addressability. The first five measure against a corpus and the last against overlays. The set belongs to the engine, and no taxonomy may vary it. See [spec 2](02-taxonomy-model.md#versioning-by-measured-compatibility).
 
 ### Confidence gate
 
@@ -295,7 +299,7 @@ A write-time hook. An edit to code that a document governs raises an advisory pr
 
 ### Kind
 
-What a document *is*. A kind carries a purpose, a section contract, a facet schema, voice and lifecycle regimes, an identifier scheme, permitted relations, and a template. See [spec 1](01-conceptual-model.md#kind).
+What a document *is*. A kind carries a purpose, a section contract, a facet schema, voice and lifecycle regimes, an identifier scheme, and a template. Its permitted relations are derived from relation endpoints and never declared on the kind. See [spec 1](01-conceptual-model.md#kind).
 
 ### Kind resolution
 
@@ -331,7 +335,7 @@ The formal schema of the taxonomy language, published and versioned with the eng
 
 ### Migration payload
 
-The machine-readable steps that ship with a major version, split into what the engine applies mechanically and what needs human or agent judgment. See [spec 7](07-distribution-and-federation.md#upgrading).
+The machine-readable steps that ship with a major version, split into what the engine applies mechanically and what needs human or agent judgment. It covers the consumer's overlay as well as the corpus, and carries the rename map that an overlay rewrite reads. See [spec 7](07-distribution-and-federation.md#upgrading).
 
 ### Migration state
 
@@ -379,7 +383,7 @@ The declared date role that a participation window measures from: `state_entered
 
 ### Overlay
 
-The declared customization of a base taxonomy, through `override`, `add`, and `remove`. An adopter never edits a base taxonomy. Merge semantics are strict, total, and order-independent. See [spec 2](02-taxonomy-model.md#customization-by-composition).
+The declared customization of a base taxonomy, through `override`, `add`, and `remove`. An adopter never edits a base taxonomy. Merge semantics are strict, total, and order-independent, and each operation asserts a precondition about the base that an upgrade can falsify. See [spec 2](02-taxonomy-model.md#customization-by-composition).
 
 ### Participation expectation
 
@@ -439,7 +443,7 @@ The reader intent that a kind serves, declared once at the taxonomy level. A kin
 
 ### Reading precedence
 
-Which of two linked documents governs the reading. It is derived from nuclearity and succession, and never declared. See [spec 2](02-taxonomy-model.md#reading-precedence-is-derived).
+Which of two linked documents governs the reading. It is derived from nuclearity, succession, and the governance family, and never declared. See [spec 2](02-taxonomy-model.md#reading-precedence-is-derived).
 
 ### Reciprocity
 
