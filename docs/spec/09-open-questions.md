@@ -109,9 +109,25 @@ This question is closed. Front matter is authoritative, and the [evaluation](../
 
 ## Q5 — Voice checking depth
 
-Lexical pattern matching is cheap, explainable, and imprecise. A small local classifier is more accurate and much less explainable. A finding that an author cannot understand is a finding that they suppress.
+This question is closed. One [evaluation](../evaluations/what-a-check-can-know.md) settles it with [Q21](#q21--terminological-succession-and-validity-under-merge), because a retired-term rule is a lexical rule and the two entries share every problem. The leaning survives. What decides it is not what this entry expected, and the measurement that shows this was available in the repository all along.
 
-**Leaning:** lexical, with a well-curated pattern set, per-category severities, and reasoned escape hatches. Revisit only with measured false-positive data.
+**Lexical, confirmed.** The curated pattern set, the per-category posture and the reasoned escape hatch all stand.
+
+**The measurement, because this project runs a lexical checker on its own specification.** `tools/ste-lint.py` reports 0 errors and 613 warnings over 14 files, 5,432 sentences and about 82,000 words. A hand-adjudicated sample gives three false-positive rates, under the two labels that [spec 4](04-assurance-model.md#suppression) already declares. The passive rule reaches 8% (60 of 449 sampled), the auxiliary rule 56% (25 of 54), and the progressive rule 83% (a census of all 12). The history adds the landing cost of a blocking rule. Of 58 sentence-length errors on the first run, 32 were defects in the sentence splitter rather than long sentences.
+
+**The errors do not come from where the entry assumes.** Three sources, in order of size. Segmentation and span, which decides what is a sentence and which text belongs to the author. Part of speech, which decides whether the matched word is the verb that the rule assumed. And the lexicon, which produced approximately no errors across four rules and one landing.
+
+**So the classifier is refused on aim rather than on accuracy.** It attacks the smallest of the three sources. It does not touch segmentation, and it does not improve a lexicon that is already right. The trigger to reopen is named: a voice category with a mechanical remediation, whose measured errors come mostly from part of speech.
+
+**The largest correction is to the revisit condition.** "Measured false-positive data" names an instrument that cannot answer this question. The passive rule measures 92% precise on its sample, 449 findings stand, and not one of them should block. What decides posture is the [fixability bar](12-check-layer.md#fixability): a category may block only when its remediation is mechanical and total. A category whose remediation is a rewrite is permanently advisory. [Spec 4](04-assurance-model.md#where-promotion-cannot-finish) now states that as a general rule, beside the case where promotion is skipped.
+
+**And the instrument is worse than imprecise. It is empty.** Against 613 advisory findings this corpus holds four escape hatches, so the suppression-derived rate has almost no denominator. That is spec 4's stated blind spot in its extreme form. The adjudicated sample is therefore the only instrument that reaches an advisory rule, and the sample above is one.
+
+**Two obligations land on the parser rather than on the rules** ([spec 3](03-authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)). A voice check reads author-owned text, so quotations, code, citations and generated blocks are outside every voice rule by construction. And sentence segmentation joins the [correctness roots](12-check-layer.md#the-correctness-roots), because that is where the errors were.
+
+**The [principle 4](00-vision-and-scope.md#design-principles) exception does not reach here.** A voice finding that fires wrongly is visible and cheap. One that fails to fire costs a sentence that a later reader or a later run still catches. Both error classes recover, so the ordinary promotion path applies and only the fixability bar stops it.
+
+**What stays open.** The measurement above is of three ASD-STE100 structural rules, used as proxies. Nobody has measured `future_intent`, `change_narration` or `phased_rollout`, which are the categories that the declarative regime forbids, because no implementation of them exists. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. [Spec 8](08-design-departures.md) calls declarative voice "mechanically detectable at useful precision". The instrument is a run of the three categories over this corpus, with an adjudicated sample of at least 50 findings each.
 
 ## Q6 — Where the corpus graph lives at rest
 
@@ -493,52 +509,46 @@ Open: whether a relation instance may carry its own cue. If it may, three questi
 One consequence arrives from outside. A cue is an instance attribute, so an edge that carries one reifies in any RDF export. It appears in that emitter's declared loss set ([Q6](#q6--where-the-corpus-graph-lives-at-rest)). The native graph export carries a cue with no loss. Nothing here changes, and the cost of the cue is now visible in the place that pays it.
 ## Q21 — Terminological succession, and validity under merge
 
-**Blocks:** nothing today. It becomes live the first time that two authors change one corpus at the same time. That is the normal case, not an edge case.
+This question is closed. One [evaluation](../evaluations/what-a-check-can-know.md) settles it with [Q5](#q5--voice-checking-depth). Both halves survive in substance, and the argument for each one changes.
 
-Two questions arrive together here and separate cleanly. One is about vocabulary. The other is about when a check result is trustworthy, and it is the larger of the two.
-
-### The observed case
+### The observed case, with its commits
 
 This project produced the case itself, which [principle 8](00-vision-and-scope.md#design-principles) makes the test that matters.
 
-One change removed a framing from the specification. A second change, written from a commit before the first one landed, used that framing in new prose. Git merged the two without a conflict, because they touched different lines. The linter passed, because no rule knew that the framing was retired. A human caught it while reading the diff.
+Commit `684a153` removed a framing from the specification and named the retired phrase, "reference system". Commit `a1aecc1` records the repair. A concurrent branch, written from an earlier commit, used the retired phrase in new prose. Git merged both without a conflict, and the linter passed because no rule knew the phrase was retired. A human found it while reading a diff.
 
-Nothing here is unusual, and that is the point. The judgment "we no longer describe it that way" existed only as prose and a diff. So no mechanism could inherit it.
+The judgment "we no longer describe it that way" existed only as prose and a diff, so no mechanism could inherit it.
 
-### Part one: what an author declares to retire a term
+### Part one: the retired-term lexicon, and where it lives
 
-[Spec 4](04-assurance-model.md#declaration-moves-the-boundary) already gives the rule that decides this. Do not ask how to detect the reintroduction. Ask what an author could declare that makes detection unnecessary.
+**A retired-term lexicon in the taxonomy, under the language regime** ([spec 2](02-taxonomy-model.md#the-language-regime-carries-the-terms-that-the-corpus-retired)). Terms do not become documents, because the glossary is a projection today and that would invert it. SKOS labels wait for the taxonomy export to have a consumer, which is the trigger that [Q13](#q13--linkml-and-shacl-as-substrate) already set for emitter 4.
 
-| Option | For | Against |
-|---|---|---|
-| A **retired-term lexicon** in the taxonomy: the term, its replacement, and the reason | Reads like the regime vocabularies that exist already. Generates a document-scoped check, and the replacement makes the fix mechanical | One more vocabulary to maintain. Lexical matching brings the false positives that [Q5](#q5--voice-checking-depth) warns about |
-| **Terms become documents**, and succession is an ordinary `supersedes` edge | Reuses the whole machinery. Provenance, adjudication and lineage come free | Promotes every phrase to a document. The glossary is a projection today, and this inverts that |
-| **SKOS labels** on concepts: `prefLabel` for the current term, `hiddenLabel` for the retired one | The standard instrument for this exact problem. [Spec 2](02-taxonomy-model.md#mapping-between-taxonomies) uses SKOS already, so the export rides along | A retired *framing* is not always a concept. It covers the vocabulary half and not the rest |
+**The entry's argument against the lexicon is the one part of it that the measurement contradicts.** This entry said that lexical matching brings the false positives Q5 warns about. Q5 measured them, and they come from segmentation and from part of speech. The lexicon produced approximately none. A retired-term list is a closed, authored, small set of exact strings, which is the highest-precision shape a lexical rule takes. It inherits Q5's two parser obligations and not Q5's warning.
 
-The reason column is not decoration. A retired term with no recorded reason is the rank with extra steps that [Q18](#q18--recording-adjudicated-disagreements) rejects.
+**It belongs to the language regime and never to a voice regime, and the reason is scope.** A voice regime binds per kind, and its `narrative` value exempts a kind entirely. A retired term is retired in a proposal as much as in a specification. The declaration count stays at eleven.
 
-This repository built a version of this already, which is evidence about the need rather than about the design. `tools/ste-lint.py` carries a stock-phrase list, a per-line escape hatch with a reason, and a baseline for what predates the rule. That is a hand-rolled retired-term check. It exists because the need was real enough to write one.
+**The replacement decides fixability, and that reverses the leaning on posture.** With a replacement the fix is a substitution, which meets the [fixability bar](12-check-layer.md#fixability), so the check offers a patch and can finish the promotion path. The leaning said it ships advisory "because it is lexical". It ships advisory under the ordinary [principle 4](00-vision-and-scope.md#design-principles) rule, and being lexical is not what holds it there. The observed case is the other shape. "Reference system" had no replacement term, and the repair rewrote the clause.
+
+**What happens when a lexicon lands on a live corpus needs no new mechanism.** A new entry makes checks that passed fail, which breaks the `consequence` [compatibility dimension](02-taxonomy-model.md#versioning-by-measured-compatibility) and forces a major version. A major ships a migration payload, which knows which rules it broke for which documents. Those are `migration-pending` findings at `(document, rule)` grain, with an owner and an expiry ([spec 7](07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)). `.ste-lint-baseline.json` is a hand-rolled version of that with neither an owner nor an expiry.
+
+**One consequence from the [warrant](01-conceptual-model.md#warrant).** A term is retired under every warrant and the check does not vary. The escape does. An `asserted` document has nobody who accepted anything, so it carries no `accepted_deviation`, and its remedy is the one that [spec 3](03-authoring-and-lifecycle.md#freshness-and-staleness) gives it already.
 
 ### Part two: validity is not preserved under merge
 
-The general statement is larger than vocabulary, and the specification does not make it anywhere:
+The general statement is the larger of the two, and [spec 4](04-assurance-model.md#a-verdict-is-about-one-state-of-the-corpus) now makes it as a property of a verdict.
 
-> Two changes that are each valid against the merge base can produce an invalid corpus.
+> Two changes that are each valid against the merge base can produce an invalid corpus, and no run against either branch tip reports it.
 
-Git reports nothing, because the conflict is semantic and not textual. The name for this is a **semantic conflict**, and it is not ours to invent. Every incremental checker has it.
+**The anomaly has a name outside version control, and the name comes with a solution.** Under snapshot isolation, two transactions that read overlapping data and write disjoint data each preserve an invariant that the pair violates. That is **write skew**, and git permits it for the identical reason: both detect a write-write overlap and neither holds a read set. Serializable snapshot isolation detects it by tracking what each transaction read, and it pays with a false abort ([spec 10 §F.6](10-theoretical-foundations.md#f6-write-skew-names-the-anomaly-and-read-sets-detect-it)).
 
-It presses harder here than in most systems, for a reason worth stating plainly. Change-scoped evaluation is the performance bet of [spec 6](06-engine-architecture.md#performance-targets) and [spec 12](12-check-layer.md). Semantic conflict is the failure class that change-scoped evaluation is worst at, because neither change looks wrong inside the scope that evaluated it.
+**We already have the read set, and that is the whole ruling.** [Spec 12](12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) keys every result on a hash of exactly the in-scope inputs. A run therefore computes its read set as a byproduct of scope enforcement. It now reports that set, with the corpus tree and the lock hash. A merge is then an ordinary change. The engine derives the invalidated instances from it as from any diff, and a verdict survives only when nothing it read has moved.
 
-Two things in the design help already, and neither was built for this.
+**The correction to this entry's own text.** It said that corpus-scoped barriers are what catch a reintroduced term. They are not. A retired-term check reads one body and the lexicon, so it is `Document`-scoped. What makes a new lexicon entry retroactive is the lock. The lexicon sits in the taxonomy, the lock hash is in every cache key, and a lock change voids every cached result at once.
 
-**Corpus-scoped checks cannot be narrowed.** [Spec 12](12-check-layer.md#scope--the-declaration-everything-else-rests-on) makes them barriers that re-run on every change. So the moment a retired-term declaration exists, the machinery catches a reintroduction with no new mechanism. The model is unchanged rather than strained.
+**Corpus scope is the honest cost of the performance bet.** A corpus-scoped instance reads everything, so any concurrent change voids it and no incremental test rescues one. Their count is now readable as the work that every merge repeats.
 
-**The prior version is anchored at the merge base.** Spec 12 states this for transition legality. What it does not state is the general form. A run against a branch tip is *provisional*, and the run that counts is the one against the merge result.
+**The engine emits and never orders** ([spec 6](06-engine-architecture.md#ci-adapters)). A merge queue answers the question completely and pays with a serialized landing, and that trade belongs to the forge. This is the boundary that [Q7](#q7--scope-of-the-mcp-surface) drew for the write path, met a second time. The invalidation test fails toward re-running, because a false invalidation costs one run and a false survival ships an invalid corpus with a green report.
 
-Open: whether the specification says that, and what follows from it. A merge queue answers it completely, by testing the merged result before it lands. That answer is well known, and it belongs to the forge rather than to us. [Spec 6](06-engine-architecture.md#ci-adapters) says that no forge is privileged in the core. So the engine emits what a merge queue consumes, and it does not become one.
+**How exposed this repository is.** Across the 29 merge commits on `main`, the mainline had moved past the merge base in 16 of them. In 11 of the 29, both sides changed at least one file under `docs/spec/` from that base. The rate does not show that the failure is common. It shows that the window is the normal case, which is what this entry claimed and could not measure.
 
-**Leaning:** declare it, and say the larger thing out loud.
-
-Retired terms become data, in the lexicon form. Terms do not become documents, because the cost is out of proportion to a phrase. Revisit SKOS labels when the taxonomy export has a consumer. The check ships advisory under [principle 4](00-vision-and-scope.md#design-principles), because it is lexical and Q5's warning applies to it directly.
-
-For the merge half, the specification states that a branch-tip result is provisional and that the merge result is what counts. The engine builds no merge queue. It emits findings that a gate can consume, which is what [spec 6](06-engine-architecture.md#ci-adapters) promises already.
+**What stays open.** Whether any corpus other than this one needs a retired-term lexicon at all. Also open: whether the read set of a real corpus is small enough that publishing it is free. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. Publishing the read set should let a gate skip a full re-run on most merges. The instrument is the fraction of merges whose read set the other side never touched.
