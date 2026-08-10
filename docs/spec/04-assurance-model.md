@@ -140,7 +140,7 @@ A control is *useful* only if its signal reaches someone who can act. The regist
 | Author | Pre-commit | Scaffolding, editor, agent, hooks |
 | Author + reviewer | Pull request | CI checks, review annotations |
 | Maintainer | Scheduled | Drift scans, efficacy probes, coverage reports |
-| Team | Periodic | Conformance audits |
+| Team | Periodic | Accuracy audits |
 | Next reader | Continuous | *Usually absent* — reader feedback loops |
 | Downstream consumer | On release | *Usually absent* — deprecation and breaking-change notice |
 
@@ -163,7 +163,7 @@ That mechanism has a blind spot exactly where promotion looks. We name the blind
 
 So the two directions use different evidence. **Demotion** runs on suppression labels alone, because a blocking check forces engagement and its labels are dense.
 
-**Promotion** also needs an adjudicated sample. During the declared observation window, a fixed random sample of the candidate check's unsuppressed findings goes in front of a human. This happens at review, or in the periodic triage that the conformance audit already schedules. The human applies the same two labels. A check whose sample was never adjudicated did not finish its observation window, however long it was advisory.
+**Promotion** also needs an adjudicated sample. During the declared observation window, a fixed random sample of the candidate check's unsuppressed findings goes in front of a human. This happens at review, or in the periodic triage that the accuracy audit already schedules. The human applies the same two labels. A check whose sample was never adjudicated did not finish its observation window, however long it was advisory.
 
 ### Discharging coherence obligations: the assisted sweep
 
@@ -276,9 +276,9 @@ The adaptive class exists to decide if the other three are worth what they cost.
 
 Coverage alone is a number that only goes up. A system that optimizes it will happily add obligations that nobody can satisfy. When coverage is read against capture cost and efficacy, it becomes a trade: this much assurance, at this much author burden, with this much demonstrated effect. A rule that raises cost and moves neither of the others is a rule to delete. Deletion is a success, and it is recorded as one.
 
-## Conformance audit
+## Accuracy audit
 
-The controls above verify *form*. One question is semantic: does a specification still describe the system? At intervals, a human (or a supervised agent) must sample the corpus and answer that question. The audit makes evidence records with their own kind, lifecycle, and identifiers — inside the corpus, governed like everything else. An audit whose findings are not addressable is theatre. An audit whose output is a typed, tracked document is a control.
+The controls above verify *form*. One question is semantic: does a specification still describe the system? At intervals, a human (or a supervised agent) must sample the corpus and answer that question. The name is deliberate. Conformance is what [spec 7](07-distribution-and-federation.md#conformance) evaluates about an adopter, and it is a different question with its own command. The audit makes evidence records with their own kind, lifecycle, and identifiers — inside the corpus, governed like everything else. An audit whose findings are not addressable is theatre. An audit whose output is a typed, tracked document is a control.
 
 ## The system's own assurance
 
