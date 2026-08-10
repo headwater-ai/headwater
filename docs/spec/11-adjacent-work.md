@@ -88,7 +88,9 @@ This matters enough to state in our own terms, below.
 
 [LinkML](https://linkml.io/) is a schema language authored in YAML that compiles to JSON Schema, SHACL, RDF/OWL, ShEx, Pydantic classes, SQL DDL, and GraphQL. It also has a validation runtime.
 
-When you read [spec 2](02-taxonomy-model.md) and then the LinkML documentation, the overlap is substantial. The shared features are classes with slots, ranges, cardinality, enums with permissible values, inheritance, and schema-level imports. The Q2 leaning of spec 2 is "YAML plus a published JSON Schema, with the resolved lock in a stricter representation". That describes something that LinkML already implements. LinkML also ships the multi-format compilation that we will otherwise write.
+When you read [spec 2](02-taxonomy-model.md) and then the LinkML documentation, the overlap is substantial. The shared features are classes with slots, ranges, cardinality, enums with permissible values, inheritance, and schema-level imports. The Q2 leaning of spec 2 read "YAML plus a published JSON Schema, with the resolved lock in a stricter representation". That describes something that LinkML already implements. LinkML also ships the multi-format compilation that we would otherwise write.
+
+**[Q2](09-open-questions.md#q2--schema-format) has since closed, and it withdrew that leaning as wrong.** Spec 2 already carries references that no JSON Schema keyword resolves, so the authored surface was always YAML plus a Headwater resolver. The overlap with LinkML survives the correction, because it is a fact about the two languages and never followed from our leaning. What the correction removes is option 1's cheapest argument, which was that our own leaning already described LinkML.
 
 Where it stops:
 
@@ -108,15 +110,15 @@ But the boundary is not structural-versus-governance: *reciprocity* fails, and r
 That reframes the question from "does LinkML cover enough?" to "is a two-layer architecture — standard shape layer plus Headwater graph layer — better than one custom layer?" Three readings follow:
 
 1. **Adopt it as the substrate.** Author the structural core as LinkML, layer Headwater's governance declarations alongside, and inherit the meta-schema, the validator, and SHACL/JSON-Schema/OWL output. Less to build, a standard that others already read, and automatic interoperability.
-2. **Stay independent, borrow the design.** LinkML's target is data models for research and biomedical data. A documentation taxonomy is a different animal, and a bolted-together schema — half LinkML, half ours — may be worse to author than either alone. The cognitive-dimensions walkthrough (Q2) is the instrument for the decision, and "two languages in one file" scores badly on role-expressiveness.
+2. **Stay independent, borrow the design.** LinkML's target is data models for research and biomedical data. A documentation taxonomy is a different animal, and a bolted-together schema — half LinkML, half ours — may be worse to author than either alone. The cognitive-dimensions [walkthrough](../evaluations/schema-format-walkthrough.md) that Q2 prescribed has since run, and "two languages in one file" scores badly on role-expressiveness.
 
 3. **Emit it, do not author in it.** Author in Headwater's language and compile the shape layer *to* LinkML, which then generates JSON Schema, SHACL, OWL and Pydantic through LinkML's own toolchain. One authoring surface, fully validated, with a standards-based export. This option only became visible when we wrote the example out, and it is now the leading candidate.
 
 The decisive evidence against option 1 is mundane: everything Headwater-specific lands in LinkML `annotations`, which are untyped pass-through. LinkML carries them and validates none of them. So for exactly the half that is ours, the meta-schema benefit disappears. Authors face two languages in one file, with no visual cue for which half is checked.
 
-I will not decide this unilaterally. It changes what we build, it is close to irreversible under option 1, and it interacts with the language decision in Q1. LinkML's tooling is Python, which pulls against a Rust core. Option 3 dissolves that tension, which is part of its appeal.
+I will not decide this unilaterally. It changes what we build, and it is close to irreversible under option 1. [Q1](09-open-questions.md#q1--implementation-language) has since closed on Rust, so LinkML's Python tooling now pulls against a settled core rather than a candidate one. Option 3 dissolves that tension, which is part of its appeal.
 
-> **Recorded as [Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate).**
+> **Recorded as [Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate), which now leans to option 3 and extends it: emit LinkML for the shape layer, and SHACL for the graph layer.**
 
 ## D. SHACL — the name for schema-derived checks
 

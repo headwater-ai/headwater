@@ -147,7 +147,7 @@ The between-majors half of this question is no longer open. The core-concepts re
 
 ## Q13 — LinkML and SHACL as substrate
 
-**Blocks:** Q1. It also blocked [Q2](#q2--schema-format), which is now decided and confirms the leaning below. The choice stays close to irreversible after the schema format ships.
+**Blocks:** the export surface — which emitters ship, and when. Both questions that this entry used to block have since closed. [Q1](#q1--implementation-language) settled on Rust, and [Q2](#q2--schema-format) settled the authored surface. Each confirms the leaning below rather than disturbing it. Downstream documents already rely on its ownership half: Headwater owns the language, and standard formats come out of it. What stays open is the emitter staging, and that choice turns close to irreversible once an external consumer depends on it.
 
 [LinkML](https://linkml.io/) is a YAML-authored schema language that compiles to JSON Schema, SHACL, RDF/OWL, Pydantic, and SQL DDL. It covers a substantial part of what [spec 2](02-taxonomy-model.md) specifies structurally — classes, slots, ranges, cardinality, enums, inheritance — and none of the governance half (regimes, expectations, overlays, core). SHACL, similarly, is the standard to validate a graph against declared shapes, which is what our schema-derived checks do by hand.
 
