@@ -51,7 +51,7 @@ See [external anchor](#external-anchor).
 
 ### Anchor resolver
 
-The single component that owns identity for one anchor type. It normalizes anchor strings, so that two spellings of one target become one node. See [spec 2](02-taxonomy-model.md#behaviour-at-the-limits).
+The single component that owns identity for one anchor type. It normalizes anchor strings, so that two spellings of one target become one node. See [spec 2](02-taxonomy-model.md#behavior-at-the-limits).
 
 ### Assisted fraction
 
@@ -119,7 +119,7 @@ The threshold below which routing says nothing. A wrong pointer costs more than 
 
 ### Confluence
 
-The property that a set of overlays, applied in any legal order, gives the same resolved taxonomy. The resolver checks it statically, before it applies anything. See [spec 2](02-taxonomy-model.md#customisation-by-composition).
+The property that a set of overlays, applied in any legal order, gives the same resolved taxonomy. The resolver checks it statically, before it applies anything. See [spec 2](02-taxonomy-model.md#customization-by-composition).
 
 ### Conformance
 
@@ -379,7 +379,7 @@ The declared date role that a participation window measures from: `state_entered
 
 ### Overlay
 
-The declared customization of a base taxonomy, through `override`, `add`, and `remove`. An adopter never edits a base taxonomy. Merge semantics are strict, total, and order-independent. See [spec 2](02-taxonomy-model.md#customisation-by-composition).
+The declared customization of a base taxonomy, through `override`, `add`, and `remove`. An adopter never edits a base taxonomy. Merge semantics are strict, total, and order-independent. See [spec 2](02-taxonomy-model.md#customization-by-composition).
 
 ### Participation expectation
 
@@ -614,7 +614,7 @@ Each pair below is two concepts that read as one. The specification treats each 
 | [Kind](#kind) | [State](#state) | A kind is rigid and a state is not. Lifecycle state must never become a kind, a shelf, or a directory |
 | [Obligation](#obligation) | [Control](#control) | The obligation is the commitment. The control is the mechanism. The binding between them is generated, never authored |
 | [Facet](#facet) | [Relation](#relation) | A connection between nodes is always a relation. A facet value is a scalar, and never a reference |
-| [Projection](#projection) | Authored document | A projection is regenerable, and CI checks it against regeneration. Synthesized content is neither ([Q15](09-open-questions.md#q15--a-synthesised-content-tier)) |
+| [Projection](#projection) | Authored document | A projection is regenerable, and CI checks it against regeneration. Synthesized content is neither ([Q15](09-open-questions.md#q15--a-synthesized-content-tier)) |
 
 ## Where the borrowed terms come from
 
@@ -643,10 +643,11 @@ Several terms are not ours. [Spec 10](10-theoretical-foundations.md) records the
 
 ## Terms with a known collision
 
-This page makes three name clashes visible. Each one is recorded here, and none is resolved here.
+An index of every term is what makes a name collision visible, so this page found several. The findings and the options for each live in the [terminology decisions table](../reviews/ste-editorial-pass-findings.md), with the other rulings that the corpus owes itself. None is resolved yet, so a reader who meets one of these words should check which sense the section means.
 
-- **register** — the voice sense (the register that a document writes in) and the [register projection](#register-projection) use one word for two concepts. The [STE pass](../reviews/ste-editorial-pass-findings.md) flagged it and asked for a ruling.
-- **gap** — a [disposition](#disposition) on an obligation, and a value of [`evidence_basis`](#evidence-basis) on a document. The two are related in spirit and separate in mechanism.
-- **audit** — [`taxonomy audit`](#audit) measures a schema against a corpus. A [conformance audit](#conformance-audit) is a human sample that asks whether a specification is still true of the system.
+- **register** — the voice sense (the register that a document writes in) and the [register projection](#register-projection).
+- **gap** — a [disposition](#disposition) on an obligation, and a value of [`evidence_basis`](#evidence-basis) on a document.
+- **audit** — [`taxonomy audit`](#audit) measures a schema against a corpus. A [conformance audit](#conformance-audit) samples whether a specification is still true.
+- **conformance** — whether the corpus still describes the system ([spec 4](04-assurance-model.md#conformance-audit)), and whether a consumer wired the published method ([spec 7](07-distribution-and-federation.md#conformance)).
 
 One further usage is deliberate rather than accidental. Routing **fails open** when it stays silent below its confidence gate. Conventional security usage would call that failing closed. Design principle 7 in [spec 0](00-vision-and-scope.md#design-principles) fixes the project meaning.
