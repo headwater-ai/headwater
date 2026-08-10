@@ -30,7 +30,7 @@ Instrument: [core-concepts-review-prompt.md](core-concepts-review-prompt.md), ru
 | register | merge into obligation + control | Spec 4 puts the disposition on the obligation itself; the register is a generated projection of the other two, not a third concept. |
 | projection | keep | `generate --check` is the drift-killer; no substitute exists. |
 | identifier scheme | keep | Resolvable-without-document is a real capability (commit messages, agent prompts) nothing else provides. |
-| core | keep | Without it conformance regresses to byte-identity — the named failure of the prior system (spec 7). |
+| core | keep | Without it conformance regresses to byte-identity — the named failure mode in spec 7. |
 | overlay | keep | The confluence rules are the best-defined edge behaviour in the whole specification. |
 | profile | merge into overlays | A profile is a publisher-named removal overlay; the resolver already implements every part of it. |
 | compatibility declaration | cut | The five dimensions are engine constants; a declaration every taxonomy states identically declares nothing. Keep the measurement, delete the schema key. |

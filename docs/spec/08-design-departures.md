@@ -1,8 +1,8 @@
-# 8 — Prior art and departures
+# 8 — Design departures
 
-This design is informed by a study of a prior internal governance framework. That system was unusually complete for its category, and many of its choices were correct. This document records what carries forward as *concept*. It also records where so much depended on its architecture that it resisted the change that we now want.
+Documentation governance tooling has a set of recurrent failure modes. Each one is easy to reach, because each one is the cheapest thing to build at the moment that the need appears. This document records the ideas that we adopt. It then records the eight patterns that we design against. Each departure names the pattern, the cost, and the choice that we make instead.
 
-## What the reference system proved
+## What we adopt
 
 These ideas work, and we adopt them here on their merits:
 
@@ -23,60 +23,56 @@ These ideas work, and we adopt them here on their merits:
 
 ## What we change, and why
 
-### 1. Taxonomy was code
+### 1. Taxonomy as code
 
-Shelf names, type vocabularies, scan roots, and status enumerations were constants inside individual checkers. The prose standards restated those values, and the instruction globs restated them again. That made three copies, and one of them was executable. A different documentation culture could not be expressed without a fork of the tooling. And a fork loses upstream fixes.
+The common shape is a set of constants inside each checker: shelf names, type vocabularies, scan roots, and status enumerations. The prose standards restate those values, and the instruction globs restate them again. That makes three copies, and one of them is executable. A team with a different documentation culture cannot express it without a fork of the tooling. A fork then loses every upstream fix.
 
 **Departure:** the taxonomy is a validated, versioned, composable schema and the sole source of structure. Checks are generated from it or configured by it. Customization is an overlay. See [taxonomy model](02-taxonomy-model.md).
 
-### 2. Ten tools, ten walks of the corpus
+### 2. A tool for each concern, a walk for each tool
 
-Each concern was its own executable. Each walked the tree again, parsed the front matter again, and derived the document types again. The tools were written in two languages plus shell, with container fallbacks per tool. This was slow, and structurally prone to a disagreement between two tools about what a document is.
+Governance needs arrive one at a time, so each concern becomes its own executable. Each tool walks the tree again, parses the front matter again, and derives the document types again. Each also brings its own runtime, which the installation must then carry. The result is slow, and two tools can disagree about what a document is.
 
 **Departure:** one engine, one parse, one graph, checks as predicates over it, one finding shape. See [engine architecture](06-engine-architecture.md).
 
 ### 3. Structural metadata encoded in filenames
 
-A filename prefix, and a glob that matched it, encoded whether a document was shared or internal. This is easy to read in a directory listing, which is a real benefit. But it overloads the name with a facet, and it makes each rename a semantic operation. It also forces literal-path exceptions as soon as a document is coupled to something by path.
+A filename prefix, and a glob that matches it, is a cheap way to record a property such as export scope. It is easy to read in a directory listing, which is a real benefit. But it overloads the name with a facet, and it makes each rename a semantic operation. It also forces literal-path exceptions as soon as a document is coupled to something by path.
 
 **Departure:** provenance and export scope are declared facets. They are checked against the package's declared contents. Naming conventions may still be enforced — as a check over a facet, not as the storage mechanism for one.
 
 ### 4. Distribution by checksummed byte-identity
 
-Consumers received verbatim file trees, gated on byte-identity. This makes drift detectable, and it makes customization nearly impossible. So specialization leaked into side-channel config files. Each new artifact forced a new argument about the boundary between "engine" and "your vocabulary".
+A vendoring model sends consumers verbatim file trees and gates them on byte-identity. This makes drift detectable, and it makes customization nearly impossible. Specialization then leaks into side-channel configuration files. Each new artifact forces a new argument about the boundary between the engine and the vocabulary of the consumer.
 
 **Departure:** versioned packages, explicit overlays, resolved lock files. Identity is a property of the *resolved* taxonomy, not of files on disk. See [distribution](07-distribution-and-federation.md).
 
 ### 5. Assurance recorded twice
 
-Coverage lived as a hand-maintained table in a strategy document *and* as a machine-readable register. A checker kept the two in agreement — a check that existed only to reconcile two copies of the same fact. The design, not the domain, made that check necessary.
+Coverage lives as a hand-maintained table in a strategy document *and* as a machine-readable register. A checker then holds the two in agreement — a check that exists only to reconcile two copies of one fact. The design, not the domain, makes that check necessary.
 
 **Departure:** one register as data. The human-readable matrix and every coverage claim are generated from it. See [assurance model](04-assurance-model.md).
 
 ### 6. Platform coupling
 
-CI templates, work-item conventions, and the hosting model were specific to one forge and one cloud. They were portable in principle and coupled in practice.
+CI templates, work-item conventions, and the hosting model attach themselves to whichever forge and cloud the first adopter uses. They are portable in principle and coupled in practice.
 
 **Departure:** a platform-neutral core with thin adapters. No forge, tracker, or cloud is privileged. More than one adapter exists from the start, and that enforces the adapter boundary.
 
-### 7. Identifier namespacing arrived late
+### 7. Identifier namespacing arrives late
 
-Namespacing per repository was retrofitted onto identifiers after collisions became foreseeable. It was then generalized again for later identifier classes. Each step was correct. The sequence was expensive.
+Identifiers start local, because the first corpus is one repository. A namespace per repository is then retrofitted once collisions become foreseeable, and generalized again for each later identifier class. Each step is correct. The sequence is expensive.
 
 **Departure:** every identifier scheme is namespaced and globally resolvable from the first release. A namespace is cheap to apply when an identifier is minted, and expensive to apply later.
 
-### 8. Doctrine and mechanism were interleaved
+### 8. Doctrine and mechanism interleaved
 
-Governance prose, agent instructions, executable tooling, and vendoring configuration all lived in one repository. Naming conventions and export globs distinguished them. To understand what a change affected, a reader needed to know the conventions.
+Governance prose, agent instructions, executable tooling, and distribution configuration all live in one repository. Naming conventions and export globs are the only things that separate them. A reader must know those conventions to understand what a change affects.
 
-**Departure:** a clean separation — engine, taxonomy package, doctrine package, corpus — each versioned and consumable independently. A team can adopt the engine and write its own doctrine, or take the doctrine wholesale. The reference system's opinions become one distributable package, not the price of entry.
+**Departure:** a clean separation — engine, taxonomy package, doctrine package, corpus — each versioned and consumable independently. A team can adopt the engine and write its own doctrine, or take the doctrine wholesale. One set of opinions becomes a distributable package, not the price of entry.
 
 ## What we deliberately do not adopt
 
 - **A generic rule-expression language in the schema.** Anything beyond declarative structure belongs in a plugin with a narrow interface. A schema with conditionals drifts from the corpus that it describes.
 - **Blocking gates as the default posture.** Advisory first, promoted on evidence.
 - **Documentation profiles as the primary abstraction.** Profiles are a projection convenience over the taxonomy, not a parallel classification system that a team must keep in step with it.
-
-## Legal and ethical position
-
-We wrote this specification from a structural study of a prior system's design — its concepts, its architecture, and its friction points. It reproduces no source code, no configuration, no prose, and no organization-specific content. The ideas credited above are mostly general practice in the technical-documentation and architecture-decision-record communities. The credit here is for the specific combination, and for the demonstration that the combination holds together in production.
