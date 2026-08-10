@@ -89,9 +89,23 @@ This question is closed. The [first-run walkthrough](../evaluations/default-taxo
 
 ## Q4 — Relation storage
 
-Relations are declared in front matter today. The alternatives are: relations inline in prose with extractable syntax, or a sidecar edge file per document. Front matter is simple and diffs well. Prose links are where humans actually write references, and they easily become dangling links.
+This question is closed. Front matter is authoritative, and the [evaluation](../evaluations/relation-storage.md) confirmed the leaning. It did not confirm it in the shape that this entry expected, and three of its findings change the specification.
 
-**Leaning:** front matter is authoritative. Prose links are *extracted* and checked for resolvability, but they do not carry relation semantics unless they are annotated. If authors find it tedious to declare the same link twice, revisit this decision — that friction is a real signal.
+**The question was not the one that this entry asked.** The entry reads as a choice between three files. [Q18](#q18--recording-adjudicated-disagreements) wants an adjudication recorded on the declared edge. [Q20](#q20--where-scent-lives) wants an optional cue on a relation, and says that it blocks here. Both need an edge that carries data of its own, so the prior question is whether a relation instance is a pointer or an object. It is an object.
+
+**The decision.** A relation is declared under a `relations:` block in front matter and nowhere else. An entry is either a target reference or a mapping with `to:` and instance attributes. The scalar is sugar for the mapping, and both produce the same edge. Targets are identifiers, never paths. An edge is identified by the source identifier, the relation name, and the normalized target. List order therefore carries no meaning, and a repeated triple is an error.
+
+**The sidecar loses on ownership rather than on convenience.** DITA relationship tables are this option, shipped for two decades in the same domain. A DITA relationship belongs to the map, so the same topic under a second map has different relationships. A Headwater relation asserts something about two documents, and it holds in every context that contains them. Standoff annotation supplies the second argument. It exists because inline markup cannot express overlapping hierarchies, which is a problem that a relation does not have. Its cost is pointer fragility, which a relation would still pay.
+
+**The annotated prose link is cut, and that is the largest change here.** The old leaning allowed a prose link to carry relation semantics "unless they are annotated". <!-- ste-lint: allow passive # quoting the superseded leaning --> An annotation syntax gives one edge two authoring locations, and three questions then have no good answer. Which location wins when they disagree? Which span does a finding anchor to? What does `--fix` write when it adds a reciprocal? [Spec 1](01-conceptual-model.md#facet) already refused a second edge syntax once, when it removed reference-valued facets, and the reasoning transfers without change.
+
+**The friction that the old leaning worried about becomes a check.** A prose link that resolves to a corpus document with no declared relation raises an advisory finding. The author writes the link once, and the fix writes the declaration. The fix is mechanical only when exactly one enabled relation type permits the pair of kinds at the two ends. Otherwise the finding lists the candidates and carries no patch. The check has no converse, because a succession edge belongs in no paragraph.
+
+**Instance attributes are governed the way facets are.** A relation type declares which attributes its instances may carry, and an undeclared attribute is a finding. An attribute takes a facet's value space and is never a reference. An edge that must point at a node is a request to make the edge a node. [Q18](#q18--recording-adjudicated-disagreements) owns that change if it wants it. Each attribute declares an owning end. A source-owned attribute on a symmetric relation gives one value per direction. An edge-owned attribute with two different values at the two ends is a finding, and no fix resolves it. `created_by` stays on the relation type, because `taxonomy audit` measures the declared intent against a real corpus.
+
+**Two consequences land outside this entry.** The internal model is a property graph. So the RDF projection of [Q6](#q6--where-the-corpus-graph-lives-at-rest) reifies any edge that carries an attribute, and the fidelity tests cover attributes. And [Q20](#q20--where-scent-lives) now has a home for its cue, plus an answer to one of its three questions: the referring end owns it.
+
+**What stays open.** One claim here is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires it to be. The promotion fix should raise author-attributable edges without a rise in hand entry, and the assisted fraction plus the audit report are the instruments. The friction signal also survives in a narrower form. If authors still declare the same link twice at a rate the fix does not absorb, this ruling is wrong and the annotation question returns.
 
 ## Q5 — Voice checking depth
 
@@ -106,6 +120,8 @@ The options are: rebuild from the cache each run (simplest, no sync problem), pe
 A fourth option arrived with Q13: an **RDF projection**, which is the input to SHACL validation. It carries a question that the others do not carry — *fidelity*. When checks read a projection rather than the documents, the projector becomes the most trusted component in the pipeline. Nothing downstream can detect its mistakes. A projector that drops or mistypes a document yields a graph that validates cleanly and does not represent the corpus ([evaluation](../evaluations/shacl-worked-example.md#problem-one-everything-downstream-trusts-the-projection-and-shacl-does-not-check-it)).
 
 **Leaning:** cache by default, with `headwater export`, which produces a committed JSON graph for anyone who wants to build on it. Avoid a database until a query workload justifies it. If RDF is emitted, it is a **derived view and never canonical**, and it ships with round-trip fidelity tests. The Markdown is the corpus. Any projection that disagrees with the Markdown is the projection's bug.
+
+[Q4](#q4--relation-storage) adds one requirement to any RDF option. An edge may carry instance attributes, which makes the internal model a property graph. A plain triple cannot hold an attribute. So the projection reifies every edge that has one, and the fidelity tests cover attributes rather than endpoints alone. This is the same asymmetry that Wikidata meets when it turns a statement into a node before it attaches a qualifier. It also sharpens the ruling above: RDF is the lossy direction, not merely the derived one.
 
 ## Q7 — Scope of the MCP surface
 
@@ -357,6 +373,8 @@ This belongs beside [Q15](#q15--a-synthesized-content-tier)'s provenance questio
 
 **Leaning:** record adjudication per-conflict as data on the declared edge, with the adjudicator named. No per-kind ranks, and no new declaration until a real corpus shows that the edge form fails.
 
+[Q4](#q4--relation-storage) built the place for it and set one limit on it. An instance attribute takes a facet's value space, so the adjudicator is a scalar and no edge runs from the edge to a person. If that is not enough, the answer is to make the edge a node, and this question owns that change. It does not arrive as an attribute type.
+
 ## Q19 — Inbound integration: an external system of record
 
 **Blocks:** nothing in the engine. It becomes live the first time that an adopter authors requirements in an RM tool. [Spec 11 §K](11-adjacent-work.md#k-modern-requirements--the-first-candidate-where-the-arrow-reverses) records that this is already scheduled to happen.
@@ -376,7 +394,7 @@ Open, in order of consequence, least first:
 
 ## Q20 — Where scent lives
 
-**Blocks:** relation storage ([Q4](#q4--relation-storage)), because a cue attached to an edge needs somewhere to sit.
+**Unblocked.** [Q4](#q4--relation-storage) closed, and a relation instance is an object with declared attributes. A cue now has somewhere to sit, and one of the three questions below has an answer.
 
 [Spec 5](05-ai-integration.md#scent-is-the-thing-being-engineered) puts the corpus's scent in the `summary` facet of each document, and calls that facet the entire scent surface. Serena's shipped convention ([spec 11 §L.3](11-adjacent-work.md#l3-where-scent-lives--the-first-substantive-disagreement)) states the opposite rule. A memory must not say when to read it, and the memory that refers to it carries that guidance instead.
 
@@ -384,7 +402,7 @@ Foraging theory supports the node for one moment and the edge for the other, bec
 
 Headwater serves both moments. Routing answers a task description, and relations answer a reader who already holds a document. So one placement covers half of the surface, and spec 5 currently claims it covers all of it.
 
-Open: whether a relation instance may carry its own cue. If it may, three questions follow. Where does the cue live, given that Q4 has not settled how relations are stored? Who writes it, given that every reference then gains an authoring cost? How does anything grade it, given that spec 5 grades distinctiveness by comparison of siblings in one place, and edge cues have no such place?
+Open: whether a relation instance may carry its own cue. If it may, three questions follow, and Q4 answered the first two of them. **Where does the cue live?** It is a declared instance attribute on the relation type, in the `relations:` block of the referring document ([spec 2](02-taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)). **Who writes it?** The owning end is `source`, so the referring document writes it, which is what Serena's convention asks for and what the proximal-cue argument requires. A symmetric relation then gets one cue per direction, correctly. The authoring cost is still real, and it is the reason that the cue stays optional. **How does anything grade it?** That question stands untouched. Spec 5 grades distinctiveness by comparison of siblings in one place, and edge cues have no such place.
 
 **Leaning:** an optional cue on a relation, with the summary still required. Absence falls back to the target's summary, so current behavior stands and no corpus regresses. Grade the cue only where a probe records a failed traversal. Do not make it mandatory. A required prose field on every edge is exactly the bookkeeping burden that [spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) warns kills a corpus.
 ## Q21 — Terminological succession, and validity under merge

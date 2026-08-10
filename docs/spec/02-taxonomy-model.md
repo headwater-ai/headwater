@@ -364,6 +364,39 @@ That is the failure that [placement is primary](#placement-is-primary-metadata-f
 
 The reading need that `may` served is real, and it survives without a declaration. `headwater explain <path>` prints the permitted relations for a document, and the template for a kind offers them. A declaration that exists to be read is a projection, not a source.
 
+### Instance attributes, and which end owns each one
+
+An edge carries data of its own. [Q18](09-open-questions.md#q18--recording-adjudicated-disagreements) records an adjudication on a `conflicts_with` edge, and [Q20](09-open-questions.md#q20--where-scent-lives) puts an optional cue on a reference. Neither fits on a bare pointer, so a relation type declares the attributes that its instances may take.
+
+```yaml
+relations:
+  conflicts_with:
+    family: association
+    from: [decision]
+    to:   [decision]
+    reciprocal: symmetric
+    attributes:
+      adjudicated_by: {type: string, owner: edge}
+      adjudicated_on: {type: date,   owner: edge}
+
+  cites:
+    family: association
+    from: [governed_document]
+    to:   [governed_document]
+    attributes:
+      cue: {type: string, owner: source}   # why this reference, from here
+```
+
+Three rules keep the attribute surface from becoming the ungoverned second syntax that [Q4](09-open-questions.md#q4--relation-storage) just closed.
+
+**Declared, not free.** An attribute that the relation type does not declare is a finding. The meta-schema owns the attribute declaration, exactly as it owns a facet declaration.
+
+**The value space is a facet's value space.** A free scalar, a date, an enum with a controlled vocabulary, or a list of any of those. Never a reference. [Spec 1](01-conceptual-model.md#facet) removed reference-valued facets because they were a second ungoverned edge mechanism, and a reference-valued attribute would be a third one. A connection is a relation. An edge that needs to point at a node is a request to make the edge a node. That is a change to the model, not a type in this table.
+
+**One owning end.** `owner` is `source`, `target`, or `edge`. A source-owned attribute on a symmetric relation gives one value per direction, which is what a cue needs. An edge-owned attribute declared at both ends with different values is a finding, and no fix resolves it, because reconciliation is a judgment.
+
+`created_by` stays a property of the relation type and does not move here. It states an intent about who maintains the edges of that type, and [`taxonomy audit`](#who-creates-each-edge) measures the intent against a real corpus. A per-instance value would answer a different question and would leave that measurement with no baseline.
+
 ### Lineage aligns with PROV
 
 The `derivation` and `succession` families map onto W3C PROV: `derives_from` to `prov:wasDerivedFrom`, `supersedes` to `prov:wasRevisionOf`, and generated projections to `prov:wasGeneratedBy`. Alignment is deliberate — provenance is a solved modeling problem. A match with a standard costs nothing, and it makes the graph interoperable with tooling that already exists.
@@ -649,6 +682,7 @@ The taxonomy language has a formal schema, published with the engine and version
 - **facet canons** — relevance, ascertainability, and permanence hold for every facet (the corpus-measured canons run under `taxonomy audit`).
 - **kind rigidity** — no kind collides with a lifecycle-state value or is named with a bare phase adjective.
 - **edge provenance** — every relation declares a `created_by` from the closed set.
+- **attribute well-formedness** — every instance attribute names a value space from the facet set and an owning end. No attribute takes a reference, and no attribute name collides with `to`.
 - **context safety** — every agent-facing kind or projection has an applicable size budget, and every facet that carries the freshness role has an applicable staleness policy. The regimes that once wrapped these are gone. The mandates are not.
 - **overlay confluence** — the overlay set commutes.
 - **mapping integrity** — every mapping names kinds and facet values that exist in both taxonomies, with a valid SKOS relation.

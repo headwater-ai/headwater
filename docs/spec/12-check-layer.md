@@ -55,6 +55,8 @@ Scope gives four things. The fourth makes the other three trustworthy.
 
 That last clause is the subgraph problem that the SHACL evaluation surfaced. The scope declaration is what solves it. An edit to document A that adds `supersedes B` invalidates the reciprocity instance on that edge. This holds whichever endpoint the check reports against, because the edge is the unit, not the file. No guesswork from the diff is necessary.
 
+The unit needs an identity, and [Q4](09-open-questions.md#q4--relation-storage) supplies it. An edge is the source identifier, the relation name, and the normalized target. Position in a list is not part of it, so a reordered front-matter block invalidates nothing. A moved file invalidates nothing either, because a target is an identifier and never a path. An edge that carries instance attributes hashes them into its cache key. An attribute that only one end declares still belongs to the edge rather than to that end.
+
 **2. Sound cache keys.** A result is keyed on a hash of exactly the inputs in scope, plus the taxonomy lock hash, the check's version, and any injected values. Nothing outside the scope can affect the result, so nothing outside it needs to be in the key.
 
 **3. Parallelism, with visible serialization points.** `Document` and `Edge` checks are embarrassingly parallel. `Corpus` checks are the barriers. Because scope is declared, their count is a number that you can read, not a property that you discover under load.
