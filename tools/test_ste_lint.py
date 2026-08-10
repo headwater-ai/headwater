@@ -44,6 +44,10 @@ check("contraction",
       "The engine doesn't read the file.\n", ["contraction"])
 check("british spelling",
       "The organisation records its behaviour.\n", ["british-spelling"])
+check("british spelling in an inflected -our word",
+      "OpenGEO solves a neighbouring problem on Markdown.\n", ["british-spelling"])
+check("american -or words are left alone",
+      "The neighboring color of the labor it favors.\n", [], ["british-spelling"])
 check("stock phrase",
       "The identifier is load-bearing for the corpus.\n", ["stock-phrase"])
 check("leverage as a verb",
@@ -101,6 +105,21 @@ check("possessives are not contractions",
 check("abbreviations do not end a sentence",
       "Use a short name, e.g. a slug, i.e. one word, for the identifier.\n",
       [], ["paragraph-sentences"])
+check("a bibliography line is a list, not a sentence",
+      "Discourse and coherence — Halliday & Hasan, *Cohesion in English* (1976) · "
+      "Mann & Thompson, *Rhetorical Structure Theory* (1988) · Hobbs, *On the "
+      "Coherence and Structure of Discourse* (1985) · Kehler, *Coherence, "
+      "Reference, and the Theory of Grammar* (2002)\n",
+      [], ["sentence-length", "paragraph-sentences"])
+check("a bibliography line still gets the word-level checks",
+      "Sources — Smith, *Organisation of Things* (1990) · Jones, *More* (1991) · "
+      "Patel, *Even More* (1992)\n",
+      ["british-spelling"])
+check("one interpunct is not a reference list",
+      "The engine reads the view · and this one long sentence must still be "
+      "counted because it keeps going and going and going well past the "
+      "stated limit.\n",
+      ["sentence-length"])
 check("a parenthetical counts as one word",
       "The engine reads the view (which carries the scoped subset of the corpus "
       "graph, plus every declaration that applies to it) and returns.\n",
@@ -127,6 +146,31 @@ if len(ste.split_sentences("One thing. Two things. Three.")) != 3:
     FAILURES.append("split_sentences: should find three sentences")
 if len(ste.split_sentences("Version 2.5 ships, e.g. in Q3. Then it stops.")) != 2:
     FAILURES.append("split_sentences: decimals and abbreviations must not split")
+if len(ste.split_sentences("It fails on maintenance cost. Links decay anyway.")) != 2:
+    FAILURES.append("split_sentences: 'St.' must not match inside 'cost.'")
+if len(ste.split_sentences("It documents the problems. Nobody reads them.")) != 2:
+    FAILURES.append("split_sentences: 'Ms.' must not match inside 'problems.'")
+if len(ste.split_sentences("Families exist first. The rest came later.")) != 2:
+    FAILURES.append("split_sentences: 'St.' must not match inside 'first.'")
+if len(ste.split_sentences("B exists in service of A. That is the relation.")) != 2:
+    FAILURES.append("split_sentences: a single letter can end a sentence")
+if ste.restore(ste.protect("the maintenance cost.")) != "the maintenance cost.":
+    FAILURES.append("protect/restore: must not corrupt the casing of 'cost.'")
+if len(ste.split_sentences("does it classify? does it pass? do they match?")) != 3:
+    FAILURES.append("split_sentences: a run of lower-case questions must split")
+if len(ste.split_sentences('It answers "does this prevent?" — which is a filter.')) != 1:
+    FAILURES.append("split_sentences: a quoted question must not split")
+
+check("a sentence may open with a lower-case link",
+      "To detect that two documents disagree is to reason about what prose asserts. "
+      "[spec 1](01-conceptual-model.md) forswears that, and [spec 4](04.md) confirms "
+      "that it is undecidable structurally.\n",
+      [], ["sentence-length"])
+check("a sentence may open with a section mark",
+      "Every integration recorded so far points out of the corpus — TrustGraph "
+      "ingestion, the OKF bundle, and the LinkML and SKOS emissions. §J prices "
+      "TrustGraph as cheap on exactly that ground: nothing flows back in.\n",
+      [], ["sentence-length"])
 
 if FAILURES:
     print(f"{len(FAILURES)} test(s) failed:")
