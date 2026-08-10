@@ -42,7 +42,7 @@ In corpus terms: linguistic structure is the file tree that we model well. The i
 
 The gap is dominance. We record that document A supersedes B, but not that A's *purpose* subordinates B's — that B exists in service of A. That is the relation that a reader most needs to decide what to read. It is also the one that an agent needs to decide what to load.
 
-> **Change:** treat purpose as an explicit declaration — every kind declares the reader intent that it serves. Reading precedence between linked documents is derived from nuclearity and succession. (As first applied, this was a per-relation `dominance` declaration. The core-concepts review found it redundant wherever those two already determined it, and unused elsewhere, so it is now derived, not declared.) This is the theoretical justification for the routing layer in spec 5: routing is a search over intentional structure, not over text. It also reframes context budgeting as attentional-state management, which is a better-posed problem than "fit under N tokens".
+> **Change:** treat purpose as an explicit declaration — every kind declares the reader intent that it serves. Reading precedence between linked documents is derived from nuclearity, succession, and the governance family. (As first applied, this was a per-relation `dominance` declaration. The core-concepts review found it redundant wherever those two already determined it, and unused elsewhere, so it is now derived, not declared. The Q2 walkthrough later found governance unanswered rather than unused, and added the third clause.) This is the theoretical justification for the routing layer in spec 5: routing is a search over intentional structure, not over text. It also reframes context budgeting as attentional-state management, which is a better-posed problem than "fit under N tokens".
 
 ### A.5 Local coherence: continuity of focus
 
@@ -229,7 +229,7 @@ Current GraphRAG and KG-RAG work reports that graph-structured retrieval outperf
 | 1 | Separate cohesion (checkable) from coherence (sampled) as distinct obligation classes | 4 | Halliday & Hasan | **applied** |
 | 2 | Add `nuclearity` to relation declarations | 2 | RST | **applied** |
 | 3 | Group relation types into a small fixed set of families | 2 | Hobbs, Kehler | **applied** |
-| 4 | Declare purpose explicitly. Derive reading precedence from nuclearity and succession | 2, 5 | Grosz & Sidner | **applied, revised** |
+| 4 | Declare purpose explicitly. Derive reading precedence from nuclearity, succession, and governance | 2, 5 | Grosz & Sidner | **applied, revised** |
 | 5 | Advisory transition-continuity check over relation edges | 4 | Centering Theory | **applied** |
 | 6 | Adopt Kruchten's decision-relation vocabulary, incl. `conflicts with` | 2 | Kruchten | **applied** |
 | 7 | Facet acceptance tests: orthogonality, ascertainability, permanence | 2, 6 | Ranganathan, Vickery | **applied** |
@@ -267,7 +267,7 @@ Where they ended up:
 The application of every change does not mean that the design is finished. Three things that the literature sharpened but could not decide, all still open in [spec 9](09-open-questions.md):
 
 - **Whether the assisted fraction actually rises.** The strongest claim in the design — that agent-assisted authoring answers the capture-cost objection that killed every prior rationale system — is now falsifiable, measured, and untested. Nothing here proves it.
-- **Whether the taxonomy language survives contact with authors.** Q2 has a procedure now, not an answer. The cognitive-dimensions walkthrough may well reject the format that the rest of the spec is written in.
+- **Whether the taxonomy language survives contact with authors.** The [walkthrough](../evaluations/schema-format-walkthrough.md) has run, and it kept the format that the rest of the spec is written in. What it could not do is meet a real author. It scored notations against scenarios, and a scenario is not an adopter.
 - **Whether coherence measurement is worth its noise.** Transition continuity is a proxy, defensible in theory, unvalidated in practice. If its distribution is stable across healthy and unhealthy corpora alike, it measures nothing and should be cut.
 
 ## H. Theory considered and set aside

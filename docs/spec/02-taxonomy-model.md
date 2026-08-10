@@ -2,7 +2,7 @@
 
 **This is the central design of the system.** Everything else is downstream of it.
 
-> **Revision note.** This document contains five structural changes that [theoretical foundations](10-theoretical-foundations.md) proposed. The changes are: nuclearity on relations, windowed participation expectations, an immutable semantic core, versioning by measured compatibility, and purpose as an explicit declaration. Reading precedence is derived from nuclearity and succession. Relation families arrived as a dependency of the precedence change. The [core-concepts review](../reviews/) later cut the per-relation `dominance` declaration. That declaration was redundant where nuclearity or succession already determined it, and unused where they did not.
+> **Revision note.** This document contains five structural changes that [theoretical foundations](10-theoretical-foundations.md) proposed. The changes are: nuclearity on relations, windowed participation expectations, an immutable semantic core, versioning by measured compatibility, and purpose as an explicit declaration. Reading precedence is derived from nuclearity, succession, and the governance family. Relation families arrived as a dependency of the precedence change. The [core-concepts review](../reviews/) later cut the per-relation `dominance` declaration, which was redundant wherever nuclearity or succession already determined the order. The review also called it unused elsewhere. The [schema-format walkthrough](../evaluations/schema-format-walkthrough.md) found that governance was unanswered rather than unused, and the derivation now carries a clause for it. That walkthrough made four further changes here. Endpoints are the only declaration of a permitted relation, abstract kinds have semantics, compatibility gained an `addressability` dimension, and the migration payload rewrites overlays.
 
 ## The problem being solved
 
@@ -163,8 +163,7 @@ kinds:
     sections:
       require: [Context, Decision, Consequences]
       optional: [Alternatives considered, Related]
-    relations:
-      may: [supersedes, superseded_by, conflicts_with, implemented_by]
+    relations:                         # what a decision may link to is derived from relation endpoints
       expect:                          # windowed participation: finds what should exist and does not
         - id: decision-realized
           relation: implemented_by
@@ -211,7 +210,7 @@ projections:
 | `relations` | What typed links exist, their family, endpoints, nuclearity, and reciprocity |
 | `anchors` | What non-document node types exist, and which resolver owns each |
 | `shelves` | How the corpus is partitioned, and what each partition means |
-| `kinds` | What each species of document is, requires, may link to, and is expected in time to link to |
+| `kinds` | What each species of document is, what it requires, and what it is expected in time to link to |
 | `identifier_schemes` | How stable identifiers are shaped, namespaced, and allocated |
 | `core` | What an overlay may never remove or redefine |
 | `mappings` | How this taxonomy's concepts correspond to another's |
@@ -225,7 +224,7 @@ One declaration is here that no earlier draft had: `anchors`. Relation endpoints
 
 ## Purpose is declared, not implied
 
-**Every kind declares the reader intent that it serves.** A kind without a purpose fails schema validation.
+**Every concrete kind declares the reader intent that it serves**, or inherits it from an [abstract parent](#abstract-kinds). A concrete kind with no purpose fails schema validation.
 
 This makes the genre-theoretic definition operational: a genre is a socially recognized type, defined by a shared *purpose* and *form*. The rest of a kind declaration — sections, facets, voice — is form. Without purpose, a kind is a shape with no reason. The first question that anyone asks about a corpus ("what is this shelf *for*?") then has no answer in the schema.
 
@@ -290,9 +289,16 @@ When two documents are linked, no declaration states which one governs the readi
 
 - **On a nucleus–satellite relation, the nucleus governs.** A satellite supports the other end and cannot stand without it. A document that cannot stand alone cannot have its purpose govern the reading of the document that it depends on.
 - **On succession, the successor governs.** That is the whole meaning of the family: the successor is the one that governs behavior now.
-- **Other multinuclear relations carry no reading order.** `conflicts_with` and `is_alternative_to` assert exactly that neither end subordinates the other, and to impose an order would misstate the relation.
+- **On governance between two documents, the source governs.** The family means that the source constrains the target. A reader who wants to know what holds reads the constraint first.
+- **Everything else carries no reading order.** `conflicts_with` and `is_alternative_to` assert exactly that neither end subordinates the other, and to impose an order would misstate the relation. Evidence is the same case. An artifact that substantiates a claim does not govern the reading of the document that makes the claim.
 
-The engine uses the derived precedence in three places. It orders routing results, chooses which document a conflict is reported against, and decides reading order in generated indexes. Nothing downstream changed when the declaration was removed, which is the evidence that it declared nothing. A real corpus may produce a multinuclear, non-succession relation whose ends genuinely need an order. That outcome is the case to reintroduce a declaration, and that is the time to argue it.
+The four clauses are total over the six families, which the earlier three were not.
+
+**The governance clause is a correction.** The earlier list stopped at succession, so a governance edge between two documents fell to the last clause and carried no reading order at all. That contradicts what the family means. The cut `dominance` field held this one case and nothing else. The core-concepts review removed it as redundant wherever nuclearity or succession decided the order, and unused where they did not. The first half of that reading was right. The second was not, because governance is precisely where nothing else decided the order, and the review read silence as no demand. The clause replaces the field, because the family already states the answer and no taxonomy needs to repeat it.
+
+**Reading precedence is not nuclearity.** A governance relation still declares no nuclearity, and the family table's cell stays blank. Nuclearity asks whether an end stands alone, and a constrained document stands alone perfectly well. Reading precedence asks which end a reader consults first. This family answers the two questions differently, which is why one declaration could never have served both.
+
+The engine uses the derived precedence in three places. It orders routing results, chooses which document a conflict is reported against, and decides reading order in generated indexes. A real corpus may still produce a multinuclear, non-succession relation whose ends genuinely need an order. That outcome is the case to reintroduce a declaration, and that is the time to argue it.
 
 ### The decision-relation vocabulary
 
@@ -339,6 +345,16 @@ This exists because of the single most consistent finding in the traceability li
 It is also measurable after the fact. `headwater taxonomy audit` reports edge counts and staleness by creator. A relation declared `created_by: author` but present on 4% of eligible documents visibly receives no maintenance. The remedy is usually to move it to `scaffold` or `generator`, not to exhort authors harder.
 
 The default taxonomy assumes that remedy from the start. Every relation that it enables is creatable by scaffold, generator, or hook. `created_by: author` is reserved for overlay additions that an adopter explicitly chooses. The claim that assisted authoring raises edge capture is the strongest and least-tested in the system ([spec 10](10-theoretical-foundations.md#what-the-theory-did-not-settle)). A default that only works if the claim holds is a bet, and a default that survives when the claim fails is a design.
+
+### Endpoints are the only permission
+
+A relation declares its endpoints, and nothing else declares them.
+
+An earlier draft also listed permitted relations on each kind, under `relations.may`. The two declarations fixed the same set of permitted pairs, from opposite ends, and no rule made them agree. A taxonomy where `supersedes.from` named a kind whose `may` omitted it passed validation, and the relation was unusable in that taxonomy.
+
+That is the failure that [placement is primary](#placement-is-primary-metadata-fills-the-gap) forbids for the discriminator facet. A second statement of one fact in time disagrees with the first. The rule was right and it was not applied here. So `may` is gone. The permitted set for a kind is derived — every relation whose `from` names the kind, plus the inverse of every relation whose `to` names it.
+
+The reading need that `may` served is real, and it survives without a declaration. `headwater explain <path>` prints the permitted relations for a document, and the template for a kind offers them. A declaration that exists to be read is a projection, not a source.
 
 ### Lineage aligns with PROV
 
@@ -406,7 +422,7 @@ kinds:
           rationale: a decision nothing implements is either not a decision or not done
 ```
 
-An earlier draft declared these as a separate top-level concept, `sequences`, sold as chains. Every declared chain was in fact a single hop: *kind + state ⇒ expected relation, within window*. A chain is three expectations that share endpoints. A single hop is a state-conditional, windowed, detective-posture participation constraint — the `required` end of the cardinality spectrum that a relation already has, plus a clock. So it is declared where `may:` already lives, and the separate concept is gone. What it models is unchanged: genre theory's *genre system* — proposal → decision → specification → evidence, and incident → postmortem → standard change.
+An earlier draft declared these as a separate top-level concept, `sequences`, sold as chains. Every declared chain was in fact a single hop: *kind + state ⇒ expected relation, within window*. A chain is three expectations that share endpoints. A single hop is a state-conditional, windowed, detective-posture participation constraint — the `required` end of the cardinality spectrum that a relation already has, plus a clock. So it is declared on the kind, beside the other obligations that a kind carries, and the separate concept is gone. What it models is unchanged: genre theory's *genre system* — proposal → decision → specification → evidence, and incident → postmortem → standard change.
 
 Expectations catch a failure class that nothing else catches. Every check in [spec 4](04-assurance-model.md) validates artifacts that exist. An expectation finds the artifact that **should exist and does not**. Examples are the accepted proposal that nobody implemented, the incident with no postmortem, and the decision that never reached a specification. That is the drift that people actually complain about. It is invisible to link and front-matter validation, because there is nothing malformed to find.
 
@@ -513,6 +529,41 @@ The first three are decidable from the schema alone and run under `headwater tax
 
 Orthogonality is the one that deserves attention. If a document's `shelf` tells you its `doc_type` with near-certainty, one of them does no work. The redundant one will eventually disagree with the other. The audit reports correlated facet pairs and does not reject them, because the right fix is a judgment. Sometimes you delete a facet, and sometimes you discover that the shelf split was wrong.
 
+## Abstract kinds
+
+The meta-schema already admitted these, in one clause and with no semantics anywhere. The coverage rule says that every kind is reachable from a shelf, "or it is explicitly marked abstract". Nothing said what an abstract kind was, or what it was for. The [schema-format walkthrough](../evaluations/schema-format-walkthrough.md) found two independent scenarios that need exactly it, so it is defined here.
+
+**An abstract kind is a kind that no document ever is.** It declares what a group of concrete kinds share. A concrete kind names its parent with `is_a`, and inherits from it.
+
+```yaml
+kinds:
+  governed_document:
+    abstract: true
+    facets:
+      require: [status, status_since, last_verified, summary]
+  playbook:
+    is_a: governed_document
+    purpose: procedure
+    lifecycle: standard
+    facets:
+      require: [owner]                 # added to what the parent already requires
+```
+
+Two costs disappear with it, and the walkthrough measured both. To add a kind no longer edits every relation that the kind participates in, because an endpoint may name an abstract kind. That endpoint reaches every concrete kind below it. And a change to a shared facet requirement is one edit rather than one edit for each kind.
+
+The rules are deliberately few.
+
+- **A kind names at most one parent, and a parent may name a parent.** Inheritance is a chain and never a lattice. Several parents bring back the contested-value problem that satellite inheritance already had to solve, and no case yet demands them.
+- **No document resolves to an abstract kind.** It may never be a shelf's declared kind, and never a discriminator value. [Kind resolution](#kind-resolution) is unchanged, because it resolves to concrete kinds only.
+- **Facet and section requirements union down the chain.** A child adds to what its parent requires. A child may never un-require what a parent requires, because that voids the parent's contract for a reader who trusts it. A parent that requires a facet that the child forbids is a validation error.
+- **Purpose is required on every concrete kind, and it may arrive by inheritance.** An abstract kind may declare the purpose for its group. A concrete kind with no purpose of its own, under no parent that declares one, fails validation exactly as before.
+- **Endpoints resolve through the chain.** `supersedes: {from: [governed_document]}` permits every concrete kind that has `governed_document` above it.
+- **An abstract kind is rigid.** The [rigidity rules](#kinds-are-rigid-states-are-not) apply to it in full. An abstract kind named `draft_document` is as wrong as a concrete one.
+
+**`is_a` is not `subsumes`.** One is a statement about kinds and the other is a statement about documents, and [spec 1](01-conceptual-model.md#two-layers-terminology-and-assertions) holds those layers apart. `is_a` says that every playbook is a governed document, which is a fact about the schema. `subsumes` says that one decision is wider than another, which is a claim that an author makes about two documents. To confuse them lets the TBox leak into the ABox through a naming accident.
+
+The declaration count stays at eleven. `abstract` and `is_a` are attributes on `kinds`, not a new declaration, and an adopter who needs neither meets neither.
+
 ## Kinds are rigid; states are not
 
 A kind is a property that a document cannot lose while it is still the same document — a specification stays a specification. A lifecycle state is a phase that every document passes through. Formal-ontology practice calls the first **rigid** and the second **anti-rigid**, and holds that an anti-rigid class may never subsume a rigid one.
@@ -555,11 +606,15 @@ Merge semantics are strict and total:
 
 - **`override`** replaces a value at an addressed path. The path must already exist.
 - **`add`** introduces a new key. The key must not already exist.
-- **`remove`** deletes a key and everything that depends on it — and the resolver **fails** if a declaration that survives still references the removed key. To remove a shelf that a projection targets is an error at resolve time, not a mystery later.
+- **`remove`** deletes a key and everything that depends on it — and the resolver **fails** if a declaration that survives still references the removed key. To remove a shelf that a projection targets is an error at resolve time, not a mystery later. The key must already exist.
 - Lists never silently merge. An overlay either replaces a list or uses explicit `add_to` / `remove_from` operations.
 - Resolution is **order-independent** for disjoint paths and an **error** for paths in conflict. Two overlays that touch the same path are a conflict to resolve, not a last-writer-wins race.
 - Overlay application must be **confluent**: the application of a set of overlays in any legal order yields the same resolved taxonomy. The resolver checks this statically, before it applies anything.
 - The resolved taxonomy must satisfy the `core`. The resolver checks this last, on the result.
+
+**Every operation asserts a precondition about the base, and a failed precondition is always an error.** `override` needs the path to exist. `add` needs the key to be absent. `remove` needs the key to be present. The symmetry is deliberate. An overlay states what it believes about the base, and an upgrade that falsifies the belief must say so rather than proceed.
+
+So an upgrade can break an overlay in three ways, and the third is the one that surprises people. A base release that *adds* a key which the overlay already added is a collision, and the overlay stops resolving. **A collision is always a task for a human, never an automatic promotion to `override`.** The two operations differ in what the consumer inherits. `add` states the whole value. `override` keeps every upstream field that the consumer did not restate, so a silent promotion would import upstream decisions that nobody read.
 
 Confluence is what makes order-independence a guarantee rather than a hope. The resolver builds the set of paths that each overlay addresses, and it checks pairwise commutativity. Two `add`s at disjoint paths commute. An `override` and a `remove` on the same subtree do not, and two `override`s on one path do not. At resolve time, the resolver rejects any pair that does not commute, and it names both overlays and the contested path.
 
@@ -574,8 +629,9 @@ The taxonomy language has a formal schema, published with the engine and version
 - structural conformance to the meta-schema.
 - referential integrity — every referenced vocabulary, regime, kind, facet, and purpose exists. Every relation endpoint is a declared kind or a declared anchor kind.
 - **anchor integrity** — every anchor kind names exactly one resolver, and no two anchor kinds claim the same resolver namespace.
-- coverage — every shelf resolves to at least one kind. Every kind is reachable from at least one shelf, or it is explicitly marked abstract.
-- **purpose completeness** — every kind declares a purpose, and every declared purpose is served by at least one kind.
+- coverage — every shelf resolves to at least one kind. Every concrete kind is reachable from at least one shelf. An abstract kind is reachable from none, and says so.
+- **kind inheritance** — `is_a` names a declared abstract kind. The chain terminates and holds no cycle. No child un-requires what a parent requires, and no child forbids a facet that a parent requires.
+- **purpose completeness** — every concrete kind has a purpose, declared or inherited, and every declared purpose is served by at least one concrete kind.
 - determinism — no two shelf patterns can match the same path ambiguously.
 - role uniqueness — at most one facet claims each engine-significant role, and the role registry is closed and lives here: `state`, `state_entered`, `created`, `freshness`, `scent`. Every `role:` in a taxonomy and every list of "special" facets elsewhere in this specification draws from this line. A role outside it is a validation error. To add a role is a meta-schema change, not a taxonomy change.
 - lifecycle soundness — the state machine is connected, has an initial state, and its terminal states are declared.
@@ -598,7 +654,7 @@ A taxonomy is a released, semantically versioned package — but the version num
 
 The naive model (additive changes are minor, everything else is major) is straightforwardly wrong for a schema that carries semantics. To add an *optional* facet is additive, and it can still change which documents a projection includes. To widen an enum is additive, and a completeness check that passed can then fail. Structural change and semantic consequence are not the same thing, and only one of them matters to a consumer.
 
-So the engine evaluates compatibility along five dimensions, against a real corpus. The dimension set is the engine's, fixed and identical for every taxonomy. An earlier draft made it a `compatibility` declaration, which every taxonomy would state identically — and a declaration with one legal value declares nothing:
+So the engine evaluates compatibility along six dimensions. Five of them measure against a real corpus, and the sixth measures against real overlays. The dimension set is the engine's, fixed and identical for every taxonomy. An earlier draft made it a `compatibility` declaration, which every taxonomy would state identically — and a declaration with one legal value declares nothing:
 
 | Dimension | Question |
 |---|---|
@@ -607,15 +663,22 @@ So the engine evaluates compatibility along five dimensions, against a real corp
 | `consequence` | Does every check that passed still pass, and every check that failed still fail? |
 | `projection` | Does every projection produce identical output? |
 | `identifier` | Does every identifier still resolve to the same document? |
+| `addressability` | Does every path that an overlay can address still exist and mean the same thing? |
 
-`headwater taxonomy diff --to <version>` runs all five and reports per dimension. The required version bump is a *consequence* of the result: any dimension broken forces a major version.
+`headwater taxonomy diff --to <version>` runs all six and reports per dimension. The required version bump is a *consequence* of the result: any dimension broken forces a major version.
+
+**`addressability` is the one dimension whose subject is the schema.** The other five ask what happened to a corpus. This one asks what happened to the surface that an overlay addresses. A rename can leave every document classified, every check unchanged, and every projection identical. It still breaks every consumer overlay that addressed the old path, and all five corpus dimensions report compatible.
+
+[Spec 7](07-distribution-and-federation.md#upgrading) already reports invalidated overlay entries to the consumer, so half of this existed. What was missing is the half that acts. A report does not force a version bump, and a publisher that measures corpora alone never learns that it broke anyone. Promotion to a dimension fixes both ends. The publisher keeps reference *overlays* beside its reference corpora, and they are cheap to keep.
 
 The publisher and the consumer play different roles here, and both are necessary:
 
-- The **publisher** measures against its own reference corpora and publishes the result as a compatibility claim attached to the release. That is the best that it can do. It does not have anyone else's documents.
+- The **publisher** measures against its own reference corpora and reference overlays, and publishes the result as a compatibility claim attached to the release. That is the best that it can do. It does not have anyone else's documents, and it cannot enumerate every path that a consumer addresses.
 - The **consumer** measures against its own corpus before an upgrade. This *verifies* the publisher's claim rather than trusts it. A claim that fails locally is exactly the interesting case. It means that the consumer's corpus uses something that the publisher's reference corpora do not.
 
 A major version ships a **migration payload**: machine-readable steps that declare what moved, what was renamed, and what must be re-stated. The steps are split into what the engine can apply mechanically (`headwater migrate --apply`) and what needs human or agent judgment (emitted as a task list with the affected documents attached). To adopt a new major version without a run of its migration is a hard failure, not a warning. The lock file records the taxonomy version and the measured compatibility result that each corpus was validated against.
+
+**The payload migrates overlays, not only documents.** Every word of the paragraph above was written for documents. The overlay is the artifact most likely to break, and least likely to have a test. The rename map that the payload already carries is exactly what an overlay rewrite needs. `headwater migrate --apply` rewrites overlay addresses from that map. It emits each `add` collision as a judgment task that shows both definitions together. Without this, a consumer reads a resolver error and reconstructs by hand what the publisher already knew.
 
 ## Worked example: three taxonomies, one engine
 
