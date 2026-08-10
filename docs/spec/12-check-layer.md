@@ -87,6 +87,20 @@ One trait per scope removes the second fact. A check that wants to compare sibli
 
 The same reasoning binds the plugin interface below. `scope()` there is a method a third party implements, so it is a claim the host would have to trust. As a type it is a claim the host cannot be given.
 
+### The read set, and what a merge does to a verdict
+
+Point 2 above gives a cache key. The same set has a second use, and it is the one that [spec 4](04-assurance-model.md#a-verdict-is-about-one-state-of-the-corpus) needs to make a verdict honest under merge.
+
+The **read set** of a run is the union of the in-scope inputs that produced its results. That is the content hash of every document and edge that an instance read. It also holds the taxonomy lock hash, the check versions, and the injected values. Every run already computes it, one instance at a time. The key is a hash of exactly those inputs, and a key that omits one is a correctness bug. What is new is that the run reports the union beside its coverage numbers.
+
+**A merge is then an ordinary change.** Given the merge result and the tree that a run evaluated, the engine derives the invalidated instances the way it derives them from any diff. An empty result means that the verdict still applies. A non-empty result voids it, and the recomputation is change-scoped over the union of the two changes rather than a full pass.
+
+This is where the design gets something free that a database has to add. A serializable database tracks read sets at run time to detect write skew. Git detects nothing of the kind, because it holds no read set at all. Scope enforcement built ours for a different purpose ([spec 10 §F.6](10-theoretical-foundations.md#f6-write-skew-names-the-anomaly-and-read-sets-detect-it)).
+
+**Corpus-scoped checks are the barriers, and this gives their count a second meaning.** A corpus-scoped instance reads everything, so any concurrent change voids it and no incremental test rescues one. Their count is the work that every merge repeats, and it is readable from the declarations rather than discovered under load.
+
+**The invalidation test fails toward re-running.** A false invalidation costs one run. A false survival ships an invalid corpus with a green report. That asymmetry decides every doubtful case, and it is the same rule that [principle 7](00-vision-and-scope.md#design-principles) gives an exporter.
+
 ## Temporal inputs: the clock and the prior version
 
 Two inputs are about time. Both are injected, never fetched.
@@ -186,7 +200,7 @@ Fixture discipline (below) covers checks. It does not cover the components that 
 - **The overlay resolver and the lock.** Every downstream verdict reads the lock. A resolver bug corrupts every check, projection, and conformance claim at once. A committed and diffable lock decreases the risk but does not test the resolver. The resolver carries its own round-trip and confluence fixtures, in the same way that Q6 already demands fidelity tests for the RDF projection.
 - **Scope enforcement.** A leak silently corrupts every cache key (stated above). That makes the enforcer the correctness root for all caching and for change-scoped CI. A leak reproduces deterministically, so it looks like correct behavior.
 - **The census walker.** Every coverage guarantee (OB-COV-1..3) assumes that the walk enumerates the corpus root correctly. A glob or symlink bug quietly shrinks the denominator, which is the exact failure that the census exists to prevent. The walker ships with a fixture tree of the pathological cases.
-- **The parser's span retention.** Section contracts, voice checks, and prose-link extraction all trust one parse. A mis-parsed heading lets a section contract pass with no finding anywhere. A parser conformance corpus is part of the engine's own test surface.
+- **The parser's spans, its sentence segmentation, and the author-owned span.** Section contracts, voice checks, and prose-link extraction all trust one parse. A mis-parsed heading lets a section contract pass with no finding anywhere. The two other properties are here on measured grounds. Over this repository's own specification, most errors of a lexical checker came from the decision about which text is a sentence. The rest of that structural share came from text which quotes another author ([evaluation](../evaluations/what-a-check-can-know.md)). So the parser owns both, and no voice rule declares an exemption for either. A parser conformance corpus is part of the engine's own test surface.
 - **The scaffolder.** Edges marked `created_by: scaffold` are corpus facts that nobody reviews individually. A scaffolder bug manufactures wrong edges at exactly the scale that the assisted-fraction metric celebrates. Scaffolder output goes through the same validation pipeline as authored input. That the output is generated is never a reason to trust it.
 - **An importer**, on the scaffolder's terms and for the identical reason. Edges marked `created_by: import` arrive in bulk from a system that this corpus does not govern, and nobody reads them one at a time. A wrong imported edge produces a *correct* check result over a *wrong* graph, so no check finds it and no advisory posture helps ([spec 4](04-assurance-model.md#promotion-measures-a-rule-and-not-a-producer-of-facts)). A fixture set over the importer is the instrument, and it is what lets an imported edge carry full weight ([Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record)).
 - **External-anchor resolvers.** Write-time impact detection fires on anchor identity ([spec 2](02-taxonomy-model.md#behavior-at-the-limits)). A resolver that mis-normalizes makes `governs` edges silently miss.

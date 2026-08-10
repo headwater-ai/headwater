@@ -765,6 +765,58 @@ CrossMark adds the detail worth taking whole. It does not try to make a flag sur
 
 ---
 
+## Q — What a lexical rule gets wrong, and what a merge queue buys
+
+This section arrived with the [Q5 and Q21 evaluation](../evaluations/what-a-check-can-know.md). §M binds it: convergence on a shape is not evidence that the shape works. Two of the sources below carry measured numbers, and one of the two is our own repository.
+
+### Q.1 Every controlled-language checker ships the same shape, and none of them blocks on voice
+
+Vale, `textlint`, `proselint`, `write-good` and `alex` are rule sets over text, with per-rule severity and a per-line disable comment. Vale ships three levels, `error`, `warning` and `suggestion`, and its published style packages put readability and voice at the lower two. That is the design that [Q5](09-open-questions.md#q5--voice-checking-depth) leans toward, arrived at five times independently.
+
+`alex` is the closest thing to a retired-term lexicon that ships. It carries terms with replacements and reasons, it is advisory by default, and it is best known for its findings on quoted and technical text. Its documented remedy is a scoped ignore comment.
+
+The convergence confirms the shape and says nothing about the posture. Not one of these tools blocks a build by default, and their maintainers say why in the same words that this evaluation reaches. A finding that needs a rewrite is a prompt and not a gate.
+
+> **Applied:** posture by fixability rather than by precision ([spec 3](03-authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)), and the permanently advisory class ([spec 4](04-assurance-model.md#where-promotion-cannot-finish)).
+
+### Q.2 The static-analysis field measured what a developer tolerates, and it is less than intuition
+
+Bessey and colleagues ("A Few Billion Lines of Code Later", *CACM* 2010) report a decade of commercial deployment. Two results transfer. A checker whose false-positive rate climbs past roughly a third gets switched off, whatever it finds. And a correct finding with no clear remediation is ignored, which costs the same as a wrong one.
+
+Google's Tricorder (ICSE 2015) states a stricter operating point. An analyzer stays in the review pipeline only while its "not useful" rate stays under about a tenth. That rate comes from the reviewers who press the button, and never from an auditor.
+
+Tricorder's instrument is the sharper one for us, and the reason is the blind spot that [spec 4](04-assurance-model.md#promotion-advisory-to-blocking) already names. It measures the reaction of a reader, and a reader who ignores an advisory finding leaves no label behind. Both numeric claims here come from memory. The session that wrote this evaluation had no web budget left to re-verify them, and that is recorded rather than hidden.
+
+> **Applied:** the adjudicated sample as the only instrument that reaches an advisory rule ([spec 4](04-assurance-model.md#where-promotion-cannot-finish)).
+
+### Q.3 Merge queues are the complete answer, and they charge for it
+
+The "not rocket science rule", stated by Graydon Hoare for Rust's `bors`, has one clause. Never merge a commit that has not passed its tests in the merged state. GitHub merge queue, Zuul and `bors` all implement it.
+
+Zuul is the instructive one, because it shows the cost and the recovery. Serialized landing destroys throughput on a busy repository, so Zuul gates a speculative future state in which several changes have landed together. When an earlier change fails, it discards the speculation behind it and re-runs. That is optimistic concurrency with a rollback, and the whole design turns on control of the landing order.
+
+Headwater does not control the landing order and should not want to. A queue needs one cheap answer from a checker: does the earlier verdict still apply? The read set supplies it.
+
+> **Applied:** the engine emits and never orders ([spec 6](06-engine-architecture.md#ci-adapters)). [Q7](09-open-questions.md#q7--scope-of-the-mcp-surface) drew the same line for the write path.
+
+### Q.4 Incremental build and incremental typecheck solved the cheap half already
+
+Bazel keys an action on a hash of its declared inputs, and reuse is correct exactly while that declaration is complete. Salsa, and the red-green algorithm inside `rustc`, memoize a query together with the queries that it read. A recorded dependency that changes invalidates the result.
+
+One rule sits under both. A result carries the set of inputs that it depended on, and it survives a change only while that set is untouched. [Spec 12](12-check-layer.md#scope--the-declaration-everything-else-rests-on) already says the hard half of it, in the sentence that calls an omitted input a correctness bug rather than a performance bug.
+
+> **Applied:** the read set of a run, and the merge as an ordinary change ([spec 12](12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)).
+
+### Q.5 Terminology retirement at scale carries by tooling, never by memory
+
+Git's own default-branch rename in 2020 is the clearest observed case. The judgment took one discussion. Its propagation took a configuration key (`init.defaultBranch`), changes across every forge and every CI product, and years of residue. The inclusive-language migrations across the Linux kernel, the large clouds and the language ecosystems ran the same way. Each one shipped a lexicon with replacements and reasons.
+
+The durable pattern in all of them is the split that [spec 2](02-taxonomy-model.md#the-language-regime-carries-the-terms-that-the-corpus-retired) adopts. A retirement with a replacement becomes a rewrite that tooling performs, at scale, with no argument. A retirement of a framing has no replacement to substitute, so it produces discussion instead of change. It needs a reason, recorded where a later author will meet it.
+
+> **Applied:** `retired_terms` in the language regime, with a required reason and an optional replacement ([spec 2](02-taxonomy-model.md#the-language-regime-carries-the-terms-that-the-corpus-retired)).
+
+---
+
 ## Summary
 
 | Source | Verdict | Outcome |
@@ -798,6 +850,11 @@ CrossMark adds the detail worth taking whole. It does not try to make a flag sur
 | Package-registry indexes, OGC and STAC conformance | The index is configuration. A version needs a client rule, and a declaration needs a verifier | Applied — the version contract and the shape check (spec 7) |
 | `llms.txt` | A descriptor with no obliged reader goes unread, measurably | Corrects §I.5. Carried into **Q16** |
 | MCP tool annotations, tool poisoning, line jumping | The annotation is a hint, and injection lands before any call | Applied — the three tool classes (spec 5). **Q7** closed |
+| Vale, `textlint`, `proselint`, `alex` | Five arrivals at the same shape, and not one of them blocks on voice | Confirms the shape, and decides nothing about posture. **Q5** closed |
+| Coverity in the field, Google Tricorder | A developer tolerates less than intuition says, and ignores what has no fix | Applied — posture by fixability, and the permanently advisory class (specs 3, 4) |
+| `bors`, GitHub merge queue, Zuul | Testing the merged state is complete, and it costs control of the landing order | Applied — the engine emits and never orders (spec 6). **Q21** closed |
+| Bazel, Salsa, `rustc` red-green | A result carries the inputs it read, and survives only while they hold | Applied — the read set of a run (spec 12) |
+| The git branch rename, inclusive-language migrations | A retirement carries by tooling. A replacement is what makes it mechanical | Applied — `retired_terms` in the language regime (spec 2) |
 | Forge coding agents, dependency bots, Allstar | Propose and never land. The credential alone does not confine a proposer | Applied — the proposal budget and the confinement statement (spec 7) |
 | MLS databases: SeaView against LDV, cover stories, the inference reports | Classify once at write. A visible hole is a named channel, and its acceptability is conditional | Applied — export-step filtering and the declared tombstone grain (spec 6). **Q17** closed |
 | Vaughn v. Rosen, 5 U.S.C. § 552(b), FRCP 26(b)(5), HTTP 451 | Amount, position and reason, at the site of the cut — unless the marking causes the harm | Applied — the `counted` placeholder and the `sealed` exception (spec 6) |

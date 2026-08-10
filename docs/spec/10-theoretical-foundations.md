@@ -220,6 +220,18 @@ Current GraphRAG and KG-RAG work reports that graph-structured retrieval outperf
 
 > **Change:** none — this supports spec 5's "graph first, embeddings at most a fallback". Note the literature's operational warning in Q6: a second index is a second thing to keep fresh. Our corpus is small enough that the graph should win outright.
 
+### F.6 Write skew names the anomaly, and read sets detect it
+
+Two changes that are each valid against the merge base can produce an invalid corpus. That failure has a name outside this project, and the name comes from concurrency control rather than from version control.
+
+Berenson, Bernstein, Gray, Melton, O'Neil and O'Neil ("A Critique of ANSI SQL Isolation Levels", SIGMOD 1995) named **write skew**. Two transactions read overlapping data, write disjoint data, and each one preserves an invariant that the pair violates. Snapshot isolation permits the anomaly, because it detects a write-write conflict and nothing else. That is exactly git. A branch is a transaction, the merge base is its snapshot, and a textual conflict is a write-write conflict at line grain.
+
+Fekete, Liarokapis, O'Neil, O'Neil and Shasha ("Making Snapshot Isolation Serializable", *TODS* 2005) found the condition. The anomaly needs a cycle with two consecutive read-write antidependencies, which makes it analyzable rather than mysterious. Cahill, Röhm and Fekete ("Serializable Isolation for Snapshot Databases", SIGMOD 2008) turned that into a run-time mechanism, and PostgreSQL ships it as its serializable level. It works by tracking what each transaction **read**, and it accepts a false abort as the price.
+
+The transfer is precise and it is favorable. Detection of this anomaly needs a read set. A database adds read tracking to get one, and git has none at all. Headwater already computes a read set per check instance, because scope enforcement makes the cache key a hash of exactly the in-scope inputs. The ingredient is a byproduct of a decision taken for caching.
+
+> **Change:** state that validity is not preserved under merge, as a property of a verdict rather than as a caution ([spec 4](04-assurance-model.md#a-verdict-is-about-one-state-of-the-corpus)). Report the read set with every run, and treat a merge as an ordinary change ([spec 12](12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)). Fail toward re-running, as serializable snapshot isolation fails toward aborting.
+
 ---
 
 ## G. Summary of changes this document proposes
@@ -246,8 +258,9 @@ Current GraphRAG and KG-RAG work reports that graph-structured retrieval outperf
 | 18 | Settle the schema-format question by cognitive-dimensions walkthrough | Q2 | Green & Petre | **applied** |
 | 19 | Derive default obligations from an empirical defect taxonomy | 4 | Aghajani et al. | **applied** |
 | 20 | Add `reconstructed` as a third provenance value | 3 | Parnas & Clements | **applied** |
+| 21 | State that validity is not preserved under merge. Report the read set | 4, 12 | Berenson et al., Cahill et al. | **applied** |
 
-All twenty are applied. The five structural changes (2, 4, 12, 13, 15) landed first, because they altered the schema itself. Change 3 came with them, since change 4's precedence semantics needed families to exist first. The remaining fourteen were additive and landed against the schema as it then stood.
+All are applied. The first twenty came from one sweep of the literature, and change 21 arrived later with [Q21](09-open-questions.md#q21--terminological-succession-and-validity-under-merge). The five structural changes (2, 4, 12, 13, 15) landed first, because they altered the schema itself. Change 3 came with them, since change 4's precedence semantics needed families to exist first. The remaining fourteen were additive and landed against the schema as it then stood.
 
 Where they ended up:
 
@@ -256,11 +269,12 @@ Where they ended up:
 | [1 — Conceptual model](01-conceptual-model.md) | Purpose on kinds, family and nuclearity on relations, windowed participation expectations |
 | [2 — Taxonomy model](02-taxonomy-model.md) | The five structural changes, plus the decision-relation vocabulary, `created_by`, PROV alignment, facet acceptance tests, the rigidity rule, overlay confluence, and cross-taxonomy mappings |
 | [3 — Authoring](03-authoring-and-lifecycle.md) | Three-state evidence basis, recorded provenance with `accepted_by`, and the assisted-fraction metric |
-| [4 — Assurance](04-assurance-model.md) | The cohesion/coherence split, defect-derived obligations, transition continuity, absence findings, and cost-aware adaptive reporting |
+| [4 — Assurance](04-assurance-model.md) | The cohesion/coherence split, defect-derived obligations, transition continuity, absence findings, cost-aware adaptive reporting, and what a verdict is about |
 | [5 — AI integration](05-ai-integration.md) | Purpose-first routing, satellite-first pruning, and scent measurement |
 | [6 — Engine](06-engine-architecture.md) | The `validate` / `audit` split and the enlarged check inventory |
 | [7 — Distribution](07-distribution-and-federation.md) | The invariant core, measured compatibility, and federation by mapping |
 | [9 — Open questions](09-open-questions.md) | A decision procedure for Q2, and the cross-taxonomy half of Q9 closed |
+| [12 — Check layer](12-check-layer.md) | The read set of a run, and the merge treated as an ordinary change |
 
 ### What the theory did not settle
 
@@ -292,5 +306,7 @@ Design rationale — Kunz & Rittel, *IBIS* (1970) · Toulmin, *The Uses of Argum
 Evolution and variability — [Noy & Klein, *Ontology Evolution: Not the Same as Schema Evolution* (2004)](https://link.springer.com/content/pdf/10.1007/s10115-003-0137-2.pdf) · Kang et al., *FODA* (1990) · Schaefer et al., delta-oriented programming
 
 Cognition — Pirolli & Card, *Information Foraging* (1999) · Green & Petre, *Cognitive Dimensions* (1996) · Carroll, *The Nurnberg Funnel* (1990)
+
+Concurrency control — Berenson, Bernstein, Gray, Melton & O'Neil, *A Critique of ANSI SQL Isolation Levels* (SIGMOD 1995) · Fekete, Liarokapis, O'Neil, O'Neil & Shasha, *Making Snapshot Isolation Serializable* (*ACM TODS* 2005) · Cahill, Röhm & Fekete, *Serializable Isolation for Snapshot Databases* (SIGMOD 2008)
 
 Empirical software engineering — [Aghajani et al., *Software Documentation Issues Unveiled* (ICSE 2019)](https://2019.icse-conferences.org/details/icse-2019-Technical-Papers/49/Software-Documentation-Issues-Unveiled) · Aghajani et al., *Software Documentation: The Practitioners' Perspective* (ICSE 2020) · Lethbridge, Singer & Forward (2003) · Parnas & Clements, *A Rational Design Process* (1986) · [*Agent READMEs: An Empirical Study of Context Files for Agentic Coding* (2025)](https://arxiv.org/pdf/2511.12884) · [*Rule Taxonomy and Evolution in AI IDEs* (2026)](https://arxiv.org/pdf/2606.12231)

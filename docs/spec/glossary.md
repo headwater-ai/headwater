@@ -489,6 +489,10 @@ The organization that releases a taxonomy package, its doctrine, and its migrati
 
 The reader intent that a kind serves, declared once at the taxonomy level. A kind without a purpose fails validation, because purpose plus form is what makes a kind a genre rather than a shape. See [spec 2](02-taxonomy-model.md#purpose-is-declared-not-implied).
 
+### Read set
+
+The inputs that a run's results depended on. It holds the content hash of every document and edge that an instance read, plus the lock hash, the check versions, and the injected values. A run reports it, so a later holder of a merge result can decide whether the verdict still applies. See [spec 12](12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict).
+
 ### Reading precedence
 
 Which of two linked documents governs the reading. It is derived from nuclearity, succession, and the governance family, and never declared. See [spec 2](02-taxonomy-model.md#reading-precedence-is-derived).
@@ -520,6 +524,10 @@ The instruction that every finding carries. A finding that cannot say what to do
 ### Resolve
 
 `headwater taxonomy resolve` fetches the base, merges the overlays, validates the result, and writes the [lock](#lock). See [spec 7](07-distribution-and-federation.md#consuming).
+
+### Retired term
+
+A term that the corpus no longer uses, declared in the language regime with a required reason and an optional replacement. With a replacement the fix is a substitution. Without one the finding carries prose, because a retired framing has nothing to substitute. See [spec 2](02-taxonomy-model.md#the-language-regime-carries-the-terms-that-the-corpus-retired).
 
 ### Rigidity
 
@@ -556,6 +564,10 @@ The only thing that a check can read. The engine enforces it, and that enforceme
 ### Section contract
 
 The headings that a kind must or may have. See [spec 1](01-conceptual-model.md#kind).
+
+### Semantic conflict
+
+Two changes that are each valid against the merge base, whose merge is invalid. Git reports nothing, because the conflict is not textual. Databases call the same anomaly write skew. See [spec 4](04-assurance-model.md#a-verdict-is-about-one-state-of-the-corpus).
 
 ### Severity
 
@@ -659,7 +671,7 @@ A named value set that facets reference. It is authoring syntax, validated as pa
 
 ### Voice regime
 
-The voice that a kind writes in, with the machine-checkable part of it: declarative, narrative, or unconstrained. Enforcement is lexical, and every escape hatch must state a reason. See [spec 3](03-authoring-and-lifecycle.md#voice).
+The voice that a kind writes in, with the machine-checkable part of it: declarative, narrative, or unconstrained. Enforcement is lexical, over author-owned text alone, and every escape hatch states a reason from the [suppression](#suppression) set. A category blocks only when its remediation is mechanical, so a category that needs a rewrite is permanently advisory. See [spec 3](03-authoring-and-lifecycle.md#voice).
 
 ### Volatility
 

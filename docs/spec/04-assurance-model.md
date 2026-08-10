@@ -181,6 +181,18 @@ One class of control does not meet it. The rule below is general, so that it doe
 
 The [withholding rule](06-engine-architecture.md#an-export-profile-carries-a-filter) of an export profile is the only instance today. A document withheld that could have been carried is visible, cheap and reversible. A document carried that should have been withheld is invisible to both instruments above, and no later run undoes it. So a withholding rule never ships advisory, carries no promotion criteria, and admits no escape hatch ([Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer)).
 
+### Where promotion cannot finish
+
+The section above describes a control that skips the promotion path. A second class starts on the path and can never reach its end. The rule is general, and the criteria above already carry it as one requirement in a list:
+
+> A control is promotable only while its remediation is mechanical and total. Where the remediation needs judgment, the control is **permanently advisory**, whatever its measured false-positive rate.
+
+Precision is not what qualifies a rule to block. A rule can be right nearly every time and still leave a reader with a rewrite that needs a decision about meaning. To block on such a rule makes a judgment into a gate. The author who meets it at a red build reaches for the escape hatch rather than for the judgment.
+
+This is measured rather than asserted. A passive-voice rule over this project's own specification produces 449 findings, at an adjudicated false-positive rate near 8% on a sample of 60. Not one of them should block ([evaluation](../evaluations/what-a-check-can-know.md)). The same measurement shows why the ordinary instrument cannot see this. Against 613 advisory findings the corpus holds four escape hatches, so the suppression-derived rate has almost no denominator. That is the blind spot above in its extreme form, and the adjudicated sample is the only instrument that reaches such a rule.
+
+The [shift ratio](#measuring-coherence-where-we-can-continuity-across-links) is already permanently advisory, and this states the general reason for it. The voice categories of [spec 3](03-authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from) are the other instances today.
+
 ### Promotion measures a rule, and not a producer of facts
 
 A second class of component sits outside the promotion path, for a different reason and with no exception attached. Both instruments above measure a **rule**. A component that produces graph facts has no false-positive rate to measure. A wrong fact makes every check over it return a correct verdict about a wrong graph, and no advisory posture ever finds that.
@@ -258,6 +270,24 @@ Three consequences deserve a plain statement:
 - **Parse failures are findings, never omissions.** A file that the engine cannot read is reported as such and counted. It does not drop out of the denominator.
 
 This is the assurance model applied to itself. The system insists that every obligation carries a disposition, and that visible incompleteness beats apparent completeness. It owes the same discipline to its own coverage.
+
+## A verdict is about one state of the corpus
+
+Coverage answers "what did this run look at?". One question sits beside it and the specification did not ask it: **what is this verdict a verdict about?**
+
+> Validity is not preserved under merge. Two changes that are each valid against the merge base can produce an invalid corpus, and no run against either branch tip reports it.
+
+Git does not catch this, because the conflict is semantic rather than textual. The name for it is a **semantic conflict**, and databases named the same anomaly first. Under snapshot isolation, two transactions that read overlapping data and write disjoint data each preserve an invariant that the pair violates. That is **write skew**, and git permits it for the same reason that snapshot isolation does. Both detect a write-write overlap and neither holds a read set ([spec 10 §F.6](10-theoretical-foundations.md#f6-write-skew-names-the-anomaly-and-read-sets-detect-it)).
+
+It presses harder here than in most systems, and the reason is our own performance bet. Change-scoped evaluation is what makes a 200 ms hook possible ([spec 6](06-engine-architecture.md#performance-targets)). Semantic conflict is the failure class that change-scoped evaluation is worst at, because neither change looks wrong inside the scope that evaluated it.
+
+Three consequences, and the machinery for all three exists.
+
+- **A run reports the state that it evaluated**, and the report is not optional. The corpus tree, the taxonomy lock hash, and the **read set** of the run ([spec 12](12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)). A verdict about one tree is not a verdict about another one, and a report that omits the tree cannot say which.
+- **A merge is an ordinary change.** The engine takes the merge result and the tree that a run evaluated, then computes the invalidated check instances as it does from any diff. Nothing invalidated means that the verdict carries. Anything invalidated voids it, and the recomputation is change-scoped rather than a full run.
+- **The engine never orders the landing.** A merge queue tests the merged state before it lands, which answers this completely and costs a serialized queue. That belongs to the forge ([spec 6](06-engine-architecture.md#ci-adapters)), and the engine emits what such a gate consumes.
+
+**The test fails toward re-running.** A verdict declared void that would have held costs one run. A verdict carried that should have been void ships an invalid corpus and reports it green. That is [principle 7](00-vision-and-scope.md#design-principles) read the way that an exporter reads it: degrade toward the cheaper error, and say which one that is.
 
 ## Findings
 
