@@ -64,7 +64,7 @@ Their system prompt states a precedence: where the normative specification and t
 
 Headwater has no such ordering. Derived reading precedence records whose *purpose* governs, which is not the same question. When a standard and a specification disagree on a fact, nothing in the corpus says which one a reader should believe. That is a genuine hole, and it is exactly the situation where an agent will otherwise pick arbitrarily and sound confident.
 
-> **Applied, then cut.** An `authority` ordering on kinds was adopted here and removed by the core-concepts review. The trigger (detection of factual disagreement) needs a judgment that the ABox boundary refuses to make. A global scalar cannot carry the scoped precedence that their prompt actually encodes. What Headwater keeps is the part of their design that works. It keeps the *decision rule* ("note the discrepancy") as an agent instruction, and the adjudication recorded as data ([spec 2](02-taxonomy-model.md#disagreement-is-adjudicated-not-ranked), [Q18](09-open-questions.md#q18--recording-adjudicated-disagreements)).
+> **Applied, then cut.** An `authority` ordering on kinds was adopted here and removed by the core-concepts review. The trigger (detection of factual disagreement) needs a judgment that the ABox boundary refuses to make. A global scalar cannot carry the scoped precedence that their prompt actually encodes. What Headwater keeps is the part of their design that works. It keeps the *decision rule* ("note the discrepancy") as an agent instruction, and the adjudication recorded as data ([spec 2](02-taxonomy-model.md#disagreement-is-adjudicated-not-ranked)). [Q18](09-open-questions.md#q18--recording-adjudicated-disagreements) has since closed and said where that data lives. An adjudication is a decision document, and `overrides` is the edge that carries it ([§P.8](#p8-legal-citators-argue-against-q18s-ruling-and-then-for-it)).
 
 ### B.3 Generated artifacts cite their source
 
@@ -179,7 +179,7 @@ An LLM lint pass is therefore a legitimate **coherence control** — sampled, de
 
 Whether Headwater should admit a synthesized tier is a genuine question. Such a tier needs its own provenance, its own staleness rules, and a clear statement that it is never canonical for anything. It is also how most organizations will actually want to use this.
 
-> **Recorded as [Q15](09-open-questions.md#q15--a-synthesized-content-tier).**
+> **Recorded as [Q15](09-open-questions.md#q15--a-synthesized-content-tier), which has since closed, and it renamed the tier.** The axis is not the author but the **warrant**: what stands behind the content ([spec 1](01-conceptual-model.md#warrant)). This pattern ships content with no warrant at all, because lint is a cohesion mechanism and establishes nothing about truth ([§P.5](#p5-the-two-observed-cases-in-this-survey-read-against-the-standards)).
 
 ## G. Knowledge-graph chunking for RAG — a problem we do not have
 
@@ -277,7 +277,7 @@ The pitch overlaps ours almost word for word — typed graphs that ground agents
 Three things deserve a record:
 
 - **Evidence the other way on Q13.** §E cites OpenGEO, which declines RDF/OWL/SHACL, as evidence that the standards stack is not required for this class of problem. TrustGraph is the counterweight: a production open-source system that chose that stack and ships it. One data point on each side is a more honest input to the decision than one.
-- **A preview of Q15's provenance burden.** TrustGraph's extracted graph is precisely the synthesized tier that Q15 asks about — LLM-maintained, never verifiable by regeneration. Its per-fact receipts (source, timestamp, derivation method) are a concrete, operational design for the provenance record that such a tier needs.
+- **A preview of Q15's provenance burden.** TrustGraph's extracted graph is precisely the tier that Q15 asks about — LLM-maintained, never verifiable by regeneration. Its per-fact receipts (source, timestamp, derivation method) are a concrete, operational design for the provenance record that such a tier needs. Q15 has since closed, and it read the receipts against the standard that they follow. A receipt records derivation and never endorsement, so it supplies the shape of the provenance block and none of the [warrant](01-conceptual-model.md#warrant) ([§P.1](#p1-w3c-prov-records-derivation-and-it-has-no-word-for-endorsement)).
 - **Attribution, implemented.** The receipt model — every answer traceable to the facts and the traversal that licensed it — is the attribution row of §H in production form. It is independent confirmation that a shipped system also put its effort into oracles and traceability.
 
 And one relationship deserves a record as complementary rather than rival. Source quality bounds extraction quality, so a governed corpus is an unusually good input to an extraction platform. Kinds, facets, and declared edges arrive as structure that the extractor otherwise must guess at. Under the [better-together principle](00-vision-and-scope.md#design-principles) of spec 0, that makes TrustGraph ingestion a candidate integration — a Headwater corpus fed in as pre-structured source material. It is in the same family as the OKF export, and equally cheap to hold: the arrow points out of the corpus, and nothing flows back in.
@@ -310,7 +310,7 @@ What flows in is therefore deliberately small: anchor identities, `traces_to` ed
 
 Two declarations that currently have no operational story acquire one here. `created_by: import` is a legal edge provenance [in spec 2](02-taxonomy-model.md#who-creates-each-edge), but nothing says what an import *is*. An RM importer is what the value is for, and the staleness-by-creator report of `taxonomy audit` is what keeps a decayed import visible. And [Q15](09-open-questions.md#q15--a-synthesized-content-tier) gains a sharper test case than the one that raised it. Imported requirement text is *not* synthesized, because regeneration against the pinned snapshot verifies it. That makes it a projection whose source the corpus does not govern. The authored/generated split does not name that case, and the tier question has to answer it.
 
-> **Recorded as [Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record).**
+> **Recorded as [Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record), which has since closed.** The last sentence above had the fact right and the conclusion backwards. Regenerability against a pinned input is the tier axis rather than a disqualifier, and imported text is the `transcribed` [warrant](01-conceptual-model.md#warrant). W3C PROV already names it `prov:Quotation` ([§P.1](#p1-w3c-prov-records-derivation-and-it-has-no-word-for-endorsement)). An importer joins the correctness roots on the scaffolder's terms, so an imported edge carries full weight ([§P.6](#p6-requirements-practice-already-has-the-pin-and-a-better-drift-signal)).
 
 ## L — Serena: the memory layer as a corpus, and where scent lives
 
@@ -385,7 +385,7 @@ TrustGraph holds its extracted graph in a separate store, and mints a per-fact r
 
 The result is a corpus in which a reader cannot tell authored content from synthesized content by inspection. Q15 already leans toward a tier that is permanently non-canonical and clearly marked. Serena shows what the alternative looks like at this scale of adoption, and that is the strongest available argument for the leaning.
 
-> **Recorded:** evidence added to [Q15](09-open-questions.md#q15--a-synthesized-content-tier).
+> **Applied:** [Q15](09-open-questions.md#q15--a-synthesized-content-tier) closed on that leaning, and it moved the boundary off the author. The failure here is not that an agent wrote the content. It is that nobody accepted it, and nothing says so. The `asserted` [warrant](01-conceptual-model.md#warrant) is the positive mark, and [spec 5](05-ai-integration.md#the-stop-rules) forbids an agent to stamp its own output as accepted.
 
 ### L.6 A filter in the tool layer is advisory, and the documentation says so
 
@@ -673,6 +673,96 @@ So the premise holds for the current tip of a repository that has never been for
 
 > **Recorded** as a qualification on [Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer)'s reliance on platform permissions.
 
+## P — Provenance, endorsement, and the record of a judgment
+
+This section sits with §N and §O, after the capstone, and for the same reason. Its sources arrived with the [warrant evaluation](../evaluations/warrant-and-adjudication.md), which closed [Q15](09-open-questions.md#q15--a-synthesized-content-tier), [Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record) and [Q18](09-open-questions.md#q18--recording-adjudicated-disagreements). §M binds them in full. One source below carries a measured result about a mark, and none of them measures whether the mark changes what a reader does.
+
+### P.1 W3C PROV records derivation, and it has no word for endorsement
+
+PROV models an **entity**, an **activity**, and an **agent**, and it relates them through `prov:wasGeneratedBy`, `prov:wasDerivedFrom` and `prov:wasAttributedTo`. Its derivation subtypes are `prov:Revision`, `prov:Quotation` and `prov:PrimarySource`. `prov:Quotation` is the repeat of part or all of an entity by somebody who may not be its original author.
+
+That last definition is Q19's imported requirement text, under a standard name that predates the question. It supplies the `transcribed` value of the [warrant](01-conceptual-model.md#warrant) whole.
+
+The contradiction is larger than the confirmation. PROV says what happened to an entity and who took part. It has no vocabulary at all for the claim that a party stands behind a result. All three entries treat "record the provenance" as the answer, and a provenance record is a record of derivation. `accepted_by` is the addition, and [spec 2](02-taxonomy-model.md#lineage-aligns-with-prov) claimed alignment with PROV without saying that the alignment stops one field short.
+
+One further point serves Q18. A PROV record is itself an entity, so it may carry provenance of its own. An adjudication that names an adjudicator wants exactly that recursion, and the cheapest artifact that already has it is a document.
+
+> **Applied:** the warrant in [spec 1](01-conceptual-model.md#warrant), and the correction to the PROV claim in [spec 2](02-taxonomy-model.md#lineage-aligns-with-prov).
+
+### P.2 SPDX makes "nobody asserted anything" a value
+
+A license field in SPDX may hold `NONE` or `NOASSERTION`, and the two mean different things. `NONE` says that the document states there is no license. `NOASSERTION` says that no party made a claim either way. SPDX 3.0 goes further and puts `creationInfo` on every element with no exception.
+
+That settles what would otherwise be a coin toss. An unwarranted document carries a positive mark and never an absent field, because a consumer cannot tell an absent field from an unknown value. A standard with a very large installed base reached the same conclusion for the same reason.
+
+> **Applied:** an absent warrant is a finding rather than a default ([spec 1](01-conceptual-model.md#warrant)).
+
+### P.3 C2PA measures what happens to a mark in transit
+
+Content Credentials bind a signed manifest to an asset, with assertions about capture, editing, and the use of generative tools. The specification's own threat model names manifest removal as a live case. The ecosystem's answer is a durable binding through watermarking and fingerprinting, because ordinary tooling strips metadata that it never intended to strip.
+
+That sharpens the constraint that [Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer) handed this group, and it moves the ruling. Q15 proposed that an emitter which cannot carry the mark declares that in its loss set. A loss-set entry serves the consumer who reads it and nobody else. The consumer who does not read it receives unwarranted content that looks vouched. So the emitter withholds the content instead.
+
+C2PA's second contribution is the signer. A manifest names an accountable party and validates against a trust list. A provenance mark with no named party is decoration, which is Q18's own test generalized past adjudication.
+
+> **Applied:** the withhold-rather-than-drop rule in [spec 6](06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped).
+
+### P.4 Wikipedia enforces on the review, not on the author
+
+The core content policy is verifiability: material must be attributable to a reliable published source, and the burden sits with the editor who adds it. A companion policy forbids original research. The slogan that the community used for years was "verifiability, not truth", which is the separation that this group needed. The project does not ask whether a sentence is true. It asks what stands behind it.
+
+The response to machine-generated content is the transferable half. The community first tagged suspected model output with a template. In 2025 it added a speedy-deletion criterion for unreviewed model output, aimed at hallucinated citations and unedited chatbot artifacts. The trigger of that criterion is not that a model wrote the text. It is that nobody reviewed it.
+
+That is the reframing of [Q15](09-open-questions.md#q15--a-synthesized-content-tier), confirmed by the largest observed instance of the problem, and by a community that tried the weaker control first.
+
+**The contradiction is the more useful half.** Most Wikipedia prose carries no inline citation. The policy demands attributability rather than attribution, and the encyclopedia is useful anyway. So a corpus that holds unwarranted content is not worthless. It is useful in proportion to how cheaply a reader can check it, and the inline `citation needed` mark is what keeps that cost visible. That contradicts any ruling that would forbid unwarranted content, and it supports the ruling that admits it and marks it.
+
+One thing that Wikipedia does and this design declines. The `citation needed` mark sits inside a paragraph, at sub-document grain. [Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer) already refused a filter that reaches inside a body, and the same reasoning holds here. A warrant is per document.
+
+> **Applied:** the `asserted` warrant, admitted and marked, in [spec 1](01-conceptual-model.md#warrant) and [spec 3](03-authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires).
+
+### P.5 The two observed cases in this survey, read against the standards
+
+[§J](#j-trustgraph--the-same-pitch-the-opposite-mechanism) records TrustGraph's per-fact receipts of source, ingestion timestamp and extraction method. Read against §P.1, a receipt is a derivation record and not an endorsement record. It supplies the shape of the provenance block and none of the warrant. It also works at per-fact grain, which §P.4 declines.
+
+[§L.5](#l5-onboarding-ships-the-synthesized-tier-and-marks-nothing) records the opposite failure in a tool with a very large installed base. Onboarding writes synthesized content into the same directory, in the same file shape, as memories that a human wrote. Nothing marks the difference. That is the outcome that a refusal to model the tier produces, observed rather than predicted.
+
+[§F.2](#f2-karpathys-llm-wiki) records ingest, query and lint as the operations of the pattern that raised Q15. Lint is a cohesion mechanism. It finds orphans, undefined concepts and contradictions between pages, and it establishes nothing about whether a page is true. So the pattern ships no warrant at all, which confirms the entry that it raised.
+
+### P.6 Requirements practice already has the pin, and a better drift signal
+
+Baselining is the pinned snapshot under the name that the field gave it. A requirements set is frozen and identified, and traceability is evaluated against the baseline rather than against the live set. [§K](#k-modern-requirements--the-first-candidate-where-the-arrow-reverses) records that the tool in question mints baselines as work items. So the pin of [Q9](09-open-questions.md#q9--multi-repository-corpora)'s one-pattern rule is the upstream's own concept here.
+
+The sharper result is the **suspect link**. DOORS-family tooling flags every trace link into a requirement when that requirement changes, and the flag clears only when a person confirms the link. Q19 proposed a change proposal against the snapshot, which is correct and too coarse. A finding on each affected edge names the document whose author can act, and that is [spec 4](04-assurance-model.md#absence-is-a-finding-class-of-its-own)'s report-at-the-origin rule.
+
+ReqIF is a real OMG standard, and this survey places it on the adopter's side rather than the engine's. It exists so that two requirements tools can exchange a set without either one owning the format. Headwater reads identities and text and writes nothing back, so the value accrues to an organization that wants to leave its current tool.
+
+> **Applied:** the snapshot properties and the drift rule in [Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record) and [spec 7](07-distribution-and-federation.md#upstream-awareness).
+
+### P.7 Debian settles redistribution by segregating the archive
+
+Software whose terms Debian cannot pass on lives in a separate archive area, and a default installation carries only the free one. An administrator enables the rest explicitly, and the act is visible in a configuration file. Machine-readable per-file copyright records sit beside that, and an embedded copy of another project must be declared.
+
+That is the shape of the answer to Q19's redistribution point, and Headwater needs no new mechanism for it. The [export filter is already default-deny over classes](06-engine-architecture.md#an-export-profile-carries-a-filter), so imported text stays inside the repository unless a profile names it.
+
+> **Applied:** the license non-claim in [spec 6](06-engine-architecture.md#what-a-filtered-export-claims-and-what-it-does-not).
+
+### P.8 Legal citators argue against Q18's ruling, and then for it
+
+Shepard's and KeyCite attach a treatment to a **pair** of cases. A later opinion overrules, distinguishes, criticizes or follows an earlier one. That is an edge attribute, shipped for over a century, in the field that thought hardest about how a later judgment binds an earlier one. Read alone it argues for Q18's leaning and against the ruling that closed it.
+
+Two further facts reverse it.
+
+**The signal is an index over a document and never the authority.** An editorial process derives the flag from a published opinion. The opinion is the record, the flag is a lookup surface, and no practitioner treats the flag as the holding. In Headwater's vocabulary the opinion is the document and the flag is a projection.
+
+**Two citators over the same case law disagree at a measured rate.** Published comparisons of the two major services report substantial divergence in how they treat the same decisions. A derived scalar produced by a party who did not make the judgment is not reliable enough to be the record. That is Q18's own sentence about the authority rank, confirmed at the largest deployed instance of the pattern.
+
+**Retraction practice lands where the ruling lands.** A retraction in scholarly publishing is a separate citable object with its own identifier, and it points at the work that it retracts. The retracted work is marked and kept. Crossref carries the relationship as metadata between two registered items.
+
+CrossMark adds the detail worth taking whole. It does not try to make a flag survive a copy. It puts a resolvable pointer to the authority inside the copy. A reader can then go back and ask whether the copy in hand is current. A transcribed document carries its pin for the same reason.
+
+> **Applied:** the adjudication as a document, and `overrides` as its edge, in [spec 2](02-taxonomy-model.md#disagreement-is-adjudicated-not-ranked). The exported pin in [spec 6](06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped).
+
 ---
 
 ## Summary
@@ -686,11 +776,16 @@ So the premise holds for the current tip of a repository that has never been for
 | OpenGEO | Different direction, same substrate | Discovery gap recorded — **Q14** |
 | KG chunking for RAG | Framing useful, chunking not applicable | Non-adoption reasoned and recorded |
 | r/OntologyEngineering | Ontology-first methodology, further than we go | Noted. Oracle work is the shared ground |
-| Karpathy, *LLM Wiki* | Best anti-RAG argument, independent capture-cost confirmation | Applied — coherence sweep (spec 4). **Q15** raised |
+| Karpathy, *LLM Wiki* | Best anti-RAG argument, independent capture-cost confirmation | Applied — coherence sweep (spec 4). **Q15** closed: the tier is real and its axis is the warrant |
 | LeanCTX / OKF | Same substrate, opposite arrow. No taxonomy to collide with | Applied — declaration boundary (spec 4). OKF export → **Q13**. Presentation gap → **Q16** |
-| TrustGraph | Same pitch, opposite mechanism — extracts the graph we declare | Standards-stack counterweight → **Q13**. Provenance precedent → **Q15**. Ingestion integration candidate |
-| Modern Requirements / Azure DevOps | First inbound candidate — the arrow reverses | Model already fits. Import semantics open — **Q19** |
+| TrustGraph | Same pitch, opposite mechanism — extracts the graph we declare | Standards-stack counterweight → **Q13**. A receipt records derivation and not endorsement → **Q15**. Ingestion integration candidate |
+| Modern Requirements / Azure DevOps | First inbound candidate — the arrow reverses | Model already fits. Applied — the `transcribed` warrant and the importer as a correctness root. **Q19** closed |
 | Serena | Fourth arrival at the substrate. The first to disagree with us | Applied — third anti-retrieval argument (spec 5). Scent placement → **Q20**. Evidence → **Q15**, **Q17** |
+| W3C PROV, SPDX, C2PA | A provenance standard records derivation. None of them records who vouched | Applied — the warrant, and a positive mark rather than an absent field (specs 1, 3) |
+| Wikipedia verifiability, and its rule for machine output | The trigger is the absence of review, and never the presence of a model | Applied — agency is not the warrant. **Q15** closed |
+| Baselines, suspect links, ReqIF | The pin has an industry name, and drift belongs on the edge | Applied — snapshot properties and edge-level drift (spec 7). **Q19** closed |
+| Debian archive areas | Content whose terms you do not control travels by an explicit act | Confirms default-deny. Applied as a license non-claim (spec 6) |
+| Shepard's and KeyCite, Crossref retractions | A treatment flag is a projection over a document, and two citators disagree | Applied — the adjudication is a document, and `overrides` is its edge. **Q18** closed |
 | **The survey as a whole** | Convergence on the substrate, and near-zero measurement of the claim | Applied — grader and counterfactual constraints (spec 5), and a new principle 11, *efficacy is measured, not inherited* |
 | SCIP and LSIF, Software Heritage | An index is a transmission format, not a store | Applied — the three artifacts and the no-database ruling (spec 6). **Q6** closed |
 | Package-manager indexes in git | A committed derived index is priced by churn, not by principle | Applied — the pin at the federation tier, not a merged graph (spec 7) |

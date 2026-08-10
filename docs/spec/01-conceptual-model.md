@@ -92,11 +92,11 @@ An entry is a target reference, or a mapping with `to:` and instance attributes.
 ```yaml
 relations:
   supersedes: DR-ACME-0031
-  cites: [STD-ACME-0007, STD-ACME-0012]
-  conflicts_with:
-    - to: DR-ACME-0044
-      adjudicated_by: J. Baxter
-      adjudicated_on: 2026-07-14
+  conflicts_with: DR-ACME-0044
+  cites:
+    - STD-ACME-0007
+    - to: STD-ACME-0012
+      cue: the retry budget, not the error taxonomy
 ```
 
 A target is an identifier and never a path. Document identifiers are namespaced, globally resolvable, and never reused ([spec 3](03-authoring-and-lifecycle.md#identifiers)), and a path is a location that moves. An anchor target is the anchor string, which its resolver normalizes.
@@ -173,6 +173,30 @@ A **projection** is a derived artifact computed from the graph. Examples: a shel
 **A projection may be filtered, and a filtered projection says so.** An [export profile](06-engine-architecture.md#an-export-profile-carries-a-filter) names an audience and a filter over facet values. What it carries and what it withholds partition the corpus. A withholding is a loss with a declared reason, so the projection census reports it like any other loss. No profile may produce a view that presents itself as total ([Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer)).
 
 **The corpus descriptor is a projection too.** A machine that arrives at a location reads it to learn which corpora live there, what taxonomy governs each one, and where to start ([spec 7](07-distribution-and-federation.md#arriving-at-a-corpus-cold)). The engine generates it from the roots, holds it to regeneration, and filters it like any other served artifact ([Q14](09-open-questions.md#q14--discovery-surface)). Like the register projection, it is engine-defined and non-optional, and its path is the engine's rather than the taxonomy's. A reader who must consult the taxonomy to find the descriptor already knows what it would say.
+
+## Warrant
+
+A **warrant** is the mechanism by which the corpus can defend that a document is what it claims to be. The term comes from Toulmin's model of argument, where the warrant licenses the step from data to a claim. Here it licenses the step from *this document says X* to *the corpus asserts X*.
+
+Every document carries exactly one warrant. The set is closed, the engine owns it, and the value lives in the provenance block ([spec 3](03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed)).
+
+| Warrant | What stands behind the content | What fails loudly |
+|---|---|---|
+| `accepted` | A named human accepted it | Nothing mechanical. A human re-reads, and the freshness facet records that they did |
+| `regenerated` | It is a function of inputs inside the repository | `generate --check`, on every run |
+| `transcribed` | It is a copy of a pinned external snapshot, byte for byte | `generate --check` against the pin, and the drift comparison when the pin advances |
+| `asserted` | Nothing | Nothing |
+
+**The first three are three mechanisms, and no order runs between them.** A projection is not weaker than an accepted document. It restates one, and it takes that document's standing through the derivation family. The one order that the design needs is that `asserted` sits below the other three, and the difference is not a matter of taste. It is the difference between a defect that some mechanism finds and a defect that no mechanism finds.
+
+**An absent value is a finding, never a default.** A reader cannot tell an unknown value from a missing field. SPDX made the same ruling when it gave a license field both `NONE` and `NOASSERTION` ([spec 11 §P](11-adjacent-work.md#p--provenance-endorsement-and-the-record-of-a-judgment)).
+
+**Agency and warrant are different fields.** An agent may draft a document that a human then accepts, and the warrant of that document is `accepted`. `asserted` marks content that nobody accepted, whoever wrote it. To read the author as the boundary loses the case that matters, which is unreviewed content at a volume where review does not scale ([Q15](09-open-questions.md#q15--a-synthesized-content-tier)).
+
+Two rules constrain `asserted` content, and each one reuses a distinction that this document already makes.
+
+- **No edge may let unwarranted content govern the reading of warranted content.** [Reading precedence](02-taxonomy-model.md#reading-precedence-is-derived) is derived from nuclearity, from succession, and from the governance family. Where the end that governs is `asserted` and the other end is not, the edge is a finding. An edge that ends on an external anchor carries no reading precedence, so an asserted document may declare `governs` against a code path. That edge is what gives the document write-time impact detection.
+- **An asserted document does not discharge an evidence obligation.** `evidence_basis: evidenced` obliges an external, auditable artifact, and an asserted document is neither ([spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)).
 
 ## How the pieces fit
 

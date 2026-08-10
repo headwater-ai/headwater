@@ -81,7 +81,7 @@ headwater generate            # write
 headwater generate --check    # fail if any committed output differs
 ```
 
-The engine implements these projection kinds: shelf indexes, relation views (decision lineage, traceability matrices), agent rule files, site navigation, graph export, coverage reports, and templates. A projection carries a generated-file marker. The engine refuses to overwrite a file that lacks the marker and did not come from a previous run. Thus a projection can never silently destroy an authored document.
+The engine implements these projection kinds: shelf indexes, relation views (decision lineage, traceability matrices), agent rule files, site navigation, graph export, coverage reports, and templates. A transcription of a pinned external snapshot is one more ([Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record)). A projection carries a generated-file marker. The engine refuses to overwrite a file that lacks the marker and did not come from a previous run. Thus a projection can never silently destroy an authored document.
 
 ### An export is a projection, and it declares what it dropped
 
@@ -95,6 +95,10 @@ Exports fall into two classes, and only one class preserves fidelity.
 So every emitter declares a **loss set**: the node classes, edge classes, and attributes that its target cannot carry, each with a reason. Every export run then emits a **projection census**. Every node and every edge in the graph is either present in the output, or accounted for by a declared loss reason. An omission that no reason covers is a projector defect, and it fails the run.
 
 That is the coverage doctrine of [spec 4](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for), applied one layer out. It answers the trust problem that the [SHACL evaluation](../evaluations/shacl-worked-example.md#problem-one-everything-downstream-trusts-the-projection-and-shacl-does-not-check-it) found. The projector was the component that everything downstream trusted and nothing could check. A round trip is the wrong instrument for the lossy class, and an earlier draft of [Q6](09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest) asked for one. The native export keeps its round-trip test, because an empty loss set is exactly what a round trip proves.
+
+**An emitter that cannot carry the warrant does not carry the content.** Every node carries a [warrant](01-conceptual-model.md#warrant), and the native export carries it with no loss. A target vocabulary that has no place for it produces an artifact in which unwarranted content is indistinguishable from accepted content. A loss-set entry reaches the consumer who reads the loss set and nobody else. The field also reports that ordinary tooling strips a mark which travels beside content ([spec 11 §P](11-adjacent-work.md#p--provenance-endorsement-and-the-record-of-a-judgment)). So such an emitter **withholds** every `asserted` and `transcribed` node, at the profile's declared tombstone grain, with its own inability to mark as the reason. That is [principle 7](00-vision-and-scope.md#design-principles) read the way that a filtered exporter reads it. An unmarked assertion is unrecoverable, and a withholding is visible and cheap ([Q15](09-open-questions.md#q15--a-synthesized-content-tier)).
+
+**A transcription that leaves carries its pin.** A `transcribed` node exports the identity of the snapshot that it copies. A consumer who holds the copy can then return to the authority and ask whether it is current. Scholarly publishing solved the same problem in that direction, rather than by a flag that has to survive every copy.
 
 **Emitters never chain.** Every emitter reads the resolved lock and the graph directly. A pipeline that routes one standard format through another inherits every loss of every hop, and declares none of them. LinkML's own SHACL generator is the observed case, because it drops constructs that LinkML itself expresses ([Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate)).
 
@@ -141,6 +145,7 @@ A tool acquires a security obligation when it publishes a claim that a boundary 
 - **A reader who can also read the publishing repository is not separated from anything.** The export is not a boundary against a party that holds a clone.
 - **Revocation is not immediate.** A tier reads a pinned export, so a document withheld today stays in the tier's copy until the next harvest ([spec 7](07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)). The lag is bounded by the export cadence, and the export carries its generation time so that a reader can compute it.
 - **The platform's repository permission is the enforcement, and it has its own limits.** Repository history, forks, and a change of visibility are governed by the hosting platform and not by us.
+- **No claim about a license reaches any content.** Headwater never reads an upstream's terms, and it cannot decide whether an adopter may redistribute a requirement that the adopter imported. A profile that carries `transcribed` content republishes somebody else's material, and the adopter owns that decision. The filter defaults to deny over classes, so the decision is a line in a taxonomy that a reviewer reads ([Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record)).
 
 ## Interfaces
 
