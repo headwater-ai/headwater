@@ -443,7 +443,7 @@ The reader intent that a kind serves, declared once at the taxonomy level. A kin
 
 ### Reading precedence
 
-Which of two linked documents governs the reading. It is derived from nuclearity and succession, and never declared. See [spec 2](02-taxonomy-model.md#reading-precedence-is-derived).
+Which of two linked documents governs the reading. It is derived from nuclearity, succession, and the governance family, and never declared. See [spec 2](02-taxonomy-model.md#reading-precedence-is-derived).
 
 ### Reciprocity
 

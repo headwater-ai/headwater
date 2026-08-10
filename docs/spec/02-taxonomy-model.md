@@ -2,7 +2,7 @@
 
 **This is the central design of the system.** Everything else is downstream of it.
 
-> **Revision note.** This document contains five structural changes that [theoretical foundations](10-theoretical-foundations.md) proposed. The changes are: nuclearity on relations, windowed participation expectations, an immutable semantic core, versioning by measured compatibility, and purpose as an explicit declaration. Reading precedence is derived from nuclearity and succession. Relation families arrived as a dependency of the precedence change. The [core-concepts review](../reviews/) later cut the per-relation `dominance` declaration. That declaration was redundant where nuclearity or succession already determined it, and unused where they did not.
+> **Revision note.** This document contains five structural changes that [theoretical foundations](10-theoretical-foundations.md) proposed. The changes are: nuclearity on relations, windowed participation expectations, an immutable semantic core, versioning by measured compatibility, and purpose as an explicit declaration. Reading precedence is derived from nuclearity, succession, and the governance family. Relation families arrived as a dependency of the precedence change. The [core-concepts review](../reviews/) later cut the per-relation `dominance` declaration, which was redundant wherever nuclearity or succession already determined the order. The review also called it unused elsewhere. The [schema-format walkthrough](../evaluations/schema-format-walkthrough.md) found that governance was unanswered rather than unused, and the derivation now carries a clause for it.
 
 ## The problem being solved
 
@@ -289,9 +289,16 @@ When two documents are linked, no declaration states which one governs the readi
 
 - **On a nucleus–satellite relation, the nucleus governs.** A satellite supports the other end and cannot stand without it. A document that cannot stand alone cannot have its purpose govern the reading of the document that it depends on.
 - **On succession, the successor governs.** That is the whole meaning of the family: the successor is the one that governs behavior now.
-- **Other multinuclear relations carry no reading order.** `conflicts_with` and `is_alternative_to` assert exactly that neither end subordinates the other, and to impose an order would misstate the relation.
+- **On governance between two documents, the source governs.** The family means that the source constrains the target. A reader who wants to know what holds reads the constraint first.
+- **Everything else carries no reading order.** `conflicts_with` and `is_alternative_to` assert exactly that neither end subordinates the other, and to impose an order would misstate the relation. Evidence is the same case. An artifact that substantiates a claim does not govern the reading of the document that makes the claim.
 
-The engine uses the derived precedence in three places. It orders routing results, chooses which document a conflict is reported against, and decides reading order in generated indexes. Nothing downstream changed when the declaration was removed, which is the evidence that it declared nothing. A real corpus may produce a multinuclear, non-succession relation whose ends genuinely need an order. That outcome is the case to reintroduce a declaration, and that is the time to argue it.
+The four clauses are total over the six families, which the earlier three were not.
+
+**The governance clause is a correction.** The earlier list stopped at succession, so a governance edge between two documents fell to the last clause and carried no reading order at all. That contradicts what the family means. The cut `dominance` field held this one case and nothing else. The core-concepts review removed it as redundant wherever nuclearity or succession decided the order, and unused where they did not. The first half of that reading was right. The second was not, because governance is precisely where nothing else decided the order, and the review read silence as no demand. The clause replaces the field, because the family already states the answer and no taxonomy needs to repeat it.
+
+**Reading precedence is not nuclearity.** A governance relation still declares no nuclearity, and the family table's cell stays blank. Nuclearity asks whether an end stands alone, and a constrained document stands alone perfectly well. Reading precedence asks which end a reader consults first. This family answers the two questions differently, which is why one declaration could never have served both.
+
+The engine uses the derived precedence in three places. It orders routing results, chooses which document a conflict is reported against, and decides reading order in generated indexes. A real corpus may still produce a multinuclear, non-succession relation whose ends genuinely need an order. That outcome is the case to reintroduce a declaration, and that is the time to argue it.
 
 ### The decision-relation vocabulary
 
