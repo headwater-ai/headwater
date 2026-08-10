@@ -343,3 +343,55 @@ Open, in order of consequence, least first:
 - **The tier question.** Imported text is regenerable against the pinned snapshot, so it fails the [Q15](#q15--a-synthesized-content-tier) definition of synthesized. But its source is ungoverned, so it is not a projection in the spec-6 sense either. Whether that is a fourth tier or a qualifier on `generated` decides what its provenance record carries. The per-fact receipts of TrustGraph (source, timestamp, method) fit as they are. The addition is the snapshot pin.
 
 **Leaning:** reference-first. Anchors and imported edges ship first — they change no content and are cheap to audit. Imported requirement text arrives later, clearly marked and never canonical, under whatever rule Q15 lands on. The snapshot pin goes into its provenance. Imported edges start advisory and walk the same evidence-driven promotion path as every other control. And the importer is an adapter in the sense that [spec 6](06-engine-architecture.md#ci-adapters) already uses: thin, swappable, and with no RM vendor privileged in the core.
+
+## Q20 — Terminological succession, and validity under merge
+
+**Blocks:** nothing today. It becomes live the first time that two authors change one corpus at the same time. That is the normal case, not an edge case.
+
+Two questions arrive together here and separate cleanly. One is about vocabulary. The other is about when a check result is trustworthy, and it is the larger of the two.
+
+### The observed case
+
+This project produced the case itself, which [principle 8](00-vision-and-scope.md#design-principles) makes the test that matters.
+
+One change removed a framing from the specification. A second change, written from a commit before the first one landed, used that framing in new prose. Git merged the two without a conflict, because they touched different lines. The linter passed, because no rule knew that the framing was retired. A human caught it while reading the diff.
+
+Nothing here is unusual, and that is the point. The judgment "we no longer describe it that way" existed only as prose and a diff. So no mechanism could inherit it.
+
+### Part one: what an author declares to retire a term
+
+[Spec 4](04-assurance-model.md#declaration-moves-the-boundary) already gives the rule that decides this. Do not ask how to detect the reintroduction. Ask what an author could declare that makes detection unnecessary.
+
+| Option | For | Against |
+|---|---|---|
+| A **retired-term lexicon** in the taxonomy: the term, its replacement, and the reason | Reads like the regime vocabularies that exist already. Generates a document-scoped check, and the replacement makes the fix mechanical | One more vocabulary to maintain. Lexical matching brings the false positives that [Q5](#q5--voice-checking-depth) warns about |
+| **Terms become documents**, and succession is an ordinary `supersedes` edge | Reuses the whole machinery. Provenance, adjudication and lineage come free | Promotes every phrase to a document. The glossary is a projection today, and this inverts that |
+| **SKOS labels** on concepts: `prefLabel` for the current term, `hiddenLabel` for the retired one | The standard instrument for this exact problem. [Spec 2](02-taxonomy-model.md#mapping-between-taxonomies) uses SKOS already, so the export rides along | A retired *framing* is not always a concept. It covers the vocabulary half and not the rest |
+
+The reason column is not decoration. A retired term with no recorded reason is the rank with extra steps that [Q18](#q18--recording-adjudicated-disagreements) rejects.
+
+This repository built a version of this already, which is evidence about the need rather than about the design. `tools/ste-lint.py` carries a stock-phrase list, a per-line escape hatch with a reason, and a baseline for what predates the rule. That is a hand-rolled retired-term check. It exists because the need was real enough to write one.
+
+### Part two: validity is not preserved under merge
+
+The general statement is larger than vocabulary, and the specification does not make it anywhere:
+
+> Two changes that are each valid against the merge base can produce an invalid corpus.
+
+Git reports nothing, because the conflict is semantic and not textual. The name for this is a **semantic conflict**, and it is not ours to invent. Every incremental checker has it.
+
+It presses harder here than in most systems, for a reason worth stating plainly. Change-scoped evaluation is the performance bet of [spec 6](06-engine-architecture.md#performance-targets) and [spec 12](12-check-layer.md). Semantic conflict is the failure class that change-scoped evaluation is worst at, because neither change looks wrong inside the scope that evaluated it.
+
+Two things in the design help already, and neither was built for this.
+
+**Corpus-scoped checks cannot be narrowed.** [Spec 12](12-check-layer.md#scope--the-declaration-everything-else-rests-on) makes them barriers that re-run on every change. So the moment a retired-term declaration exists, the machinery catches a reintroduction with no new mechanism. The model is unchanged rather than strained.
+
+**The prior version is anchored at the merge base.** Spec 12 states this for transition legality. What it does not state is the general form. A run against a branch tip is *provisional*, and the run that counts is the one against the merge result.
+
+Open: whether the specification says that, and what follows from it. A merge queue answers it completely, by testing the merged result before it lands. That answer is well known, and it belongs to the forge rather than to us. [Spec 6](06-engine-architecture.md#ci-adapters) says that no forge is privileged in the core. So the engine emits what a merge queue consumes, and it does not become one.
+
+**Leaning:** declare it, and say the larger thing out loud.
+
+Retired terms become data, in the lexicon form. Terms do not become documents, because the cost is out of proportion to a phrase. Revisit SKOS labels when the taxonomy export has a consumer. The check ships advisory under [principle 4](00-vision-and-scope.md#design-principles), because it is lexical and Q5's warning applies to it directly.
+
+For the merge half, the specification states that a branch-tip result is provisional and that the merge result is what counts. The engine builds no merge queue. It emits findings that a gate can consume, which is what [spec 6](06-engine-architecture.md#ci-adapters) promises already.
