@@ -69,7 +69,7 @@ These are the tie-breakers when a design decision is genuinely contested.
 
 9. **Better together.** Headwater does not stand alone. Other projects solve adjacent problems, and some solve them well. When a complementary project exists, we build an integration with it before we build a replacement for it. Shared formats and emitted configurations let the corpus serve tools that we do not own. [Spec 11](11-adjacent-work.md) records the current candidates.
 
-10. **Tested against theory and practice.** A structural design decision is not settled on intuition alone. We check it against the research literature, and against at least one observed industry application. We record the confrontation: what the sources confirm, what they sharpen, what they contradict. [Spec 8](08-prior-art-and-departures.md), [spec 10](10-theoretical-foundations.md), and [spec 11](11-adjacent-work.md) are that record for the current design. A future decision of the same weight owes the same test before it is fixed.
+10. **Tested against theory and practice.** A structural design decision is not settled on intuition alone. We check it against the research literature, and against at least one observed industry application. We record the confrontation: what the sources confirm, what they sharpen, what they contradict. [Spec 10](10-theoretical-foundations.md) and [spec 11](11-adjacent-work.md) are that record for the current design. A future decision of the same weight owes the same test before it is fixed.
 
 ## Success criteria
 

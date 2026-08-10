@@ -32,7 +32,7 @@ Headwater's premise: **make the structure of the corpus a machine-readable contr
 | 5 | [AI integration](docs/spec/05-ai-integration.md) | Routing, rules, hooks, agents, the corpus MCP surface, efficacy |
 | 6 | [Engine architecture](docs/spec/06-engine-architecture.md) | One parse, one graph, pluggable checks; CLI and library shape |
 | 7 | [Distribution and federation](docs/spec/07-distribution-and-federation.md) | Publishing a taxonomy, consuming one, overlays, pins, drift |
-| 8 | [Prior art and departures](docs/spec/08-prior-art-and-departures.md) | What the reference system got right, and what we change |
+| 8 | [Design departures](docs/spec/08-design-departures.md) | The recurrent failure modes of governance tooling, and what we do instead |
 | 9 | [Open questions](docs/spec/09-open-questions.md) | Decisions deliberately deferred to the design phase |
 | 10 | [Theoretical foundations](docs/spec/10-theoretical-foundations.md) | The research the design rests on, and the 20 changes it forced — all applied |
 | 11 | [Adjacent work](docs/spec/11-adjacent-work.md) | Existing tools and patterns that overlap — what to adopt, and what we already specified twice |
@@ -45,10 +45,6 @@ Evidence gathered for specific open questions lives in [`docs/evaluations/`](doc
 Design reviews and the prompts that commission them live in [`docs/reviews/`](docs/reviews/) — currently a [core-concepts review](docs/reviews/core-concepts-review-prompt.md) aimed at simplification and robustness. The prompts are committed alongside their findings on purpose: a review whose instrument is unrecorded cannot be repeated against a later draft, and comparing two runs of the same instrument is the only way to tell whether the design improved or the reviewer changed.
 
 Start at 0 and 2 if you only read two. Spec 10 is where the design gets tested against the literature; the five structural changes it called for are applied.
-
-## Provenance
-
-This design is informed by a study of a prior internal governance framework — the concepts it proved out, and the specific places where so much came to depend on its architecture that it resisted change. That study is summarized, in design terms only, in [prior art and departures](docs/spec/08-prior-art-and-departures.md).
 
 ## The name
 
