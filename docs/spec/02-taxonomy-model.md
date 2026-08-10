@@ -163,8 +163,7 @@ kinds:
     sections:
       require: [Context, Decision, Consequences]
       optional: [Alternatives considered, Related]
-    relations:
-      may: [supersedes, superseded_by, conflicts_with, implemented_by]
+    relations:                         # what a decision may link to is derived from relation endpoints
       expect:                          # windowed participation: finds what should exist and does not
         - id: decision-realized
           relation: implemented_by
@@ -211,7 +210,7 @@ projections:
 | `relations` | What typed links exist, their family, endpoints, nuclearity, and reciprocity |
 | `anchors` | What non-document node types exist, and which resolver owns each |
 | `shelves` | How the corpus is partitioned, and what each partition means |
-| `kinds` | What each species of document is, requires, may link to, and is expected in time to link to |
+| `kinds` | What each species of document is, what it requires, and what it is expected in time to link to |
 | `identifier_schemes` | How stable identifiers are shaped, namespaced, and allocated |
 | `core` | What an overlay may never remove or redefine |
 | `mappings` | How this taxonomy's concepts correspond to another's |
@@ -340,6 +339,16 @@ It is also measurable after the fact. `headwater taxonomy audit` reports edge co
 
 The default taxonomy assumes that remedy from the start. Every relation that it enables is creatable by scaffold, generator, or hook. `created_by: author` is reserved for overlay additions that an adopter explicitly chooses. The claim that assisted authoring raises edge capture is the strongest and least-tested in the system ([spec 10](10-theoretical-foundations.md#what-the-theory-did-not-settle)). A default that only works if the claim holds is a bet, and a default that survives when the claim fails is a design.
 
+### Endpoints are the only permission
+
+A relation declares its endpoints, and nothing else declares them.
+
+An earlier draft also listed permitted relations on each kind, under `relations.may`. The two declarations fixed the same set of permitted pairs, from opposite ends, and no rule made them agree. A taxonomy where `supersedes.from` named a kind whose `may` omitted it passed validation, and the relation was unusable in that taxonomy.
+
+That is the failure that [placement is primary](#placement-is-primary-metadata-fills-the-gap) forbids for the discriminator facet. A second statement of one fact in time disagrees with the first. The rule was right and it was not applied here. So `may` is gone. The permitted set for a kind is derived — every relation whose `from` names the kind, plus the inverse of every relation whose `to` names it.
+
+The reading need that `may` served is real, and it survives without a declaration. `headwater explain <path>` prints the permitted relations for a document, and the template for a kind offers them. A declaration that exists to be read is a projection, not a source.
+
 ### Lineage aligns with PROV
 
 The `derivation` and `succession` families map onto W3C PROV: `derives_from` to `prov:wasDerivedFrom`, `supersedes` to `prov:wasRevisionOf`, and generated projections to `prov:wasGeneratedBy`. Alignment is deliberate — provenance is a solved modeling problem. A match with a standard costs nothing, and it makes the graph interoperable with tooling that already exists.
@@ -406,7 +415,7 @@ kinds:
           rationale: a decision nothing implements is either not a decision or not done
 ```
 
-An earlier draft declared these as a separate top-level concept, `sequences`, sold as chains. Every declared chain was in fact a single hop: *kind + state ⇒ expected relation, within window*. A chain is three expectations that share endpoints. A single hop is a state-conditional, windowed, detective-posture participation constraint — the `required` end of the cardinality spectrum that a relation already has, plus a clock. So it is declared where `may:` already lives, and the separate concept is gone. What it models is unchanged: genre theory's *genre system* — proposal → decision → specification → evidence, and incident → postmortem → standard change.
+An earlier draft declared these as a separate top-level concept, `sequences`, sold as chains. Every declared chain was in fact a single hop: *kind + state ⇒ expected relation, within window*. A chain is three expectations that share endpoints. A single hop is a state-conditional, windowed, detective-posture participation constraint — the `required` end of the cardinality spectrum that a relation already has, plus a clock. So it is declared on the kind, beside the other obligations that a kind carries, and the separate concept is gone. What it models is unchanged: genre theory's *genre system* — proposal → decision → specification → evidence, and incident → postmortem → standard change.
 
 Expectations catch a failure class that nothing else catches. Every check in [spec 4](04-assurance-model.md) validates artifacts that exist. An expectation finds the artifact that **should exist and does not**. Examples are the accepted proposal that nobody implemented, the incident with no postmortem, and the decision that never reached a specification. That is the drift that people actually complain about. It is invisible to link and front-matter validation, because there is nothing malformed to find.
 

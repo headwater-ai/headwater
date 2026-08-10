@@ -295,7 +295,7 @@ A write-time hook. An edit to code that a document governs raises an advisory pr
 
 ### Kind
 
-What a document *is*. A kind carries a purpose, a section contract, a facet schema, voice and lifecycle regimes, an identifier scheme, permitted relations, and a template. See [spec 1](01-conceptual-model.md#kind).
+What a document *is*. A kind carries a purpose, a section contract, a facet schema, voice and lifecycle regimes, an identifier scheme, and a template. Its permitted relations are derived from relation endpoints and never declared on the kind. See [spec 1](01-conceptual-model.md#kind).
 
 ### Kind resolution
 
