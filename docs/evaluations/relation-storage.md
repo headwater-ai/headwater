@@ -92,6 +92,8 @@ relations:
 
 The scalar is sugar for a mapping whose only key is `to`. Both forms produce the same edge, and the engine reports on one shape.
 
+The adjudication pair in that example is superseded, and the example stays as written because this document is a record of what Q4 decided. [Q18](../spec/09-open-questions.md#q18--recording-adjudicated-disagreements) later refused the edge-as-node change that Q4 offered it, and an adjudication is now a document with an `overrides` edge ([evaluation](warrant-and-adjudication.md)). The long form and the owning-end rule are unaffected.
+
 **Relations sit under one key.** A relation name and a facet name come from separate declarations. Nothing stops a taxonomy from declaring both a facet and a relation called `owns`. Under a flat front matter, that collision is unresolvable, and it appears in one adopter's corpus rather than in the meta-schema. A single `relations:` block also gives `--fix` one region to rewrite and gives edge findings one span root.
 
 **Targets are identifiers, never paths.** [Spec 8](../spec/08-design-departures.md#7-identifier-namespacing-arrives-late) makes every identifier namespaced and globally resolvable, and [spec 3](../spec/03-authoring-and-lifecycle.md#identifiers) never reuses one. A path is a location, and a location moves. An anchor target is the anchor string, which its resolver normalizes.

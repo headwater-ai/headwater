@@ -132,7 +132,8 @@ relations:
     created_by: hook                   # proposed at review time from the change
 
 anchors:                               # non-document node types relations may target
-  code_path: {resolver: source-tree}
+  code_path:     {resolver: source-tree}
+  ado_work_item: {resolver: ado-snapshot}   # reads a committed pin, never a live service
 
 shelves:
   decisions:
@@ -204,6 +205,9 @@ projections:
     output: .headwater/export/partner.json
     filter: {exclude: {confidentiality: [internal, secret]}}
     tombstone: counted                 # counted | sealed
+  - kind: transcription                # requirement text copied from a pinned snapshot
+    from: {anchor: ado_work_item}      # the resolver that owns the pin
+    output: docs/requirements/
 ```
 
 ## The eleven declarations
@@ -227,6 +231,8 @@ An earlier draft counted twelve and then added two more in the next sentence. Fo
 `sequences` was folded into windowed relation participation on kinds (below). `profiles` are publisher-shipped overlays ([spec 7](07-distribution-and-federation.md#profiles-are-publisher-overlays)). `compatibility` named the engine's fixed measurement dimensions, which no taxonomy could legally vary. A declaration with one legal value is an engine constant. `vocabularies` remains as authoring syntax — a named value set that facets reference. It is validated as part of `facets`, and it is not a concept that anyone must learn first.
 
 The count stays at eleven when an adopter serves a filtered audience. An **export profile** is an entry under `projections`, with a named audience, a filter over facet values, and a tombstone grain. It is not a twelfth declaration. The reason is the one that removed `profiles` and `compatibility`: a use of an existing mechanism earns no name of its own ([spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter), [Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer)).
+
+The count also stays at eleven when a corpus imports content from a system that it does not govern. The pin is an anchor kind with one resolver, and the imported text is a `transcription` projection over that pin. Neither half is new, and [Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record) closed on that reading.
 
 One declaration is here that no earlier draft had: `anchors`. Relation endpoints referenced anchor kinds (`code_path`) that nothing ever declared. Identity, resolver ownership, and referential integrity for anchors all hung on a name that was used but never defined. The count went up because a real corner of the model was missing, which is the one honest reason that it may.
 
@@ -331,6 +337,8 @@ The default taxonomy therefore adopts the decision-relation set from Kruchten's 
 
 To adopt a published vocabulary rather than invent one is deliberate. This set was in use and under criticism for two decades, and the arguments about where its edges sit already occurred.
 
+**`overrides` is the adjudication edge, and [Q18](09-open-questions.md#q18--recording-adjudicated-disagreements) closed on it.** A human who settles a live disagreement writes a decision, and that decision overrides the one whose effect it displaces. The claim in the table above states the semantics exactly: the loser stays, and only its effect goes. So `overrides` declares an inverse and required reciprocity, in the way that `supersedes` does. Without the inverse, a reader who arrives at the losing document learns nothing, and `check --fix` has no back-link to write.
+
 Four checks come with it, none of which succession alone can express:
 
 - two `current` decisions joined by `conflicts_with` — an incoherent corpus state.
@@ -374,25 +382,24 @@ The reading need that `may` served is real, and it survives without a declaratio
 
 ### Instance attributes, and which end owns each one
 
-An edge carries data of its own. [Q18](09-open-questions.md#q18--recording-adjudicated-disagreements) records an adjudication on a `conflicts_with` edge, and [Q20](09-open-questions.md#q20--where-scent-lives) puts an optional cue on a reference. Neither fits on a bare pointer, so a relation type declares the attributes that its instances may take.
+An edge carries data of its own. [Q20](09-open-questions.md#q20--where-scent-lives) puts an optional cue on a reference, and an importer records the upstream revision that it checked an edge against ([Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record)). Neither fits on a bare pointer, so a relation type declares the attributes that its instances may take.
 
 ```yaml
 relations:
-  conflicts_with:
-    family: association
-    from: [decision]
-    to:   [decision]
-    reciprocal: symmetric
-    attributes:
-      adjudicated_by: {type: string, owner: edge}
-      adjudicated_on: {type: date,   owner: edge}
-
   cites:
     family: association
     from: [governed_document]
     to:   [governed_document]
     attributes:
       cue: {type: string, owner: source}   # why this reference, from here
+
+  traces_to:
+    family: evidence
+    from: [specification]
+    to:   [ado_work_item]
+    created_by: import
+    attributes:
+      verified_revision: {type: string, owner: edge}   # the pinned revision this edge was checked against
 ```
 
 Three rules keep the attribute surface from becoming the ungoverned second syntax that [Q4](09-open-questions.md#q4--relation-storage) just closed.
@@ -400,6 +407,8 @@ Three rules keep the attribute surface from becoming the ungoverned second synta
 **Declared, not free.** An attribute that the relation type does not declare is a finding. The meta-schema owns the attribute declaration, exactly as it owns a facet declaration.
 
 **The value space is a facet's value space.** A free scalar, a date, an enum with a controlled vocabulary, or a list of any of those. Never a reference. [Spec 1](01-conceptual-model.md#facet) removed reference-valued facets because they were a second ungoverned edge mechanism, and a reference-valued attribute would be a third one. A connection is a relation. An edge that needs to point at a node is a request to make the edge a node. That is a change to the model, not a type in this table.
+
+[Q18](09-open-questions.md#q18--recording-adjudicated-disagreements) held that request and gave it back. An adjudication needs a named adjudicator, a date, a scope, and a reason, and a thing with all four is a document. So the model change is refused, and the surface stays as this section describes it. An earlier draft showed `adjudicated_by` and `adjudicated_on` on a `conflicts_with` edge, and both are gone.
 
 **One owning end.** `owner` is `source`, `target`, or `edge`. A source-owned attribute on a symmetric relation gives one value per direction, which is what a cue needs. An edge-owned attribute declared at both ends with different values is a finding, and no fix resolves it, because reconciliation is a judgment.
 
@@ -411,11 +420,14 @@ The `derivation` and `succession` families map onto W3C PROV: `derives_from` to 
 
 It also brings PROV's agent dimension, which now matters: humans, agents, and both together draft documents. See [authoring and lifecycle](03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed).
 
+**The alignment stops one field short, and the specification says so rather than implying more.** PROV records what happened to an entity and who took part. It has no vocabulary for endorsement, so it cannot say that a party stands behind a result. `accepted_by` is that addition, and the [warrant](01-conceptual-model.md#warrant) is what makes the addition visible. PROV does supply one warrant value under a standard name. `prov:Quotation` is the repeat of part or all of an entity by somebody who may not be its original author. That is the `transcribed` value exactly ([spec 11 §P](11-adjacent-work.md#p--provenance-endorsement-and-the-record-of-a-judgment)).
+
 ### Behavior at the limits
 
 A real corpus finds the edges of this machinery quickly. Every case below is declared here, not left for an implementation accident to settle. All of them are generated Graph checks ([spec 12](12-check-layer.md)) — they come with the family, not with adopter code.
 
 - **Succession, derivation, and composition are acyclic.** `A supersedes A`, a mutual succession, or a longer cycle leaves a corpus with no live end. A `derives_from` loop means that satellite inheritance never terminates. A `comprises` cycle is nonsense. All three families reject self-reference and cycles. Association may legitimately cycle. Governance and evidence edges are directed, so their cycles are expressible — and **legal**. Two decisions genuinely can constrain each other, and evidence can be mutual. Nothing downstream depends on an order over these families — no inheritance, no live end, no part-of hierarchy — so a cycle breaks no semantics. Acyclicity is confined to the three families where a cycle destroys what the family means, not applied wherever it sounds hygienic. Self-reference stays invalid in every family except association. A document that constrains or evidences itself is a modeling error, not a relationship.
+- **Unwarranted content may not govern the reading of warranted content.** [Reading precedence](#reading-precedence-is-derived) says which end of an edge governs. Where that end carries the `asserted` [warrant](01-conceptual-model.md#warrant) and the other end does not, the edge is a finding. One rule covers three cases. An asserted standard constrains an accepted specification. An asserted successor displaces an accepted decision. An asserted nucleus carries an accepted satellite. A list of forbidden relations would miss the next relation that an adopter adds. The rule is silent about an edge that ends on an anchor, because such an edge carries no reading precedence ([Q15](09-open-questions.md#q15--a-synthesized-content-tier)).
 - **Duplicate edges collapse to one, with a finding.** Two identical declarations of one relation between the same endpoints are a single edge and an advisory finding. The cause is usually a merge artifact, never a stronger claim.
 - **Inverses that disagree are a finding, not a choice.** Where both ends author their half, the halves can disagree — B names a successor that is not the document that names B. The engine prefers neither side. It reports the pair, and the corpus is incoherent there until an author resolves it.
 - **A satellite with two nuclei inherits nothing contested.** Where the inherited facet values agree, inheritance proceeds. Where they disagree — one nucleus `current`, the other `superseded` — the engine does not silently pick a value. The conflict is a finding against the satellite. A satellite that declares a value that its nucleus also supplies keeps its local value, and the divergence is itself a finding. Silent shadowing is how inherited staleness disappears.
@@ -429,7 +441,11 @@ Two documents can both be current, both be well-formed, and disagree on a fact �
 - **At that point, the adjudication is the data.** Whoever identified the disagreement knows which side is right for this case. Spec 4's design rule says to record that judgment — as a declared edge, a correction, or a succession. It says not to pre-answer the judgment with a scalar that someone chose before the question existed.
 - **A scalar cannot express the semantics that the prose demanded.** "A specification outranks a standard about its own component and is silent about anything else" is scoped precedence. `authority: 20` is a global ordering, which is exactly the backwards behavior that the old prose warned against.
 
-What survives needs no numbers: where sources conflict and no declared adjudication exists, an agent cites both and flags the conflict ([spec 5](05-ai-integration.md)). Whether adjudications eventually need their own declaration is reopened as [Q18](09-open-questions.md#q18--recording-adjudicated-disagreements).
+What survives needs no numbers: where sources conflict and no declared adjudication exists, an agent cites both and flags the conflict ([spec 5](05-ai-integration.md)).
+
+**The positive half is settled, and it needs no declaration either** ([Q18](09-open-questions.md#q18--recording-adjudicated-disagreements)). An adjudication is a decision, written by a human, and it carries `overrides` against the document whose effect it displaces. The adjudicator is the name in `accepted_by`, which the engine already enforces. The scope is the pair of endpoints plus the prose. Readers and agents inherit the ruling through derived reading precedence, because the successor governs on a succession edge. A later document may supersede the adjudication, which is what a lifecycle is for.
+
+Three properties follow, and each one was a reason to cut the rank. The judgment happens once, when a human writes the document. It is recorded as data, so everything downstream is ordinary graph work ([spec 4](04-assurance-model.md#declaration-moves-the-boundary)). And the precedence is scoped, because the endpoints scope it.
 
 ## Contract sidecars: the specification as oracle
 
@@ -691,6 +707,7 @@ The taxonomy language has a formal schema, published with the engine and version
 - **kind rigidity** — no kind collides with a lifecycle-state value or is named with a bare phase adjective.
 - **edge provenance** — every relation declares a `created_by` from the closed set.
 - **attribute well-formedness** — every instance attribute names a value space from the facet set and an owning end. No attribute takes a reference, and no attribute name collides with `to`.
+- **warrant integrity** — every `transcription` projection names a declared anchor kind as its pin, and that anchor kind names exactly one resolver. A transcription that writes over an authored path is a projection-target error like any other.
 - **context safety** — every agent-facing kind or projection has an applicable size budget, and every facet that carries the freshness role has an applicable staleness policy. The regimes that once wrapped these are gone. The mandates are not.
 - **overlay confluence** — the overlay set commutes.
 - **mapping integrity** — every mapping names kinds and facet values that exist in both taxonomies, with a valid SKOS relation.

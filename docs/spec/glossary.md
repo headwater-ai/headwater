@@ -45,6 +45,10 @@ A periodic human or supervised-agent sample that asks one semantic question: doe
 
 The control class that retunes the other three, through efficacy probes, false-positive rates, and promotion decisions. See [spec 4](04-assurance-model.md#assurance-not-enforcement).
 
+### Adjudication
+
+A human ruling that settles a disagreement between two documents. It is itself a decision, and it carries `overrides` against the document whose effect it displaces. The adjudicator is the name in `accepted_by`. There is no rank and no scalar. See [spec 2](02-taxonomy-model.md#disagreement-is-adjudicated-not-ranked).
+
 ### Advisory
 
 A posture. The finding reports and does not block. Every new check starts here. See [spec 4](04-assurance-model.md#promotion-advisory-to-blocking).
@@ -60,6 +64,10 @@ See [external anchor](#external-anchor).
 ### Anchor resolver
 
 The single component that owns identity for one anchor type. It normalizes anchor strings, so that two spellings of one target become one node. See [spec 2](02-taxonomy-model.md#behavior-at-the-limits).
+
+### Asserted content
+
+Content with the `asserted` [warrant](#warrant): nobody accepted it, and no regeneration proves it. Headwater admits it, marks it positively, and never lets it govern the reading of warranted content or discharge an evidence obligation. See [spec 1](01-conceptual-model.md#warrant).
 
 ### Assisted fraction
 
@@ -187,7 +195,7 @@ Two related reports. Over obligations, the fraction discharged by severity, with
 
 ### `created_by`
 
-The required declaration of who creates each edge, from a closed set: `author`, `scaffold`, `generator`, `hook`, `agent`, `import`. It forces the question of who pays for a link at design time, not after the corpus stops maintaining it. See [spec 2](02-taxonomy-model.md#who-creates-each-edge).
+The required declaration of who creates each edge, from a closed set: `author`, `scaffold`, `generator`, `hook`, `agent`, `import`. It forces the question of who pays for a link at design time, not after the corpus stops maintaining it. An `import` edge carries the same weight as any other, because its producer is a [correctness root](12-check-layer.md#the-correctness-roots) rather than a rule. See [spec 2](02-taxonomy-model.md#who-creates-each-edge).
 
 ### Declarative regime
 
@@ -247,7 +255,7 @@ One of three honest states for the support behind a decision: `evidenced`, `reco
 
 ### Export
 
-A [projection](#projection) of the graph for a consumer outside the engine. The native graph export carries the property graph with no loss. Every interoperability export is lossy, and each one declares a [loss set](#loss-set). It is also the serving boundary, so an [export profile](#export-profile) is where a corpus decides what leaves it. No export is canonical for anything. See [spec 6](06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped).
+A [projection](#projection) of the graph for a consumer outside the engine. The native graph export carries the property graph with no loss. Every interoperability export is lossy, and each one declares a [loss set](#loss-set). It is also the serving boundary, so an [export profile](#export-profile) is where a corpus decides what leaves it. An emitter that cannot carry the [warrant](#warrant) withholds the content rather than shipping it unmarked. No export is canonical for anything. See [spec 6](06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped).
 
 ### Export profile
 
@@ -291,7 +299,7 @@ An edge whose two endpoints share nothing, so that the reader must reorient on a
 
 ### Freshness
 
-The date when a human last confirmed that a document agrees with reality. It is deliberately not the last-edited date, which says nothing about truth. See [spec 3](03-authoring-and-lifecycle.md#freshness-and-staleness).
+The date when a human last confirmed that a document agrees with reality. It is deliberately not the last-edited date, which says nothing about truth. [Asserted content](#asserted-content) carries no value here, because nobody confirmed it. See [spec 3](03-authoring-and-lifecycle.md#freshness-and-staleness).
 
 ### Front matter
 
@@ -459,7 +467,7 @@ A named overlay that the publisher ships for a repository archetype, which remov
 
 ### Projection
 
-A derived artifact computed from the graph: a shelf index, a lineage view, site navigation, an agent rule file, a graph export, the [corpus descriptor](#corpus-descriptor). Projections are generated, checked against regeneration, and declared in the schema. A projection that leaves the repository may carry a filter, and it then says so. See [spec 1](01-conceptual-model.md#projections).
+A derived artifact computed from the graph: a shelf index, site navigation, an agent rule file, a graph export, a [transcription](#transcription), the [corpus descriptor](#corpus-descriptor). They are generated, checked against regeneration, and declared in the schema. A projection that leaves the repository may carry a filter, and it then says so. See [spec 1](01-conceptual-model.md#projections).
 
 ### Projection census
 
@@ -471,7 +479,7 @@ The evidence-bound move of a check from advisory to blocking. It needs an observ
 
 ### Provenance
 
-The PROV-aligned record of who drafted a document, by which activity, and who accepted it. An agent may draft. Acceptance is a human act, and the record names the human. See [spec 3](03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed).
+The record of who drafted a document, by which activity, who accepted it, and what [warrant](#warrant) it carries. An agent may draft. Acceptance is a human act, and the record names the human. The block's shape is the engine's rather than a taxonomy choice, because `accepted_by` enforces a boundary. PROV supplies the derivation half and has no vocabulary for the endorsement half. See [spec 3](03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed).
 
 ### Publisher
 
@@ -565,6 +573,10 @@ The share of edges that are [focus shifts](#focus-shift), reported as a corpus-h
 
 The declared context limit on an agent-facing kind or projection. It is mandatory, and an agent-facing projection without an applicable budget fails validation. See [spec 5](05-ai-integration.md#read-time-rule-loading).
 
+### Snapshot pin
+
+A committed copy of an external system of record, with its fetch time and the upstream identity and revision of every item in it. An [anchor resolver](#anchor-resolver) reads it, so check time stays offline. It is the second of the three instances of one pin pattern. See [spec 7](07-distribution-and-federation.md#upstream-awareness).
+
 ### Staleness
 
 The condition of a document past its freshness threshold, weighted by drift risk rather than by calendar time alone. Detective, never blocking. See [spec 3](03-authoring-and-lifecycle.md#freshness-and-staleness).
@@ -621,6 +633,10 @@ One layer of a federation: the generic method, a divisional taxonomy, or a repos
 
 What a filtered [export profile](#export-profile) tells a reader about what it withheld. `counted` gives the number by declared reason, and `sealed` gives only the fact of the filter. No profile may present a filtered view as total. See [spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter).
 
+### Transcription
+
+A [projection](#projection) that copies text out of a [snapshot pin](#snapshot-pin), byte for byte. Its [warrant](#warrant) is `transcribed`, which W3C PROV calls `prov:Quotation`. Truth stays upstream, and `generate --check` proves the copy. See [Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record).
+
 ### Unevidenced
 
 An [evidence basis](#evidence-basis). No evidence exists behind a decision, and none is claimed. Whether the register that collects these is the obligation [gap](#gap) register, or a second register of the same name, is unsettled. See [spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two).
@@ -653,6 +669,10 @@ A facet's declaration of permanence. A `mutable` facet may not appear in an iden
 
 A consumer's deliberate deviation from a conformance rule, with a rule name, a reason, an owner, and an expiry. Deviation is fine. Invisible deviation is not. See [spec 7](07-distribution-and-federation.md#waivers).
 
+### Warrant
+
+What the corpus can point at to defend that a document is what it claims to be. One of `accepted`, `regenerated`, `transcribed`, or `asserted`. The set is closed, the engine owns it, and an absent value is a finding rather than a default. See [spec 1](01-conceptual-model.md#warrant).
+
 ### Window
 
 The time bound on a [participation expectation](#participation-expectation), measured from a declared [origin](#origin). An expectation with no window is a wish. See [spec 2](02-taxonomy-model.md#participation-expectations).
@@ -678,7 +698,9 @@ Each pair below is two concepts that read as one. The specification treats each 
 | [Kind](#kind) | [State](#state) | A kind is rigid and a state is not. Lifecycle state must never become a kind, a shelf, or a directory |
 | [Obligation](#obligation) | [Control](#control) | The obligation is the commitment. The control is the mechanism. The binding between them is generated, never authored |
 | [Facet](#facet) | [Relation](#relation) | A connection between nodes is always a relation. A facet value is a scalar, and never a reference |
-| [Projection](#projection) | Authored document | A projection is regenerable, and CI checks it against regeneration. Synthesized content is neither ([Q15](09-open-questions.md#q15--a-synthesized-content-tier)) |
+| [Projection](#projection) | Authored document | A projection is regenerable, and CI checks it against regeneration. [Asserted content](#asserted-content) is neither, and it carries no warrant at all |
+| [Warrant](#warrant) | Agency | An agent may draft a document that a human accepts, and that document is `accepted`. `asserted` marks what nobody accepted, whoever wrote it |
+| [Transcription](#transcription) | [Asserted content](#asserted-content) | One is a function of a pin that the repository holds, so a run proves it. The other is a function of nothing that the corpus can check |
 | [Withholding](#withholding) | An unresolved anchor | One is somebody's declared decision, reported at a declared grain. The other is a defect. Counted as one class, the defects disappear |
 | [Loss set](#loss-set) | [Withholding](#withholding) | A loss is what a target vocabulary cannot carry. A withholding is what a corpus chose not to send. Both are census reasons, and only one is a policy |
 
@@ -698,7 +720,8 @@ Several terms are not ours. [Spec 10](10-theoretical-foundations.md) records the
 | [Core](#core) as a boundary object | Star & Griesemer (1989) | Plastic enough to adapt locally, strong enough to keep a common identity across sites |
 | [Scent](#scent) | Pirolli & Card, *Information Foraging* (1999) | Routing has a theory, and the confidence gate errs toward silence |
 | The decision relations | Kruchten, *An Ontology of Architectural Design Decisions* (2004) | The default decision-relation vocabulary, adopted rather than invented |
-| PROV | W3C | Lineage and provenance alignment for `derives_from`, `supersedes`, and generated artifacts |
+| [Warrant](#warrant) | Toulmin, *The Uses of Argument* (1958) | What licenses the step from data to a claim, which here is the step from what a document says to what the corpus asserts |
+| PROV | W3C | Lineage and provenance alignment for `derives_from`, `supersedes`, and generated artifacts. `prov:Quotation` names the `transcribed` warrant |
 | SKOS [mapping](#mapping) relations | W3C | `exactMatch`, `closeMatch`, `broadMatch`, `narrowMatch`, `relatedMatch` between taxonomies |
 | [Confluence](#confluence), overlay operations | Delta-oriented programming (Schaefer et al.) | Order independence of overlays, checked statically before application |
 | [Capture cost](#capture-cost) | IBIS, gIBIS, QOC, and the traceability literature | The failure that killed fifty years of design-rationale tools, now a tracked metric |

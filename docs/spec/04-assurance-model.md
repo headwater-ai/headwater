@@ -43,6 +43,8 @@ Contradiction is the clearest case. To detect that two documents disagree is str
 
 Spec 2 gives the rule that [two `current` decisions joined by `conflicts_with`](02-taxonomy-model.md#the-decision-relation-vocabulary) is an invalid state. That rule is deterministic, total, and blocking-eligible. The judgment happened once, when the author declared the edge. After that, the check is cohesion.
 
+The same move settles the conflict itself. A human who resolves the disagreement writes a decision, and that decision `overrides` the one whose effect it displaces. The judgment is then data twice over: once in the edge that declared the conflict, and once in the document that settled it. Derived reading precedence carries the ruling to every later reader with no further mechanism ([Q18](09-open-questions.md#q18--recording-adjudicated-disagreements)).
+
 This generalizes, and we state it as a design rule rather than as an observation about one relation:
 
 > **A coherence obligation becomes a cohesion obligation the moment the judgment that it needs is recorded as data.** Where a coherence concern recurs, do not ask "how do we detect this?" Ask instead: "what could an author declare that would make detecting it unnecessary?"
@@ -178,6 +180,12 @@ One class of control does not meet it. The rule below is general, so that it doe
 > A control walks the promotion path when both of its error classes are recoverable. Where one error class is unrecoverable, the control ships at its final posture. The evidence that the promotion machinery would collect is then evidence about the wrong error.
 
 The [withholding rule](06-engine-architecture.md#an-export-profile-carries-a-filter) of an export profile is the only instance today. A document withheld that could have been carried is visible, cheap and reversible. A document carried that should have been withheld is invisible to both instruments above, and no later run undoes it. So a withholding rule never ships advisory, carries no promotion criteria, and admits no escape hatch ([Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer)).
+
+### Promotion measures a rule, and not a producer of facts
+
+A second class of component sits outside the promotion path, for a different reason and with no exception attached. Both instruments above measure a **rule**. A component that produces graph facts has no false-positive rate to measure. A wrong fact makes every check over it return a correct verdict about a wrong graph, and no advisory posture ever finds that.
+
+The scaffolder and an importer are the two components of this class. Their instrument is a fixture set, and [spec 12](12-check-layer.md#the-correctness-roots) holds both as correctness roots. So an imported edge carries full weight from the first release. It satisfies a participation expectation, and it supports `evidenced` ([Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record)). To ship such an edge at a reduced posture would buy nothing and would measure the wrong artifact.
 
 ### Discharging coherence obligations: the assisted sweep
 

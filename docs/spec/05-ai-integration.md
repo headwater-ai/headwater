@@ -25,6 +25,8 @@ Routing is **confidence-gated and fails open**: below the threshold it says noth
 
 Silence for weak scent and silence for a withheld document are different facts, and routing keeps them apart. Where a route runs over a filtered [export profile](06-engine-architecture.md#an-export-profile-carries-a-filter), a document that the filter removed is reported at the profile's declared tombstone grain. It never falls under the confidence gate, because nothing about it is uncertain.
 
+A third case joins those two. A pointer to a document with the `asserted` [warrant](01-conceptual-model.md#warrant) states that warrant beside the summary. Nobody accepted the document, and an agent that follows the pointer has to know that before it reads. To offer such a pointer silently is the failure that [Q15](09-open-questions.md#q15--a-synthesized-content-tier) exists to prevent, reached through our own routing surface.
+
 #### Scent is the thing being engineered
 
 Information-foraging theory names what routing actually trades in: **scent** — the proximal cue that predicts distal value. A reader or an agent follows scent, and abandons a patch when the scent weakens. Thus scent quality, not corpus quality, decides whether anything is found. A perfect document with a vague summary is invisible.
@@ -143,6 +145,8 @@ This is cheap, and it survives refactoring better than a link in a commit messag
 
 Where sources conflict, the agent cites **both** and flags the conflict ([spec 2](02-taxonomy-model.md#disagreement-is-adjudicated-not-ranked)). If an agent resolves a contradiction silently, it destroys the evidence that one existed.
 
+Where a human already settled the conflict, the agent cites the **adjudication**. A settled disagreement is a decision that `overrides` the document whose effect it displaces, and derived reading precedence puts the successor first. So the agent follows a ruling that a named person made, rather than making the same ruling again with no record ([Q18](09-open-questions.md#q18--recording-adjudicated-disagreements)).
+
 ## The stop rules
 
 These are explicit behaviors that an assistant who works in the corpus must show:
@@ -151,6 +155,7 @@ These are explicit behaviors that an assistant who works in the corpus must show
 2. **No hand edits to a generated file.** Change the source and regenerate.
 3. **No new shelf, kind, or facet invented in place.** Structural change is a taxonomy change: propose it, version it, migrate it.
 4. **No duplication of a fact that exists elsewhere.** Link. If the target is hard to find, fix the routing — do not copy.
+5. **No self-acceptance.** An agent never writes `accepted_by`, and never changes a [warrant](01-conceptual-model.md#warrant) to `accepted`. It drafts, and it marks what it drafted as `asserted` where no human read the result. A stamp that an agent applies to its own output is the mark that Serena's onboarding pass never wrote, with a false name attached ([spec 11 §L.5](11-adjacent-work.md#l5-onboarding-ships-the-synthesized-tier-and-marks-nothing)).
 
 These are the rules that a capable model breaks most readily under pressure to be helpful. That is exactly why we state them as stop conditions rather than preferences.
 

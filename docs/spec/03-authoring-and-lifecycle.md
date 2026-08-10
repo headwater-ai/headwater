@@ -13,7 +13,9 @@ Four facets do structural work in the default taxonomy:
 - **freshness** (`last_verified:`) — the date when a human last confirmed that the document agrees with reality. This is deliberately *not* the last-edited date. Git already knows the last-edited date, and that date says nothing about truth.
 - **summary** — one sentence, for machine consumption. It is what the query layer, the generated indexes, and agent-facing pointers show. The summary is not optional decoration. It is the public interface of the document.
 
-Everything else — owner, scope, audience, domain, provenance — is a taxonomy choice.
+Everything else — owner, scope, audience, domain — is a taxonomy choice.
+
+**The provenance block is the exception, and its shape belongs to the engine.** An earlier draft listed provenance beside the taxonomy choices above. A taxonomy chooses which facets a kind carries. It does not choose whether `accepted_by` exists, because that field is what enforces the boundary between a draft and an acceptance. It does not choose the [warrant](01-conceptual-model.md#warrant) vocabulary either, because four engine rules turn on the value.
 
 ## Lifecycle
 
@@ -34,6 +36,8 @@ Rules that the engine enforces from the declaration alone:
 
 **Correction versus succession** is a distinction that the system takes seriously. A document is edited in place when it was wrong about the present. A *successor* is written when the decision itself changed. The first preserves truth. The second preserves lineage. A conflation of the two destroys the record, so the lifecycle regime makes the second path cheap and the first path honest.
 
+**Adjudication is the third case, and the pair above does not cover it.** Two documents can both be right and still disagree, and a human then settles which one governs. Neither was wrong about the present, so a correction misstates it. Neither decision changed, so a succession misstates it too. What happens instead is a new decision that `overrides` the one whose effect it displaces, and the loser stays in place ([spec 2](02-taxonomy-model.md#disagreement-is-adjudicated-not-ranked)).
+
 ## Freshness and staleness
 
 `last_verified` is an assertion by a human: *on this date I checked that this document is true*. The declared policy of the freshness facet turns that assertion into a signal:
@@ -43,6 +47,8 @@ Rules that the engine enforces from the declaration alone:
 - the engine flags a document whose backing code changed since its last verification ahead of one that is only old. Staleness is a function of drift risk, not only of calendar time.
 
 Staleness is **detective, never blocking**. A block on staleness teaches authors to bump the date, and that changes the most valuable signal of the corpus into noise.
+
+**Content with the `asserted` warrant carries no freshness value, and the engine never reports it as stale.** `last_verified` records that a human confirmed a document, and nobody confirmed this one. It cannot acquire the date without becoming `accepted`, which is what promotion is. What the corpus reports instead is drift: the sources changed after the date on which the content was asserted. The remedy is to produce the content again or to delete it, and there is no date to bump ([Q15](09-open-questions.md#q15--a-synthesized-content-tier)).
 
 ## Voice
 
@@ -97,6 +103,8 @@ Where none exists, the earlier design offered two outcomes: evidenced, or a regi
 
 The semantic judgment — *is this evidence actually about this decision?* — stays with the author and the agent stop rules ([spec 5](05-ai-integration.md)). The mechanical parts are these: the facet is present and valid, pointers resolve, `reconstructed` contains its basis, and the gap register accounts for every `unevidenced` document.
 
+**Two rulings about which pointers count** ([Q15](09-open-questions.md#q15--a-synthesized-content-tier), [Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record)). A pointer to a document with the `asserted` [warrant](01-conceptual-model.md#warrant) does not support `evidenced`, because such a document is neither external nor auditable. A fabricated *why* with a file name is the failure that this table exists to prevent. A pointer that an importer created does support `evidenced`. A work item in a system of record is an external auditable artifact, and the pointer resolves offline against a committed snapshot.
+
 The value is named `unevidenced`, and not `gap`, because `gap` is already the [disposition](04-assurance-model.md#every-obligation-has-exactly-one-disposition) of an obligation that no control discharges. One word for two mechanisms hid a real question, and this document does not settle it. Is the gap register above the same artifact as the obligation gap register, or a second one that shares its name?
 
 ## Provenance is recorded, not assumed
@@ -107,6 +115,7 @@ Every document contains provenance aligned with W3C PROV:
 
 ```yaml
 provenance:
+  warrant: accepted        # accepted | regenerated | transcribed | asserted
   agency: agent            # human | agent | mixed
   drafted_by: claude-opus-5
   activity: scaffold+draft
@@ -118,6 +127,29 @@ provenance:
 `accepted_by` is the field that enforces the boundary. An agent may draft. Acceptance is a human act, and the record says who did it. Generated projections are exempt. They are `wasGeneratedBy` a tool, and they are checked against regeneration, not accepted.
 
 This makes real questions answerable. Which parts of the corpus are agent-drafted? Do agent-drafted documents drift faster than hand-written ones? Does reconstruction correlate with agency? None of these questions can be asked of a corpus that does not record the answer.
+
+### The warrant, and what each value requires
+
+`warrant` states what stands behind the document ([spec 1](01-conceptual-model.md#warrant)). It is required, its value set is closed, and an absent value is a finding rather than a default. Each value requires a different part of the block, and the engine checks the pairing.
+
+| `warrant` | Requires | Forbids |
+|---|---|---|
+| `accepted` | `accepted_by`, naming a human | — |
+| `regenerated` | The generated-file marker, and a source inside the repository | `accepted_by` |
+| `transcribed` | The generated-file marker, and the snapshot pin that it copies | `accepted_by` |
+| `asserted` | `drafted_by`, `activity`, and the sources that produced the content | `accepted_by` |
+
+**`asserted` forbids `accepted_by` for the reason that runs through this specification.** A document that names an acceptor is `accepted`. To let the two coexist gives one fact two authoring locations, and the reader then has to decide which one wins.
+
+**Agency is not the warrant.** An agent that drafts a document which a human then accepts produces an `accepted` document, and that is the ordinary case in this design. `asserted` marks content that nobody accepted, whoever or whatever wrote it.
+
+### Promotion is one human, one document, one diff
+
+An `asserted` document becomes `accepted` when a person reads it, sets the warrant, and names themselves. That is the act the whole model rests on, and it needs no second mechanism.
+
+The failure mode is bulk. A script that stamps forty documents writes bytes that are identical to forty real acceptances, and no check can separate them. So the engine does not try. `taxonomy audit` reports promotions per change instead, and a change that promotes forty documents is a finding about the review rather than about the documents. The posture is advisory permanently, for the reason that the [shift ratio](04-assurance-model.md#measuring-coherence-where-we-can-continuity-across-links) is advisory permanently. A threshold teaches people to promote in smaller batches.
+
+Promotion never rewrites history. `drafted_by` and `agency` stay as they were, so the corpus can still say which parts an agent drafted.
 
 ## Capture cost is a tracked metric
 
