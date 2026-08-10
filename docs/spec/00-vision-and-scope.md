@@ -2,7 +2,7 @@
 
 ## The thesis
 
-A documentation corpus is a **structured artefact with invariants**, not a pile of prose. When you declare that structure in a form that a machine can read, four things become possible that were not possible before:
+A documentation corpus is a **structured artifact with invariants**, not a pile of prose. When you declare that structure in a form that a machine can read, four things become possible that were not possible before:
 
 - You can **validate** the corpus — not for spelling, but for truthfulness signals, completeness, lineage, and internal consistency.
 - You can **navigate** it deterministically. A task, a code path, or a concept resolves to the documents that govern it, without search or luck.
@@ -13,11 +13,11 @@ Everything in this specification follows from that premise.
 
 ## Who this is for
 
-**Primary:** an engineering organisation that wants documentation that people and tools rely on. Humans use it at review time, and coding agents use it at work time. The organisation accepts structure in exchange for trust.
+**Primary:** an engineering organization that wants documentation that people and tools rely on. Humans use it at review time, and coding agents use it at work time. The organization accepts structure in exchange for trust.
 
 **Secondary:** a single team or a solo maintainer who wants a strong default documentation system, but does not want to invent one. The tool must not dictate a taxonomy that does not match how they think.
 
-**Explicitly served:** organisations whose documentation culture does **not** match ours. The taxonomy is theirs to define. The engine is ours.
+**Explicitly served:** organizations whose documentation culture does **not** match ours. The taxonomy is theirs to define. The engine is ours.
 
 ## What we build
 
@@ -25,11 +25,11 @@ Everything in this specification follows from that premise.
 
 2. **An engine** that reads a corpus and its taxonomy, builds a typed graph, and evaluates constraints over that graph. It parses once and checks many times. Its output is machine-readable and human-readable. It is advisory by default and blocking on request.
 
-3. **A projection layer** that generates every derived artefact from that graph: shelf indexes, decision-lineage views, traceability matrices, site navigation, and the AI instruction surface.
+3. **A projection layer** that generates every derived artifact from that graph: shelf indexes, decision-lineage views, traceability matrices, site navigation, and the AI instruction surface.
 
 4. **An AI integration surface** for the four moments when an assistant touches documentation: planning, reading, writing, and reviewing. A probe harness measures whether the surface works. The authoring half — scaffolding, the information-architecture and authoring skills, and the harness hooks that invoke them — ships with the first release, not after it. Three facts make this necessary. Everything distinctive runs on the edges of the graph. The capture-cost thesis ([spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric)) is not testable without this machinery. And a validator that ships before the machinery would measure a corpus that nothing helps to maintain.
 
-5. **A distribution model** that lets one organisation publish a taxonomy and the doctrine that explains it. Many repositories can then consume that taxonomy. They can customise it by overlay, upgrade it deliberately, and prove that they are still conformant.
+5. **A distribution model** that lets one organization publish a taxonomy and the doctrine that explains it. Many repositories can then consume that taxonomy. They can customize it by overlay, upgrade it deliberately, and prove that they are still conformant.
 
 6. **A doctrine starter kit** — an opinionated default taxonomy and the prose that explains it. It ships as a package that a new adopter can take fully, take partially, or ignore.
 
@@ -53,7 +53,7 @@ These are the tie-breakers when a design decision is genuinely contested.
 
 2. **One source of truth per fact, many paths to it.** You declare a fact once — including a fact *about the structure of the corpus*. Prose that restates the schema is generated from it or validated against it. No one maintains that prose in parallel.
 
-3. **Derived artefacts are always regenerable.** If a person can change a generated file by hand, and the system does not see the change, that file will drift. Readers will then trust a file that is wrong. Thus, the system checks that generated files agree with their sources. It does not only offer to regenerate them.
+3. **Derived artifacts are always regenerable.** If a person can change a generated file by hand, and the system does not see the change, that file will drift. Readers will then trust a file that is wrong. Thus, the system checks that generated files agree with their sources. It does not only offer to regenerate them.
 
 4. **Visibility before blocking.** A new rule ships as advisory. It collects evidence about its false-positive rate. Only that evidence promotes the rule to blocking. The promotion criteria are recorded, not improvised.
 
@@ -72,7 +72,7 @@ These are the tie-breakers when a design decision is genuinely contested.
 The system works when:
 
 - The schema determines the correct location, template, metadata, and required links of a new document. No one has to ask.
-- An organisation with a different taxonomy adopts the system when it writes a schema. It does not patch code.
+- An organization with a different taxonomy adopts the system when it writes a schema. It does not patch code.
 - An agent that receives a task retrieves the governing documents before it reads source code. It measurably obeys them more often than an agent without the corpus.
 - A taxonomy change propagates to consumers as a reviewable, verifiable migration, not as a broadcast request.
 - Every stated invariant names the control that discharges it, or appears in the gap register. There is no third category.

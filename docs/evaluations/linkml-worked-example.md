@@ -57,7 +57,7 @@ enums:
   EvidenceBasis:
     description: How the rationale in a document is grounded.
     permissible_values:
-      evidenced:      {description: An external auditable artefact supports this.}
+      evidenced:      {description: An external auditable artifact supports this.}
       reconstructed:  {description: Written after the fact; basis must be stated.}
       gap:            {description: No evidence exists and none is claimed.}
 
@@ -142,7 +142,7 @@ slots:
       headwater:invalid_when: both_current
 
   derives_from:
-    description: A generated artefact and the canonical source it projects.
+    description: A generated artifact and the canonical source it projects.
     range: Standard
     slot_uri: prov:wasDerivedFrom
     annotations:
@@ -200,7 +200,7 @@ classes:
     description: What a component does, as it is now.
     slots: [governs]
     annotations:
-      headwater:purpose: behaviour
+      headwater:purpose: behavior
       headwater:voice: declarative
       headwater:authority: 10
       headwater:contracts_allowed: "true"
@@ -239,7 +239,7 @@ Four of these were genuinely surprising — not "can be encoded" but "is the sam
 | Lineage semantics | `slot_uri: prov:wasRevisionOf` | PROV alignment, natively — change #11, for free |
 | Relation endpoints and cardinality | `range` to a class, `multivalued` | Direct |
 
-Three of the twenty research-derived changes (SKOS mappings, PROV alignment, advisory severity) are things LinkML already ships. That is a real argument for adoption, and also mild evidence the modelling instincts in spec 2 were conventional rather than eccentric.
+Three of the twenty research-derived changes (SKOS mappings, PROV alignment, advisory severity) are things LinkML already ships. That is a real argument for adoption, and also mild evidence the modeling instincts in spec 2 were conventional rather than eccentric.
 
 ## Where it stops — and the boundary is not the one I claimed
 
@@ -275,13 +275,13 @@ The resolved taxonomy compiles to a LinkML schema covering the shape layer — w
 
 That gets the interoperability without the two-languages problem: one authoring surface, fully validated, with a standards-based export that other tooling can consume. It also inverts the risk. Adopting LinkML as the authoring surface is close to irreversible; emitting it is a generator we can add, change, or drop.
 
-Worth noting how this rhymes with the position already taken on distribution: a resolved artefact, emitted, not authored.
+Worth noting how this rhymes with the position already taken on distribution: a resolved artifact, emitted, not authored.
 
 ## Recommendation
 
 Take **option 3** into the Q2 walkthrough as the leading candidate, with these consequences to weigh:
 
 - it removes the Q1 tension entirely — a Rust core emitting LinkML YAML has no dependency on LinkML's Python tooling;
-- the SHACL question resolves itself: SHACL becomes an output artefact for external consumers, so its poor error messages never reach a headwater author;
+- the SHACL question resolves itself: SHACL becomes an output artifact for external consumers, so its poor error messages never reach a headwater author;
 - the cost is a generator plus fidelity tests proving the emitted schema accepts exactly the documents headwater accepts, which is a real and ongoing cost;
 - and the shape/graph boundary needs to be stated in [spec 6](../spec/06-engine-architecture.md) as an architectural seam, because it is one.

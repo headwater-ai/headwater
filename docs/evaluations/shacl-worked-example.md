@@ -20,7 +20,7 @@ SHACL validates RDF, so the corpus graph needs a triple projection. This is mech
     dg:id          "DR-ACME-0042" ;
     dg:status      dg:current ;
     dg:lastVerified "2026-07-15"^^xsd:date ;
-    dg:summary     "Overlay-based customisation keeps consumers on upstream fixes" ;
+    dg:summary     "Overlay-based customization keeps consumers on upstream fixes" ;
     dg:evidenceBasis dg:evidenced ;
     dg:supersedes  <file:///docs/decisions/dr-0031.md> ;
     dg:governs     <file:///src/taxonomy/resolve.rs> .
@@ -222,7 +222,7 @@ Combine that with `sh:targetClass` requiring explicit `rdf:type` triples in the 
 
 For an assurance system that is the worst available failure mode, because absence of data is indistinguishable from absence of problems, and it fails *quiet* and *green*. The document that is most broken is the one most likely to escape.
 
-The fix is not in SHACL. headwater must establish, before validation runs, that every file in the corpus was classified and routed to at least one check — and treat a document that matched nothing as a finding in its own right. That guarantee generalises past SHACL to any check layer, so it belongs in the assurance model rather than here.
+The fix is not in SHACL. headwater must establish, before validation runs, that every file in the corpus was classified and routed to at least one check — and treat a document that matched nothing as a finding in its own right. That guarantee generalizes past SHACL to any check layer, so it belongs in the assurance model rather than here.
 
 > **Applied:** every-document-accounted-for as an explicit obligation in [spec 4](../spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for).
 

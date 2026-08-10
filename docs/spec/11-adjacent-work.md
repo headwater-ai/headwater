@@ -46,7 +46,7 @@ The decision belongs in the specification rather than in whichever schema someon
 
 Two posts work a Z-Machine header specification into an RDF/Turtle ontology. They then generate an implementation from it and test the result. It is the most directly relevant practitioner work found. It runs the full pipeline that the "structured knowledge improves machine output" thesis depends on. It also reports honestly on what it did and did not achieve.
 
-What the author does: prose spec → hand-crafted ontology (classes, datatype properties, object properties) → LLM-generated implementation → tests that **query the ontology at runtime** to derive what should be true. Version-conditional behaviour that lived in table footnotes becomes explicit graph edges (`applicableFrom`, `supersededBy`). The generated code cites ontology individuals by name in its comments.
+What the author does: prose spec → hand-crafted ontology (classes, datatype properties, object properties) → LLM-generated implementation → tests that **query the ontology at runtime** to derive what should be true. Version-conditional behavior that lived in table footnotes becomes explicit graph edges (`applicableFrom`, `supersededBy`). The generated code cites ontology individuals by name in its comments.
 
 Four things transfer directly.
 
@@ -64,11 +64,11 @@ Their system prompt states a precedence: where the normative specification and t
 
 headwater has no such ordering. Derived reading precedence records whose *purpose* governs, which is not the same question. When a standard and a specification disagree on a fact, nothing in the corpus says which one a reader should believe. That is a genuine hole, and it is exactly the situation where an agent will otherwise pick arbitrarily and sound confident.
 
-> **Applied, then cut.** An `authority` ordering on kinds was adopted here and removed by the core-concepts review. The trigger (detection of factual disagreement) needs a judgement that the ABox boundary refuses to make. A global scalar cannot carry the scoped precedence that their prompt actually encodes. What headwater keeps is the part of their design that works. It keeps the *decision rule* ("note the discrepancy") as an agent instruction, and the adjudication recorded as data ([spec 2](02-taxonomy-model.md#disagreement-is-adjudicated-not-ranked), [Q18](09-open-questions.md#q18--recording-adjudicated-disagreements)).
+> **Applied, then cut.** An `authority` ordering on kinds was adopted here and removed by the core-concepts review. The trigger (detection of factual disagreement) needs a judgment that the ABox boundary refuses to make. A global scalar cannot carry the scoped precedence that their prompt actually encodes. What headwater keeps is the part of their design that works. It keeps the *decision rule* ("note the discrepancy") as an agent instruction, and the adjudication recorded as data ([spec 2](02-taxonomy-model.md#disagreement-is-adjudicated-not-ranked), [Q18](09-open-questions.md#q18--recording-adjudicated-disagreements)).
 
-### B.3 Generated artefacts cite their source
+### B.3 Generated artifacts cite their source
 
-Comments in the generated code name the ontology individual that justified each decision (`field_font_width_v5`). Any output can be walked back to the artefact that licensed it.
+Comments in the generated code name the ontology individual that justified each decision (`field_font_width_v5`). Any output can be walked back to the artifact that licensed it.
 
 > **Applied:** citation-on-generation for agent-produced content, in [spec 5](05-ai-integration.md).
 
@@ -130,14 +130,14 @@ The conclusion is the same as for LinkML, by a different route: a compilation ta
 
 ## E. OpenGEO — same substrate, opposite direction
 
-[OpenGEO](https://github.com/donhaji/opengeo) is a specification for publishers to declare canonical meaning to AI systems. It uses Markdown bodies with YAML front matter, organised as Discovery → Semantic → Context → Execution. Assurance is treated as a concern *around* the chain rather than a layer in it.
+[OpenGEO](https://github.com/donhaji/opengeo) is a specification for publishers to declare canonical meaning to AI systems. It uses Markdown bodies with YAML front matter, organized as Discovery → Semantic → Context → Execution. Assurance is treated as a concern *around* the chain rather than a layer in it.
 
 Two points of contact:
 
 - **The substrate is identical.** Markdown plus YAML front matter as a semantic contract for machine readers, deliberately *not* RDF/OWL/SHACL. That is an independent data point that the heavyweight stack is not required for this class of problem. It is useful evidence for the Q13 decision, and a caution against the assumption that the standards-based route is obviously correct.
 - **Assurance is not a layer.** Their framing puts provenance, authorship, freshness, auditability and ownership as oversight around the whole chain rather than a stage within it. That framing matches [spec 4](04-assurance-model.md) and is a cleaner statement of it than ours.
 
-But the direction is opposite. OpenGEO points **outward**: a publisher declares meaning to third-party engines that it does not control, with execution explicitly out of scope. headwater points **inward**: an organisation governs its own corpus, for its own agents. We control the whole pipeline, and can therefore *check* things rather than merely declare them. Their context layer (tone, persona, interpretation envelope) follows from a lack of control over the consumer. We do control the consumer, so we constrain behaviour directly, and do not merely request it.
+But the direction is opposite. OpenGEO points **outward**: a publisher declares meaning to third-party engines that it does not control, with execution explicitly out of scope. headwater points **inward**: an organization governs its own corpus, for its own agents. We control the whole pipeline, and can therefore *check* things rather than merely declare them. Their context layer (tone, persona, interpretation envelope) follows from a lack of control over the consumer. We do control the consumer, so we constrain behavior directly, and do not merely request it.
 
 The transferable gap is **discovery**. OpenGEO takes seriously how a machine reader arrives cold and finds out what a corpus is. [Spec 7](07-distribution-and-federation.md) covers distribution to repositories that already know about us, and says nothing about an agent that encounters the corpus for the first time.
 
@@ -151,7 +151,7 @@ There are two related sources: the r/OntologyEngineering community, and Karpathy
 
 The community's stated position is that ontology should come **first**. You build the model of the domain and let agents derive the stack that supports it. Implementation is treated as a consequence of the model, rather than the other way round. Documentation generates the system. It does not describe one that already exists.
 
-That is the testerstories pipeline (§B) generalised into a methodology, and it is further than headwater currently goes. Our specs *describe* a system that exists. Theirs *generate* one. The two meet at the oracle idea in §B.1. A specification precise enough to test an implementation is most of the way to one precise enough to generate it. To be clear, headwater's design does not preclude the stronger position, but it does not currently claim it either.
+That is the testerstories pipeline (§B) generalized into a methodology, and it is further than headwater currently goes. Our specs *describe* a system that exists. Theirs *generate* one. The two meet at the oracle idea in §B.1. A specification precise enough to test an implementation is most of the way to one precise enough to generate it. To be clear, headwater's design does not preclude the stronger position, but it does not currently claim it either.
 
 ### F.2 Karpathy's LLM Wiki
 
@@ -167,17 +167,17 @@ A further data point: the pattern reports that a maintained index file works wel
 
 **Independent arrival at the capture-cost thesis.** The stated reason that wikis die is that the maintenance burden outgrows the value — the bookkeeping, not the thinking, is what people abandon. The reason that this pattern survives is that an LLM does the bookkeeping at near-zero cost. That is Grudin's capture bottleneck and the assisted-fraction answer of [spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric), reached from practice rather than from the literature. Two independent derivations of the same claim are the best support that it will get, short of measurement.
 
-**Lint as a coherence control.** Their lint pass looks for contradictions between pages, claims superseded by newer sources, orphans, and concepts referenced but never defined. Most of that is cohesion, and the engine already does it deterministically. But *contradiction between pages* is not. It is exactly what [spec 4](04-assurance-model.md#cohesion-and-coherence-are-different-obligations) classes as coherence: undecidable structurally, so it needs judgement.
+**Lint as a coherence control.** Their lint pass looks for contradictions between pages, claims superseded by newer sources, orphans, and concepts referenced but never defined. Most of that is cohesion, and the engine already does it deterministically. But *contradiction between pages* is not. It is exactly what [spec 4](04-assurance-model.md#cohesion-and-coherence-are-different-obligations) classes as coherence: undecidable structurally, so it needs judgment.
 
 An LLM lint pass is therefore a legitimate **coherence control** — sampled, detective, non-blocking, exactly as spec 4 requires of that class. It does not violate "no LLM in the validation path", because that rule governs *verdicts*. A coherence finding is a prompt for human attention rather than a verdict. This is a real addition: spec 4 named the coherence class and left it thin.
 
 > **Applied:** LLM-assisted coherence sweep added as a control class in spec 4.
 
-**The gap that it exposes: a third content tier.** The pattern's wiki is neither hand-authored nor mechanically generated. It is *synthesised* — an agent's interpretation of sources, which evolves and is revised as new sources arrive. headwater recognises only two tiers: authored documents and deterministic projections. Synthesised content fits neither. The difference matters, because a projection can be verified through regeneration and a synthesis cannot.
+**The gap that it exposes: a third content tier.** The pattern's wiki is neither hand-authored nor mechanically generated. It is *synthesized* — an agent's interpretation of sources, which evolves and is revised as new sources arrive. headwater recognizes only two tiers: authored documents and deterministic projections. Synthesized content fits neither. The difference matters, because a projection can be verified through regeneration and a synthesis cannot.
 
-Whether headwater should admit a synthesised tier is a genuine question. Such a tier needs its own provenance, its own staleness rules, and a clear statement that it is never canonical for anything. It is also how most organisations will actually want to use this.
+Whether headwater should admit a synthesized tier is a genuine question. Such a tier needs its own provenance, its own staleness rules, and a clear statement that it is never canonical for anything. It is also how most organizations will actually want to use this.
 
-> **Recorded as [Q15](09-open-questions.md#q15--a-synthesised-content-tier).**
+> **Recorded as [Q15](09-open-questions.md#q15--a-synthesized-content-tier).**
 
 ## G. Knowledge-graph chunking for RAG — a problem we do not have
 
@@ -191,7 +191,7 @@ This is the position stated properly rather than assumed, and it is recorded in 
 
 ## H. What structured knowledge actually buys — stated precisely
 
-The goal behind all of this is more deterministic machine behaviour. The claim needs a careful statement, because the honest version is narrower than the marketing version and it changes what we should build.
+The goal behind all of this is more deterministic machine behavior. The claim needs a careful statement, because the honest version is narrower than the marketing version and it changes what we should build.
 
 **Structured, governed knowledge does not make a language model deterministic.** Sampling is stochastic, and identical prompts produce different outputs. That is a property of the model, not of its inputs, and no amount of schema fixes it. The testerstories author is explicit about this, and keeps a hand-written reference implementation exactly because of it.
 
@@ -201,7 +201,7 @@ What it does buy, and each buys something that we can build toward:
 |---|---|
 | **Ambiguity removal** | Fewer legitimate readings of the input, so fewer defensible-but-divergent outputs. Variance narrows. It does not vanish |
 | **Oracles** | An output can be *checked* against a declared expectation rather than judged by eye |
-| **Attribution** | When output deviates, the artefact that licensed it is identifiable — so the fix lands on the corpus or the prompt, not on a hunch |
+| **Attribution** | When output deviates, the artifact that licensed it is identifiable — so the fix lands on the corpus or the prompt, not on a hunch |
 | **Reproducible comparison** | A pinned corpus plus a pinned model gives a baseline that a later run can be diffed against |
 
 The achievable target is **bounded, auditable non-determinism**. That is output that varies within a space that the corpus defines, deviations that are visible, and causes that are attributable. This is a substantially more useful goal than determinism, because it survives contact with how these models actually work.
@@ -236,7 +236,7 @@ The inversion explains their validation, and a concrete statement of it is worth
 
 **`type` is a free string with a default.** There is no closed vocabulary, no per-type required facets, no cardinality, no reciprocity, nothing whole-graph.
 
-This is not a criticism. For an export format, lenience is correct engineering: the obligation is to survive a round trip. A format that rejects its own bundles serves nobody. But it decides the overlap question. LeanCTX has our file format and none of our TBox. [§C](#c-linkml--the-uncomfortable-one) established that everything that headwater does beyond one-instance-against-a-shape is the interesting part. So a shared serialisation costs us nothing and threatens nothing.
+This is not a criticism. For an export format, lenience is correct engineering: the obligation is to survive a round trip. A format that rejects its own bundles serves nobody. But it decides the overlap question. LeanCTX has our file format and none of our TBox. [§C](#c-linkml--the-uncomfortable-one) established that everything that headwater does beyond one-instance-against-a-shape is the interesting part. So a shared serialization costs us nothing and threatens nothing.
 
 ### I.3 What transfers
 
@@ -246,17 +246,17 @@ This is not a criticism. For an export format, lenience is correct engineering: 
 
 **`contradicts` as a declared edge — and an inconsistency that it exposed in our own specification.** OKF carries `contradicts` as a declared relation, which prompted the question of where a declared contradiction sits on the cohesion/coherence line. The answer was embarrassing rather than novel. [spec 2](02-taxonomy-model.md#the-decision-relation-vocabulary) contains `conflicts_with` with `invalid_when: {both: {status: current}}`, and it was there all along — a deterministic, blocking-eligible check. But [spec 4](04-assurance-model.md#discharging-coherence-obligations-the-assisted-sweep) listed "pages that contradict each other while both remain current" as work for the sampled LLM sweep. Two documents assigned the same job to two different mechanisms, and one of them was needlessly the expensive one.
 
-The fix generalises past the bug. What decides whether an obligation is cohesion or coherence is not its subject but **whether the judgement that it requires is recorded as data**. So a coherence concern that recurs is a prompt to ask what an author can declare, rather than how to detect it better. That reframes the sweep's purpose: its best output is not a finding but a declared edge, after which the engine owns the constraint permanently.
+The fix generalizes past the bug. What decides whether an obligation is cohesion or coherence is not its subject but **whether the judgment that it requires is recorded as data**. So a coherence concern that recurs is a prompt to ask what an author can declare, rather than how to detect it better. That reframes the sweep's purpose: its best output is not a finding but a declared edge, after which the engine owns the constraint permanently.
 
 > **Applied:** the declaration boundary, the corrected sweep scope, and a fourth sweep constraint, in [spec 4](04-assurance-model.md#declaration-moves-the-boundary).
 
 ### I.4 Two things to be careful about
 
-**The Context Governance Benchmark.** LeanCTX publishes a self-assessment against a 32-control, 6-family, 3-tier benchmark and claims "C2 — Managed". The structure is recognisably that of [spec 4](04-assurance-model.md) — named controls, families, maturity tiers, a published assessment. If our control catalogue ever wants an existing numbering to point at, it is a candidate.
+**The Context Governance Benchmark.** LeanCTX publishes a self-assessment against a 32-control, 6-family, 3-tier benchmark and claims "C2 — Managed". The structure is recognisably that of [spec 4](04-assurance-model.md) — named controls, families, maturity tiers, a published assessment. If our control catalog ever wants an existing numbering to point at, it is a candidate.
 
-But the spec lives on a private GitLab instance that belongs to the same author, and its independence is **unverified**. It should be read as self-published until shown otherwise. The controls themselves govern agent behaviour rather than corpus quality, so little of the content transfers even if the framing does.
+But the spec lives on a private GitLab instance that belongs to the same author, and its independence is **unverified**. It should be read as self-published until shown otherwise. The controls themselves govern agent behavior rather than corpus quality, so little of the content transfers even if the framing does.
 
-**The claims move.** The repository description, the README and cached earlier versions give the MCP tool count as 76, 82 and 62 respectively. The compression percentages and the "4-layer verification engine" are unmeasured by anyone outside the project. Roughly nine-tenths of the commits are from one author in under five months. The OKF specification itself is small, legible and backed by round-trip tests, and can be depended on directly. That judgement does not extend to the numbers around it.
+**The claims move.** The repository description, the README and cached earlier versions give the MCP tool count as 76, 82 and 62 respectively. The compression percentages and the "4-layer verification engine" are unmeasured by anyone outside the project. Roughly nine-tenths of the commits are from one author in under five months. The OKF specification itself is small, legible and backed by round-trip tests, and can be depended on directly. That judgment does not extend to the numbers around it.
 
 ### I.5 The presentation is the lesson
 
@@ -268,19 +268,19 @@ That last detail is not decoration — it is [Q14](09-open-questions.md#q14--dis
 
 ## J. TrustGraph — the same pitch, the opposite mechanism
 
-[TrustGraph](https://github.com/trustgraph-ai/trustgraph) (Apache-2.0, v1.2 shipped August 2025) is a containerised context-engineering platform. Documents flow through configurable pipelines in which **LLM agents extract entities and relationships** into a graph store (Cassandra, Neo4j, Memgraph or FalkorDB). Embeddings live in Qdrant, messages flow over Pulsar, and retrieval returns to agents as document-, graph-, or ontology-driven RAG. Its semantic layer is the standards stack — RDF, OWL, SKOS, SHACL. Every answer carries a per-fact provenance receipt: source document, ingestion timestamp, extraction method.
+[TrustGraph](https://github.com/trustgraph-ai/trustgraph) (Apache-2.0, v1.2 shipped August 2025) is a containerized context-engineering platform. Documents flow through configurable pipelines in which **LLM agents extract entities and relationships** into a graph store (Cassandra, Neo4j, Memgraph or FalkorDB). Embeddings live in Qdrant, messages flow over Pulsar, and retrieval returns to agents as document-, graph-, or ontology-driven RAG. Its semantic layer is the standards stack — RDF, OWL, SKOS, SHACL. Every answer carries a per-fact provenance receipt: source document, ingestion timestamp, extraction method.
 
 The pitch overlaps ours almost word for word — typed graphs that ground agents in verifiable knowledge, with provenance. The implementations are close to opposites. In headwater, authors declare the graph: documents are the nodes, front-matter references are the typed edges, and no LLM issues a verdict. In TrustGraph, an LLM extracts the graph: documents are feedstock, dissolved into triples, and the 1.2 release headline is an agent that "autonomously populates the knowledge graph". Nothing in the platform governs the source documents — it mines them. Its retrieval modes manage exactly the reconstitution loss that §G describes. That makes TrustGraph the subject of that section, in production form. The overlap is at the slogan, not the layer beneath it.
 
 Three things deserve a record:
 
 - **Evidence the other way on Q13.** §E cites OpenGEO, which declines RDF/OWL/SHACL, as evidence that the standards stack is not required for this class of problem. TrustGraph is the counterweight: a production open-source system that chose that stack and ships it. One data point on each side is a more honest input to the decision than one.
-- **A preview of Q15's provenance burden.** TrustGraph's extracted graph is precisely the synthesised tier that Q15 asks about — LLM-maintained, never verifiable by regeneration. Its per-fact receipts (source, timestamp, derivation method) are a concrete, operational design for the provenance record that such a tier needs.
+- **A preview of Q15's provenance burden.** TrustGraph's extracted graph is precisely the synthesized tier that Q15 asks about — LLM-maintained, never verifiable by regeneration. Its per-fact receipts (source, timestamp, derivation method) are a concrete, operational design for the provenance record that such a tier needs.
 - **Attribution, implemented.** The receipt model — every answer traceable to the facts and the traversal that licensed it — is the attribution row of §H in production form. It is independent confirmation that a shipped system also put its effort into oracles and traceability.
 
 And one relationship deserves a record as complementary rather than rival. Source quality bounds extraction quality, so a governed corpus is an unusually good input to an extraction platform. Kinds, facets, and declared edges arrive as structure that the extractor otherwise must guess at. Under the [better-together principle](00-vision-and-scope.md#design-principles) of spec 0, that makes TrustGraph ingestion a candidate integration — a headwater corpus fed in as pre-structured source material. It is in the same family as the OKF export, and equally cheap to hold: the arrow points out of the corpus, and nothing flows back in.
 
-> **Recorded:** counterweight evidence added to [Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate); provenance precedent added to [Q15](09-open-questions.md#q15--a-synthesised-content-tier).
+> **Recorded:** counterweight evidence added to [Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate); provenance precedent added to [Q15](09-open-questions.md#q15--a-synthesized-content-tier).
 
 ---
 

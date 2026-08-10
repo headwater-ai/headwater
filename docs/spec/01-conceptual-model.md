@@ -52,9 +52,9 @@ The engine resolves a kind from a document's position (shelf + path pattern) and
 
 ### External anchor
 
-A node that represents something outside the corpus that documents point at. Examples: a source path, a component, a work item, a service, a released artefact, a URL. Anchors turn otherwise-dangling references into typed nodes. The engine can then check them, traverse them, and answer "what governs this code path?" without a special case for every kind of pointer.
+A node that represents something outside the corpus that documents point at. Examples: a source path, a component, a work item, a service, a released artifact, a URL. Anchors turn otherwise-dangling references into typed nodes. The engine can then check them, traverse them, and answer "what governs this code path?" without a special case for every kind of pointer.
 
-An anchor carries an identifier, a name, and an owner — never a purpose or a lifecycle. Every substantive claim about the thing itself lives in a document. Anchor kinds are declared like everything else: the taxonomy's `anchors` declaration names each type and the single resolver that owns it. Thus a relation endpoint is always either a declared kind or a declared anchor kind — never a bare string. Anchor identity is declared, not guessed. Anchor strings normalise before comparison, so two spellings of one target are one node. An anchor that no resolver claims is a finding ([spec 2](02-taxonomy-model.md#behaviour-at-the-limits)).
+An anchor carries an identifier, a name, and an owner — never a purpose or a lifecycle. Every substantive claim about the thing itself lives in a document. Anchor kinds are declared like everything else: the taxonomy's `anchors` declaration names each type and the single resolver that owns it. Thus a relation endpoint is always either a declared kind or a declared anchor kind — never a bare string. Anchor identity is declared, not guessed. Anchor strings normalize before comparison, so two spellings of one target are one node. An anchor that no resolver claims is a finding ([spec 2](02-taxonomy-model.md#behavior-at-the-limits)).
 
 ## Edges
 
@@ -74,7 +74,7 @@ Because relation semantics live in the schema, the checks over them are generic.
 
 Relation types that an adopter is likely to want (all shipped with the default package, none hard-coded in the engine): `supersedes` / `superseded_by`, `derives_from`, `governs`, `verifies`, `implements`, `cites`, `owns`, `refines`, `conflicts_with`. Shipped does not mean enabled: the default *enables* a minimal four. The rest are complete declarations that an overlay pulls in by reference ([spec 2](02-taxonomy-model.md#the-decision-relation-vocabulary)).
 
-A kind may also declare a participation **expectation**. The expectation says that its documents, in a given state, get a named relation within a window measured from a declared origin date ([spec 2](02-taxonomy-model.md#participation-expectations)). Expectations are the only construct that finds a document that **should exist and does not**. Every other check validates artefacts that are present. They model what genre theory calls a *genre system*: proposal → decision → specification → evidence.
+A kind may also declare a participation **expectation**. The expectation says that its documents, in a given state, get a named relation within a window measured from a declared origin date ([spec 2](02-taxonomy-model.md#participation-expectations)). Expectations are the only construct that finds a document that **should exist and does not**. Every other check validates artifacts that are present. They model what genre theory calls a *genre system*: proposal → decision → specification → evidence.
 
 The end that governs the *reading* of two linked documents is derived, never declared. On a nucleus–satellite relation the nucleus governs: a document that cannot stand alone cannot govern the reading of the one that it depends on. On succession the successor governs — that is what succession means. Other multinuclear relations carry no reading order, and none needed one to date. A routing or projection outcome that requires one is the evidence that reopens this ([spec 2](02-taxonomy-model.md#reading-precedence-is-derived)).
 
@@ -111,11 +111,11 @@ An earlier draft had two more regimes, and each was one parameter in a wrapper. 
 
 ### Obligation
 
-A statement that the corpus commits to, expressed as an **invariant** with a stable identifier. "Behaviour-changing code updates its specification in the same change." "Every live decision record is reachable from what it constrains." Obligations are data in the corpus, not prose in a document.
+A statement that the corpus commits to, expressed as an **invariant** with a stable identifier. "Behavior-changing code updates its specification in the same change." "Every live decision record is reachable from what it constrains." Obligations are data in the corpus, not prose in a document.
 
 ### Control
 
-A mechanism that discharges an obligation: an engine check, a CI job, a git hook, an agent behaviour, a scheduled scan, a human audit. A control declares what it verifies, when it runs, and its **posture** — advisory, blocking, or detective.
+A mechanism that discharges an obligation: an engine check, a CI job, a git hook, an agent behavior, a scheduled scan, a human audit. A control declares what it verifies, when it runs, and its **posture** — advisory, blocking, or detective.
 
 These are the section's only two concepts. Their binding is visible in the **register projection**: the generated, checked view of which controls discharge which obligations. The view also gives the explicit disposition of every obligation with none — *gap* (tracked, wanted) or *unverifiable* (no mechanism can exist, accepted) — and control health, suppressions, and waivers. Every obligation carries exactly one disposition.
 
@@ -125,7 +125,7 @@ See [assurance model](04-assurance-model.md).
 
 ## Projections
 
-A **projection** is a derived artefact computed from the graph. Examples: a shelf index, a decision-lineage summary, a component-to-specification matrix, site navigation, an agent instruction file, a JSON export of the graph. Projections are:
+A **projection** is a derived artifact computed from the graph. Examples: a shelf index, a decision-lineage summary, a component-to-specification matrix, site navigation, an agent instruction file, a JSON export of the graph. Projections are:
 
 - **generated** — never hand-authored.
 - **checked** — CI fails when a committed projection differs from a regenerated one.

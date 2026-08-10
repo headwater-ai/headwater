@@ -64,18 +64,18 @@ This exists because unmarked requirements are the ones that people argue about l
 Each kind declares a template. The template is not a suggestion file for humans to copy. It is generated from the kind declaration. Thus the required sections and the required front matter always agree with what the engine validates. A template that drifted from its kind is impossible by construction.
 
 ```
-headwater new decision --title "Adopt overlay-based taxonomy customisation"
+headwater new decision --title "Adopt overlay-based taxonomy customization"
 ```
 
 resolves the kind, allocates an identifier, seeds front matter, and emits required sections with prompts. It places the file where the shelf layout dictates. It also prints the relations that the new document is expected to declare.
 
 ## Identifiers
 
-Some artefacts need stable names that survive a move, a rename, or a read out of context. These artefacts are decisions, requirements, acceptance criteria, controls, and obligations.
+Some artifacts need stable names that survive a move, a rename, or a read out of context. These artifacts are decisions, requirements, acceptance criteria, controls, and obligations.
 
 The taxonomy declares the pattern, the namespace, and the allocation policy of each identifier scheme. Three properties matter:
 
-1. **Globally unique.** An identifier is namespaced at minting — by repository or organisation. Thus, when a corpus is vendored into another repository, identifiers from two sources cannot collide. To retrofit a namespace later is expensive. The default is to always have one.
+1. **Globally unique.** An identifier is namespaced at minting — by repository or organization. Thus, when a corpus is vendored into another repository, identifiers from two sources cannot collide. To retrofit a namespace later is expensive. The default is to always have one.
 
 2. **Resolvable without its document.** Given `DR-ACME-0042` and nothing else, the engine resolves it to a path. The graph contains an identifier index, so identifiers work in commit messages, code comments, tickets, and agent prompts.
 
@@ -83,19 +83,19 @@ The taxonomy declares the pattern, the namespace, and the allocation policy of e
 
 ## Evidence has three honest states, not two
 
-A decision recorded without evidence outside the document that records it is a rationalisation. The system asks for a pointer — a work item, a substantive commit, a recorded discussion, a measurement.
+A decision recorded without evidence outside the document that records it is a rationalization. The system asks for a pointer — a work item, a substantive commit, a recorded discussion, a measurement.
 
-Where none exists, the earlier design offered two outcomes: evidenced, or a registered gap. That is one short. The real design process is never as rational as the record makes it look. To document it *as if* it were rational is both legitimate and valuable — if the reconstruction is labelled as one. To force every after-the-fact account into "gap" pushes authors to overstate what they have. That is the failure that the rule existed to prevent.
+Where none exists, the earlier design offered two outcomes: evidenced, or a registered gap. That is one short. The real design process is never as rational as the record makes it look. To document it *as if* it were rational is both legitimate and valuable — if the reconstruction is labeled as one. To force every after-the-fact account into "gap" pushes authors to overstate what they have. That is the failure that the rule existed to prevent.
 
 | `evidence_basis` | Means | Obligation |
 |---|---|---|
-| `evidenced` | An external, auditable artefact supports this | The pointer resolves |
+| `evidenced` | An external, auditable artifact supports this | The pointer resolves |
 | `reconstructed` | Written after the fact from memory and inference | Must state what it was reconstructed from, and by whom |
 | `gap` | No evidence exists and none is claimed | Appears in the gap register |
 
 `reconstructed` is not a soft `evidenced`. It never silently promotes. To move a document to `evidenced`, you must add a resolving pointer, and the transition is recorded. A corpus where most rationale is reconstructed tells you something real about how decisions are made there. To hide that behind a binary would waste the signal.
 
-The semantic judgement — *is this evidence actually about this decision?* — stays with the author and the agent stop rules ([spec 5](05-ai-integration.md)). The mechanical parts are these: the facet is present and valid, pointers resolve, `reconstructed` contains its basis, and the gap register accounts for every `gap`.
+The semantic judgment — *is this evidence actually about this decision?* — stays with the author and the agent stop rules ([spec 5](05-ai-integration.md)). The mechanical parts are these: the facet is present and valid, pointers resolve, `reconstructed` contains its basis, and the gap register accounts for every `gap`.
 
 ## Provenance is recorded, not assumed
 
