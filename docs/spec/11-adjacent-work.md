@@ -458,7 +458,7 @@ Three requirements follow. Each is cheap to state now and expensive to retrofit.
 
 One statement keeps this section honest. Headwater has no measurements either. It has a design for them, an unbuilt engine, and now a written obligation not to claim more than the design has earned.
 
-> **Applied:** the grader constraint and the counterfactual obligation in [spec 5](05-ai-integration.md#measuring-whether-any-of-this-works), and the efficacy limit of prior-art agreement in [principle 10](00-vision-and-scope.md#design-principles).
+> **Applied:** the grader constraint and the counterfactual obligation in [spec 5](05-ai-integration.md#measuring-whether-any-of-this-works), and a new [principle 11](00-vision-and-scope.md#design-principles), *efficacy is measured, not inherited*. Principle 10 keeps its original scope. The split between the two is the point: one tests the design, and the other tests whether it works.
 
 ---
 
@@ -478,4 +478,4 @@ One statement keeps this section honest. Headwater has no measurements either. I
 | TrustGraph | Same pitch, opposite mechanism — extracts the graph we declare | Standards-stack counterweight → **Q13**. Provenance precedent → **Q15**. Ingestion integration candidate |
 | Modern Requirements / Azure DevOps | First inbound candidate — the arrow reverses | Model already fits. Import semantics open — **Q19** |
 | Serena | Fourth arrival at the substrate. The first to disagree with us | Applied — third anti-retrieval argument (spec 5). Scent placement → **Q20**. Evidence → **Q15**, **Q17** |
-| **The survey as a whole** | Convergence on the substrate, and near-zero measurement of the claim | Applied — grader and counterfactual constraints (spec 5), efficacy limit of prior-art agreement (principle 10) |
+| **The survey as a whole** | Convergence on the substrate, and near-zero measurement of the claim | Applied — grader and counterfactual constraints (spec 5), and a new principle 11, *efficacy is measured, not inherited* |
