@@ -85,6 +85,10 @@ regimes:
         current:    [superseded, deprecated]
         superseded: []
       retain_terminal: true            # superseded documents are never deleted
+  language:
+    default:
+      tag: en-US                       # BCP 47: language and variant in one tag
+      controlled: ste-house            # none | ste-house | ste-strict
 
 relations:
   supersedes:
@@ -203,7 +207,7 @@ projections:
 |---|---|
 | `purposes` | What reader intents the corpus serves |
 | `facets` | What metadata documents carry, its shape, and how hard it is enforced |
-| `regimes` | Reusable rule bundles: voice and lifecycle |
+| `regimes` | Reusable rule bundles: voice, lifecycle, and language |
 | `relations` | What typed links exist, their family, endpoints, nuclearity, and reciprocity |
 | `anchors` | What non-document node types exist, and which resolver owns each |
 | `shelves` | How the corpus is partitioned, and what each partition means |
@@ -232,6 +236,21 @@ Purpose does real work downstream:
 - **Routing** ([spec 5](05-ai-integration.md)) matches a task's intent against declared purposes before it matches text. "Why is it like this?" resolves to `rationale` kinds. "what does it do?" resolves to `behavior` kinds. This is a search over intentional structure, not over prose. It is far cheaper and more precise than lexical ranking alone.
 - **`headwater explain`** states a document's purpose alongside its kind. A reader who opens a document thus knows what it is *for* before they read it.
 - **The core** (below) is expressed in terms of purposes. This lets an adopter rename everything and still run the same method in a recognisable way.
+
+## Language is declared, not assumed
+
+Every corpus is written in a natural language, in a variant of that language, and sometimes in a controlled profile of that variant. Most systems leave all three implicit. The cost surfaces as style rules that nothing enforces. This project met the cost in its own corpus: the ruling for American spelling lived in an instruction file, and a manual sweep applied it. The schema had no slot to hold the ruling. That is configuration expressed as convention — the failure that this specification exists to remove.
+
+The three axes are different decisions, and a taxonomy must not conflate them:
+
+- **Language and variant** — one BCP 47 tag carries both (`en-US`, `en-GB`, `de-DE`).
+- **Controlled profile** — none, or a named profile such as STE house (structural rules) or STE strict (closed dictionary). A profile is a promise about the text, so checks can read it.
+
+Language is the third regime family. The corpus declares one default, and a kind may bind a different profile — runbooks in the strict profile, specifications in the house profile. Checks parameterize on the declaration: the spelling lexicon, the sentence-length limits, and the controlled-vocabulary check all read the regime instead of a hard-coded assumption. A check that cannot state its language assumption is not portable between corpora.
+
+A monolingual corpus declares no `language` facet on documents. Such a facet has one value everywhere, and no check varies on it, so it fails the every-rule-earns-its-place test ([spec 0](00-vision-and-scope.md#design-principles)). A multilingual corpus promotes language to a facet, and the promotion pays for itself at once. Checks select their lexicon per document. The AI surface knows what language it reads and answers in. And a `translation_of` relation becomes declarable, with the standard expectation machinery behind it. When a source document changes, its translations fall stale. That is the ordinary freshness check, not a new mechanism.
+
+The doctrine starter kit declares `en-US` with the house profile as its default.
 
 ## Relation families and nuclearity
 
