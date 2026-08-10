@@ -1,0 +1,5 @@
+# Per-session state for the ste-gate hook, and worktrees created by agents.
+.claude/state/
+.claude/worktrees/
+
+__pycache__/

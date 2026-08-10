@@ -34,7 +34,7 @@ When you model the estate above individual repositories, the temptation is immed
 
 Nothing in the current design carries that obligation. The drift failure mode is worse than stale prose, because a wrong node looks structural rather than editorial.
 
-The middle position is available and is probably right. Solution-layer nodes are **declared anchors** — identified things that documents may point at. Each anchor carries an identifier, a name, and ownership. There is no claim that any further property is accurate, and no pretence that the set is complete.
+The middle position is available and is probably right. Solution-layer nodes are **declared anchors** — identified things that documents may point at. Each anchor carries an identifier, a name, and ownership. There is no claim that any further property is accurate, and no pretense that the set is complete.
 
 That buys the cross-estate edges that the layer exists for. Every substantive assertion stays inside a document, where the freshness machinery and the check layer already reach it. It is the same move that `code_path` already makes: an external anchor kind that is referenced, never described.
 

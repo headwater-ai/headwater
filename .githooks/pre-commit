@@ -1,0 +1,24 @@
+#!/bin/sh
+# STE house profile check on staged spec prose.
+#
+# Install once per clone (the repo ships the hook, git does not install it):
+#     git config core.hooksPath .githooks
+
+root=$(git rev-parse --show-toplevel) || exit 0
+
+[ -f "$root/tools/ste-lint.py" ] || exit 0
+
+if python3 "$root/tools/ste-lint.py" --staged --quiet --errors-only; then
+    exit 0
+fi
+
+cat <<'EOF'
+
+The staged spec prose does not pass the STE house profile. Your options:
+  - fix the errors above (tools/ste-lint.py <file> to re-check)
+  - mark a deliberate exception with a trailing comment on the offending line:
+        <!-- ste-lint: allow sentence-length -->
+  - grandfather them: tools/ste-lint.py --update-baseline, then review the diff
+  - skip this check for one commit: git commit --no-verify
+EOF
+exit 1

@@ -183,13 +183,13 @@ Four constraints keep this inside the rules that the rest of the system obeys:
 
 So the best outcome of a sweep is not a finding but an **edge**. The correct end state for a contradiction that the sweep surfaces is a declared `conflicts_with`. After that, the engine owns it permanently, and the sweep never needs to find it again. A coherence control whose findings never convert into declarations does the same work every cycle. That is the accumulation failure that [spec 5](05-ai-integration.md#what-we-do-not-do) rejects RAG for, now in our own assurance layer.
 
-This is the same division that the system draws everywhere. Deterministic tooling handles what is decidable, and judgment handles what is not. There is no pretence that either does the other's job.
+This is the same division that the system draws everywhere. Deterministic tooling handles what is decidable, and judgment handles what is not. There is no pretense that either does the other's job.
 
 ## Measuring coherence where we can: continuity across links
 
 Coherence resists mechanization, but one component of it does not.
 
-Centering Theory models local coherence as continuity of focus. Adjacent utterances that keep the same entity in view are easy to follow. Each shift of focus imposes an inference cost on the reader. The corpus analogue is direct. For every relation edge, the engine computes what the two endpoints share — a component, a domain, an identifier, a code-path anchor, a facet value. An edge whose endpoints share nothing is a **focus shift**: the reader must reorient on arrival.
+Centering Theory models local coherence as continuity of focus. Adjacent utterances that keep the same entity in view are easy to follow. Each shift of focus imposes an inference cost on the reader. The corpus analog is direct. For every relation edge, the engine computes what the two endpoints share — a component, a domain, an identifier, a code-path anchor, a facet value. An edge whose endpoints share nothing is a **focus shift**: the reader must reorient on arrival.
 
 Individual shifts are fine and often necessary. The **distribution** is the signal:
 
@@ -278,7 +278,7 @@ Coverage alone is a number that only goes up. A system that optimizes it will ha
 
 ## Accuracy audit
 
-The controls above verify *form*. One question is semantic: does a specification still describe the system? At intervals, a human (or a supervised agent) must sample the corpus and answer that question. The name is deliberate. Conformance is what [spec 7](07-distribution-and-federation.md#conformance) evaluates about an adopter, and it is a different question with its own command. The audit makes evidence records with their own kind, lifecycle, and identifiers — inside the corpus, governed like everything else. An audit whose findings are not addressable is theatre. An audit whose output is a typed, tracked document is a control.
+The controls above verify *form*. One question is semantic: does a specification still describe the system? At intervals, a human (or a supervised agent) must sample the corpus and answer that question. The name is deliberate. Conformance is what [spec 7](07-distribution-and-federation.md#conformance) evaluates about an adopter, and it is a different question with its own command. The audit makes evidence records with their own kind, lifecycle, and identifiers — inside the corpus, governed like everything else. An audit whose findings are not addressable is theater. An audit whose output is a typed, tracked document is a control.
 
 ## The system's own assurance
 

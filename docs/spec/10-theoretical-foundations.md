@@ -48,7 +48,7 @@ The gap is dominance. We record that document A supersedes B, but not that A's *
 
 Centering Theory (Grosz, Joshi & Weinstein, *Computational Linguistics*, 1995) models local coherence as continuity of the entity in focus across adjacent utterances. It ranks transition types by the inference cost that they impose.
 
-The corpus analogue is cheap and useful. A link between two documents with no shared subject — no common component, domain, identifier, or anchor — is a **focus shift**. A shelf full of them is a corpus that a reader cannot traverse without a re-orientation at every hop.
+The corpus analog is cheap and useful. A link between two documents with no shared subject — no common component, domain, identifier, or anchor — is a **focus shift**. A shelf full of them is a corpus that a reader cannot traverse without a re-orientation at every hop.
 
 > **Change:** an advisory *transition-continuity* check. For each relation edge, compute shared facets and anchors. Report edges with no continuity. Advisory forever — some shifts are legitimate. But the *distribution* is a genuine corpus-health metric. It is our first metric that measures coherence rather than cohesion.
 
