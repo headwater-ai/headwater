@@ -1,4 +1,10 @@
-# headwater authoring conventions
+# Headwater authoring conventions
+
+## The name is Headwater
+
+**Headwater** is the name of the system, not a working name (decided 2026-08-10, [Q10](docs/spec/09-open-questions.md#q10--naming)). Capitalize it in prose, including compounds: Headwater's, Headwater-specific, Headwater-native.
+
+Write it as `headwater` in lower case only when it is an identifier: the CLI verb (`headwater check`), package names (`acme/headwater-taxonomy`), the `.headwater/` directory, the `headwater:` annotation prefix, and the `https://headwater.dev/` namespace. Do not capitalize inside code spans or fenced code. Documents under `docs/reviews/` are point-in-time records and stay as written.
 
 ## No arbitrary line breaks in Markdown
 
