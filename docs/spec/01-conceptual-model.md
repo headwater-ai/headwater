@@ -8,7 +8,7 @@ The [glossary](glossary.md) indexes every term in the specification, including t
 
 The split that this model rests on is the one that description logic already names. A knowledge base has a **TBox** and an **ABox**. The **TBox** is the terminology: which kinds of thing exist, which relations may hold between them, and which values are legal. The **ABox** is the assertions: the actual individuals and the relations actually asserted.
 
-| headwater | Description logic |
+| Headwater | Description logic |
 |---|---|
 | Taxonomy | TBox |
 | Resolved taxonomy lock | Compiled TBox |
@@ -18,7 +18,7 @@ The split that this model rests on is the one that description logic already nam
 
 The use of the standard names is not decoration. It is why the validation of a taxonomy and the check of a corpus are two different operations, not two halves of one operation ([spec 6](06-engine-architecture.md#taxonomy-validate-versus-taxonomy-audit)).
 
-**Where the ABox stops.** headwater's assertions are about *documents* — this document exists, is of this kind, governs that code path, supersedes that other document. They are not about the claims *inside* the prose. "The service returns 404 on a missing key" is a sentence. The system knows the document that contains it and what that document governs, but not what it asserts about the world. Reasoning stops at the document boundary. A promise of semantic consistency checking beyond that boundary is a promise that we cannot keep.
+**Where the ABox stops.** Headwater's assertions are about *documents* — this document exists, is of this kind, governs that code path, supersedes that other document. They are not about the claims *inside* the prose. "The service returns 404 on a missing key" is a sentence. The system knows the document that contains it and what that document governs, but not what it asserts about the world. Reasoning stops at the document boundary. A promise of semantic consistency checking beyond that boundary is a promise that we cannot keep.
 
 ## The corpus
 
@@ -104,7 +104,7 @@ The facet that plays each role is declared, not assumed. A corpus may call its s
 
 A **regime** is a reusable, named bundle of rules that a kind opts into. Regimes exist so that rules are declared once and referenced many times.
 
-- **Voice regime** — the register in which a document is written, with the machine-checkable part of it: e.g. *declarative present-state* (no future intent, no narration of change, no phased-rollout language), *narrative* (time-boxed exploration, changelogs), or *unconstrained*.
+- **Voice regime** — the voice in which a document is written, with the machine-checkable part of it: e.g. *declarative present-state* (no future intent, no narration of change, no phased-rollout language), *narrative* (time-boxed exploration, changelogs), or *unconstrained*.
 - **Lifecycle regime** — a state machine over the state facet: states, legal transitions, terminal states, and what each state implies (e.g. superseded documents are retained and delinked from live dependency paths).
 
 An earlier draft had two more regimes, and each was one parameter in a wrapper. **Freshness policy** — the staleness threshold, drift weighting, and posture — lives on the freshness facet itself, and it is mandatory. A facet that carries the freshness role without applicable policy is invalid. **Size budgets** live on the agent-facing kinds and projections that they meter, and they are mandatory there. An agent-facing projection without an applicable budget is invalid. The protections moved to their enforcement points. Only the wrappers were deleted.

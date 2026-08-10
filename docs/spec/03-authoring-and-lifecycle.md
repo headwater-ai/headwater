@@ -91,11 +91,13 @@ Where none exists, the earlier design offered two outcomes: evidenced, or a regi
 |---|---|---|
 | `evidenced` | An external, auditable artifact supports this | The pointer resolves |
 | `reconstructed` | Written after the fact from memory and inference | Must state what it was reconstructed from, and by whom |
-| `gap` | No evidence exists and none is claimed | Appears in the gap register |
+| `unevidenced` | No evidence exists and none is claimed | Appears in the gap register |
 
 `reconstructed` is not a soft `evidenced`. It never silently promotes. To move a document to `evidenced`, you must add a resolving pointer, and the transition is recorded. A corpus where most rationale is reconstructed tells you something real about how decisions are made there. To hide that behind a binary would waste the signal.
 
-The semantic judgment — *is this evidence actually about this decision?* — stays with the author and the agent stop rules ([spec 5](05-ai-integration.md)). The mechanical parts are these: the facet is present and valid, pointers resolve, `reconstructed` contains its basis, and the gap register accounts for every `gap`.
+The semantic judgment — *is this evidence actually about this decision?* — stays with the author and the agent stop rules ([spec 5](05-ai-integration.md)). The mechanical parts are these: the facet is present and valid, pointers resolve, `reconstructed` contains its basis, and the gap register accounts for every `unevidenced` document.
+
+The value is named `unevidenced`, and not `gap`, because `gap` is already the [disposition](04-assurance-model.md#every-obligation-has-exactly-one-disposition) of an obligation that no control discharges. One word for two mechanisms hid a real question, which this document does not settle: whether the gap register above is the same artifact as the obligation gap register, or a second one that shares its name.
 
 ## Provenance is recorded, not assumed
 

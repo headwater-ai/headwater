@@ -10,9 +10,9 @@ The question here is narrower and more uncomfortable: *what did we specify that 
 
 Description logic separates a knowledge base into two parts. The **TBox** (terminology box) holds the schema: classes, their hierarchy, and the relations that may hold between them. The **ABox** (assertion box) holds instances: individuals, their attributes, and the actual relations asserted between them.
 
-That is exactly headwater's split, and we described it in invented vocabulary:
+That is exactly Headwater's split, and we described it in invented vocabulary:
 
-| headwater | Description logic |
+| Headwater | Description logic |
 |---|---|
 | Taxonomy (kinds, facets, relations, regimes) | TBox |
 | Resolved taxonomy lock file | Compiled TBox |
@@ -22,7 +22,7 @@ That is exactly headwater's split, and we described it in invented vocabulary:
 
 Adoption of the standard names costs nothing and buys precision. It also explains why the `validate` / `audit` split arrived at [spec 6](06-engine-architecture.md#taxonomy-validate-versus-taxonomy-audit). That split is TBox reasoning versus ABox reasoning. This is a real distinction with decades of theory behind it, not a convenience that we invented.
 
-**One boundary to state plainly.** headwater's ABox is the graph of *documents and their declared edges* — not the claims inside the prose. "This service returns 404 on a missing key" is a sentence in a document. The system knows that the document exists, what kind it is, and what it governs, but not what it asserts. To pretend otherwise is to promise semantic consistency checks that we cannot deliver. The ABox stops at the document boundary, and that limit belongs in the specification rather than in a footnote that someone discovers later.
+**One boundary to state plainly.** Headwater's ABox is the graph of *documents and their declared edges* — not the claims inside the prose. "This service returns 404 on a missing key" is a sentence in a document. The system knows that the document exists, what kind it is, and what it governs, but not what it asserts. To pretend otherwise is to promise semantic consistency checks that we cannot deliver. The ABox stops at the document boundary, and that limit belongs in the specification rather than in a footnote that someone discovers later.
 
 > **Applied:** TBox/ABox vocabulary adopted in specs 1, 2 and 6, with the ABox boundary stated explicitly.
 
@@ -54,7 +54,7 @@ Four things transfer directly.
 
 Their tests do not hardcode expectations. They ask the ontology what fields should exist for the version found in the file. Coverage adapts because the schema is queried, not copied.
 
-headwater has the ingredients, but they are not connected. Acceptance criteria carry stable identifiers ([spec 3](03-authoring-and-lifecycle.md#identifiers)). Contract sidecars were credited as prior art but never actually specified. When they are connected, they give the strongest possible form of "the specification describes what is" — the specification *generates the check that proves it*.
+Headwater has the ingredients, but they are not connected. Acceptance criteria carry stable identifiers ([spec 3](03-authoring-and-lifecycle.md#identifiers)). Contract sidecars were credited as prior art but never actually specified. When they are connected, they give the strongest possible form of "the specification describes what is" — the specification *generates the check that proves it*.
 
 > **Applied:** contract sidecars specified in [spec 2](02-taxonomy-model.md), with identified acceptance criteria as an oracle source.
 
@@ -62,9 +62,9 @@ headwater has the ingredients, but they are not connected. Acceptance criteria c
 
 Their system prompt states a precedence: where the normative specification and the conventional practice disagree, prefer the normative one **and note the discrepancy**. The ontology carries `hasSourceAuthority`. The prompt turns it into a decision rule.
 
-headwater has no such ordering. Derived reading precedence records whose *purpose* governs, which is not the same question. When a standard and a specification disagree on a fact, nothing in the corpus says which one a reader should believe. That is a genuine hole, and it is exactly the situation where an agent will otherwise pick arbitrarily and sound confident.
+Headwater has no such ordering. Derived reading precedence records whose *purpose* governs, which is not the same question. When a standard and a specification disagree on a fact, nothing in the corpus says which one a reader should believe. That is a genuine hole, and it is exactly the situation where an agent will otherwise pick arbitrarily and sound confident.
 
-> **Applied, then cut.** An `authority` ordering on kinds was adopted here and removed by the core-concepts review. The trigger (detection of factual disagreement) needs a judgment that the ABox boundary refuses to make. A global scalar cannot carry the scoped precedence that their prompt actually encodes. What headwater keeps is the part of their design that works. It keeps the *decision rule* ("note the discrepancy") as an agent instruction, and the adjudication recorded as data ([spec 2](02-taxonomy-model.md#disagreement-is-adjudicated-not-ranked), [Q18](09-open-questions.md#q18--recording-adjudicated-disagreements)).
+> **Applied, then cut.** An `authority` ordering on kinds was adopted here and removed by the core-concepts review. The trigger (detection of factual disagreement) needs a judgment that the ABox boundary refuses to make. A global scalar cannot carry the scoped precedence that their prompt actually encodes. What Headwater keeps is the part of their design that works. It keeps the *decision rule* ("note the discrepancy") as an agent instruction, and the adjudication recorded as data ([spec 2](02-taxonomy-model.md#disagreement-is-adjudicated-not-ranked), [Q18](09-open-questions.md#q18--recording-adjudicated-disagreements)).
 
 ### B.3 Generated artifacts cite their source
 
@@ -92,7 +92,7 @@ When you read [spec 2](02-taxonomy-model.md) and then the LinkML documentation, 
 
 Where it stops:
 
-| headwater declaration | LinkML |
+| Headwater declaration | LinkML |
 |---|---|
 | Kinds, facets, vocabularies, cardinality | Direct fit — this is what LinkML is |
 | Relations with endpoints and cardinality | Direct fit |
@@ -103,16 +103,16 @@ Where it stops:
 
 **That table is wrong, and a [worked example](../evaluations/linkml-worked-example.md) shows why.** An expression of the taxonomy in real LinkML establishes two things that the guess above missed. LinkML already ships three of the twenty research-derived changes — SKOS mappings, PROV alignment, and `recommended` as advisory severity. Its `designates_type` is our heterogeneous-shelf discriminator under another name.
 
-But the boundary is not structural-versus-governance: *reciprocity* fails, and reciprocity is as structural as anything in spec 2. The real line is that LinkML, SHACL, and JSON Schema all validate **one instance against a shape**. Everything that headwater does that they cannot is a property of the **whole graph, or of the corpus over time**.
+But the boundary is not structural-versus-governance: *reciprocity* fails, and reciprocity is as structural as anything in spec 2. The real line is that LinkML, SHACL, and JSON Schema all validate **one instance against a shape**. Everything that Headwater does that they cannot is a property of the **whole graph, or of the corpus over time**.
 
-That reframes the question from "does LinkML cover enough?" to "is a two-layer architecture — standard shape layer plus headwater graph layer — better than one custom layer?" Three readings follow:
+That reframes the question from "does LinkML cover enough?" to "is a two-layer architecture — standard shape layer plus Headwater graph layer — better than one custom layer?" Three readings follow:
 
-1. **Adopt it as the substrate.** Author the structural core as LinkML, layer headwater's governance declarations alongside, and inherit the meta-schema, the validator, and SHACL/JSON-Schema/OWL output. Less to build, a standard that others already read, and automatic interoperability.
+1. **Adopt it as the substrate.** Author the structural core as LinkML, layer Headwater's governance declarations alongside, and inherit the meta-schema, the validator, and SHACL/JSON-Schema/OWL output. Less to build, a standard that others already read, and automatic interoperability.
 2. **Stay independent, borrow the design.** LinkML's target is data models for research and biomedical data. A documentation taxonomy is a different animal, and a bolted-together schema — half LinkML, half ours — may be worse to author than either alone. The cognitive-dimensions walkthrough (Q2) is the instrument for the decision, and "two languages in one file" scores badly on role-expressiveness.
 
-3. **Emit it, do not author in it.** Author in headwater's language and compile the shape layer *to* LinkML, which then generates JSON Schema, SHACL, OWL and Pydantic through LinkML's own toolchain. One authoring surface, fully validated, with a standards-based export. This option only became visible when we wrote the example out, and it is now the leading candidate.
+3. **Emit it, do not author in it.** Author in Headwater's language and compile the shape layer *to* LinkML, which then generates JSON Schema, SHACL, OWL and Pydantic through LinkML's own toolchain. One authoring surface, fully validated, with a standards-based export. This option only became visible when we wrote the example out, and it is now the leading candidate.
 
-The decisive evidence against option 1 is mundane: everything headwater-specific lands in LinkML `annotations`, which are untyped pass-through. LinkML carries them and validates none of them. So for exactly the half that is ours, the meta-schema benefit disappears. Authors face two languages in one file, with no visual cue for which half is checked.
+The decisive evidence against option 1 is mundane: everything Headwater-specific lands in LinkML `annotations`, which are untyped pass-through. LinkML carries them and validates none of them. So for exactly the half that is ours, the meta-schema benefit disappears. Authors face two languages in one file, with no visual cue for which half is checked.
 
 I will not decide this unilaterally. It changes what we build, it is close to irreversible under option 1, and it interacts with the language decision in Q1. LinkML's tooling is Python, which pulls against a Rust core. Option 3 dissolves that tension, which is part of its appeal.
 
@@ -137,7 +137,7 @@ Two points of contact:
 - **The substrate is identical.** Markdown plus YAML front matter as a semantic contract for machine readers, deliberately *not* RDF/OWL/SHACL. That is an independent data point that the heavyweight stack is not required for this class of problem. It is useful evidence for the Q13 decision, and a caution against the assumption that the standards-based route is obviously correct.
 - **Assurance is not a layer.** Their framing puts provenance, authorship, freshness, auditability and ownership as oversight around the whole chain rather than a stage within it. That framing matches [spec 4](04-assurance-model.md) and is a cleaner statement of it than ours.
 
-But the direction is opposite. OpenGEO points **outward**: a publisher declares meaning to third-party engines that it does not control, with execution explicitly out of scope. headwater points **inward**: an organization governs its own corpus, for its own agents. We control the whole pipeline, and can therefore *check* things rather than merely declare them. Their context layer (tone, persona, interpretation envelope) follows from a lack of control over the consumer. We do control the consumer, so we constrain behavior directly, and do not merely request it.
+But the direction is opposite. OpenGEO points **outward**: a publisher declares meaning to third-party engines that it does not control, with execution explicitly out of scope. Headwater points **inward**: an organization governs its own corpus, for its own agents. We control the whole pipeline, and can therefore *check* things rather than merely declare them. Their context layer (tone, persona, interpretation envelope) follows from a lack of control over the consumer. We do control the consumer, so we constrain behavior directly, and do not merely request it.
 
 The transferable gap is **discovery**. OpenGEO takes seriously how a machine reader arrives cold and finds out what a corpus is. [Spec 7](07-distribution-and-federation.md) covers distribution to repositories that already know about us, and says nothing about an agent that encounters the corpus for the first time.
 
@@ -151,7 +151,7 @@ There are two related sources: the r/OntologyEngineering community, and Karpathy
 
 The community's stated position is that ontology should come **first**. You build the model of the domain and let agents derive the stack that supports it. Implementation is treated as a consequence of the model, rather than the other way round. Documentation generates the system. It does not describe one that already exists.
 
-That is the testerstories pipeline (§B) generalized into a methodology, and it is further than headwater currently goes. Our specs *describe* a system that exists. Theirs *generate* one. The two meet at the oracle idea in §B.1. A specification precise enough to test an implementation is most of the way to one precise enough to generate it. To be clear, headwater's design does not preclude the stronger position, but it does not currently claim it either.
+That is the testerstories pipeline (§B) generalized into a methodology, and it is further than Headwater currently goes. Our specs *describe* a system that exists. Theirs *generate* one. The two meet at the oracle idea in §B.1. A specification precise enough to test an implementation is most of the way to one precise enough to generate it. To be clear, Headwater's design does not preclude the stronger position, but it does not currently claim it either.
 
 ### F.2 Karpathy's LLM Wiki
 
@@ -161,7 +161,7 @@ Four things in it matter here, and one of them is a correction to something I wr
 
 **The anti-RAG argument, better than mine.** The objection raised is not that retrieval is imprecise — it is that retrieval *accumulates nothing*. Every question re-derives its answer from fragments, and the synthesis is thrown away. If you ask again tomorrow, the work is done again from scratch. Knowledge should be **compiled once and kept current**, not reconstructed per query.
 
-That is a stronger and more durable argument than the precision one that I gave in [spec 5](05-ai-integration.md#what-we-do-not-do). It is the argument that headwater's whole design rests on: validation, relations, and projections are all compilation steps whose results persist.
+That is a stronger and more durable argument than the precision one that I gave in [spec 5](05-ai-integration.md#what-we-do-not-do). It is the argument that Headwater's whole design rests on: validation, relations, and projections are all compilation steps whose results persist.
 
 A further data point: the pattern reports that a maintained index file works well into the hundreds of pages *without* embedding infrastructure. A governed documentation corpus is squarely in that range.
 
@@ -173,19 +173,19 @@ An LLM lint pass is therefore a legitimate **coherence control** — sampled, de
 
 > **Applied:** LLM-assisted coherence sweep added as a control class in spec 4.
 
-**The gap that it exposes: a third content tier.** The pattern's wiki is neither hand-authored nor mechanically generated. It is *synthesized* — an agent's interpretation of sources, which evolves and is revised as new sources arrive. headwater recognizes only two tiers: authored documents and deterministic projections. Synthesized content fits neither. The difference matters, because a projection can be verified through regeneration and a synthesis cannot.
+**The gap that it exposes: a third content tier.** The pattern's wiki is neither hand-authored nor mechanically generated. It is *synthesized* — an agent's interpretation of sources, which evolves and is revised as new sources arrive. Headwater recognizes only two tiers: authored documents and deterministic projections. Synthesized content fits neither. The difference matters, because a projection can be verified through regeneration and a synthesis cannot.
 
-Whether headwater should admit a synthesized tier is a genuine question. Such a tier needs its own provenance, its own staleness rules, and a clear statement that it is never canonical for anything. It is also how most organizations will actually want to use this.
+Whether Headwater should admit a synthesized tier is a genuine question. Such a tier needs its own provenance, its own staleness rules, and a clear statement that it is never canonical for anything. It is also how most organizations will actually want to use this.
 
 > **Recorded as [Q15](09-open-questions.md#q15--a-synthesized-content-tier).**
 
 ## G. Knowledge-graph chunking for RAG — a problem we do not have
 
-The TBox/ABox framing (§A) is the valuable half and stands independently of retrieval. The chunking half solves a problem that headwater does not have. That half covers how to slice a knowledge graph into embeddable pieces, and the trade between class-based and instance-based strategies. We record the reasoning because it also explains *why* we do not have the problem.
+The TBox/ABox framing (§A) is the valuable half and stands independently of retrieval. The chunking half solves a problem that Headwater does not have. That half covers how to slice a knowledge graph into embeddable pieces, and the trade between class-based and instance-based strategies. We record the reasoning because it also explains *why* we do not have the problem.
 
 Chunking exists because embedding retrieval must reconstitute meaning at query time from fragments chosen by similarity. Every strategy in that article manages a loss that the approach introduces. Class-based chunking orphans cross-class relations, and instance-based chunking fragments schema reasoning. Hybrid approaches are recommended because neither loss is acceptable alone.
 
-headwater never incurs the loss. Retrieval returns *identified documents reached along declared edges*, so structure is not something to reconstruct — it was never dissolved. There is nothing to chunk because nothing is embedded.
+Headwater never incurs the loss. Retrieval returns *identified documents reached along declared edges*, so structure is not something to reconstruct — it was never dissolved. There is nothing to chunk because nothing is embedded.
 
 This is the position stated properly rather than assumed, and it is recorded in [spec 5](05-ai-integration.md#what-we-do-not-do).
 
@@ -226,17 +226,17 @@ The point of contact is the **Open Knowledge Format**, which LeanCTX defines its
 - a relation vocabulary of `depends_on`, `related_to`, `supports`, `contradicts`, `supersedes`
 - written into the user's repository, byte-deterministic so exports diff cleanly
 
-Typed nodes, typed edges, Markdown in the repository. That is headwater's substrate, reached from an entirely different initial problem. This makes it a third independent arrival at the same choice, after OpenGEO (§E) and the LLM Wiki (§F.2). After three, we can no longer treat it as a preference.
+Typed nodes, typed edges, Markdown in the repository. That is Headwater's substrate, reached from an entirely different initial problem. This makes it a third independent arrival at the same choice, after OpenGEO (§E) and the LLM Wiki (§F.2). After three, we can no longer treat it as a preference.
 
 ### I.2 The arrow points the other way, and that is the whole difference
 
-OKF is an **export**. The durable store is a `knowledge.json` under the user's config directory — the only format that round-trips losslessly. Markdown is a projection *out* of it, for portability and hand-editing. headwater is the exact inverse: the Markdown is the corpus, and the graph, indexes and rules are projections out of *that* ([Q6](09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest) exists exactly to keep it that way).
+OKF is an **export**. The durable store is a `knowledge.json` under the user's config directory — the only format that round-trips losslessly. Markdown is a projection *out* of it, for portability and hand-editing. Headwater is the exact inverse: the Markdown is the corpus, and the graph, indexes and rules are projections out of *that* ([Q6](09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest) exists exactly to keep it that way).
 
 The inversion explains their validation, and a concrete statement of it is worthwhile: it is the sharpest available illustration of what a taxonomy is *for*. `lint_okf_bundle` returns warnings only — its own doc comment says that the checks are advisory and "a partially-malformed bundle should still import what it can". The complete set is: not a directory, unreadable, missing front matter, missing `type`, empty body. Four checks. The importer then does `get_str(fm, "type").unwrap_or("fact")`.
 
 **`type` is a free string with a default.** There is no closed vocabulary, no per-type required facets, no cardinality, no reciprocity, nothing whole-graph.
 
-This is not a criticism. For an export format, lenience is correct engineering: the obligation is to survive a round trip. A format that rejects its own bundles serves nobody. But it decides the overlap question. LeanCTX has our file format and none of our TBox. [§C](#c-linkml--the-uncomfortable-one) established that everything that headwater does beyond one-instance-against-a-shape is the interesting part. So a shared serialization costs us nothing and threatens nothing.
+This is not a criticism. For an export format, lenience is correct engineering: the obligation is to survive a round trip. A format that rejects its own bundles serves nobody. But it decides the overlap question. LeanCTX has our file format and none of our TBox. [§C](#c-linkml--the-uncomfortable-one) established that everything that Headwater does beyond one-instance-against-a-shape is the interesting part. So a shared serialization costs us nothing and threatens nothing.
 
 ### I.3 What transfers
 
@@ -270,7 +270,7 @@ That last detail is not decoration — it is [Q14](09-open-questions.md#q14--dis
 
 [TrustGraph](https://github.com/trustgraph-ai/trustgraph) (Apache-2.0, v1.2 shipped August 2025) is a containerized context-engineering platform. Documents flow through configurable pipelines in which **LLM agents extract entities and relationships** into a graph store (Cassandra, Neo4j, Memgraph or FalkorDB). Embeddings live in Qdrant, messages flow over Pulsar, and retrieval returns to agents as document-, graph-, or ontology-driven RAG. Its semantic layer is the standards stack — RDF, OWL, SKOS, SHACL. Every answer carries a per-fact provenance receipt: source document, ingestion timestamp, extraction method.
 
-The pitch overlaps ours almost word for word — typed graphs that ground agents in verifiable knowledge, with provenance. The implementations are close to opposites. In headwater, authors declare the graph: documents are the nodes, front-matter references are the typed edges, and no LLM issues a verdict. In TrustGraph, an LLM extracts the graph: documents are feedstock, dissolved into triples, and the 1.2 release headline is an agent that "autonomously populates the knowledge graph". Nothing in the platform governs the source documents — it mines them. Its retrieval modes manage exactly the reconstitution loss that §G describes. That makes TrustGraph the subject of that section, in production form. The overlap is at the slogan, not the layer beneath it.
+The pitch overlaps ours almost word for word — typed graphs that ground agents in verifiable knowledge, with provenance. The implementations are close to opposites. In Headwater, authors declare the graph: documents are the nodes, front-matter references are the typed edges, and no LLM issues a verdict. In TrustGraph, an LLM extracts the graph: documents are feedstock, dissolved into triples, and the 1.2 release headline is an agent that "autonomously populates the knowledge graph". Nothing in the platform governs the source documents — it mines them. Its retrieval modes manage exactly the reconstitution loss that §G describes. That makes TrustGraph the subject of that section, in production form. The overlap is at the slogan, not the layer beneath it.
 
 Three things deserve a record:
 
@@ -278,15 +278,15 @@ Three things deserve a record:
 - **A preview of Q15's provenance burden.** TrustGraph's extracted graph is precisely the synthesized tier that Q15 asks about — LLM-maintained, never verifiable by regeneration. Its per-fact receipts (source, timestamp, derivation method) are a concrete, operational design for the provenance record that such a tier needs.
 - **Attribution, implemented.** The receipt model — every answer traceable to the facts and the traversal that licensed it — is the attribution row of §H in production form. It is independent confirmation that a shipped system also put its effort into oracles and traceability.
 
-And one relationship deserves a record as complementary rather than rival. Source quality bounds extraction quality, so a governed corpus is an unusually good input to an extraction platform. Kinds, facets, and declared edges arrive as structure that the extractor otherwise must guess at. Under the [better-together principle](00-vision-and-scope.md#design-principles) of spec 0, that makes TrustGraph ingestion a candidate integration — a headwater corpus fed in as pre-structured source material. It is in the same family as the OKF export, and equally cheap to hold: the arrow points out of the corpus, and nothing flows back in.
+And one relationship deserves a record as complementary rather than rival. Source quality bounds extraction quality, so a governed corpus is an unusually good input to an extraction platform. Kinds, facets, and declared edges arrive as structure that the extractor otherwise must guess at. Under the [better-together principle](00-vision-and-scope.md#design-principles) of spec 0, that makes TrustGraph ingestion a candidate integration — a Headwater corpus fed in as pre-structured source material. It is in the same family as the OKF export, and equally cheap to hold: the arrow points out of the corpus, and nothing flows back in.
 
 > **Recorded:** counterweight evidence added to [Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate); provenance precedent added to [Q15](09-open-questions.md#q15--a-synthesized-content-tier).
 
 ## K. Modern Requirements — the first candidate where the arrow reverses
 
-[Modern Requirements4DevOps](https://www.modernrequirements.com/products/modern-requirements4devops/) is a commercial requirements-management extension embedded in Azure DevOps. Everything that it creates is an ADO work item. Requirements, reviews, baselines, and trace links live in the ADO store. Its own documentation calls that store the single source of truth for project artifacts. Its interchange surfaces are the ADO REST API and ReqIF, the OMG Requirements Interchange Format, which a companion extension supplies. This entry exists for a practical reason, not for survey completeness. An organization that we work with decided to adopt the tool. Thus "can a headwater corpus sit downstream of an RM tool?" is a question with a date on it.
+[Modern Requirements4DevOps](https://www.modernrequirements.com/products/modern-requirements4devops/) is a commercial requirements-management extension embedded in Azure DevOps. Everything that it creates is an ADO work item. Requirements, reviews, baselines, and trace links live in the ADO store. Its own documentation calls that store the single source of truth for project artifacts. Its interchange surfaces are the ADO REST API and ReqIF, the OMG Requirements Interchange Format, which a companion extension supplies. This entry exists for a practical reason, not for survey completeness. An organization that we work with decided to adopt the tool. Thus "can a Headwater corpus sit downstream of an RM tool?" is a question with a date on it.
 
-The overlap is larger than a commercial ALM extension suggests, and it sits on our side of the boundary. Requirements management is traceability management, and [spec 10 §B.5](10-theoretical-foundations.md#b5-traceability-information-models--our-idea-has-a-name-and-a-literature) grounds headwater's design in exactly that literature. The pieces that an RM integration needs are already specified:
+The overlap is larger than a commercial ALM extension suggests, and it sits on our side of the boundary. Requirements management is traceability management, and [spec 10 §B.5](10-theoretical-foundations.md#b5-traceability-information-models--our-idea-has-a-name-and-a-literature) grounds Headwater's design in exactly that literature. The pieces that an RM integration needs are already specified:
 
 - `traces_to` is an evidence relation, enabled by default ([spec 2](02-taxonomy-model.md#the-decision-relation-vocabulary)).
 - Work items are a named external anchor kind. One resolver owns each anchor kind, and resolution is a [correctness root](02-taxonomy-model.md#behavior-at-the-limits).

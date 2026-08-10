@@ -546,14 +546,16 @@ def in_scope(rel: str) -> bool:
 def all_in_scope(root: Path) -> list[str]:
     out = subprocess.run(["git", "ls-files", "-z", "--", *SCOPE],
                          capture_output=True, text=True, cwd=root, check=True)
-    return sorted(p for p in out.stdout.split("\0") if p and in_scope(p))
+    # An unmerged path appears once per index stage, so dedupe: during a
+    # conflicted merge the same file would otherwise be linted three times.
+    return sorted({p for p in out.stdout.split("\0") if p and in_scope(p)})
 
 
 def staged_files(root: Path) -> list[str]:
     out = subprocess.run(
         ["git", "diff", "--cached", "--name-only", "-z", "--diff-filter=ACM"],
         capture_output=True, text=True, cwd=root, check=True)
-    return sorted(p for p in out.stdout.split("\0") if p and in_scope(p))
+    return sorted({p for p in out.stdout.split("\0") if p and in_scope(p)})
 
 
 def staged_content(root: Path, rel: str) -> str:

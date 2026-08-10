@@ -1,8 +1,8 @@
-# The headwater checks in SHACL — a worked example
+# The Headwater checks in SHACL — a worked example
 
 The companion to the [LinkML worked example](linkml-worked-example.md), and the second half of the evidence for [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate).
 
-The two are not alternatives. LinkML is a **schema** language — it says what a document is. SHACL is a **constraint** language over **graphs** — it says what must hold across them. So SHACL maps onto headwater's *checks*, not its taxonomy, and it lands exactly where the LinkML exercise found the boundary: whole-graph invariants.
+The two are not alternatives. LinkML is a **schema** language — it says what a document is. SHACL is a **constraint** language over **graphs** — it says what must hold across them. So SHACL maps onto Headwater's *checks*, not its taxonomy, and it lands exactly where the LinkML exercise found the boundary: whole-graph invariants.
 
 **It gets further than I claimed in Q13, and one objection I recorded there does not survive contact with the spec.**
 
@@ -186,7 +186,7 @@ Two things this exposes that no amount of SHACL fixes:
 
 The sharper question, and the answer is narrower than the sections above suggest.
 
-SHACL validates **RDF**. headwater's instances are Markdown files with YAML front matter. So nothing above touches a document directly — it touches a *projection* of one, and everything depends on what that projection contains.
+SHACL validates **RDF**. Headwater's instances are Markdown files with YAML front matter. So nothing above touches a document directly — it touches a *projection* of one, and everything depends on what that projection contains.
 
 ### What is in the graph, and what is not
 
@@ -222,7 +222,7 @@ Combine that with `sh:targetClass` requiring explicit `rdf:type` triples in the 
 
 For an assurance system that is the worst available failure mode, because absence of data is indistinguishable from absence of problems, and it fails *quiet* and *green*. The document that is most broken is the one most likely to escape.
 
-The fix is not in SHACL. headwater must establish, before validation runs, that every file in the corpus was classified and routed to at least one check — and treat a document that matched nothing as a finding in its own right. That guarantee generalizes past SHACL to any check layer, so it belongs in the assurance model rather than here.
+The fix is not in SHACL. Headwater must establish, before validation runs, that every file in the corpus was classified and routed to at least one check — and treat a document that matched nothing as a finding in its own right. That guarantee generalizes past SHACL to any check layer, so it belongs in the assurance model rather than here.
 
 > **Applied:** every-document-accounted-for as an explicit obligation in [spec 4](../spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for).
 
@@ -236,7 +236,7 @@ So change-scoped validation needs the affected *subgraph*, and its extent is a f
 
 ## Where SHACL stops
 
-| headwater capability | SHACL |
+| Headwater capability | SHACL |
 |---|---|
 | Shape constraints, enums, cardinality, patterns | Core, directly |
 | Unknown-facet detection | `sh:closed` |
@@ -253,25 +253,25 @@ The pattern is consistent with the LinkML finding. SHACL covers the **graph** la
 
 ## Two corrections to what Q13 recorded
 
-**The error-message objection was too strong.** I wrote that SHACL's violation reports are "famously hard to read", which is true of raw reports and irrelevant here. `sh:message` with `{$this}` / `{?var}` interpolation in SPARQL-based constraints makes messages exactly as good as they are authored — and since headwater would *generate* the shapes, they would be as good as our generator. That objection should be withdrawn.
+**The error-message objection was too strong.** I wrote that SHACL's violation reports are "famously hard to read", which is true of raw reports and irrelevant here. `sh:message` with `{$this}` / `{?var}` interpolation in SPARQL-based constraints makes messages exactly as good as they are authored — and since Headwater would *generate* the shapes, they would be as good as our generator. That objection should be withdrawn.
 
 **The real objections are different, and sharper:**
 
-- **Line numbers are lost.** A SHACL `ValidationResult` carries `focusNode`, `resultPath`, `value`, `sourceShape`, `resultSeverity` and `resultMessage`. RDF has no notion of a byte offset in a Markdown file, so the `line` field that [spec 4](../spec/04-assurance-model.md#findings) requires cannot survive the round trip. Findings would need to be re-anchored to source positions by the headwater side.
+- **Line numbers are lost.** A SHACL `ValidationResult` carries `focusNode`, `resultPath`, `value`, `sourceShape`, `resultSeverity` and `resultMessage`. RDF has no notion of a byte offset in a Markdown file, so the `line` field that [spec 4](../spec/04-assurance-model.md#findings) requires cannot survive the round trip. Findings would need to be re-anchored to source positions by the Headwater side.
 - **No remediation, no fixability.** Spec 4 requires every finding to carry a remediation and a `fixable` flag. SHACL has no slot for either. They can be hung off the shape as custom properties and looked up via `sourceShape`, but that is a convention we would define, not something a stock SHACL consumer would understand.
-- **Posture is not severity.** `sh:Violation` / `sh:Warning` / `sh:Info` map onto headwater's severities, but headwater's *posture* — advisory versus blocking, and the promotion criteria attached to it — is a property of the control, not of the shape. It lives in the runner either way.
+- **Posture is not severity.** `sh:Violation` / `sh:Warning` / `sh:Info` map onto Headwater's severities, but Headwater's *posture* — advisory versus blocking, and the promotion criteria attached to it — is a property of the control, not of the shape. It lives in the runner either way.
 
 **And one objection dissolves.** Q13 noted that a SPARQL engine pulls against the single-binary, offline, sub-second constraints of spec 6. Embeddable Rust SPARQL engines exist, so an in-memory store over a corpus of this size is not obviously a problem. It needs measuring against the change-scoped budget rather than assuming, but it is not the blocker it looked like.
 
 ## What this means for Q13
 
-It reinforces **option 3**, and extends it. The LinkML example concluded: author in headwater's language, emit LinkML. This one adds the other half.
+It reinforces **option 3**, and extends it. The LinkML example concluded: author in Headwater's language, emit LinkML. This one adds the other half.
 
-> Emit **LinkML for the shape layer and SHACL for the graph layer**. Between them, an external consumer can validate a headwater corpus to a genuinely useful depth without installing headwater at all.
+> Emit **LinkML for the shape layer and SHACL for the graph layer**. Between them, an external consumer can validate a Headwater corpus to a genuinely useful depth without installing Headwater at all.
 
 The argument that decides it is the same one, and it is stronger here. Every interesting SHACL constraint above is embedded SPARQL. Hand-authored, that is *less* readable than the equivalent engine predicate and considerably harder to test. **Generated, nobody reads it** — and readability stops being a cost at all. That is the difference between adopting SHACL as the authoring surface (bad) and as a compilation target (good), and it is exactly the conclusion the LinkML exercise reached by a different route.
 
-Two things stay headwater-native regardless, and they should be stated as such rather than discovered later:
+Two things stay Headwater-native regardless, and they should be stated as such rather than discovered later:
 
 - the checks SHACL cannot express — schema operations, statistical measures, instrumentation;
 - the finding shape, because line anchoring, remediation and fixability are what make a finding actionable, and none of them survive the RDF round trip.

@@ -6,7 +6,7 @@ One parse, one graph, many consumers.
 
 The obvious decomposition — a separate linter per concern — is the wrong one. Each tool re-walks the tree, re-parses front matter, re-implements path matching, and re-derives what kind each document is. That is slow, and worse, it is *divergent*. When two tools disagree about what a document is, the result is contradictory findings and an unfixable bug report.
 
-headwater parses once, builds one typed graph, and runs every check against it. Checks become small predicates over a shared model instead of programs.
+Headwater parses once, builds one typed graph, and runs every check against it. Checks become small predicates over a shared model instead of programs.
 
 ## Pipeline
 

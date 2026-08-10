@@ -33,6 +33,10 @@ The assertion layer of the knowledge base: the documents and the edges that they
 
 A report that a document which should exist does not. [Participation expectations](#participation-expectation) are the only construct that produces one. See [spec 4](04-assurance-model.md#absence-is-a-finding-class-of-its-own).
 
+### Accuracy audit
+
+A periodic human or supervised-agent sample that asks one semantic question: does this specification still describe the system? Its output is a typed, tracked document inside the corpus. It was called a conformance audit until the name collided with [conformance](#conformance). See [spec 4](04-assurance-model.md#accuracy-audit).
+
 ### Adaptive
 
 The control class that retunes the other three, through efficacy probes, false-positive rates, and promotion decisions. See [spec 4](04-assurance-model.md#assurance-not-enforcement).
@@ -51,7 +55,7 @@ See [external anchor](#external-anchor).
 
 ### Anchor resolver
 
-The single component that owns identity for one anchor type. It normalizes anchor strings, so that two spellings of one target become one node. See [spec 2](02-taxonomy-model.md#behaviour-at-the-limits).
+The single component that owns identity for one anchor type. It normalizes anchor strings, so that two spellings of one target become one node. See [spec 2](02-taxonomy-model.md#behavior-at-the-limits).
 
 ### Assisted fraction
 
@@ -59,7 +63,7 @@ The measured share of required front matter, sections, identifiers, and relation
 
 ### Audit
 
-`headwater taxonomy audit` measures a taxonomy against a real corpus. Its findings are about the schema, and they are advisory by construction. Compare the [conformance audit](#conformance-audit), which asks a different question. See [spec 6](06-engine-architecture.md#taxonomy-validate-versus-taxonomy-audit).
+`headwater taxonomy audit` measures a taxonomy against a real corpus. Its findings are about the schema, and they are advisory by construction. Compare the [accuracy audit](#accuracy-audit), which asks a different question. See [spec 6](06-engine-architecture.md#taxonomy-validate-versus-taxonomy-audit).
 
 ### Backfill
 
@@ -119,15 +123,11 @@ The threshold below which routing says nothing. A wrong pointer costs more than 
 
 ### Confluence
 
-The property that a set of overlays, applied in any legal order, gives the same resolved taxonomy. The resolver checks it statically, before it applies anything. See [spec 2](02-taxonomy-model.md#customisation-by-composition).
+The property that a set of overlays, applied in any legal order, gives the same resolved taxonomy. The resolver checks it statically, before it applies anything. See [spec 2](02-taxonomy-model.md#customization-by-composition).
 
 ### Conformance
 
 The evaluated question of whether a consumer wired the method, rather than only copied it. It checks the [core](#core), not the whole taxonomy, which is the difference between a method and a monoculture. See [spec 7](07-distribution-and-federation.md#conformance).
-
-### Conformance audit
-
-A periodic human or supervised-agent sample that asks one semantic question: does this specification still describe the system? Its output is a typed, tracked document inside the corpus. See [spec 4](04-assurance-model.md#conformance-audit).
 
 ### Consumer
 
@@ -219,7 +219,7 @@ A stated, reasoned exemption from a rule, scoped to a file or a block. Voice che
 
 ### Evidence basis
 
-One of three honest states for the support behind a decision: `evidenced`, `reconstructed`, or `gap`. `reconstructed` is not a soft `evidenced`, and it never promotes silently. See [spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two).
+One of three honest states for the support behind a decision: `evidenced`, `reconstructed`, or [`unevidenced`](#unevidenced). `reconstructed` is not a soft `evidenced`, and it never promotes silently. See [spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two).
 
 ### Explain
 
@@ -271,7 +271,7 @@ The YAML block that carries the facets which a kind requires. It is the machine'
 
 ### Gap
 
-Two senses, both deliberate. As a [disposition](#disposition), no control discharges the obligation yet, and an owner tracks it. As an [evidence basis](#evidence-basis), no evidence exists and none is claimed. See [spec 4](04-assurance-model.md#every-obligation-has-exactly-one-disposition) and [spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two).
+A [disposition](#disposition). No control discharges the obligation yet, it is wanted, and an owner tracks it. The evidence sense of this word is now [`unevidenced`](#unevidenced). See [spec 4](04-assurance-model.md#every-obligation-has-exactly-one-disposition).
 
 ### Generated-file marker
 
@@ -379,7 +379,7 @@ The declared date role that a participation window measures from: `state_entered
 
 ### Overlay
 
-The declared customization of a base taxonomy, through `override`, `add`, and `remove`. An adopter never edits a base taxonomy. Merge semantics are strict, total, and order-independent. See [spec 2](02-taxonomy-model.md#customisation-by-composition).
+The declared customization of a base taxonomy, through `override`, `add`, and `remove`. An adopter never edits a base taxonomy. Merge semantics are strict, total, and order-independent. See [spec 2](02-taxonomy-model.md#customization-by-composition).
 
 ### Participation expectation
 
@@ -445,13 +445,13 @@ Which of two linked documents governs the reading. It is derived from nuclearity
 
 Whether the target of a relation must acknowledge the source, and with which inverse relation. Two halves that disagree are a finding, and the engine prefers neither side. See [spec 1](01-conceptual-model.md#relation).
 
-### Register projection
-
-The generated view of which controls discharge which obligations, with every disposition, control health, suppressions, and waivers. It is engine-defined, non-optional, and never authored. See [spec 4](04-assurance-model.md#every-obligation-has-exactly-one-disposition).
-
 ### Regime
 
 A reusable, named bundle of rules that a kind opts into, so that a rule is declared once and referenced many times. Two survive: [voice](#voice-regime) and [lifecycle](#lifecycle-regime). See [spec 1](01-conceptual-model.md#regimes).
+
+### Register projection
+
+The generated view of which controls discharge which obligations, with every disposition, control health, suppressions, and waivers. It is engine-defined, non-optional, and never authored. See [spec 4](04-assurance-model.md#every-obligation-has-exactly-one-disposition).
 
 ### Relation
 
@@ -565,6 +565,10 @@ The starting document for a kind, generated from the kind declaration. A templat
 
 One layer of a federation: the generic method, a divisional taxonomy, or a repository overlay. See [spec 7](07-distribution-and-federation.md#federation).
 
+### Unevidenced
+
+An [evidence basis](#evidence-basis). No evidence exists behind a decision, and none is claimed. Whether the register that collects these is the obligation [gap](#gap) register, or a second register of the same name, is unsettled. See [spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two).
+
 ### Unverifiable
 
 A [disposition](#disposition). No mechanism can discharge the obligation, the organization accepts that, and the reasoning is recorded. See [spec 4](04-assurance-model.md#every-obligation-has-exactly-one-disposition).
@@ -583,7 +587,7 @@ A named value set that facets reference. It is authoring syntax, validated as pa
 
 ### Voice regime
 
-The register that a kind writes in, with the machine-checkable part of it: declarative, narrative, or unconstrained. Enforcement is lexical, and every escape hatch must state a reason. See [spec 3](03-authoring-and-lifecycle.md#voice).
+The voice that a kind writes in, with the machine-checkable part of it: declarative, narrative, or unconstrained. Enforcement is lexical, and every escape hatch must state a reason. See [spec 3](03-authoring-and-lifecycle.md#voice).
 
 ### Volatility
 
@@ -614,7 +618,7 @@ Each pair below is two concepts that read as one. The specification treats each 
 | [Kind](#kind) | [State](#state) | A kind is rigid and a state is not. Lifecycle state must never become a kind, a shelf, or a directory |
 | [Obligation](#obligation) | [Control](#control) | The obligation is the commitment. The control is the mechanism. The binding between them is generated, never authored |
 | [Facet](#facet) | [Relation](#relation) | A connection between nodes is always a relation. A facet value is a scalar, and never a reference |
-| [Projection](#projection) | Authored document | A projection is regenerable, and CI checks it against regeneration. Synthesized content is neither ([Q15](09-open-questions.md#q15--a-synthesised-content-tier)) |
+| [Projection](#projection) | Authored document | A projection is regenerable, and CI checks it against regeneration. Synthesized content is neither ([Q15](09-open-questions.md#q15--a-synthesized-content-tier)) |
 
 ## Where the borrowed terms come from
 
@@ -641,12 +645,14 @@ Several terms are not ours. [Spec 10](10-theoretical-foundations.md) records the
 | SARIF | OASIS | One of the finding output formats |
 | MCP | Model Context Protocol | The agent-facing surface of the engine library |
 
-## Terms with a known collision
+## Terms that used to collide
 
-This page makes three name clashes visible. Each one is recorded here, and none is resolved here.
+An index of every term is what makes a name collision visible, so this page found four. All four are now resolved, and the [terminology decisions table](../reviews/ste-editorial-pass-findings.md) records what each one was and why the rename went the way it did. The rule that settled them: rename the sense that is not embedded in a schema key, a CLI verb, or a generated artifact name.
 
-- **register** — the voice sense (the register that a document writes in) and the [register projection](#register-projection) use one word for two concepts. The [STE pass](../reviews/ste-editorial-pass-findings.md) flagged it and asked for a ruling.
-- **gap** — a [disposition](#disposition) on an obligation, and a value of [`evidence_basis`](#evidence-basis) on a document. The two are related in spirit and separate in mechanism.
-- **audit** — [`taxonomy audit`](#audit) measures a schema against a corpus. A [conformance audit](#conformance-audit) is a human sample that asks whether a specification is still true of the system.
+- **register** — the voice sense is now *voice*. The word is left to the [register projection](#register-projection) and the registers that it generates.
+- **gap** — the evidence sense is now [`unevidenced`](#unevidenced). The word is left to the obligation [disposition](#disposition).
+- **audit** and **conformance** — spec 4's conformance audit is now the [accuracy audit](#accuracy-audit). `taxonomy audit` keeps its CLI verb, and [conformance](#conformance) keeps the adoption sense that owns `headwater conformance`.
+
+One question survives the renames. Spec 3 says that an `unevidenced` document appears in the gap register, and spec 4 says that an uncovered obligation appears in the gap register. Whether that is one artifact with two entry classes, or two artifacts that share a name, is unsettled and recorded.
 
 One further usage is deliberate rather than accidental. Routing **fails open** when it stays silent below its confidence gate. Conventional security usage would call that failing closed. Design principle 7 in [spec 0](00-vision-and-scope.md#design-principles) fixes the project meaning.

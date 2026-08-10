@@ -123,7 +123,7 @@ Where sources conflict, the agent cites **both** and flags the conflict ([spec 2
 
 These are explicit behaviors that an assistant who works in the corpus must show:
 
-1. **No decision record without external evidence.** If no work item, commit, discussion, or measurement supports it, halt and ask. If the human confirms that none exists, log a registered gap. Never invent rationale — a fabricated *why* is worse than an admitted absence, because someone will cite it.
+1. **No decision record without external evidence.** If no work item, commit, discussion, or measurement supports it, halt and ask. If the human confirms that none exists, record the document as `unevidenced` ([spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)). Never invent rationale — a fabricated *why* is worse than an admitted absence, because someone will cite it.
 2. **No hand edits to a generated file.** Change the source and regenerate.
 3. **No new shelf, kind, or facet invented in place.** Structural change is a taxonomy change: propose it, version it, migrate it.
 4. **No duplication of a fact that exists elsewhere.** Link. If the target is hard to find, fix the routing — do not copy.
