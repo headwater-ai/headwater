@@ -36,19 +36,37 @@ Headwater parses once, builds one typed graph, and runs every check against it. 
 
 **Cache** is content-addressed per file plus taxonomy hash, so incremental runs are proportional to the change, not the corpus. The change-scoped mode that CI and hooks use is the same code path with a smaller working set.
 
+## Nothing stores the graph
+
+The graph is a function of the corpus and the lock, and every run rebuilds it. Three artifacts derive from it, and none of them is canonical for anything ([Q6](09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest)).
+
+| Artifact | Lives for | Committed | Canonical for |
+|---|---|---|---|
+| The in-memory graph | one run | never | nothing |
+| The cache | until its inputs change | never, and version control ignores it | nothing |
+| An export | until a run regenerates it | when the taxonomy declares an output path | nothing |
+
+**The cache is disposable, and a test says so.** `headwater check --no-cache` produces output byte-identical to `headwater check`. A cache that can change a verdict is a store under another name. The engine carries that test beside the fixtures for its other correctness roots ([spec 12](12-check-layer.md#the-correctness-roots)).
+
+**There is no embedded database, and the trigger to add one is named.** The refusal rests on measurement rather than on taste. A warm change-scoped pass over 1,000 documents costs about 2 ms against a 200 ms budget ([spike results](../evaluations/language-spike-results.md)). Nothing in the design asks a question that the in-memory graph cannot answer inside the targets below. A named query workload that misses a target reopens this, and nothing else does.
+
+The industry does not agree, and the disagreement belongs in view. CodeQL ships a derived database as its query surface, at very large scale. The refusal here follows from spec 0's non-negotiables: offline, deterministic, and reviewable in a diff. It does not follow from a claim that a derived store cannot work ([evaluation](../evaluations/graph-export-and-federation.md)).
+
 ## Checks
 
 A check is a pure function from a **scoped view** of the graph to findings. Checks come from five origins:
 
 | Origin | Comes from | Exportable as |
 |---|---|---|
-| **Shape** | the taxonomy, generated | LinkML + SHACL |
+| **Shape** | the taxonomy, generated | JSON Schema, SHACL, LinkML |
 | **Graph** | relation declarations, generated | SHACL |
 | **Corpus** | declarations that need many documents at once | — |
 | **Document** | regimes applied to the body, which is not in the graph | — |
 | **Plugin** | adopter code | — |
 
 The first two are *generated*: a new facet or relation brings its checks with no code. That is the point of taxonomy-as-data, and most of the check count is there. The last three are why a native engine exists at all. They are exactly what LinkML and SHACL cannot express.
+
+The last column is a **set of emitter targets**, not one format. A check exportable to SHACL need not be exportable to JSON Schema, and most checks export to nothing. The engine generates both the exported set and the unexported set from one registry. A target may appear only when the emitted constraint is equivalent to the native check. [Spec 12](12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule) owns the partition rule and the equivalence bar.
 
 Every check declares its **scope** (document, edge, neighborhood, shelf, corpus), and the engine enforces it. A check sees only what it declared. Scope is what makes change-scoped evaluation exact, cache keys sound, and parallelism safe.
 
@@ -65,6 +83,21 @@ headwater generate --check    # fail if any committed output differs
 
 The engine implements these projection kinds: shelf indexes, relation views (decision lineage, traceability matrices), agent rule files, site navigation, graph export, coverage reports, and templates. A projection carries a generated-file marker. The engine refuses to overwrite a file that lacks the marker and did not come from a previous run. Thus a projection can never silently destroy an authored document.
 
+### An export is a projection, and it declares what it dropped
+
+A graph export is a projection like the others. The taxonomy declares its output path, so whether an export is committed is a schema decision and not an engine default ([principle 1](00-vision-and-scope.md#design-principles)). A declared export is held to regeneration by `generate --check`, exactly as a shelf index is.
+
+Exports fall into two classes, and only one class preserves fidelity.
+
+- **The native graph export** carries the property graph with no loss, and that includes the instance attributes on edges ([Q4](09-open-questions.md#q4--relation-storage)). It is what the federation tier reads ([spec 7](07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)).
+- **An interoperability export** is lossy by construction. RDF, SKOS, LinkML, SHACL, JSON Schema and OKF each speak a vocabulary that cannot carry everything in the graph.
+
+So every emitter declares a **loss set**: the node classes, edge classes, and attributes that its target cannot carry, each with a reason. Every export run then emits a **projection census**. Every node and every edge in the graph is either present in the output, or accounted for by a declared loss reason. An omission that no reason covers is a projector defect, and it fails the run.
+
+That is the coverage doctrine of [spec 4](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for), applied one layer out. It answers the trust problem that the [SHACL evaluation](../evaluations/shacl-worked-example.md#problem-one-everything-downstream-trusts-the-projection-and-shacl-does-not-check-it) found. The projector was the component that everything downstream trusted and nothing could check. A round trip is the wrong instrument for the lossy class, and an earlier draft of [Q6](09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest) asked for one. The native export keeps its round-trip test, because an empty loss set is exactly what a round trip proves.
+
+**Emitters never chain.** Every emitter reads the resolved lock and the graph directly. A pipeline that routes one standard format through another inherits every loss of every hop, and declares none of them. LinkML's own SHACL generator is the observed case, because it drops constructs that LinkML itself expresses ([Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate)).
+
 ## Interfaces
 
 ### CLI
@@ -76,10 +109,13 @@ headwater new        <kind> [--title ...]
 headwater route      <task description>
 headwater query      <expression>
 headwater explain    <path|identifier>
+headwater export     [--format json|jsonschema|shacl|rdf|skos|okf|linkml] [--check]
 headwater taxonomy   validate | resolve | diff | migrate | audit
 headwater coverage   [--format ...]
 headwater probe      [--category ...]
 ```
+
+`export` is the projection contract under another verb, and `--check` is the same comparison that `generate --check` performs. It carries its own verb because a consumer outside the repository asks for one format at a time. Only `json` and `jsonschema` ship in the first release, and each later format waits for a consumer who asks for it ([Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate)).
 
 The CLI is advisory by default (exit 0 with findings on stdout). Use `--strict` for gates. The default is deliberate: a tool that blocks on first contact is removed, and a removed tool catches nothing.
 

@@ -51,7 +51,7 @@ A posture. The finding reports and does not block. Every new check starts here. 
 
 ### Aggregator
 
-The tier that answers questions across taxonomies which share no vocabulary. It owns the [mappings](#mapping), normatively rather than conveniently. See [spec 7](07-distribution-and-federation.md#across-taxonomies-not-under-them).
+The tier that answers questions across taxonomies which share no vocabulary. It is a solution corpus plus one anchor kind, and it holds no merged graph. It owns the [mappings](#mapping), normatively rather than conveniently. It harvests [pinned exports](#pinned-export) and never queries a live endpoint. See [spec 7](07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it).
 
 ### Anchor
 
@@ -87,7 +87,7 @@ A named overlay that the publisher ships, which adds optional content and declar
 
 ### Cache
 
-Content-addressed per file, plus the taxonomy lock hash, so that an incremental run costs what the change costs rather than what the corpus costs. See [spec 6](06-engine-architecture.md#pipeline).
+Content-addressed per file, plus the taxonomy lock hash, so that an incremental run costs what the change costs rather than what the corpus costs. It is disposable by test: a run with the cache and a run without it produce byte-identical output. See [spec 6](06-engine-architecture.md#nothing-stores-the-graph).
 
 ### Capture cost
 
@@ -159,11 +159,11 @@ The semantics that an overlay may extend but never remove or redefine. It constr
 
 ### Corpus
 
-The set of documents that one taxonomy governs, rooted at one directory in one repository. A repository has exactly one corpus. See [spec 1](01-conceptual-model.md#the-corpus).
+The set of documents that one taxonomy governs, rooted at one directory. One taxonomy and one root make a corpus, and a repository holds one or more. A path resolves to exactly one of them. See [spec 1](01-conceptual-model.md#the-corpus).
 
 ### Corpus graph
 
-Typed nodes and typed edges, built in one pass and cached. The graph, not the file tree, is the engine's working representation. See [spec 1](01-conceptual-model.md#the-corpus).
+Typed nodes and typed edges, built in one pass and cached. The graph, not the file tree, is the engine's working representation. Every run rebuilds it, and nothing stores it. See [spec 1](01-conceptual-model.md#the-corpus).
 
 ### Correction
 
@@ -221,6 +221,10 @@ One relation instance in the graph. The edge, not the file, is the unit that cha
 
 The measured effect of the instruction surface on agent behavior, taken from the probe suite. A rule that measurably changes nothing is a candidate for deletion. See [spec 5](05-ai-integration.md#measuring-whether-any-of-this-works).
 
+### Emitter
+
+The generator for one [export](#export) target. Every emitter reads the resolved [lock](#lock) and the graph directly, and no emitter reads another emitter's output. See [spec 6](06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped).
+
 ### Engine
 
 The deterministic program that parses the corpus once, builds one graph, and runs every check against it. No LLM sits in its validation path. See [spec 6](06-engine-architecture.md#why-one-engine).
@@ -236,6 +240,10 @@ One of three honest states for the support behind a decision: `evidenced`, `reco
 ### Explain
 
 `headwater explain` prints why the engine typed a document as it did. It names the shelf that matched, the rule that fired, the declared purpose, and what is consequently required. Classification is never a black box. See [spec 2](02-taxonomy-model.md#kind-resolution).
+
+### Export
+
+A [projection](#projection) of the graph for a consumer outside the engine. The native graph export carries the property graph with no loss. Every interoperability export is lossy, and each one declares a [loss set](#loss-set). No export is canonical for anything. See [spec 6](06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped).
 
 ### External anchor
 
@@ -329,6 +337,10 @@ A property of a relation and of its family. A live document may not depend on a 
 
 The resolved taxonomy, written with a content hash and committed. Everything downstream reads the lock and never the sources, so a check result depends on a hash that a reviewer can see in a diff. See [spec 6](06-engine-architecture.md#pipeline).
 
+### Loss set
+
+What an [emitter](#emitter)'s target vocabulary cannot carry: node classes, edge classes, and attributes, each with a reason. The [projection census](#projection-census) is what proves the declaration complete. See [spec 6](06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped).
+
 ### Maintainer subagent
 
 A context-isolated agent that owns documentation upkeep across a change, with its own bounded instruction subset. It does not inflate the always-on prompt of every session. See [spec 5](05-ai-integration.md#agent-surfaces).
@@ -405,6 +417,10 @@ A kind's declaration that its documents, in a given state, acquire a named relat
 
 The taxonomy version that a consumer holds. A scheduled check compares it against the publisher's latest release. See [spec 7](07-distribution-and-federation.md#upstream-awareness).
 
+### Pinned export
+
+A source corpus's [export](#export), named by identity, content hash, and location, and committed where a harvesting tier can read it. An export that the tier cannot read is a finding that names the pin. See [spec 7](07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it).
+
 ### Plugin
 
 Adopter check code behind a narrow interface. It receives the same scoped view as a built-in check, obeys the same scope enforcement, and must name the obligation that it serves. See [spec 12](12-check-layer.md#the-plugin-interface).
@@ -436,6 +452,10 @@ A named overlay that the publisher ships for a repository archetype, which remov
 ### Projection
 
 A derived artifact computed from the graph: a shelf index, a lineage view, site navigation, an agent rule file, a graph export. Projections are generated, checked against regeneration, and declared in the schema. See [spec 1](01-conceptual-model.md#projections).
+
+### Projection census
+
+The account that an [export](#export) run gives of itself. Every node and every edge is present in the output, or covered by a declared [loss set](#loss-set) reason. An uncovered omission fails the run. It is the [census](#census) doctrine, one layer out. See [spec 6](06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped).
 
 ### Promotion
 
@@ -665,7 +685,7 @@ Several terms are not ours. [Spec 10](10-theoretical-foundations.md) records the
 | [Confluence](#confluence), overlay operations | Delta-oriented programming (Schaefer et al.) | Order independence of overlays, checked statically before application |
 | [Capture cost](#capture-cost) | IBIS, gIBIS, QOC, and the traceability literature | The failure that killed fifty years of design-rationale tools, now a tracked metric |
 | RFC 2119 | IETF | The normative keyword set that voice checking assumes by default |
-| LinkML, SHACL | The [evaluations](../evaluations/) | The export target for Shape and Graph checks, and an open substrate question ([Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate)) |
+| LinkML, SHACL | The [evaluations](../evaluations/) | Export targets for Shape and Graph checks. Emitted, never authored, and each one waits for a named consumer ([Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate)) |
 | SARIF | OASIS | One of the finding output formats |
 | MCP | Model Context Protocol | The agent-facing surface of the engine library |
 

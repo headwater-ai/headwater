@@ -169,8 +169,26 @@ A layered stack only helps organizations that share a root. Two divisions that a
 
 They do not need to merge. They need **declared correspondences**: SKOS-style mapping relations between their concept schemes ([spec 2](02-taxonomy-model.md#mapping-between-taxonomies)). `exactMatch` where two kinds are interchangeable, `closeMatch` where they are interchangeable for retrieval but not inference, `broadMatch` / `narrowMatch` where one is wider.
 
-With mappings declared, an aggregator answers "every decision in the organization" across taxonomies that share no vocabulary. Neither division gives up its own. Neither taxonomy changes. A third artifact records how they correspond, and the tier that aggregates owns it — normatively, not conveniently. Pairwise mappings between peers grow quadratically, and they go stale on every publisher release ([spec 2](02-taxonomy-model.md#mapping-between-taxonomies)). That is the standard answer to this problem in knowledge organization, and there is no reason to invent a worse one.
+With mappings declared, an aggregator answers "every decision in the organization" across taxonomies that share no vocabulary. The next section says what an aggregator is. Neither division gives up its own. Neither taxonomy changes. A third artifact records how they correspond, and the tier that aggregates owns it — normatively, not conveniently. Pairwise mappings between peers grow quadratically, and they go stale on every publisher release ([spec 2](02-taxonomy-model.md#mapping-between-taxonomies)). That is the standard answer to this problem in knowledge organization, and there is no reason to invent a worse one.
+
+### The tier above a corpus harvests it
+
+A tier that answers questions across many corpora needs their content. Two architectures were available, and only one survives contact with the constraints that this specification already set ([Q9](09-open-questions.md#q9--multi-repository-corpora)).
+
+**The aggregator is a solution corpus plus one anchor kind.** The solution layer is an ordinary corpus. It authors the facts that live between repositories, and it consumes exports for everything else. What was unstated is how it reaches the corpora below, and nothing new is needed for that. An anchor kind is declared, and exactly one resolver owns it ([spec 2](02-taxonomy-model.md#behavior-at-the-limits)). That resolver reads pinned corpus exports, in the way that the `code_path` resolver reads a source tree.
+
+**There is no merged graph.** Merging *is* anchor resolution, and anchor resolution leaves nothing behind when a run ends. The solution corpus holds its own documents and its own declared edges. It resolves anchors against the exports that it pinned, and it rebuilds that resolution on every run. A merged graph would be canonical for nothing, would carry no reviewer, and would cost one rebuild to reproduce. Such an artifact does not need to exist.
+
+**The tier harvests, and it never fans out.** Each source corpus carries a pin: an identity, a content hash, and a location. A scheduled job fetches each export out of band and commits it, and the resolver then reads the committed copy. The tier never queries a live endpoint. Three arguments agree, and this specification already made all three.
+
+- [Spec 0](00-vision-and-scope.md#non-negotiables) forbids a network dependency at check time, and a fan-out query is one.
+- [Spec 6](06-engine-architecture.md#performance-targets) budgets 100 ms for a route query. A fan-out across estates does not fit inside that, and a call that does not fit is a call that developers remove.
+- A fan-out that meets an unreachable source either fails whole, or returns a smaller answer with no notice. The second outcome is the silent pass that [spec 4](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for) exists to forbid.
+
+So a pinned export that the tier cannot read is a **finding that names the pin**. It is never a narrower answer, delivered quietly. The metadata-harvesting aggregators of the digital-library world reached this architecture under the same pressure, and the [evaluation](../evaluations/graph-export-and-federation.md) records what they found.
 
 ## Upstream awareness
 
 A scheduled check compares the pinned version against the latest release of the publisher. It raises a change proposal, with the diff report and the migration assessment attached. It does not raise a notification that nobody acts on. The default is a draft change request that an agent can complete. A pin that only a human can advance is a pin that goes stale.
+
+**One pattern, three instances.** A taxonomy pin, a requirements snapshot pin ([Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record)), and a source-export pin all work the same way. Each one fetches out of band, commits the result, checks against the committed copy, and compares on a schedule. Each one raises a change proposal and never a mutation. To state the pattern once is what keeps the third instance from arriving as a new mechanism.
