@@ -169,6 +169,16 @@ So the two directions use different evidence. **Demotion** runs on suppression l
 
 **Promotion** also needs an adjudicated sample. During the declared observation window, a fixed random sample of the candidate check's unsuppressed findings goes in front of a human. This happens at review, or in the periodic triage that the accuracy audit already schedules. The human applies the same two labels. A check whose sample was never adjudicated did not finish its observation window, however long it was advisory.
 
+### Where promotion does not apply
+
+Both instruments above measure one error class: the finding that fired and should not have. That is sound while the other error class is recoverable, and every control described so far meets that condition. A check that misses something today catches it tomorrow, after somebody notices.
+
+One class of control does not meet it. The rule below is general, so that it does not read as a special case:
+
+> A control walks the promotion path when both of its error classes are recoverable. Where one error class is unrecoverable, the control ships at its final posture. The evidence that the promotion machinery would collect is then evidence about the wrong error.
+
+The [withholding rule](06-engine-architecture.md#an-export-profile-carries-a-filter) of an export profile is the only instance today. A document withheld that could have been carried is visible, cheap and reversible. A document carried that should have been withheld is invisible to both instruments above, and no later run undoes it. So a withholding rule never ships advisory, carries no promotion criteria, and admits no escape hatch ([Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer)).
+
 ### Discharging coherence obligations: the assisted sweep
 
 To name a coherence class is easy. To discharge it is the hard part, and structural checks cannot do it. The mechanism is a periodic **LLM-assisted coherence sweep**. An agent reads a bounded slice of the corpus and reports what no linter can see:
@@ -262,7 +272,7 @@ Uniform findings make the rest cheap: one renderer per output format (human, Mar
 
 ## Suppression
 
-Suppression is permitted, bounded, and observable. It is scoped to a file or block, it carries an expiry, and it states a reason from a closed set. The reasons are `false_positive` (the finding is wrong) and `accepted_deviation` (the finding is right and tolerated for now). The coverage report includes an inventory of suppressions. A rule with fifty suppressions is not a rule — it is a finding about the taxonomy.
+Suppression is permitted, bounded, and observable. It is scoped to a file or block, it carries an expiry, and it states a reason from a closed set. The reasons are `false_positive` (the finding is wrong) and `accepted_deviation` (the finding is right and tolerated for now). The coverage report includes an inventory of suppressions. A rule with fifty suppressions is not a rule — it is a finding about the taxonomy. One class of finding sits outside the mechanism. A [withholding](06-engine-architecture.md#an-export-profile-carries-a-filter) finding is not suppressible. A suppression is one author's local judgment, and the error that it releases is a disclosure that nobody recalls.
 
 Both constraints were looser in an earlier draft, and each looseness broke something downstream. Expiry was optional here, while waiver expiry ([spec 7](07-distribution-and-federation.md#waivers)) was mandatory. That made the local mechanism — the one that an individual author reaches for at a red check — the leakier of the two, which is backwards. And an undifferentiated reason field conflated "wrong" with "tolerated". That made the false-positive rate unmeasurable, and that is the number that the promotion machinery above runs on.
 

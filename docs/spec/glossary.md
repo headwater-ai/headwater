@@ -161,6 +161,10 @@ The semantics that an overlay may extend but never remove or redefine. It constr
 
 The set of documents that one taxonomy governs, rooted at one directory. One taxonomy and one root make a corpus, and a repository holds one or more. A path resolves to exactly one of them. See [spec 1](01-conceptual-model.md#the-corpus).
 
+### Corpus descriptor
+
+The generated document that a machine reads when it arrives at a location with nothing else. It names every corpus root in the repository, with the taxonomy identity, the version, the lock hash, the entry points, and each [export profile](#export-profile). It is a [projection](#projection), so it cannot go stale against the roots. Its path is the engine's rather than the taxonomy's, because a reader who must read the taxonomy to find it already knows what it says. See [spec 7](07-distribution-and-federation.md#arriving-at-a-corpus-cold).
+
 ### Corpus graph
 
 Typed nodes and typed edges, built in one pass and cached. The graph, not the file tree, is the engine's working representation. Every run rebuilds it, and nothing stores it. See [spec 1](01-conceptual-model.md#the-corpus).
@@ -243,11 +247,15 @@ One of three honest states for the support behind a decision: `evidenced`, `reco
 
 ### Export
 
-A [projection](#projection) of the graph for a consumer outside the engine. The native graph export carries the property graph with no loss. Every interoperability export is lossy, and each one declares a [loss set](#loss-set). No export is canonical for anything. See [spec 6](06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped).
+A [projection](#projection) of the graph for a consumer outside the engine. The native graph export carries the property graph with no loss. Every interoperability export is lossy, and each one declares a [loss set](#loss-set). It is also the serving boundary, so an [export profile](#export-profile) is where a corpus decides what leaves it. No export is canonical for anything. See [spec 6](06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped).
+
+### Export profile
+
+An entry under `projections` that names an audience, an emitter target, an output path, a filter over facet values, and a [tombstone grain](#tombstone-grain). It is not a twelfth declaration. A corpus with one audience declares one profile and no filter. See [spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter).
 
 ### External anchor
 
-A node for something outside the corpus that documents point at: a code path, a work item, a service, a URL. It carries an identity, and never a purpose or a lifecycle. See [spec 1](01-conceptual-model.md#external-anchor).
+A node for something outside the corpus that documents point at: a code path, a work item, a service, a URL. It carries an identity, and never a purpose or a lifecycle. Resolution has three outcomes: resolved, unresolved, and [withheld](#withholding). See [spec 1](01-conceptual-model.md#external-anchor).
 
 ### Facet
 
@@ -351,7 +359,7 @@ A declared SKOS correspondence between two taxonomies: `exactMatch`, `closeMatch
 
 ### MCP server
 
-The agent-facing surface of the engine library. It exposes `route`, `governing_docs_for_path`, `resolve_identifier`, `related`, `explain`, and `check`. It is read-only by default. See [spec 5](05-ai-integration.md#agent-surfaces).
+The agent-facing surface of the engine library. Its tools fall in three classes: query, working-tree write, and landed write. The first two ship, and the third never does, because acceptance is a human act. It applies no filter to a corpus that its reader already holds. See [spec 5](05-ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it).
 
 ### Meta-schema
 
@@ -451,7 +459,7 @@ A named overlay that the publisher ships for a repository archetype, which remov
 
 ### Projection
 
-A derived artifact computed from the graph: a shelf index, a lineage view, site navigation, an agent rule file, a graph export. Projections are generated, checked against regeneration, and declared in the schema. See [spec 1](01-conceptual-model.md#projections).
+A derived artifact computed from the graph: a shelf index, a lineage view, site navigation, an agent rule file, a graph export, the [corpus descriptor](#corpus-descriptor). Projections are generated, checked against regeneration, and declared in the schema. A projection that leaves the repository may carry a filter, and it then says so. See [spec 1](01-conceptual-model.md#projections).
 
 ### Projection census
 
@@ -459,7 +467,7 @@ The account that an [export](#export) run gives of itself. Every node and every 
 
 ### Promotion
 
-The evidence-bound move of a check from advisory to blocking. It needs an observation window, a false-positive rate under a declared threshold, a mechanical remediation path, and an adjudicated sample. Demotion is the inverse. See [spec 4](04-assurance-model.md#promotion-advisory-to-blocking).
+The evidence-bound move of a check from advisory to blocking. It needs an observation window, a false-positive rate under a declared threshold, a mechanical remediation path, and an adjudicated sample. Demotion is the inverse. A control with one unrecoverable error class does not walk this path, and a [withholding](#withholding) rule is the one instance. See [spec 4](04-assurance-model.md#promotion-advisory-to-blocking).
 
 ### Provenance
 
@@ -609,6 +617,10 @@ The starting document for a kind, generated from the kind declaration. A templat
 
 One layer of a federation: the generic method, a divisional taxonomy, or a repository overlay. See [spec 7](07-distribution-and-federation.md#federation).
 
+### Tombstone grain
+
+What a filtered [export profile](#export-profile) tells a reader about what it withheld. `counted` gives the number by declared reason, and `sealed` gives only the fact of the filter. No profile may present a filtered view as total. See [spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter).
+
 ### Unevidenced
 
 An [evidence basis](#evidence-basis). No evidence exists behind a decision, and none is claimed. Whether the register that collects these is the obligation [gap](#gap) register, or a second register of the same name, is unsettled. See [spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two).
@@ -645,6 +657,10 @@ A consumer's deliberate deviation from a conformance rule, with a rule name, a r
 
 The time bound on a [participation expectation](#participation-expectation), measured from a declared [origin](#origin). An expectation with no window is a wish. See [spec 2](02-taxonomy-model.md#participation-expectations).
 
+### Withholding
+
+The removal of a document from an [export profile](#export-profile) by its declared filter. It is a [loss set](#loss-set) reason, so the [projection census](#projection-census) accounts for it. The rule that performs it never ships advisory, and no suppression or waiver reaches it, because its false negative is a disclosure that nothing recalls. See [spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter).
+
 ## Distinctions that the design depends on
 
 Each pair below is two concepts that read as one. The specification treats each difference as structural, so a reader who collapses a pair will misread the design.
@@ -663,6 +679,8 @@ Each pair below is two concepts that read as one. The specification treats each 
 | [Obligation](#obligation) | [Control](#control) | The obligation is the commitment. The control is the mechanism. The binding between them is generated, never authored |
 | [Facet](#facet) | [Relation](#relation) | A connection between nodes is always a relation. A facet value is a scalar, and never a reference |
 | [Projection](#projection) | Authored document | A projection is regenerable, and CI checks it against regeneration. Synthesized content is neither ([Q15](09-open-questions.md#q15--a-synthesized-content-tier)) |
+| [Withholding](#withholding) | An unresolved anchor | One is somebody's declared decision, reported at a declared grain. The other is a defect. Counted as one class, the defects disappear |
+| [Loss set](#loss-set) | [Withholding](#withholding) | A loss is what a target vocabulary cannot carry. A withholding is what a corpus chose not to send. Both are census reasons, and only one is a policy |
 
 ## Where the borrowed terms come from
 

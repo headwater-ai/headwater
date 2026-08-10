@@ -40,7 +40,7 @@ That buys the cross-estate edges that the layer exists for. Every substantive as
 
 The decision belongs in the specification rather than in whichever schema someone writes first. The ontology-first thesis of §F.1 argues for a step further. An architecture layer is exactly where that step can pay. So this is a genuine choice, not a formality.
 
-> **Recorded in [Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer), alongside the access question that the same layer raises.**
+> **Decided: a solution-layer node is a declared anchor ([spec 7](07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)).** The [evaluation](../evaluations/the-serving-boundary.md) adds a second argument that this section did not have, and it is the one that settles the case. A filter has nothing to attach to on a node that carries properties. A document has facets that a predicate reads, and an anchor is carried whole or withheld whole.
 
 ## B. Specification → ontology → implementation (testerstories)
 
@@ -143,7 +143,7 @@ But the direction is opposite. OpenGEO points **outward**: a publisher declares 
 
 The transferable gap is **discovery**. OpenGEO takes seriously how a machine reader arrives cold and finds out what a corpus is. [Spec 7](07-distribution-and-federation.md) covers distribution to repositories that already know about us, and says nothing about an agent that encounters the corpus for the first time.
 
-> **Recorded as [Q14](09-open-questions.md#q14--discovery-surface).**
+> **Recorded as [Q14](09-open-questions.md#q14--discovery-surface), which has since closed.** The gap named here is real and it is narrower than this section states. A corpus can tell an arriving machine what governs it, and that is the [corpus descriptor](07-distribution-and-federation.md#arriving-at-a-corpus-cold). A corpus cannot make itself found by a machine that holds no pointer to it, and no file inside a corpus ever will.
 
 ## F. Ontology-first, and the LLM-maintained wiki
 
@@ -264,7 +264,7 @@ But the spec lives on a private GitLab instance that belongs to the same author,
 
 The most transferable thing here is not technical. LeanCTX ships a product site that covers, coherently and in eighteen languages, what most open specifications never assemble. The site has how-it-works, architecture, benchmarks, compatibility, competitor comparisons, six use-case pages, pricing, an enterprise tier, docs, changelog, community, and a compliance self-assessment. Its `robots.txt` explicitly welcomes AI crawlers under a "GEO" heading, and it serves an `llms.txt` that describes it to machine readers.
 
-That last detail is not decoration — it is [Q14](09-open-questions.md#q14--discovery-surface) already shipped by someone else. It is evidence that the discovery surface has a human half that we did not plan for at all. A corpus that nobody can evaluate from the outside is not adopted, however well it validates.
+That last detail read at the time as [Q14](09-open-questions.md#q14--discovery-surface) already shipped by someone else, and the measurement since says otherwise. A study of about 137,000 domains found that 97% of valid `llms.txt` files received no requests at all in one month. Most of the requests that did arrive came from audit tools. No major model provider has stated that it reads the file. The lesson survives the correction and changes shape. A published descriptor is worth what its obliged consumer is worth, and this one has none ([§O.3](#o3-llmstxt-is-the-measured-failure-of-a-descriptor-with-no-obliged-reader)). What the site does establish stands: the discovery surface has a human half that we did not plan for at all. A corpus that nobody can evaluate from the outside is not adopted, however well it validates.
 
 > **Recorded as [Q16](09-open-questions.md#q16--public-presence).**
 
@@ -393,9 +393,11 @@ Two regex controls sit in Serena's configuration. `read_only_memory_patterns` ma
 
 The second is the instructive one. The documentation states that an ignored memory is reachable through no memory tool. It then tells the reader to open that memory with the general `read_file` tool, on the raw path. The filter sits in the tool surface. The bytes sit in the repository. Serena's security page states the same limit about a different feature. The trust gate is "a functionality boundary, not a containment boundary".
 
-[Q17](09-open-questions.md#access-control-is-a-property-of-the-serving-boundary) already places enforcement at the serving boundary rather than at the authoring layer. Here that position is confirmed by counterexample. A control that filters one reading path, while the bytes stay readable along another, is a convenience. `read_only_memory_patterns` is the honest half of the pair, because it constrains a cooperative agent and claims nothing beyond that.
+[Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer) places enforcement at the serving boundary rather than at the authoring layer. Here that position is confirmed by counterexample. A control that filters one reading path, while the bytes stay readable along another, is a convenience. `read_only_memory_patterns` is the honest half of the pair, because it constrains a cooperative agent and claims nothing beyond that.
 
-> **Recorded:** evidence added to [Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer).
+This entry then decided more than it looked like it would. Q17 first read the serving boundary as the federated tier, and a tier that serves holds bytes that a publishing corpus already gave it. That is this same failure at one remove. So the boundary moved inward, to the export step of each publishing corpus. The Headwater MCP server then inherits the honest half of Serena's pair. It applies no filter to a corpus that its reader already holds, and it says so ([spec 5](05-ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it)).
+
+> **Applied:** the filter placement in [spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter), and the no-filter rule for the MCP server in [spec 5](05-ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it). [Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer) closed.
 
 ### L.7 Two smaller things, and a gap in the evaluation
 
@@ -522,6 +524,155 @@ GraphQL federation is the counter-example, and it proves the rule. Apollo's rout
 
 > **Applied:** harvest over fan-out, and the pinned export, in [spec 7](07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it).
 
+## O — The serving boundary: descriptors, redaction, and the write path
+
+This section sits with §N, after the capstone, and for the same reason. Its sources arrived with the [serving-boundary evaluation](../evaluations/the-serving-boundary.md), which closed [Q14](09-open-questions.md#q14--discovery-surface), [Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer) and [Q7](09-open-questions.md#q7--scope-of-the-mcp-surface). §M binds them in full. Two of the sources below measure adoption rather than efficacy, and the distinction is worth holding. They say what a mechanism achieved in the field. They say nothing about whether the knowledge it carried helped anyone.
+
+### O.1 The well-known convention is narrower than its reputation
+
+RFC 8615 reserves a path prefix at the **root of an origin**, and an IANA registry admits suffixes under a specification-required policy. Its author's current guidance names three costs. The approach locks a service into a one-to-one relation with a site. It misdescribes a host that represents several publishers. And it needs control of the apex. The recommendation is direct: where a protocol can carry a full URL, a well-known location earns nothing.
+
+A corpus meets all three objections at once. A repository holds one or more corpora. A documentation site is often one part of a larger host. And the party who writes a descriptor rarely owns the root. RFC 9727 registers a **link relation** beside its well-known path for the same reason, and that half is the one a corpus can always use.
+
+> **Applied:** the canonical descriptor location is repository-relative, and a pointer reaches the served copy ([spec 7](07-distribution-and-federation.md#arriving-at-a-corpus-cold)).
+
+### O.2 Registration is configuration, in every registry that ships a descriptor
+
+Three package ecosystems put a capability document at a fixed path inside an index. None of them discovers the index. The Python simple-repository API takes the index URL from configuration and reports its own version inside each response. Cargo takes a scheme-tagged index URL from configuration and reads `config.json` at the index root. The npm client takes the registry URL from configuration and negotiates capability by content type.
+
+That settles what a fixed-path descriptor is for. It describes an already-known location, and it does not make a location known. The Python contract is the part worth copying whole. Every response carries a `Major.Minor` version. A major above what the client understands is a hard failure, and a minor mismatch is a warning.
+
+The sitemap protocol adds the two-level shape and one detail that is easy to miss. An index names up to 50,000 sitemaps, and each of those names up to 50,000 URLs. The index carries a location and a modification date and nothing else. The fixed path is not the sitemap. It is the robots file, which carries a *pointer*.
+
+> **Applied:** the split between registration and resolution, and the version contract, in [spec 7](07-distribution-and-federation.md#arriving-at-a-corpus-cold) and [Q14](09-open-questions.md#q14--discovery-surface).
+
+### O.3 `llms.txt` is the measured failure of a descriptor with no obliged reader
+
+The convention was proposed in September 2024, and it is close in spirit to what Q14 leaned toward. A study of about 137,000 domains reports that 28% publish one. Of roughly 38,000 valid files, **97% received no requests at all in one month**. About 96% of the requests that did arrive came from bots, and only about a fifth of those were named AI tools. No major model provider has stated that it consumes the file.
+
+The published diagnosis is structural rather than aesthetic. The format cannot work without cooperation from parties who never agreed to cooperate. The sample is self-selected and the adoption figure is biased upward, which makes the zero-request figure the reliable half.
+
+This corrects [§I.5](#i5-the-presentation-is-the-lesson), which read the file as Q14 already shipped by somebody else. What survives is sharper than what it replaces. A descriptor is worth exactly what its obliged consumer is worth. Headwater's first consumer is its own tooling, which it controls and can oblige, and that difference is the whole reason to build one.
+
+> **Applied:** the obliged-consumer argument in [Q14](09-open-questions.md#q14--discovery-surface), and the caution carried into [Q16](09-open-questions.md#q16--public-presence).
+
+### O.4 Absence reads as presence, and a declaration needs a verifier
+
+A survey of seventy-four API providers for the standardized catalog path found four real documents. **Sixty-eight returned a success status with an unrelated HTML page**, because a catch-all route answers every path. Two returned a clean not-found. The sample is curated and point-in-time, and the failure mode it exposes is not.
+
+The declaration side has the same shape. An OGC API implementation serves the conformance classes that it supports, and a listed class obliges the whole capability behind it. STAC moved that list to its landing page so that one request answers the question. A separate validator exists to test each declared class against the live service, and its documentation records real classes of wrong declaration in the wild. This survey found no published statement that conformance lists routinely lie. The weaker evidence carries the point anyway. Nobody writes a rule that a declared class must be implemented unless the rule has been broken.
+
+One header from a neighboring domain belongs here rather than with the redaction sources, because it is the same idea in miniature. When an OCI registry applies a server-side filter to a referrers query, it must return a header saying that a filter was applied. A partial answer announces itself in band, so a client can separate "no results" from "I did not look".
+
+> **Applied:** the required media type and shape check in [spec 7](07-distribution-and-federation.md#arriving-at-a-corpus-cold), and the announce-the-filter rule in [spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter).
+
+### O.5 The annotations are hints, and the attacks arrive before the call
+
+The Model Context Protocol gained tool annotations in its March 2025 revision, and they survive unchanged into the current one: `readOnlyHint`, `destructiveHint`, `idempotentHint` and `openWorldHint`. The normative sentence is that clients **must** consider tool annotations untrusted unless they come from trusted servers, and the schema repeats it. The properties are hints, and they are not guaranteed to describe behavior faithfully. The specification never defines a trusted server.
+
+Two details are worth keeping. An omitted `readOnlyHint` means false, and an omitted `destructiveHint` means true. Silence means "assume destructive", which is the same error asymmetry that [principle 7](00-vision-and-scope.md#design-principles) states for an exporter. And the shipped read-only modes of a large forge's reference server filter at registration, so the flag describes a tool that is not there.
+
+The published attacks defeat the obvious safety argument. The line-jumping result is the sharpest. A payload in a tool description enters a model's context at *discovery* time, before any call. It therefore bypasses invocation-time approval entirely, and the malicious tool never has to run. Tool poisoning and the mutable-description case are the same family. All of these are vendor disclosures and preprints, and this survey found no peer-reviewed source among them.
+
+One observed exploit ties this to §L.6 and to the access question. An attacker filed an issue on a public repository. A user asked their agent a benign question, and the agent read private content and published it **by opening a proposal on the public repository**. The write tool was the exfiltration channel. Two supply-chain incidents have the same shape at another layer. One compromised a bot credential that held write access. One exfiltrated secrets by creating a public repository and committing to it.
+
+The protocol supplies no approval primitive. Its human-in-the-loop language is a *should* addressed to clients, and it concedes that it cannot enforce its security principles at the protocol level. Its elicitation feature is a structured-input channel rather than an authorization one. So propose-rather-than-commit is a Headwater decision with no protocol vocabulary behind it.
+
+> **Applied:** the three tool classes, the annotation-is-not-enforcement rule, and the disclosure-channel argument in [spec 5](05-ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it).
+
+### O.6 Propose and do not land, and what actually confines a proposer
+
+A production coding agent at a large forge implements the ruling that [Q7](09-open-questions.md#q7--scope-of-the-mcp-surface) reached. It pushes to one namespaced branch and no other. It opens a draft proposal, cannot mark that proposal ready, cannot approve it, and cannot merge it. Continuous integration does not run until a person with write access approves. Several dependency bots follow the same shape. One governance tool takes the cheapest posture of all, and reports an issue rather than authoring a change.
+
+**The permission split alone does not deliver it, and that is the sharpening.** On the platform whose generated permission data this survey checked directly, creating a proposal needs one permission and merging needs another. That looks like the separation. It is not, because creating the branch that a proposal points at needs the same permission that merging needs. A proposer that authors its own branch is therefore not confined by its credential. Two mechanisms confine it: a branch rule that requires review and grants the proposer no exemption, or a separate repository that the proposer owns.
+
+**A proposal channel is priced by selectivity, and this part is peer reviewed.** A 2017 study of 7,470 projects found that automated proposals raised upgrade frequency by about 1.6 times. Only about a third of those proposals merged, against roughly four fifths for ordinary ones within three days. A 2021 study of 2,904 projects found that about 65% of *security* proposals were accepted, often within a day. A 2024 journal study over 9.9 million proposal-related issues confirms the scale. The mechanism is identical in all three, so what moves the number is what the proposer chooses to propose. Notification fatigue was the top reported complaint in 2017, and the standard remedy is a cap on open proposals.
+
+**Two field results about shared write access.** A long-running collaborative packaging organization closed in March 2026. It reported that only about one in ten machine-generated proposals met project standards. It also reported that an organization which gives push access to everyone can no longer operate safely. A widely used project ended its bug bounty in January 2026. Low-quality machine-generated reports had driven its confirmation rate below 5%, from a historical figure above 15%. Its intake later reopened and the bounty did not. Neither result is about documentation, and both are about what an unselective write channel does to the people who maintain the thing.
+
+> **Applied:** the proposal budget and the confinement statement in [spec 7](07-distribution-and-federation.md#upstream-awareness).
+
+### O.7 Filter where the data is written, not where it is read
+
+Multilevel-secure database research ran this comparison in the 1980s and wrote down the answer. Lunt's 1989 paper on aggregation and inference sets SeaView against LDV. SeaView applies classification once, when data enters. LDV applies it on every access. Her verdict on the second is that a low user may infer high information from the results of their own queries. Different information is released depending on the context in which the query was posed. She adds that the read-side design drags a large part of the database mechanism into the trusted base.
+
+That is the ruling of [Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer), reached forty years earlier in another discipline. It also names a second cost that this design would otherwise have to discover. A filter that runs on every read makes the *behavior of the filter* an inference channel.
+
+The redaction literature says the same thing in the crudest possible form. Four dated public cases exist in which a black rectangle covered text that was still in the file. A copy-and-paste recovered it in every one. The authoritative guidance is unambiguous. Information hidden or covered in a computer document can almost always be recovered, so the item must be **deleted** rather than obscured. Where deletion breaks the layout, the guidance says to replace it with meaningless content of the same size. That is a tombstone, specified as engineering.
+
+> **Applied:** filtering at the export step, and a placeholder rather than a cover, in [spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter).
+
+### O.8 "3 documents withheld" is a named channel, and the field named it in 1986
+
+The withheld count has a name in this literature. Denning called it the **missing data inference channel** in 1986, and Lunt records the conditional that governs it. Holes in a relation are correct when the existence of the hidden item is not itself sensitive, and they are a channel when it is.
+
+The field's own answer to the second case is the one that Headwater declines. Multilevel databases invented **polyinstantiation** and **cover stories** so that a filtered view would look complete. The standard reference then documents the cost. Real-world entity integrity is lost. High users receive a mix of real data and cover stories with no explanation. And nobody can later tell reality from cover story from data-entry error.
+
+So the two branches are both known and both costly, and the choice between them is conditional. That is the `counted` and `sealed` grain, and it is a switch rather than a preference.
+
+The freedom-of-information statute reaches the identical conditional from the other direction. It requires three things at a deletion. The amount deleted. The place in the record where the deletion is made. And the rule under which it was made. Its exception is the same one. The indication is omitted where including it would harm the interest that the exemption protects. A 1973 appellate decision supplies the reason for the default. The party who wants a record cannot argue about content that it cannot see, so only an itemized account restores the argument. The civil-procedure counterpart requires a description that lets another party assess the claim "without revealing information itself privileged or protected". A protocol precedent exists too. The HTTP status code for a legal obstacle asks for the demanding party and the applicable rule. It then concedes that a client cannot rely on receiving either.
+
+Three consequences follow, and the third is the one that a footer count misses.
+
+- The default is legible, because that is the usual obligation in every source above.
+- The exception is narrow and separately justified. Courts treat a refusal to confirm or deny as an answer that must itself be defended, and not as a default.
+- **Amount, position, and reason** is the specification. A count in a footer gives one of the three. A placeholder at the position, carrying the rule identifier, gives all three. The reason comes from a closed set, because free prose in a tombstone is a second channel.
+
+The clearest working example of the switch is one vendor's own product. It answers a request for a private repository with "not found" rather than "forbidden", so the reply does not confirm existence. The same product answers a legal takedown with a status code that names the rule, and it publishes the notice. Illegible for permission, legible for rule, in one system, deliberately.
+
+**And the honest limit.** The 1996 standards report on inference and aggregation states that eliminating inference is difficult if not impossible. It calls classification rules a constant trade-off. And it carries the sentence that this design should adopt: inference controls mean that complete data correctness is not always possible for the low reader. The covert-channel guidance of the same tradition sets bandwidth thresholds rather than a prohibition. The posture is to bound and declare a channel, never to claim its absence.
+
+> **Applied:** the declared tombstone grain, the closed reason set, and the non-claims in [spec 6](06-engine-architecture.md#what-a-filtered-export-claims-and-what-it-does-not).
+
+### O.9 The derived artifact is where a correct redaction leaks
+
+One case is worth more than the four in §O.7 because the redaction *held*. A deposition shipped with its text correctly removed. It also shipped with an alphabetized word index that covered redacted and unredacted words alike, so the alphabetical neighbors bracketed every hidden term. Electronic-discovery guidance carries the general form of the rule. When a redaction is burned into an image, the extracted searchable text layer has to be withheld or regenerated. Otherwise it reproduces exactly what the image hides.
+
+A database vendor supplies the same failure in a supported feature. Creating a table from a query over a row-filtered table copies the filtered rows and does **not** carry the policy. The data crosses and the rule does not.
+
+A governed corpus produces exactly the metadata that betrayed that deposition: indexes, counts, sort orders, link degrees, navigation trees. So a filtered profile regenerates every projection that it carries, from the filtered graph. A projection built once at full visibility and then shipped inside a filtered profile is the leak. It is the class of leak that survives a correct redaction of the documents.
+
+> **Applied:** the regenerate-from-the-filtered-graph rule in [spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter).
+
+### O.10 What the filtered result may say, and what a permission model would have cost
+
+**Any diagnostic that a full-visibility component emits is a channel.** PostgreSQL states the general rule in its own documentation for row-level security. A function is `LEAKPROOF` only when it reveals nothing about its arguments except through its return value. A function that puts argument values into an error message is therefore not leakproof. Only a superuser may make the declaration. The same documentation records that referential-integrity checks bypass row security by design, and warns in those words about covert-channel leaks through them.
+
+That is the reason a withholding reason comes from a closed set. A component that sees everything and writes free prose is a leakproof violation with better grammar. The cloud vendors supply the rest of a threat model without being asked. Query duration, billing amount, and the errors raised when a query exceeds a limit are each named as an observable channel over repeated attempts.
+
+**The permission model that Headwater does not build has a documented price.** One large collaboration product breaks permission inheritance per page. Its own support base records inheritance that silently stops applying after an import. The derived table that the computation reads has diverged from the visible tree. Another product caps unique permission scopes per list, warns that query performance degrades as they grow, and refuses to break inheritance past the cap. Both are evidence for the ruling that Headwater keeps one permission system, and that it is the platform's.
+
+**And the systems that answer the question we never ask.** Centralized authorization services model access as relation tuples with rewrite rules and answer at request time. Object capabilities make designation and authority one thing and answer at the moment of use. Bearer credentials with attenuating caveats let a holder narrow a token offline and let a service verify it without a callback. All three answer whether a principal may act on an object *now*. Headwater has no principal and no now, so all three are recorded here as considered and declined, and nobody has to run the comparison again.
+
+Two of them leave a mark on the design anyway.
+
+- **The staleness objection is real and it is theirs.** The centralized service exists partly to stop an old permission from reaching new content. It carries a freshness token on every answer to prove that it did not. A pinned export is that failure by construction, because a permission revoked after the pin holds in the tier until the next harvest. No version of harvest-not-fan-out removes it, so the specification declares the cadence instead ([spec 7](07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)).
+- **The attenuating-credential literature names a bug that a schema change would otherwise cause.** A credential that lists what it forbids silently widens when the target grows a new operation. The stated remedy is default-deny on anything new, plus a version. An export filter written as a list of exclusions has the same defect the first time a taxonomy adds a node class.
+
+**One acronym is a red herring, recorded so that nobody spends an afternoon on it.** The messaging protocol called MLS is a group key-agreement protocol and shares only its initials with multilevel security. Its own architecture document places authorization out of scope.
+
+> **Applied:** the closed reason set and the default-deny filter in [spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter), and the declared harvest cadence in [spec 7](07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it).
+
+### O.11 The obligation attaches to the published claim
+
+One vendor's servicing criteria give the clearest available answer, and it is a decision procedure rather than a threshold. A report earns a security fix when it violates the goal or intent of a **security boundary** that the vendor has published. The same document then enumerates what is deliberately **not** a boundary, and a bypass of a non-boundary is not a vulnerability.
+
+So the obligation does not attach when a project writes a filter. It attaches when the project publishes a sentence that says a boundary holds. [Spec 6](06-engine-architecture.md#what-a-filtered-export-claims-and-what-it-does-not) therefore states one claim and five non-claims, and the non-claims are the more useful half. They convert the declared tombstone channel, the shape leak, and the revocation lag from latent defects into stated limits.
+
+Around that sit the ordinary process standards. Two ISO standards split the external disclosure interface from the internal handling process. A long-running coordination guide describes the roles, and an identifier-assignment scheme defines what a supplier may assign against. A published policy and a stated contact are the cheap form of all of it. There is also a date that does not care what the project calls itself. European product regulation binds vulnerability-reporting duties for products with digital elements from September 2026, and full handling duties from December 2027.
+
+> **Applied:** the claim and the non-claims in [spec 6](06-engine-architecture.md#what-a-filtered-export-claims-and-what-it-does-not), and the disclosure obligation in [Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer).
+
+### O.12 The platform permission that this design leans on has a documented hole
+
+[Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer) rests enforcement on the hosting platform's repository permissions. One published analysis qualifies that, and the vendor confirms the behavior as intended rather than fixing it.
+
+Commits in a fork network stay reachable across that network. A commit pushed to a fork that somebody later deleted remains reachable through the upstream by its hash. Code committed to a private fork before the upstream became public becomes public with it. Short commit prefixes are guessable. The vendor's own documentation states that commits to any repository in a fork network are accessible to all repositories in it.
+
+So the premise holds for the current tip of a repository that has never been forked and never changed visibility. It is qualified otherwise. That does not move the ruling, because no alternative placement is better. It does mean that the export step is not merely where filtering is best done. For a corpus with that history, it may be the only place where filtering happens at all.
+
+> **Recorded** as a qualification on [Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer)'s reliance on platform permissions.
+
 ---
 
 ## Summary
@@ -548,3 +699,16 @@ GraphQL federation is the counter-example, and it proves the rule. Apollo's rout
 | SPDX 3.0, LinkML's SHACL generator | Model-first works. A chained emitter drops what it never declares | Applied — staging order and no chaining. **Q13** closed |
 | OGC API, STAC conformance | The declared subset, already an industry convention | Applied — partition rule and equivalence bar (spec 12) |
 | SPARQL federation, OAI-PMH aggregators, GraphQL federation | Harvest, and never fan out | Applied — the harvesting tier (spec 7). **Q9** closed |
+| Well-known URIs, robots.txt, sitemaps | A fixed path describes a known location, and never makes one known | Applied — the descriptor and the registration split (spec 7). **Q14** closed |
+| Package-registry indexes, OGC and STAC conformance | The index is configuration. A version needs a client rule, and a declaration needs a verifier | Applied — the version contract and the shape check (spec 7) |
+| `llms.txt` | A descriptor with no obliged reader goes unread, measurably | Corrects §I.5. Carried into **Q16** |
+| MCP tool annotations, tool poisoning, line jumping | The annotation is a hint, and injection lands before any call | Applied — the three tool classes (spec 5). **Q7** closed |
+| Forge coding agents, dependency bots, Allstar | Propose and never land. The credential alone does not confine a proposer | Applied — the proposal budget and the confinement statement (spec 7) |
+| MLS databases: SeaView against LDV, cover stories, the inference reports | Classify once at write. A visible hole is a named channel, and its acceptability is conditional | Applied — export-step filtering and the declared tombstone grain (spec 6). **Q17** closed |
+| Vaughn v. Rosen, 5 U.S.C. § 552(b), FRCP 26(b)(5), HTTP 451 | Amount, position and reason, at the site of the cut — unless the marking causes the harm | Applied — the `counted` placeholder and the `sealed` exception (spec 6) |
+| Redaction failures, NSA redaction guidance, the indexed deposition | Delete rather than cover. The derived artifact is where a correct redaction leaks | Applied — no partial-document redaction, and regenerate every projection (spec 6) |
+| PostgreSQL RLS, BigQuery, Snowflake | A diagnostic is a channel. A copy carries the data and drops the policy | Applied — the closed reason set, and the declaration travels with the artifact (spec 6) |
+| Zanzibar, object capabilities, macaroons | They answer whether a principal may act now. We have no principal and no now | Declined, with the reason recorded. Their staleness and vocabulary objections applied (specs 6, 7) |
+| Confluence and SharePoint permission models | A second permission model diverges in its derived structure, and does not scale | Confirms one permission system, and it is the platform's |
+| Microsoft security servicing criteria, ISO 29147/30111, the CRA | The obligation attaches to the published claim. Publish the non-boundaries too | Applied — the claim and the five non-claims (spec 6) |
+| Cross-fork object reference on a large forge | Repository permissions hold for an unforked tip, and are qualified otherwise | Recorded as a qualification on **Q17** |
