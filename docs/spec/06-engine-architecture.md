@@ -98,6 +98,50 @@ That is the coverage doctrine of [spec 4](04-assurance-model.md#no-silent-passes
 
 **Emitters never chain.** Every emitter reads the resolved lock and the graph directly. A pipeline that routes one standard format through another inherits every loss of every hop, and declares none of them. LinkML's own SHACL generator is the observed case, because it drops constructs that LinkML itself expresses ([Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate)).
 
+### An export profile carries a filter
+
+The export is the point where a corpus meets a reader that it does not control, so it is where a corpus decides what leaves. An **export profile** is an entry under `projections` ([spec 2](02-taxonomy-model.md#the-eleven-declarations)). It names an audience, an emitter target, an output path, a **filter** over facet values, and a **tombstone grain**. A corpus with one audience declares one profile with no filter, which is the first release ([Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer)).
+
+**The filter runs at export, and there is no reader to identify.** A profile filters for a destination and never for a person. So the engine holds no principals, evaluates no permission at request time, issues no credential, and records no read. The bytes of a filtered export live in a repository. The permissions of the hosting platform on that repository decide who reads them, exactly as they decide who reads the Markdown. One permission system, and it is not ours.
+
+Six rules make the filter honest, and three of them already hold elsewhere.
+
+- **Carried and withheld partition the corpus, and the engine generates both.** This is the [partition rule](12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule) that `exportable_as` obeys, applied to documents instead of to checks. Neither list is authored, so neither can drift from the other.
+- **A withholding is a loss reason.** The projection census already accounts for every node and edge that the output does not carry. A withheld document is one more accounted absence.
+- **A document is withheld whole.** The unit is the document, and no filter reaches inside a body. A redaction inside prose is how a reader ends up with a rectangle drawn over text that is still there.
+- **The filter is default-deny over classes.** A node class, an edge class, or an attribute that no profile names does not travel. So a later release that adds a class does not widen a profile that nobody re-read. A filter stated as a list of exclusions grows a hole every time the schema grows.
+- **Every projection inside a profile regenerates from the filtered graph.** Take a shelf index, a lineage view, or a navigation file. Built at full visibility and then shipped inside a filtered profile, each one carries what the filter removed. A count, a sort order, or an index of terms is enough. That failure is observed, and it is the one that survives a correct redaction.
+- **The declaration travels with the artifact.** A filtered export states that it is filtered, and it states when it was generated. A copy of an artifact carries neither of those unless the artifact does.
+
+**The tombstone grain is declared, because the two things that a filtered view owes a reader are in tension.** A view must not look complete, and a report of what it withheld is itself a disclosure. Both cannot hold in full. The freedom-of-information statutes reached this exact conditional from the other direction, and so did the multilevel-security literature ([spec 11 §O](11-adjacent-work.md#o--the-serving-boundary-descriptors-redaction-and-the-write-path)).
+
+| Grain | What the reader learns | When it fits |
+|---|---|---|
+| `counted` | A placeholder sits where each withheld node or edge would have been, and it carries the identifier of the rule that withheld it | The default. The reader is a tier under a contract, and the existence of the item is not the secret |
+| `sealed` | The view is filtered. Nothing else | The existence of the item is itself the disclosure |
+
+**A withholding reason comes from a closed set that the taxonomy declares.** Free prose in a tombstone is a channel, and a reason that quotes the document is a leak wearing a label. The rule identifier is what a reader needs to ask for access, and it is all that they get.
+
+**No profile may produce a view that presents as total.** That is the invariant, and it holds under both grains because it leaks nothing. Under `sealed` a reader still knows to stop drawing conclusions from absence, which is the harm that the rule exists to prevent. An agent that traverses a filtered graph, finds nothing, and reports absence is the failure that [spec 5](05-ai-integration.md) names at its start. Here our own filter causes it.
+
+**An exporter fails closed, and that is [principle 7](00-vision-and-scope.md#design-principles) read correctly.** An exporter that cannot evaluate its filter emits nothing and fails the run. It never emits an unfiltered artifact, and it never emits a partly filtered one. The principle says "fail open at the edges", and its own gloss gives the rule underneath: degrade toward the cheaper error. For an agent-facing hint, silence is cheaper than a wrong pointer. For an exporter with a filter, an empty output is cheaper than one document too many.
+
+**A withholding rule never ships advisory.** Its two error classes are not both recoverable, so the promotion machinery measures the wrong one ([spec 4](04-assurance-model.md#promotion-advisory-to-blocking)). It is not suppressible and it is not waivable.
+
+### What a filtered export claims, and what it does not
+
+A tool acquires a security obligation when it publishes a claim that a boundary holds, and not before. So the claim is stated here, narrowly, and the things that are **not** claims are stated beside it. A reader who treats a non-claim as a boundary has been misled by us rather than by an attacker.
+
+**The claim.** A filtered export contains no document that its declared filter withholds, and no artifact inside the profile derives from one.
+
+**Not claims, and each one is a channel that the design accepts rather than removes.**
+
+- **The tombstone under `counted` is a declared channel.** It reports that something exists and does not say what. That is deliberate, and an adopter who cannot accept it declares `sealed`.
+- **Shape is not hidden.** Shelf and kind names, node counts, and edge degrees describe organizational and product structure. No filter removes what the remaining graph implies.
+- **A reader who can also read the publishing repository is not separated from anything.** The export is not a boundary against a party that holds a clone.
+- **Revocation is not immediate.** A tier reads a pinned export, so a document withheld today stays in the tier's copy until the next harvest ([spec 7](07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)). The lag is bounded by the export cadence, and the export carries its generation time so that a reader can compute it.
+- **The platform's repository permission is the enforcement, and it has its own limits.** Repository history, forks, and a change of visibility are governed by the hosting platform and not by us.
+
 ## Interfaces
 
 ### CLI
@@ -109,13 +153,13 @@ headwater new        <kind> [--title ...]
 headwater route      <task description>
 headwater query      <expression>
 headwater explain    <path|identifier>
-headwater export     [--format json|jsonschema|shacl|rdf|skos|okf|linkml] [--check]
+headwater export     [--profile ...] [--format json|jsonschema|shacl|rdf|skos|okf|linkml] [--check]
 headwater taxonomy   validate | resolve | diff | migrate | audit
 headwater coverage   [--format ...]
 headwater probe      [--category ...]
 ```
 
-`export` is the projection contract under another verb, and `--check` is the same comparison that `generate --check` performs. It carries its own verb because a consumer outside the repository asks for one format at a time. Only `json` and `jsonschema` ship in the first release, and each later format waits for a consumer who asks for it ([Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate)).
+`export` is the projection contract under another verb, and `--check` is the same comparison that `generate --check` performs. It carries its own verb because a consumer outside the repository asks for one format at a time. Only `json` and `jsonschema` ship in the first release, and each later format waits for a consumer who asks for it ([Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate)). `--profile` selects one declared export profile. With no profile named, the engine writes every declared profile, so a filtered audience is never omitted by accident.
 
 The CLI is advisory by default (exit 0 with findings on stdout). Use `--strict` for gates. The default is deliberate: a tool that blocks on first contact is removed, and a removed tool catches nothing.
 

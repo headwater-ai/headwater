@@ -198,6 +198,12 @@ projections:
     output: .agent/rules/
   - kind: site_nav
     output: .headwater/nav.yml
+  - kind: graph_export                 # a projection that leaves the repository
+    profile: partner                   # the audience it serves
+    format: json
+    output: .headwater/export/partner.json
+    filter: {exclude: {confidentiality: [internal, secret]}}
+    tombstone: counted                 # counted | sealed
 ```
 
 ## The eleven declarations
@@ -219,6 +225,8 @@ projections:
 An earlier draft counted twelve and then added two more in the next sentence. Four of those fourteen are gone deliberately, and what each protected survives without its name.
 
 `sequences` was folded into windowed relation participation on kinds (below). `profiles` are publisher-shipped overlays ([spec 7](07-distribution-and-federation.md#profiles-are-publisher-overlays)). `compatibility` named the engine's fixed measurement dimensions, which no taxonomy could legally vary. A declaration with one legal value is an engine constant. `vocabularies` remains as authoring syntax — a named value set that facets reference. It is validated as part of `facets`, and it is not a concept that anyone must learn first.
+
+The count stays at eleven when an adopter serves a filtered audience. An **export profile** is an entry under `projections`, with a named audience, a filter over facet values, and a tombstone grain. It is not a twelfth declaration. The reason is the one that removed `profiles` and `compatibility`: a use of an existing mechanism earns no name of its own ([spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter), [Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer)).
 
 One declaration is here that no earlier draft had: `anchors`. Relation endpoints referenced anchor kinds (`code_path`) that nothing ever declared. Identity, resolver ownership, and referential integrity for anchors all hung on a name that was used but never defined. The count went up because a real corner of the model was missing, which is the one honest reason that it may.
 
@@ -411,7 +419,7 @@ A real corpus finds the edges of this machinery quickly. Every case below is dec
 - **Duplicate edges collapse to one, with a finding.** Two identical declarations of one relation between the same endpoints are a single edge and an advisory finding. The cause is usually a merge artifact, never a stronger claim.
 - **Inverses that disagree are a finding, not a choice.** Where both ends author their half, the halves can disagree — B names a successor that is not the document that names B. The engine prefers neither side. It reports the pair, and the corpus is incoherent there until an author resolves it.
 - **A satellite with two nuclei inherits nothing contested.** Where the inherited facet values agree, inheritance proceeds. Where they disagree — one nucleus `current`, the other `superseded` — the engine does not silently pick a value. The conflict is a finding against the satellite. A satellite that declares a value that its nucleus also supplies keeps its local value, and the divergence is itself a finding. Silent shadowing is how inherited staleness disappears.
-- **Anchors are endpoints without document semantics.** Nuclearity, reading precedence, and lifecycle interaction are defined between documents. A relation that ends on an external anchor carries none of them. An anchor has no purpose and no lifecycle, which is why the family table's nuclearity cells are blank for governance and evidence. What an anchor endpoint does carry is **identity**. Each anchor type is declared in `anchors` and owned by exactly one resolver. Anchor strings are normalized before comparison, so two spellings of one target are one node. An anchor that no resolver claims is a finding. Write-time impact detection ([spec 5](05-ai-integration.md)) fires on these identities, so anchor resolution is a correctness root, not an edge case. **A resolver reads repository content or a committed snapshot, and never a live service.** That keeps check time offline ([spec 0](00-vision-and-scope.md#non-negotiables)) and it makes a resolution result reproducible. Two cases already rest on the rule: a requirements snapshot ([Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record)) and a pinned corpus export at the federation tier ([spec 7](07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)).
+- **Anchors are endpoints without document semantics.** Nuclearity, reading precedence, and lifecycle interaction are defined between documents. A relation that ends on an external anchor carries none of them. An anchor has no purpose and no lifecycle, which is why the family table's nuclearity cells are blank for governance and evidence. What an anchor endpoint does carry is **identity**. Each anchor type is declared in `anchors` and owned by exactly one resolver. Anchor strings are normalized before comparison, so two spellings of one target are one node. An anchor that no resolver claims is a finding. Write-time impact detection ([spec 5](05-ai-integration.md)) fires on these identities, so anchor resolution is a correctness root, not an edge case. **A resolver reads repository content or a committed snapshot, and never a live service.** That keeps check time offline ([spec 0](00-vision-and-scope.md#non-negotiables)) and it makes a resolution result reproducible. Two cases already rest on the rule: a requirements snapshot ([Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record)) and a pinned corpus export at the federation tier ([spec 7](07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)). **Resolution has three outcomes.** An anchor resolves, or it fails to resolve, or the source that owns it withheld the target under a declared export filter. The third outcome is `withheld`, and it is never counted as the second. One is somebody's declared decision, and the other is a defect ([Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer)).
 
 ### Disagreement is adjudicated, not ranked
 

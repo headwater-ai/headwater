@@ -23,6 +23,8 @@ In all other respects, routing is a deterministic projection over the graph — 
 
 Routing is **confidence-gated and fails open**: below the threshold it says nothing. A wrong pointer costs more than a missing one, because an agent will follow it.
 
+Silence for weak scent and silence for a withheld document are different facts, and routing keeps them apart. Where a route runs over a filtered [export profile](06-engine-architecture.md#an-export-profile-carries-a-filter), a document that the filter removed is reported at the profile's declared tombstone grain. It never falls under the confidence gate, because nothing about it is uncertain.
+
 #### Scent is the thing being engineered
 
 Information-foraging theory names what routing actually trades in: **scent** — the proximal cue that predicts distal value. A reader or an agent follows scent, and abandons a patch when the scent weakens. Thus scent quality, not corpus quality, decides whether anything is found. A perfect document with a vague summary is invisible.
@@ -71,7 +73,27 @@ The same engine runs, scoped to the change. It limits findings to the touched pa
 
 Beyond files, there are three richer surfaces:
 
-**The corpus MCP server.** The server exposes the graph as tools that an agent calls directly: `route`, `governing_docs_for_path`, `resolve_identifier`, `related`, `explain`, `check`. This is strictly better than to make an agent grep a corpus that it does not understand. The graph already knows the answers, and a tool call returns them at no context cost for exploration. The server is read-only by default. Writes, where enabled, go through the same validation as a human edit.
+**The corpus MCP server.** The server exposes the graph as tools that an agent calls directly: `route`, `governing_docs_for_path`, `resolve_identifier`, `related`, `explain`, `check`. This is strictly better than to make an agent grep a corpus that it does not understand. The graph already knows the answers, and a tool call returns them at no context cost for exploration.
+
+#### What the server may do, and the axis that decides it
+
+"Read-only or not" is the wrong question, and [Q7](09-open-questions.md#q7--scope-of-the-mcp-surface) asked it for a while. `headwater check --fix` writes files today, in a human's working tree, and the result lands in a diff that the human commits. A hosted server that commits to a branch produces the same bytes with no review at any point. The axis is **whose review the result passes through**, not whether bytes move.
+
+| Class | Tools | Ships | Why |
+|---|---|---|---|
+| **Query** | `route`, `governing_docs_for_path`, `resolve_identifier`, `related`, `explain`, `check` | first release | It changes nothing |
+| **Working-tree write** | `new`, `fix` | first release, and off by default per server | The human reviews at commit, and the [fixability bar](12-check-layer.md#fixability) forbids a judgment-bearing patch |
+| **Landed write** | a commit, a push, a merge, a server that writes to a repository | never | Acceptance is a human act ([spec 3](03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed)), and no forge is privileged in the core |
+
+The third row is a refusal and not a deferral. A server-side commit produces a document with no `accepted_by`, or with an invented one. The provenance model forbids it before any judgment about trust arrives. Headwater instead emits what a change proposal needs: findings, patches, and a task list. An adapter opens the proposal, with the credential that its operator granted it. That is the same boundary that keeps the engine out of the merge-queue business ([Q21](09-open-questions.md#q21--terminological-succession-and-validity-under-merge)).
+
+Working-tree writes stay off by default, because a client may connect to a checkout that the user did not intend to change. The opt-in is per server.
+
+**The annotation is not the enforcement.** The protocol lets a server declare that a tool only reads. It also states that a client must not treat that declaration from an untrusted server as a guarantee. Headwater annotates its tools correctly and relies on something else. Where a class of tool is off, the server does not register it, so no handler exists to call. A property that a caller reads off a tool list is a hint. A property with no code path behind it is a guarantee.
+
+**A write tool is a disclosure channel, and that is why the third row is a refusal rather than a preference.** The published attacks on this protocol put attacker text into a model's context at discovery time, before any tool runs. A confirmation prompt at each call therefore never sees them. What the attacks then need is an actuator. The observed case against a widely deployed server used a write tool as the exit. The agent read private content, then published it by opening a proposal on a public repository. A server that cannot land a write lends an injected instruction nothing. That argument is about [Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer) as much as about this entry.
+
+**The server applies no filter to a corpus that its reader already holds.** It runs in-process against a checkout, so the reader has every byte. A filter there would control one reading path while the bytes stay readable along another. [Spec 11 §L.6](11-adjacent-work.md#l6-a-filter-in-the-tool-layer-is-advisory-and-the-documentation-says-so) records that failure in a shipped tool. A server that serves a reader who holds no checkout serves exactly one declared [export profile](06-engine-architecture.md#an-export-profile-carries-a-filter) and never mixes the two sources.
 
 **Authoring skills.** Packaged procedures for the work that bears judgment: to draft a decision record, to run a corpus-wide sweep, to propose a taxonomy change. Skills carry the doctrine that an agent needs, and they call the deterministic engine for everything mechanical. Thus the LLM does the reasoning and never the arithmetic.
 

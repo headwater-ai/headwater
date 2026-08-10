@@ -64,6 +64,8 @@ A node that represents something outside the corpus that documents point at. Exa
 
 An anchor carries an identifier, a name, and an owner — never a purpose or a lifecycle. Every substantive claim about the thing itself lives in a document. Anchor kinds are declared like everything else: the taxonomy's `anchors` declaration names each type and the single resolver that owns it. Thus a relation endpoint is always either a declared kind or a declared anchor kind — never a bare string. Anchor identity is declared, not guessed. Anchor strings normalize before comparison, so two spellings of one target are one node. An anchor that no resolver claims is a finding ([spec 2](02-taxonomy-model.md#behavior-at-the-limits)).
 
+Resolution has three outcomes and not two. An anchor resolves, or it fails to resolve, or its target sits behind a declared withholding. The third outcome is **withheld**, and it is never reported as the second. A withheld target is a fact about a filter that somebody declared. An unresolved target is a defect. To report them as one class teaches a reader to ignore the class that carries the defects ([Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer)).
+
 ## Edges
 
 ### Relation
@@ -167,6 +169,10 @@ A **projection** is a derived artifact computed from the graph. Examples: a shel
 - **generated** — never hand-authored.
 - **checked** — CI fails when a committed projection differs from a regenerated one.
 - **declared** — the schema names them, so a taxonomy can add projections without engine changes, within the set of projection kinds that the engine implements.
+
+**A projection may be filtered, and a filtered projection says so.** An [export profile](06-engine-architecture.md#an-export-profile-carries-a-filter) names an audience and a filter over facet values. What it carries and what it withholds partition the corpus. A withholding is a loss with a declared reason, so the projection census reports it like any other loss. No profile may produce a view that presents itself as total ([Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer)).
+
+**The corpus descriptor is a projection too.** A machine that arrives at a location reads it to learn which corpora live there, what taxonomy governs each one, and where to start ([spec 7](07-distribution-and-federation.md#arriving-at-a-corpus-cold)). The engine generates it from the roots, holds it to regeneration, and filters it like any other served artifact ([Q14](09-open-questions.md#q14--discovery-surface)). Like the register projection, it is engine-defined and non-optional, and its path is the engine's rather than the taxonomy's. A reader who must consult the taxonomy to find the descriptor already knows what it would say.
 
 ## How the pieces fit
 

@@ -46,6 +46,7 @@ Everything in this specification follows from that premise.
 | A ticketing or workflow system | We refer to work items. We do not manage them | Whatever tracker is in use |
 | An LLM product | The engine is deterministic. LLMs are consumers of the corpus, and one optional authoring surface | — |
 | A general knowledge base | The corpus documents a system, for people who change that system | — |
+| An access-control system | We generate a filtered artifact from a declared rule. We never authenticate a reader, hold a session, issue a credential, or decide a request | The permissions of the hosting platform, on the repository that holds the artifact |
 
 ## Design principles
 
@@ -57,13 +58,13 @@ These are the tie-breakers when a design decision is genuinely contested.
 
 3. **Derived artifacts are always regenerable.** If a person can change a generated file by hand, and the system does not see the change, that file will drift. Readers will then trust a file that is wrong. Thus, the system checks that generated files agree with their sources. It does not only offer to regenerate them.
 
-4. **Visibility before blocking.** A new rule ships as advisory. It collects evidence about its false-positive rate. Only that evidence promotes the rule to blocking. The promotion criteria are recorded, not improvised.
+4. **Visibility before blocking.** A new rule ships as advisory. It collects evidence about its false-positive rate. Only that evidence promotes the rule to blocking. The promotion criteria are recorded, not improvised. This holds while both of the rule's error classes are recoverable, which is the ordinary case. Where one error class is unrecoverable, the control ships at its final posture, because the promotion evidence measures the other one ([spec 4](04-assurance-model.md#where-promotion-does-not-apply)).
 
 5. **Explicit incompleteness.** The system records what it does not check. You can triage a gap that the system registers. A gap that stays invisible becomes worse over time.
 
 6. **Every rule earns its place.** Context is finite for humans and metered for agents. We remove a rule that has no enforcement, no observed violation, and no stated cost of failure. We do not tolerate it.
 
-7. **Fail open at the edges, closed at the core.** When agent-facing helpers cannot answer, they degrade silently, because a missing hint is better than a wrong one. Corpus validation never degrades silently.
+7. **Fail open at the edges, closed at the core.** When agent-facing helpers cannot answer, they degrade silently, because a missing hint is better than a wrong one. Corpus validation never degrades silently. The position of a component is shorthand for the rule underneath, which is the cost of each error. Degrade toward the cheaper error, and say which one that is. An exporter that cannot evaluate its filter therefore emits nothing, although it sits at an edge ([spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter)).
 
 8. **The system governs itself.** The documentation of Headwater is itself a Headwater corpus, and Headwater validates it in its own CI. If a change is painful to dogfood, its design is not complete.
 
