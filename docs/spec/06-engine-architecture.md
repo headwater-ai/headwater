@@ -123,4 +123,4 @@ Hooks and agent-facing queries must be fast enough to be invisible. A pre-commit
 - **Deterministic.** Same corpus, same lock, same output, byte for byte. This is what makes `--check` on projections meaningful.
 - **Embeddable.** Usable as a library from an editor plugin or an agent process, with no need to spawn subprocesses.
 
-The language choice is deferred ([open questions](09-open-questions.md)), but these constraints make most of the choice.
+These constraints made most of the choice. The language is Rust, and the embeddable requirement above is the argument that decided it ([Q1](09-open-questions.md#q1--implementation-language)).

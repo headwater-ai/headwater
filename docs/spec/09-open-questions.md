@@ -4,16 +4,34 @@ These are decisions that we deliberately deferred. Each one blocks something. Ea
 
 ## Q1 — Implementation language
 
-**Blocks:** everything downstream of the engine.
+This question is closed. The language is **Rust**, with a WebAssembly build of the same crate for editor and browser embedding. Go stays the fallback until the spike below passes. The full argument is a separate [evaluation](../evaluations/language-choice.md).
 
-| Option | For | Against |
-|---|---|---|
-| Rust | Single static binary, fast, no runtime, good WASM story | Slower to iterate, smaller pool of contributors |
-| Go | Single binary, fast enough, simple, easy plugins via subprocess | Weaker ergonomics for schema and graph work |
-| TypeScript | Best editor/LSP and MCP ecosystem. Agent tooling is native there | Runtime dependency. Distribution is heavier |
-| Python | Fastest prototyping, strongest text-processing library set | Distribution and performance are the known pain |
+Python and TypeScript are out on distribution. Spec 6 requires a single binary and no toolchain per check, and it gives 200 ms to the change-scoped run that a commit hook performs. An interpreter start spends a large part of that budget before any work begins.
 
-**Leaning:** Rust for the core with a WASM build for editor and browser embedding, if the schema and graph work proves ergonomic enough. Go is the pragmatic fallback. Decide with a spike that implements the parse-classify-graph path in two candidates.
+Rust and Go were the real question, and the table that this entry used to carry decided it on the wrong axis. **Performance does not separate them.** A thousand Markdown documents is a small corpus, and both languages clear every target in [spec 6](06-engine-architecture.md#performance-targets) comfortably. The performance argument is completely spent on the exclusion of the two interpreted candidates, and to carry it forward is to count it twice.
+
+Three arguments decide it, and each one comes from a constraint that the specification already made.
+
+**Embedding.** [Spec 6](06-engine-architecture.md#library) requires that editor integrations, the MCP server, and CI adapters consume the library in-process and do not start a subprocess. Rust reaches a Node, Python, or JVM host as a shared library that adds no runtime to it, and reaches a browser through WebAssembly. Go reaches those hosts by putting its scheduler and collector inside them. The esbuild project is the proof of this rather than the counter-example. It is the most successful Go tool in the JavaScript ecosystem, and it arrived by the subprocess route that spec 6 declines.
+
+**Scope enforcement.** [Spec 12](12-check-layer.md#scope--the-declaration-everything-else-rests-on) says that a `Document`-scoped check must be unable to read a sibling. It adds that the enforcement is the feature, and that a leak silently corrupts every cache key derived from it. In Rust, a view is a borrow that holds no path back to the graph, so the leak is a compile error. The same signature makes check purity and parallel safety properties of the build. In Go, the same design compiles and the enforcement returns to code review. Spec 12 lists this component beside the census walker as one whose defect produces systematically green results.
+
+**Sum types.** `Scope`, `Severity`, provenance, the taxonomy syntax, and the classification outcome in the census are all closed sets. Exhaustive matching turns a change to one of them into a compiler-generated list of the sites to fix. Spec 12 already expects two such changes. Taxonomy-as-data means that the engine is mostly interpreters over closed sets, so this is a recurring cost rather than a one-time one.
+
+Three arguments that look decisive are not, and are recorded so that nobody re-runs them. The **RDF stack** is thicker in Rust, but [Q13](#q13--linkml-and-shacl-as-substrate) already puts SHACL off the check path, so an external validator may run as a subprocess. **WebAssembly plugin hosting** is available in both. **Determinism** needs the same discipline in both.
+
+The costs are real and stated in the evaluation. The YAML crate ecosystem is in poor repair, which matters less than it looks because spec 12 requires source spans that no convenient deserializer supplies. Iteration speed and the contributor pool are genuine, and the architecture shrinks the surface where anyone writes engine code at all.
+
+**The counter-evidence, kept in view:** [Vale](00-vision-and-scope.md#what-we-do-not-build) is the closest observed analog to this engine, and it is Go. Go builds this command-line tool. What Go builds poorly is the embeddable library underneath it, which is where the whole investment goes.
+
+**The spike changes.** A parse-classify-graph path in two candidates would measure the one axis on which the languages are equal. The replacement is a risk-retirement spike in Rust alone, and any item in it can reopen this question:
+
+- a front-matter parse that reports line and column for every key,
+- a scope leak that fails to compile,
+- one crate built as a native Node addon and as `wasm32`,
+- a warm change-scoped run over 1,000 documents, under 200 ms.
+
+Run the second item first. It carries the most weight, and it is the only claim that Rust might not deliver.
 
 ## Q2 — Schema format
 
