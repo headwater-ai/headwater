@@ -2,7 +2,7 @@
 
 **This is the central design of the system.** Everything else is downstream of it.
 
-> **Revision note.** This document contains five structural changes that [theoretical foundations](10-theoretical-foundations.md) proposed. The changes are: nuclearity on relations, windowed participation expectations, an immutable semantic core, versioning by measured compatibility, and purpose as an explicit declaration. Reading precedence is derived from nuclearity, succession, and the governance family. Relation families arrived as a dependency of the precedence change. The [core-concepts review](../reviews/) later cut the per-relation `dominance` declaration, which was redundant wherever nuclearity or succession already determined the order. The review also called it unused elsewhere. The [schema-format walkthrough](../evaluations/schema-format-walkthrough.md) found that governance was unanswered rather than unused, and the derivation now carries a clause for it. That walkthrough made four further changes here. Endpoints are the only declaration of a permitted relation, abstract kinds have semantics, compatibility gained an `addressability` dimension, and the migration payload rewrites overlays.
+> **Revision note.** This document contains five structural changes that [theoretical foundations](10-theoretical-foundations.md) proposed. The changes are: nuclearity on relations, windowed participation expectations, an immutable semantic core, versioning by measured compatibility, and purpose as an explicit declaration. Reading precedence is derived from nuclearity, succession, and the governance family. Relation families arrived as a dependency of the precedence change. The [core-concepts review](../reviews/) later cut the per-relation `dominance` declaration, which was redundant wherever nuclearity or succession already determined the order. The review also called it unused elsewhere. The [schema-format walkthrough](../evaluations/schema-format-walkthrough.md) found that governance was unanswered rather than unused, and the derivation now carries a clause for it. That walkthrough made four further changes here. Endpoints are the only declaration of a permitted relation, abstract kinds have semantics, compatibility gained an `addressability` dimension, and the migration payload rewrites overlays. The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md) then made three more, all in what the default taxonomy enables. The base enables `governs`, no base relation is `created_by: author`, and optional content ships as add-only bundles.
 
 ## The problem being solved
 
@@ -249,7 +249,7 @@ Language is the third regime family. The corpus declares one default, and a kind
 
 A monolingual corpus declares no `language` facet on documents. Such a facet has one value everywhere, and no check varies on it, so it fails the every-rule-earns-its-place test ([spec 0](00-vision-and-scope.md#design-principles)). A multilingual corpus promotes language to a facet, and the promotion pays for itself at once. Checks select their lexicon per document. The AI surface knows what language it reads and answers in. And a `translation_of` relation becomes declarable, with the standard expectation machinery behind it. When a source document changes, its translations fall stale. That is the ordinary freshness check, not a new mechanism.
 
-The doctrine starter kit declares `en-US` with the house profile as its default.
+The doctrine starter kit declares `en-US` with the house profile as its default. The base package declares `en-US` with `controlled: none`, and the difference between the two is deliberate. A controlled profile that the base turns on meets an adopted corpus with a wall of findings on its first run ([Q3](09-open-questions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box)).
 
 ## Relation families and nuclearity
 
@@ -332,9 +332,13 @@ Four checks come with it, none of which succession alone can express:
 
 A taxonomy may enable any subset. The default enables four: `supersedes`, `conflicts_with`, `constrains`, and `traces_to`. This keeps the live-conflict and void-constraint checks, at the cost of the `forbids`/`enables` and `does_not_comply_with` checks. Those checks belong to the regulated column of the worked example anyway, and they arrive with the regulated platform's overlay as *additions*.
 
+**A fifth default relation comes from outside this vocabulary, and the count above hid the need for it.** Every relation in the table runs between decisions, because that is what an ontology of decisions contains. A default drawn only from this table thus gives a corpus no edge to code. A behavior-serving kind then has no permitted edge at all, and every document of that kind is an orphan finding. The base therefore also enables `governs`, from a governed document to the `code_path` anchor. It carries write-time impact detection ([spec 5](05-ai-integration.md)), and spec 0's promise that a code path resolves to its governing documents rests on it. The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md) found this only when it wrote the base out as YAML. No reading of the table shows it.
+
 An earlier draft enabled all twelve and expected a small team's overlay to remove most of them. That was backwards twice over. Defaults are the learnability surface for exactly the adopter ([spec 0](00-vision-and-scope.md#who-this-is-for)) with no taxonomist on staff. And the design's own sprawl warning — readers apply relation sets inconsistently past about a dozen entries — was aimed at its own default. A first taxonomy experience that consists of `remove:` lines is friction spent to delete things that nobody asked for.
 
-**Defined and enabled are distinct states, and both have semantics.** The *package* defines the full vocabulary — endpoints, family, generated checks, doctrine — as a library of complete, named declarations. A *taxonomy* enables a relation when it carries the declaration in the resolved result. The base pulls in four. An overlay enables another by reference (`add: {relations.forbids: $package.optional.forbids}`), with no restatement, through the same `$`-reference syntax that vocabularies already use. A defined-but-unenabled relation does not exist as far as a corpus is concerned. An edge that names it is an ordinary unknown-relation finding, the relation generates no checks, and it appears in no template. This is what makes the minimal default nearly free for the regulated adopter — to enable the rest is a line per relation, not a redeclaration.
+**Defined and enabled are distinct states, and both have semantics.** The *package* defines the full vocabulary — endpoints, family, generated checks, doctrine — as a library of complete, named declarations. A *taxonomy* enables a relation when it carries the declaration in the resolved result. The base pulls in five. An overlay enables another by reference (`add: {relations.forbids: $package.optional.forbids}`), with no restatement, through the same `$`-reference syntax that vocabularies already use. A defined-but-unenabled relation does not exist as far as a corpus is concerned. An edge that names it is an ordinary unknown-relation finding, the relation generates no checks, and it appears in no template. This is what makes the minimal default nearly free for the regulated adopter — to enable the rest is a line per relation, not a redeclaration.
+
+**Past relations, enabling by reference needs a bundle.** One line works for a relation in this vocabulary, because such a relation references only kinds that the base already has. An optional *kind* does not. `kinds.control` needs a purpose, an identifier scheme, facets, a shelf, and the relations that make it more than a shape. One `add` line for it produces five dangling references. Optional content therefore ships as a **bundle**: a named, add-only publisher overlay with a declared dependency closure ([spec 7](07-distribution-and-federation.md#bundles-are-publisher-overlays-in-the-other-direction)). A bundle holds no `override` and no `remove`, so any subset of bundles commutes and resolves under the confluence check that the resolver already runs. [Abstract kinds](#abstract-kinds) are what make that possible. A bundle's new kind names `governed_document` as its parent, and joins the base relations with no endpoint edit. No bundle thus has to override an endpoint list.
 
 ### Who creates each edge
 
@@ -344,7 +348,11 @@ This exists because of the single most consistent finding in the traceability li
 
 It is also measurable after the fact. `headwater taxonomy audit` reports edge counts and staleness by creator. A relation declared `created_by: author` but present on 4% of eligible documents visibly receives no maintenance. The remedy is usually to move it to `scaffold` or `generator`, not to exhort authors harder.
 
-The default taxonomy assumes that remedy from the start. Every relation that it enables is creatable by scaffold, generator, or hook. `created_by: author` is reserved for overlay additions that an adopter explicitly chooses. The claim that assisted authoring raises edge capture is the strongest and least-tested in the system ([spec 10](10-theoretical-foundations.md#what-the-theory-did-not-settle)). A default that only works if the claim holds is a bet, and a default that survives when the claim fails is a design.
+The default taxonomy assumes that remedy from the start. **No relation that it enables is `created_by: author`.** That value is reserved for overlay additions which an adopter explicitly chooses.
+
+An earlier statement of this rule named scaffold, generator, and hook as the permitted creators, and the base contradicts it. A scaffold proposes `supersedes`. A hook proposes `traces_to` and `governs` from the change. Nothing mechanical proposes `conflicts_with` or `constrains`, because both come from the coherence sweep, which is an agent. The narrower rule is the one that does the intended work, because the claim under test is that unassisted human capture decays.
+
+The claim that assisted authoring raises edge capture is the strongest and least-tested in the system ([spec 10](10-theoretical-foundations.md#what-the-theory-did-not-settle)). A default that only works if the claim holds is a bet, and a default that survives when the claim fails is a design. Two of the base's five edges depend on that claim. `taxonomy audit` reports edge counts and staleness by creator, so the dependence is measurable rather than assumed.
 
 ### Endpoints are the only permission
 
@@ -684,14 +692,16 @@ A major version ships a **migration payload**: machine-readable steps that decla
 
 | | Small team | Product suite | Regulated platform |
 |---|---|---|---|
-| Shelves | `decisions`, `guides` | + `specifications`, `standards`, `proposals`, `evidence` | + `controls`, `audits`, `risk` |
-| Purposes | `rationale`, `procedure` | + `behavior`, `constraint` | + `attestation` |
-| Lifecycle | `draft` → `current` | + `superseded`, `deprecated` | + `approved`, with an approver facet |
-| Identifiers | none | decision + requirement ids | + control ids, mapped to an external framework |
-| Voice regime | unconstrained | declarative on specs and standards | + mandatory normative keyword usage |
-| Relations | the default four | + `governs`, `verifies`, `implemented_by` | + `mitigates`, `attests`, `forbids`, `does_not_comply_with` |
+| Shelves | `decisions`, `specifications` | + `guides`, `standards`, `proposals`, `evidence` | + `controls`, `audits`, `risk` |
+| Purposes | `rationale`, `behavior` | + `procedure`, `constraint` | + `attestation` |
+| Lifecycle | `draft` → `current` → `superseded` / `deprecated` | unchanged | + `approved`, with an approver facet |
+| Identifiers | decision ids | + requirement ids | + control ids, mapped to an external framework |
+| Voice regime | declarative on both kinds | + normative keywords on standards | + mandatory normative keyword usage |
+| Relations | the default five | + `verifies`, `implemented_by` | + `mitigates`, `attests`, `forbids`, `does_not_comply_with` |
 | Expectations | none | decision → spec, incident → postmortem | + control → audit → attestation |
 | Engine changes | none | none | none |
+
+**The first column is derived rather than sketched.** An earlier draft of it gave the small team the `rationale` and `procedure` purposes, no identifiers, and an unconstrained voice. The core requires `behavior`, so `taxonomy validate` rejects that column as written. [Spec 3](03-authoring-and-lifecycle.md#identifiers) also rules that an identifier always carries a namespace, and the base binds the declarative regime to both of its kinds. The column is now the base package of the [first-run walkthrough](../evaluations/default-taxonomy-first-run.md), which derives the smallest legal taxonomy from the core instead of imagining it. Two of the three defects that walkthrough found came from this one cell block, and neither is visible until somebody writes the package out.
 
 The third column is the real test. If a regulated adopter can express control mappings, approval states, and attestation relations with no change to engine code, the model is right. If they cannot, the schema lacks a primitive — and the fix is a new primitive, not a special case.
 
