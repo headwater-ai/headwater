@@ -2,7 +2,7 @@
 
 [Spec 6](06-engine-architecture.md) says that checks are pure functions over the corpus graph. That was sufficient at that level of detail. The LinkML and SHACL evaluations then found where the standards stop. Everything past that line lands here. Thus the check layer needs a design, not only a description.
 
-The signatures below are pseudocode, given as examples. The implementation language is [Q1](09-open-questions.md#q1--implementation-language). Nothing here depends on it.
+The signatures below are pseudocode, given as examples. Nothing here depends on the implementation language, which is Rust ([Q1](09-open-questions.md#q1--implementation-language)). Two requirements in this document are what decided that question.
 
 ## What a check is
 
@@ -175,4 +175,4 @@ This rule also connects to promotion ([spec 4](04-assurance-model.md#promotion-a
 
 - The `Neighbourhood(depth)` scope is speculative. If no real check needs depth > 1, the correct move is to cut it and to keep `Edge` as the only relational scope.
 - Whether `Shelf` is a separate scope or only `Corpus` with a filter. This matters only if sibling-comparison checks become common.
-- Whether plugins are in-process (fast, but a foreign-code trust question) or subprocess (safe, but the per-instance overhead can dominate for `Document`-scoped checks). This interacts with Q1.
+- Whether plugins are in-process (fast, but a foreign-code trust question) or subprocess (safe, but the per-instance overhead can dominate for `Document`-scoped checks). [Q1](09-open-questions.md#q1--implementation-language) supplies a third option that answers both horns. A WebAssembly component runs in-process, and it receives no filesystem, no network, and no clock unless the host grants them. That is the plugin contract above, restated as a capability model. The plugin design makes the call, and it is no longer a choice between two bad options.
