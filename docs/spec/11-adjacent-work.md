@@ -118,7 +118,7 @@ The decisive evidence against option 1 is mundane: everything Headwater-specific
 
 I will not decide this unilaterally. It changes what we build, and it is close to irreversible under option 1. [Q1](09-open-questions.md#q1--implementation-language) has since closed on Rust, so LinkML's Python tooling now pulls against a settled core rather than a candidate one. Option 3 dissolves that tension, which is part of its appeal.
 
-> **Recorded as [Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate), which now leans to option 3 and extends it: emit LinkML for the shape layer, and SHACL for the graph layer.**
+> **Recorded as [Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate), which has since closed on option 3 with one correction.** Emitters never chain, so LinkML is not the route to SHACL or to JSON Schema. It is the last of six sibling emitters, and §N.5 records the measurement that decided it.
 
 ## D. SHACL — the name for schema-derived checks
 
@@ -128,7 +128,7 @@ A [worked example](../evaluations/shacl-worked-example.md) confirms that SHACL r
 
 My reservation here — that SHACL's reports are hard to read — was too strong and is withdrawn. `sh:message` with variable interpolation makes messages as good as they are authored. The objections that survive are sharper. **Line numbers, remediation and fixability do not survive the RDF round trip**, and [spec 4](04-assurance-model.md) requires all three to make a finding actionable. Temporal checks also need the evaluation time injected rather than read from the clock, or determinism breaks. This constraint applies to whatever engine we build, not just to this one.
 
-The conclusion is the same as for LinkML, by a different route: a compilation target, not an authoring surface. Folded into Q13.
+The conclusion is the same as for LinkML, by a different route: a compilation target, not an authoring surface. Folded into Q13, which closed and put SHACL third in the emitter order, behind JSON Schema and the native graph export.
 
 ## E. OpenGEO — same substrate, opposite direction
 
@@ -232,7 +232,7 @@ Typed nodes, typed edges, Markdown in the repository. That is Headwater's substr
 
 ### I.2 The arrow points the other way, and that is the whole difference
 
-OKF is an **export**. The durable store is a `knowledge.json` under the user's config directory — the only format that round-trips losslessly. Markdown is a projection *out* of it, for portability and hand-editing. Headwater is the exact inverse: the Markdown is the corpus, and the graph, indexes and rules are projections out of *that* ([Q6](09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest) exists exactly to keep it that way).
+OKF is an **export**. The durable store is a `knowledge.json` under the user's config directory — the only format that round-trips losslessly. Markdown is a projection *out* of it, for portability and hand-editing. Headwater is the exact inverse: the Markdown is the corpus, and the graph, indexes and rules are projections out of *that*. [Q6](09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest) closed on exactly that, and it added the obligation that every projection declares what it dropped.
 
 The inversion explains their validation, and a concrete statement of it is worthwhile: it is the sharpest available illustration of what a taxonomy is *for*. `lint_okf_bundle` returns warnings only — its own doc comment says that the checks are advisory and "a partially-malformed bundle should still import what it can". The complete set is: not a directory, unreadable, missing front matter, missing `type`, empty body. Four checks. The importer then does `get_str(fm, "type").unwrap_or("fact")`.
 
@@ -244,7 +244,7 @@ This is not a criticism. For an export format, lenience is correct engineering: 
 
 **OKF as an export target.** We already emit Markdown with typed front matter. An OKF bundle is close to free, and it buys interoperation with a tool that a large number of people already installed. Their `leanctx_*` convention — producer-owned prefixed keys that a consumer carries but never validates — is the right pattern for the reverse direction too. Their round-trip test asserts exactly that: unknown keys survive a parse-emit cycle.
 
-> **Folded into [Q13](09-open-questions.md#the-okf-question-is-a-different-layer), as a separate and much smaller question than the substrate one.**
+> **Folded into [Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate), as a separate and much smaller question than the substrate one.** Q13 has since closed and placed OKF fifth in the emitter order. The terms are the ones that every emitter takes: it declares a loss set and emits a census.
 
 **`contradicts` as a declared edge — and an inconsistency that it exposed in our own specification.** OKF carries `contradicts` as a declared relation, which prompted the question of where a declared contradiction sits on the cohesion/coherence line. The answer was embarrassing rather than novel. [spec 2](02-taxonomy-model.md#the-decision-relation-vocabulary) contains `conflicts_with` with `invalid_when: {both: {status: current}}`, and it was there all along — a deterministic, blocking-eligible check. But [spec 4](04-assurance-model.md#discharging-coherence-obligations-the-assisted-sweep) listed "pages that contradict each other while both remain current" as work for the sampled LLM sweep. Two documents assigned the same job to two different mechanisms, and one of them was needlessly the expensive one.
 
@@ -462,6 +462,66 @@ One statement keeps this section honest. Headwater has no measurements either. I
 
 > **Applied:** the grader constraint and the counterfactual obligation in [spec 5](05-ai-integration.md#measuring-whether-any-of-this-works), and a new [principle 11](00-vision-and-scope.md#design-principles), *efficacy is measured, not inherited*. Principle 10 keeps its original scope. The split between the two is the point: one tests the design, and the other tests whether it works.
 
+## N — Transmission, harvest, and the declared subset
+
+This section sits after the capstone above rather than before it. Its sources arrived with the [Q6, Q13 and Q9 evaluation](../evaluations/graph-export-and-federation.md) and not with the original survey, and §M binds them in full. Not one of the seven below measured whether structured knowledge changes what a reader or an agent does. What they settle is architecture, where a wrong answer costs a migration.
+
+### N.1 A derived index is a transmission format, not a store
+
+Sourcegraph replaced LSIF with SCIP, and the SCIP design document states the distinction outright. SCIP carries data from producers to consumers, and it is not a storage format for queries. LSIF failed on the other half of the same rule. It encoded a graph with opaque global integer identifiers, which forced an order on how symbols entered the index. Partial update of one document then became impractical, and Sourcegraph replaced the integers with human-readable string symbols.
+
+That last detail confirms a ruling that Headwater reached for an unrelated reason. [Q4](09-open-questions.md#q4--relation-storage) made an edge identity a triple of stable strings, so that the `Edge` scope had a computable key. Sourcegraph arrived at the same shape from incremental indexing.
+
+Software Heritage shows the same layering with two derived representations. The archive exports its tables as Apache ORC, and a separate pipeline compiles a compressed WebGraph representation *from that export*. The fast representation is regenerated rather than maintained, and the archive stays the authority.
+
+> **Applied:** the three-artifact table and the no-database ruling in [spec 6](06-engine-architecture.md#nothing-stores-the-graph).
+
+### N.2 Git is not a database for a derived index
+
+Four package registries put an index in a git repository, and every large one migrated away. Cargo moved to a sparse HTTP protocol, and about 99% of crates.io requests used it by April 2025. Homebrew moved to JSON downloads in 4.0.0, after `.git` directories reached about 1 GB. CocoaPods moved to a content delivery network in 1.8, with 16,000 directories in one folder as the cause. Go made `GOPROXY` the default in 1.13, and one reported resolution fell from 18 minutes to 12 seconds.
+
+This contradicts the casual half of the old [Q6](09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest) leaning, which offered a committed graph with no cost attached. The cost is churn and size rather than principle. It does not bite at a thousand documents. It bites at the tier that harvests many corpora, which is why that tier holds pins rather than a merged graph.
+
+### N.3 Backstage — the catalog is a read model that authors its own entries
+
+Backstage keeps entity descriptors in the repositories that they describe. A processing loop re-derives entities continuously, and an edge that a later pass no longer emits is severed. The `relations` field is read-only, and processors generate it. The catalog also admits entities registered as static configuration rather than harvested from a repository.
+
+That last property is [Q9](09-open-questions.md#the-aggregator-authors-its-own-facts)'s "the aggregator authors its own facts", already in production. The rest confirms rebuild over store, at a scale that Headwater will not reach soon.
+
+### N.4 CodeQL — the contradiction worth keeping in view
+
+A CodeQL database is created from source, uploaded as an artifact, and it *is* the query surface. That is a shipped design at very large scale, so the refusal in spec 6 is not a general truth.
+
+What CodeQL never does is treat the database as canonical for the code, and nobody reviews a database in a pull request. Headwater declines the pattern on its own stated constraints: offline, deterministic, and reviewable in a diff. It does not decline it on a claim that the pattern fails.
+
+### N.5 SPDX 3.0, and what LinkML's own generator drops
+
+SPDX 3.0 is [Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate)'s option 3 at standards scale. One model generates an OWL ontology with SHACL restrictions, a JSON-LD context, and a JSON Schema through `shacl2code`. The serializations are derived rather than authored in parallel, by a standards body with many independent consumers.
+
+The sharper result is a limit inside LinkML. A 2024 report on a semantic data link records that LinkML's SHACL generator translates its own schema inadequately. It names `any_of` and `equals_string_in` as constructs that do not survive.
+
+Q13 argued that a pipeline routed through LinkML drops the *graph* layer, which LinkML never expressed. The measured fact is stronger. Such a pipeline also drops parts of the *shape* layer that LinkML does express, and it declares nothing. That is the reason for the rule that emitters never chain.
+
+> **Applied:** the staging order and the no-chaining rule in [Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate) and [spec 6](06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped).
+
+### N.6 OGC API and STAC — the subset declaration, shipped
+
+An OGC API implementation serves a conformance endpoint that lists the conformance classes it supports, and a listed class obliges the whole capability behind it. STAC moved the same list onto the landing page, so that one request tells a client what it is talking to.
+
+They sharpen the requirement rather than supply it. Both declare a positive set against a fixed, published universe of classes. Headwater's universe is the check registry that an adopter's own taxonomy generates, so an outside reader cannot compute the complement. The export therefore states both halves, which is a real difference and not a copy.
+
+> **Applied:** the partition rule and the equivalence bar in [spec 12](12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule).
+
+### N.7 Harvest beat fan-out, and GraphQL federation says why
+
+SPARQL federation is the standards-track version of query fan-out. Under SPARQL 1.1 and 1.2, a `SERVICE` pattern that cannot reach its endpoint fails the whole query. The remedy in the specification is the `SILENT` keyword, which lets the query succeed with a silently incomplete answer. Research on public endpoints reports that low reliability pushes serious consumers onto dataset dumps and local reinstallation. Wikidata maintains a page of federation issues that lists downtime, timeouts, and protocol incompatibilities.
+
+The digital-library field ran the same experiment for two decades. The candidates were distributed broadcast search over Z39.50 and metadata harvesting over OAI-PMH. Europeana aggregates from more than 3,700 providers through its Metis service, partly through intermediary aggregators, and DPLA harvests over the same protocol. The tiered shape matters here, because providers feed intermediaries and intermediaries feed the top. That is [spec 7](07-distribution-and-federation.md#federation)'s tiers, reached by an unrelated community under load.
+
+GraphQL federation is the counter-example, and it proves the rule. Apollo's router does fan out at query time, on three conditions. Composition of subgraph schemas is a build-time step that yields a static supergraph artifact. Entities join on a declared `@key`, and a cross-subgraph reference carries only the key fields. Every subgraph is a live service under one operator. Headwater meets none of the three, and what transfers is the build-time half.
+
+> **Applied:** harvest over fan-out, and the pinned export, in [spec 7](07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it).
+
 ---
 
 ## Summary
@@ -470,8 +530,8 @@ One statement keeps this section honest. Headwater has no measurements either. I
 |---|---|---|
 | TBox/ABox framing | Adopt the vocabulary | Applied — specs 1, 2, 6 |
 | testerstories, spec → ontology → implementation | Strongest supporting evidence found | Applied — oracle and citation (specs 2, 4, 5). Authority adopted, then cut by review |
-| LinkML | May already be half of spec 2 | **Open — Q13**, needs a decision |
-| SHACL | May already be the check layer | **Open — Q13** |
+| LinkML | May already be half of spec 2 | Closed — **Q13**. Emitted, never authored, and last in the emitter order |
+| SHACL | May already be the check layer | Closed — **Q13**. A compilation target, and never the validator |
 | OpenGEO | Different direction, same substrate | Discovery gap recorded — **Q14** |
 | KG chunking for RAG | Framing useful, chunking not applicable | Non-adoption reasoned and recorded |
 | r/OntologyEngineering | Ontology-first methodology, further than we go | Noted. Oracle work is the shared ground |
@@ -481,3 +541,10 @@ One statement keeps this section honest. Headwater has no measurements either. I
 | Modern Requirements / Azure DevOps | First inbound candidate — the arrow reverses | Model already fits. Import semantics open — **Q19** |
 | Serena | Fourth arrival at the substrate. The first to disagree with us | Applied — third anti-retrieval argument (spec 5). Scent placement → **Q20**. Evidence → **Q15**, **Q17** |
 | **The survey as a whole** | Convergence on the substrate, and near-zero measurement of the claim | Applied — grader and counterfactual constraints (spec 5), and a new principle 11, *efficacy is measured, not inherited* |
+| SCIP and LSIF, Software Heritage | An index is a transmission format, not a store | Applied — the three artifacts and the no-database ruling (spec 6). **Q6** closed |
+| Package-manager indexes in git | A committed derived index is priced by churn, not by principle | Applied — the pin at the federation tier, not a merged graph (spec 7) |
+| Backstage | Rebuild over store, and the aggregator authors its own entries | Confirms **Q9**. No change needed |
+| CodeQL | A derived store *is* a query surface at scale | Contradiction kept in view, in spec 6 |
+| SPDX 3.0, LinkML's SHACL generator | Model-first works. A chained emitter drops what it never declares | Applied — staging order and no chaining. **Q13** closed |
+| OGC API, STAC conformance | The declared subset, already an industry convention | Applied — partition rule and equivalence bar (spec 12) |
+| SPARQL federation, OAI-PMH aggregators, GraphQL federation | Harvest, and never fan out | Applied — the harvesting tier (spec 7). **Q9** closed |

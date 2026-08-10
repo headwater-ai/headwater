@@ -30,7 +30,21 @@ This table settles three things.
 
 **Document checks are the ones that no graph standard can reach**, because the body is not in the graph. That is the finding from the [SHACL instance-data evaluation](../evaluations/shacl-worked-example.md#does-this-help-with-the-actual-documents). Not by coincidence, they are also the checks that need source positions.
 
-**`exportable_as` is machine-checkable.** The emitted LinkML and SHACL are generated from exactly the checks that are marked exportable. The export metadata declares which obligations it does not cover. Thus the "declared subset" promised in the SHACL evaluation cannot drift from the truth, because both sides are generated from the same list.
+**`exportable_as` is machine-checkable.** The emitted shapes are generated from exactly the checks that declare a target, and the next section states the rules that keep the claim honest.
+
+### `exportable_as` is a set with a partition rule
+
+A check declares the emitter targets that it exports to. The value is a **set** rather than one format, and `none` is legal and common. A check exportable to SHACL need not be exportable to JSON Schema.
+
+Three rules make the declared subset of [Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate) true rather than intended.
+
+**The two lists partition the registry.** The engine generates the exported set and the unexported set from one check registry. Neither list is authored, so neither can drift from the other, and no check falls into both or into neither.
+
+**A target needs equivalence, not resemblance.** A check may name a target only when the emitted constraint catches exactly what the native check catches, over the exported graph. A differential test establishes that. A stock validator runs over the projection, and its finding set for that check matches the engine's over the fixture corpus. A partial translation is declared unexported. A claim of coverage that is partly true is worse than a claim of none, because a consumer cannot see the difference.
+
+**The declaration travels with the artifact.** An export carries its own coverage statement, so a consumer who copies the export copies the statement too. A statement that lives beside the artifact arrives separately, or not at all.
+
+That last rule follows practice rather than invention. An OGC API implementation serves the conformance classes that it supports, and a listed class obliges the whole capability behind it. Headwater owes one thing more, because its check registry comes from an adopter's taxonomy rather than from a published universe. An outside reader cannot compute the complement, so the export states both halves ([evaluation](../evaluations/graph-export-and-federation.md)).
 
 ## Scope — the declaration everything else rests on
 
@@ -175,7 +189,8 @@ Fixture discipline (below) covers checks. It does not cover the components that 
 - **The parser's span retention.** Section contracts, voice checks, and prose-link extraction all trust one parse. A mis-parsed heading lets a section contract pass with no finding anywhere. A parser conformance corpus is part of the engine's own test surface.
 - **The scaffolder.** Edges marked `created_by: scaffold` are corpus facts that nobody reviews individually. A scaffolder bug manufactures wrong edges at exactly the scale that the assisted-fraction metric celebrates. Scaffolder output goes through the same validation pipeline as authored input. That the output is generated is never a reason to trust it.
 - **External-anchor resolvers.** Write-time impact detection fires on anchor identity ([spec 2](02-taxonomy-model.md#behavior-at-the-limits)). A resolver that mis-normalizes makes `governs` edges silently miss.
-- **Kind resolution and the graph projector**, the two components already named in [Q6](09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest).
+- **The cache.** A cache that can change a verdict is a store under another name. `headwater check --no-cache` and `headwater check` produce byte-identical output, and that comparison is a fixture rather than an assumption ([spec 6](06-engine-architecture.md#nothing-stores-the-graph)).
+- **Kind resolution and the graph projector**, the two components that [Q6](09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest) named. The projector now carries a check of its own rather than a warning. Every export run emits a census over the projection, and an omission that no declared loss reason covers fails the run ([spec 6](06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped)).
 
 ## Testing: a check without a failing fixture does not ship
 

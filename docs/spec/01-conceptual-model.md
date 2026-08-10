@@ -22,9 +22,15 @@ The use of the standard names is not decoration. It is why the validation of a t
 
 ## The corpus
 
-A **corpus** is the set of documents that one taxonomy governs, rooted at one directory (usually `docs/`) in one repository. A repository has exactly one corpus. A corpus knows its taxonomy by reference (id plus version). Thus the system never requires a document to state what kind of thing it is more than once.
+A **corpus** is the set of documents that one taxonomy governs, rooted at one directory (usually `docs/`). A corpus knows its taxonomy by reference (id plus version). Thus the system never requires a document to state what kind of thing it is more than once.
+
+**One taxonomy and one root make a corpus, and a repository holds one or more.** An earlier draft said that a repository has exactly one corpus, which named the wrong container. A monorepo with several independent documentation sets is not one corpus under strain. It is several corpora that share a working tree, and each one carries its own lock.
+
+Two rules keep that cheap, and both reuse machinery that exists. A path resolves to exactly one corpus. The rule is the one that shelf patterns already obey: the most specific root wins, and a tie is a schema-validation error. Identifiers carry a namespace from the moment of minting ([spec 3](03-authoring-and-lifecycle.md#identifiers)), so two corpora in one tree cannot collide ([Q9](09-open-questions.md#q9--multi-repository-corpora)).
 
 The engine loads the corpus into a **corpus graph**: typed nodes with typed edges. The engine builds the graph in one pass and caches it. Every downstream operation reuses it. The graph — not the file tree — is the engine's working representation.
+
+**The graph is rebuilt, and nothing stores it.** Every run derives the graph from the Markdown, and the cache only makes that derivation cheap. A cache that can change a verdict is a store under another name, and the engine tests the difference ([spec 6](06-engine-architecture.md#nothing-stores-the-graph)). Every artifact that leaves the graph is a projection, and each one declares what it could not carry ([Q6](09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest)).
 
 ## Nodes
 
