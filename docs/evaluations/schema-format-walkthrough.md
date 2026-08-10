@@ -294,6 +294,14 @@ YAML's traps are the error-proneness cost of this choice, and a strict loader re
 - **Merge keys are forbidden**, for the same reason, and they are a YAML 1.1 extension in any case.
 - **Scalar types come from the meta-schema, never from the resolver.** A version reads as a string because the meta-schema says it is one.
 
+## The implementation cost, and why it is already retired
+
+Choosing YAML in a Rust engine has one obvious cost, and [Q1](../spec/09-open-questions.md#q1--implementation-language) named it while closing: the YAML crate ecosystem is in poor repair. The reason it matters less than it looks is the same reason in both entries. [Spec 12](../spec/12-check-layer.md) requires findings to anchor to a line, and no convenient deserializer retains spans. The engine writes its own parse whatever format it reads.
+
+The [language spike](language-spike-results.md) built that parse for document front matter, with ten assertions covering line and column for every key. A taxonomy file is the same problem at a different scale. So the format decision here adds no implementation risk that the engine had not already accepted.
+
+This is also the reason the loader rulings above cost nothing to enforce. A parser that the engine owns can reject a duplicate key, refuse an anchor, and take a scalar's type from the meta-schema. A parser that the engine merely calls can do none of those.
+
 ## The lock is a different artifact with different criteria
 
 Q2's leaning said the resolved lock belongs in "a stricter representation" without saying what strict means. The lock is generated, so authorability is not one of its criteria. Determinism and diffability are.
