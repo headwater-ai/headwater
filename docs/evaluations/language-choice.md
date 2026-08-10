@@ -2,7 +2,7 @@
 
 The evidence for [Q1](../spec/09-open-questions.md#q1--implementation-language). The question listed four candidates. Two of them fall to a constraint that [spec 6](../spec/06-engine-architecture.md#implementation-constraints) already states, so this document argues the remaining two.
 
-**Python and Node are out on distribution, not on speed.** Spec 6 requires a single binary and no toolchain per check. It also gives a 200 ms budget for the change-scoped run that a commit hook performs. An interpreter start costs a large fraction of that budget before any work begins. And the reference system's mix of Python, Node, and shell is the named cost that Headwater exists to not repeat. That leaves Rust and Go.
+**Python and Node are out on distribution, not on speed.** Spec 6 requires a single binary and no toolchain per check. It also gives a 200 ms budget for the change-scoped run that a commit hook performs. An interpreter start costs a large fraction of that budget before any work begins. And a mix of Python, Node, and shell, each with its own container fallback, is the named cost that spec 6 refuses. That leaves Rust and Go.
 
 **The conclusion is Rust, and the reasons are not the ones that Q1's table gives.** Speed does not decide between these two. The three arguments that do decide it come from constraints that the specification already committed to, in spec 6 and [spec 12](../spec/12-check-layer.md).
 
