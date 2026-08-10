@@ -282,4 +282,4 @@ The controls above verify *form*. One question is semantic: does a specification
 
 ## The system's own assurance
 
-headwater's obligations, controls, and gaps live in headwater's own corpus and are checked in headwater's own CI. The same command that an adopter runs generates the coverage numbers that we publish for the project. If we exempt ourselves from something, that exemption is visible in the register. That is exactly the property that we ask adopters to accept.
+Headwater's obligations, controls, and gaps live in Headwater's own corpus and are checked in Headwater's own CI. The same command that an adopter runs generates the coverage numbers that we publish for the project. If we exempt ourselves from something, that exemption is visible in the register. That is exactly the property that we ask adopters to accept.
