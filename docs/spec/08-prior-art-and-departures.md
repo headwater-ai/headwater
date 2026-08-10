@@ -27,7 +27,7 @@ These ideas work, and we adopt them here on their merits:
 
 Shelf names, type vocabularies, scan roots, and status enumerations were constants inside individual checkers. The prose standards restated those values, and the instruction globs restated them again. That made three copies, and one of them was executable. A different documentation culture could not be expressed without a fork of the tooling. And a fork loses upstream fixes.
 
-**Departure:** the taxonomy is a validated, versioned, composable schema and the sole source of structure. Checks are generated from it or configured by it. Customisation is an overlay. See [taxonomy model](02-taxonomy-model.md).
+**Departure:** the taxonomy is a validated, versioned, composable schema and the sole source of structure. Checks are generated from it or configured by it. Customization is an overlay. See [taxonomy model](02-taxonomy-model.md).
 
 ### 2. Ten tools, ten walks of the corpus
 
@@ -43,7 +43,7 @@ A filename prefix, and a glob that matched it, encoded whether a document was sh
 
 ### 4. Distribution by checksummed byte-identity
 
-Consumers received verbatim file trees, gated on byte-identity. This makes drift detectable, and it makes customisation nearly impossible. So specialisation leaked into side-channel config files. Each new artefact forced a new argument about the boundary between "engine" and "your vocabulary".
+Consumers received verbatim file trees, gated on byte-identity. This makes drift detectable, and it makes customization nearly impossible. So specialization leaked into side-channel config files. Each new artifact forced a new argument about the boundary between "engine" and "your vocabulary".
 
 **Departure:** versioned packages, explicit overlays, resolved lock files. Identity is a property of the *resolved* taxonomy, not of files on disk. See [distribution](07-distribution-and-federation.md).
 
@@ -61,7 +61,7 @@ CI templates, work-item conventions, and the hosting model were specific to one 
 
 ### 7. Identifier namespacing arrived late
 
-Namespacing per repository was retrofitted onto identifiers after collisions became foreseeable. It was then generalised again for later identifier classes. Each step was correct. The sequence was expensive.
+Namespacing per repository was retrofitted onto identifiers after collisions became foreseeable. It was then generalized again for later identifier classes. Each step was correct. The sequence was expensive.
 
 **Departure:** every identifier scheme is namespaced and globally resolvable from the first release. A namespace is cheap to apply when an identifier is minted, and expensive to apply later.
 
@@ -79,4 +79,4 @@ Governance prose, agent instructions, executable tooling, and vendoring configur
 
 ## Legal and ethical position
 
-We wrote this specification from a structural study of a prior system's design — its concepts, its architecture, and its friction points. It reproduces no source code, no configuration, no prose, and no organisation-specific content. The ideas credited above are mostly general practice in the technical-documentation and architecture-decision-record communities. The credit here is for the specific combination, and for the demonstration that the combination holds together in production.
+We wrote this specification from a structural study of a prior system's design — its concepts, its architecture, and its friction points. It reproduces no source code, no configuration, no prose, and no organization-specific content. The ideas credited above are mostly general practice in the technical-documentation and architecture-decision-record communities. The credit here is for the specific combination, and for the demonstration that the combination holds together in production.

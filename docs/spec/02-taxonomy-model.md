@@ -15,7 +15,7 @@ The taxonomy must thus be:
 - **declarative** — data, not code.
 - **complete** — nothing structural known only to the engine.
 - **validated** — the schema itself has a schema.
-- **composable** — customisation by overlay, never by fork.
+- **composable** — customization by overlay, never by fork.
 - **versioned** — a change is a release, with a migration path.
 - **explainable** — the engine can justify every classification decision.
 
@@ -40,7 +40,7 @@ purposes:                              # reader intents the corpus serves
   rationale:
     intent: explain why a choice was made and what it forecloses
     answers: ["why is it this way", "what was rejected", "what does this constrain"]
-  behaviour:
+  behavior:
     intent: state what the system does, as it is now
     answers: ["what does this component do", "what may I rely on"]
   procedure:
@@ -162,7 +162,7 @@ kinds:
     relations:
       may: [supersedes, superseded_by, conflicts_with, implemented_by]
       expect:                          # windowed participation: finds what should exist and does not
-        - id: decision-realised
+        - id: decision-realized
           relation: implemented_by
           to_kind: specification
           when: {status: current}
@@ -183,7 +183,7 @@ core:                                  # what overlays may never remove or redef
     - facet_role: freshness
     - facet_role: scent
     - purpose: rationale               # some kind must serve it
-    - purpose: behaviour
+    - purpose: behavior
     - relation_family: succession
       lifecycle_sensitive: true
 
@@ -211,7 +211,7 @@ projections:
 | `identifier_schemes` | How stable identifiers are shaped, namespaced, and allocated |
 | `core` | What an overlay may never remove or redefine |
 | `mappings` | How this taxonomy's concepts correspond to another's |
-| `projections` | What derived artefacts are generated, and where they land |
+| `projections` | What derived artifacts are generated, and where they land |
 
 An earlier draft counted twelve and then added two more in the next sentence. Four of those fourteen are gone deliberately, and what each protected survives without its name.
 
@@ -223,13 +223,13 @@ One declaration is here that no earlier draft had: `anchors`. Relation endpoints
 
 **Every kind declares the reader intent that it serves.** A kind without a purpose fails schema validation.
 
-This makes the genre-theoretic definition operational: a genre is a socially recognised type, defined by a shared *purpose* and *form*. The rest of a kind declaration — sections, facets, voice — is form. Without purpose, a kind is a shape with no reason. The first question that anyone asks about a corpus ("what is this shelf *for*?") then has no answer in the schema.
+This makes the genre-theoretic definition operational: a genre is a socially recognized type, defined by a shared *purpose* and *form*. The rest of a kind declaration — sections, facets, voice — is form. Without purpose, a kind is a shape with no reason. The first question that anyone asks about a corpus ("what is this shelf *for*?") then has no answer in the schema.
 
 Purposes are declared once, at the taxonomy level, and kinds reference them. Several kinds may serve one purpose — a decision record and an architecture note can both serve `rationale`. But a kind that serves two unrelated purposes is a signal to split the kind, and the validator says so.
 
 Purpose does real work downstream:
 
-- **Routing** ([spec 5](05-ai-integration.md)) matches a task's intent against declared purposes before it matches text. "Why is it like this?" resolves to `rationale` kinds. "what does it do?" resolves to `behaviour` kinds. This is a search over intentional structure, not over prose. It is far cheaper and more precise than lexical ranking alone.
+- **Routing** ([spec 5](05-ai-integration.md)) matches a task's intent against declared purposes before it matches text. "Why is it like this?" resolves to `rationale` kinds. "what does it do?" resolves to `behavior` kinds. This is a search over intentional structure, not over prose. It is far cheaper and more precise than lexical ranking alone.
 - **`headwater explain`** states a document's purpose alongside its kind. A reader who opens a document thus knows what it is *for* before they read it.
 - **The core** (below) is expressed in terms of purposes. This lets an adopter rename everything and still run the same method in a recognisable way.
 
@@ -243,11 +243,11 @@ Every relation belongs to exactly one of six families:
 
 | Family | Meaning | Default nuclearity | Lifecycle-sensitive |
 |---|---|---|---|
-| `succession` | One artefact replaces or revises another | multinuclear | yes |
-| `derivation` | One artefact is generated or distilled from another | nucleus–satellite | yes |
-| `governance` | One artefact constrains another, or constrains code | — | yes |
-| `evidence` | One artefact substantiates a claim in another | — | no |
-| `composition` | One artefact is part of another | nucleus–satellite | yes |
+| `succession` | One artifact replaces or revises another | multinuclear | yes |
+| `derivation` | One artifact is generated or distilled from another | nucleus–satellite | yes |
+| `governance` | One artifact constrains another, or constrains code | — | yes |
+| `evidence` | One artifact substantiates a claim in another | — | no |
+| `composition` | One artifact is part of another | nucleus–satellite | yes |
 | `association` | Related, with no stronger claim | multinuclear | no |
 
 The fixed family set is deliberate. Open relation vocabularies sprawl, and readers apply them inconsistently once the list passes about a dozen entries. Decades of discourse annotation agree on that finding. A family supplies default semantics, so a new relation type inherits sensible checking without a declaration of its own. The validator can also flag a taxonomy that grew five near-synonymous relations inside one family.
@@ -270,7 +270,7 @@ This asymmetry pays for itself in four places:
 When two documents are linked, no declaration states which one governs the reading. Properties already declared entail it. The earlier per-relation `dominance` field was cut when the entailment was noticed:
 
 - **On a nucleus–satellite relation, the nucleus governs.** A satellite supports the other end and cannot stand without it. A document that cannot stand alone cannot have its purpose govern the reading of the document that it depends on.
-- **On succession, the successor governs.** That is the whole meaning of the family: the successor is the one that governs behaviour now.
+- **On succession, the successor governs.** That is the whole meaning of the family: the successor is the one that governs behavior now.
 - **Other multinuclear relations carry no reading order.** `conflicts_with` and `is_alternative_to` assert exactly that neither end subordinates the other, and to impose an order would misstate the relation.
 
 The engine uses the derived precedence in three places. It orders routing results, chooses which document a conflict is reported against, and decides reading order in generated indexes. Nothing downstream changed when the declaration was removed, which is the evidence that it declared nothing. A real corpus may produce a multinuclear, non-succession relation whose ends genuinely need an order. That outcome is the case to reintroduce a declaration, and that is the time to argue it.
@@ -323,38 +323,38 @@ The default taxonomy assumes that remedy from the start. Every relation that it 
 
 ### Lineage aligns with PROV
 
-The `derivation` and `succession` families map onto W3C PROV: `derives_from` to `prov:wasDerivedFrom`, `supersedes` to `prov:wasRevisionOf`, and generated projections to `prov:wasGeneratedBy`. Alignment is deliberate — provenance is a solved modelling problem. A match with a standard costs nothing, and it makes the graph interoperable with tooling that already exists.
+The `derivation` and `succession` families map onto W3C PROV: `derives_from` to `prov:wasDerivedFrom`, `supersedes` to `prov:wasRevisionOf`, and generated projections to `prov:wasGeneratedBy`. Alignment is deliberate — provenance is a solved modeling problem. A match with a standard costs nothing, and it makes the graph interoperable with tooling that already exists.
 
 It also brings PROV's agent dimension, which now matters: humans, agents, and both together draft documents. See [authoring and lifecycle](03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed).
 
-### Behaviour at the limits
+### Behavior at the limits
 
 A real corpus finds the edges of this machinery quickly. Every case below is declared here, not left for an implementation accident to settle. All of them are generated Graph checks ([spec 12](12-check-layer.md)) — they come with the family, not with adopter code.
 
-- **Succession, derivation, and composition are acyclic.** `A supersedes A`, a mutual succession, or a longer cycle leaves a corpus with no live end. A `derives_from` loop means that satellite inheritance never terminates. A `comprises` cycle is nonsense. All three families reject self-reference and cycles. Association may legitimately cycle. Governance and evidence edges are directed, so their cycles are expressible — and **legal**. Two decisions genuinely can constrain each other, and evidence can be mutual. Nothing downstream depends on an order over these families — no inheritance, no live end, no part-of hierarchy — so a cycle breaks no semantics. Acyclicity is confined to the three families where a cycle destroys what the family means, not applied wherever it sounds hygienic. Self-reference stays invalid in every family except association. A document that constrains or evidences itself is a modelling error, not a relationship.
-- **Duplicate edges collapse to one, with a finding.** Two identical declarations of one relation between the same endpoints are a single edge and an advisory finding. The cause is usually a merge artefact, never a stronger claim.
+- **Succession, derivation, and composition are acyclic.** `A supersedes A`, a mutual succession, or a longer cycle leaves a corpus with no live end. A `derives_from` loop means that satellite inheritance never terminates. A `comprises` cycle is nonsense. All three families reject self-reference and cycles. Association may legitimately cycle. Governance and evidence edges are directed, so their cycles are expressible — and **legal**. Two decisions genuinely can constrain each other, and evidence can be mutual. Nothing downstream depends on an order over these families — no inheritance, no live end, no part-of hierarchy — so a cycle breaks no semantics. Acyclicity is confined to the three families where a cycle destroys what the family means, not applied wherever it sounds hygienic. Self-reference stays invalid in every family except association. A document that constrains or evidences itself is a modeling error, not a relationship.
+- **Duplicate edges collapse to one, with a finding.** Two identical declarations of one relation between the same endpoints are a single edge and an advisory finding. The cause is usually a merge artifact, never a stronger claim.
 - **Inverses that disagree are a finding, not a choice.** Where both ends author their half, the halves can disagree — B names a successor that is not the document that names B. The engine prefers neither side. It reports the pair, and the corpus is incoherent there until an author resolves it.
 - **A satellite with two nuclei inherits nothing contested.** Where the inherited facet values agree, inheritance proceeds. Where they disagree — one nucleus `current`, the other `superseded` — the engine does not silently pick a value. The conflict is a finding against the satellite. A satellite that declares a value that its nucleus also supplies keeps its local value, and the divergence is itself a finding. Silent shadowing is how inherited staleness disappears.
-- **Anchors are endpoints without document semantics.** Nuclearity, reading precedence, and lifecycle interaction are defined between documents. A relation that ends on an external anchor carries none of them. An anchor has no purpose and no lifecycle, which is why the family table's nuclearity cells are blank for governance and evidence. What an anchor endpoint does carry is **identity**. Each anchor type is declared in `anchors` and owned by exactly one resolver. Anchor strings are normalised before comparison, so two spellings of one target are one node. An anchor that no resolver claims is a finding. Write-time impact detection ([spec 5](05-ai-integration.md)) fires on these identities, so anchor resolution is a correctness root, not an edge case.
+- **Anchors are endpoints without document semantics.** Nuclearity, reading precedence, and lifecycle interaction are defined between documents. A relation that ends on an external anchor carries none of them. An anchor has no purpose and no lifecycle, which is why the family table's nuclearity cells are blank for governance and evidence. What an anchor endpoint does carry is **identity**. Each anchor type is declared in `anchors` and owned by exactly one resolver. Anchor strings are normalized before comparison, so two spellings of one target are one node. An anchor that no resolver claims is a finding. Write-time impact detection ([spec 5](05-ai-integration.md)) fires on these identities, so anchor resolution is a correctness root, not an edge case.
 
 ### Disagreement is adjudicated, not ranked
 
 Two documents can both be current, both be well-formed, and disagree on a fact — a standard says one thing, a specification another. An earlier draft answered this with a per-kind **authority rank** consumed by an `on_disagreement` rule. It is cut, for three reasons that survive any rewording:
 
 - **The trigger is unobservable.** To detect that two documents disagree *on a fact* is to reason about what prose asserts. [spec 1](01-conceptual-model.md#two-layers-terminology-and-assertions) explicitly forswears that, and [spec 4](04-assurance-model.md#declaration-moves-the-boundary) confirms that it is undecidable structurally. The rule could only ever fire *after* a human or a coherence-sweep finding already identified the disagreement.
-- **At that point, the adjudication is the data.** Whoever identified the disagreement knows which side is right for this case. Spec 4's design rule says to record that judgement — as a declared edge, a correction, or a succession. It says not to pre-answer the judgement with a scalar that someone chose before the question existed.
-- **A scalar cannot express the semantics that the prose demanded.** "A specification outranks a standard about its own component and is silent about anything else" is scoped precedence. `authority: 20` is a global ordering, which is exactly the backwards behaviour that the old prose warned against.
+- **At that point, the adjudication is the data.** Whoever identified the disagreement knows which side is right for this case. Spec 4's design rule says to record that judgment — as a declared edge, a correction, or a succession. It says not to pre-answer the judgment with a scalar that someone chose before the question existed.
+- **A scalar cannot express the semantics that the prose demanded.** "A specification outranks a standard about its own component and is silent about anything else" is scoped precedence. `authority: 20` is a global ordering, which is exactly the backwards behavior that the old prose warned against.
 
 What survives needs no numbers: where sources conflict and no declared adjudication exists, an agent cites both and flags the conflict ([spec 5](05-ai-integration.md)). Whether adjudications eventually need their own declaration is reopened as [Q18](09-open-questions.md#q18--recording-adjudicated-disagreements).
 
 ## Contract sidecars: the specification as oracle
 
-Prose is canonical for meaning and hopeless for precision. A component may therefore carry a **contract sidecar**: machine-verifiable artefacts beside the prose. Examples are schemas, interface descriptions, metric definitions, and structured acceptance criteria that carry stable identifiers.
+Prose is canonical for meaning and hopeless for precision. A component may therefore carry a **contract sidecar**: machine-verifiable artifacts beside the prose. Examples are schemas, interface descriptions, metric definitions, and structured acceptance criteria that carry stable identifiers.
 
 ```
 specifications/ingest/parser/
   functional.md          # prose: what it does and why — canonical for meaning
-  technical.md           # prose: how it is realised
+  technical.md           # prose: how it is realized
   contracts/
     input.schema.json    # canonical for shape
     acceptance.yml       # identified, structured criteria
@@ -364,7 +364,7 @@ The prose stays canonical for intent, and the sidecar is canonical for the exact
 
 What this unlocks is the more interesting part. Structured acceptance criteria with stable identifiers are a **test oracle**. The engine can derive a conformance check from the specification. Nobody then writes the check alongside the specification, and the check does not drift from it. The check asks the corpus what should be true, so coverage follows the specification automatically, with no parallel maintenance.
 
-That closes the loop that the whole system is built around. A specification that can generate the check that proves it is a specification that cannot quietly become false. That is the strongest available form of "documentation describes what is". It also sets an important boundary: a generated check confirms *structure*, never meaning. A criterion can be present, well-formed, mechanically satisfied, and still describe the wrong behaviour. Structural conformance is a floor, and the audit layer ([spec 4](04-assurance-model.md)) is the ceiling.
+That closes the loop that the whole system is built around. A specification that can generate the check that proves it is a specification that cannot quietly become false. That is the strongest available form of "documentation describes what is". It also sets an important boundary: a generated check confirms *structure*, never meaning. A criterion can be present, well-formed, mechanically satisfied, and still describe the wrong behavior. Structural conformance is a floor, and the audit layer ([spec 4](04-assurance-model.md)) is the ceiling.
 
 Sidecars are optional. A component with nothing mechanically checkable carries none, and the taxonomy declares which kinds may have them.
 
@@ -377,7 +377,7 @@ kinds:
   decision:
     relations:
       expect:
-        - id: decision-realised
+        - id: decision-realized
           relation: implemented_by
           to_kind: specification
           when: {status: current}
@@ -389,7 +389,7 @@ kinds:
 
 An earlier draft declared these as a separate top-level concept, `sequences`, sold as chains. Every declared chain was in fact a single hop: *kind + state ⇒ expected relation, within window*. A chain is three expectations that share endpoints. A single hop is a state-conditional, windowed, detective-posture participation constraint — the `required` end of the cardinality spectrum that a relation already has, plus a clock. So it is declared where `may:` already lives, and the separate concept is gone. What it models is unchanged: genre theory's *genre system* — proposal → decision → specification → evidence, and incident → postmortem → standard change.
 
-Expectations catch a failure class that nothing else catches. Every check in [spec 4](04-assurance-model.md) validates artefacts that exist. An expectation finds the artefact that **should exist and does not**. Examples are the accepted proposal that nobody implemented, the incident with no postmortem, and the decision that never reached a specification. That is the drift that people actually complain about. It is invisible to link and front-matter validation, because there is nothing malformed to find.
+Expectations catch a failure class that nothing else catches. Every check in [spec 4](04-assurance-model.md) validates artifacts that exist. An expectation finds the artifact that **should exist and does not**. Examples are the accepted proposal that nobody implemented, the incident with no postmortem, and the decision that never reached a specification. That is the drift that people actually complain about. It is invisible to link and front-matter validation, because there is nothing malformed to find.
 
 **The window has a declared origin.** `within: 90d` is meaningless until the question *ninety days from what?* has an answer in the graph. The earlier draft had none — no state-entry or creation date existed anywhere, which made the flagship absence check uncomputable from declared data. So the origin is now part of the declaration: `since:` names an engine-significant date role — `state_entered` (stamped by the transition that put the document in the state that triggers the expectation) or `created` for expectations with no state condition. An expectation whose origin facet is not required on the kind that declares it fails `taxonomy validate`. This keeps the check pure ([spec 12](12-check-layer.md)): origin date plus injected clock, no history walk, no git archaeology.
 
@@ -398,7 +398,7 @@ Expectations catch a failure class that nothing else catches. Every check in [sp
 - Its correct value is the date that the transition *landed*, not the date that someone noticed. Whatever performs the transition stamps it — scaffold, hook, agent, or author. A generated change-scoped check ([`needs_prior`](12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version)) enforces the pairing. A diff that moves the state facet but not the state-entry date is a finding. A stamp in the future, or earlier than the prior stamp, is also a finding. The contract is checked at the only moment that it is cheaply fixable — while the transition is still in the diff.
 - `check --fix` stamps the date only when the transition sits in the same diff. It never reconstructs a missing date after the fact. An invented origin silently rewrites every window measured from it. A human enters a lost entry date, or it stays a finding.
 - State changes caused by edges stamp too. `on_target: {set_state: superseded}` sets the target's state-entry date in the same operation. A state change with no stamp is a defect regardless of what caused the change.
-- **Re-entry into a state resets the window, deliberately.** The state-entry date describes the current state's entry, so a lifecycle machine with a cycle re-arms any expectation conditioned on the re-entered state. That is usually the right semantics — re-acceptance restarts the clock on realisation. But it is a gaming route, so the churn is visible. `taxonomy audit`'s state-dwell and transition-count distributions make a flip-flop to re-arm a window a reportable pattern.
+- **Re-entry into a state resets the window, deliberately.** The state-entry date describes the current state's entry, so a lifecycle machine with a cycle re-arms any expectation conditioned on the re-entered state. That is usually the right semantics — re-acceptance restarts the clock on realization. But it is a gaming route, so the churn is visible. `taxonomy audit`'s state-dwell and transition-count distributions make a flip-flop to re-arm a window a reportable pattern.
 - A document that lacks its origin facet — the normal condition of an adopted corpus at first contact — does not have a window invented for it. Expectation instances against it are skipped with reason `missing-origin` and counted in coverage ([spec 4](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)). The missing required facet is already its own finding, so the absence is loud while the window stays honest.
 
 Four constraints keep expectations honest:
@@ -421,7 +421,7 @@ core:
     - facet_role: freshness
     - facet_role: scent
     - purpose: rationale
-    - purpose: behaviour
+    - purpose: behavior
     - relation_family: succession
       lifecycle_sensitive: true
 ```
@@ -451,7 +451,7 @@ mappings:
 
 Four relations, with their standard meanings: `exactMatch` (interchangeable in practice), `closeMatch` (interchangeable for retrieval, not for inference), `broadMatch` / `narrowMatch` (one is wider than the other), `relatedMatch` (associated, neither wider nor equivalent).
 
-Mappings are what let a cross-repository aggregator answer "show me every decision in the organisation" across taxonomies that share no vocabulary. Whoever needs the correspondence declares them, and they are directional, versioned, and validated. A mapping that names a kind that neither taxonomy has is a finding.
+Mappings are what let a cross-repository aggregator answer "show me every decision in the organization" across taxonomies that share no vocabulary. Whoever needs the correspondence declares them, and they are directional, versioned, and validated. A mapping that names a kind that neither taxonomy has is a finding.
 
 Past a handful of taxonomies, "whoever needs the correspondence" is only ever the aggregator tier. That is the normative topology, not a tendency. Pairwise mappings between fifty independent taxonomies permit 1,225 unordered pairs before direction and versions multiply them. Every pair goes stale on every publisher release. Peers do not map to peers at scale. The aggregator owns the correspondences, because it is the only party that reads them.
 
@@ -463,14 +463,14 @@ Given a document path and its front matter, the engine resolves a kind in four s
 
 1. It matches the path against shelf patterns — the most specific wins, and ties are a schema-validation error, not a runtime coin-flip.
 2. If the shelf is homogeneous, it takes the declared kind.
-3. If the shelf is heterogeneous, it reads the discriminator facet. A missing or unrecognised value is a finding whose severity the shelf declares.
+3. If the shelf is heterogeneous, it reads the discriminator facet. A missing or unrecognized value is a finding whose severity the shelf declares.
 4. It applies any path-pattern refinement that the shelf declares (for instance `functional.md` and `technical.md` resolve to different kinds within one component directory).
 
 `headwater explain <path>` prints this derivation — which shelf matched, which rule fired, and the kind's declared purpose. It also prints which facets and sections are consequently required, and which relations are permitted. Classification is never a black box, for a human or an agent.
 
 ### Placement is primary; metadata fills the gap
 
-Directory placement carries the primary classification, because it is the signal that a reader sees first and the one that a path glob can act on. Metadata materialises only what placement *cannot* express.
+Directory placement carries the primary classification, because it is the signal that a reader sees first and the one that a path glob can act on. Metadata materializes only what placement *cannot* express.
 
 This produces one rule with real teeth: **a homogeneous shelf forbids the discriminator facet.** If the directory already says what a document is, a restatement in front matter creates a second truth that will eventually disagree with the first. The schema enforces the prohibition and does not trust authors to notice.
 
@@ -492,7 +492,7 @@ The mitigation is structural, not detective. Kinds that share a shelf should not
 
 The first three are decidable from the schema alone and run under `headwater taxonomy validate`. The last two require documents to measure against, and they run under `headwater taxonomy audit`, which is advisory by construction. A young corpus will fail differentiation simply because it is small.
 
-Orthogonality is the one that deserves attention. If a document's `shelf` tells you its `doc_type` with near-certainty, one of them does no work. The redundant one will eventually disagree with the other. The audit reports correlated facet pairs and does not reject them, because the right fix is a judgement. Sometimes you delete a facet, and sometimes you discover that the shelf split was wrong.
+Orthogonality is the one that deserves attention. If a document's `shelf` tells you its `doc_type` with near-certainty, one of them does no work. The redundant one will eventually disagree with the other. The audit reports correlated facet pairs and does not reject them, because the right fix is a judgment. Sometimes you delete a facet, and sometimes you discover that the shelf split was wrong.
 
 ## Kinds are rigid; states are not
 
@@ -502,7 +502,7 @@ The practical rule: **never model lifecycle state as a kind, a shelf, or a direc
 
 This is the most common taxonomy mistake there is, and it always looks reasonable at the time (`docs/drafts/`, a `deprecated-standard` kind). It is expensive to undo, because it forces a document to change identity as it matures. A name for the underlying principle gives the argument a resolution instead of a stand-off.
 
-## Customisation by composition
+## Customization by composition
 
 An adopter never edits a base taxonomy. They declare an overlay:
 
@@ -603,7 +603,7 @@ A major version ships a **migration payload**: machine-readable steps that decla
 | | Small team | Product suite | Regulated platform |
 |---|---|---|---|
 | Shelves | `decisions`, `guides` | + `specifications`, `standards`, `proposals`, `evidence` | + `controls`, `audits`, `risk` |
-| Purposes | `rationale`, `procedure` | + `behaviour`, `constraint` | + `attestation` |
+| Purposes | `rationale`, `procedure` | + `behavior`, `constraint` | + `attestation` |
 | Lifecycle | `draft` → `current` | + `superseded`, `deprecated` | + `approved`, with an approver facet |
 | Identifiers | none | decision + requirement ids | + control ids, mapped to an external framework |
 | Voice regime | unconstrained | declarative on specs and standards | + mandatory normative keyword usage |

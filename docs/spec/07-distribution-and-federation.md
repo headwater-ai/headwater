@@ -1,6 +1,6 @@
 # 7 — Distribution and federation
 
-One organisation defines a documentation method. Many repositories adopt it. It evolves. Everyone must be able to take the evolution without loss of what they customised. Also, the publisher must be able to tell who actually did.
+One organization defines a documentation method. Many repositories adopt it. It evolves. Everyone must be able to take the evolution without loss of what they customized. Also, the publisher must be able to tell who actually did.
 
 ## What is shared, and what is not
 
@@ -13,7 +13,7 @@ One organisation defines a documentation method. Many repositories adopt it. It 
 | Router / entry point | No — it describes *this* repository | Yes |
 | Control register | Partly — the publisher's obligations are inherited | Local controls and waivers |
 
-This distinction makes the problem tractable: **the taxonomy is a package, not a copy.** Prior systems vendored checksummed file trees and gated on byte-identity. That works only while nobody needs to customise. Here, customisation is expressed as an overlay against a versioned base. Thus an upgrade is a package bump and a re-resolve, not a merge conflict with a file that you were never supposed to edit.
+This distinction makes the problem tractable: **the taxonomy is a package, not a copy.** Prior systems vendored checksummed file trees and gated on byte-identity. That works only while nobody needs to customize. Here, customization is expressed as an overlay against a versioned base. Thus an upgrade is a package bump and a re-resolve, not a merge conflict with a file that you were never supposed to edit.
 
 ## Publishing
 
@@ -27,12 +27,12 @@ contents:
   taxonomy: taxonomy/
   doctrine: doctrine/          # prose explaining the method, vendored to consumers
   templates: templates/
-  plugins: plugins/            # organisation-specific checks
+  plugins: plugins/            # organization-specific checks
 profiles: [service-repo, docs-only, platform]   # named overlays the package ships
 migrations: migrations/
 ```
 
-Publishing is a release: a semantic version, a changelog, an integrity digest, and a migration payload for any major bump. Distribution is over the registry or repository that the organisation already uses. The engine requires only that it can fetch a version and check its digest.
+Publishing is a release: a semantic version, a changelog, an integrity digest, and a migration payload for any major bump. Distribution is over the registry or repository that the organization already uses. The engine requires only that it can fetch a version and check its digest.
 
 ## Consuming
 
@@ -113,19 +113,19 @@ A consumer may deviate deliberately. A waiver names the rule, the reason, the ow
 
 ## Federation
 
-Larger organisations use layers: a generic method, a divisional taxonomy that extends it, and a repository overlay that extends that. Two rules keep the stack coherent:
+Larger organizations use layers: a generic method, a divisional taxonomy that extends it, and a repository overlay that extends that. Two rules keep the stack coherent:
 
 1. **References run upward.** A repository may reference its own tier or a higher one, never a sibling or a lower one. A downward reference makes the upper tier depend on something that it does not control, and the abstraction inverts. The legal reference set is derived from what a repository actually consumes, so it needs no hand-maintained registry.
 
-2. **Overlays compose in one direction.** Each tier may override, add, or remove against the tier above it. A tier never reaches past its parent. Conflicts are resolution errors, not precedence puzzles. Overlay application must be confluent ([spec 2](02-taxonomy-model.md#customisation-by-composition)). Thus a three-tier stack has no resolution order that anyone must remember.
+2. **Overlays compose in one direction.** Each tier may override, add, or remove against the tier above it. A tier never reaches past its parent. Conflicts are resolution errors, not precedence puzzles. Overlay application must be confluent ([spec 2](02-taxonomy-model.md#customization-by-composition)). Thus a three-tier stack has no resolution order that anyone must remember.
 
 ### Across taxonomies, not under them
 
-A layered stack only helps organisations that share a root. Two divisions that adopted different taxonomies independently — after an acquisition, or simply because they arrived separately — have no common ancestor to build an overlay against. A merge of the two is a political project, not a technical one.
+A layered stack only helps organizations that share a root. Two divisions that adopted different taxonomies independently — after an acquisition, or simply because they arrived separately — have no common ancestor to build an overlay against. A merge of the two is a political project, not a technical one.
 
 They do not need to merge. They need **declared correspondences**: SKOS-style mapping relations between their concept schemes ([spec 2](02-taxonomy-model.md#mapping-between-taxonomies)). `exactMatch` where two kinds are interchangeable, `closeMatch` where they are interchangeable for retrieval but not inference, `broadMatch` / `narrowMatch` where one is wider.
 
-With mappings declared, an aggregator answers "every decision in the organisation" across taxonomies that share no vocabulary. Neither division gives up its own. Neither taxonomy changes. A third artefact records how they correspond, and the tier that aggregates owns it — normatively, not conveniently. Pairwise mappings between peers grow quadratically, and they go stale on every publisher release ([spec 2](02-taxonomy-model.md#mapping-between-taxonomies)). That is the standard answer to this problem in knowledge organization, and there is no reason to invent a worse one.
+With mappings declared, an aggregator answers "every decision in the organization" across taxonomies that share no vocabulary. Neither division gives up its own. Neither taxonomy changes. A third artifact records how they correspond, and the tier that aggregates owns it — normatively, not conveniently. Pairwise mappings between peers grow quadratically, and they go stale on every publisher release ([spec 2](02-taxonomy-model.md#mapping-between-taxonomies)). That is the standard answer to this problem in knowledge organization, and there is no reason to invent a worse one.
 
 ## Upstream awareness
 

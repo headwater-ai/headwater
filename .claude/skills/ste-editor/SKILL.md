@@ -30,6 +30,7 @@ Full rule text: `references/writing-rules.md`. The subset that does most of the 
 8. **One name per thing** — never two terms for the same concept, never the same term for two concepts.
 9. **No semicolons, no contractions, no omitted words**; use "that" to open subordinate clauses; use articles ("the", "a") rather than dropping them.
 10. **Vocabulary (strict profile)**: every word must be an approved dictionary word (in its approved meaning and part of speech), a technical noun, or a technical verb.
+11. **American spelling** (rule 1.14, ruled for this repo 2026-08-10): organization, artifact, behavior, customize, judgment.
 
 ## Workflow
 

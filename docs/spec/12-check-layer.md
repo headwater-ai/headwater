@@ -22,7 +22,7 @@ Spec 6 sketched three tiers. The correct decomposition is five. It comes from th
 | **Graph** | relation declarations, generated | reciprocity, endpoint kinds, lifecycle-sensitivity, satellite inheritance, live conflicts, windowed participation expectations | SHACL (via SPARQL) |
 | **Corpus** | declarations that need many documents | facet orthogonality, continuity distribution, scent distinctiveness | — |
 | **Document** | regimes, applied to the body | voice, section contract, normative language, size budgets, prose-link resolution | — |
-| **Plugin** | adopter code | anything organisation-specific | — |
+| **Plugin** | adopter code | anything organization-specific | — |
 
 This table settles three things.
 
@@ -57,7 +57,7 @@ That last clause is the subgraph problem that the SHACL evaluation surfaced. The
 
 **2. Sound cache keys.** A result is keyed on a hash of exactly the inputs in scope, plus the taxonomy lock hash, the check's version, and any injected values. Nothing outside the scope can affect the result, so nothing outside it needs to be in the key.
 
-**3. Parallelism, with visible serialisation points.** `Document` and `Edge` checks are embarrassingly parallel. `Corpus` checks are the barriers. Because scope is declared, their count is a number that you can read, not a property that you discover under load.
+**3. Parallelism, with visible serialization points.** `Document` and `Edge` checks are embarrassingly parallel. `Corpus` checks are the barriers. Because scope is declared, their count is a number that you can read, not a property that you discover under load.
 
 **4. Enforcement, which is what makes the rest honest.** The view exposes *only* what the scope declared. A `Document`-scoped check physically cannot read a sibling. So a scope declaration cannot quietly rot into a lie. A scope that is declared but not enforced would silently corrupt every cache key derived from it. The enforcement is the feature, and the declaration alone would be a comment.
 
@@ -103,9 +103,9 @@ The shape of a finding comes from [spec 4](04-assurance-model.md#findings). The 
 
 A check may return a patch alongside a finding. The rule for whether it may return one:
 
-> A fix is offered only when it is **mechanical and total** — one correct outcome, derivable without judgement.
+> A fix is offered only when it is **mechanical and total** — one correct outcome, derivable without judgment.
 
-To regenerate a stale projection, to add a missing reciprocal link, to normalise front-matter key order, to correct the format of an identifier: these are mechanical. To rewrite a section to satisfy a contract, to choose a summary, to resolve a conflict between two live decisions: these are not. Those carry remediation prose instead. A plausible automatic fix for them would be worse than none, because it would be applied unread.
+To regenerate a stale projection, to add a missing reciprocal link, to normalize front-matter key order, to correct the format of an identifier: these are mechanical. To rewrite a section to satisfy a contract, to choose a summary, to resolve a conflict between two live decisions: these are not. Those carry remediation prose instead. A plausible automatic fix for them would be worse than none, because it would be applied unread.
 
 ## Severity is the check's; posture is the control's
 
@@ -158,11 +158,11 @@ That keeps "no LLM in the validation path" literally true, because the validatio
 Fixture discipline (below) covers checks. It does not cover the components that every check silently trusts. A defect in any of these produces systematically green or misdirected results, which is the silent-pass failure one level up. Each component therefore owes its own conformance fixtures, in the same spirit as "a check without a failing fixture does not ship":
 
 - **The overlay resolver and the lock.** Every downstream verdict reads the lock. A resolver bug corrupts every check, projection, and conformance claim at once. A committed and diffable lock decreases the risk but does not test the resolver. The resolver carries its own round-trip and confluence fixtures, in the same way that Q6 already demands fidelity tests for the RDF projection.
-- **Scope enforcement.** A leak silently corrupts every cache key (stated above). That makes the enforcer the correctness root for all caching and for change-scoped CI. A leak reproduces deterministically, so it looks like correct behaviour.
+- **Scope enforcement.** A leak silently corrupts every cache key (stated above). That makes the enforcer the correctness root for all caching and for change-scoped CI. A leak reproduces deterministically, so it looks like correct behavior.
 - **The census walker.** Every coverage guarantee (OB-COV-1..3) assumes that the walk enumerates the corpus root correctly. A glob or symlink bug quietly shrinks the denominator, which is the exact failure that the census exists to prevent. The walker ships with a fixture tree of the pathological cases.
 - **The parser's span retention.** Section contracts, voice checks, and prose-link extraction all trust one parse. A mis-parsed heading lets a section contract pass with no finding anywhere. A parser conformance corpus is part of the engine's own test surface.
 - **The scaffolder.** Edges marked `created_by: scaffold` are corpus facts that nobody reviews individually. A scaffolder bug manufactures wrong edges at exactly the scale that the assisted-fraction metric celebrates. Scaffolder output goes through the same validation pipeline as authored input. That the output is generated is never a reason to trust it.
-- **External-anchor resolvers.** Write-time impact detection fires on anchor identity ([spec 2](02-taxonomy-model.md#behaviour-at-the-limits)). A resolver that mis-normalises makes `governs` edges silently miss.
+- **External-anchor resolvers.** Write-time impact detection fires on anchor identity ([spec 2](02-taxonomy-model.md#behavior-at-the-limits)). A resolver that mis-normalizes makes `governs` edges silently miss.
 - **Kind resolution and the graph projector**, the two components already named in [Q6](09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest).
 
 ## Testing: a check without a failing fixture does not ship

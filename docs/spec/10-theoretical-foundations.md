@@ -12,7 +12,7 @@ Each entry states what the theory claims, what it gives us, and what changes as 
 
 ### A.1 Cohesion is not coherence — and we have been conflating them
 
-Halliday and Hasan (*Cohesion in English*, 1976) draw the distinction that the whole design rests on. **Cohesion** is the set of surface ties that bind a text — reference, substitution, ellipsis, conjunction, lexical repetition. **Coherence** is the reader's experience that the text hangs together. Cohesion is a property of the artefact. Coherence is a property of the encounter. Cohesion is necessary, nowhere near sufficient, and — importantly — *mechanically checkable* in a way that coherence is not.
+Halliday and Hasan (*Cohesion in English*, 1976) draw the distinction that the whole design rests on. **Cohesion** is the set of surface ties that bind a text — reference, substitution, ellipsis, conjunction, lexical repetition. **Coherence** is the reader's experience that the text hangs together. Cohesion is a property of the artifact. Coherence is a property of the encounter. Cohesion is necessary, nowhere near sufficient, and — importantly — *mechanically checkable* in a way that coherence is not.
 
 Everything that spec 4 currently checks is cohesion: links resolve, relations are reciprocal, identifiers bind, vocabularies are respected. A corpus can pass all of it and stay incoherent — the documents can each be well-formed and collectively fail to add up.
 
@@ -20,7 +20,7 @@ Everything that spec 4 currently checks is cohesion: links resolve, relations ar
 
 ### A.2 Nuclearity — some relations have an end the other depends on
 
-Rhetorical Structure Theory (Mann & Thompson, 1988) analyses text as a hierarchy of spans joined by coherence relations. It makes a distinction that we lack. Relations are either **nucleus–satellite** (hypotactic — the satellite supports the nucleus, and its removal does not destroy the point) or **multinuclear** (paratactic — the spans are co-equal). RST's ~23 relations are less important than that structural asymmetry.
+Rhetorical Structure Theory (Mann & Thompson, 1988) analyzes text as a hierarchy of spans joined by coherence relations. It makes a distinction that we lack. Relations are either **nucleus–satellite** (hypotactic — the satellite supports the nucleus, and its removal does not destroy the point) or **multinuclear** (paratactic — the spans are co-equal). RST's ~23 relations are less important than that structural asymmetry.
 
 Our relations are currently flat: `supersedes`, `governs`, `derives_from`, `cites` all look alike to the engine. But they are not alike. A derived AI rule is a *satellite* of the standard that it points at. Delete it, and you lose nothing that the nucleus does not still carry. A specification is a *nucleus*. Its contract sidecar is a satellite. Two specifications that describe halves of one seam are *multinuclear*.
 
@@ -32,7 +32,7 @@ Hobbs (1985) and Kehler (*Coherence, Reference, and the Theory of Grammar*, 2002
 
 An open relation vocabulary in a taxonomy will grow out of control in the same way, and adopters will apply it inconsistently.
 
-> **Change:** relation types declare a **family** from a small fixed set (`succession`, `derivation`, `governance`, `evidence`, `composition`, `association`). Families carry default checking semantics, so a new relation type inherits sensible behaviour. The schema validator can also flag a taxonomy that grew twelve near-synonymous relations in one family.
+> **Change:** relation types declare a **family** from a small fixed set (`succession`, `derivation`, `governance`, `evidence`, `composition`, `association`). Families carry default checking semantics, so a new relation type inherits sensible behavior. The schema validator can also flag a taxonomy that grew twelve near-synonymous relations in one family.
 
 ### A.4 Intentional structure — the missing dimension
 
@@ -74,7 +74,7 @@ Our decision relations are `supersedes` / `superseded_by` / `refines` — the te
 
 ### B.2 Faceted classification — the discipline behind facets
 
-Ranganathan's facet analysis and its later formalisation (Vickery, 1960) is the grounding for spec 2's facet model. The transferable rules: facets should be **orthogonal** (a document's value on one facet must not determine its value on another), and each facet needs a stated **principle of division**. Ranganathan's canons give real acceptance tests — *differentiation* (the facet must actually separate documents), *relevance* (to the purpose of the scheme), *ascertainability* (the author can determine the value without ambiguity), and *permanence* (the value must not change for incidental reasons).
+Ranganathan's facet analysis and its later formalization (Vickery, 1960) is the grounding for spec 2's facet model. The transferable rules: facets should be **orthogonal** (a document's value on one facet must not determine its value on another), and each facet needs a stated **principle of division**. Ranganathan's canons give real acceptance tests — *differentiation* (the facet must actually separate documents), *relevance* (to the purpose of the scheme), *ascertainability* (the author can determine the value without ambiguity), and *permanence* (the value must not change for incidental reasons).
 
 > **Change:** add these as schema-validation checks. Orthogonality is measurable over an existing corpus — if two facets' values are near-perfectly correlated, one is redundant and the validator should say so. Ascertainability becomes a requirement: every enum facet value must document how to choose it. This turns "is this a good facet?" from taste into a test.
 
@@ -82,13 +82,13 @@ Ranganathan's facet analysis and its later formalisation (Vickery, 1960) is the 
 
 Guarino and Welty's OntoClean validates taxonomies with meta-properties: **rigidity** (does the property hold for an instance in every possible world?), **identity**, **unity**, and **dependence**. Its central rule is that an anti-rigid class cannot subsume a rigid one.
 
-Apply it to us: *specification* is rigid — a document cannot cease to be a specification and stay the same document. *Draft* is anti-rigid — a document passes through it. Thus lifecycle state must never be modelled as a kind. Spec 3 already separates them. OntoClean explains **why**, which matters the next time that someone proposes a `docs/drafts/` shelf, or a kind called "deprecated standard".
+Apply it to us: *specification* is rigid — a document cannot cease to be a specification and stay the same document. *Draft* is anti-rigid — a document passes through it. Thus lifecycle state must never be modeled as a kind. Spec 3 already separates them. OntoClean explains **why**, which matters the next time that someone proposes a `docs/drafts/` shelf, or a kind called "deprecated standard".
 
 > **Change:** none to the model — but use the meta-properties as the taxonomy-review vocabulary, and add a validator check that flags kinds whose names match state-facet values. Cheap, and it catches the single most common taxonomy mistake.
 
 ### B.4 SKOS and ISO 25964 — the federation answer already exists
 
-SKOS (W3C, 2009) and ISO 25964 standardise exactly what spec 2 defines ad hoc: concept schemes, and hierarchical (broader/narrower), associative (related), and equivalence relations. Critically, they also standardise **mapping relations between schemes** (`exactMatch`, `closeMatch`, `broadMatch`, `narrowMatch`).
+SKOS (W3C, 2009) and ISO 25964 standardize exactly what spec 2 defines ad hoc: concept schemes, and hierarchical (broader/narrower), associative (related), and equivalence relations. Critically, they also standardize **mapping relations between schemes** (`exactMatch`, `closeMatch`, `broadMatch`, `narrowMatch`).
 
 That mapping vocabulary is the unsolved part of Q9 (multi-repository corpora). Two divisions with different taxonomies do not need a merged taxonomy. They need declared mappings between their concept schemes, which is a solved problem with a standard.
 
@@ -96,9 +96,9 @@ That mapping vocabulary is the unsolved part of Q9 (multi-repository corpora). T
 
 ### B.5 Traceability information models — our idea has a name and a literature
 
-A **Traceability Information Model** declares permitted artefact types, link types, and their directions, and it drives the tracing tools. That is exactly "taxonomy as configuration". Ramesh and Jarke ("Toward reference models for requirements traceability", *IEEE TSE*, 2001) derived reference models empirically from practice. One finding: organisations cluster into low-end and high-end traceability users, which is exactly our "small team vs regulated platform" split in spec 2.
+A **Traceability Information Model** declares permitted artifact types, link types, and their directions, and it drives the tracing tools. That is exactly "taxonomy as configuration". Ramesh and Jarke ("Toward reference models for requirements traceability", *IEEE TSE*, 2001) derived reference models empirically from practice. One finding: organizations cluster into low-end and high-end traceability users, which is exactly our "small team vs regulated platform" split in spec 2.
 
-The Grand Challenge of Traceability work (Gotel, Cleland-Huang et al., 2012; revisited 2017) carries the harder lesson: traceability fails not on modelling but on **creation and maintenance cost**. Manually created links decay because the person who pays the cost is not the person who receives the benefit.
+The Grand Challenge of Traceability work (Gotel, Cleland-Huang et al., 2012; revisited 2017) carries the harder lesson: traceability fails not on modeling but on **creation and maintenance cost**. Manually created links decay because the person who pays the cost is not the person who receives the benefit.
 
 > **Change:** use the reference-model framing and — more importantly — treat link creation cost as an explicit design constraint. Every relation in the default taxonomy must be derivable from work that the author already does (a commit, a template field, a scaffolded document). If it is not, it will not survive contact with a deadline. Add "what creates this edge, and who pays?" to the review checklist for relation declarations.
 
@@ -106,7 +106,7 @@ The Grand Challenge of Traceability work (Gotel, Cleland-Huang et al., 2012; rev
 
 W3C PROV (entities, activities, agents: `wasDerivedFrom`, `wasRevisionOf`, `wasGeneratedBy`) already models what our lineage relations approximate. That includes the agent dimension, which matters now that both humans and LLMs draft documents.
 
-> **Change:** align lineage relation semantics with PROV, and record the generating agent on derived artefacts. "Which of these documents were agent-drafted, and did a human accept them?" becomes a query rather than an archaeology exercise.
+> **Change:** align lineage relation semantics with PROV, and record the generating agent on derived artifacts. "Which of these documents were agent-drafted, and did a human accept them?" becomes a query rather than an archaeology exercise.
 
 ---
 
@@ -114,7 +114,7 @@ W3C PROV (entities, activities, agents: `wasDerivedFrom`, `wasRevisionOf`, `wasG
 
 ### C.1 Genre theory grounds "kind" — and warns us
 
-Yates and Orlikowski (*Academy of Management Review*, 1992; *ASQ*, 1994; *Journal of Business Communication*, 2002) define **genres** as socially recognised types of communicative action, characterised by shared *purpose* and *form*. They define a **genre repertoire** as the set that a community actually enacts. They define **genre systems** as sequences of interrelated genres that structure work.
+Yates and Orlikowski (*Academy of Management Review*, 1992; *ASQ*, 1994; *Journal of Business Communication*, 2002) define **genres** as socially recognized types of communicative action, characterized by shared *purpose* and *form*. They define a **genre repertoire** as the set that a community actually enacts. They define **genre systems** as sequences of interrelated genres that structure work.
 
 Three consequences:
 
@@ -126,11 +126,11 @@ Three consequences:
 
 ### C.2 Boundary objects — publisher and consumer
 
-Star and Griesemer (*Social Studies of Science*, 1989) define **boundary objects** as artefacts "plastic enough to adapt to local needs… yet robust enough to maintain a common identity across sites", weakly structured in common use and strongly structured in local use.
+Star and Griesemer (*Social Studies of Science*, 1989) define **boundary objects** as artifacts "plastic enough to adapt to local needs… yet robust enough to maintain a common identity across sites", weakly structured in common use and strongly structured in local use.
 
 That is the taxonomy package, stated better than spec 7 states it. But it carries a requirement that we do not yet meet: for identity to hold across sites, something must be *invariant*. Our overlay algebra currently lets a consumer override or remove almost anything, which means that two consumers of "the same" taxonomy may share nothing.
 
-> **Change:** the taxonomy package declares a **core** — the kinds, relations, and facets that overlays may extend but never remove or redefine. Conformance checks the core, not the whole. This gives the publisher a real answer to "are they still using our method?" and gives the consumer a bounded, legible customisation surface.
+> **Change:** the taxonomy package declares a **core** — the kinds, relations, and facets that overlays may extend but never remove or redefine. Conformance checks the core, not the whole. This gives the publisher a real answer to "are they still using our method?" and gives the consumer a bounded, legible customization surface.
 
 ### C.3 The design-rationale capture bottleneck
 
@@ -154,7 +154,7 @@ Spec 2 originally carried a version table (minor for additive, major for anythin
 
 ### D.2 Overlays are a variability problem with prior art
 
-Research on software product lines — feature models (Kang et al., 1990), staged configuration (Czarnecki et al.), and delta-oriented programming (Schaefer et al.) — fully worked the "base plus modifications" ground. Delta modelling in particular formalises exactly our add/override/remove operations. That includes application-order constraints, and the conditions under which a delta set is confluent.
+Research on software product lines — feature models (Kang et al., 1990), staged configuration (Czarnecki et al.), and delta-oriented programming (Schaefer et al.) — fully worked the "base plus modifications" ground. Delta modeling in particular formalizes exactly our add/override/remove operations. That includes application-order constraints, and the conditions under which a delta set is confluent.
 
 > **Change:** borrow the confluence requirement explicitly. Spec 2 says that overlays that conflict are an error. The delta literature says how to *decide* that statically. Use the check rather than derive it again, and state that overlay application must be confluent as a schema-validation property.
 
@@ -198,11 +198,11 @@ Our obligation set in spec 4 was invented from experience. There is no reason fo
 
 Lethbridge, Singer and Forward (*IEEE Software*, 2003) found that engineers rely on documentation that is known to be out of date. They use it as an imperfect but valuable guide.
 
-> **Change:** none — this is direct empirical support for spec 3's decision that staleness is detective and never blocking. A gate on freshness would remove artefacts that are demonstrably still useful.
+> **Change:** none — this is direct empirical support for spec 3's decision that staleness is detective and never blocking. A gate on freshness would remove artifacts that are demonstrably still useful.
 
 ### F.3 Rational reconstruction is legitimate
 
-Parnas and Clements ("A Rational Design Process: How and Why to Fake It", *IEEE TSE*, 1986) argue that the real process is never rational. To document it *as if* it were rational is both honest and valuable, provided that the reconstruction is labelled.
+Parnas and Clements ("A Rational Design Process: How and Why to Fake It", *IEEE TSE*, 1986) argue that the real process is never rational. To document it *as if* it were rational is both honest and valuable, provided that the reconstruction is labeled.
 
 This sits in productive tension with our evidence stop rule. Reconstruction of rationale after the fact is legitimate. *Fabrication* is not. The line between them is whether the reconstruction is grounded in auditable evidence and marked as reconstructed.
 
@@ -241,7 +241,7 @@ Current GraphRAG and KG-RAG work reports that graph-structured retrieval outperf
 | 13 | Taxonomy packages declare an immutable core | 7 | Star & Griesemer | **applied** |
 | 14 | Track author capture cost as a metric | 3, 5 | Grudin | **applied** |
 | 15 | Replace semver rules with measured compatibility dimensions | 2, 7 | Noy & Klein | **applied** |
-| 16 | Require confluence of overlay application, statically checked | 2 | Delta modelling | **applied** |
+| 16 | Require confluence of overlay application, statically checked | 2 | Delta modeling | **applied** |
 | 17 | Treat `summary` as the scent surface. Frame the routing gate in scent terms | 5 | Pirolli & Card | **applied** |
 | 18 | Settle the schema-format question by cognitive-dimensions walkthrough | Q2 | Green & Petre | **applied** |
 | 19 | Derive default obligations from an empirical defect taxonomy | 4 | Aghajani et al. | **applied** |
@@ -272,8 +272,8 @@ The application of every change does not mean that the design is finished. Three
 
 ## H. Theory considered and set aside
 
-- **Diátaxis** (tutorial / how-to / reference / explanation). It is elegant and widely adopted, but it classifies by *reader mode* for end-user documentation, and our corpus is organised by *authority and lifecycle*. Values statements, registers, and decision records do not map onto the four modes without distortion. It is available as an optional facet for adopters who want it, but it is not the spine.
-- **Formal argumentation frameworks** (Dung, 1995). This is a rigorous account of attack and defeat between arguments, and it genuinely applies to decisions that conflict. But it demands a formalisation cost that no author will pay. Revisit only if `conflicts with` edges become common enough to need automated resolution.
+- **Diátaxis** (tutorial / how-to / reference / explanation). It is elegant and widely adopted, but it classifies by *reader mode* for end-user documentation, and our corpus is organized by *authority and lifecycle*. Values statements, registers, and decision records do not map onto the four modes without distortion. It is available as an optional facet for adopters who want it, but it is not the spine.
+- **Formal argumentation frameworks** (Dung, 1995). This is a rigorous account of attack and defeat between arguments, and it genuinely applies to decisions that conflict. But it demands a formalization cost that no author will pay. Revisit only if `conflicts with` edges become common enough to need automated resolution.
 - **Full OWL/description-logic semantics.** This is reasoning power that we do not need, at a cost in authoring difficulty and validation time that we cannot afford. SKOS is deliberately the weaker, cheaper standard, and it is the right one here.
 - **Speech act theory** for normative language. It is an attractive framing for MUST/SHOULD/MAY, but RFC 2119 already gives us the operational subset, and the deeper theory adds no checks.
 

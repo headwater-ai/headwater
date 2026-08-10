@@ -19,7 +19,7 @@ These are decisions that we deliberately deferred. Each one blocks something. Ea
 
 YAML is the default expectation, but the meta-schema, the diff experience, and the overlay merge semantics all become better with a stricter format. The options are: YAML with a published JSON Schema, a typed configuration language (CUE, Dhall, KCL) that gives validation and composition natively, or a small purpose-built DSL.
 
-**Leaning:** YAML plus JSON Schema for the authored surface, because adopters must read and write it with no new language to learn. The resolved lock is in a stricter representation. Investigate whether CUE can be an *optional* authoring front-end for organisations that want it.
+**Leaning:** YAML plus JSON Schema for the authored surface, because adopters must read and write it with no new language to learn. The resolved lock is in a stricter representation. Investigate whether CUE can be an *optional* authoring front-end for organizations that want it.
 
 **How to decide this.** Not by preference. The cognitive-dimensions framework is the standard instrument to evaluate a notation, and this question is exactly what it is for. Walk each candidate through five authoring scenarios, and score each one on the dimensions below. The first three scenarios are: add a kind, rename a shelf, and split one facet into two. The last two are: add a relation type to an existing family, and upgrade across a major version with a live overlay.
 
@@ -33,7 +33,7 @@ YAML is the default expectation, but the meta-schema, the diff experience, and t
 | Progressive evaluation | Can I check partial work, or only a complete schema? |
 | Abstraction gradient | What must a beginner learn before they write anything at all? |
 
-Viscosity and hidden dependencies will decide it. The framework also makes explicit a choice that the design already made: **overlays deliberately trade viscosity for hidden dependencies.** Customisation by overlay makes change cheap (low viscosity) at the cost of a resolved result that no one authored directly (hidden dependencies). That trade is defensible, but it means that the schema format must get the visibility back. Thus `explain`, `resolve`, and a readable lock file are not conveniences here. They are the mitigation.
+Viscosity and hidden dependencies will decide it. The framework also makes explicit a choice that the design already made: **overlays deliberately trade viscosity for hidden dependencies.** Customization by overlay makes change cheap (low viscosity) at the cost of a resolved result that no one authored directly (hidden dependencies). That trade is defensible, but it means that the schema format must get the visibility back. Thus `explain`, `resolve`, and a readable lock file are not conveniences here. They are the mitigation.
 
 ## Q3 — How much of the default taxonomy ships in the box
 
@@ -55,7 +55,7 @@ Lexical pattern matching is cheap, explainable, and imprecise. A small local cla
 
 ## Q6 — Where the corpus graph lives at rest
 
-The options are: rebuild from the cache each run (simplest, no sync problem), persist to a committed JSON artefact (reviewable in diffs, enables tooling without the engine), or use an embedded database (fast queries, another thing to keep in step).
+The options are: rebuild from the cache each run (simplest, no sync problem), persist to a committed JSON artifact (reviewable in diffs, enables tooling without the engine), or use an embedded database (fast queries, another thing to keep in step).
 
 A fourth option arrived with Q13: an **RDF projection**, which is the input to SHACL validation. It carries a question that the others do not carry — *fidelity*. When checks read a projection rather than the documents, the projector becomes the most trusted component in the pipeline. Nothing downstream can detect its mistakes. A projector that drops or mistypes a document yields a graph that validates cleanly and does not represent the corpus ([evaluation](../evaluations/shacl-worked-example.md#problem-one-everything-downstream-trusts-the-projection-and-shacl-does-not-check-it)).
 
@@ -75,7 +75,7 @@ Efficacy probes are the adaptive layer and they cost real money per run. These p
 
 ## Q9 — Multi-repository corpora
 
-The model assumes one corpus per repository. Monorepos with several independent documentation sets, and organisations that want a single query surface across many repositories, both push against that.
+The model assumes one corpus per repository. Monorepos with several independent documentation sets, and organizations that want a single query surface across many repositories, both push against that.
 
 **Leaning:** one corpus per repository stays the model. Cross-repository views are a *federation* concern — an aggregator that merges exported graphs — not a change to the corpus model. Confirm this before the graph export format is frozen, because that format is the aggregator's input.
 
@@ -97,13 +97,13 @@ This also decides where authority sits, in the terms that [principle 2](00-visio
 
 `headwater` is a working name. The name matters for adoption and for the CLI verb that people type dozens of times a day.
 
-## Q11 — Licence and distribution posture
+## Q11 — License and distribution posture
 
 The options are open source, source-available, or internal-only. A related question is whether the default taxonomy package ships under the same terms as the engine. This affects Q3 and Q7. Decide it early, because it is easier to open something later than to close it.
 
 ## Q12 — Migration path for an existing corpus
 
-An organisation that already runs a comparable framework needs an on-ramp. The on-ramp includes a taxonomy inferred from an existing corpus, and a report of what does not fit. It also includes an incremental adoption mode, where checks apply only to newly touched documents. Whether this is a first-release feature or a follow-on determines how much the schema must tolerate a half-conformant corpus. That tolerance is a design constraint, not a feature request.
+An organization that already runs a comparable framework needs an on-ramp. The on-ramp includes a taxonomy inferred from an existing corpus, and a report of what does not fit. It also includes an incremental adoption mode, where checks apply only to newly touched documents. Whether this is a first-release feature or a follow-on determines how much the schema must tolerate a half-conformant corpus. That tolerance is a design constraint, not a feature request.
 
 **Leaning:** `headwater infer` (propose a taxonomy from an existing tree) and a `--since <ref>` mode are first-release. Adoption friction is the thing most likely to kill this, and both of these directly attack it.
 
@@ -155,7 +155,7 @@ The honest risk: the taxonomy generates the shape checks and the graph checks ei
 
 The question above is about the **TBox**: whether an external language expresses our schema and our checks. [OKF](11-adjacent-work.md#i1-okf--the-same-substrate-arrived-at-independently) — LeanCTX's Markdown-plus-front-matter knowledge format — is about the **ABox**: whether the *corpus itself* is exportable to something that another tool already reads. The two share the word "export" and nothing else. To conflate them imports the substrate question's weight onto a decision that does not carry it.
 
-It does not carry it for three reasons. It is **additive**: an emitter that nobody uses costs a generator and a fidelity test, and its deletion later breaks nothing upstream. It is **already most of the way done**: OKF is a directory of Markdown files with YAML front matter, `type` required, and Markdown-link relations. That describes what we already write. And it is **lossless in the direction that matters**: OKF carries unrecognised front-matter keys through a parse-emit cycle untouched. Thus headwater facets with no OKF meaning ride along under a `headwater_*` prefix and are not dropped.
+It does not carry it for three reasons. It is **additive**: an emitter that nobody uses costs a generator and a fidelity test, and its deletion later breaks nothing upstream. It is **already most of the way done**: OKF is a directory of Markdown files with YAML front matter, `type` required, and Markdown-link relations. That describes what we already write. And it is **lossless in the direction that matters**: OKF carries unrecognized front-matter keys through a parse-emit cycle untouched. Thus headwater facets with no OKF meaning ride along under a `headwater_*` prefix and are not dropped.
 
 If it is built, two constraints apply. The emitted bundle is a **projection and never canonical**, on the same terms that Q6 sets for any RDF view. The Markdown corpus is the truth, and a disagreement is the projector's bug.
 
@@ -173,11 +173,11 @@ Prior art exists to copy rather than reinvent. Examples: a well-known file at a 
 
 **Leaning:** a small machine-readable descriptor at a fixed path, plus the MCP surface for agents that can use it. The descriptor holds: taxonomy identity and version, corpus root, entry points, and the graph export location. Defer until the graph export format is stable, because the descriptor will point at it.
 
-## Q15 — A synthesised content tier
+## Q15 — A synthesized content tier
 
 **Blocks:** the provenance model, if the answer is yes.
 
-headwater recognises two kinds of content: **authored** (a human wrote it, and it is canonical) and **generated** (a projection, verified by regeneration and comparison). Karpathy's LLM Wiki pattern ([spec 11](11-adjacent-work.md#f2-karpathys-llm-wiki)) is built on a third: **synthesised** — an agent's interpretation of sources. The interpretation evolves, and the agent revises it as new sources arrive.
+headwater recognizes two kinds of content: **authored** (a human wrote it, and it is canonical) and **generated** (a projection, verified by regeneration and comparison). Karpathy's LLM Wiki pattern ([spec 11](11-adjacent-work.md#f2-karpathys-llm-wiki)) is built on a third: **synthesized** — an agent's interpretation of sources. The interpretation evolves, and the agent revises it as new sources arrive.
 
 It fits neither existing tier, and the difference is not cosmetic. A projection is verifiable by regeneration, but a synthesis is not. Two runs over the same sources produce different prose, both defensible.
 
@@ -185,9 +185,9 @@ The tier is not hypothetical. [TrustGraph](11-adjacent-work.md#j-trustgraph--the
 
 [Q19](#q19--inbound-integration-an-external-system-of-record) brings the neighboring case that sharpens the definition: imported requirement text. That text *is* regenerable, against a pinned upstream snapshot, so it is not synthesized. The boundary that this question draws is a verification method, not an author. The answer has to place both cases.
 
-Open: whether headwater admits synthesised content at all. If it does, more questions follow. Does it need its own staleness rules? How does the system make sure that it can never become canonical for anything? Does a human acceptance step promote it to authored, or does it stay permanently second-class?
+Open: whether headwater admits synthesized content at all. If it does, more questions follow. Does it need its own staleness rules? How does the system make sure that it can never become canonical for anything? Does a human acceptance step promote it to authored, or does it stay permanently second-class?
 
-**Leaning:** admit it, permanently non-canonical, clearly marked, and never a valid target for a `governs` or `verifies` relation. Promotion to authored requires an explicit human acceptance that changes its provenance record. It is how most organisations will actually want to use this, and a refusal to model it just means that it happens unmarked.
+**Leaning:** admit it, permanently non-canonical, clearly marked, and never a valid target for a `governs` or `verifies` relation. Promotion to authored requires an explicit human acceptance that changes its provenance record. It is how most organizations will actually want to use this, and a refusal to model it just means that it happens unmarked.
 
 ## Q16 — Public presence
 
@@ -244,13 +244,13 @@ Inversion costs four things that the design currently gets free.
 
 Against that, inversion buys nothing that the serving boundary, below, does not already give.
 
-There is a coherent version of the proposal. Name it, so that no one adopts it by accident. An organisation for whom a repository clone is *itself* the leak wants documentation that is never committed to the repository at all. That is a real market. It also abandons "documents are files in the repository, next to the code they describe", which is [spec 0](00-vision-and-scope.md)'s central bet and the reason that capture is cheap. It is a **pivot, not an extension**.
+There is a coherent version of the proposal. Name it, so that no one adopts it by accident. An organization for whom a repository clone is *itself* the leak wants documentation that is never committed to the repository at all. That is a real market. It also abandons "documents are files in the repository, next to the code they describe", which is [spec 0](00-vision-and-scope.md)'s central bet and the reason that capture is cheap. It is a **pivot, not an extension**.
 
 ### Access control is a property of the serving boundary
 
 Enforcement belongs where a reader is *served*, not where an author writes. Per-repository Markdown stays canonical and carries the host platform's repository permissions. The federated graph is a filtered view, and the filtering happens there.
 
-This puts the control exactly where the need is and nowhere else. When someone who can clone a repository reads that repository, that is intended behaviour. Every case that motivates the question — contractor, partner, adjacent business unit, "show the topology but not the internals" — is cross-corpus, which is the federated layer by definition. Sensitive material lives in a tightly-permissioned repository and is federated in. The graph serves filtered views over the union.
+This puts the control exactly where the need is and nowhere else. When someone who can clone a repository reads that repository, that is intended behavior. Every case that motivates the question — contractor, partner, adjacent business unit, "show the topology but not the internals" — is cross-corpus, which is the federated layer by definition. Sensitive material lives in a tightly-permissioned repository and is federated in. The graph serves filtered views over the union.
 
 The declaration surface already exists: `confidentiality` is a named facet ([spec 1](01-conceptual-model.md)). This promotes it from descriptive metadata to an enforced security control. That is a small schema change that carries a large change in obligation. A mislabelled facet is no longer a lint — it becomes a leak.
 
@@ -260,7 +260,7 @@ The declaration surface already exists: `confidentiality` is a named facet ([spe
 
 **Checks are privileged and total. Serving is filtered.** An evaluation of reciprocity on a partial graph invents findings. Validation therefore runs at full visibility regardless of who triggered it, and only the results are filtered on the way out. That seam is clean, and a written statement of it prevents the obvious mistake: checks that run as the user who made the request.
 
-**Topology leaks even when content does not.** Shelf and kind names leak organisational structure, and node counts and edge shapes leak product structure. A hidden document with a kept inbound edge leaks its existence. When both are hidden, the graph's shape changes in ways that a determined reader can difference. This is the multi-level-security inference problem, and it has no clean solution. What the specification owes is honesty that this is mitigation rather than a guarantee.
+**Topology leaks even when content does not.** Shelf and kind names leak organizational structure, and node counts and edge shapes leak product structure. A hidden document with a kept inbound edge leaks its existence. When both are hidden, the graph's shape changes in ways that a determined reader can difference. This is the multi-level-security inference problem, and it has no clean solution. What the specification owes is honesty that this is mitigation rather than a guarantee.
 
 **Do not invent an identity system.** Derive from the platform's existing identity and team model. Two permission systems that disagree mean that the documentation system is the wrong one, and it is the one that leaks. Spec 7 already has the pattern for rules that it cannot decide from the repository tree. The pattern: degrade to a recorded attestation with an owner and a date.
 
@@ -268,7 +268,7 @@ The declaration surface already exists: `confidentiality` is a named facet ([spe
 
 [Principle 4](00-vision-and-scope.md#design-principles) says that a new rule ships advisory and earns its way to blocking. Access control is the single mechanism in the system where that is wrong. To ship it advisory is to ship it broken. Every other control may be wrong for a while, precisely because that state is recoverable. A leak is not.
 
-This exception belongs in the specification rather than in someone's judgement. The promotion machinery is otherwise uniform, and it will happily process a permission check like any other.
+This exception belongs in the specification rather than in someone's judgment. The promotion machinery is otherwise uniform, and it will happily process a permission check like any other.
 
 ### The sub-question that arrives silently: what may be a node
 
@@ -276,7 +276,7 @@ Access is the loud half of the solution layer. The quiet half is what the layer 
 
 [Spec 11 §A](11-adjacent-work.md#a1-the-solution-layer-presses-on-that-boundary) sets out the choice. The ABox currently stops at the document boundary: the corpus knows that a document exists, its kind, and what it governs — never what it asserts. A solution layer with a `Service` node that describes an actual service crosses that line. It takes on an obligation to stay true to the estate. Nothing in the design currently carries that obligation. Its drift is worse than stale prose, because a wrong node reads as structural rather than editorial.
 
-**Leaning:** declared anchors. A solution-layer node carries an identifier, a name and an owner, and asserts nothing further. Every substantive claim stays inside a document, where freshness and the check layer already reach it. This is what `code_path` already does — an external anchor kind that is referenced and never described — and its generalisation costs no new machinery. Revisit only against a concrete need that the anchor form cannot meet.
+**Leaning:** declared anchors. A solution-layer node carries an identifier, a name and an owner, and asserts nothing further. Every substantive claim stays inside a document, where freshness and the check layer already reach it. This is what `code_path` already does — an external anchor kind that is referenced and never described — and its generalization costs no new machinery. Revisit only against a concrete need that the anchor form cannot meet.
 
 ### What it changes about the project
 
@@ -288,11 +288,11 @@ This is worth a plain statement, because it is a category change rather than a f
 
 **Blocks:** nothing yet. It becomes live the first time that an agent must choose between two current sources that a human already judged.
 
-Spec 2 formerly assigned kinds a scalar authority rank, consumed by an `on_disagreement` rule. The core-concepts review cut it ([spec 2](02-taxonomy-model.md#disagreement-is-adjudicated-not-ranked)), for three reasons. The trigger is a judgement that the ABox boundary says the system cannot make. The rank pre-answers a question that nobody asked. And a global scalar cannot express the scoped precedence that the prose demanded.
+Spec 2 formerly assigned kinds a scalar authority rank, consumed by an `on_disagreement` rule. The core-concepts review cut it ([spec 2](02-taxonomy-model.md#disagreement-is-adjudicated-not-ranked)), for three reasons. The trigger is a judgment that the ABox boundary says the system cannot make. The rank pre-answers a question that nobody asked. And a global scalar cannot express the scoped precedence that the prose demanded.
 
-What the cut leaves open is the *positive* half. Suppose that a human adjudicated a specific disagreement, or accepted a coherence-sweep finding that did. Where does that judgement live, so that agents and readers inherit it and do not decide it again? The options are: a resolution recorded on the `conflicts_with` edge itself, a correction or succession of the document that lost, or a dedicated scoped-precedence declaration. Be suspicious of the last option — it re-grows the authority rank with more syntax.
+What the cut leaves open is the *positive* half. Suppose that a human adjudicated a specific disagreement, or accepted a coherence-sweep finding that did. Where does that judgment live, so that agents and readers inherit it and do not decide it again? The options are: a resolution recorded on the `conflicts_with` edge itself, a correction or succession of the document that lost, or a dedicated scoped-precedence declaration. Be suspicious of the last option — it re-grows the authority rank with more syntax.
 
-This belongs beside [Q15](#q15--a-synthesised-content-tier)'s provenance questions. Both are about a record of who vouched for what. An adjudication without a named adjudicator is a rank with extra steps.
+This belongs beside [Q15](#q15--a-synthesized-content-tier)'s provenance questions. Both are about a record of who vouched for what. An adjudication without a named adjudicator is a rank with extra steps.
 
 **Leaning:** record adjudication per-conflict as data on the declared edge, with the adjudicator named. No per-kind ranks, and no new declaration until a real corpus shows that the edge form fails.
 
@@ -309,6 +309,6 @@ Open, in order of consequence, least first:
 - **Snapshot format and home.** ReqIF (an OMG standard, tool-neutral, verbose) or the native JSON of the API (simpler, vendor-specific)? And does the snapshot live inside the governed repository or beside it? The snapshot is an input to anchor resolution, so its format is a compatibility surface, not an implementation detail.
 - **Does imported prose enter the corpus at all?** The minimal integration imports identities and edges only. Documents point at requirement anchors, and a reader follows the pointer into the RM tool. The larger integration materializes requirement text as marked, read-only documents. Then the corpus is self-contained for offline readers and agents. The larger integration is more useful, and it imports a maintenance obligation with the text.
 - **What is an imported edge worth?** May a `traces_to` edge that an importer created satisfy a participation expectation, or let a document claim `evidenced`? If yes, a system that nobody here governs discharges obligations in a corpus that claims to be checkable. If no, imports are decoration. The honest middle: imported edges satisfy nothing blocking until the fidelity of the importer has an evidence trail. That is [principle 4](00-vision-and-scope.md#design-principles), applied to a pipeline instead of a rule.
-- **The tier question.** Imported text is regenerable against the pinned snapshot, so it fails the [Q15](#q15--a-synthesised-content-tier) definition of synthesized. But its source is ungoverned, so it is not a projection in the spec-6 sense either. Whether that is a fourth tier or a qualifier on `generated` decides what its provenance record carries. The per-fact receipts of TrustGraph (source, timestamp, method) fit as they are. The addition is the snapshot pin.
+- **The tier question.** Imported text is regenerable against the pinned snapshot, so it fails the [Q15](#q15--a-synthesized-content-tier) definition of synthesized. But its source is ungoverned, so it is not a projection in the spec-6 sense either. Whether that is a fourth tier or a qualifier on `generated` decides what its provenance record carries. The per-fact receipts of TrustGraph (source, timestamp, method) fit as they are. The addition is the snapshot pin.
 
 **Leaning:** reference-first. Anchors and imported edges ship first — they change no content and are cheap to audit. Imported requirement text arrives later, clearly marked and never canonical, under whatever rule Q15 lands on. The snapshot pin goes into its provenance. Imported edges start advisory and walk the same evidence-driven promotion path as every other control. And the importer is an adapter in the sense that [spec 6](06-engine-architecture.md#ci-adapters) already uses: thin, swappable, and with no RM vendor privileged in the core.

@@ -8,7 +8,7 @@ Enforcement implies a gate that stops bad things. Real documentation systems nee
 
 | Class | Acts | Example |
 |---|---|---|
-| **Preventive** | Before the mistake lands | Scaffolding, editor validation, agent behaviour, commit hooks |
+| **Preventive** | Before the mistake lands | Scaffolding, editor validation, agent behavior, commit hooks |
 | **Detective** | After it lands | CI checks, scheduled drift scans, staleness sweeps |
 | **Corrective** | Repairs what was found | Auto-fix, generated remediation tasks, agent-raised change proposals |
 | **Adaptive** | Retunes the mechanisms | Efficacy probes, false-positive tracking, promotion decisions |
@@ -17,7 +17,7 @@ Most systems build the first two and claim the set. The adaptive layer decides i
 
 ## Cohesion and coherence are different obligations
 
-Linguistics draws a distinction that this model needs. **Cohesion** is the set of surface ties that bind a text — references that resolve, links that land, vocabulary that is used consistently. **Coherence** is the reader's experience that the whole holds together. Cohesion is a property of the artefact. Coherence is a property of the encounter.
+Linguistics draws a distinction that this model needs. **Cohesion** is the set of surface ties that bind a text — references that resolve, links that land, vocabulary that is used consistently. **Coherence** is the reader's experience that the whole holds together. Cohesion is a property of the artifact. Coherence is a property of the encounter.
 
 Almost everything that the engine checks is cohesion: links resolve, relations are reciprocal, identifiers bind, enums are respected, sections are present. All of it is decidable, deterministic, and blocking-eligible.
 
@@ -27,7 +27,7 @@ So each obligation declares which it is, and different mechanisms discharge the 
 
 | | Cohesion obligations | Coherence obligations |
 |---|---|---|
-| Decidable | Yes, deterministically | No, it needs judgement |
+| Decidable | Yes, deterministically | No, it needs judgment |
 | Mechanism | Engine checks | Sampled audit, efficacy probes, reader feedback |
 | Coverage | Total (every document, every run) | Sampled (a subset, at intervals) |
 | Posture | Advisory → blocking | Detective, always |
@@ -41,11 +41,11 @@ The line between the two is not fixed by subject matter. It is fixed by one ques
 
 Contradiction is the clearest case. To detect that two documents disagree is structurally undecidable — someone must read both and judge. But a `conflicts_with` edge between two decisions is an assertion already in the front matter. Everything downstream of it is ordinary graph work.
 
-Spec 2 gives the rule that [two `current` decisions joined by `conflicts_with`](02-taxonomy-model.md#the-decision-relation-vocabulary) is an invalid state. That rule is deterministic, total, and blocking-eligible. The judgement happened once, when the author declared the edge. After that, the check is cohesion.
+Spec 2 gives the rule that [two `current` decisions joined by `conflicts_with`](02-taxonomy-model.md#the-decision-relation-vocabulary) is an invalid state. That rule is deterministic, total, and blocking-eligible. The judgment happened once, when the author declared the edge. After that, the check is cohesion.
 
-This generalises, and we state it as a design rule rather than as an observation about one relation:
+This generalizes, and we state it as a design rule rather than as an observation about one relation:
 
-> **A coherence obligation becomes a cohesion obligation the moment the judgement that it needs is recorded as data.** Where a coherence concern recurs, the question to ask is not "how do we detect this?" but "what could an author declare that would make detecting it unnecessary?"
+> **A coherence obligation becomes a cohesion obligation the moment the judgment that it needs is recorded as data.** Where a coherence concern recurs, the question to ask is not "how do we detect this?" but "what could an author declare that would make detecting it unnecessary?"
 
 The rest of this document depends on two consequences.
 
@@ -60,13 +60,13 @@ An obligation is a stable, identified invariant that the corpus commits to. It i
 ```yaml
 obligations:
   - id: OB-001
-    statement: Behaviour-changing code updates its governing specification in the same change
+    statement: Behavior-changing code updates its governing specification in the same change
     rationale: A stale specification actively misleads humans, agents, and auditors
     class: cohesion
     prevents: content.outdated          # observed defect class
     severity: high
   - id: OB-014
-    statement: Every live decision is reachable from at least one artefact it constrains
+    statement: Every live decision is reachable from at least one artifact it constrains
     rationale: Rationale nobody can find from the thing it explains is rationale nobody reads
     class: cohesion
     prevents: process.traceability
@@ -83,7 +83,7 @@ obligations:
 
 `prevents:` is required, and it names a class in a **documentation-defect taxonomy**. That taxonomy is derived empirically, from real documentation problems and from practitioner surveys. It is not a list that we assembled from our own experience.
 
-The default register is built from a walk of that taxonomy: content defects (incorrect, incomplete, outdated, inconsistent), presentation defects (readability, organisation), and process defects (maintenance, traceability, contribution friction). For each class, we ask two questions. What obligation prevents this defect? Can we discharge that obligation at acceptable cost?
+The default register is built from a walk of that taxonomy: content defects (incorrect, incomplete, outdated, inconsistent), presentation defects (readability, organization), and process defects (maintenance, traceability, contribution friction). For each class, we ask two questions. What obligation prevents this defect? Can we discharge that obligation at acceptable cost?
 
 This gives two benefits, and the second is the one that matters in practice:
 
@@ -125,7 +125,7 @@ This is the rule that keeps the register honest:
 
 There is no fourth state and no silence. An obligation with no disposition is itself a finding. This is the check that stops the decay of an assurance model into a list of good intentions. The register is complete by construction, or the build fails.
 
-**The register is generated, never authored.** The binding lives on the control (`discharges:`), and the disposition lives on the obligation. The register — coverage, control health, suppressions, waivers — is a projection of the two. The engine regenerates and checks it like any other projection. An earlier draft treated it as a third authored artefact. Two sources of truth for one binding is exactly the drift that this system exists to kill.
+**The register is generated, never authored.** The binding lives on the control (`discharges:`), and the disposition lives on the obligation. The register — coverage, control health, suppressions, waivers — is a projection of the two. The engine regenerates and checks it like any other projection. An earlier draft treated it as a third authored artifact. Two sources of truth for one binding is exactly the drift that this system exists to kill.
 
 What does not change is the register's standing: it is mandatory and inspectable. An uncovered control cannot hide, and neither can one that degrades, because the view that surfaces them is not optional.
 
@@ -157,7 +157,7 @@ A new check starts as **advisory**. It becomes blocking only against evidence:
 
 The criteria are recorded with the control. So promotion is a decision with a paper trail, not an argument about someone's tolerance for red builds. The inverse is also specified. A blocking check whose false-positive rate rises past the threshold is demoted. It is not endured.
 
-A false-positive rate needs a collection mechanism, or every criterion above is unfalsifiable in practice. The mechanism is the suppression reason ([below](#suppression)). `false_positive` means that the finding is wrong, and `accepted_deviation` means that it is right but tolerated. Only `false_positive` counts toward the promotion and demotion statistics. Nobody is asked to label findings as a separate task. The label attaches to the escape hatch that authors already use, and that is the only place where the judgement occurs.
+A false-positive rate needs a collection mechanism, or every criterion above is unfalsifiable in practice. The mechanism is the suppression reason ([below](#suppression)). `false_positive` means that the finding is wrong, and `accepted_deviation` means that it is right but tolerated. Only `false_positive` counts toward the promotion and demotion statistics. Nobody is asked to label findings as a separate task. The label attaches to the escape hatch that authors already use, and that is the only place where the judgment occurs.
 
 That mechanism has a blind spot exactly where promotion looks. We name the blind spot, and we do not hide it. An advisory finding blocks nothing, so nobody is forced to suppress it. The rational response to advisory noise is to ignore it. So suppression-derived labels measure a biased subset: the findings that annoyed someone enough to act. So an advisory check can hold a catastrophic real false-positive rate behind a clean measured one.
 
@@ -183,11 +183,11 @@ Four constraints keep this inside the rules that the rest of the system obeys:
 
 So the best outcome of a sweep is not a finding but an **edge**. The correct end state for a contradiction that the sweep surfaces is a declared `conflicts_with`. After that, the engine owns it permanently, and the sweep never needs to find it again. A coherence control whose findings never convert into declarations does the same work every cycle. That is the accumulation failure that [spec 5](05-ai-integration.md#what-we-do-not-do) rejects RAG for, now in our own assurance layer.
 
-This is the same division that the system draws everywhere. Deterministic tooling handles what is decidable, and judgement handles what is not. There is no pretence that either does the other's job.
+This is the same division that the system draws everywhere. Deterministic tooling handles what is decidable, and judgment handles what is not. There is no pretence that either does the other's job.
 
 ## Measuring coherence where we can: continuity across links
 
-Coherence resists mechanisation, but one component of it does not.
+Coherence resists mechanization, but one component of it does not.
 
 Centering Theory models local coherence as continuity of focus. Adjacent utterances that keep the same entity in view are easy to follow. Each shift of focus imposes an inference cost on the reader. The corpus analogue is direct. For every relation edge, the engine computes what the two endpoints share — a component, a domain, an identifier, a code-path anchor, a facet value. An edge whose endpoints share nothing is a **focus shift**: the reader must reorient on arrival.
 
@@ -262,7 +262,7 @@ Suppression is permitted, bounded, and observable. It is scoped to a file or blo
 
 Both constraints were looser in an earlier draft, and each looseness broke something downstream. Expiry was optional here, while waiver expiry ([spec 7](07-distribution-and-federation.md#waivers)) was mandatory. That made the local mechanism — the one that an individual author reaches for at a red check — the leakier of the two, which is backwards. And an undifferentiated reason field conflated "wrong" with "tolerated". That made the false-positive rate unmeasurable, and that is the number that the promotion machinery above runs on.
 
-A finding can now fall under more than one escape mechanism at once — a waived rule, a `migration-pending` document ([spec 7](07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)), and a file-scoped suppression. Coverage accounting applies one, by fixed precedence — **waiver, then migration-pending, then suppression** — and counts the finding in exactly that bucket. So the three inventories partition the escaped findings, and no finding is counted three times. The wider mechanism wins because it carries the wider accountability. A waiver has an owner and is visible to the publisher. A migration state has an expiry and a task list, and a suppression is one author's local judgement.
+A finding can now fall under more than one escape mechanism at once — a waived rule, a `migration-pending` document ([spec 7](07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)), and a file-scoped suppression. Coverage accounting applies one, by fixed precedence — **waiver, then migration-pending, then suppression** — and counts the finding in exactly that bucket. So the three inventories partition the escaped findings, and no finding is counted three times. The wider mechanism wins because it carries the wider accountability. A waiver has an owner and is visible to the publisher. A migration state has an expiry and a task list, and a suppression is one author's local judgment.
 
 ## The adaptive layer reports cost, not just coverage
 
@@ -272,9 +272,9 @@ The adaptive class exists to decide if the other three are worth what they cost.
 |---|---|---|
 | **Coverage** | Obligation register | What fraction of obligations are discharged, by severity? |
 | **Assisted fraction** | Scaffolder and agent instrumentation | How much of authoring does the tooling carry, and does that rise or fall? ([spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric)) |
-| **Efficacy** | Probe suite | Does the instruction surface change agent behaviour at all? ([spec 5](05-ai-integration.md)) |
+| **Efficacy** | Probe suite | Does the instruction surface change agent behavior at all? ([spec 5](05-ai-integration.md)) |
 
-Coverage alone is a number that only goes up. A system that optimises it will happily add obligations that nobody can satisfy. When coverage is read against capture cost and efficacy, it becomes a trade: this much assurance, at this much author burden, with this much demonstrated effect. A rule that raises cost and moves neither of the others is a rule to delete. Deletion is a success, and it is recorded as one.
+Coverage alone is a number that only goes up. A system that optimizes it will happily add obligations that nobody can satisfy. When coverage is read against capture cost and efficacy, it becomes a trade: this much assurance, at this much author burden, with this much demonstrated effect. A rule that raises cost and moves neither of the others is a rule to delete. Deletion is a success, and it is recorded as one.
 
 ## Conformance audit
 

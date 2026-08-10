@@ -14,11 +14,11 @@ headwater's premise: **make the structure of the corpus a machine-readable contr
 
 ## The three commitments
 
-1. **Taxonomy is data.** What shelves exist, what document kinds live on them, what metadata they carry, what voice and lifecycle they obey, and how they may reference each other — all declared in one versioned schema. Two organisations with different documentation cultures run the same engine over different taxonomies. Customising the taxonomy never means forking the tooling.
+1. **Taxonomy is data.** What shelves exist, what document kinds live on them, what metadata they carry, what voice and lifecycle they obey, and how they may reference each other — all declared in one versioned schema. Two organizations with different documentation cultures run the same engine over different taxonomies. Customizing the taxonomy never means forking the tooling.
 
-2. **The corpus is a graph.** Documents are typed nodes; front-matter references are typed edges. Every validation rule is a constraint on that graph, every query is a traversal of it, and every derived artefact (indexes, site navigation, AI rules, agent context) is a projection of it.
+2. **The corpus is a graph.** Documents are typed nodes; front-matter references are typed edges. Every validation rule is a constraint on that graph, every query is a traversal of it, and every derived artifact (indexes, site navigation, AI rules, agent context) is a projection of it.
 
-3. **AI assistants are readers in their own right, and measured ones.** The corpus feeds agents at intent time, read time, write time, and review time — and the system probes whether that context actually changes agent behaviour, rather than assuming it does.
+3. **AI assistants are readers in their own right, and measured ones.** The corpus feeds agents at intent time, read time, write time, and review time — and the system probes whether that context actually changes agent behavior, rather than assuming it does.
 
 ## Read the specification
 
@@ -28,7 +28,7 @@ headwater's premise: **make the structure of the corpus a machine-readable contr
 | 1 | [Conceptual model](docs/spec/01-conceptual-model.md) | The vocabulary — corpus, shelf, kind, facet, relation, obligation |
 | 2 | [Taxonomy model](docs/spec/02-taxonomy-model.md) | **The core change**: taxonomy as a composable, validated schema |
 | 3 | [Authoring and lifecycle](docs/spec/03-authoring-and-lifecycle.md) | States, front matter, voice regimes, templates, identifiers |
-| 4 | [Assurance model](docs/spec/04-assurance-model.md) | Invariants, controls, the evidence register, defence in depth |
+| 4 | [Assurance model](docs/spec/04-assurance-model.md) | Invariants, controls, the evidence register, defense in depth |
 | 5 | [AI integration](docs/spec/05-ai-integration.md) | Routing, rules, hooks, agents, the corpus MCP surface, efficacy |
 | 6 | [Engine architecture](docs/spec/06-engine-architecture.md) | One parse, one graph, pluggable checks; CLI and library shape |
 | 7 | [Distribution and federation](docs/spec/07-distribution-and-federation.md) | Publishing a taxonomy, consuming one, overlays, pins, drift |
@@ -46,6 +46,6 @@ Start at 0 and 2 if you only read two. Spec 10 is where the design gets tested a
 
 ## Provenance
 
-This design is informed by a study of a prior internal governance framework — the concepts it proved out, and the specific places where so much came to depend on its architecture that it resisted change. That study is summarised, in design terms only, in [prior art and departures](docs/spec/08-prior-art-and-departures.md).
+This design is informed by a study of a prior internal governance framework — the concepts it proved out, and the specific places where so much came to depend on its architecture that it resisted change. That study is summarized, in design terms only, in [prior art and departures](docs/spec/08-prior-art-and-departures.md).
 
 `headwater` is a working name.

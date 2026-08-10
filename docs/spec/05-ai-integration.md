@@ -17,7 +17,7 @@ An assistant touches documentation at four different moments. Each moment needs 
 
 This is the highest-value moment, and it is the one most often missed. An agent that reads the governing standard *before* it writes code produces different code. An agent that finds the standard afterwards produces an apology.
 
-Routing matches the **declared purpose** of each kind against the intent of the task before it matches any text. "why is it like this?" resolves to kinds that serve `rationale`, and "what does it do?" resolves to kinds that serve `behaviour`. That is a search over the corpus's intentional structure, not over its prose. It is cheaper and more precise than lexical ranking, and it degrades gracefully because purposes are a small closed set. Lexical ranking then orders results *within* the matched purpose, and derived reading precedence breaks ties ([spec 2](02-taxonomy-model.md#reading-precedence-is-derived)). Where two linked documents both match, routing offers a nucleus before its satellite, and offers a successor before the document that it superseded.
+Routing matches the **declared purpose** of each kind against the intent of the task before it matches any text. "why is it like this?" resolves to kinds that serve `rationale`, and "what does it do?" resolves to kinds that serve `behavior`. That is a search over the corpus's intentional structure, not over its prose. It is cheaper and more precise than lexical ranking, and it degrades gracefully because purposes are a small closed set. Lexical ranking then orders results *within* the matched purpose, and derived reading precedence breaks ties ([spec 2](02-taxonomy-model.md#reading-precedence-is-derived)). Where two linked documents both match, routing offers a nucleus before its satellite, and offers a successor before the document that it superseded.
 
 In all other respects, routing is a deterministic projection over the graph — summaries, facets, relations, and code-path anchors — not a semantic search. A task description resolves to a ranked, budget-capped set of **pointers**: paths and one-line summaries, never content. Pointers keep the corpus as the single source of truth and keep the context cost near zero.
 
@@ -37,14 +37,14 @@ That makes the `summary` facet the corpus's entire scent surface, and the surfac
 | **Routing precision** | Of the pointers offered, how often the agent opened the top one, and it sufficed |
 | **Abandonment** | Pointers offered and never opened — scent that promised and did not pay |
 
-The first three are static and run as advisory checks. The last two come from probe transcripts. Probe transcripts are the only place where the corpus can observe foraging behaviour rather than infer it.
+The first three are static and run as advisory checks. The last two come from probe transcripts. Probe transcripts are the only place where the corpus can observe foraging behavior rather than infer it.
 
 The confidence gate is a scent threshold. The engine stays silent when the strongest available cue is weak, because a cue that misleads is worse than a missing cue. That is the same asymmetry stated in foraging terms, and it is why the gate errs toward silence.
 
 ```
 headwater route "add rate limiting to the ingest API"
   docs/standards/api-design.md      — API surface conventions, versioning, error shapes
-  docs/specifications/ingest/...    — ingest service behaviour and SLOs
+  docs/specifications/ingest/...    — ingest service behavior and SLOs
   docs/decisions/dr-0031.md         — why throttling is applied at the edge, not per-service
 ```
 
@@ -83,13 +83,13 @@ These surfaces read as conveniences, and they are not: they are the supply chain
 
 Three commitments make the machinery governable rather than merely present:
 
-- **Judgement stays human.** Skills propose kinds, relations, summaries, and lifecycle changes from the artefacts already in the change. A human accepts. A skill that cannot justify a classification refuses it and does not guess ([the stop rules](#the-stop-rules)).
+- **Judgment stays human.** Skills propose kinds, relations, summaries, and lifecycle changes from the artifacts already in the change. A human accepts. A skill that cannot justify a classification refuses it and does not guess ([the stop rules](#the-stop-rules)).
 - **Every required datum is attributed.** `created_by` and the assisted fraction say whether the machinery actually maintains the graph. An assisted fraction that *falls* is an assurance finding — evidence that the adoption model fails — not a dashboard curiosity.
-- **Generated context is checked before it is trusted.** Agent-facing projections carry freshness policy and size budgets like anything else, and the engine verifies them before they load. Stale governance instructions delivered efficiently are an efficient source of wrong behaviour.
+- **Generated context is checked before it is trusted.** Agent-facing projections carry freshness policy and size budgets like anything else, and the engine verifies them before they load. Stale governance instructions delivered efficiently are an efficient source of wrong behavior.
 
 ## What structured knowledge buys
 
-The reason to build any of this is machine behaviour that is more predictable. We must state the claim accurately, or it will shape the work wrongly.
+The reason to build any of this is machine behavior that is more predictable. We must state the claim accurately, or it will shape the work wrongly.
 
 **A governed corpus does not make a language model deterministic.** Sampling is stochastic. Identical prompts produce different outputs, and no amount of schema changes that. Anyone who claims otherwise has something to sell.
 
@@ -99,16 +99,16 @@ What it does buy:
 |---|---|
 | **Ambiguity removal** | Fewer legitimate readings of the input, so fewer defensible-but-divergent outputs. Variance narrows. It does not vanish |
 | **Oracles** | We can check output against a declared expectation ([spec 2](02-taxonomy-model.md#contract-sidecars-the-specification-as-oracle)) rather than judge it by eye |
-| **Attribution** | When output deviates, the artefact that licensed it is identifiable, so the fix lands on the corpus or the prompt rather than on a hunch |
+| **Attribution** | When output deviates, the artifact that licensed it is identifiable, so the fix lands on the corpus or the prompt rather than on a hunch |
 | **Reproducible comparison** | A pinned corpus and a pinned model give a baseline, and we can diff later runs against it |
 
 The achievable target is **bounded, auditable non-determinism**: output that varies within a space that the corpus defines, deviations visible, causes attributable.
 
 That is not a lesser goal, and it sets the investment priority. Effort belongs in oracles and traceability — checkable expectations, and citation of what licensed each decision. Effort does not belong in prompt engineering that tries to coax a model to repeat itself. The first compounds and is measurable. The second is a treadmill.
 
-### Generated artefacts cite what licensed them
+### Generated artifacts cite what licensed them
 
-Any artefact that an agent produces under the corpus's direction cites the identifiers of the artefacts that governed it. Examples are a document, a generated test, and an implementation written against a specification. The citation is inline, at the point of the decision.
+Any artifact that an agent produces under the corpus's direction cites the identifiers of the artifacts that governed it. Examples are a document, a generated test, and an implementation written against a specification. The citation is inline, at the point of the decision.
 
 ```python
 # per REQ-INGEST-014 (specifications/ingest/parser/functional.md)
@@ -121,7 +121,7 @@ Where sources conflict, the agent cites **both** and flags the conflict ([spec 2
 
 ## The stop rules
 
-These are explicit behaviours that an assistant who works in the corpus must show:
+These are explicit behaviors that an assistant who works in the corpus must show:
 
 1. **No decision record without external evidence.** If no work item, commit, discussion, or measurement supports it, halt and ask. If the human confirms that none exists, log a registered gap. Never invent rationale — a fabricated *why* is worse than an admitted absence, because someone will cite it.
 2. **No hand edits to a generated file.** Change the source and regenerate.
@@ -134,7 +134,7 @@ These are the rules that a capable model breaks most readily under pressure to b
 
 Instruction files are written on the assumption that the assistant reads and follows them. That assumption is testable. When it is not tested, it is usually optimistic.
 
-A **probe suite** runs scenarios against the corpus in a controlled session. It grades behaviour from the tool-call transcript, not from the model's self-report. The grader re-derives every verdict from what the agent actually opened and did. Probe categories:
+A **probe suite** runs scenarios against the corpus in a controlled session. It grades behavior from the tool-call transcript, not from the model's self-report. The grader re-derives every verdict from what the agent actually opened and did. Probe categories:
 
 | Category | Asks |
 |---|---|
@@ -143,7 +143,7 @@ A **probe suite** runs scenarios against the corpus in a controlled session. It 
 | Fidelity | Does the derived rule teach the same thing as its canonical source? |
 | Navigability | Can it get from a code path to the governing document, and back? |
 | Consistency | Same question, different phrasings — same answer? |
-| Counterfactual | Does removal of the context actually change behaviour? |
+| Counterfactual | Does removal of the context actually change behavior? |
 
 The counterfactual category is the one that matters most, and it is the one most often skipped. An A/B run — corpus present versus absent — is the only evidence that the instruction surface earns its context cost. Without it, "the AI reads our docs" is a belief.
 
@@ -151,7 +151,7 @@ Probes run on a schedule, with a pinned model, deterministic probe selection, an
 
 ## Anti-overfitting
 
-Probes are written against **behaviour**, not against phrasings. A probe that passes because a rule file contains a magic sentence tests the sentence. The harness rotates and paraphrases probes deterministically per run. Probes are also reviewed for the failure mode where the corpus is tuned to the probe suite instead of to its readers.
+Probes are written against **behavior**, not against phrasings. A probe that passes because a rule file contains a magic sentence tests the sentence. The harness rotates and paraphrases probes deterministically per run. Probes are also reviewed for the failure mode where the corpus is tuned to the probe suite instead of to its readers.
 
 ## What we do not do
 
