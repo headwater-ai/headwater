@@ -51,6 +51,10 @@ The rest of this document depends on two consequences.
 
 **The sweep examines only the undeclared half.** Anything that the graph already asserts is the engine's job. A sampled LLM pass that re-derives it is slower, more costly, and less reliable than the check that already exists.
 
+**The corpus offers to move the line for you.** [Q4](09-open-questions.md#q4--relation-storage) keeps relation semantics out of prose, so a link in the body asserts nothing that the engine can check. The **undeclared reference** check narrows the gap that this leaves. A prose link that resolves to a corpus document with which the source declares no relation raises an advisory finding. The author wrote the reference once, and the fix writes the declaration.
+
+The fix is mechanical only when exactly one enabled relation type permits the pair of kinds at the two ends, which the [endpoint declarations](02-taxonomy-model.md#endpoints-are-the-only-permission) settle. Otherwise the finding lists the candidates and carries no patch, because the choice between two legal relations is a judgment. There is no converse check. A declared relation whose target the prose never names is not a finding, since a succession edge belongs in no paragraph. The posture is advisory, and [principle 4](00-vision-and-scope.md#design-principles) governs any promotion of it.
+
 **Declared coverage is partial, and stays that way.** `conflicts_with` is `decision`-to-`decision`. Two standards that contradict each other have no way to say so, and until they do, that contradiction is coherence work. Wider endpoints on the relation can move more of it across the line. That is worth the work when there is evidence of the need, and not pre-emptively. A relation that authors do not use gives no benefit, and an unused relation is itself a finding about the taxonomy.
 
 ## Obligations are data

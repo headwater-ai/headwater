@@ -71,8 +71,37 @@ A **typed, named, directed link** between documents (or from a document to an an
 - **reciprocity** — if the target must acknowledge the source, and with which inverse relation.
 - **directionality constraints** — for example, a reference may only point at the same abstraction tier or higher.
 - **lifecycle interaction** — for example, a live document may not depend on a superseded one.
+- **instance attributes** — the data that one instance of this relation may carry, and which end owns each one.
 
 Because relation semantics live in the schema, the checks over them are generic. A new relation type added to a taxonomy adds validation for free. It does not add a linter.
+
+#### The authored form
+
+Every relation instance is declared under one `relations:` key in front matter ([Q4](09-open-questions.md#q4--relation-storage)). A relation name and a facet name come from separate declarations. Under a flat front matter, a taxonomy that declares both a facet and a relation called `owns` is unresolvable. One block also gives `check --fix` one region to rewrite.
+
+An entry is a target reference, or a mapping with `to:` and instance attributes. The scalar is sugar for a mapping whose only key is `to`, and both forms produce the same edge.
+
+```yaml
+relations:
+  supersedes: DR-ACME-0031
+  cites: [STD-ACME-0007, STD-ACME-0012]
+  conflicts_with:
+    - to: DR-ACME-0044
+      adjudicated_by: J. Baxter
+      adjudicated_on: 2026-07-14
+```
+
+A target is an identifier and never a path. Document identifiers are namespaced, globally resolvable, and never reused ([spec 3](03-authoring-and-lifecycle.md#identifiers)), and a path is a location that moves. An anchor target is the anchor string, which its resolver normalizes.
+
+An edge is identified by the source identifier, the relation name, and the normalized target. List order therefore carries no meaning, and a repeated triple in one document is an error. That identity is what the `Edge` scope of [spec 12](12-check-layer.md#scope--the-declaration-everything-else-rests-on) keys on.
+
+An instance attribute takes a facet's value space, and it is never a reference. A connection is a relation, and the rule that removed reference-valued facets reaches edges before anyone finds the loophole ([spec 2](02-taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)).
+
+#### Prose links are not relations
+
+A prose link is evidence that an author found a reference worth making at one point in a text. A relation asserts something about two documents that holds wherever a reader meets them. The engine extracts every prose link and checks that it resolves. No syntax promotes one into a relation. Two authoring locations for one edge leave three questions unanswered: which location wins, which span a finding anchors to, and what a fix writes.
+
+The cost of that ruling is a reference written twice. [Spec 4](04-assurance-model.md#declaration-moves-the-boundary) absorbs most of it: an extracted link with no declared relation is an advisory finding, and the fix writes the declaration.
 
 Relation types that an adopter is likely to want (all shipped with the default package, none hard-coded in the engine): `supersedes` / `superseded_by`, `derives_from`, `governs`, `verifies`, `implements`, `cites`, `owns`, `refines`, `conflicts_with`. Shipped does not mean enabled: the default *enables* a minimal four. The rest are complete declarations that an overlay pulls in by reference ([spec 2](02-taxonomy-model.md#the-decision-relation-vocabulary)).
 

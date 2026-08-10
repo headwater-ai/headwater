@@ -19,7 +19,7 @@ In an implemented system this page is a projection. Kinds, facets, relations, an
 | [State](#state) | Where the document sits in its lifecycle |
 | [Freshness](#freshness) | The date when a human last confirmed that the document is true |
 | [Summary](#summary) | One sentence. It is how routing, indexes, and agents find the document |
-| [Relation](#relation) | A typed link to another document, declared in front matter |
+| [Relation](#relation) | A typed link to another document, declared under `relations:` in front matter |
 
 `headwater new <kind>` supplies most of them. `headwater explain <path>` states what the engine expects of a document, and why.
 
@@ -471,7 +471,11 @@ The generated view of which controls discharge which obligations, with every dis
 
 ### Relation
 
-A typed, named, directed link between two documents, or from a document to an anchor, declared in front matter. It carries a family, nuclearity, endpoints, cardinality, reciprocity, and lifecycle interaction. See [spec 1](01-conceptual-model.md#relation).
+A typed, named, directed link between two documents, or from a document to an anchor. It is declared under the `relations:` key of front matter and nowhere else. The type carries a family, nuclearity, endpoints, cardinality, reciprocity, lifecycle interaction, and the [instance attributes](#relation-instance-attribute) that its edges may take. An instance is identified by the source identifier, the relation name, and the normalized target. See [spec 1](01-conceptual-model.md#the-authored-form).
+
+### Relation instance attribute
+
+Data that one edge carries, as distinct from data that the relation type declares for all of them. A relation type names each attribute, its value space, and its owning end, which is `source`, `target`, or `edge`. An undeclared attribute is a finding, and an attribute value is never a reference. See [spec 2](02-taxonomy-model.md#instance-attributes-and-which-end-owns-each-one).
 
 ### Remediation
 
