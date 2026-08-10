@@ -1,0 +1,23 @@
+[workspace]
+members = ["crates/core", "crates/node", "crates/wasm"]
+resolver = "2"
+
+[workspace.package]
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# Standard release settings. The bench (item 4) is measured here, so nothing
+# in this profile is tuned for artifact size.
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+# Size-tuned profile, used only for the wasm32 artifact in item 3. Kept
+# separate so that shrinking the wasm build cannot quietly slow the bench.
+[profile.release-small]
+inherits = "release"
+opt-level = "z"
+panic = "abort"

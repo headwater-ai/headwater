@@ -1,0 +1,7 @@
+error: lifetime may not live long enough
+  --> tests/ui/leak_downcast.rs:12:28
+   |
+11 | fn try_downcast(view: &DocumentView<'_>) -> bool {
+   |                 ---- has type `&DocumentView<'1>`
+12 |     let anyref: &dyn Any = view;
+   |                            ^^^^ coercion requires that `'1` must outlive `'static`

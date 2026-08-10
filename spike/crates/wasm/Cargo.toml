@@ -1,0 +1,14 @@
+[package]
+name = "headwater-wasm"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+# The browser/editor embedding half of item 3. No wasm-bindgen: a raw C-ABI
+# export is enough to prove the core crate compiles and runs on wasm32, and it
+# keeps the measured artifact free of glue that would flatter the size number.
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+headwater-core = { path = "../core", default-features = false }

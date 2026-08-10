@@ -1,0 +1,21 @@
+error[E0624]: associated function `new` is private
+  --> tests/ui/leak_construct_view.rs:12:31
+   |
+12 |     let _corpus = CorpusView::new(&graph);
+   |                               ^^^ private associated function
+   |
+  ::: src/view.rs
+   |
+   |     pub(crate) fn new(graph: &'g Graph) -> Self {
+   |     ------------------------------------------- private associated function defined here
+
+error[E0624]: associated function `new` is private
+  --> tests/ui/leak_construct_view.rs:13:30
+   |
+13 |     let _doc = DocumentView::new(graph.doc(0));
+   |                              ^^^ private associated function
+   |
+  ::: src/view.rs
+   |
+   |     pub(crate) fn new(doc: &'g Document) -> Self {
+   |     -------------------------------------------- private associated function defined here

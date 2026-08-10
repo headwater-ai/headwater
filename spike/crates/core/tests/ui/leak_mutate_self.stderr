@@ -1,0 +1,7 @@
+error[E0594]: cannot assign to `self.seen`, which is behind a `&` reference
+  --> tests/ui/leak_mutate_self.rs:29:9
+   |
+28 |     fn evaluate(&self, _view: &DocumentView<'_>) -> Vec<Finding> {
+   |                 ----- this is an immutable reference
+29 |         self.seen += 1;
+   |         ^^^^^^^^^^^^^^ `self` is a `&` reference, so it cannot be written to

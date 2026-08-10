@@ -4,7 +4,7 @@ These are decisions that we deliberately deferred. Each one blocks something. Ea
 
 ## Q1 — Implementation language
 
-This question is closed. The language is **Rust**, with a WebAssembly build of the same crate for editor and browser embedding. Go stays the fallback until the spike below passes. The full argument is a separate [evaluation](../evaluations/language-choice.md).
+This question is closed. The language is **Rust**, with a WebAssembly build of the same crate for editor and browser embedding. The full argument is a separate [evaluation](../evaluations/language-choice.md), and the spike that tested it [passed on all four items](../evaluations/language-spike-results.md). Go is no longer the fallback.
 
 Python and TypeScript are out on distribution. Spec 6 requires a single binary and no toolchain per check, and it gives 200 ms to the change-scoped run that a commit hook performs. An interpreter start spends a large part of that budget before any work begins.
 
@@ -24,14 +24,18 @@ The costs are real and stated in the evaluation. The YAML crate ecosystem is in 
 
 **The counter-evidence, kept in view:** [Vale](00-vision-and-scope.md#what-we-do-not-build) is the closest observed analog to this engine, and it is Go. Go builds this command-line tool. What Go builds poorly is the embeddable library underneath it, which is where the whole investment goes.
 
-**The spike changes.** A parse-classify-graph path in two candidates would measure the one axis on which the languages are equal. The replacement is a risk-retirement spike in Rust alone, and any item in it can reopen this question:
+**The spike changed, and then it ran.** A parse-classify-graph path in two candidates would have measured the one axis on which the languages are equal. The replacement was a risk-retirement spike in Rust alone, in [`spike/`](../../spike/), where any item could reopen this question. All four passed ([results](../evaluations/language-spike-results.md)).
 
-- a front-matter parse that reports line and column for every key,
-- a scope leak that fails to compile,
-- one crate built as a native Node addon and as `wasm32`,
-- a warm change-scoped run over 1,000 documents, under 200 ms.
+| Item | Result |
+|---|---|
+| A front-matter parse that reports line and column for every key | 10 assertions pass, front matter and body |
+| A scope leak that fails to compile | 6 leaks rejected, 3 positive controls compile |
+| One crate built as a native Node addon and as `wasm32` | 600 KiB addon, 113 KiB wasm, identical output |
+| A warm change-scoped run over 1,000 documents, under 200 ms | about 2 ms |
 
-Run the second item first. It carries the most weight, and it is the only claim that Rust might not deliver.
+The scope-leak item ran first, because it carried the most weight and was the only claim that Rust might not have delivered. It delivered, and it also caught the spike's own author. The first Node wrapper tried to construct a view from outside the crate, and it did not compile.
+
+**One result belongs in [spec 12](12-check-layer.md) rather than here.** Scope is better carried as a *type* than as a value that `scope()` returns. One trait per scope makes the declared scope and the argument type one fact, so they cannot disagree. Spec 12 records this in its own terms.
 
 ## Q2 — Schema format
 

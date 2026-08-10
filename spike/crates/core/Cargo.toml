@@ -1,0 +1,16 @@
+[package]
+name = "headwater-core"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+saphyr-parser = "0.0.11"
+
+[dev-dependencies]
+trybuild = "1.0"
+
+[features]
+# Off on wasm32, where the runner falls back to a single thread.
+parallel = []
+default = ["parallel"]

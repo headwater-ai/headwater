@@ -107,14 +107,18 @@ That spike answers nothing now. Both candidates produce a working parse-classify
 
 Replace it with a risk-retirement spike in Rust alone. Each item below can falsify the decision, and Go remains the fallback until all four pass.
 
-| Retires | Acceptance |
-|---|---|
-| The YAML gap | A front-matter parse that reports line and column for every key, and a `Finding` that carries the position to output |
-| Scope enforcement (argument 2) | A test that fails to compile when a `Document`-scoped check reaches a sibling. A test that compiles proves the claim false |
-| Embedding (argument 1) | The same crate built as a native Node addon and as `wasm32`, with both binary sizes recorded |
-| The budget | A change-scoped run over a synthetic 1,000-document corpus, warm, under 200 ms |
+**All four passed.** The code is in [`spike/`](../../spike/) and the measurements are in the [results](language-spike-results.md).
+
+| Retires | Acceptance | Result |
+|---|---|---|
+| The YAML gap | A front-matter parse that reports line and column for every key, and a `Finding` that carries the position to output | pass — 10 assertions |
+| Scope enforcement (argument 2) | A test that fails to compile when a `Document`-scoped check reaches a sibling. A test that compiles proves the claim false | pass — 6 leaks rejected, 3 controls compile |
+| Embedding (argument 1) | The same crate built as a native Node addon and as `wasm32`, with both binary sizes recorded | pass — 600 KiB addon, 113 KiB wasm |
+| The budget | A change-scoped run over a synthetic 1,000-document corpus, warm, under 200 ms | pass — about 2 ms |
 
 Item two is the one to run first. It is the argument that carries the most weight and the only one where Rust could fail to deliver what this document claims for it.
+
+Two things the results add to this document. The YAML cost is real and takes a shape this document did not predict: the parser's own documentation is wrong about column indexing and about how a blank value arrives, and only an empirical check finds either. And argument 2 turned out to be stronger than stated, because scope is better carried as a *type* than as a value a check returns. That correction belongs to [spec 12](../spec/12-check-layer.md) and is not a language argument, although only the type system makes it available.
 
 ## What stays reversible
 

@@ -1,0 +1,18 @@
+[package]
+name = "headwater-node"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+# The in-process Node addon half of item 3. cdylib is what N-API loads; there
+# is no subprocess and no stdio protocol anywhere in this crate.
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+headwater-core = { path = "../core" }
+napi = { version = "2", default-features = false, features = ["napi4"] }
+napi-derive = "2"
+
+[build-dependencies]
+napi-build = "2"

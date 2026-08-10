@@ -61,6 +61,16 @@ That last clause is the subgraph problem that the SHACL evaluation surfaced. The
 
 **4. Enforcement, which is what makes the rest honest.** The view exposes *only* what the scope declared. A `Document`-scoped check physically cannot read a sibling. So a scope declaration cannot quietly rot into a lie. A scope that is declared but not enforced would silently corrupt every cache key derived from it. The enforcement is the feature, and the declaration alone would be a comment.
 
+### The declaration is a type, not a returned value
+
+The [Q1 spike](../evaluations/language-spike-results.md) tested point 4 and changed it. The `scope()` signature above is the wrong shape, for a reason that applies to any implementation language.
+
+A scope that a check *returns* is a second fact beside the argument it receives. Nothing connects them, so a check can declare `Document` and still be handed a view that reads the corpus. The declaration is then a comment again, which is the failure that point 4 exists to prevent.
+
+One trait per scope removes the second fact. A check that wants to compare siblings must implement the corpus-scoped trait, which is the only way to receive a corpus view. That trait also registers the check where the runner already keys the cache on the whole corpus. The declared scope and the argument type are one fact. `Scope` stays as a value for reporting and for cache keys, derived from the trait and never supplied by the implementer.
+
+The same reasoning binds the plugin interface below. `scope()` there is a method a third party implements, so it is a claim the host would have to trust. As a type it is a claim the host cannot be given.
+
 ## Temporal inputs: the clock and the prior version
 
 Two inputs are about time. Both are injected, never fetched.
@@ -175,4 +185,4 @@ This rule also connects to promotion ([spec 4](04-assurance-model.md#promotion-a
 
 - The `Neighbourhood(depth)` scope is speculative. If no real check needs depth > 1, the correct move is to cut it and to keep `Edge` as the only relational scope.
 - Whether `Shelf` is a separate scope or only `Corpus` with a filter. This matters only if sibling-comparison checks become common.
-- Whether plugins are in-process (fast, but a foreign-code trust question) or subprocess (safe, but the per-instance overhead can dominate for `Document`-scoped checks). [Q1](09-open-questions.md#q1--implementation-language) supplies a third option that answers both horns. A WebAssembly component runs in-process, and it receives no filesystem, no network, and no clock unless the host grants them. That is the plugin contract above, restated as a capability model. The plugin design makes the call, and it is no longer a choice between two bad options.
+- Whether plugins are in-process (fast, but a foreign-code trust question) or subprocess (safe, but the per-instance overhead can dominate for `Document`-scoped checks). [Q1](09-open-questions.md#q1--implementation-language) supplies a third option that answers both horns. A WebAssembly component runs in-process, and it receives no filesystem, no network, and no clock unless the host grants them. That is the plugin contract above, restated as a capability model. The plugin design makes the call, and it is no longer a choice between two bad options. The [Q1 spike](../evaluations/language-spike-results.md) makes this plausible and does not test it. It compiled the engine *to* WebAssembly, which is not the same as hosting a component.
