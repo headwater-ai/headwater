@@ -1,0 +1,17 @@
+error[E0599]: no method named `graph` found for reference `&DocumentView<'_>` in the current scope
+  --> tests/ui/leak_sibling.rs:29:22
+   |
+29 |         let _ = view.graph();
+   |                      ^^^^^ method not found in `&DocumentView<'_>`
+
+error[E0599]: no method named `siblings` found for reference `&DocumentView<'_>` in the current scope
+  --> tests/ui/leak_sibling.rs:30:22
+   |
+30 |         let _ = view.siblings();
+   |                      ^^^^^^^^ method not found in `&DocumentView<'_>`
+
+error[E0599]: no method named `corpus` found for reference `&DocumentView<'_>` in the current scope
+  --> tests/ui/leak_sibling.rs:31:22
+   |
+31 |         let _ = view.corpus();
+   |                      ^^^^^^ method not found in `&DocumentView<'_>`

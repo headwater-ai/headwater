@@ -1,0 +1,8 @@
+error: lifetime may not live long enough
+  --> tests/ui/leak_escape_lifetime.rs:11:5
+   |
+ 9 | fn smuggle<'g>(view: &DocumentView<'g>) -> &'static str {
+   |            -- lifetime `'g` defined here
+10 |     // `path()` borrows for 'g, which is not 'static.
+11 |     view.path()
+   |     ^^^^^^^^^^^ returning this value requires that `'g` must outlive `'static`

@@ -1,0 +1,18 @@
+error[E0277]: `RefCell<Vec<String>>` cannot be shared between threads safely
+  --> tests/ui/leak_interior_mutability.rs:32:24
+   |
+32 | impl DocumentCheck for Accumulating {
+   |                        ^^^^^^^^^^^^ `RefCell<Vec<String>>` cannot be shared between threads safely
+   |
+   = help: within `Accumulating`, the trait `Sync` is not implemented for `RefCell<Vec<String>>`
+   = note: if you want to do aliasing and mutation between multiple threads, use `std::sync::RwLock` instead
+note: required because it appears within the type `Accumulating`
+  --> tests/ui/leak_interior_mutability.rs:16:8
+   |
+16 | struct Accumulating {
+   |        ^^^^^^^^^^^^
+note: required by a bound in `DocumentCheck`
+  --> src/check.rs
+   |
+   | pub trait DocumentCheck: CheckMeta + Send + Sync {
+   |                                             ^^^^ required by this bound in `DocumentCheck`
