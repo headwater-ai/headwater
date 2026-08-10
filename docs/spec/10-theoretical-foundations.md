@@ -267,7 +267,7 @@ Where they ended up:
 The application of every change does not mean that the design is finished. Three things that the literature sharpened but could not decide, all still open in [spec 9](09-open-questions.md):
 
 - **Whether the assisted fraction actually rises.** The strongest claim in the design — that agent-assisted authoring answers the capture-cost objection that killed every prior rationale system — is now falsifiable, measured, and untested. Nothing here proves it.
-- **Whether the taxonomy language survives contact with authors.** Q2 has a procedure now, not an answer. The cognitive-dimensions walkthrough may well reject the format that the rest of the spec is written in.
+- **Whether the taxonomy language survives contact with authors.** The [walkthrough](../evaluations/schema-format-walkthrough.md) has run, and it kept the format that the rest of the spec is written in. What it could not do is meet a real author. It scored notations against scenarios, and a scenario is not an adopter.
 - **Whether coherence measurement is worth its noise.** Transition continuity is a proxy, defensible in theory, unvalidated in practice. If its distribution is stable across healthy and unhealthy corpora alike, it measures nothing and should be cut.
 
 ## H. Theory considered and set aside

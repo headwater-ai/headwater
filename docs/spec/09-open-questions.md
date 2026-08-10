@@ -39,23 +39,33 @@ The scope-leak item ran first, because it carried the most weight and was the on
 
 ## Q2 — Schema format
 
-YAML is the default expectation, but the meta-schema, the diff experience, and the overlay merge semantics all become better with a stricter format. The options are: YAML with a published JSON Schema, a typed configuration language (CUE, Dhall, KCL) that gives validation and composition natively, or a small purpose-built DSL.
+This question is closed. The [cognitive-dimensions walkthrough](../evaluations/schema-format-walkthrough.md) that this entry prescribed has run, over the five authoring scenarios and the seven dimensions that it named.
 
-**Leaning:** YAML plus JSON Schema for the authored surface, because adopters must read and write it with no new language to learn. The resolved lock is in a stricter representation. Investigate whether CUE can be an *optional* authoring front-end for organizations that want it.
+**The decision.** YAML 1.2 is the concrete syntax. The schema language, the reference sublanguage, the overlay language and the meta-schema are Headwater's. JSON Schema is an emitted export and never the validator.
 
-**How to decide this.** Not by preference. The cognitive-dimensions framework is the standard instrument to evaluate a notation, and this question is exactly what it is for. Walk each candidate through five authoring scenarios, and score each one on the dimensions below. The first three scenarios are: add a kind, rename a shelf, and split one facet into two. The last two are: add a relation type to an existing family, and upgrade across a major version with a live overlay.
+The question decomposed into three, and only two of them were open. Who owns the schema language? [Q13](#q13--linkml-and-shacl-as-substrate) answered that already: Headwater owns it, and standard formats come out of it. What syntax do authors type, and what checks partial work? Those two are what the walkthrough settled.
 
-| Dimension | Question |
-|---|---|
-| Viscosity | How much editing does a small conceptual change require? |
-| Hidden dependencies | When I change this, what else changes that I cannot see? |
-| Premature commitment | What must I decide before I have enough information? |
-| Role-expressiveness | Can a reader tell what each part is *for*? |
-| Error-proneness | Which mistakes does the notation invite? |
-| Progressive evaluation | Can I check partial work, or only a complete schema? |
-| Abstraction gradient | What must a beginner learn before they write anything at all? |
+The earlier leaning read "YAML plus JSON Schema for the authored surface". That phrasing implies an answer to the first question, and the implied answer is wrong. [Spec 2](02-taxonomy-model.md) already carries references that no JSON Schema keyword resolves: `$vocabularies.lifecycle_state`, `$package.optional.forbids`, and every dotted overlay address. JSON Schema checks that a reference has the shape of one. Only the engine checks that it points at something. The authored surface was thus always YAML plus a Headwater resolver.
 
-Viscosity and hidden dependencies will decide it. The framework also makes explicit a choice that the design already made: **overlays deliberately trade viscosity for hidden dependencies.** Customization by overlay makes change cheap (low viscosity) at the cost of a resolved result that no one authored directly (hidden dependencies). That trade is defensible, but it means that the schema format must get the visibility back. Thus `explain`, `resolve`, and a readable lock file are not conveniences here. They are the mitigation.
+This is the same finding that Q13 reached from the other end. Q13 found that LinkML and SHACL validate one instance against a shape. Q2 finds that JSON Schema validates one document against a shape. Two questions, opposite directions, one architecture.
+
+**Why the typed configuration languages lost.** CUE unifies, and unification only narrows. It expresses `add` well, and it expresses neither `override` nor `remove`. The workaround is a default inside a disjunction, which makes the publisher pre-enumerate every value that an adopter might choose. That is premature commitment, placed on the party least able to carry it. Dhall does express override, and an overlay there becomes a function. But spec 2 requires a static confluence check over the paths that each overlay addresses. No reader can take that address set off a function that branches on its input.
+
+**What the walkthrough derived rather than assumed.** A statically checkable confluence property needs the address set of an overlay to be readable off its syntax. That leaves a first-order path-addressed patch language as the only available shape, which is the shape that spec 2 already sketched. The overlay design is now derived, not preferred.
+
+**Loader rulings.** YAML 1.2 core schema, so `no` stays the string `no`. Duplicate keys are an error. Anchors, aliases and merge keys are forbidden in taxonomy sources. The `$`-reference is the sanctioned reuse mechanism, and an alias is a second one that no overlay can address. Scalar types come from the meta-schema and never from the YAML resolver.
+
+**The lock.** The lock is generated, so authorability is not one of its criteria. "A stricter representation" thus means a canonical serialization rather than a typed language. The lock is JSON with sorted keys, one spelling per value, every reference resolved, and a hash over the bytes.
+
+**CUE as an optional front-end.** Yes, outside the engine and in one direction. An organization writes CUE, runs its own build, and commits generated Headwater YAML. The engine never reads CUE. This costs nothing, because it follows from the format being ordinary YAML.
+
+The trade that this entry named still holds, and the decision does not soften it. **Overlays deliberately trade viscosity for hidden dependencies.** Customization by overlay makes change cheap, at the cost of a resolved result that nobody authored directly. Thus `explain`, `resolve`, and a readable lock file are not conveniences here. They are the mitigation.
+
+**What it opened.** The walkthrough found five defects in [spec 2](02-taxonomy-model.md) that no notation fixes. The kind-to-relation permission is declared twice, and nothing makes the two directions agree. `abstract` appears in the meta-schema with no semantics. Reading precedence has no clause for the governance family. Compatibility has no dimension for the overlay address surface. And a major version migrates documents but never overlays. Each defect has an owner at the end of the [walkthrough](../evaluations/schema-format-walkthrough.md#consequences-for-the-specification).
+
+One point stays open in this entry. The `$`-reference sublanguage has three uses and no grammar, and it needs one definition before the meta-schema ships.
+
+**A note on the method.** This entry predicted that viscosity and hidden dependencies would decide the question. They did not. All three candidates scored near-equal on both, because most of the viscosity lives in the model rather than in the notation. Premature commitment, abstraction gradient and a new dimension for machine authors decided it instead. The framework earned its place by contradiction of the prediction that chose it.
 
 ## Q3 — How much of the default taxonomy ships in the box
 
@@ -135,7 +145,7 @@ The between-majors half of this question is no longer open. The core-concepts re
 
 ## Q13 — LinkML and SHACL as substrate
 
-**Blocks:** Q1 and Q2, and it is close to irreversible after the schema format ships.
+**Blocks:** Q1. It also blocked [Q2](#q2--schema-format), which is now decided and confirms the leaning below. The choice stays close to irreversible after the schema format ships.
 
 [LinkML](https://linkml.io/) is a YAML-authored schema language that compiles to JSON Schema, SHACL, RDF/OWL, Pydantic, and SQL DDL. It covers a substantial part of what [spec 2](02-taxonomy-model.md) specifies structurally — classes, slots, ranges, cardinality, enums, inheritance — and none of the governance half (regimes, expectations, overlays, core). SHACL, similarly, is the standard to validate a graph against declared shapes, which is what our schema-derived checks do by hand.
 
@@ -157,7 +167,7 @@ Two corrections apply to what this question originally recorded. The **error-mes
 
 The objections that survive are different and sharper: **line numbers, remediation and fixability do not survive the RDF round trip**. Those three are what make a finding actionable under [spec 4](04-assurance-model.md#findings).
 
-**Leaning:** option 3, which the Q2 walkthrough must confirm — and extended: emit **LinkML for the shape layer and SHACL for the graph layer**. Then an external consumer can validate a Headwater corpus to useful depth with no Headwater installation. This choice makes the shape/graph split an explicit architectural seam rather than an accident. Every mature validation stack in this space already has that shape.
+**Leaning:** option 3, which the [Q2 walkthrough](../evaluations/schema-format-walkthrough.md) now confirms — and extended: emit **LinkML for the shape layer and SHACL for the graph layer**. Then an external consumer can validate a Headwater corpus to useful depth with no Headwater installation. This choice makes the shape/graph split an explicit architectural seam rather than an accident. Every mature validation stack in this space already has that shape.
 
 The decisive argument is the same for both, and stronger for SHACL: every interesting constraint is embedded SPARQL. Hand-authored SPARQL is *less* readable than an engine predicate. But nobody reads generated SPARQL, so readability is no longer a cost.
 
