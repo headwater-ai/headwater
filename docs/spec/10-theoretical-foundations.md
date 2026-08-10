@@ -275,7 +275,7 @@ The application of every change does not mean that the design is finished. Three
 - **Diátaxis** (tutorial / how-to / reference / explanation). It is elegant and widely adopted, but it classifies by *reader mode* for end-user documentation, and our corpus is organised by *authority and lifecycle*. Values statements, registers, and decision records do not map onto the four modes without distortion. It is available as an optional facet for adopters who want it, but it is not the spine.
 - **Formal argumentation frameworks** (Dung, 1995). This is a rigorous account of attack and defeat between arguments, and it genuinely applies to decisions that conflict. But it demands a formalisation cost that no author will pay. Revisit only if `conflicts with` edges become common enough to need automated resolution.
 - **Full OWL/description-logic semantics.** This is reasoning power that we do not need, at a cost in authoring difficulty and validation time that we cannot afford. SKOS is deliberately the weaker, cheaper standard, and it is the right one here.
-- **Speech act theory** for normative language. It is an attractive framing for MUST/SHOULD/ MAY, but RFC 2119 already gives us the operational subset, and the deeper theory adds no checks.
+- **Speech act theory** for normative language. It is an attractive framing for MUST/SHOULD/MAY, but RFC 2119 already gives us the operational subset, and the deeper theory adds no checks.
 
 ## References
 
