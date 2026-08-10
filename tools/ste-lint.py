@@ -213,6 +213,11 @@ class Unit:
     allows: set = field(default_factory=set)
 
 
+def unmark(text: str) -> str:
+    """Drop the link markers that only the sentence splitter needs to see."""
+    return text.replace("⟦", "").replace("⟧", "")
+
+
 def normalize_for_hash(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip().lower()
 
@@ -339,7 +344,10 @@ def strip_markup(text: str) -> str:
     text = re.sub(r"<!--.*?-->", " ", text)
     text = re.sub(r"`[^`]*`", " CODE ", text)
     text = re.sub(r"!\[[^\]]*\]\([^)]*\)", " ", text)
-    text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", text)
+    # Keep a marker where a link was. A sentence often opens with one, and its
+    # text is usually lower case ("[spec 1](…) explicitly forswears that"), so
+    # without the marker the sentence splitter cannot see the sentence start.
+    text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"⟦\1⟧", text)
     text = re.sub(r"\[([^\]]*)\]\[[^\]]*\]", r"\1", text)
     text = re.sub(r"<https?://[^>]*>", " URL ", text)
     text = re.sub(r"https?://\S+", " URL ", text)
@@ -351,10 +359,18 @@ def strip_markup(text: str) -> str:
 
 
 def protect(text: str) -> str:
+    # The \b matters: without it "St." matches inside "cost." and "Ms." inside
+    # "problems.", which hides the sentence end and silently merges two
+    # sentences into one over-long count. Replace through a function so the
+    # original casing survives the case-insensitive match.
     for abbr in ABBREVIATIONS:
-        text = re.sub(re.escape(abbr), abbr.replace(".", "\u0001"), text, flags=re.IGNORECASE)
+        text = re.sub(r"\b" + re.escape(abbr),
+                      lambda m: m.group(0).replace(".", "\u0001"),
+                      text, flags=re.IGNORECASE)
     text = re.sub(r"(\d)\.(\d)", "\\1\u0001\\2", text)
-    text = re.sub(r"\b([A-Z])\.", "\\1\u0001", text)
+    # No rule for single-letter initials: this corpus writes no "J. Smith", but
+    # it does write "that B exists in service of A. That is the relation…",
+    # where the letter really does end the sentence.
     # A parenthetical counts as one word (rule 6.3 help), and never splits a sentence.
     for _ in range(4):
         new = re.sub(r"\([^()]*\)", " PARENTHETICAL ", text)
@@ -370,7 +386,13 @@ def restore(text: str) -> str:
 
 def split_sentences(text: str) -> list[str]:
     protected = protect(text)
-    parts = re.split(r'(?<=[.!?])["”\'’)\]]*\s+(?=[A-Z0-9“"\[(`*_])', protected)
+    parts = re.split(
+        r'(?<=[.!?])["”\'’)\]]*\s+(?=[A-Z0-9“"\[(`*_⟦§])'
+        # A run of questions may continue in lower case ("…same kind? does every
+        # check still pass?"). Only after ? or !, never after a period, which
+        # would split "cf. the projection".
+        r'|(?<=[?!])\s+(?=[a-z])',
+        protected)
     return [restore(p).strip() for p in parts if p.strip()]
 
 
@@ -424,7 +446,20 @@ def check_words(path: str, unit: Unit, text: str, findings: list[Finding]) -> No
         )
 
 
+def is_reference_list(text: str) -> bool:
+    """A run of citations joined by "·" is a list of items, not a sentence.
+
+    The sentence and paragraph limits are about how much a reader holds at once
+    while following an argument. A bibliography line asks nothing of the sort:
+    it is read one entry at a time, and splitting it would only make it longer.
+    """
+    return text.count(" · ") >= 2
+
+
 def check_prose(path: str, unit: Unit, text: str, findings: list[Finding]) -> None:
+    if is_reference_list(text):
+        return
+
     sentences = split_sentences(text)
     if len(sentences) > MAX_PARAGRAPH_SENTENCES:
         findings.append(
@@ -435,6 +470,7 @@ def check_prose(path: str, unit: Unit, text: str, findings: list[Finding]) -> No
         )
 
     for sentence in sentences:
+        sentence = unmark(sentence)
         words = count_words(sentence)
         if words > MAX_SENTENCE_WORDS:
             findings.append(
@@ -509,7 +545,7 @@ def lint(path: str, content: str, profile: str) -> list[Finding]:
         if not text:
             continue
         unit_findings: list[Finding] = []
-        check_words(path, unit, text, unit_findings)
+        check_words(path, unit, unmark(text), unit_findings)
         if unit.kind == "prose":
             check_prose(path, unit, text, unit_findings)
             if profile == "strict":

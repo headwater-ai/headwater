@@ -97,7 +97,7 @@ Where none exists, the earlier design offered two outcomes: evidenced, or a regi
 
 The semantic judgment — *is this evidence actually about this decision?* — stays with the author and the agent stop rules ([spec 5](05-ai-integration.md)). The mechanical parts are these: the facet is present and valid, pointers resolve, `reconstructed` contains its basis, and the gap register accounts for every `unevidenced` document.
 
-The value is named `unevidenced`, and not `gap`, because `gap` is already the [disposition](04-assurance-model.md#every-obligation-has-exactly-one-disposition) of an obligation that no control discharges. One word for two mechanisms hid a real question, which this document does not settle: whether the gap register above is the same artifact as the obligation gap register, or a second one that shares its name.
+The value is named `unevidenced`, and not `gap`, because `gap` is already the [disposition](04-assurance-model.md#every-obligation-has-exactly-one-disposition) of an obligation that no control discharges. One word for two mechanisms hid a real question, and this document does not settle it. Is the gap register above the same artifact as the obligation gap register, or a second one that shares its name?
 
 ## Provenance is recorded, not assumed
 

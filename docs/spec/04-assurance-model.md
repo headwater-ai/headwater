@@ -45,7 +45,7 @@ Spec 2 gives the rule that [two `current` decisions joined by `conflicts_with`](
 
 This generalizes, and we state it as a design rule rather than as an observation about one relation:
 
-> **A coherence obligation becomes a cohesion obligation the moment the judgment that it needs is recorded as data.** Where a coherence concern recurs, the question to ask is not "how do we detect this?" but "what could an author declare that would make detecting it unnecessary?"
+> **A coherence obligation becomes a cohesion obligation the moment the judgment that it needs is recorded as data.** Where a coherence concern recurs, do not ask "how do we detect this?" Ask instead: "what could an author declare that would make detecting it unnecessary?"
 
 The rest of this document depends on two consequences.
 

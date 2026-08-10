@@ -66,7 +66,7 @@ This is the closest prior art to what we build, and it validates three choices. 
 
 ### B.1 Kruchten's decision-relationship ontology
 
-Kruchten ("An Ontology of Architectural Design Decisions in Software-Intensive Systems", 2004) lists relationships between design decisions: *constrains, forbids, enables, subsumes, conflicts with, overrides, comprises, is bound to, is an alternative to, is related to, traces to, does not comply with.*
+Kruchten ("An Ontology of Architectural Design Decisions in Software-Intensive Systems", 2004) lists relationships between design decisions: *constrains, forbids, enables, subsumes, conflicts with, overrides, comprises, is bound to, is an alternative to, is related to, traces to, does not comply with.* <!-- ste-lint: allow sentence-length # Kruchten's relation vocabulary, quoted entire -->
 
 Our decision relations are `supersedes` / `superseded_by` / `refines` — the temporal axis only. Kruchten's set is mostly *logical*: `conflicts with` and `constrains` say things about simultaneously live decisions that succession cannot express. A corpus that holds two current decisions that conflict is incoherent in a way that no reciprocity check will ever detect.
 
@@ -126,7 +126,7 @@ Three consequences:
 
 ### C.2 Boundary objects — publisher and consumer
 
-Star and Griesemer (*Social Studies of Science*, 1989) define **boundary objects** as artifacts "plastic enough to adapt to local needs… yet robust enough to maintain a common identity across sites", weakly structured in common use and strongly structured in local use.
+Star and Griesemer (*Social Studies of Science*, 1989) define **boundary objects** as artifacts "plastic enough to adapt to local needs… yet robust enough to maintain a common identity across sites", weakly structured in common use and strongly structured in local use. <!-- ste-lint: allow sentence-length # verbatim definition, not ours to split -->
 
 That is the taxonomy package, stated better than spec 7 states it. But it carries a requirement that we do not yet meet: for identity to hold across sites, something must be *invariant*. Our overlay algebra currently lets a consumer override or remove almost anything, which means that two consumers of "the same" taxonomy may share nothing.
 
@@ -192,7 +192,7 @@ Aghajani et al. ("Software Documentation Issues Unveiled", ICSE 2019; "Software 
 
 Our obligation set in spec 4 was invented from experience. There is no reason for that when an empirically derived defect taxonomy exists.
 
-> **Change:** derive the default obligation set from a published defect taxonomy, and record the mapping. Every obligation then answers "which observed defect class does this prevent?" — which is both a better filter than intuition and a real answer to "why are you making me do this?".
+> **Change:** derive the default obligation set from a published defect taxonomy, and record the mapping. Every obligation then answers "which observed defect class does this prevent?" That is a better filter than intuition, and a real answer to "why are you making me do this?".
 
 ### F.2 Stale documentation is still used
 
