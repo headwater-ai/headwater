@@ -318,15 +318,17 @@ This costs Headwater nothing, because it is a consequence of the format being or
 
 # Consequences for the specification
 
-Each of these is a design defect that the walkthrough surfaced. None of them is a notation choice, and none is fixed by changing syntax.
+Each of these is a design defect that the walkthrough surfaced. None of them is a notation choice, and none is fixed by changing syntax. All five are now applied, and the last column says where each landed.
 
-| # | Finding | Owner |
+| # | Finding | Landed in |
 |---|---|---|
-| 1 | Kind-to-relation permission is declared twice and nothing makes the two agree. Endpoints become authoritative and `may:` is derived. | [spec 2](../spec/02-taxonomy-model.md), relations and kinds |
-| 2 | `abstract` appears in the meta-schema with no semantics. Define abstract kinds and `is_a`. Scenarios 1 and 3 both need exactly it. | [spec 2](../spec/02-taxonomy-model.md), kinds and the meta-schema |
-| 3 | Reading precedence has no clause for the governance family, and the derivation contradicts what the family means. On governance between two documents, the source governs. | [spec 2](../spec/02-taxonomy-model.md), reading precedence |
-| 4 | Compatibility has no dimension for the overlay address surface. Add `addressability`, measured against reference overlays. | [spec 2](../spec/02-taxonomy-model.md), versioning |
-| 5 | Migration migrates documents and not overlays. The payload drives an overlay rewrite, and an `add` collision is always a human task. | [spec 2](../spec/02-taxonomy-model.md), versioning |
+| 1 | Kind-to-relation permission is declared twice and nothing makes the two agree. Endpoints become authoritative and `may:` is derived. | [Endpoints are the only permission](../spec/02-taxonomy-model.md#endpoints-are-the-only-permission) |
+| 2 | `abstract` appears in the meta-schema with no semantics. Define abstract kinds and `is_a`. Scenarios 1 and 3 both need exactly it. | [Abstract kinds](../spec/02-taxonomy-model.md#abstract-kinds) |
+| 3 | Reading precedence has no clause for the governance family, and the derivation contradicts what the family means. On governance between two documents, the source governs. | [Reading precedence is derived](../spec/02-taxonomy-model.md#reading-precedence-is-derived) |
+| 4 | Compatibility has no dimension for the overlay address surface. Add `addressability`, measured against reference overlays. | [Versioning by measured compatibility](../spec/02-taxonomy-model.md#versioning-by-measured-compatibility) |
+| 5 | Migration migrates documents and not overlays. The payload drives an overlay rewrite, and an `add` collision is always a human task. | [Customization by composition](../spec/02-taxonomy-model.md#customization-by-composition) and versioning |
+
+Two of them turned out to be half-present rather than absent, which is worth recording because it changes what the fix is. Spec 7 already reported invalidated overlay entries to a consumer, so defect 4 was a missing *consequence* rather than a missing report. And spec 2 already named the `override` precondition, so defect 5 was an incomplete symmetry rather than an unconsidered case. A walkthrough finds these where a reading does not, because it forces the whole sequence rather than one paragraph.
 
 # What the walkthrough did not settle
 
