@@ -49,7 +49,3 @@ Start at 0 and 2 if you only read two. Spec 10 is where the design gets tested a
 ## Provenance
 
 This design is informed by a study of a prior internal governance framework — the concepts it proved out, and the specific places where so much came to depend on its architecture that it resisted change. That study is summarized, in design terms only, in [prior art and departures](docs/spec/08-prior-art-and-departures.md).
-
-## The name
-
-The system is **Headwater**. Write it capitalized in prose. Write it as `headwater` in lower case when it is an identifier — the CLI verb, the package name, the `.headwater/` directory, and the `https://headwater.dev/` namespace. See [Q10](docs/spec/09-open-questions.md#q10--naming).
