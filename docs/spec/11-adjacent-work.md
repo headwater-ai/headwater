@@ -282,6 +282,34 @@ And one relationship deserves a record as complementary rather than rival. Sourc
 
 > **Recorded:** counterweight evidence added to [Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate); provenance precedent added to [Q15](09-open-questions.md#q15--a-synthesized-content-tier).
 
+## K. Modern Requirements — the first candidate where the arrow reverses
+
+[Modern Requirements4DevOps](https://www.modernrequirements.com/products/modern-requirements4devops/) is a commercial requirements-management extension embedded in Azure DevOps. Everything that it creates is an ADO work item. Requirements, reviews, baselines, and trace links live in the ADO store. Its own documentation calls that store the single source of truth for project artifacts. Its interchange surfaces are the ADO REST API and ReqIF, the OMG Requirements Interchange Format, which a companion extension supplies. This entry exists for a practical reason, not for survey completeness. An organization that we work with decided to adopt the tool. Thus "can a headwater corpus sit downstream of an RM tool?" is a question with a date on it.
+
+The overlap is larger than a commercial ALM extension suggests, and it sits on our side of the boundary. Requirements management is traceability management, and [spec 10 §B.5](10-theoretical-foundations.md#b5-traceability-information-models--our-idea-has-a-name-and-a-literature) grounds headwater's design in exactly that literature. The pieces that an RM integration needs are already specified:
+
+- `traces_to` is an evidence relation, enabled by default ([spec 2](02-taxonomy-model.md#the-decision-relation-vocabulary)).
+- Work items are a named external anchor kind. One resolver owns each anchor kind, and resolution is a [correctness root](02-taxonomy-model.md#behavior-at-the-limits).
+- Requirements and acceptance criteria are two of the five artifacts that receive stable identifiers ([spec 3](03-authoring-and-lifecycle.md#identifiers)).
+- Traceability matrices are a projection kind ([spec 6](06-engine-architecture.md#projections)).
+- `evidence_basis` asks for exactly the pointer that an RM tool mints.
+
+Even the exclusion is already written. [Spec 0](00-vision-and-scope.md#what-we-do-not-build) declines to build a ticketing system: "we refer to work items, we do not manage them". Everything in Modern Requirements is a work item, so that row covers requirements management verbatim. Nothing in the model changes to point at this tool.
+
+What has no precedent is the direction. Every integration recorded so far points out of the corpus — TrustGraph ingestion, the OKF bundle, and the LinkML, SHACL, and SKOS emissions. §J prices TrustGraph as cheap on exactly that ground: nothing flows back in. Here the requirements come from a store that the corpus does not govern, and the corpus consumes them. This is the first inbound candidate, and it is a different family with a different cost.
+
+It meets three stated positions of spec 0 head-on. Each one resolves into a design constraint, not a refusal:
+
+- **"We refer to work items. We do not manage them."** This position holds untouched. The integration reads. On the day that it writes a work item, it becomes a requirements tool and leaves the scope table.
+- **No network dependency at check time.** So the fetch is not part of validation. A scheduled job pulls a snapshot — a ReqIF bundle or an API export — and commits it. This is the [upstream-awareness pattern](07-distribution-and-federation.md#upstream-awareness) of spec 7, pointed at a second kind of upstream. An `ado_work_item` resolver then binds anchors against the committed snapshot, and that step is offline and deterministic. Check-time behavior stays a function of repository content, as everywhere else.
+- **One source of truth per fact.** Requirement content is canonical in the RM tool and never here. What the corpus canonically owns is its own half of the join: which documents trace to which requirements. The corpus declares those edges, and the RM tool knows nothing of them.
+
+What flows in is therefore deliberately small: anchor identities, `traces_to` edges, and drift findings. Upstream, someone can reword, close, or delete a requirement that documents trace to. When the snapshot shows such a change, the comparison raises a change proposal with the diff attached. That is exactly what spec 7 already does for taxonomy upstreams. It never mutates the corpus silently.
+
+Two declarations that currently have no operational story acquire one here. `created_by: import` is a legal edge provenance [in spec 2](02-taxonomy-model.md#who-creates-each-edge), but nothing says what an import *is*. An RM importer is what the value is for, and the staleness-by-creator report of `taxonomy audit` is what keeps a decayed import visible. And [Q15](09-open-questions.md#q15--a-synthesized-content-tier) gains a sharper test case than the one that raised it. Imported requirement text is *not* synthesized, because regeneration against the pinned snapshot verifies it. That makes it a projection whose source the corpus does not govern. The authored/generated split does not name that case, and the tier question has to answer it.
+
+> **Recorded as [Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record).**
+
 ---
 
 ## Summary
@@ -298,3 +326,4 @@ And one relationship deserves a record as complementary rather than rival. Sourc
 | Karpathy, *LLM Wiki* | Best anti-RAG argument, independent capture-cost confirmation | Applied — coherence sweep (spec 4). **Q15** raised |
 | LeanCTX / OKF | Same substrate, opposite arrow. No taxonomy to collide with | Applied — declaration boundary (spec 4). OKF export → **Q13**. Presentation gap → **Q16** |
 | TrustGraph | Same pitch, opposite mechanism — extracts the graph we declare | Standards-stack counterweight → **Q13**. Provenance precedent → **Q15**. Ingestion integration candidate |
+| Modern Requirements / Azure DevOps | First inbound candidate — the arrow reverses | Model already fits. Import semantics open — **Q19** |

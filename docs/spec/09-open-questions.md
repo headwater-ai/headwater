@@ -183,6 +183,8 @@ It fits neither existing tier, and the difference is not cosmetic. A projection 
 
 The tier is not hypothetical. [TrustGraph](11-adjacent-work.md#j-trustgraph--the-same-pitch-the-opposite-mechanism) runs an entire platform on it. Its per-fact receipts — source document, ingestion timestamp, extraction method — are a working design for the provenance record that this tier needs. What it lacks is exactly what this question adds: a rule that prevents anyone from treating the synthesis as canonical.
 
+[Q19](#q19--inbound-integration-an-external-system-of-record) brings the neighboring case that sharpens the definition: imported requirement text. That text *is* regenerable, against a pinned upstream snapshot, so it is not synthesized. The boundary that this question draws is a verification method, not an author. The answer has to place both cases.
+
 Open: whether headwater admits synthesized content at all. If it does, more questions follow. Does it need its own staleness rules? How does the system make sure that it can never become canonical for anything? Does a human acceptance step promote it to authored, or does it stay permanently second-class?
 
 **Leaning:** admit it, permanently non-canonical, clearly marked, and never a valid target for a `governs` or `verifies` relation. Promotion to authored requires an explicit human acceptance that changes its provenance record. It is how most organizations will actually want to use this, and a refusal to model it just means that it happens unmarked.
@@ -293,3 +295,20 @@ What the cut leaves open is the *positive* half. Suppose that a human adjudicate
 This belongs beside [Q15](#q15--a-synthesized-content-tier)'s provenance questions. Both are about a record of who vouched for what. An adjudication without a named adjudicator is a rank with extra steps.
 
 **Leaning:** record adjudication per-conflict as data on the declared edge, with the adjudicator named. No per-kind ranks, and no new declaration until a real corpus shows that the edge form fails.
+
+## Q19 — Inbound integration: an external system of record
+
+**Blocks:** nothing in the engine. It becomes live the first time that an adopter authors requirements in an RM tool. [Spec 11 §K](11-adjacent-work.md#k-modern-requirements--the-first-candidate-where-the-arrow-reverses) records that this is already scheduled to happen.
+
+Every integration specified so far points out of the corpus. Spec 11 §K records the first candidate that points in: Modern Requirements. There, requirements live in Azure DevOps as work items, and headwater documents must trace to them. The model needs nothing new — work-item anchors, `traces_to`, and `created_by: import` are all specified. What is unspecified is the operational half: what an importer is, what it may touch, and what its output is worth.
+
+These constraints are already settled. The fetch runs out-of-band and commits a snapshot, so check time stays offline ([spec 0](00-vision-and-scope.md#non-negotiables)). The resolver binds anchors against the committed snapshot, not against the live service. Upstream drift raises a change proposal, never a mutation ([spec 7](07-distribution-and-federation.md#upstream-awareness)). Requirement content stays canonical upstream ([principle 2](00-vision-and-scope.md#design-principles)).
+
+Open, in order of consequence, least first:
+
+- **Snapshot format and home.** ReqIF (an OMG standard, tool-neutral, verbose) or the native JSON of the API (simpler, vendor-specific)? And does the snapshot live inside the governed repository or beside it? The snapshot is an input to anchor resolution, so its format is a compatibility surface, not an implementation detail.
+- **Does imported prose enter the corpus at all?** The minimal integration imports identities and edges only. Documents point at requirement anchors, and a reader follows the pointer into the RM tool. The larger integration materializes requirement text as marked, read-only documents. Then the corpus is self-contained for offline readers and agents. The larger integration is more useful, and it imports a maintenance obligation with the text.
+- **What is an imported edge worth?** May a `traces_to` edge that an importer created satisfy a participation expectation, or let a document claim `evidenced`? If yes, a system that nobody here governs discharges obligations in a corpus that claims to be checkable. If no, imports are decoration. The honest middle: imported edges satisfy nothing blocking until the fidelity of the importer has an evidence trail. That is [principle 4](00-vision-and-scope.md#design-principles), applied to a pipeline instead of a rule.
+- **The tier question.** Imported text is regenerable against the pinned snapshot, so it fails the [Q15](#q15--a-synthesized-content-tier) definition of synthesized. But its source is ungoverned, so it is not a projection in the spec-6 sense either. Whether that is a fourth tier or a qualifier on `generated` decides what its provenance record carries. The per-fact receipts of TrustGraph (source, timestamp, method) fit as they are. The addition is the snapshot pin.
+
+**Leaning:** reference-first. Anchors and imported edges ship first — they change no content and are cheap to audit. Imported requirement text arrives later, clearly marked and never canonical, under whatever rule Q15 lands on. The snapshot pin goes into its provenance. Imported edges start advisory and walk the same evidence-driven promotion path as every other control. And the importer is an adapter in the sense that [spec 6](06-engine-architecture.md#ci-adapters) already uses: thin, swappable, and with no RM vendor privileged in the core.
