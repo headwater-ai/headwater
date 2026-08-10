@@ -103,7 +103,7 @@ The MCP server is the agent-facing surface of the same library ([AI integration]
 
 ### CI adapters
 
-The engine emits findings. Adapters translate them to the native vocabulary of a platform: annotations, check runs, job summaries, review comments. Adapters are thin and swappable so that no forge is privileged in the core. Portability is a requirement, not an aspiration. The coupling of the reference system to one CI platform is a stated failure mode that we correct.
+The engine emits findings. Adapters translate them to the native vocabulary of a platform: annotations, check runs, job summaries, review comments. Adapters are thin and swappable so that no forge is privileged in the core. Portability is a requirement, not an aspiration. Coupling of the core to one CI platform is a stated failure mode that we correct ([spec 8](08-design-departures.md)).
 
 ## Performance targets
 
@@ -118,7 +118,7 @@ Hooks and agent-facing queries must be fast enough to be invisible. A pre-commit
 
 ## Implementation constraints
 
-- **Single binary or single runtime.** Installation of the engine must not require a toolchain per check. The reference system's mix of Python, Node, and shell — each with its own Docker fallback — is a cost that we do not repeat.
+- **Single binary or single runtime.** Installation of the engine must not require a toolchain per check. A mix of Python, Node, and shell — each with its own container fallback — is a cost that we do not accept.
 - **Offline.** No network at check time.
 - **Deterministic.** Same corpus, same lock, same output, byte for byte. This is what makes `--check` on projections meaningful.
 - **Embeddable.** Usable as a library from an editor plugin or an agent process, with no need to spawn subprocesses.
