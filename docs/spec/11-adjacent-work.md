@@ -310,6 +310,99 @@ Two declarations that currently have no operational story acquire one here. `cre
 
 > **Recorded as [Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record).**
 
+## L — Serena: the memory layer as a corpus, and where scent lives
+
+[Serena](https://github.com/oraios/serena) is an MCP toolkit for coding agents, MIT-licensed, created in March 2025, with 27.8k stars. It gives an agent symbol-level navigation and editing through language servers, which is not our subject. The adjacent part is its **memory system**: Markdown files that an agent writes into `.serena/memories/` and commits with the code.
+
+Scale changes how we should read it. LeanCTX (§I) has about 3.5k stars, and Serena has near eight times that number. This is not one team's local convention. It is a shape that a large number of agent-assisted repositories now carry.
+
+### L.1 The fourth arrival, and the first one with its reasons written down
+
+§I.1 counted three independent arrivals at Markdown-in-the-repository as the substrate for machine-readable knowledge: OpenGEO, the LLM Wiki, and OKF. Serena is the fourth. It is the first that states its criteria as a numbered list, and then names what those criteria exclude.
+
+The seven criteria, compressed:
+
+1. files stay human-readable and editable in any text editor
+2. project memories live beside the code, and diff in a pull request
+3. an agent receives the memory *name list*, and chooses what to read from it
+4. references beat search
+5. the agent decides each read, and the harness injects nothing on its behalf
+6. the format is plain Markdown, with one Serena-specific convention
+7. two scopes, project and global, compose freely
+
+The exclusions are the more interesting half. Database-backed memory, which covers SQLite, graph stores and vector stores, fails criteria 1, 4 and 6. Single-file conventions of the `AGENTS.md` family fail criteria 3 and 5. Hooks and harness-internal memory fail criteria 5 and 6. The documentation then states that no existing system met the goal, and that Serena ships its own layer for that reason. It names Obsidian, Logseq and Foam as the nearest relatives. That is a documented search for an off-the-shelf answer, and a documented failure to find one.
+
+The overlap stops where it stopped for OKF. A memory carries no front matter, no declared kind, and no schema. One relation exists, `mem:`, and it is untyped. OKF at least requires a `type` field and names five relations (§I.2). Serena carries less than that. So the verdict of §I.2 applies again and more strongly. This is our file format and none of our TBox, so a shared shape costs nothing and threatens nothing.
+
+### L.2 "Prefer references to search" — a third argument against retrieval
+
+[Spec 5](05-ai-integration.md#what-we-do-not-do) declines retrieval as the primary mechanism, and that position now rests on three independent arguments. Mine was precision. Karpathy's, which §F.2 records as the better one, is that retrieval accumulates nothing. Serena's is different again.
+
+The criterion states that any retrieval method, lexical or semantic, produces both false positives and false negatives. An explicit reference, named and chosen by the agent, produces neither. Retrieval is therefore a source of variance, and a declared edge removes it.
+
+That is §H in operational form. §H sets the target as bounded, auditable non-determinism, and it names ambiguity removal as the mechanism that narrows variance. A named edge in place of a similarity match is one concrete instance of that mechanism. Serena also keeps plain search as a complement and never as the authority, which is the posture spec 5 already takes toward embeddings.
+
+> **Applied:** the third argument added to [spec 5](05-ai-integration.md#what-we-do-not-do).
+
+### L.3 Where scent lives — the first substantive disagreement
+
+This is the one finding that contradicts something we specified.
+
+Serena ships a convention document to every onboarded project. One of its rules reads: "Memories themselves should not contain information about when to read them; this is the responsibility of the referring memory." <!-- ste-lint: allow semicolon # direct quotation from the shipped memory_maintenance template --> The convention also asks each reference to do more than name its target, and to say which aspects of the subject the target covers.
+
+[Spec 5](05-ai-integration.md#scent-is-the-thing-being-engineered) puts that cue in the `summary` facet of the target, and calls the summary facet "the corpus's entire scent surface". Serena puts it on the edge. Both designs engineer scent deliberately, and they place it in opposite locations.
+
+Foraging theory settles more of this than I expected, and it settles it against the stronger half of our claim. Scent is the **proximal** cue at the point of decision. When a reader follows a relation, the proximal cue is the referring text, and the target's own summary is distal. Spec 5 cites the theory correctly and then applies it to one moment only.
+
+The two placements are not interchangeable, and each one fails where the other works.
+
+- **Query-time routing needs the cue on the node.** `headwater route` builds a pointer list from a task description, so no referring edge exists to carry a cue. Serena has no routing, and never meets this case.
+- **Traversal-time reading needs the cue on the edge.** A summary cannot say why *this* link, from *here*. One standard, referenced once by a decision and once by a specification, deserves a different cue in each place.
+- **Orphans separate the two.** A document with no inbound edge still has node scent, and routing still finds it. Under edge-only scent it is invisible. Serena covers this with the up-front name list and a `mem:core` root, which works at the scale of a single project.
+- **Measurement separates them again.** Spec 5 grades distinctiveness by a comparison of sibling summaries in one place. Edge cues have no such place, so they are harder to grade. Serena grades neither.
+
+Headwater serves both moments, so it plausibly needs both placements, and it currently specifies one. The cost of the second is real. A cue on a relation instance means prose on an edge. It adds an authoring burden at every reference, and a new object for the checks to grade.
+
+> **Recorded as [Q20](09-open-questions.md#q20--where-scent-lives).**
+
+### L.4 The convention document is itself a memory, and nothing keeps it current
+
+Serena seeds a `memory_maintenance` memory at first onboarding, under a stated precedence. A global copy wins, and suppresses the project copy. Otherwise an existing project copy stays untouched. Otherwise the shipped template lands in the project. Existing files are never overwritten.
+
+That is [spec 7](07-distribution-and-federation.md)'s overlay shape, reached independently: a shipped default, an organization-wide override, and a local copy. Two details are worth keeping.
+
+First, the precedence runs opposite to ours. [Spec 7](07-distribution-and-federation.md#federation) has overlays compose in one direction, where each tier may override the tier above it. A global convention here does the reverse. It **suppresses** the local copy, and no local copy is written at all. The stated reason is that a team wants one convention document across all of its projects. So a convention overlay and a content overlay want opposite precedence, which spec 7 does not currently allow for.
+
+Second, the mechanism seeds once and then diverges. No pin exists, no version, and no drift report. The documented route to an improved template is deletion of the local copy. Spec 7's [upstream awareness](07-distribution-and-federation.md#upstream-awareness) and change proposals are the machinery this lacks, which is mild confirmation that they earn their cost.
+
+### L.5 Onboarding ships the synthesized tier, and marks nothing
+
+Serena runs an **onboarding** pass the first time it meets a project. It reads the code and writes what it learned into memories. That is [Q15](09-open-questions.md#q15--a-synthesized-content-tier)'s synthesized tier in production, and it is a sharper case than TrustGraph's.
+
+TrustGraph holds its extracted graph in a separate store, and mints a per-fact receipt with source, timestamp and derivation method (§J). Serena writes synthesized content into the same directory, with the same file shape, as memories that a human wrote by hand. No front matter separates them, because no front matter exists. Nothing records which agent wrote a memory, from which sources, or when its claims were last true. The documented control is a recommendation to review the output after onboarding.
+
+The result is a corpus in which a reader cannot tell authored content from synthesized content by inspection. Q15 already leans toward a tier that is permanently non-canonical and clearly marked. Serena shows what the alternative looks like at this scale of adoption, and that is the strongest available argument for the leaning.
+
+> **Recorded:** evidence added to [Q15](09-open-questions.md#q15--a-synthesized-content-tier).
+
+### L.6 A filter in the tool layer is advisory, and the documentation says so
+
+Two regex controls sit in Serena's configuration. `read_only_memory_patterns` marks memories that the agent must not change, and the agent is told which ones. `ignored_memory_patterns` removes memories from every memory tool.
+
+The second is the instructive one. The documentation states that an ignored memory is reachable through no memory tool. It then tells the reader to open that memory with the general `read_file` tool, on the raw path. The filter sits in the tool surface. The bytes sit in the repository. Serena's security page states the same limit about a different feature. The trust gate is "a functionality boundary, not a containment boundary".
+
+[Q17](09-open-questions.md#access-control-is-a-property-of-the-serving-boundary) already places enforcement at the serving boundary rather than at the authoring layer. Here that position is confirmed by counterexample. A control that filters one reading path, while the bytes stay readable along another, is a convenience. `read_only_memory_patterns` is the honest half of the pair, because it constrains a cooperative agent and claims nothing beyond that.
+
+> **Recorded:** evidence added to [Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer).
+
+### L.7 Two smaller things, and a gap in the evaluation
+
+**A rule for what not to record.** The convention document sets an add threshold. It keeps stable, non-obvious project conventions that prevent expensive rediscovery. It then refuses quick-read facts, generic framework knowledge, one-off task notes, volatile line-level detail, and behavior that is likely to change soon. [Spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) argues that cheap capture is what saves a corpus. This is the other half of that argument. Once capture is cheap, over-capture becomes the failure mode, and something has to say what to leave out. Headwater's kinds and shelves say where a document belongs. Nothing yet says that a fact is too volatile to record at all.
+
+**A voice regime for a machine reader.** The same document sets a style: "Dense agent notes, not prose docs". It asks for invariants and terse bullets, and it refuses rationale or examples unless they prevent a likely mistake. That is a voice regime whose primary reader is an agent. It is close to the opposite of the regimes spec 3 describes for human-facing kinds. The regime abstraction holds under the change of reader, which is the useful result. Headwater has not yet named a regime of this class.
+
+**The closest part is the unmeasured part.** Serena publishes a real evaluation, with a methodology, a fixed prompt, five agent and model combinations, and a classification that admits neutral and negative results. It evaluates the code tools. It does not evaluate the memory system, which is the part that resembles Headwater. Reported user feedback is what carries that layer. The method is also agent-as-evaluator, where [spec 5](05-ai-integration.md#measuring-whether-any-of-this-works) grades from the tool-call transcript instead. Above all, no counterfactual run compares agent behavior with the memories present against the same behavior without them. Spec 5 names the counterfactual as the category that matters most, and the one most often skipped. The most widely adopted example of this pattern skips it.
+
 ---
 
 ## Summary
@@ -327,3 +420,4 @@ Two declarations that currently have no operational story acquire one here. `cre
 | LeanCTX / OKF | Same substrate, opposite arrow. No taxonomy to collide with | Applied — declaration boundary (spec 4). OKF export → **Q13**. Presentation gap → **Q16** |
 | TrustGraph | Same pitch, opposite mechanism — extracts the graph we declare | Standards-stack counterweight → **Q13**. Provenance precedent → **Q15**. Ingestion integration candidate |
 | Modern Requirements / Azure DevOps | First inbound candidate — the arrow reverses | Model already fits. Import semantics open — **Q19** |
+| Serena | Fourth arrival at the substrate. The first to disagree with us | Applied — third anti-retrieval argument (spec 5). Scent placement → **Q20**. Evidence → **Q15**, **Q17** |

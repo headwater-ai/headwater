@@ -214,6 +214,8 @@ It fits neither existing tier, and the difference is not cosmetic. A projection 
 
 The tier is not hypothetical. [TrustGraph](11-adjacent-work.md#j-trustgraph--the-same-pitch-the-opposite-mechanism) runs an entire platform on it. Its per-fact receipts — source document, ingestion timestamp, extraction method — are a working design for the provenance record that this tier needs. What it lacks is exactly what this question adds: a rule that prevents anyone from treating the synthesis as canonical.
 
+[Serena](11-adjacent-work.md#l5-onboarding-ships-the-synthesized-tier-and-marks-nothing) shows the cost of no rule at all, and it is the sharper case of the two. Its onboarding pass writes agent-synthesized knowledge into the same directory, in the same file shape, as memories that a human wrote. Nothing marks the difference, and no field records the source or the date. A reader cannot separate the two tiers by inspection, so the corpus quietly loses the distinction that this question exists to keep. That is the outcome a refusal to model the tier produces, observed in a widely adopted tool rather than predicted.
+
 [Q19](#q19--inbound-integration-an-external-system-of-record) brings the neighboring case that sharpens the definition: imported requirement text. That text *is* regenerable, against a pinned upstream snapshot, so it is not synthesized. The boundary that this question draws is a verification method, not an author. The answer has to place both cases.
 
 Open: whether Headwater admits synthesized content at all. If it does, more questions follow. Does it need its own staleness rules? How does the system make sure that it can never become canonical for anything? Does a human acceptance step promote it to authored, or does it stay permanently second-class?
@@ -281,6 +283,8 @@ There is a coherent version of the proposal. Name it, so that no one adopts it b
 
 Enforcement belongs where a reader is *served*, not where an author writes. Per-repository Markdown stays canonical and carries the host platform's repository permissions. The federated graph is a filtered view, and the filtering happens there.
 
+[Serena](11-adjacent-work.md#l6-a-filter-in-the-tool-layer-is-advisory-and-the-documentation-says-so) demonstrates the failure of the other placement. Its `ignored_memory_patterns` hides a memory from every memory tool, and its own documentation then explains how to read the file with a general file tool. The filter sits in the tool surface while the bytes sit in the repository, so it controls one reading path and no other. Serena states the limit plainly for a related feature: the trust gate is "a functionality boundary, not a containment boundary". Any filter that Headwater places short of the serving boundary inherits the same weakness.
+
 This puts the control exactly where the need is and nowhere else. When someone who can clone a repository reads that repository, that is intended behavior. Every case that motivates the question — contractor, partner, adjacent business unit, "show the topology but not the internals" — is cross-corpus, which is the federated layer by definition. Sensitive material lives in a tightly-permissioned repository and is federated in. The graph serves filtered views over the union.
 
 The declaration surface already exists: `confidentiality` is a named facet ([spec 1](01-conceptual-model.md)). This promotes it from descriptive metadata to an enforced security control. That is a small schema change that carries a large change in obligation. A mislabelled facet is no longer a lint — it becomes a leak.
@@ -343,3 +347,17 @@ Open, in order of consequence, least first:
 - **The tier question.** Imported text is regenerable against the pinned snapshot, so it fails the [Q15](#q15--a-synthesized-content-tier) definition of synthesized. But its source is ungoverned, so it is not a projection in the spec-6 sense either. Whether that is a fourth tier or a qualifier on `generated` decides what its provenance record carries. The per-fact receipts of TrustGraph (source, timestamp, method) fit as they are. The addition is the snapshot pin.
 
 **Leaning:** reference-first. Anchors and imported edges ship first — they change no content and are cheap to audit. Imported requirement text arrives later, clearly marked and never canonical, under whatever rule Q15 lands on. The snapshot pin goes into its provenance. Imported edges start advisory and walk the same evidence-driven promotion path as every other control. And the importer is an adapter in the sense that [spec 6](06-engine-architecture.md#ci-adapters) already uses: thin, swappable, and with no RM vendor privileged in the core.
+
+## Q20 — Where scent lives
+
+**Blocks:** relation storage ([Q4](#q4--relation-storage)), because a cue attached to an edge needs somewhere to sit.
+
+[Spec 5](05-ai-integration.md#scent-is-the-thing-being-engineered) puts the corpus's scent in the `summary` facet of each document, and calls that facet the entire scent surface. Serena's shipped convention ([spec 11 §L.3](11-adjacent-work.md#l3-where-scent-lives--the-first-substantive-disagreement)) states the opposite rule. A memory must not say when to read it, and the memory that refers to it carries that guidance instead.
+
+Foraging theory supports the node for one moment and the edge for the other, because scent is the proximal cue at the point of decision. A routing result has no referring edge, so the cue has to sit on the node. A traversal has one, and there the referring text is proximal while the target's summary is distal.
+
+Headwater serves both moments. Routing answers a task description, and relations answer a reader who already holds a document. So one placement covers half of the surface, and spec 5 currently claims it covers all of it.
+
+Open: whether a relation instance may carry its own cue. If it may, three questions follow. Where does the cue live, given that Q4 has not settled how relations are stored? Who writes it, given that every reference then gains an authoring cost? How does anything grade it, given that spec 5 grades distinctiveness by comparison of siblings in one place, and edge cues have no such place?
+
+**Leaning:** an optional cue on a relation, with the summary still required. Absence falls back to the target's summary, so current behavior stands and no corpus regresses. Grade the cue only where a probe records a failed traversal. Do not make it mandatory. A required prose field on every edge is exactly the bookkeeping burden that [spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) warns kills a corpus.
