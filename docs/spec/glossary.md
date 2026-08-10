@@ -119,7 +119,7 @@ The surface ties that bind the corpus: links that land, relations that reciproca
 
 ### Compatibility dimensions
 
-The five measures that decide a version bump: classification, instance validity, consequence, projection, and identifier. The set belongs to the engine, and no taxonomy may vary it. See [spec 2](02-taxonomy-model.md#versioning-by-measured-compatibility).
+The six measures that decide a version bump: classification, instance validity, consequence, projection, identifier, and addressability. The first five measure against a corpus and the last against overlays. The set belongs to the engine, and no taxonomy may vary it. See [spec 2](02-taxonomy-model.md#versioning-by-measured-compatibility).
 
 ### Confidence gate
 

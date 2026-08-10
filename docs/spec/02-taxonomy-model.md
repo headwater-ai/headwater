@@ -650,7 +650,7 @@ A taxonomy is a released, semantically versioned package — but the version num
 
 The naive model (additive changes are minor, everything else is major) is straightforwardly wrong for a schema that carries semantics. To add an *optional* facet is additive, and it can still change which documents a projection includes. To widen an enum is additive, and a completeness check that passed can then fail. Structural change and semantic consequence are not the same thing, and only one of them matters to a consumer.
 
-So the engine evaluates compatibility along five dimensions, against a real corpus. The dimension set is the engine's, fixed and identical for every taxonomy. An earlier draft made it a `compatibility` declaration, which every taxonomy would state identically — and a declaration with one legal value declares nothing:
+So the engine evaluates compatibility along six dimensions. Five of them measure against a real corpus, and the sixth measures against real overlays. The dimension set is the engine's, fixed and identical for every taxonomy. An earlier draft made it a `compatibility` declaration, which every taxonomy would state identically — and a declaration with one legal value declares nothing:
 
 | Dimension | Question |
 |---|---|
@@ -659,12 +659,17 @@ So the engine evaluates compatibility along five dimensions, against a real corp
 | `consequence` | Does every check that passed still pass, and every check that failed still fail? |
 | `projection` | Does every projection produce identical output? |
 | `identifier` | Does every identifier still resolve to the same document? |
+| `addressability` | Does every path that an overlay can address still exist and mean the same thing? |
 
-`headwater taxonomy diff --to <version>` runs all five and reports per dimension. The required version bump is a *consequence* of the result: any dimension broken forces a major version.
+`headwater taxonomy diff --to <version>` runs all six and reports per dimension. The required version bump is a *consequence* of the result: any dimension broken forces a major version.
+
+**`addressability` is the one dimension whose subject is the schema.** The other five ask what happened to a corpus. This one asks what happened to the surface that an overlay addresses. A rename can leave every document classified, every check unchanged, and every projection identical. It still breaks every consumer overlay that addressed the old path, and all five corpus dimensions report compatible.
+
+[Spec 7](07-distribution-and-federation.md#upgrading) already reports invalidated overlay entries to the consumer, so half of this existed. What was missing is the half that acts. A report does not force a version bump, and a publisher that measures corpora alone never learns that it broke anyone. Promotion to a dimension fixes both ends. The publisher keeps reference *overlays* beside its reference corpora, and they are cheap to keep.
 
 The publisher and the consumer play different roles here, and both are necessary:
 
-- The **publisher** measures against its own reference corpora and publishes the result as a compatibility claim attached to the release. That is the best that it can do. It does not have anyone else's documents.
+- The **publisher** measures against its own reference corpora and reference overlays, and publishes the result as a compatibility claim attached to the release. That is the best that it can do. It does not have anyone else's documents, and it cannot enumerate every path that a consumer addresses.
 - The **consumer** measures against its own corpus before an upgrade. This *verifies* the publisher's claim rather than trusts it. A claim that fails locally is exactly the interesting case. It means that the consumer's corpus uses something that the publisher's reference corpora do not.
 
 A major version ships a **migration payload**: machine-readable steps that declare what moved, what was renamed, and what must be re-stated. The steps are split into what the engine can apply mechanically (`headwater migrate --apply`) and what needs human or agent judgment (emitted as a task list with the affected documents attached). To adopt a new major version without a run of its migration is a hard failure, not a warning. The lock file records the taxonomy version and the measured compatibility result that each corpus was validated against.
