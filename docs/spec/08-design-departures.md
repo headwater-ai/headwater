@@ -9,7 +9,7 @@ These ideas work, and we adopt them here on their merits:
 | Idea | Why it earns its place |
 |---|---|
 | Directory placement as the primary classification axis | It is the signal that a reader sees first, and the one that a glob can act on |
-| Present-state declarative voice on specifications and standards | The rule with the widest effect. Its precision is **unmeasured**, and [Q5](09-open-questions.md#q5--voice-checking-depth) names the run |
+| Present-state declarative voice on specifications and standards | The rule with the widest effect. Its precision is **unmeasured**, and [spec 13](13-open-obligations.md#unmeasured-claims) names the run |
 | A `last_verified` assertion distinct from the edit date | Git knows when a file changed. Only a human knows when it was last true |
 | Decision records with retained lineage and reciprocal succession links | Institutional memory at the lowest possible cost |
 | Refusal to draft rationale without external evidence | Post-hoc justification is worse than an admitted gap |

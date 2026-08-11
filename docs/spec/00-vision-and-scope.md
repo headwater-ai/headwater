@@ -47,7 +47,7 @@ Everything in this specification follows from that premise.
 | An LLM product | The engine is deterministic. LLMs are consumers of the corpus, and one optional authoring surface | — |
 | A general knowledge base | The corpus documents a system, for people who change that system | — |
 | An access-control system | We generate a filtered artifact from a declared rule. We never authenticate a reader, hold a session, issue a credential, or decide a request | The permissions of the hosting platform, on the repository that holds the artifact |
-| A registry or directory of corpora | Discovery that depends on one service staying online contradicts the offline run below. Registration is publication into a channel that already has an obliged reader | The channel that already distributes the taxonomy package, and a solution corpus where somebody owns the list ([Q16](09-open-questions.md#q16--public-presence)) |
+| A registry or directory of corpora | Discovery that depends on one service staying online contradicts the offline run below. Registration is publication into a channel that already has an obliged reader | The channel that already distributes the taxonomy package, and a solution corpus where somebody owns the list ([Q16](09-decisions.md#q16--public-presence)) |
 
 ## Design principles
 

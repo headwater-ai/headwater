@@ -33,10 +33,13 @@ Headwater's premise: **make the structure of the corpus a machine-readable contr
 | 6 | [Engine architecture](docs/spec/06-engine-architecture.md) | One parse, one graph, pluggable checks; CLI and library shape |
 | 7 | [Distribution and federation](docs/spec/07-distribution-and-federation.md) | Publishing a taxonomy, consuming one, overlays, pins, drift |
 | 8 | [Design departures](docs/spec/08-design-departures.md) | The recurrent failure modes of governance tooling, and what we do instead |
-| 9 | [Open questions](docs/spec/09-open-questions.md) | Every decision the design phase deferred, and the argument that settled it. 20 of 21 are closed |
+| 9 | [The decision register](docs/spec/09-decisions.md) | Every decision the design phase deferred, and the argument that settled it. All 21 are closed |
 | 10 | [Theoretical foundations](docs/spec/10-theoretical-foundations.md) | The research the design rests on, and the 20 changes it forced — all applied |
 | 11 | [Adjacent work](docs/spec/11-adjacent-work.md) | Existing tools and patterns that overlap — what to adopt, and what we already specified twice |
 | 12 | [The check layer](docs/spec/12-check-layer.md) | Where checks come from, how scope makes caching and change-scoping sound |
+| 13 | [Open obligations](docs/spec/13-open-obligations.md) | What the project still owes: the unmeasured claims, the work that waits on a first adopter |
+
+[`09-open-questions.md`](docs/spec/09-open-questions.md) stays at its old path as a redirect map, because the evaluations cite its anchors and this project does not rewrite them.
 
 The [glossary](docs/spec/glossary.md) lists every named concept in one place, with a link to the section that defines it. It also marks the eight terms that an author needs to file a document, which is the whole of the vocabulary that most readers meet.
 
@@ -54,4 +57,4 @@ The prose under `docs/` is licensed under Creative Commons Attribution 4.0 Inter
 
 Contributions arrive under the [Developer Certificate of Origin](https://developercertificate.org/), with a `Signed-off-by` line and no contributor license agreement. [`CONTRIBUTING.md`](CONTRIBUTING.md) states why. [`SECURITY.md`](SECURITY.md) carries the disclosure process, and [`TRADEMARKS.md`](TRADEMARKS.md) states the trademark position, which is that there is no registered mark.
 
-[Q11](docs/spec/09-open-questions.md#q11--license-and-distribution-posture) records the reasoning, and the [first-contact evaluation](docs/evaluations/first-contact.md) carries the full argument. The design narrowed the field and did not choose within it: internal-only and source-available terms are refused by rulings the specification already made, and network copyleft is refused for the library that spec 6 requires. The choice among the terms that remained belongs to the owner, who made it on 2026-08-11.
+[Q11](docs/spec/09-decisions.md#q11--license-and-distribution-posture) records the reasoning, and the [first-contact evaluation](docs/evaluations/first-contact.md) carries the full argument. The design narrowed the field and did not choose within it: internal-only and source-available terms are refused by rulings the specification already made, and network copyleft is refused for the library that spec 6 requires. The choice among the terms that remained belongs to the owner, who made it on 2026-08-11.

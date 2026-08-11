@@ -170,7 +170,7 @@ This is the theoretical justification for spec 5's pointers-with-summaries desig
 
 The computational descendants sharpen it further, and they decide where a cue lives. SNIF-ACT and the Bloodhound line model a link choice as a utility computed over **the links available at the current position**. They model patch leaving as that utility falling below what another patch offers. Scent is therefore never an absolute property of a target. It is a comparison over the options at the point of decision, which means that every scent measure owes a comparison set. For a summary, that set is the documents a reader is choosing between. For a cue on a relation, it is the other links that the same document offers.
 
-> **Change:** treat summary quality as an assurance concern in its own right rather than a front-matter formality. Frame the routing confidence gate in scent terms. The engine stays silent when scent is weak, because a cue that misleads costs more than an absent one. Probe categories map directly onto foraging outcomes. (As first applied, spec 5 called the `summary` facet the entire scent surface. [Q20](09-open-questions.md#q20--where-scent-lives) later found that the theory places a second cue on the referring edge, and that each measure states the set it compares against.)
+> **Change:** treat summary quality as an assurance concern in its own right rather than a front-matter formality. Frame the routing confidence gate in scent terms. The engine stays silent when scent is weak, because a cue that misleads costs more than an absent one. Probe categories map directly onto foraging outcomes. (As first applied, spec 5 called the `summary` facet the entire scent surface. [Q20](09-decisions.md#q20--where-scent-lives) later found that the theory places a second cue on the referring edge, and that each measure states the set it compares against.)
 
 ### E.2 Cognitive dimensions — how to evaluate the schema language
 
@@ -262,7 +262,7 @@ The transfer is precise and it is favorable. Detection of this anomaly needs a r
 | 20 | Add `reconstructed` as a third provenance value | 3 | Parnas & Clements | **applied** |
 | 21 | State that validity is not preserved under merge. Report the read set | 4, 12 | Berenson et al., Cahill et al. | **applied** |
 
-All are applied. The first twenty came from one sweep of the literature, and change 21 arrived later with [Q21](09-open-questions.md#q21--terminological-succession-and-validity-under-merge). The five structural changes (2, 4, 12, 13, 15) landed first, because they altered the schema itself. Change 3 came with them, since change 4's precedence semantics needed families to exist first. The remaining fourteen were additive and landed against the schema as it then stood.
+All are applied. The first twenty came from one sweep of the literature, and change 21 arrived later with [Q21](09-decisions.md#q21--terminological-succession-and-validity-under-merge). The five structural changes (2, 4, 12, 13, 15) landed first, because they altered the schema itself. Change 3 came with them, since change 4's precedence semantics needed families to exist first. The remaining fourteen were additive and landed against the schema as it then stood.
 
 Where they ended up:
 
@@ -275,12 +275,12 @@ Where they ended up:
 | [5 — AI integration](05-ai-integration.md) | Purpose-first routing, satellite-first pruning, and scent measurement |
 | [6 — Engine](06-engine-architecture.md) | The `validate` / `audit` split and the enlarged check inventory |
 | [7 — Distribution](07-distribution-and-federation.md) | The invariant core, measured compatibility, and federation by mapping |
-| [9 — Open questions](09-open-questions.md) | A decision procedure for Q2, and the cross-taxonomy half of Q9 closed |
+| [9 — The decision register](09-decisions.md) | A decision procedure for Q2, and the cross-taxonomy half of Q9 closed |
 | [12 — Check layer](12-check-layer.md) | The read set of a run, and the merge treated as an ordinary change |
 
 ### What the theory did not settle
 
-The application of every change does not mean that the design is finished. Three things that the literature sharpened but could not decide, all still open in [spec 9](09-open-questions.md):
+The application of every change does not mean that the design is finished. Three things that the literature sharpened but could not decide, all still open in [spec 13](13-open-obligations.md):
 
 - **Whether the assisted fraction actually rises.** The strongest claim in the design — that agent-assisted authoring answers the capture-cost objection that killed every prior rationale system — is now falsifiable, measured, and untested. Nothing here proves it.
 - **Whether the taxonomy language survives contact with authors.** The [walkthrough](../evaluations/schema-format-walkthrough.md) has run, and it kept the format that the rest of the spec is written in. What it could not do is meet a real author. It scored notations against scenarios, and a scenario is not an adopter.

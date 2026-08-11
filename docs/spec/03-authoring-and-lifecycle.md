@@ -48,7 +48,7 @@ Rules that the engine enforces from the declaration alone:
 
 Staleness is **detective, never blocking**. A block on staleness teaches authors to bump the date, and that changes the most valuable signal of the corpus into noise.
 
-**Content with the `asserted` warrant carries no freshness value, and the engine never reports it as stale.** `last_verified` records that a human confirmed a document, and nobody confirmed this one. It cannot acquire the date without becoming `accepted`, which is what promotion is. What the corpus reports instead is drift: the sources changed after the date on which the content was asserted. The remedy is to produce the content again or to delete it, and there is no date to bump ([Q15](09-open-questions.md#q15--a-synthesized-content-tier)).
+**Content with the `asserted` warrant carries no freshness value, and the engine never reports it as stale.** `last_verified` records that a human confirmed a document, and nobody confirmed this one. It cannot acquire the date without becoming `accepted`, which is what promotion is. What the corpus reports instead is drift: the sources changed after the date on which the content was asserted. The remedy is to produce the content again or to delete it, and there is no date to bump ([Q15](09-decisions.md#q15--a-synthesized-content-tier)).
 
 ## Voice
 
@@ -115,7 +115,7 @@ Where none exists, the earlier design offered two outcomes: evidenced, or a regi
 
 The semantic judgment — *is this evidence actually about this decision?* — stays with the author and the agent stop rules ([spec 5](05-ai-integration.md)). The mechanical parts are these: the facet is present and valid, pointers resolve, `reconstructed` contains its basis, and the gap register accounts for every `unevidenced` document.
 
-**Two rulings about which pointers count** ([Q15](09-open-questions.md#q15--a-synthesized-content-tier), [Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record)). A pointer to a document with the `asserted` [warrant](01-conceptual-model.md#warrant) does not support `evidenced`, because such a document is neither external nor auditable. A fabricated *why* with a file name is the failure that this table exists to prevent. A pointer that an importer created does support `evidenced`. A work item in a system of record is an external auditable artifact, and the pointer resolves offline against a committed snapshot.
+**Two rulings about which pointers count** ([Q15](09-decisions.md#q15--a-synthesized-content-tier), [Q19](09-decisions.md#q19--inbound-integration-an-external-system-of-record)). A pointer to a document with the `asserted` [warrant](01-conceptual-model.md#warrant) does not support `evidenced`, because such a document is neither external nor auditable. A fabricated *why* with a file name is the failure that this table exists to prevent. A pointer that an importer created does support `evidenced`. A work item in a system of record is an external auditable artifact, and the pointer resolves offline against a committed snapshot.
 
 The value is named `unevidenced`, and not `gap`, because `gap` is already the [disposition](04-assurance-model.md#every-obligation-has-exactly-one-disposition) of an obligation that no control discharges. One word for two mechanisms hid a real question, and this document does not settle it. Is the gap register above the same artifact as the obligation gap register, or a second one that shares its name?
 

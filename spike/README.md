@@ -1,7 +1,7 @@
 # Q1 risk-retirement spike
 
 Not an engine, and not the start of one. This is the four-item spike that
-[Q1](../docs/spec/09-open-questions.md#q1--implementation-language) requires before the Rust decision stands, built far enough that each item passes or fails. The results are in [the results document](../docs/evaluations/language-spike-results.md), and the argument they test is in [the evaluation](../docs/evaluations/language-choice.md).
+[Q1](../docs/spec/09-decisions.md#q1--implementation-language) requires before the Rust decision stands, built far enough that each item passes or fails. The results are in [the results document](../docs/evaluations/language-spike-results.md), and the argument they test is in [the evaluation](../docs/evaluations/language-choice.md).
 
 Run everything:
 

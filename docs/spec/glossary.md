@@ -679,7 +679,7 @@ What a filtered [export profile](#export-profile) tells a reader about what it w
 
 ### Transcription
 
-A [projection](#projection) that copies text out of a [snapshot pin](#snapshot-pin), byte for byte. Its [warrant](#warrant) is `transcribed`, which W3C PROV calls `prov:Quotation`. Truth stays upstream, and `generate --check` proves the copy. See [Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record).
+A [projection](#projection) that copies text out of a [snapshot pin](#snapshot-pin), byte for byte. Its [warrant](#warrant) is `transcribed`, which W3C PROV calls `prov:Quotation`. Truth stays upstream, and `generate --check` proves the copy. See [Q19](09-decisions.md#q19--inbound-integration-an-external-system-of-record).
 
 ### Unevidenced
 
@@ -770,7 +770,7 @@ Several terms are not ours. [Spec 10](10-theoretical-foundations.md) records the
 | [Confluence](#confluence), overlay operations | Delta-oriented programming (Schaefer et al.) | Order independence of overlays, checked statically before application |
 | [Capture cost](#capture-cost) | IBIS, gIBIS, QOC, and the traceability literature | The failure that killed fifty years of design-rationale tools, now a tracked metric |
 | RFC 2119 | IETF | The normative keyword set that voice checking assumes by default |
-| LinkML, SHACL | The [evaluations](../evaluations/) | Export targets for Shape and Graph checks. Emitted, never authored, and each one waits for a named consumer ([Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate)) |
+| LinkML, SHACL | The [evaluations](../evaluations/) | Export targets for Shape and Graph checks. Emitted, never authored, and each one waits for a named consumer ([spec 13](13-open-obligations.md#what-waits-on-a-first-adopter)) |
 | SARIF | OASIS | One of the finding output formats |
 | MCP | Model Context Protocol | The agent-facing surface of the engine library |
 

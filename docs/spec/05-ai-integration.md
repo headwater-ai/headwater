@@ -25,7 +25,7 @@ Routing is **confidence-gated and fails open**: below the threshold it says noth
 
 Silence for weak scent and silence for a withheld document are different facts, and routing keeps them apart. Where a route runs over a filtered [export profile](06-engine-architecture.md#an-export-profile-carries-a-filter), a document that the filter removed is reported at the profile's declared tombstone grain. It never falls under the confidence gate, because nothing about it is uncertain.
 
-A third case joins those two. A pointer to a document with the `asserted` [warrant](01-conceptual-model.md#warrant) states that warrant beside the summary. Nobody accepted the document, and an agent that follows the pointer has to know that before it reads. To offer such a pointer silently is the failure that [Q15](09-open-questions.md#q15--a-synthesized-content-tier) exists to prevent, reached through our own routing surface.
+A third case joins those two. A pointer to a document with the `asserted` [warrant](01-conceptual-model.md#warrant) states that warrant beside the summary. Nobody accepted the document, and an agent that follows the pointer has to know that before it reads. To offer such a pointer silently is the failure that [Q15](09-decisions.md#q15--a-synthesized-content-tier) exists to prevent, reached through our own routing surface.
 
 #### Scent is the thing being engineered
 
@@ -59,7 +59,7 @@ The confidence gate is a scent threshold. The engine stays silent when the stron
 
 #### What a cue may do, and where it is served
 
-The cue is optional and the summary stays required, so a corpus that declares no cue behaves as it does today ([Q20](09-open-questions.md#q20--where-scent-lives)). Five rules govern it, and four of the five follow from rulings that already exist.
+The cue is optional and the summary stays required, so a corpus that declares no cue behaves as it does today ([Q20](09-decisions.md#q20--where-scent-lives)). Five rules govern it, and four of the five follow from rulings that already exist.
 
 - **`related` and `explain` serve the cue where one exists, and the target's summary otherwise.** Routing never serves a cue, because a routing result has no referring edge.
 - **A cue states the warrant of its target.** A cue that points at a document with the `asserted` [warrant](01-conceptual-model.md#warrant) says so beside the cue, for the reason that a pointer does.
@@ -99,7 +99,7 @@ Beyond files, there are three richer surfaces:
 
 #### What the server may do, and the axis that decides it
 
-"Read-only or not" is the wrong question, and [Q7](09-open-questions.md#q7--scope-of-the-mcp-surface) asked it for a while. `headwater check --fix` writes files today, in a human's working tree, and the result lands in a diff that the human commits. A hosted server that commits to a branch produces the same bytes with no review at any point. The axis is **whose review the result passes through**, not whether bytes move.
+"Read-only or not" is the wrong question, and [Q7](09-decisions.md#q7--scope-of-the-mcp-surface) asked it for a while. `headwater check --fix` writes files today, in a human's working tree, and the result lands in a diff that the human commits. A hosted server that commits to a branch produces the same bytes with no review at any point. The axis is **whose review the result passes through**, not whether bytes move.
 
 | Class | Tools | Ships | Why |
 |---|---|---|---|
@@ -107,13 +107,13 @@ Beyond files, there are three richer surfaces:
 | **Working-tree write** | `new`, `fix` | first release, and off by default per server | The human reviews at commit, and the [fixability bar](12-check-layer.md#fixability) forbids a judgment-bearing patch |
 | **Landed write** | a commit, a push, a merge, a server that writes to a repository | never | Acceptance is a human act ([spec 3](03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed)), and no forge is privileged in the core |
 
-The third row is a refusal and not a deferral. A server-side commit produces a document with no `accepted_by`, or with an invented one. The provenance model forbids it before any judgment about trust arrives. Headwater instead emits what a change proposal needs: findings, patches, and a task list. An adapter opens the proposal, with the credential that its operator granted it. That is the same boundary that keeps the engine out of the merge-queue business ([Q21](09-open-questions.md#q21--terminological-succession-and-validity-under-merge)).
+The third row is a refusal and not a deferral. A server-side commit produces a document with no `accepted_by`, or with an invented one. The provenance model forbids it before any judgment about trust arrives. Headwater instead emits what a change proposal needs: findings, patches, and a task list. An adapter opens the proposal, with the credential that its operator granted it. That is the same boundary that keeps the engine out of the merge-queue business ([Q21](09-decisions.md#q21--terminological-succession-and-validity-under-merge)).
 
 Working-tree writes stay off by default, because a client may connect to a checkout that the user did not intend to change. The opt-in is per server.
 
 **The annotation is not the enforcement.** The protocol lets a server declare that a tool only reads. It also states that a client must not treat that declaration from an untrusted server as a guarantee. Headwater annotates its tools correctly and relies on something else. Where a class of tool is off, the server does not register it, so no handler exists to call. A property that a caller reads off a tool list is a hint. A property with no code path behind it is a guarantee.
 
-**A write tool is a disclosure channel, and that is why the third row is a refusal rather than a preference.** The published attacks on this protocol put attacker text into a model's context at discovery time, before any tool runs. A confirmation prompt at each call therefore never sees them. What the attacks then need is an actuator. The observed case against a widely deployed server used a write tool as the exit. The agent read private content, then published it by opening a proposal on a public repository. A server that cannot land a write lends an injected instruction nothing. That argument is about [Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer) as much as about this entry.
+**A write tool is a disclosure channel, and that is why the third row is a refusal rather than a preference.** The published attacks on this protocol put attacker text into a model's context at discovery time, before any tool runs. A confirmation prompt at each call therefore never sees them. What the attacks then need is an actuator. The observed case against a widely deployed server used a write tool as the exit. The agent read private content, then published it by opening a proposal on a public repository. A server that cannot land a write lends an injected instruction nothing. That argument is about [Q17](09-decisions.md#q17--governed-access-and-the-solution-layer) as much as about this entry.
 
 **The server applies no filter to a corpus that its reader already holds.** It runs in-process against a checkout, so the reader has every byte. A filter there would control one reading path while the bytes stay readable along another. [Spec 11 §L.6](11-adjacent-work.md#l6-a-filter-in-the-tool-layer-is-advisory-and-the-documentation-says-so) records that failure in a shipped tool. A server that serves a reader who holds no checkout serves exactly one declared [export profile](06-engine-architecture.md#an-export-profile-carries-a-filter) and never mixes the two sources.
 
@@ -165,7 +165,7 @@ This is cheap, and it survives refactoring better than a link in a commit messag
 
 Where sources conflict, the agent cites **both** and flags the conflict ([spec 2](02-taxonomy-model.md#disagreement-is-adjudicated-not-ranked)). If an agent resolves a contradiction silently, it destroys the evidence that one existed.
 
-Where a human already settled the conflict, the agent cites the **adjudication**. A settled disagreement is a decision that `overrides` the document whose effect it displaces, and derived reading precedence puts the successor first. So the agent follows a ruling that a named person made, rather than making the same ruling again with no record ([Q18](09-open-questions.md#q18--recording-adjudicated-disagreements)).
+Where a human already settled the conflict, the agent cites the **adjudication**. A settled disagreement is a decision that `overrides` the document whose effect it displaces, and derived reading precedence puts the successor first. So the agent follows a ruling that a named person made, rather than making the same ruling again with no record ([Q18](09-decisions.md#q18--recording-adjudicated-disagreements)).
 
 ## The stop rules
 
@@ -199,7 +199,7 @@ The grader constraint below needs something to bind, so the specification says w
 
 **A question whose answer needs a rubric is not a probe.** It is a coherence question, and the [sweep](04-assurance-model.md#discharging-coherence-obligations-the-assisted-sweep) owns those. The sweep reports findings rather than verdicts, and it is marked as agent-provenanced.
 
-That rule is what makes the grader constraint a property rather than a promise. A predicate over an event log needs no model, so the grader holds none. This is the shape that [Q7](09-open-questions.md#q7--scope-of-the-mcp-surface) used for the write path. A guarantee is a code path that does not exist, and not a declaration.
+That rule is what makes the grader constraint a property rather than a promise. A predicate over an event log needs no model, so the grader holds none. This is the shape that [Q7](09-decisions.md#q7--scope-of-the-mcp-surface) used for the write path. A guarantee is a code path that does not exist, and not a declaration.
 
 **A self-report and a produced output are different things.** A self-report is the agent's account of its own process, and no probe accepts one. A produced output is the artifact that the task asked for, and a declared expectation may read it. Without that distinction, Sufficiency has no instrument at all.
 
@@ -227,7 +227,7 @@ Two constraints protect the instrument, and [spec 11 §M](11-adjacent-work.md#m-
 
 A run emits a **transcript**. It holds the ordered tool-call events with their arguments and result identities, the identifiers of every produced artifact, and the final closed-set answer. It also holds the **run identity**: the model with its served version, the corpus tree hash, and the taxonomy lock hash. The identity continues with the probe selection hash, the rotation seed, the harness version, the arm, and the time. The transcript holds no model prose. That omission is the enforcement, in the way that scope enforcement is the feature in [spec 12](12-check-layer.md#scope--the-declaration-everything-else-rests-on).
 
-A transcript is a committed snapshot that a `probe_run` anchor resolver reads. A probe run is an external system of record, and [Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record) built that machinery already. So nothing new arrives here, and the declaration count stays at eleven. The **probe result** is a document, generated from the transcript, the expectations and the grader version. It carries the `regenerated` [warrant](01-conceptual-model.md#warrant), and `generate --check` proves it.
+A transcript is a committed snapshot that a `probe_run` anchor resolver reads. A probe run is an external system of record, and [Q19](09-decisions.md#q19--inbound-integration-an-external-system-of-record) built that machinery already. So nothing new arrives here, and the declaration count stays at eleven. The **probe result** is a document, generated from the transcript, the expectations and the grader version. It carries the `regenerated` [warrant](01-conceptual-model.md#warrant), and `generate --check` proves it.
 
 The transcript is not optional, and the reason is the evidence rules. A result with no committed transcript has nothing inside the repository behind it, so its warrant is `asserted`. An asserted document discharges no evidence obligation ([spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)). The measurement layer would then produce content that the corpus refuses as evidence.
 
