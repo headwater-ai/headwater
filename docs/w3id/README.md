@@ -1,6 +1,6 @@
 # The `w3id.org/headwater` namespace
 
-[Q10](../spec/09-open-questions.md#q10--naming) fixes `https://w3id.org/headwater/` as the namespace that emitted artifacts carry. This directory holds the payload for the registration, and it is not part of the build.
+[Q10](../spec/09-open-questions.md#q10--naming) fixes `https://w3id.org/headwater/` as the namespace that emitted artifacts carry. The identifier is registered and it resolves. This directory holds the copy of record for what the service serves, and it is not part of the build.
 
 ## Why a permanent identifier and not the project domain
 
@@ -8,17 +8,16 @@ A namespace URI inside an emitted artifact is a promise about a name that outliv
 
 The precedent is direct. LinkML publishes its own metamodel at `https://w3id.org/linkml/`, and the [worked example](../evaluations/linkml-worked-example.md) already imports that namespace beside this one.
 
-## How to register it
+## The registration
 
-The service takes registrations as pull requests against [perma-id/w3id.org](https://github.com/perma-id/w3id.org). The fork and the branch already exist, and the branch holds a `headwater/` directory with the two files that the service wants.
+The service took the entry through [perma-id/w3id.org#6533](https://github.com/perma-id/w3id.org/pull/6533), which a maintainer merged on 2026-08-11. The registry now carries a `headwater/` directory that holds the same two files as this one.
 
-- Fork: [jameswbaxter/w3id.org](https://github.com/jameswbaxter/w3id.org), branch `headwater`
-- Open the pull request: [compare view](https://github.com/perma-id/w3id.org/compare/master...jameswbaxter:w3id.org:headwater)
+A request to `https://w3id.org/headwater/` answers 302 and sends the client to `https://headwater.tools/ns/`. A request that asks for `text/turtle` or `application/rdf+xml` goes to a `.ttl` file under the same path, and every other request goes to the documentation. No vocabulary is published yet, so a request for a `.ttl` answers 404 until an engine emits one.
 
-A maintainer reviews the request and merges it. The maintainers refuse identifiers that are too generic or that could cause confusion, and `headwater` is specific enough to pass that test. The copy of [`.htaccess`](.htaccess) here is the same file that the branch carries. Change both together, or the record here stops matching what the service serves.
+[`.htaccess`](.htaccess) here is the copy of record, and it matches the file that the registry serves byte for byte. A change to one that does not reach the other makes this directory a lie. To change the live rules, raise another pull request against the registry.
 
-## What has to exist first
+## What is still open
 
-The redirect target is `https://headwater.tools/ns/`. Serve something at that path before you open the pull request, because a registration that resolves to nothing gives the reviewer no way to check the request.
+The redirects are temporary (302). Change them to permanent (301) once the web address is settled, which lets clients cache the resolution. That change needs a pull request against the registry and a matching edit here.
 
-The rules send a request for `text/turtle` or `application/rdf+xml` to a `.ttl` file, and every other request to the documentation. The redirects are temporary (302) until the site settles. Change them to permanent (301) after that, which lets clients cache the resolution.
+The web address is an ordinary domain and the identifier is not. Moving the site later means one edit to the registry entry, and it reaches no artifact that any adopter already holds. That property is the whole reason for the indirection.
