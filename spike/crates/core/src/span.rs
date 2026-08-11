@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Source positions, in file coordinates.
 //!
 //! Spec 12 requires that a finding anchor to a line, and that the parser retain

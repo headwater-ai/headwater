@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Headwater Q1 risk-retirement spike.
 //!
 //! Not an engine. Four claims from `docs/evaluations/language-choice.md`, built

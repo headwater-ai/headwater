@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Concrete checks, one per origin the spike exercises.
 //!
 //! These stand in for the generated shape and graph checks of spec 12. Each one

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Front-matter parsing that keeps a span for every key.
 //!
 //! **Item 1 of the spike.** The evaluation claimed that no convenient

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The probe that settled two questions the crate documentation answers wrongly
 //! or not at all. Kept because both findings are load-bearing for `frontmatter`
 //! and neither is guessable.

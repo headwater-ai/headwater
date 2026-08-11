@@ -1,0 +1,22 @@
+The prose in this directory is licensed under the Creative Commons
+Attribution 4.0 International License (CC BY 4.0).
+
+    Copyright 2026 The Headwater Authors
+
+    Deed:      https://creativecommons.org/licenses/by/4.0/
+    Legal code: https://creativecommons.org/licenses/by/4.0/legalcode
+    SPDX identifier: CC-BY-4.0
+
+You may share and adapt this material for any purpose, including
+commercially, provided that you give appropriate credit, link to the
+license, and indicate whether you made changes.
+
+This covers the prose: the specification under spec/, the evaluations
+under evaluations/, and the review records under reviews/. Code samples
+embedded in that prose are licensed under the Apache License, Version
+2.0, on the terms in the LICENSE file at the repository root, so that
+copying an example into your own project carries no attribution
+obligation.
+
+The name Headwater is not licensed by either license. See TRADEMARKS.md
+at the repository root.

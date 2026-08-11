@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Scoped views.
 //!
 //! **Item 2 of the spike.** Spec 12: "The view exposes *only* what the scope

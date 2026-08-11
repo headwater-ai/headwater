@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
 """Mechanical STE checks for the spec prose in this repo.
 
 This is step 4 of the ste-editor skill ("mechanical check on the result") turned

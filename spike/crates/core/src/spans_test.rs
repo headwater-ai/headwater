@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Item 1: does a source position survive from the YAML parser to a rendered
 //! finding, in *file* coordinates?
 //!

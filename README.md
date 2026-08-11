@@ -48,6 +48,10 @@ Start at 0 and 2 if you only read two. Spec 10 is where the design gets tested a
 
 ## License
 
-**There is no license yet, and that is a decision rather than an oversight.** Nothing in this repository is licensed for use, and until a `LICENSE` file appears, default copyright applies.
+Code is licensed under the Apache License, Version 2.0. See [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
 
-[Q11](docs/spec/09-open-questions.md#q11--license-and-distribution-posture) is the one entry in the register that is not closed. The design narrows the field — internal-only and source-available terms are refused by rulings the specification already made, and network copyleft is refused for the library that spec 6 requires. It does not pick one of the options that remain, because that choice belongs to the owner of the project. The entry records a recommendation, its reasoning, and the six artifacts that ratifying it would produce. The [first-contact evaluation](docs/evaluations/first-contact.md) carries the full argument.
+The prose under `docs/` is licensed under Creative Commons Attribution 4.0 International. See [`docs/LICENSE`](docs/LICENSE). Code samples inside that prose stay under Apache-2.0, so copying an example into your own project carries no attribution obligation.
+
+Contributions arrive under the [Developer Certificate of Origin](https://developercertificate.org/), with a `Signed-off-by` line and no contributor license agreement. [`CONTRIBUTING.md`](CONTRIBUTING.md) states why. [`SECURITY.md`](SECURITY.md) carries the disclosure process, and [`TRADEMARKS.md`](TRADEMARKS.md) states the trademark position, which is that there is no registered mark.
+
+[Q11](docs/spec/09-open-questions.md#q11--license-and-distribution-posture) records the reasoning, and the [first-contact evaluation](docs/evaluations/first-contact.md) carries the full argument. The design narrowed the field and did not choose within it: internal-only and source-available terms are refused by rulings the specification already made, and network copyleft is refused for the library that spec 6 requires. The choice among the terms that remained belongs to the owner, who made it on 2026-08-11.

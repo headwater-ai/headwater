@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
 """Self-test for ste-lint. Run: python3 tools/test_ste_lint.py
 
 No test framework: this must run anywhere the pre-commit hook runs.

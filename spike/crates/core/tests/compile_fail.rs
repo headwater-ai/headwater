@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! **Item 2 of the spike**, and the one that can falsify the Q1 decision.
 //!
 //! The claim under test, from `docs/evaluations/language-choice.md`:
