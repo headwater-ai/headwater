@@ -11,7 +11,7 @@ The two are not alternatives. LinkML is a **schema** language — it says what a
 SHACL validates RDF, so the corpus graph needs a triple projection. This is mechanical — the graph is already typed nodes and typed edges.
 
 ```turtle
-@prefix dg:   <https://headwater.dev/taxonomy/> .
+@prefix dg:   <https://w3id.org/headwater/taxonomy/> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
 
@@ -34,7 +34,7 @@ Everything LinkML covered, SHACL also covers, with better message and severity c
 
 ```turtle
 @prefix sh:  <http://www.w3.org/ns/shacl#> .
-@prefix dgs: <https://headwater.dev/shapes/> .
+@prefix dgs: <https://w3id.org/headwater/shapes/> .
 
 dgs:DocumentShape
     a sh:NodeShape ;
@@ -98,7 +98,7 @@ The check LinkML definitively could not express:
 
 ```turtle
 dgs: sh:declare [ sh:prefix "dg" ;
-                  sh:namespace "https://headwater.dev/taxonomy/"^^xsd:anyURI ] .
+                  sh:namespace "https://w3id.org/headwater/taxonomy/"^^xsd:anyURI ] .
 
 dgs:DecisionShape
     sh:sparql [

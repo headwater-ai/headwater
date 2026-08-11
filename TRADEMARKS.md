@@ -14,7 +14,7 @@ Use the name to refer to this project accurately. Say that your tool reads a Hea
 
 Do not use the name in a way that suggests we published, endorsed, or maintain something we do not. A fork or a redistribution that a reader could mistake for the original should carry its own name.
 
-`headwater` in lower case is an identifier throughout the design: the command that people type, the package name, the `.headwater/` directory, the `headwater:` annotation prefix, and the `https://headwater.dev/` namespace that [Q10](docs/spec/09-open-questions.md#q10--naming) fixed. Nothing here restricts writing that identifier where the software requires it. A namespace URI is an identifier, and using one implies no claim about who holds the domain.
+`headwater` in lower case is an identifier throughout the design: the command that people type, the package name, the `.headwater/` directory, the `headwater:` annotation prefix, and the `https://w3id.org/headwater/` namespace that [Q10](docs/spec/09-open-questions.md#q10--naming) fixed. Nothing here restricts writing that identifier where the software requires it. A namespace URI is an identifier, and using one implies no claim about who holds the domain.
 
 ## Why this file exists
 

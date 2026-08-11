@@ -1,0 +1,18 @@
+# https://w3id.org/headwater/ — Headwater documentation governance system
+#
+# Project:  https://github.com/headwater-ai/headwater
+# Contact:  James Baxter <j.w.baxter@gmail.com>
+#
+# Temporary redirects (302) while the site is under construction. Change to 301
+# once https://headwater.tools/ns/ is stable.
+
+Options +FollowSymLinks
+RewriteEngine on
+
+# Turtle and RDF/XML requests go to the machine-readable serialization.
+RewriteCond %{HTTP_ACCEPT} text/turtle [OR]
+RewriteCond %{HTTP_ACCEPT} application/rdf\+xml
+RewriteRule ^(.*)$ https://headwater.tools/ns/$1.ttl [R=302,L]
+
+# Everything else goes to the human-readable documentation.
+RewriteRule ^(.*)$ https://headwater.tools/ns/$1 [R=302,L]

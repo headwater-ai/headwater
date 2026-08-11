@@ -7,7 +7,7 @@ Evidence for [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substra
 A meaningful subset of the default taxonomy: three kinds, the core facets, four relations, one heterogeneous shelf, identifiers, and profiles.
 
 ```yaml
-id: https://headwater.dev/taxonomy/standard
+id: https://w3id.org/headwater/taxonomy/standard
 name: headwater_standard
 title: Headwater standard taxonomy
 description: >-
@@ -18,7 +18,7 @@ license: https://creativecommons.org/publicdomain/zero/1.0/
 
 prefixes:
   linkml: https://w3id.org/linkml/
-  headwater: https://headwater.dev/taxonomy/
+  headwater: https://w3id.org/headwater/taxonomy/
   prov: http://www.w3.org/ns/prov#
   skos: http://www.w3.org/2004/02/skos/core#
 default_prefix: headwater
