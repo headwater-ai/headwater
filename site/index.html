@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Headwater — a documentation governance system</title>
+<meta name="description" content="A typed, validated, self-describing corpus of documentation that machines can check and agents can navigate.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🜄</text></svg>">
+<style>
+  :root {
+    --bg: #fbfaf8; --fg: #1a1917; --muted: #5f5b54;
+    --rule: #e2ddd4; --accent: #1d5c54; --code-bg: #f1eee8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161a; --fg: #e6e3dd; --muted: #9b968c;
+      --rule: #2a2e35; --accent: #6fb3a6; --code-bg: #1c1f25;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 17px/1.65 ui-serif, Charter, "Iowan Old Style", Georgia, serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 40rem; margin: 0 auto; padding: 4rem 1.5rem 6rem; }
+  h1 {
+    font-size: 2.1rem; line-height: 1.15; letter-spacing: -0.02em;
+    margin: 0 0 0.25rem; font-weight: 600;
+  }
+  .tagline { color: var(--muted); font-size: 1.05rem; margin: 0 0 2.5rem; }
+  h2 {
+    font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.09em;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 650;
+    color: var(--muted); margin: 3rem 0 0.85rem;
+    padding-bottom: 0.5rem; border-bottom: 1px solid var(--rule);
+  }
+  p { margin: 0 0 1.1rem; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  .status {
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.9rem;
+    background: var(--code-bg); border-left: 3px solid var(--accent);
+    padding: 0.9rem 1.1rem; margin: 0 0 2.5rem; color: var(--muted);
+  }
+  .status strong { color: var(--fg); }
+  ol { padding-left: 1.2rem; margin: 0 0 1.1rem; }
+  li { margin-bottom: 0.6rem; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.87em; background: var(--code-bg);
+    padding: 0.12em 0.36em; border-radius: 3px;
+  }
+  footer {
+    margin-top: 4rem; padding-top: 1.25rem; border-top: 1px solid var(--rule);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.87rem; color: var(--muted);
+  }
+  footer a { margin-right: 1.25rem; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Headwater</h1>
+  <p class="tagline">A documentation governance system.</p>
+
+  <p class="status"><strong>Status: specification, pre-implementation.</strong> Nothing is built yet. The repository holds a specification written to be argued with.</p>
+
+  <p>Documentation rots because nothing holds it accountable. Specifications drift from code, rationale evaporates, standards multiply and contradict each other, and the AI assistants now reading that documentation as context inherit every one of those faults — silently, and at scale.</p>
+
+  <p>The usual answers are a style guide (unenforced), a wiki (unstructured), or a static-site generator (renders whatever you feed it). None of them can answer <em>“is this corpus still true?”</em>, because none of them know what kind of document anything is.</p>
+
+  <p>Headwater's premise: make the structure of the corpus a machine-readable contract, then derive everything else from it — validation, navigation, templates, AI instruction context, publishing, and the evidence that the whole thing is working.</p>
+
+  <h2>The three commitments</h2>
+  <ol>
+    <li><strong>Taxonomy is data.</strong> What shelves exist, what document kinds live on them, what metadata they carry, and how they may reference each other — all declared in one versioned schema. Customizing the taxonomy never means forking the tooling.</li>
+    <li><strong>The corpus is a graph.</strong> Documents are typed nodes and front-matter references are typed edges. Every validation rule is a constraint on that graph, and every derived artifact is a projection of it.</li>
+    <li><strong>AI assistants are readers in their own right, and measured ones.</strong> The system probes whether the context it supplies actually changes agent behavior, rather than assuming it does.</li>
+  </ol>
+
+  <h2>Namespace</h2>
+  <p>Emitted artifacts carry the permanent identifier <code>https://w3id.org/headwater/</code>. See <a href="/ns/">the namespace documentation</a> for what resolves there and why it is not this domain.</p>
+
+  <footer>
+    <a href="https://github.com/headwater-ai/headwater">Source</a>
+    <a href="https://github.com/headwater-ai/headwater/tree/main/docs/spec">Specification</a>
+    <a href="/ns/">Namespace</a>
+  </footer>
+
+</div>
+</body>
+</html>
