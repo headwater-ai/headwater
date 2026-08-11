@@ -31,21 +31,41 @@ A third case joins those two. A pointer to a document with the `asserted` [warra
 
 Information-foraging theory names what routing actually trades in: **scent** — the proximal cue that predicts distal value. A reader or an agent follows scent, and abandons a patch when the scent weakens. Thus scent quality, not corpus quality, decides whether anything is found. A perfect document with a vague summary is invisible.
 
-That makes the `summary` facet the corpus's entire scent surface, and the surface is measured rather than assumed:
+Scent has two surfaces, because a reader arrives at a document in two ways. A routing result answers a task description, and no referring edge exists, so the cue has to sit on the node. That cue is the `summary` facet. A reader who follows a relation meets the referring text first, and the target's summary is distal from there. That cue is an optional **cue** attribute on the relation instance, which the referring document writes ([spec 2](02-taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)).
 
-| Measure | What it catches |
-|---|---|
-| **Distinctiveness** | A summary that shares no discriminating term with its siblings cannot separate them. The shelf reads as undifferentiated |
-| **Non-restatement** | A summary that only rephrases the title carries no information that the path did not |
-| **Length band** | Too short to discriminate, or too long to scan in a pointer list |
-| **Routing precision** | Of the pointers offered, how often the agent opened the top one, and it sufficed |
-| **Abandonment** | Pointers offered and never opened — scent that promised and did not pay |
+One rule grades both, and it comes from the theory rather than from convenience.
 
-The first three are static and run as advisory checks. The last two come from probe transcripts. Probe transcripts are the only place where the corpus can observe foraging behavior rather than infer it.
+> **Grade a cue against the alternatives that it competes with at the moment a reader reads it.**
+
+Scent is never absolute in foraging theory. It is a comparison over the options at the point of decision ([spec 10 §E.1](10-theoretical-foundations.md#e1-information-foraging--routing-has-a-theory)). So each measure below names its comparison set, and the set is what changes between the two placements.
+
+| Measure | Comparison set | Catches |
+|---|---|---|
+| **Distinctiveness** (summary) | the shelf siblings, as a static proxy for the pointer list | A summary that shares no discriminating term with its siblings cannot separate them |
+| **Distinctiveness** (cue) | the other outbound cues of the same document | A cue that does not separate this link from the others that the document offers |
+| **Non-restatement** (summary) | the document's own title | A summary that only rephrases the title carries no information that the path did not |
+| **Non-restatement** (cue) | the target's summary and title | A cue that rephrases the fallback carries nothing that the fallback carried |
+| **Length band** | the declared band | Too short to discriminate, or too long to scan |
+| **Routing precision** | the pointer list that the query returned | Of the pointers offered, how often the agent opened the top one, and it sufficed |
+| **Abandonment** | the same list | Pointers offered and never opened, which is scent that promised and did not pay |
+| **Traversal precision** | the edges reachable from an opened document | Of the edges available, how often the agent followed one whose target sufficed |
+| **Traversal abandonment** | the same edge set | Edges offered and never followed |
+
+The static measures run as advisory checks, and they stay advisory permanently, because the remedy for a weak cue is a rewrite ([spec 4](04-assurance-model.md#where-promotion-cannot-finish)). Distinctiveness over cues is `Document`-scoped and non-restatement is `Edge`-scoped ([spec 12](12-check-layer.md#scope--the-declaration-everything-else-rests-on)). The four behavioral measures come from probe transcripts. A transcript is the only place where the corpus observes foraging behavior rather than infers it.
+
+A shelf is a proxy and the pointer list is the thing. A static check reads the proxy, because a query-dependent set is not available at check time. A probe measures the list itself. The two measure one property at two fidelities, and the specification does not pretend otherwise.
 
 The confidence gate is a scent threshold. The engine stays silent when the strongest available cue is weak, because a cue that misleads is worse than a missing cue. That is the same asymmetry stated in foraging terms, and it is why the gate errs toward silence.
 
-One caution on the word *entire* above. The summary is the whole scent surface for routing, where a pointer list answers a query and no referring edge exists. A reader who follows a relation meets a different proximal cue first, which is the referring text. [Q20](09-open-questions.md#q20--where-scent-lives) asks whether a relation should carry a cue of its own, and until it is settled this section describes one of the two moments.
+#### What a cue may do, and where it is served
+
+The cue is optional and the summary stays required, so a corpus that declares no cue behaves as it does today ([Q20](09-open-questions.md#q20--where-scent-lives)). Five rules govern it, and four of the five follow from rulings that already exist.
+
+- **`related` and `explain` serve the cue where one exists, and the target's summary otherwise.** Routing never serves a cue, because a routing result has no referring edge.
+- **A cue states the warrant of its target.** A cue that points at a document with the `asserted` [warrant](01-conceptual-model.md#warrant) says so beside the cue, for the reason that a pointer does.
+- **The confidence gate does not reach a cue.** The gate is a threshold over a score, and an author writes a cue rather than the engine scoring it. Silence is not available on a traversal either, because the reader already holds the document and can see the edge. So the fallback is the summary and never nothing.
+- **A withheld target takes its cues with it.** A cue is an edge attribute, and an [export profile](06-engine-architecture.md#an-export-profile-carries-a-filter) filters attributes by class under default-deny. A tombstone carries a rule identifier and never a cue.
+- **Nothing makes a cue mandatory.** A required prose field on every edge is the capture cost that [spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) says kills a corpus. A hand-authored cue also counts as hand entry, so the assisted fraction reports the tax if there is one.
 
 ```
 headwater route "add rate limiting to the ingest API"
@@ -163,29 +183,90 @@ These are the rules that a capable model breaks most readily under pressure to b
 
 Instruction files are written on the assumption that the assistant reads and follows them. That assumption is testable. When it is not tested, it is usually optimistic.
 
-A **probe suite** runs scenarios against the corpus in a controlled session. It grades behavior from the tool-call transcript, not from the model's self-report. The grader re-derives every verdict from what the agent actually opened and did. Probe categories:
+A **probe suite** runs scenarios against the corpus in a controlled session. It grades behavior from the tool-call transcript, not from the model's self-report. The grader re-derives every verdict from what the agent actually opened and did.
+
+#### A probe is a document with a declared expectation
+
+The grader constraint below needs something to bind, so the specification says what a probe is. A **probe** is a document in the corpus, with a kind, a shelf, an identifier and an acceptance. It declares a category, a task statement, and an **expectation**. The expectation is a predicate over the run record, and its forms are a closed set.
+
+| Form | Satisfied when |
+|---|---|
+| `opened` | The transcript shows that the session read one of the named documents |
+| `not_opened` | It read none of them |
+| `cited` | A produced artifact cites one of the named identifiers ([above](#generated-artifacts-cite-what-licensed-them)) |
+| `answered` | The final answer is one named value from a closed set that the probe declares |
+| `patched` | A produced patch passes a named check, which is the oracle route ([spec 2](02-taxonomy-model.md#contract-sidecars-the-specification-as-oracle)) |
+
+**A question whose answer needs a rubric is not a probe.** It is a coherence question, and the [sweep](04-assurance-model.md#discharging-coherence-obligations-the-assisted-sweep) owns those. The sweep reports findings rather than verdicts, and it is marked as agent-provenanced.
+
+That rule is what makes the grader constraint a property rather than a promise. A predicate over an event log needs no model, so the grader holds none. This is the shape that [Q7](09-open-questions.md#q7--scope-of-the-mcp-surface) used for the write path. A guarantee is a code path that does not exist, and not a declaration.
+
+**A self-report and a produced output are different things.** A self-report is the agent's account of its own process, and no probe accepts one. A produced output is the artifact that the task asked for, and a declared expectation may read it. Without that distinction, Sufficiency has no instrument at all.
+
+#### Probe categories
 
 | Category | Asks |
 |---|---|
 | Discovery | Does the agent find the governing document at all? |
 | Sufficiency | After it finds the document, does it have enough to act correctly? |
-| Fidelity | Does the derived rule teach the same thing as its canonical source? |
 | Navigability | Can it get from a code path to the governing document, and back? |
-| Consistency | Same question, different phrasings — same answer? |
-| Counterfactual | Does removal of the context actually change behavior? |
+| Consistency | Same question, different phrasings, same answer? |
 
-The counterfactual category is the one that matters most, and it is the one most often skipped. An A/B run — corpus present versus absent — is the only evidence that the instruction surface earns its context cost. Without it, "the AI reads our docs" is a belief.
+Sufficiency needs a `patched`, `cited` or `answered` expectation. Without one of the three it is a question about prose quality, which belongs to the sweep. Consistency compares the read set and the cited identifiers of two runs. An equality over two prose answers is not available to a grader that reads no prose.
+
+Two earlier categories are gone, and each removal is a finding rather than a simplification. **Fidelity is not a probe.** A derived rule is a generated projection, and `generate --check` proves that it agrees with its source. To pay a model for that comparison re-derives what the graph already declares. **The counterfactual is not a category either.** It is an **arm** of every probe: `present` or `absent`. Listing it beside the others hid that it applies to all of them, and hid that the pair doubles the cost of whatever it measures. The absent arm names a declared ablation, so what "corpus absent" removed is a recorded fact.
+
+An A/B run over the two arms is the only evidence that the instruction surface earns its context cost. Without it, "the AI reads our docs" is a belief.
 
 Two constraints protect the instrument, and [spec 11 §M](11-adjacent-work.md#m--what-the-survey-shows-as-a-whole-convergence-is-not-evidence) records why both are needed. Every adjacent project that claims this benefit either graded itself or skipped the counterfactual. The literature shows what a weak grader does to a result. A systematic comparison of RAG and graph-based RAG reached the opposite conclusion to the original study. The cause was the grading method rather than the systems. The same authors found that an LLM judge reverses its verdict when the order of two candidates is reversed.
 
 - **The grader is never the system under test.** A verdict comes from the tool-call transcript and a declared expectation. No model judges whether the corpus helped, and no probe accepts an agent's account of its own behavior.
 - **A published claim carries its counterfactual.** Corpus present against corpus absent, with a pinned model and a recorded probe selection. A claim with no such pair is reported as unmeasured rather than as supported, and the [evidence register](04-assurance-model.md) carries that mark.
 
-Probes run on a schedule, with a pinned model, deterministic probe selection, and a cost envelope. Results feed the adaptive layer of the [assurance model](04-assurance-model.md): a rule that measurably changes nothing is a candidate for deletion, and deletion is a success.
+#### A run produces a snapshot and a document
+
+A run emits a **transcript**. It holds the ordered tool-call events with their arguments and result identities, the identifiers of every produced artifact, and the final closed-set answer. It also holds the **run identity**: the model with its served version, the corpus tree hash, and the taxonomy lock hash. The identity continues with the probe selection hash, the rotation seed, the harness version, the arm, and the time. The transcript holds no model prose. That omission is the enforcement, in the way that scope enforcement is the feature in [spec 12](12-check-layer.md#scope--the-declaration-everything-else-rests-on).
+
+A transcript is a committed snapshot that a `probe_run` anchor resolver reads. A probe run is an external system of record, and [Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record) built that machinery already. So nothing new arrives here, and the declaration count stays at eleven. The **probe result** is a document, generated from the transcript, the expectations and the grader version. It carries the `regenerated` [warrant](01-conceptual-model.md#warrant), and `generate --check` proves it.
+
+The transcript is not optional, and the reason is the evidence rules. A result with no committed transcript has nothing inside the repository behind it, so its warrant is `asserted`. An asserted document discharges no evidence obligation ([spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)). The measurement layer would then produce content that the corpus refuses as evidence.
+
+**A model name is not a pin.** Two snapshots of one named model, three months apart, moved from 84% to 51% on a single task. The same pair moved in opposite directions on other tasks ([spec 11 §R](11-adjacent-work.md#r--measuring-whether-the-corpus-works)). So a run records the served version where the provider exposes one, and records the name as a name where it does not.
+
+#### Drift and variance are separated by an interval
+
+The grading is deterministic and the behavior is not, so [principle 3](00-vision-and-scope.md#design-principles) answers in two halves. A regenerated result that disagrees with its own transcript is a **defect** in the grader, the parser, or the committed inputs, and `generate --check` catches it. A rerun that returns a different rate is either sampling variance or **drift**, and only an interval separates them. So a probe result reports an interval rather than a point. An interval that overlaps the previous one is variance. An interval that does not overlap is drift, and the run identity says where to look.
+
+#### Two tiers, and the cadence follows the purpose
+
+Cadence does not follow the category. It follows whether a run watches for a change or estimates a difference, and any category does either.
+
+| Tier | Purpose | Shape | Cadence |
+|---|---|---|---|
+| **Regression** | Detect that something moved | A fixed scenario set, one arm, against a recorded baseline | Scheduled, and weekly is a sound default |
+| **Campaign** | Estimate a difference for one named claim | Both arms, powered, one batch, one model version | On the claim: when it is published, and when a change voids it |
+
+A campaign runs as one batch, or it is not one measurement. A run spread over weeks may hold a model that moved inside it. The regression tier runs one arm, so it establishes no effect and no published claim rests on it.
+
+**A probe never runs against a proposed change.** The network is closed at check time, no LLM sits in the validation path, and a probe is a sampler rather than a check ([spec 12](12-check-layer.md#where-the-llm-coherence-sweep-fits)). A verdict that a rerun may reverse is not what a gate needs, and a per-change cost falls on the wrong payer.
+
+What a change does instead costs nothing. A probe result is a verdict about one state of the corpus, so it carries a [read set](12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict). That set holds the documents that the transcript shows the session opened. It also holds the tree, the lock hash, the model identity, the selection and the harness version. A run reports which recorded probe results the change voided, through the machinery that already derives invalidated instances from a diff. The finding is advisory and it names the result. A trend over quarters needs this, because a line through points of unknown staleness compares nothing.
+
+#### The envelope is declared, and the harness fails closed
+
+The cost of the layer is the session count times the cost of a session, and the session count is scenarios times arms times repetitions. A campaign's count comes from statistical power rather than from taste. At 80% power and a 5% two-sided level, 0.50 against 0.75 takes about 58 sessions per arm. The same test on 0.60 against 0.75 takes about 152 per arm. A campaign is therefore one hundred to three hundred sessions, and a smaller effect costs a much larger run.
+
+Each tier declares a budget. The harness projects the cost of a run before it starts, and it refuses to start a run that exceeds the budget. That is [principle 7](00-vision-and-scope.md#design-principles) read the way that an exporter reads it: a run that does not happen is the cheaper error. The harness reports realized cost beside the result, so the adaptive layer measures its own instrument ([spec 4](04-assurance-model.md#the-adaptive-layer-reports-cost-not-just-coverage)).
+
+Probes are not latency-sensitive, which is a cost lever rather than a detail. A scheduled run tolerates a batch interface and its discount, and many scenarios against one corpus share a cached prefix.
+
+Results feed the adaptive layer of the [assurance model](04-assurance-model.md). A rule that measurably changes nothing is a candidate for deletion, and deletion is a success.
 
 ## Anti-overfitting
 
-Probes are written against **behavior**, not against phrasings. A probe that passes because a rule file contains a magic sentence tests the sentence. The harness rotates and paraphrases probes deterministically per run. Probes are also reviewed for the failure mode where the corpus is tuned to the probe suite instead of to its readers.
+Probes are written against **behavior**, not against phrasings. A probe that passes because a rule file contains a magic sentence tests the sentence. The harness rotates and paraphrases probes deterministically per run. The rotation seed is part of the run identity, so a selection reproduces even though a behavior does not. **A paraphrase varies the task statement and never the expectation.** A paraphrase that moves the predicate has written a second probe under one identifier.
+
+Probes are also reviewed for the failure mode where the corpus is tuned to the probe suite instead of to its readers. One measure of the suite falls out of the arms. **A probe whose two arms never differ measures nothing about the corpus**, and [principle 6](00-vision-and-scope.md#design-principles) makes it a candidate for deletion. That is the same test that [spec 10](10-theoretical-foundations.md#what-the-theory-did-not-settle) sets for a coherence metric whose distribution never moves.
 
 ## What we do not do
 

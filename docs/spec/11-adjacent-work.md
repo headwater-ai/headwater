@@ -361,11 +361,11 @@ The two placements are not interchangeable, and each one fails where the other w
 - **Query-time routing needs the cue on the node.** `headwater route` builds a pointer list from a task description, so no referring edge exists to carry a cue. Serena has no routing, and never meets this case.
 - **Traversal-time reading needs the cue on the edge.** A summary cannot say why *this* link, from *here*. One standard, referenced once by a decision and once by a specification, deserves a different cue in each place.
 - **Orphans separate the two.** A document with no inbound edge still has node scent, and routing still finds it. Under edge-only scent it is invisible. Serena covers this with the up-front name list and a `mem:core` root, which works at the scale of a single project.
-- **Measurement separates them again.** Spec 5 grades distinctiveness by a comparison of sibling summaries in one place. Edge cues have no such place, so they are harder to grade. Serena grades neither.
+- **Measurement separated them, until it did not.** Spec 5 graded distinctiveness by a comparison of sibling summaries in one place, and this entry concluded that edge cues have no such place. [§R.1](#r1-foraging-models-compute-a-utility-over-the-options-in-view) later found that they do. Serena grades neither.
 
-Headwater serves both moments, so it plausibly needs both placements, and it currently specifies one. The cost of the second is real. A cue on a relation instance means prose on an edge. It adds an authoring burden at every reference, and a new object for the checks to grade.
+Headwater serves both moments, so it needs both placements. The cost of the second is real. A cue on a relation instance means prose on an edge. It adds an authoring burden at every reference, and a new object for the checks to grade. That is why the cue is optional and the summary is not.
 
-> **Recorded as [Q20](09-open-questions.md#q20--where-scent-lives).**
+> **Applied:** the optional cue and its serving rules in [spec 5](05-ai-integration.md#what-a-cue-may-do-and-where-it-is-served). [Q20](09-open-questions.md#q20--where-scent-lives) closed.
 
 ### L.4 The convention document is itself a memory, and nothing keeps it current
 
@@ -815,6 +815,70 @@ The durable pattern in all of them is the split that [spec 2](02-taxonomy-model.
 
 > **Applied:** `retired_terms` in the language regime, with a required reason and an optional replacement ([spec 2](02-taxonomy-model.md#the-language-regime-carries-the-terms-that-the-corpus-retired)).
 
+## R — Measuring whether the corpus works
+
+The sources here arrived with the [Q8 and Q20 evaluation](../evaluations/the-measurement-layer.md). §M binds them, and it binds them from both sides. Not one of them measured whether structured documentation changes what a reader or an agent does. What several of them did measure is the **instrument**, which is what this project needs before it may claim anything at all.
+
+The web budget for that session ran out before four of the sources could be re-verified. Each one below says so where it applies.
+
+### R.1 Foraging models compute a utility over the options in view
+
+Pirolli and Card's information foraging gives spec 5 its vocabulary, and §E.1 of [spec 10](10-theoretical-foundations.md#e1-information-foraging--routing-has-a-theory) already records that. The computational descendants add the part that [Q20](09-open-questions.md#q20--where-scent-lives) needed. SNIF-ACT and the Bloodhound line score a link decision as a utility over **the links available at the current position**. They treat patch leaving as that utility falling below what another patch offers.
+
+That contradicts Q20's own premise. Q20 concluded that a cue on an edge has no sibling set to compare against, and therefore no way to grade distinctiveness. The theory says the opposite. The comparison set for a cue is the other links that the document in hand offers, which is precisely the choice the reader is making.
+
+This session could not reach the SNIF-ACT paper. Two hosts returned 403 and 404, and the general reference that resolved confirms the per-link and comparative framing without the utility function. The claim is recorded at that strength.
+
+> **Applied:** the comparison-set rule and the two placements in [spec 5](05-ai-integration.md#scent-is-the-thing-being-engineered), and the sharpening in [spec 10 §E.1](10-theoretical-foundations.md#e1-information-foraging--routing-has-a-theory).
+
+### R.2 Programmer navigation puts the cue in the source, not the target
+
+Lawrance, Bogart, Burnett and colleagues model debugging as foraging over a code base. The PFIS family scores the cues visible from the programmer's current position. The cue is the word or the link in the source, and not a property of the destination. This session could not fetch the paper, and the claim rests on memory.
+
+It agrees with the shipped convention that [§L.3](#l3-where-scent-lives--the-first-substantive-disagreement) already records, at a scale of tens of thousands of repositories. Two independent arrivals at edge-carried scent is what turned Q20 from a preference into a design.
+
+### R.3 A test collection is a large fixed cost and a small marginal one
+
+The Cranfield paradigm builds a reusable collection once and amortizes it across many systems. TREC scaled that with pooling, because exhaustive judgment does not scale. The transfer is the cost model. A probe suite is a test collection, so its cost sits in authoring scenarios and expectations, and the per-run cost is small. [Q8](09-open-questions.md#q8--probe-cost-and-cadence) assumed the opposite shape, and priced a recurring bill.
+
+Voorhees measured what happens when the judgments vary between assessors. Absolute scores move and the **relative ranking of systems stays stable**. This session could not re-fetch that paper. The lesson transfers on its own terms, and it is the reason that the design measures a difference between two arms rather than a level.
+
+### R.4 The judge is measured, and it is good enough to agree and not good enough to decide
+
+Zheng and colleagues name four faults in an LLM judge: position bias, verbosity bias, self-enhancement bias, and limited reasoning. They also report over 80% agreement with human preference for a strong judge. Read that beside [§M.3](#m3-the-grader-decides-the-answer-and-the-literature-proves-it), which records a comparison whose verdict reversed with the grading method and an order reversal that produced opposite judgments.
+
+Both readings are correct and they answer different questions. An LLM judge agrees with humans well enough for a survey. It does not carry a result that its author has an interest in. Headwater's answer is not a better judge. It is an expectation language narrow enough that the grader needs no judge at all.
+
+> **Applied:** the closed set of expectation forms in [spec 5](05-ai-integration.md#a-probe-is-a-document-with-a-declared-expectation), and the rule that a rubric question belongs to the sweep.
+
+### R.5 RAG evaluation already splits the two halves that this ruling separates
+
+RAGAS scores retrieval and generation on separate axes: whether the retrieved context is relevant and focused, and whether the answer stays faithful to it. The retrieval half computes against a known answer set. The generation half needs a judge.
+
+Headwater keeps the first half and refuses the second, arrived at from the corpus side rather than the retrieval side. That is why Discovery and Navigability need no new machinery, and why Sufficiency needs an oracle or a closed set before it means anything.
+
+### R.6 A pinned model name is not a pinned model
+
+Chen, Zaharia and Zou compared two snapshots of nominally identical models three months apart. Accuracy on one task fell from **84% to 51%**, and the pair moved in opposite directions on other tasks.
+
+This is the observed application that decides how a run records what produced it. [Spec 5](05-ai-integration.md#measuring-whether-any-of-this-works) required a pinned model from the start, and a name is not one. A run therefore records the served version where a provider exposes one. It is also why a campaign runs as a single batch: a comparison spread over weeks may hold a model that moved inside it.
+
+> **Applied:** the run identity and the batch rule in [spec 5](05-ai-integration.md#a-run-produces-a-snapshot-and-a-document).
+
+### R.7 The shipped pattern is two tiers, and nobody runs the expensive one often
+
+Every evaluation harness in current practice ships the same shape. A small fixed set runs often against a recorded baseline to catch regressions, and a larger offline evaluation runs rarely to establish a result. Canary and shadow evaluation in production machine learning is that shape at a different scale.
+
+The reason is not thrift. A regression run has one arm and estimates nothing, and a powered comparison costs what statistics say it costs. [Q8](09-open-questions.md#q8--probe-cost-and-cadence) asked which categories run on which cadence. The observed answer is that cadence follows the purpose of the run, and category has nothing to do with it.
+
+> **Applied:** the two tiers in [spec 5](05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose).
+
+### R.8 The measured failure of an unread instrument surface
+
+The closest published measurement of a machine-facing documentation surface is the one that [Q14](09-open-questions.md#q14--discovery-surface) already carries. About 137,000 domains publish an `llms.txt`, and 97% of the valid files went unread for a month ([§O.3](#o3-llmstxt-is-the-measured-failure-of-a-descriptor-with-no-obliged-reader)).
+
+It belongs here as well, in a second reading. A surface that nobody measured is a surface whose failure nobody noticed for as long as it took somebody outside the project to count. That is the outcome that principle 11 exists to prevent for this project, and the counterfactual arm is what would have caught it.
+
 ---
 
 ## Summary
@@ -832,7 +896,7 @@ The durable pattern in all of them is the split that [spec 2](02-taxonomy-model.
 | LeanCTX / OKF | Same substrate, opposite arrow. No taxonomy to collide with | Applied — declaration boundary (spec 4). OKF export → **Q13**. Presentation gap → **Q16** |
 | TrustGraph | Same pitch, opposite mechanism — extracts the graph we declare | Standards-stack counterweight → **Q13**. A receipt records derivation and not endorsement → **Q15**. Ingestion integration candidate |
 | Modern Requirements / Azure DevOps | First inbound candidate — the arrow reverses | Model already fits. Applied — the `transcribed` warrant and the importer as a correctness root. **Q19** closed |
-| Serena | Fourth arrival at the substrate. The first to disagree with us | Applied — third anti-retrieval argument (spec 5). Scent placement → **Q20**. Evidence → **Q15**, **Q17** |
+| Serena | Fourth arrival at the substrate. The first to disagree with us | Applied — third anti-retrieval argument (spec 5). Scent placement: **Q20** closed, and both placements ship. Evidence → **Q15**, **Q17** |
 | W3C PROV, SPDX, C2PA | A provenance standard records derivation. None of them records who vouched | Applied — the warrant, and a positive mark rather than an absent field (specs 1, 3) |
 | Wikipedia verifiability, and its rule for machine output | The trigger is the absence of review, and never the presence of a model | Applied — agency is not the warrant. **Q15** closed |
 | Baselines, suspect links, ReqIF | The pin has an industry name, and drift belongs on the edge | Applied — snapshot properties and edge-level drift (spec 7). **Q19** closed |
@@ -846,6 +910,7 @@ The durable pattern in all of them is the split that [spec 2](02-taxonomy-model.
 | SPDX 3.0, LinkML's SHACL generator | Model-first works. A chained emitter drops what it never declares | Applied — staging order and no chaining. **Q13** closed |
 | OGC API, STAC conformance | The declared subset, already an industry convention | Applied — partition rule and equivalence bar (spec 12) |
 | SPARQL federation, OAI-PMH aggregators, GraphQL federation | Harvest, and never fan out | Applied — the harvesting tier (spec 7). **Q9** closed |
+| Foraging models, Cranfield and TREC, LLM-as-judge, RAGAS, model drift | The instrument is measurable, and almost nobody measured the claim | Applied — the probe as a document, the expectation forms, the two tiers (spec 5). **Q8** and **Q20** closed |
 | Well-known URIs, robots.txt, sitemaps | A fixed path describes a known location, and never makes one known | Applied — the descriptor and the registration split (spec 7). **Q14** closed |
 | Package-registry indexes, OGC and STAC conformance | The index is configuration. A version needs a client rule, and a declaration needs a verifier | Applied — the version contract and the shape check (spec 7) |
 | `llms.txt` | A descriptor with no obliged reader goes unread, measurably | Corrects §I.5. Carried into **Q16** |

@@ -289,6 +289,8 @@ Three consequences, and the machinery for all three exists.
 
 **The test fails toward re-running.** A verdict declared void that would have held costs one run. A verdict carried that should have been void ships an invalid corpus and reports it green. That is [principle 7](00-vision-and-scope.md#design-principles) read the way that an exporter reads it: degrade toward the cheaper error, and say which one that is.
 
+**A probe result is a verdict too, and the same rule governs it.** An efficacy result describes one state of the corpus, under one model and one probe selection ([spec 5](05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose)). It therefore carries a read set, and a change reports which recorded results it voided. The finding is advisory, because a stale measurement misleads a reader and breaks nothing. Nobody re-runs a probe on a proposed change, and a trend that does not mark its stale points is a line through incomparable numbers.
+
 ## Findings
 
 Every finding, from every mechanism, has one shape:
@@ -325,6 +327,10 @@ The adaptive class exists to decide if the other three are worth what they cost.
 | **Coverage** | Obligation register | What fraction of obligations are discharged, by severity? |
 | **Assisted fraction** | Scaffolder and agent instrumentation | How much of authoring does the tooling carry, and does that rise or fall? ([spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric)) |
 | **Efficacy** | Probe suite | Does the instruction surface change agent behavior at all? ([spec 5](05-ai-integration.md)) |
+
+**Efficacy is reported as an interval and never as a point.** A probe outcome is a sample, so two runs of one probe differ without anything being wrong. An interval is what separates ordinary variance from drift in the model, the corpus or the harness ([spec 5](05-ai-integration.md#drift-and-variance-are-separated-by-an-interval)). A point estimate reports the two as one number and hides both.
+
+**The layer reports the cost of its own instrument.** Probes cost money per run, and a cost report that omits the cost of measuring is the failure that this section exists to prevent. So each probe tier declares a budget. The harness refuses a run whose projected cost exceeds it, and every run reports realized cost beside its result.
 
 Coverage alone is a number that only goes up. A system that optimizes it will happily add obligations that nobody can satisfy. When coverage is read against capture cost and efficacy, it becomes a trade: this much assurance, at this much author burden, with this much demonstrated effect. A rule that raises cost and moves neither of the others is a rule to delete. Deletion is a success, and it is recorded as one.
 

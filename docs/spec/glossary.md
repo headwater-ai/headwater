@@ -6,7 +6,7 @@ Every named concept in this specification, with one line about what it is and a 
 
 In an implemented system this page is a projection. Kinds, facets, relations, and purposes all carry their own declarations, so the engine can emit the list. It is written by hand today because the engine does not exist yet. When it does, this page is generated and checked like any other [projection](01-conceptual-model.md#projections).
 
-**On the count.** The list below holds just over 140 terms, and that number needs an honest reading. Most of them belong to the engine, the check layer, or the publisher, and no author ever meets them. An author who files a document meets the eight in the next table. A taxonomy author meets roughly thirty-five. The [core-concepts review](../reviews/) treats concept count as a live risk to adoption. This page is the inventory that makes the count visible, instead of leaving it to be felt.
+**On the count.** The list below holds about 175 terms, and that number needs an honest reading. Most of them belong to the engine, the check layer, or the publisher, and no author ever meets them. An author who files a document meets the eight in the next table. A taxonomy author meets roughly thirty-five. The [core-concepts review](../reviews/) treats concept count as a live risk to adoption. This page is the inventory that makes the count visible, instead of leaving it to be felt.
 
 ## The eight an author needs
 
@@ -65,6 +65,10 @@ See [external anchor](#external-anchor).
 
 The single component that owns identity for one anchor type. It normalizes anchor strings, so that two spellings of one target become one node. See [spec 2](02-taxonomy-model.md#behavior-at-the-limits).
 
+### Arm
+
+Whether a probe run had the corpus present or absent. Every probe runs in one arm, and a published efficacy claim needs the pair. See [spec 5](05-ai-integration.md#probe-categories).
+
 ### Asserted content
 
 Content with the `asserted` [warrant](#warrant): nobody accepted it, and no regeneration proves it. Headwater admits it, marks it positively, and never lets it govern the reading of warranted content or discharge an evidence obligation. See [spec 1](01-conceptual-model.md#warrant).
@@ -96,6 +100,10 @@ A named overlay that the publisher ships, which adds optional content and declar
 ### Cache
 
 Content-addressed per file, plus the taxonomy lock hash, so that an incremental run costs what the change costs rather than what the corpus costs. It is disposable by test: a run with the cache and a run without it produce byte-identical output. See [spec 6](06-engine-architecture.md#nothing-stores-the-graph).
+
+### Campaign
+
+A powered, paired probe run for one named claim, executed as a single batch at one model version. Compare the regression tier, which runs one arm on a schedule and estimates no effect. See [spec 5](05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose).
 
 ### Capture cost
 
@@ -187,7 +195,7 @@ The control class that repairs what detection found: auto-fix, generated remedia
 
 ### Counterfactual probe
 
-An A/B run of one scenario with the corpus present and absent. It is the only evidence that the instruction surface earns its context cost. See [spec 5](05-ai-integration.md#measuring-whether-any-of-this-works).
+A pair of runs of one probe, in the `present` [arm](#arm) and the `absent` arm. It is the only evidence that the instruction surface earns its context cost. It is not a probe category. See [spec 5](05-ai-integration.md#probe-categories).
 
 ### Coverage
 
@@ -196,6 +204,10 @@ Two related reports. Over obligations, the fraction discharged by severity, with
 ### `created_by`
 
 The required declaration of who creates each edge, from a closed set: `author`, `scaffold`, `generator`, `hook`, `agent`, `import`. It forces the question of who pays for a link at design time, not after the corpus stops maintaining it. An `import` edge carries the same weight as any other, because its producer is a [correctness root](12-check-layer.md#the-correctness-roots) rather than a rule. See [spec 2](02-taxonomy-model.md#who-creates-each-edge).
+
+### Cue
+
+An optional source-owned attribute on a relation instance, which says why this link, from here. Absent, a reader gets the target's [summary](#summary) instead. See [spec 5](05-ai-integration.md#what-a-cue-may-do-and-where-it-is-served).
 
 ### Declarative regime
 
@@ -231,7 +243,7 @@ One relation instance in the graph. The edge, not the file, is the unit that cha
 
 ### Efficacy
 
-The measured effect of the instruction surface on agent behavior, taken from the probe suite. A rule that measurably changes nothing is a candidate for deletion. See [spec 5](05-ai-integration.md#measuring-whether-any-of-this-works).
+The measured effect of the instruction surface on agent behavior, taken from the probe suite and reported as an interval. A rule that measurably changes nothing is a candidate for deletion. See [spec 4](04-assurance-model.md#the-adaptive-layer-reports-cost-not-just-coverage).
 
 ### Emitter
 
@@ -248,6 +260,10 @@ A stated, reasoned exemption from a rule, scoped to a file or a block. Voice che
 ### Evidence basis
 
 One of three honest states for the support behind a decision: `evidenced`, `reconstructed`, or [`unevidenced`](#unevidenced). `reconstructed` is not a soft `evidenced`, and it never promotes silently. See [spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two).
+
+### Expectation
+
+The predicate that grades a probe run, drawn from a closed set of forms over the transcript and the produced artifacts. A question that needs a rubric instead is not a probe. See [spec 5](05-ai-integration.md#a-probe-is-a-document-with-a-declared-expectation).
 
 ### Explain
 
@@ -457,9 +473,21 @@ The control class that acts before the mistake lands: scaffolding, editor valida
 
 A change-scoped check input, supplied by the diff. It is the merge-base version for a proposed change, and the committed `HEAD` version for a working-tree hook. Transition legality cannot be decided without it. See [spec 12](12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version).
 
+### Probe
+
+An authored document that declares a category, a task statement, and an [expectation](#expectation). It is the unit that the probe suite runs. See [spec 5](05-ai-integration.md#a-probe-is-a-document-with-a-declared-expectation).
+
+### Probe result
+
+The document that grades one run: a projection over the [probe transcript](#probe-transcript), the declared expectations and the grader version. Its [warrant](#warrant) is `regenerated`, and it reports an interval rather than a point. See [spec 5](05-ai-integration.md#a-run-produces-a-snapshot-and-a-document).
+
 ### Probe suite
 
-Scenarios run against the corpus in a controlled session, graded from the tool-call transcript rather than from the model's self-report. Probes run with a pinned model and a cost envelope. See [spec 5](05-ai-integration.md#measuring-whether-any-of-this-works).
+The probes that a corpus declares, run against it in a controlled session and graded from the tool-call transcript rather than from the model's self-report. It runs in two tiers, regression and [campaign](#campaign). See [spec 5](05-ai-integration.md#measuring-whether-any-of-this-works).
+
+### Probe transcript
+
+The committed snapshot that one run emits: the ordered tool-call events, the produced artifacts, the final answer, and the [run identity](#run-identity). It holds no model prose, which is what keeps the grader out of the system under test. See [spec 5](05-ai-integration.md#a-run-produces-a-snapshot-and-a-document).
 
 ### Profile
 
@@ -537,9 +565,13 @@ A kind is rigid, because a document cannot lose it and stay the same document. A
 
 The intent-time match of a task description against declared purposes, before any match on text. It returns a ranked, budget-capped set of [pointers](#pointer), and it fails open below its confidence gate. See [spec 5](05-ai-integration.md#intent-time-routing).
 
+### Run identity
+
+What a probe run records about itself. It holds the served model version, the corpus tree, the lock hash, the probe selection, the seed, the harness version, the [arm](#arm), and the time. A model name alone is not a pin. See [spec 5](05-ai-integration.md#a-run-produces-a-snapshot-and-a-document).
+
 ### Sampler
 
-The non-deterministic path that carries the [coherence sweep](#coherence-sweep). It shares the finding shape and the reporting pipeline, and it never enters the cached, reproducible path. See [spec 12](12-check-layer.md#where-the-llm-coherence-sweep-fits).
+The non-deterministic path that carries the [coherence sweep](#coherence-sweep) and the [probe suite](#probe-suite). It shares the finding shape and the reporting pipeline, and it never enters the cached, reproducible path. See [spec 12](12-check-layer.md#where-the-llm-coherence-sweep-fits).
 
 ### Satellite
 
@@ -551,7 +583,7 @@ The end of a nucleus–satellite relation that cannot stand alone. It inherits d
 
 ### Scent
 
-The proximal cue that predicts distal value, and the thing that routing trades in. The `summary` facet is the corpus's whole scent surface, so its quality is measured rather than assumed. See [spec 5](05-ai-integration.md#intent-time-routing).
+The proximal cue that predicts distal value, and the thing that routing trades in. It sits in the `summary` facet at a routing result, and in an optional [cue](#cue) at a traversal. Each measure of it names the alternatives it compares against. See [spec 5](05-ai-integration.md#scent-is-the-thing-being-engineered).
 
 ### Scope
 

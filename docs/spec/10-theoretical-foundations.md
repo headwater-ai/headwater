@@ -166,9 +166,11 @@ Research on software product lines — feature models (Kang et al., 1990), stage
 
 Pirolli and Card (*Psychological Review*, 1999) model information seeking as foraging. Readers follow **information scent** — proximal cues that predict distal value — and abandon a patch when the scent weakens. Scent quality, not corpus quality, determines whether anything is found.
 
-This is the theoretical justification for spec 5's pointers-with-summaries design, and it relocates where the effort should go. The `summary` facet is the corpus's entire scent surface. A perfect document with a vague summary is invisible.
+This is the theoretical justification for spec 5's pointers-with-summaries design, and it relocates where the effort should go. A perfect document with a vague summary is invisible.
 
-> **Change:** treat summary quality as an assurance concern in its own right rather than a front-matter formality. Frame the routing confidence gate in scent terms. The engine stays silent when scent is weak, because a cue that misleads costs more than an absent one. Probe categories map directly onto foraging outcomes.
+The computational descendants sharpen it further, and they decide where a cue lives. SNIF-ACT and the Bloodhound line model a link choice as a utility computed over **the links available at the current position**. They model patch leaving as that utility falling below what another patch offers. Scent is therefore never an absolute property of a target. It is a comparison over the options at the point of decision, which means that every scent measure owes a comparison set. For a summary, that set is the documents a reader is choosing between. For a cue on a relation, it is the other links that the same document offers.
+
+> **Change:** treat summary quality as an assurance concern in its own right rather than a front-matter formality. Frame the routing confidence gate in scent terms. The engine stays silent when scent is weak, because a cue that misleads costs more than an absent one. Probe categories map directly onto foraging outcomes. (As first applied, spec 5 called the `summary` facet the entire scent surface. [Q20](09-open-questions.md#q20--where-scent-lives) later found that the theory places a second cue on the referring edge, and that each measure states the set it compares against.)
 
 ### E.2 Cognitive dimensions — how to evaluate the schema language
 

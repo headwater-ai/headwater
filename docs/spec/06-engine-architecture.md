@@ -161,8 +161,10 @@ headwater explain    <path|identifier>
 headwater export     [--profile ...] [--format json|jsonschema|shacl|rdf|skos|okf|linkml] [--check]
 headwater taxonomy   validate | resolve | diff | migrate | audit
 headwater coverage   [--format ...]
-headwater probe      [--category ...]
+headwater probe      [--tier regression|campaign] [--arm present|absent] [--category ...]
 ```
+
+`probe` is the one verb that reaches the network, so it never runs inside `check` and never gates ([spec 5](05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose)). It projects the cost of a run against the tier's declared budget and refuses a run that exceeds it. Every run writes its transcript and reports the run identity, the realized cost, and the interval around each rate.
 
 `export` is the projection contract under another verb, and `--check` is the same comparison that `generate --check` performs. It carries its own verb because a consumer outside the repository asks for one format at a time. Only `json` and `jsonschema` ship in the first release, and each later format waits for a consumer who asks for it ([Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate)). `--profile` selects one declared export profile. With no profile named, the engine writes every declared profile, so a filtered audience is never omitted by accident.
 
