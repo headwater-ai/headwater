@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Headwater namespace — https://w3id.org/headwater/</title>
+<meta name="description" content="The permanent identifier that Headwater artifacts carry, what resolves under it, and why it is not the project domain.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🜄</text></svg>">
+<style>
+  :root {
+    --bg: #fbfaf8; --fg: #1a1917; --muted: #5f5b54;
+    --rule: #e2ddd4; --accent: #1d5c54; --code-bg: #f1eee8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161a; --fg: #e6e3dd; --muted: #9b968c;
+      --rule: #2a2e35; --accent: #6fb3a6; --code-bg: #1c1f25;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 17px/1.65 ui-serif, Charter, "Iowan Old Style", Georgia, serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 42rem; margin: 0 auto; padding: 3rem 1.5rem 6rem; }
+  .back {
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.85rem;
+    color: var(--muted); text-decoration: none; display: inline-block;
+    margin-bottom: 2.5rem;
+  }
+  .back:hover { color: var(--accent); }
+  h1 {
+    font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.015em;
+    margin: 0 0 0.4rem; font-weight: 600;
+  }
+  .uri {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.95rem; color: var(--accent); margin: 0 0 2.5rem;
+    word-break: break-all;
+  }
+  h2 {
+    font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.09em;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 650;
+    color: var(--muted); margin: 2.75rem 0 0.85rem;
+    padding-bottom: 0.5rem; border-bottom: 1px solid var(--rule);
+  }
+  p { margin: 0 0 1.1rem; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.87em; background: var(--code-bg);
+    padding: 0.12em 0.36em; border-radius: 3px;
+  }
+  .tablewrap { overflow-x: auto; margin: 0 0 1.4rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.94rem; }
+  th, td {
+    text-align: left; padding: 0.6rem 0.9rem 0.6rem 0;
+    border-bottom: 1px solid var(--rule); vertical-align: top;
+  }
+  th {
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted);
+    font-weight: 650;
+  }
+  .note {
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.9rem;
+    background: var(--code-bg); border-left: 3px solid var(--accent);
+    padding: 0.9rem 1.1rem; margin: 0 0 2rem; color: var(--muted);
+  }
+  .note strong { color: var(--fg); }
+  footer {
+    margin-top: 3.5rem; padding-top: 1.25rem; border-top: 1px solid var(--rule);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.87rem; color: var(--muted);
+  }
+  footer a { margin-right: 1.25rem; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <a class="back" href="/">← Headwater</a>
+
+  <h1>The Headwater namespace</h1>
+  <p class="uri">https://w3id.org/headwater/</p>
+
+  <p class="note"><strong>Status: specification, pre-implementation.</strong> No engine has shipped, so no artifact carries these identifiers yet. This page reserves and documents them.</p>
+
+  <p>Every artifact Headwater emits carries identifiers under this namespace. It is a permanent identifier served by <a href="https://w3id.org/">w3id.org</a>, which the W3C Permanent Identifier Community Group operates, and it redirects here.</p>
+
+  <h2>What resolves under it</h2>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Prefix</th><th>What it identifies</th></tr></thead>
+    <tbody>
+      <tr><td><code>taxonomy/</code></td><td>Taxonomy schemas — shelves, document kinds, facets, relations. The LinkML form declares this as its default prefix.</td></tr>
+      <tr><td><code>shapes/</code></td><td>SHACL node shapes and constraints generated from a taxonomy.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>Both appear in the worked examples: the <a href="https://github.com/headwater-ai/headwater/blob/main/docs/evaluations/linkml-worked-example.md">LinkML schema</a> and the <a href="https://github.com/headwater-ai/headwater/blob/main/docs/evaluations/shacl-worked-example.md">SHACL shapes</a>.</p>
+
+  <h2>Why not this domain</h2>
+
+  <p>A namespace URI inside an emitted artifact is a promise about a name that outlives every release. A domain rented by the year is a weak vehicle for a promise of that length, and an adopter who holds a generated artifact should never depend on who renews what.</p>
+
+  <p>So the identifier and the web address are separate assets. w3id.org holds the identifier, and it redirects to whatever location this project hosts. A later change of domain reaches no artifact anyone already holds. LinkML publishes its own metamodel at <code>https://w3id.org/linkml/</code> for the same reason.</p>
+
+  <p><a href="https://github.com/headwater-ai/headwater/blob/main/docs/spec/09-open-questions.md#q10--naming">Q10</a> records the ruling and the date it was taken.</p>
+
+  <h2>Terms</h2>
+
+  <p>Code is licensed under Apache-2.0, and the prose under <code>docs/</code> under Creative Commons Attribution 4.0. The project claims no registered trademark, and <a href="https://github.com/headwater-ai/headwater/blob/main/TRADEMARKS.md">TRADEMARKS.md</a> states that position. Using an identifier from this namespace implies no claim about who holds any domain.</p>
+
+  <footer>
+    <a href="https://github.com/headwater-ai/headwater">Source</a>
+    <a href="https://github.com/headwater-ai/headwater/tree/main/docs/spec">Specification</a>
+    <a href="/">Home</a>
+  </footer>
+
+</div>
+</body>
+</html>
