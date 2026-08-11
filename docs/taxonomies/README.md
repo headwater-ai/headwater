@@ -100,4 +100,10 @@ One item there is this library seen from the specification's side. **The bundle 
 
 An entry arrives as a pull request that adds one directory under this one. The reviewer checks the seven criteria above, and the entry is admitted when all seven hold. Criteria 3, 6, and 7 become mechanical the day that the resolver exists. Until then a reviewer reads the address list in `bundle.yml` against the entries already here.
 
-**Nothing is admitted yet.** The first entry is the design-spec taxonomy, which models the shape that this repository's own `docs/spec/` corpus follows. Each admitted entry adds a line below, with its bundle name and the tradition that it models.
+Each admitted entry adds a line below, with its bundle name and the tradition that it models.
+
+| Entry | Bundle | The tradition |
+|---|---|---|
+| [`design-spec`](design-spec/) | `design-spec` | The numbered specification series of IETF RFCs, academic papers, and software design documents |
+
+The design-spec entry carries six findings against the specification, which its [doctrine](design-spec/doctrine.md#findings) states in full. Two of them are worth reading before a second entry is authored. A bundle cannot extend a list, so no entry may ship its own lifecycle ladder or its own projection. And the base's `specification` kind carries a section contract that a tradition with other headings cannot reuse.
