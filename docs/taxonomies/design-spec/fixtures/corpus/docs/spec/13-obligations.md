@@ -8,7 +8,7 @@ sequence: 13
 provenance:
   warrant: accepted
   agency: human
-  accepted_by: a.ferreira
+  accepted_by: fixture-acceptor
   evidence_basis: evidenced
 ---
 

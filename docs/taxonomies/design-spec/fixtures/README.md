@@ -2,6 +2,8 @@
 
 A miniature corpus in the tradition, under `corpus/`. It exists so that the schema meets documents rather than only a reader. Beacon is invented, and the tree is the smallest one that exercises every declaration in `bundle.yml`.
 
+Everything in the corpus is invented, including the names. `warrant: accepted` requires an `accepted_by` that names a human, so the fixtures write `fixture-acceptor`. A placeholder that reads as one keeps a fixture from implying a real person.
+
 No runner reads these files. There is no engine, so the expected findings below are stated in prose rather than in a manifest that nothing executes. The day an engine exists, this file states what a run over `corpus/` must report. It becomes the fixture manifest at that point.
 
 ## What each document exercises

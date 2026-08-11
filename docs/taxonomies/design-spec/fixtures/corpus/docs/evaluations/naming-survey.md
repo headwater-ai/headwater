@@ -7,7 +7,7 @@ doc_type: evaluation
 provenance:
   warrant: accepted
   agency: agent
-  accepted_by: a.ferreira
+  accepted_by: fixture-acceptor
   evidence_basis: evidenced
 ---
 

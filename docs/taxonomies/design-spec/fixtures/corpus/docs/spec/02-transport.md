@@ -10,7 +10,7 @@ superseded_by:
 provenance:
   warrant: accepted
   agency: human
-  accepted_by: a.ferreira
+  accepted_by: fixture-acceptor
   evidence_basis: evidenced
 ---
 

@@ -10,7 +10,7 @@ supersedes:
 provenance:
   warrant: accepted
   agency: mixed
-  accepted_by: a.ferreira
+  accepted_by: fixture-acceptor
   evidence_basis: evidenced
 ---
 
