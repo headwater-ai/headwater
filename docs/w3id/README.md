@@ -10,15 +10,12 @@ The precedent is direct. LinkML publishes its own metamodel at `https://w3id.org
 
 ## How to register it
 
-The service takes registrations as pull requests against [perma-id/w3id.org](https://github.com/perma-id/w3id.org).
+The service takes registrations as pull requests against [perma-id/w3id.org](https://github.com/perma-id/w3id.org). The fork and the branch already exist, and the branch holds a `headwater/` directory with the two files that the service wants.
 
-1. Fork that repository.
-2. Create a directory named `headwater/` at the top level.
-3. Copy [`.htaccess`](.htaccess) and this file into it.
-4. Test the redirect rules locally, which the repository documents.
-5. Open a pull request with one squashed commit. Name the project in the commit message, and keep the contact address in `.htaccess` current.
+- Fork: [jameswbaxter/w3id.org](https://github.com/jameswbaxter/w3id.org), branch `headwater`
+- Open the pull request: [compare view](https://github.com/perma-id/w3id.org/compare/master...jameswbaxter:w3id.org:headwater)
 
-A maintainer reviews the request and merges it. The maintainers refuse identifiers that are too generic or that could cause confusion, and `headwater` is specific enough to pass that test.
+A maintainer reviews the request and merges it. The maintainers refuse identifiers that are too generic or that could cause confusion, and `headwater` is specific enough to pass that test. The copy of [`.htaccess`](.htaccess) here is the same file that the branch carries. Change both together, or the record here stops matching what the service serves.
 
 ## What has to exist first
 
