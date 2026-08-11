@@ -1,0 +1,13 @@
+{
+  // Deployment config for https://headwater.tools/, which is the target that
+  // the https://w3id.org/headwater/ permanent identifier redirects to.
+  //
+  // There is no Worker script. The project serves the static files under
+  // site/ and nothing else, so there is no "main" entry point. Cloudflare
+  // runs `npx wrangler deploy` from the repository root on each push.
+  "name": "headwater",
+  "compatibility_date": "2026-08-11",
+  "assets": {
+    "directory": "./site"
+  }
+}
