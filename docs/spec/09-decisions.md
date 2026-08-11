@@ -1,22 +1,10 @@
-# 9 — Open questions
+# 9 — The decision register
 
-This file began as a list of decisions that we deliberately deferred, with the options and a leaning for each one. The design phase has now argued every entry, and all twenty-one are closed. The last one to close was [Q11](#q11--license-and-distribution-posture). No argument from the design could close it, because a license states what the owner intends for the project. The owner ratified it on 2026-08-11.
+This file began as a list of decisions that the design phase deferred, with the options and a leaning for each one. Every entry is now argued, and all twenty-one are closed. The last one to close was [Q11](#q11--license-and-distribution-posture). No argument from the design could close it, because a license states what the owner intends for the project. The owner ratified it on 2026-08-11.
 
-So the file is a register of settled decisions and the reasoning that settled them. Each entry states the decision, what the argument corrected in the entry that asked the question, and what stays open under it. The title stays, because the last section of most entries is still an open question. The evidence for each closure lives beside it in [`docs/evaluations/`](../evaluations/).
+So this file is a register of settled decisions and the reasoning that settled them. Each entry states the decision and what the argument corrected in the entry that asked the question. The evidence for each closure lives beside it in [`docs/evaluations/`](../evaluations/).
 
-## What is still live, across the whole file
-
-A reader who wants the open work does not have to read twenty-one entries for it. Three classes cover all of it.
-
-**Seventeen entries carry an unmeasured claim**, as [principle 11](00-vision-and-scope.md#design-principles) requires them to. Each one names its instrument, and no instrument has run, because the engine does not exist. Every one of them sits under "what stays open" in its own entry, and none is hidden.
-
-**Most entries also wait on a first adopter.** Nine items, and each one is data or a deferred component. So the first real adopter is the evidence, rather than a further argument.
-
-- The bundle set of [Q3](#q3--how-much-of-the-default-taxonomy-ships-in-the-box) · the second export profile of [Q17](#q17--governed-access-and-the-solution-layer) · the vendoring question of [Q9](#q9--multi-repository-corpora) · the named consumers of [Q13](#q13--linkml-and-shacl-as-substrate)'s emitters 3 through 6 · the transcription projection of [Q19](#q19--inbound-integration-an-external-system-of-record) · the cue volume of [Q20](#q20--where-scent-lives) · the retired-term lexicon of [Q21](#q21--terminological-succession-and-validity-under-merge) · the probe kind placement of [Q8](#q8--probe-cost-and-cadence) · the operational shape of a hosted server, which [Q7](#q7--scope-of-the-mcp-surface) and Q17 both hold
-
-**One entry holds design work that nothing else blocks.** [Q2](#q2--schema-format) leaves the `$`-reference sublanguage with three uses and no grammar. It needs one definition before the meta-schema ships.
-
-This index is itself the thing that the [first-run walkthrough](../evaluations/default-taxonomy-first-run.md#five-first-runs) found this register cannot express. Each entry is a decision document with a state, a date, edges to other entries, and citations to its evidence. One file cannot carry that, so a human maintains this summary by hand. [Principle 2](00-vision-and-scope.md#design-principles) calls that a defect, and it is the most-edited artifact in the repository. The remedy is ordinary corpus work rather than a design change.
+What the decisions leave open moved out to [13 — Open obligations](13-open-obligations.md). That file gathers the unmeasured claims, the work that waits on a first adopter, and one piece of design work. The old file name stays in place as [a tombstone](09-open-questions.md) that maps each anchor to its new home.
 
 ## Q1 — Implementation language
 
@@ -81,8 +69,6 @@ The trade that this entry named still holds, and the decision does not soften it
 
 **What it found on the way.** The walkthrough found five defects in [spec 2](02-taxonomy-model.md) that no notation fixes, and all five are now applied. The kind-to-relation permission was declared twice, with nothing to make the two directions agree. `abstract` appeared in the meta-schema with no semantics. Reading precedence had no clause for the governance family. Compatibility had no dimension for the overlay address surface. And a major version migrated documents but never overlays. The [walkthrough](../evaluations/schema-format-walkthrough.md#consequences-for-the-specification) records where each one landed.
 
-One point stays open in this entry. The `$`-reference sublanguage has three uses and no grammar, and it needs one definition before the meta-schema ships.
-
 **A note on the method.** This entry predicted that viscosity and hidden dependencies would decide the question. They did not. All three candidates scored near-equal on both, because most of the viscosity lives in the model rather than in the notation. Premature commitment, abstraction gradient and a new dimension for machine authors decided it instead. The framework earned its place by contradiction of the prediction that chose it.
 
 ## Q3 — How much of the default taxonomy ships in the box
@@ -101,7 +87,7 @@ This question is closed. The [first-run walkthrough](../evaluations/default-taxo
 
 **What it found on the way.** Six defects, and three of them sit in [spec 2](02-taxonomy-model.md) with one cause between them. The smallest column of the worked example was drawn as an impression and never derived from the core beside it. So it omits the `behavior` purpose that the core requires. Its four default relations all run between decisions, so no default edge attaches the corpus to code. And two of those four have no mechanical creator, which contradicts what spec 2 claims for its own default set. All six are applied, and the [walkthrough](../evaluations/default-taxonomy-first-run.md#consequences-for-the-specification) records where each one landed.
 
-**What stays open.** The bundle set is a guess about how adopters cluster, and no adopter exists yet. It is data in a package, so the first real adopter revises it at the cost of a release. The license half of this question went to [Q11](#q11--license-and-distribution-posture), which found it a constraint rather than a preference. An overlay resolution contains base content, so the base and the bundles may impose nothing on a derived taxonomy. Apache-2.0 satisfies it, and nothing above depended on which terms did.
+**The license half went to [Q11](#q11--license-and-distribution-posture), which found it a constraint rather than a preference.** An overlay resolution contains base content, so the base and the bundles may impose nothing on a derived taxonomy. Apache-2.0 satisfies it, and nothing above depended on which terms did.
 
 ## Q4 — Relation storage
 
@@ -120,8 +106,6 @@ This question is closed. Front matter is authoritative, and the [evaluation](../
 **Instance attributes are governed the way facets are.** A relation type declares which attributes its instances may carry, and an undeclared attribute is a finding. An attribute takes a facet's value space and is never a reference. An edge that must point at a node is a request to make the edge a node. [Q18](#q18--recording-adjudicated-disagreements) owned that change and declined it, because an adjudication that needs an author, a date and a reason is a document. So [Q20](#q20--where-scent-lives)'s cue is the one live instance attribute in this specification. Each attribute declares an owning end. A source-owned attribute on a symmetric relation gives one value per direction. An edge-owned attribute with two different values at the two ends is a finding, and no fix resolves it. `created_by` stays on the relation type, because `taxonomy audit` measures the declared intent against a real corpus.
 
 **Two consequences land outside this entry.** The internal model is a property graph. So the RDF projection of [Q6](#q6--where-the-corpus-graph-lives-at-rest) reifies any edge that carries an attribute. Q6 has since closed, and it replaced the round-trip test with a declared loss set and a projection census. The reification is one entry in RDF's loss set. And [Q20](#q20--where-scent-lives) now has a home for its cue, plus an answer to one of its three questions: the referring end owns it.
-
-**What stays open.** One claim here is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires it to be. The promotion fix should raise author-attributable edges without a rise in hand entry, and the assisted fraction plus the audit report are the instruments. The friction signal also survives in a narrower form. If authors still declare the same link twice at a rate the fix does not absorb, this ruling is wrong and the annotation question returns.
 
 ## Q5 — Voice checking depth
 
@@ -142,8 +126,6 @@ This question is closed. One [evaluation](../evaluations/what-a-check-can-know.m
 **Two obligations land on the parser rather than on the rules** ([spec 3](03-authoring-and-lifecycle.md#what-a-lexical-rule-gets-wrong-and-where-posture-comes-from)). A voice check reads author-owned text, so quotations, code, citations and generated blocks are outside every voice rule by construction. And sentence segmentation joins the [correctness roots](12-check-layer.md#the-correctness-roots), because that is where the errors were.
 
 **The [principle 4](00-vision-and-scope.md#design-principles) exception does not reach here.** A voice finding that fires wrongly is visible and cheap. One that fails to fire costs a sentence that a later reader or a later run still catches. Both error classes recover, so the ordinary promotion path applies and only the fixability bar stops it.
-
-**What stays open.** The measurement above is of three ASD-STE100 structural rules, used as proxies. Nobody has measured `future_intent`, `change_narration` or `phased_rollout`, which are the categories that the declarative regime forbids, because no implementation of them exists. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. [Spec 8](08-design-departures.md) calls declarative voice "mechanically detectable at useful precision". The instrument is a run of the three categories over this corpus, with an adjudicated sample of at least 50 findings each.
 
 ## Q6 — Where the corpus graph lives at rest
 
@@ -167,8 +149,6 @@ That answers the trust problem that the [SHACL evaluation](../evaluations/shacl-
 
 **What it found on the way.** Three findings, and two of them are about other documents. [Spec 1](01-conceptual-model.md#the-corpus) said that a repository has exactly one corpus, which named the wrong container and quietly blocked the monorepo half of Q9. The command list in [spec 6](06-engine-architecture.md#cli) never carried `headwater export`, although the pipeline diagram and [spec 2](02-taxonomy-model.md#mapping-between-taxonomies) both used it. And the projector had no check of its own, only a warning that it needed one.
 
-**What stays open.** One claim here is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires it to be. The rebuild-and-cache design is measured at spike scale, on generated documents. A real corpus and a real harvesting tier are the instruments, and neither exists yet.
-
 ## Q7 — Scope of the MCP surface
 
 This question is closed. One [evaluation](../evaluations/the-serving-boundary.md) settles it with [Q14](#q14--discovery-surface) and [Q17](#q17--governed-access-and-the-solution-layer). All three are about one boundary, where a corpus meets a reader that it does not control.
@@ -190,8 +170,6 @@ This question is closed. One [evaluation](../evaluations/the-serving-boundary.md
 **And the second row corrects the leaning the other way.** "Read-only in the first release" would ship the agent surface without the authoring half. [Spec 0](00-vision-and-scope.md#what-we-build) puts that half in the first release for a stated reason. The two working-tree tools are the mechanical, total operations that the fixability bar already admits.
 
 **Three findings from the prior art change how this is stated** ([spec 11 §O](11-adjacent-work.md#o--the-serving-boundary-descriptors-redaction-and-the-write-path)). The protocol's own annotations are hints, and a client must not trust one from an untrusted server. So the enforcement is an unregistered tool and never a flag. The published attacks arrive at discovery time, before any call, so a confirmation prompt at each call is not a safety argument. And an observed exploit used a write tool as an exfiltration channel, which makes this entry an access-control ruling as well as a workflow one.
-
-**What stays open.** What a hosted server is, operationally: who runs it, and how it is deployed. [Q11](#q11--license-and-distribution-posture) adds one fact to that. This surface and the probe harness are the only two places in the specification where a commercial tier could sit. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. Working-tree write tools should raise the assisted fraction ([spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric)), and that metric is the instrument.
 
 ## Q8 — Probe cost and cadence
 
@@ -216,8 +194,6 @@ This question is closed. One [evaluation](../evaluations/the-measurement-layer.m
 **Drift and defect are separated, as [principle 3](00-vision-and-scope.md#design-principles) requires.** The grading is deterministic, so a result that disagrees with its own transcript is a defect, and the grader joins the [correctness roots](12-check-layer.md#the-correctness-roots). The behavior is not deterministic, so a rerun that returns a different rate is variance or drift, and only an interval separates them. A model name is not a pin. Two snapshots of one named model moved from 84% to 51% on a task in three months.
 
 **The envelope is derived, and money is not the constraint.** A campaign's session count comes from statistical power, which puts it at one hundred to three hundred sessions for a detectable effect. Against a corpus of this size that is a low-hundreds-of-dollars line item, and a weekly regression tier is a small monthly bill. What binds is the authoring of scenarios and expectations, and the correctness of the grader. The envelope stays as a declared budget per tier, and the harness fails closed rather than overspends.
-
-**What stays open.** Whether the probe kind ships in the base package or in a bundle, which is a [Q3](#q3--how-much-of-the-default-taxonomy-ships-in-the-box) clustering question. How a probe reaches a harvesting tier, which has no tier to try it on. The retention policy for transcripts, whose size nobody has measured. Whether any adopter ever pays for a campaign is a business-model question, and [Q11](#q11--license-and-distribution-posture) places it rather than answers it. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. A closed-set expectation should make a probe verdict reproducible under grading, and `generate --check` over a result document is the instrument.
 
 ## Q9 — Multi-repository corpora
 
@@ -250,8 +226,6 @@ Backstage is this shape in production. Its catalog re-derives entities from desc
 The harvest ruling constrained [Q17](#q17--governed-access-and-the-solution-layer) in three ways, and Q17 has since closed on them.
 
 The export is the serving artifact, so a filter acts at export and never at graph build. Checks therefore stay privileged and total, which Q17 required and could not point at. The projection census is the mechanism for Q17's tombstone rule. A redaction is a loss with a reason, and the census already reports that shape. And a harvesting tier holds bytes that a publishing corpus gave it. A filter applied when the tier *reads* is a filter applied after the bytes crossed the boundary. Filtering belongs to the publishing corpus's export step. That third constraint changed Q17's answer rather than confirming it, because Q17 had placed the boundary at the tier.
-
-**What stays open.** Whether a solution corpus vendors each source export or references it. A vendored copy keeps checks offline and grows the repository, and a reference does the reverse. The size of one real harvest is the evidence that closes it, and no such tier exists yet. Also open: whether a harvesting tier owes conformance rules of its own, because `headwater conformance` evaluates one repository. One claim is unmeasured. Harvest should keep a solution-tier route query inside the same 100 ms budget, and route latency at that tier is the instrument.
 
 ## Q10 — Naming
 
@@ -298,8 +272,6 @@ What the evaluation does instead is narrow the field, and it narrows it much fur
 
 **The link to [Q7](#q7--scope-of-the-mcp-surface) that this entry used to name is gone.** Q7 closed on the ruling that a landed write never ships, and no license term changes that.
 
-**What stays open.** Where a commercial tier could sit, which the paragraph above holds rather than answers. The trademark position is also deliberately thin, and a registration or a transfer would change it. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. Permissive terms should remove a step before a trial. The instrument is a count of adopters who report the terms as the reason that they stopped. That count needs a public channel, which does not exist yet.
-
 ## Q12 — Migration path for an existing corpus
 
 This question is closed. One [evaluation](../evaluations/first-contact.md) settles it with [Q11](#q11--license-and-distribution-posture) and [Q16](#q16--public-presence). The between-majors half closed earlier. What stayed open was first contact: a corpus that was never valid. The migration state appears not to cover it, because that state is defined against a known-good starting point.
@@ -317,8 +289,6 @@ This question is closed. One [evaluation](../evaluations/first-contact.md) settl
 **Every run reports how many pairs remain.** ESLint fails a run that carries a suppression which no longer matches, and that is the property `.ste-lint-baseline.json` lacks. Headwater does not need the failure, because a pair that passes is a task that closes and the expiry forces the conversation. It needs the number, beside coverage, so that a payload which is not shrinking is visible long before its expiry.
 
 **The observed shape of gradual adoption is a declaration in the tree, and we already have it.** Sorbet reads a strictness level from a sigil at the top of each file. The default for an unmarked file is the level at which almost nothing fires. Two properties do the work. The level is committed and diffable, so no invocation changes a verdict, and the untouched file stays in the denominator. Headwater reached both from the other direction. The regimes are declared per kind and per shelf, and Q3 already declared `controlled: none` on the base package for this reason.
-
-**What stays open.** One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. An adoption payload should shrink. The instrument is its remaining pair count over time, against the fraction of payloads that reach zero before the expiry. This repository ran the pattern in miniature. `.ste-lint-baseline.json` grandfathered 65 violations when the check landed, and it holds 14 today. That number is weaker than it looks. Most of the fall came from prose that a later commit rewrote for other reasons, and from a defect in the checker. The baseline also has neither an owner nor an expiry. It shows that a text-keyed ratchet does not run backwards. It shows nothing about whether anyone works a debt list.
 
 ## Q13 — LinkML and SHACL as substrate
 
@@ -359,8 +329,6 @@ That placement makes the standing worry concrete rather than hypothetical. OKF's
 
 **Counter-evidence, still standing.** [OpenGEO](11-adjacent-work.md#e-opengeo--same-substrate-opposite-direction) declines RDF, OWL and SHACL for a neighboring problem. [TrustGraph](11-adjacent-work.md#j-trustgraph--the-same-pitch-the-opposite-mechanism) chose the whole standards stack and ships it. The staging order is what respects both. Nothing standards-based is refused, and nothing is built before a consumer exists.
 
-**What stays open.** No named consumer exists for emitters 3 through 6, and that is the trigger rather than an oversight. If none appears, four emitters are never written and nothing upstream changes. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. Emitted JSON Schema should lower the rate of invalid front matter that reaches a check. The instrument is the coverage report's finding rate for Shape-origin rules. If that rate does not move, the staging order is wrong and SHACL has as good a claim to the first slot.
-
 ## Q14 — Discovery surface
 
 This question is closed. One [evaluation](../evaluations/the-serving-boundary.md) settles it with [Q17](#q17--governed-access-and-the-solution-layer) and [Q7](#q7--scope-of-the-mcp-surface), because the three describe one boundary from three sides.
@@ -378,8 +346,6 @@ This question is closed. One [evaluation](../evaluations/the-serving-boundary.md
 **The descriptor is a disclosure, not only a convenience.** It names roots, entry points and profiles, which is organizational structure. The robots convention states the same thing about itself in its own standard. The file grants no authorization, and a path becomes discoverable by being named.
 
 **What the prior art contributes, including against us.** Four conventions that resemble this keep the index bare and put identity on each collection. They do so to avoid a central file that describes roots which somebody else edits. Headwater centralizes anyway, and may, because the descriptor is generated and regeneration catches drift. The sharper warning is `llms.txt`: about 137,000 domains measured, 97% of valid files unread in a month, and no provider obliged to read one. A descriptor is worth what its obliged consumer is worth, and Headwater's first consumer is its own tooling ([spec 11 §O](11-adjacent-work.md#o--the-serving-boundary-descriptors-redaction-and-the-write-path)).
-
-**What stays open.** Nothing here. Registration went to [Q16](#q16--public-presence), which has since closed it. Registration is an act of publication into a channel whose reader is already obliged, and two such channels carry the descriptor already. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. A descriptor should let a cold agent reach a governing document that it otherwise misses, and the Discovery and Navigability probe categories are the instrument.
 
 ## Q15 — A synthesized content tier
 
@@ -408,8 +374,6 @@ This question is closed. One [evaluation](../evaluations/warrant-and-adjudicatio
 **Promotion is acceptance, and nothing new is built.** A person reads the document, sets the warrant, and names themselves. Bulk stamping produces identical bytes, so no mechanism detects it. `taxonomy audit` reports promotions per change instead, and a change that promotes forty documents is a finding about the review. That posture is advisory permanently, for the reason that the shift ratio is.
 
 **The Q17 constraint changed the answer rather than confirming it.** This entry proposed that an emitter which cannot carry the mark declares that in its loss set. A loss-set entry reaches the consumer who reads it and nobody else. C2PA's own threat model records that ordinary tooling strips a mark that travels beside content. So an emitter that cannot carry the warrant **withholds** the content at the profile's declared tombstone grain ([spec 6](06-engine-architecture.md#an-export-is-a-projection-and-it-declares-what-it-dropped)). That costs nothing today, because the native export carries the warrant with no loss.
-
-**What stays open.** Whether anything is ever promoted. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. Asserted content should move to `accepted` rather than accumulate, and the promotion rate against the asserted count is the instrument. If it never moves, the tier is a dumping ground and the honest response is to say so.
 
 ## Q16 — Public presence
 
@@ -445,8 +409,6 @@ This question is closed. One [evaluation](../evaluations/first-contact.md) settl
 **"Honest before impressive" becomes a mechanism, because the site is generated.** §I.4 records claims that move between README versions as the thing which made an otherwise strong project harder to trust. An intention does not prevent that. A generated page does. **Every number on the site comes from the evidence register, and a claim with no instrument is generated as unmeasured** ([spec 4](04-assurance-model.md#the-systems-own-assurance)). A hand-written number on the site is then a finding, in the way that a hand-edited shelf index is. And the self-assessment states that it is self-published, which is §I.4's standard applied to ourselves.
 
 **The leaning on timing survives, with a derived trigger.** The site ships when the engine ships. A site supplies observability, and it cannot supply trialability. The diffusion literature is clear that neither substitutes for the other ([spec 11 §S.6](11-adjacent-work.md#s6-what-predicts-adoption-and-which-entry-supplies-each-attribute)). So a site that describes a tool nobody can run spends the first impression and offers no next step. The sitemap is drafted above, which is what the leaning asked for.
-
-**What stays open.** Whether the four documentation modes of Diátaxis are the right kind set for a documentation-site bundle. That is a [Q3](#q3--how-much-of-the-default-taxonomy-ships-in-the-box) clustering question, and it is data in a package. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. A generated site should let a reader answer "is this for me?" without reading the specification. The Discovery probe category is the instrument for the machine half. The human half has no instrument at all, which is worth a statement rather than a silence.
 
 ## Q17 — Governed access and the solution layer
 
@@ -538,8 +500,6 @@ So the project takes on three things, and they arrive with the first filtered pr
 
 **Sub-repository filtering is refused, not deferred.** Within one repository a clone is total, so any filter placed there controls one reading path while the bytes stay readable along another. An adopter who needs a contractor to read one shelf and not another puts the other shelf in a second repository and federates it in. The cost is real and stated. The alternative is a control that we would have to call advisory in the one place where advisory is a defect.
 
-**What stays open.** Whether any corpus ever needs a second profile. The first release ships one, unfiltered, and a real adopter with a real second audience is what builds the rest. Also open: what a hosted server is operationally, and whether a withheld anchor needs a class beside its count. [Q11](#q11--license-and-distribution-posture) names the hosted server as one of the two surfaces where a commercial tier could sit. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. A `counted` tombstone should stop an agent reporting absence with confidence, and a probe over a withheld answer is the instrument.
-
 This entry's closing sentence survives and belongs in the specification. A filtered view that does not announce its filtering is not a partial implementation of this. It is a defect.
 
 ## Q18 — Recording adjudicated disagreements
@@ -563,8 +523,6 @@ Everything the entry wanted then follows from rulings that exist.
 
 **The prior art argued the other way first** ([spec 11 §P](11-adjacent-work.md#p--provenance-endorsement-and-the-record-of-a-judgment)). Legal citators put a treatment signal on the citing relationship, which is the edge, and they have done so for over a century. Two facts turn it around. The flag is derived from a published opinion, so the opinion is the record and the flag is a projection. And two citators over the same case law disagree at a measured rate. Retraction practice lands where this ruling lands: a separate citable object that points at a work which stays in place.
 
-**What stays open.** Whether an adjudication is ever partial, with one document governing one axis and another governing a second. Today that is two edges, or one document whose prose carries the split. No corpus shows the need. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. An agent that meets the losing document first should reach the adjudication, and a probe over a settled pair is the instrument.
-
 ## Q19 — Inbound integration: an external system of record
 
 This question is closed. One [evaluation](../evaluations/warrant-and-adjudication.md) settles it with [Q15](#q15--a-synthesized-content-tier) and [Q18](#q18--recording-adjudicated-disagreements). Four of the five open points close, and the first one dissolves.
@@ -580,8 +538,6 @@ This question is closed. One [evaluation](../evaluations/warrant-and-adjudicatio
 **Imported text does not leave, and the mechanism landed one group earlier.** [Q17](#q17--governed-access-and-the-solution-layer) made the export filter default-deny over classes, and a transcribed document is a class. So an adopter carries imported prose to an audience only by naming it in a profile, and that is a line that a reviewer reads. What this ruling adds is a statement rather than a mechanism, and it sits with the other non-claims. Headwater checks nothing about a license. A profile that carries transcribed content is the adopter's redistribution decision ([spec 6](06-engine-architecture.md#what-a-filtered-export-claims-and-what-it-does-not)). Debian segregates by archive area for the same reason, and carries the rest by an explicit act.
 
 **Drift is reported on the edge, not on the snapshot.** When a scheduled comparison advances the pin, the requirements whose revision changed are known. Every `traces_to` edge into one of them is a finding until a person re-verifies it. That is the suspect-link mechanism of requirements practice, and it is [spec 4](04-assurance-model.md#absence-is-a-finding-class-of-its-own)'s report-at-the-origin rule. A proposal against the whole snapshot names a file. A finding on an edge names the document whose author can act.
-
-**What stays open.** Whether a transcription projection ships at all, because no adopter has asked for imported text. Also open: the size of a committed snapshot with full requirement text, which is the same question that [Q9](#q9--multi-repository-corpora) holds about a vendored source export. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. Imported edges should not decay faster than scaffolded ones, and staleness by `created_by` in `taxonomy audit` is the instrument.
 
 ## Q20 — Where scent lives
 
@@ -602,8 +558,6 @@ This question is closed. One [evaluation](../evaluations/the-measurement-layer.m
 **The cue's counterfactual is the cheapest in the specification.** Absence falls back to the target's summary, so the ablation is a switch in the serving layer rather than a second corpus. The leaning said to grade the cue only where a probe records a failed traversal. That is close and one step short, because a failure in the present arm alone has no baseline to compare against.
 
 **One consequence arrives from outside, and it is unchanged.** A cue is an instance attribute, so an edge that carries one reifies in any RDF export. It appears in that emitter's declared loss set ([Q6](#q6--where-the-corpus-graph-lives-at-rest)). The native graph export carries a cue with no loss.
-
-**What stays open.** Whether any corpus authors enough cues to grade, because no adopter exists and this repository has not tried. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. A cue should raise traversal precision over the summary fallback, and a paired campaign over one corpus is the instrument. If it does not, the cue is authoring cost with no scent gain. The honest response is then to remove it rather than to make it longer.
 
 ## Q21 — Terminological succession, and validity under merge
 
@@ -648,5 +602,3 @@ The general statement is the larger of the two, and [spec 4](04-assurance-model.
 **The engine emits and never orders** ([spec 6](06-engine-architecture.md#ci-adapters)). A merge queue answers the question completely and pays with a serialized landing, and that trade belongs to the forge. This is the boundary that [Q7](#q7--scope-of-the-mcp-surface) drew for the write path, met a second time. The invalidation test fails toward re-running, because a false invalidation costs one run and a false survival ships an invalid corpus with a green report.
 
 **How exposed this repository is.** Across the 29 merge commits on `main`, the mainline had moved past the merge base in 16 of them. In 11 of the 29, both sides changed at least one file under `docs/spec/` from that base. The rate does not show that the failure is common. It shows that the window is the normal case, which is what this entry claimed and could not measure.
-
-**What stays open.** Whether any corpus other than this one needs a retired-term lexicon at all. Also open: whether the read set of a real corpus is small enough that publishing it is free. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. Publishing the read set should let a gate skip a full re-run on most merges. The instrument is the fraction of merges whose read set the other side never touched.
