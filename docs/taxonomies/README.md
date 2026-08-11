@@ -1,0 +1,103 @@
+# The canonical taxonomy library
+
+This directory holds the canonical taxonomy library: a curated set of taxonomies, each one modeling a named documentation tradition. Every adopter would otherwise rediscover and re-encode their own tradition from nothing. The library is the alternative to that, published on the terms that [spec 7](../spec/07-distribution-and-federation.md) already fixed.
+
+This file settles four things: what an entry is, what admits one, what each entry ships, and where a draft lives before an engine exists. It also collects the rulings that a draft works under, so that authoring an entry reopens none of them.
+
+## An entry is a bundle
+
+[Q3](../spec/09-decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) settled the packaging mechanism before the library needed it. The base package `headwater/standard` is minimal and derived from the core. Optional content ships as a **bundle**, which is a publisher overlay that holds `add` operations and nothing else ([spec 7](../spec/07-distribution-and-federation.md#bundles-are-publisher-overlays-in-the-other-direction)). A library entry is one such overlay, plus the doctrine prose, the templates, and the fixtures that go with it.
+
+The add-only rule comes from the resolver rather than from taste. Add-only overlays over disjoint addresses commute, so the static confluence check proves that every subset of bundles resolves ([spec 2](../spec/02-taxonomy-model.md#customization-by-composition)). The publisher runs that check once per release. No adopter can then select a combination of entries that fails.
+
+## Admission criteria
+
+Seven criteria. The first five confirm the sketch that the [epic](https://github.com/headwater-ai/headwater/issues/1) proposed, with one correction inside criterion 5. The last two follow from the confluence rule that criterion 3 rests on. A reviewer checks both mechanically once the engine exists.
+
+**1. It models a named tradition with citable prior art.** A book, a published method, or a convention that many organizations copied. The doctrine prose carries the citations, and it states what the tradition converges on rather than asserting a shape. A structure invented for the library fails here, however neat it is. The test a reviewer applies: somebody who works in the tradition recognizes it, and the citation predates the entry.
+
+**2. It ships the whole anatomy.** Schema, doctrine, templates, and fixtures, in the layout that [the next section](#what-an-entry-ships) fixes. A schema with no doctrine is a shape with no reason. [Spec 2](../spec/02-taxonomy-model.md#purpose-is-declared-not-implied) refuses that inside a taxonomy, and this file refuses it around one.
+
+**3. It is add-only over the base.** No `override` and no `remove`. An entry that needs either one does not fail admission on its own account. It is evidence that the base declared something that it should not have, and that finding goes to [13 — Open obligations](../spec/13-open-obligations.md). The entry then waits for the base change rather than working around it.
+
+**4. It carries a worked instance corpus.** At least one real or realistic corpus, typed by the entry. A taxonomy that never met a document is a guess about a tradition. The failure mode is symmetry: kinds that balance on the page and that nobody files. The corpus is also what the engine inherits as a fixture the day that it exists.
+
+**5. It declares its relationship to the invariant core.** The core requires the `state`, `freshness`, and `scent` facet roles, the `rationale` and `behavior` purposes, and a lifecycle-sensitive succession family ([spec 2](../spec/02-taxonomy-model.md#the-immutable-core)). An entry names which of its facets carry those roles, and which of its kinds serve those purposes.
+
+A **partial entry** states that instead. A facet-only overlay such as Diátaxis composes onto a base that already satisfies the core, and it satisfies nothing by itself. The declaration is what separates a partial entry from an entry with a hole in it.
+
+This criterion was first drafted around `rationale` alone. That inherited the omission that [Q3 corrected in its own leaning](../spec/09-decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box). A taxonomy with no behavior-serving kind has nowhere to state what the system does, so a code path resolves to nothing.
+
+**6. Its address set is disjoint from every admitted entry.** Confluence holds for add-only overlays over disjoint addresses. Two entries that both add `kinds.guide` collide, and that pair does not commute, so an adopter who selects both gets a resolution error. The admission test is the pairwise check that the publisher already runs at release. The remedy is a rename in the later entry, or a declared dependency on the earlier one where both mean the same thing.
+
+**7. It resolves, and it declares its dependency closure.** Every reference in the entry resolves against the base plus the entries that it names in `requires`. The [meta-schema](../spec/02-taxonomy-model.md#the-meta-schema) lists what that means in full, and three of its rules catch most of it. Every concrete kind is reachable from a shelf. Every declared purpose is served by a concrete kind. Every relation endpoint names a declared kind or anchor kind.
+
+The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md#bundles-and-why-one-line-per-relation-does-not-generalize) measured why this is not free. A new relation is one line. A new kind drags a shelf, a purpose, an identifier scheme, and its edges behind it.
+
+### One rule of the base is not a criterion here
+
+No relation in the base is `created_by: author`, because the claim under test is that unassisted human capture decays. A tradition that an entry models may genuinely carry an author-declared edge, so the rule does not transfer. The meta-schema already requires a `created_by` on every relation from a closed set. What an entry owes beyond that is one sentence of doctrine for each author-created edge, stating why nothing mechanical can propose it. `taxonomy audit` reports edge counts and staleness by creator, so the bet stays measurable rather than hidden.
+
+## What an entry ships
+
+One directory per entry, named for the bundle that it will publish as. Four parts, and each one has a destination in the published package, so promotion is a move rather than a rewrite.
+
+| Part | Path in the draft | Where it lands when the entry is published |
+|---|---|---|
+| Schema | `bundle.yml` | `bundles/<name>.yml` ([spec 7](../spec/07-distribution-and-federation.md#publishing)) |
+| Doctrine | `doctrine.md` | the `doctrine/` path, vendored to consumers |
+| Templates | `templates/` | the `templates/` path |
+| Fixtures | `fixtures/` | the publisher's reference corpora, which [spec 7](../spec/07-distribution-and-federation.md#upgrading) measures compatibility against |
+
+**`bundle.yml` is the overlay.** It names the bundle, the base version that it was written against, its `requires` closure, and its `add` operations. The per-file shape of a bundle is not specified anywhere yet, so a draft adopts this one and says so:
+
+```yaml
+bundle: design-spec
+extends: headwater/standard@1.0.0
+requires: []
+
+add:
+  purposes.<name>: {...}
+  kinds.<name>: {...}
+  shelves.<name>: {...}
+```
+
+**`doctrine.md` is the prose that a consumer vendors.** It states the tradition and cites the prior art of criterion 1. It explains the selection rather than restating the schema. It carries the core declaration of criterion 5, the author-edge sentences above, and every reading that the draft assumed where the specification is silent.
+
+**`templates/` holds one template per concrete kind that the entry adds.** [Spec 3](../spec/03-authoring-and-lifecycle.md) owns what a template contains. An entry with a kind that has no template asks an author to derive a document shape from a schema.
+
+**`fixtures/` holds the worked corpus of criterion 4**, and a `fixtures/README.md` that states what each document exercises and which findings it should raise. No runner reads these files yet. A fixture manifest in a format that nothing executes is a guess about a runner. The statement stays prose until an engine gives it a shape.
+
+## Where drafts live, and why here
+
+**Drafts live at `docs/taxonomies/<name>/`, and this file is the index.** The decision is recorded here because this file is the one that every entry author reads first.
+
+The alternative was `docs/evaluations/`, on the argument that a draft is evidence. That argument is spent. Q2, Q3, and Q13 each closed on an evaluation of its own, so no draft is needed to settle a decision now.
+
+An evaluation is a point-in-time record of how a question closed, and it is finished when the question is. A draft taxonomy is neither. It is a deliverable that later releases revise, and it is the engine's fixture corpus the day that there is an engine. A deliverable filed as evidence reads as spent the moment that its decision closes. That is wrong for an artifact which has to stay current.
+
+`docs/spec/` is not a candidate. The specification states what Headwater is, and a taxonomy is content that runs on it.
+
+## The rulings a draft works under
+
+These are settled elsewhere. An entry works under them and reopens none of them.
+
+**The format is Headwater's own dialect, in YAML.** [Q2](../spec/09-decisions.md#q2--schema-format) closed it. YAML 1.2 core schema is the concrete syntax, and the schema language, the reference sublanguage, the overlay language, and the meta-schema are Headwater's. JSON Schema is an emitted export and never the validator, because [spec 2](../spec/02-taxonomy-model.md) already carries references that no JSON Schema keyword resolves.
+
+**The loader rules bind a draft now.** `no` stays the string `no`. Duplicate keys are an error. Anchors, aliases, and merge keys are forbidden in taxonomy sources. The `$`-reference is the sanctioned reuse mechanism, and an alias is a second one that no overlay can address. Scalar types come from the meta-schema and never from the YAML resolver.
+
+**No second projection is required.** [Q13](../spec/09-decisions.md#q13--linkml-and-shacl-as-substrate) put LinkML last of six emitters, shipping only when a named external consumer asks, and it ruled that emitters never chain. Its evidence is already collected in the [LinkML worked example](../evaluations/linkml-worked-example.md). A hand-written LinkML or SHACL projection of an entry buys nothing that those two documents do not already hold.
+
+**A draft that uses `$`-references presses on an open obligation.** The sublanguage has three uses and no grammar, and [13 — Open obligations](../spec/13-open-obligations.md#design-work-that-nothing-blocks) lists the grammar as design work that nothing blocks. A draft is the first thing to press on it. So the draft records the reading that it assumed at each use, in `doctrine.md`, and the finding goes to 13.
+
+## Where a finding goes
+
+[9 — The decision register](../spec/09-decisions.md) is a register of settled decisions, and it accepts no new questions. A finding from library work goes to [13 — Open obligations](../spec/13-open-obligations.md), or it reopens a closed decision explicitly and argues the change.
+
+One item there is this library seen from the specification's side. **The bundle set** waits on a first adopter, because it is a guess about how adopters cluster and it is data in a package. Every entry admitted here is a revision of that guess, and the two must not drift.
+
+## Admission, and what is admitted
+
+An entry arrives as a pull request that adds one directory under this one. The reviewer checks the seven criteria above, and the entry is admitted when all seven hold. Criteria 3, 6, and 7 become mechanical the day that the resolver exists. Until then a reviewer reads the address list in `bundle.yml` against the entries already here.
+
+**Nothing is admitted yet.** The first entry is the design-spec taxonomy, which models the shape that this repository's own `docs/spec/` corpus follows. Each admitted entry adds a line below, with its bundle name and the tradition that it models.
