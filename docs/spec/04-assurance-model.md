@@ -43,7 +43,7 @@ Contradiction is the clearest case. To detect that two documents disagree is str
 
 Spec 2 gives the rule that [two `current` decisions joined by `conflicts_with`](02-taxonomy-model.md#the-decision-relation-vocabulary) is an invalid state. That rule is deterministic, total, and blocking-eligible. The judgment happened once, when the author declared the edge. After that, the check is cohesion.
 
-The same move settles the conflict itself. A human who resolves the disagreement writes a decision, and that decision `overrides` the one whose effect it displaces. The judgment is then data twice over: once in the edge that declared the conflict, and once in the document that settled it. Derived reading precedence carries the ruling to every later reader with no further mechanism ([Q18](09-open-questions.md#q18--recording-adjudicated-disagreements)).
+The same move settles the conflict itself. A human who resolves the disagreement writes a decision, and that decision `overrides` the one whose effect it displaces. The judgment is then data twice over: once in the edge that declared the conflict, and once in the document that settled it. Derived reading precedence carries the ruling to every later reader with no further mechanism ([Q18](09-decisions.md#q18--recording-adjudicated-disagreements)).
 
 This generalizes, and we state it as a design rule rather than as an observation about one relation:
 
@@ -53,7 +53,7 @@ The rest of this document depends on two consequences.
 
 **The sweep examines only the undeclared half.** Anything that the graph already asserts is the engine's job. A sampled LLM pass that re-derives it is slower, more costly, and less reliable than the check that already exists.
 
-**The corpus offers to move the line for you.** [Q4](09-open-questions.md#q4--relation-storage) keeps relation semantics out of prose, so a link in the body asserts nothing that the engine can check. The **undeclared reference** check narrows the gap that this leaves. A prose link that resolves to a corpus document with which the source declares no relation raises an advisory finding. The author wrote the reference once, and the fix writes the declaration.
+**The corpus offers to move the line for you.** [Q4](09-decisions.md#q4--relation-storage) keeps relation semantics out of prose, so a link in the body asserts nothing that the engine can check. The **undeclared reference** check narrows the gap that this leaves. A prose link that resolves to a corpus document with which the source declares no relation raises an advisory finding. The author wrote the reference once, and the fix writes the declaration.
 
 The fix is mechanical only when exactly one enabled relation type permits the pair of kinds at the two ends, which the [endpoint declarations](02-taxonomy-model.md#endpoints-are-the-only-permission) settle. Otherwise the finding lists the candidates and carries no patch, because the choice between two legal relations is a judgment. There is no converse check. A declared relation whose target the prose never names is not a finding, since a succession edge belongs in no paragraph. The posture is advisory, and [principle 4](00-vision-and-scope.md#design-principles) governs any promotion of it.
 
@@ -179,7 +179,7 @@ One class of control does not meet it. The rule below is general, so that it doe
 
 > A control walks the promotion path when both of its error classes are recoverable. Where one error class is unrecoverable, the control ships at its final posture. The evidence that the promotion machinery would collect is then evidence about the wrong error.
 
-The [withholding rule](06-engine-architecture.md#an-export-profile-carries-a-filter) of an export profile is the only instance today. A document withheld that could have been carried is visible, cheap and reversible. A document carried that should have been withheld is invisible to both instruments above, and no later run undoes it. So a withholding rule never ships advisory, carries no promotion criteria, and admits no escape hatch ([Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer)).
+The [withholding rule](06-engine-architecture.md#an-export-profile-carries-a-filter) of an export profile is the only instance today. A document withheld that could have been carried is visible, cheap and reversible. A document carried that should have been withheld is invisible to both instruments above, and no later run undoes it. So a withholding rule never ships advisory, carries no promotion criteria, and admits no escape hatch ([Q17](09-decisions.md#q17--governed-access-and-the-solution-layer)).
 
 ### Where promotion cannot finish
 
@@ -197,7 +197,7 @@ The [shift ratio](#measuring-coherence-where-we-can-continuity-across-links) is 
 
 A second class of component sits outside the promotion path, for a different reason and with no exception attached. Both instruments above measure a **rule**. A component that produces graph facts has no false-positive rate to measure. A wrong fact makes every check over it return a correct verdict about a wrong graph, and no advisory posture ever finds that.
 
-The scaffolder and an importer are the two components of this class. Their instrument is a fixture set, and [spec 12](12-check-layer.md#the-correctness-roots) holds both as correctness roots. So an imported edge carries full weight from the first release. It satisfies a participation expectation, and it supports `evidenced` ([Q19](09-open-questions.md#q19--inbound-integration-an-external-system-of-record)). To ship such an edge at a reduced posture would buy nothing and would measure the wrong artifact.
+The scaffolder and an importer are the two components of this class. Their instrument is a fixture set, and [spec 12](12-check-layer.md#the-correctness-roots) holds both as correctness roots. So an imported edge carries full weight from the first release. It satisfies a participation expectation, and it supports `evidenced` ([Q19](09-decisions.md#q19--inbound-integration-an-external-system-of-record)). To ship such an edge at a reduced posture would buy nothing and would measure the wrong artifact.
 
 ### Discharging coherence obligations: the assisted sweep
 
@@ -343,4 +343,4 @@ The controls above verify *form*. One question is semantic: does a specification
 
 Headwater's obligations, controls, and gaps live in Headwater's own corpus and are checked in Headwater's own CI. The same command that an adopter runs generates the coverage numbers that we publish for the project. If we exempt ourselves from something, that exemption is visible in the register. That is exactly the property that we ask adopters to accept.
 
-**The public surface is under the same rule, because it is a projection too.** The site that describes Headwater is generated from this corpus ([Q16](09-open-questions.md#q16--public-presence)). So **every number on it comes from the register, and a claim with no instrument is generated as unmeasured**. That is [principle 11](00-vision-and-scope.md#design-principles) given a publication surface. Two consequences follow. A hand-written figure on the site is a finding, in the way that a hand-edited shelf index is. And a self-assessment states that it is self-published, because [spec 11 §I.4](11-adjacent-work.md#i4-two-things-to-be-careful-about) applies that standard to a neighbor and [principle 8](00-vision-and-scope.md#design-principles) applies it here.
+**The public surface is under the same rule, because it is a projection too.** The site that describes Headwater is generated from this corpus ([Q16](09-decisions.md#q16--public-presence)). So **every number on it comes from the register, and a claim with no instrument is generated as unmeasured**. That is [principle 11](00-vision-and-scope.md#design-principles) given a publication surface. Two consequences follow. A hand-written figure on the site is a finding, in the way that a hand-edited shelf index is. And a self-assessment states that it is self-published, because [spec 11 §I.4](11-adjacent-work.md#i4-two-things-to-be-careful-about) applies that standard to a neighbor and [principle 8](00-vision-and-scope.md#design-principles) applies it here.

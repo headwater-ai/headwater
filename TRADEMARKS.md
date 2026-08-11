@@ -14,10 +14,10 @@ Use the name to refer to this project accurately. Say that your tool reads a Hea
 
 Do not use the name in a way that suggests we published, endorsed, or maintain something we do not. A fork or a redistribution that a reader could mistake for the original should carry its own name.
 
-`headwater` in lower case is an identifier throughout the design: the command that people type, the package name, the `.headwater/` directory, the `headwater:` annotation prefix, and the `https://w3id.org/headwater/` namespace that [Q10](docs/spec/09-open-questions.md#q10--naming) fixed. Nothing here restricts writing that identifier where the software requires it. A namespace URI is an identifier, and using one implies no claim about who holds the domain.
+`headwater` in lower case is an identifier throughout the design: the command that people type, the package name, the `.headwater/` directory, the `headwater:` annotation prefix, and the `https://w3id.org/headwater/` namespace that [Q10](docs/spec/09-decisions.md#q10--naming) fixed. Nothing here restricts writing that identifier where the software requires it. A namespace URI is an identifier, and using one implies no claim about who holds the domain.
 
 ## Why this file exists
 
-[Q11](docs/spec/09-open-questions.md#q11--license-and-distribution-posture) records that the trademark reservation is one of the two reasons the design preferred Apache-2.0 to MIT. A reservation that nobody wrote down is not a position. This file is the written form of it, and the register entry carries the date it was taken.
+[Q11](docs/spec/09-decisions.md#q11--license-and-distribution-posture) records that the trademark reservation is one of the two reasons the design preferred Apache-2.0 to MIT. A reservation that nobody wrote down is not a position. This file is the written form of it, and the register entry carries the date it was taken.
 
 If the position changes — a registration, a policy, or a transfer to an entity that holds the mark — it changes here, in a commit, with a date.

@@ -1,6 +1,6 @@
 # The `w3id.org/headwater` namespace
 
-[Q10](../spec/09-open-questions.md#q10--naming) fixes `https://w3id.org/headwater/` as the namespace that emitted artifacts carry. The identifier is registered and it resolves. This directory holds the copy of record for what the service serves, and it is not part of the build.
+[Q10](../spec/09-decisions.md#q10--naming) fixes `https://w3id.org/headwater/` as the namespace that emitted artifacts carry. The identifier is registered and it resolves. This directory holds the copy of record for what the service serves, and it is not part of the build.
 
 ## Why a permanent identifier and not the project domain
 
