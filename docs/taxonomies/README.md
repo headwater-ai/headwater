@@ -94,6 +94,20 @@ These are settled elsewhere. An entry works under them and reopens none of them.
 
 [9 — The decision register](../spec/09-decisions.md) is a register of settled decisions, and it accepts no new questions. A finding from library work goes to [13 — Open obligations](../spec/13-open-obligations.md), or it reopens a closed decision explicitly and argues the change.
 
+**An entry never edits the specification, and the finding is a separate change.** The two travel in opposite directions. An entry is content that runs on the specification, and a finding is a claim about the specification. To carry both in one pull request lets a library change rewrite the rules that admitted it.
+
+### A finding has a tier, and the tier fixes the timing
+
+**1. It contradicts a closed decision.** Stop, and reopen that decision explicitly before the entry merges. An entry built on a ruling that its own author believes is wrong carries the error into every entry that follows it.
+
+**2. It sharpens a decision, or it names a gap that blocks nothing.** It goes to 13, in one change per entry, opened as soon as the entry merges.
+
+**3. It records an assumption that the specification does not cover.** The same change carries it, grouped under one item. Each one is a place where the meta-schema has to speak eventually.
+
+**One change per entry, and never one per epic.** A finding held to the end of a program of work is written months after the argument that produced it. Whoever writes it then has to reconstruct that argument first. The long form stays in the entry's doctrine, where the reasoning already sits. 13 carries the pointer, which is the form that its own entries already take.
+
+**The epic holds the ledger.** Each entry posts its findings to the epic as a comment when it merges, with the tier of each one. That is what makes a review at the end of the epic possible. The review checks that every finding landed, and it is not the mechanism that lands them.
+
 One item there is this library seen from the specification's side. **The bundle set** waits on a first adopter, because it is a guess about how adopters cluster and it is data in a package. Every entry admitted here is a revision of that guess, and the two must not drift.
 
 ## Admission, and what is admitted
