@@ -155,6 +155,8 @@ This makes real questions answerable. Which parts of the corpus are agent-drafte
 
 **Agency is not the warrant.** An agent that drafts a document which a human then accepts produces an `accepted` document, and that is the ordinary case in this design. `asserted` marks content that nobody accepted, whoever or whatever wrote it.
 
+**A measurement is `regenerated`, and its transcript is what makes that true.** An efficacy [probe](05-ai-integration.md#a-run-produces-a-snapshot-and-a-document) run emits a transcript, which the corpus commits as a snapshot. The probe result is generated from that snapshot, the declared expectations and the grader version, so `generate --check` proves it. Without the committed transcript the result would be `asserted`, and the [evidence rules above](#evidence-has-three-honest-states-not-two) would then refuse it. A measurement that no decision may cite is not worth running.
+
 ### Promotion is one human, one document, one diff
 
 An `asserted` document becomes `accepted` when a person reads it, sets the warrant, and names themselves. That is the act the whole model rests on, and it needs no second mechanism.
