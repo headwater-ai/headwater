@@ -32,7 +32,7 @@ Seventeen decisions carry a claim that no run supports. Each one names its instr
 
 Nine items, and each one is data or a deferred component. So the first real adopter is the evidence, rather than a further argument.
 
-- **The bundle set** ([Q3](09-decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box)). It is a guess about how adopters cluster, and no adopter exists yet. It is data in a package, so the first real adopter revises it at the cost of a release.
+- **The bundle set** ([Q3](09-decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box)). It is a guess about how adopters cluster, and no adopter exists yet. It is data in a package, so the first real adopter revises it at the cost of a release. The [design-spec taxonomy](../taxonomies/design-spec/doctrine.md#findings) supplies a first data point. It adds the `narrative` voice regime at the address that the sketched `proposals` bundle also adds, and an adopter that selects both meets the collision.
 - **A second export profile** ([Q17](09-decisions.md#q17--governed-access-and-the-solution-layer)). Whether any corpus ever needs one. The first release ships one profile, unfiltered, and a real adopter with a real second audience is what builds the rest.
 - **Vendoring or reference at a solution corpus** ([Q9](09-decisions.md#q9--multi-repository-corpora)). Whether a solution corpus vendors each source export or references it. A vendored copy keeps checks offline and grows the repository, and a reference does the reverse. The size of one real harvest is the evidence that closes it, and no such tier exists yet.
 - **A named consumer for emitters 3 through 6** ([Q13](09-decisions.md#q13--linkml-and-shacl-as-substrate)). None exists, and that is the trigger rather than an oversight. If none appears, four emitters are never written and nothing upstream changes.
@@ -44,7 +44,19 @@ Nine items, and each one is data or a deferred component. So the first real adop
 
 ## Design work that nothing blocks
 
+Six items. The first comes from the register. The other five arrived from the [design-spec taxonomy](../taxonomies/design-spec/doctrine.md#findings), which is the first library entry to write a bundle out as YAML. No adopter and no measurement gates any of them.
+
 **The `$`-reference sublanguage** ([Q2](09-decisions.md#q2--schema-format)). It has three uses and no grammar, and it needs one definition before the meta-schema ships. No adopter and no measurement gates this one.
+
+**List extension in an add-only overlay** ([Q3](09-decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box)). A bundle holds no `override` and no `remove`, and [spec 2](02-taxonomy-model.md#customization-by-composition) supplies `add_to` for a list. Nothing states whether a bundle may use it. The confluence argument covers disjoint addresses only, and two `add_to` operations at one address are not disjoint. The wordings disagree as well. Spec 2, [spec 7](07-distribution-and-federation.md#bundles-are-publisher-overlays-in-the-other-direction) and the [glossary](glossary.md) permit whatever is not `override` or `remove`, and Q3 says that a bundle only adds. Until this closes, no bundle ships a lifecycle state or a projection, because the base holds both as lists.
+
+**Section contracts in the base** ([Q3](09-decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box)). The base `specification` kind requires the sections `Scope` and `Behavior`. That is a lexical commitment inside a package whose [core](07-distribution-and-federation.md#the-invariant-core) is semantic and never lexical. A tradition with other headings cannot reuse the kind add-only, so it adds a parallel behavior kind. The base kind and its shelf then hold nothing. The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md#the-starter-kit-is-a-selection-not-a-third-option) reached the same finding about the controlled-language profile. The remedy is the same one: an opinionated default belongs to the starter kit.
+
+**Identity below the grain of a document** ([spec 3](03-authoring-and-lifecycle.md#identifiers)). This file cites a decision as Q13, and it cites an obligation by its position in a list. Neither is a document, so neither reaches the identifier index and no edge names one. A taxonomy for this corpus therefore cannot say which decision an evaluation closed. The [last section](#a-human-maintains-this-list-by-hand) of this file states the same defect from the inside. The remedy converts each entry into a document, which is a different tradition with a taxonomy of its own.
+
+**A participation expectation names one target kind** ([spec 2](02-taxonomy-model.md#participation-expectations)). The declaration carries one `to_kind`. A corpus that expects a citation from any one of several register kinds cannot state that. An abstract kind over those kinds expresses it, at the cost of a kind that exists only as a target.
+
+**Two meta-schema surfaces have a required declaration and no stated form** ([Q2](09-decisions.md#q2--schema-format)). A facet declares `volatility`, and no value set states what it may hold. The [ascertainability canon](02-taxonomy-model.md#facet-acceptance-tests) requires guidance on every enum value, and no syntax carries it. A third surface is smaller and it belongs beside them. [Spec 7](07-distribution-and-federation.md#publishing) declares bundles in the package manifest, and nothing fixes the shape of the file that holds one. The first library entry guessed all three, and it recorded each guess.
 
 ## What else each decision left open
 
