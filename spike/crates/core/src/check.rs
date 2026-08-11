@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The check traits.
 //!
 //! Spec 12 models scope as a value that a check returns from `scope()`. The

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! **Item 4 of the spike.** A warm change-scoped run over a 1,000-document
 //! corpus, against the 200 ms hook budget from spec 6.
 //!

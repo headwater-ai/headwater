@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Content hashing for cache keys.
 //!
 //! FNV-1a, 128-bit. This is a **placeholder**: a real engine wants a

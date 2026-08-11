@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The finding shape from spec 4, reduced to what the spike needs.
 
 use crate::span::Span;

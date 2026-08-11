@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! **Item 3, first half.** The core crate as a native Node addon.
 //!
 //! The point of this crate is what it does *not* contain. There is no child

@@ -1,14 +1,12 @@
 # 9 — Open questions
 
-This file began as a list of decisions that we deliberately deferred, with the options and a leaning for each one. The design phase has now argued every entry. Twenty of the twenty-one are closed. One waits on a decision that belongs to the owner of this project and to no argument from the design.
+This file began as a list of decisions that we deliberately deferred, with the options and a leaning for each one. The design phase has now argued every entry, and all twenty-one are closed. The last one to close was [Q11](#q11--license-and-distribution-posture). No argument from the design could close it, because a license states what the owner intends for the project. The owner ratified it on 2026-08-11.
 
 So the file is a register of settled decisions and the reasoning that settled them. Each entry states the decision, what the argument corrected in the entry that asked the question, and what stays open under it. The title stays, because the last section of most entries is still an open question. The evidence for each closure lives beside it in [`docs/evaluations/`](../evaluations/).
 
 ## What is still live, across the whole file
 
-A reader who wants the open work does not have to read twenty-one entries for it. Four classes cover all of it.
-
-**One entry is not closed.** [Q11](#q11--license-and-distribution-posture) is pending the owner's ratification. The field of options is narrowed and a recommendation is on the table. Ratification is six concrete artifacts, and the entry lists them.
+A reader who wants the open work does not have to read twenty-one entries for it. Three classes cover all of it.
 
 **Seventeen entries carry an unmeasured claim**, as [principle 11](00-vision-and-scope.md#design-principles) requires them to. Each one names its instrument, and no instrument has run, because the engine does not exist. Every one of them sits under "what stays open" in its own entry, and none is hidden.
 
@@ -103,7 +101,7 @@ This question is closed. The [first-run walkthrough](../evaluations/default-taxo
 
 **What it found on the way.** Six defects, and three of them sit in [spec 2](02-taxonomy-model.md) with one cause between them. The smallest column of the worked example was drawn as an impression and never derived from the core beside it. So it omits the `behavior` purpose that the core requires. Its four default relations all run between decisions, so no default edge attaches the corpus to code. And two of those four have no mechanical creator, which contradicts what spec 2 claims for its own default set. All six are applied, and the [walkthrough](../evaluations/default-taxonomy-first-run.md#consequences-for-the-specification) records where each one landed.
 
-**What stays open.** The bundle set is a guess about how adopters cluster, and no adopter exists yet. It is data in a package, so the first real adopter revises it at the cost of a release. The license half of this question went to [Q11](#q11--license-and-distribution-posture), which found it a constraint rather than a preference. An overlay resolution contains base content, so the base and the bundles may impose nothing on a derived taxonomy. Which terms satisfy that is pending ratification, and nothing above depends on the answer.
+**What stays open.** The bundle set is a guess about how adopters cluster, and no adopter exists yet. It is data in a package, so the first real adopter revises it at the cost of a release. The license half of this question went to [Q11](#q11--license-and-distribution-posture), which found it a constraint rather than a preference. An overlay resolution contains base content, so the base and the bundles may impose nothing on a derived taxonomy. Apache-2.0 satisfies it, and nothing above depended on which terms did.
 
 ## Q4 — Relation storage
 
@@ -263,7 +261,9 @@ The casing has two forms, and they do not mix. In prose, the name of the system 
 
 ## Q11 — License and distribution posture
 
-**This entry is pending the owner's ratification.** No argument from the design closes it. A license is a statement about what the owner intends for the project, and this register cannot make one. One [evaluation](../evaluations/first-contact.md) prepares the decision with [Q12](#q12--migration-path-for-an-existing-corpus) and [Q16](#q16--public-presence), because the three describe one path that one outsider walks.
+This question is closed. The owner ratified it on 2026-08-11, and the terms are **Apache-2.0** for the engine, the library, the base package and the bundles.
+
+No argument from the design closed this one, and that is why it closed last. A license states what the owner intends for the project, and this register cannot make such a statement. What the design could do was narrow the field and prepare the decision. One [evaluation](../evaluations/first-contact.md) did that with [Q12](#q12--migration-path-for-an-existing-corpus) and [Q16](#q16--public-presence), because the three describe one path that one outsider walks.
 
 What the evaluation does instead is narrow the field, and it narrows it much further than this entry assumed. Eight rulings already made refuse two of the four postures outright, and a third for the library.
 
@@ -277,24 +277,24 @@ What the evaluation does instead is narrow the field, and it narrows it much fur
 
 **One half of this question the specification decides on its own, and it decides against the framing.** This entry treats the terms of the base package as a related preference. It is a constraint. [Q3](#q3--how-much-of-the-default-taxonomy-ships-in-the-box) ships a base plus add-only bundles, and [Q2](#q2--schema-format) makes an overlay a patch whose resolution contains base content. So an adopter's resolved taxonomy and lock contain the base. A copyleft or share-alike term on the base therefore propagates into an artifact that [spec 0](00-vision-and-scope.md#who-this-is-for) promises is the adopter's own. **The base package and the bundles may impose nothing on a derived taxonomy** ([spec 7](07-distribution-and-federation.md#publishing)).
 
-**The recommendation, for the owner to take or to decline.** Apache-2.0 for the engine, the library, the base package and the bundles. It satisfies the embedding requirement. It grants a patent license that MIT does not, and it reserves the trademark that [Q10](#q10--naming) fixed as the `https://headwater.dev/` namespace. [Q17](#q17--governed-access-and-the-solution-layer) is the reason the patent clause matters, because this tool emits artifacts into other people's compliance pipelines. Creative Commons Attribution for the doctrine prose, on the boundary that `contents.doctrine` already draws. The Developer Certificate of Origin for contributions, and no contributor license agreement. State that reason positively. The one power a contributor agreement adds is the power to change the terms later without asking, and the recommendation is not to want it.
+**What the owner took, and the reasoning that the recommendation carried.** Apache-2.0 for the engine, the library, the base package and the bundles. It satisfies the embedding requirement. It grants a patent license that MIT does not, and it reserves the trademark that [Q10](#q10--naming) fixed as the `https://headwater.dev/` namespace. [Q17](#q17--governed-access-and-the-solution-layer) is the reason the patent clause matters, because this tool emits artifacts into other people's compliance pipelines. Creative Commons Attribution for the doctrine prose, on the boundary that `contents.doctrine` already draws. The Developer Certificate of Origin for contributions, and no contributor license agreement. State that reason positively. The one power a contributor agreement adds is the power to change the terms later without asking, and the recommendation is not to want it.
 
-**What ratification means, concretely.** Six artifacts, and until they exist this entry stays pending.
+**What ratification produced.** This entry named six artifacts and said that it stayed pending until they existed. All six exist.
 
-1. A `LICENSE` file at the repository root, and a convention for the license identifier in source files.
-2. A `NOTICE` file, and a `CONTRIBUTING.md` that states the certificate and requires a sign-off line.
-3. A `SECURITY.md` with the coordinated-disclosure process that [Q17](#q17--governed-access-and-the-solution-layer) obliges and nothing currently discharges.
-4. The content license for `docs/`, marked where a reader finds it.
-5. The trademark position for the name and the domain, including the answer that there is none.
-6. The date. A term with no date cannot later be shown to have changed, and a visible change is the whole value of the commitment.
+1. [`LICENSE`](../../LICENSE) carries the Apache-2.0 text without modification. Source files carry `SPDX-License-Identifier: Apache-2.0` on the first line that permits a comment, and [`CONTRIBUTING.md`](../../CONTRIBUTING.md) states that convention. The identifier is the whole header, because a per-file copyright line goes stale and the commit history does not.
+2. [`NOTICE`](../../NOTICE) carries the project-level statement. [`CONTRIBUTING.md`](../../CONTRIBUTING.md) requires a `Signed-off-by` line under the Developer Certificate of Origin, and states the reason for no contributor agreement positively.
+3. [`SECURITY.md`](../../SECURITY.md) carries the coordinated-disclosure process that [Q17](#q17--governed-access-and-the-solution-layer) obliges. It reports that no engine has shipped, so no released artifact can carry a defect yet. It also states what is out of scope by design, which is a reader who can clone a repository and then reads it.
+4. [`docs/LICENSE`](../LICENSE) puts the prose under Creative Commons Attribution 4.0. It keeps the embedded code samples under Apache-2.0, so that copying an example carries no attribution obligation.
+5. [`TRADEMARKS.md`](../../TRADEMARKS.md) states the position, and the position is that there is no registered mark. Apache-2.0 section 6 grants no trademark rights, and that reservation was one of the two reasons to prefer these terms to MIT.
+6. The date is 2026-08-11. A term with no date cannot later be shown to have changed, and a visible change is the whole value of the commitment.
 
-**What the specification cannot decide, stated plainly.** Every constraint above rules an option out. Not one of them rules exactly one option in. Between MIT and Apache-2.0 the design is indifferent except for the patent and trademark clauses. Between Apache-2.0 and a weak copyleft it is nearly indifferent, and the choice turns on whether the owner wants engine improvements to return. A source-available license is still possible, and it would mean reopening principle 9 and Q13's staging order in the open.
+**What the specification could not decide, kept on the record.** Every constraint above rules an option out. Not one of them rules exactly one option in. Between MIT and Apache-2.0 the design is indifferent except for the patent and trademark clauses. Between Apache-2.0 and a weak copyleft it is nearly indifferent, and the choice turns on whether the owner wants engine improvements to return. The owner chose the permissive side of that question, and no argument in this file made the choice.
 
 **Where money could sit, because the question arrives with this one.** [Q7](#q7--scope-of-the-mcp-surface) and [Q17](#q17--governed-access-and-the-solution-layer) both leave open what a hosted server is operationally, and [Q8](#q8--probe-cost-and-cadence) prices a campaign run at real money. Those two surfaces are the only places in this specification where a commercial tier could sit, and neither is specified. The closest observed analog draws its line there: [Vale](00-vision-and-scope.md#what-we-do-not-build) is MIT, and its author sells a hosted authoring layer beside it ([spec 11 §S.3](11-adjacent-work.md#s3-where-the-closest-analog-draws-the-commercial-line)).
 
 **The link to [Q7](#q7--scope-of-the-mcp-surface) that this entry used to name is gone.** Q7 closed on the ruling that a landed write never ships, and no license term changes that.
 
-**What stays open.** Ratification, and the six artifacts above. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. Permissive terms should remove a step before a trial. The instrument is a count of adopters who report the terms as the reason that they stopped. That count needs a public channel, which does not exist yet.
+**What stays open.** Where a commercial tier could sit, which the paragraph above holds rather than answers. The trademark position is also deliberately thin, and a registration or a transfer would change it. One claim is unmeasured, as [principle 11](00-vision-and-scope.md#design-principles) requires. Permissive terms should remove a step before a trial. The instrument is a count of adopters who report the terms as the reason that they stopped. That count needs a public channel, which does not exist yet.
 
 ## Q12 — Migration path for an existing corpus
 
@@ -429,9 +429,9 @@ This question is closed. One [evaluation](../evaluations/first-contact.md) settl
 | Use cases | The five adopters of the [first-run walkthrough](../evaluations/default-taxonomy-first-run.md#five-first-runs) | Answered, from an evaluation |
 | Compatibility, integrations | [Q13](#q13--linkml-and-shacl-as-substrate)'s six emitters, of which two ship | Answered, and the answer is two |
 | Docs, getting started | [Spec 3](03-authoring-and-lifecycle.md) and the [interview](07-distribution-and-federation.md#the-interview) | Partial. No quickstart, because there is nothing to start |
-| Pricing, enterprise, consulting | [Q11](#q11--license-and-distribution-posture) | Blocked, pending ratification |
+| Pricing, enterprise, consulting | [Q11](#q11--license-and-distribution-posture) | Partial. The terms are Apache-2.0, and where a commercial tier sits is still open |
 | Compliance, audits, self-assessment | [Spec 4](04-assurance-model.md)'s obligation and gap registers, and [spec 6](06-engine-architecture.md#what-a-filtered-export-claims-and-what-it-does-not)'s one claim and five non-claims | Answered |
-| Changelog, community, open-source posture | [Q11](#q11--license-and-distribution-posture). There is no changelog and no community | Blocked |
+| Changelog, community, open-source posture | [Q11](#q11--license-and-distribution-posture). There is no changelog and no community | Partial. The posture is stated, and neither artifact exists |
 | `llms.txt`, AI-crawler `robots.txt` | Cheap to emit, and measurably unread | Ship it, and count it as nothing |
 
 **What the forcing function found is uncomfortable and correct.** The largest hole in the public story is the one that this project has decided it may not fill. The benchmark row is empty because [principle 11](00-vision-and-scope.md#design-principles) forbids a number that no run produced, and it stays empty until a campaign runs. The pressure to relax that will arrive exactly when the site does.

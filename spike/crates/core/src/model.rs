@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The typed graph.
 //!
 //! One design rule in this module carries item 2, and it is worth stating

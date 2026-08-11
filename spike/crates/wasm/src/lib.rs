@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! **Item 3, second half.** The core crate on `wasm32-unknown-unknown`.
 //!
 //! Deliberately no `wasm-bindgen`. The claim under test is that *the core

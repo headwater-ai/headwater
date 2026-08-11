@@ -307,6 +307,8 @@ So: **the site ships when the engine ships.** The sitemap is drafted above, thre
 
 **Q11 is pending the owner's ratification.** The six items in "what ratifying this would mean" are the work. Until they exist, this repository has no stated license, which is itself the first thing an outsider checks.
 
+That sentence was true when this evaluation ran, and it is no longer true. The owner ratified Apache-2.0 on 2026-08-11, and all six artifacts exist. The paragraph stays as written, because this document records what the evaluation found rather than what the project later did. [Q11](../spec/09-open-questions.md#q11--license-and-distribution-posture) carries the current state.
+
 **What a hosted server is, operationally.** Q7 and Q17 both left this open and this evaluation does not close it. What it adds is that the two hosted surfaces — a server and a probe harness — are the only places in this specification where a commercial tier could sit, and that the closest observed analog draws its line there.
 
 **Whether any adopter ever pays for a campaign.** Q8's open question is a business-model question, and Q11's recommendation does not answer it. It only says that the answer does not belong in the engine's license.

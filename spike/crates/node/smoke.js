@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // Item 3, first half: proof that Node loads the core crate in-process.
 //
 // `require` of a .node file is a dlopen into this process. If this script

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The runner: census, cache, and change-scoped evaluation.
 //!
 //! **Item 4 of the spike.** The claim under test is that a change-scoped run
