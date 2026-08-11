@@ -170,6 +170,8 @@ headwater probe      [--tier regression|campaign] [--arm present|absent] [--cate
 
 The CLI is advisory by default (exit 0 with findings on stdout). Use `--strict` for gates. The default is deliberate: a tool that blocks on first contact is removed, and a removed tool catches nothing.
 
+**No flag decides which findings count.** `--changed-only` scopes the work and never the verdict, because a full run over the same tree and the same lock reaches the same result. That is what makes it sound for a 200 ms hook. A mode that evaluated only newly touched documents would be a second input to the verdict that no reviewer sees. It would also report the rest as neither checked nor skipped. An adopter who wants patient debt gets it from the [adoption payload](07-distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy). That is a fact about the corpus, rather than a property of an invocation ([Q12](09-open-questions.md#q12--migration-path-for-an-existing-corpus)).
+
 ### `taxonomy validate` versus `taxonomy audit`
 
 There are two commands because there are two kinds of question. The distinction is the standard one between reasoning over a **TBox** (the terminology) and reasoning over an **ABox** (the assertions) against it ([spec 1](01-conceptual-model.md#two-layers-terminology-and-assertions)).

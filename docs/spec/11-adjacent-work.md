@@ -881,6 +881,112 @@ It belongs here as well, in a second reading. A surface that nobody measured is 
 
 ---
 
+## S — Terms, on-ramps, and being found
+
+These sources arrived with the [Q11, Q12 and Q16 evaluation](../evaluations/first-contact.md), and [§M](#m--what-the-survey-shows-as-a-whole-convergence-is-not-evidence) binds them. Two of them are efficacy sources rather than architecture sources, and the section marks them as such. The rest settle what a decision forecloses, which is a question about consequences rather than about effect.
+
+**One limit on this section, stated before the content.** The session that assembled it had no search budget left. Every claim below thus comes from a page fetched directly, and none comes from a search result. Three questions therefore stay unread, and they appear here as unread.
+
+- The number of companies pledged to the OpenTofu fork · the dates and license identifiers of the 2021 Elastic change and the fork that answered it · Redis's own relicensing sequence
+
+This follows the convention of [§R](#r--measuring-whether-the-corpus-works). A source that this survey did not read is weaker than a source that returned nothing.
+
+### S.1 A relicensing is measured in forks, and the licensor keeps the trademark
+
+Three episodes are available, and two of them were read at the primary source.
+
+A large infrastructure vendor announced on 10 August 2023 that its products moved from a weak copyleft license to the Business Source License v1.1. The announcement permits "copying, modification, redistribution, non-commercial use, and commercial use under specific conditions", and excludes anyone "providing a competitive offering". Fifteen days later a public fork appeared. Its manifesto states the reason in the language of uncertainty rather than of principle.
+
+> every company, vendor, and developer using Terraform has to wonder whether what they are doing could be construed as competitive with HashiCorp's offerings
+
+The fork then joined a foundation, so that the project stays "truly open source and neutral and not at the whim of any one company."
+
+A search-engine vendor supplies the other half of the arc, and it is the more useful half because the company published a retrospective. Its founder wrote on 29 August 2024 that the products would add AGPL beside the two existing licenses. On the 2021 change he wrote: "We had issues with AWS and the market confusion their offering was causing." And on the result:
+
+> Amazon is fully invested in their fork, the market confusion has been (mostly) resolved, and our partnership with AWS is stronger than ever
+
+The post declines to call the original change a mistake, and it does not have to. A relicensing whose stated goal was to prevent a competitor's offering produced one that is now permanent. The licensor then added an open-source license back, three years later.
+
+A third project, a fork of a key-value datastore, states the shape rather than the history. It is BSD-licensed, and "backed by the Linux Foundation, ensuring it will remain open source forever". It also notes that the original name is a registered trademark of the original company.
+
+**What transfers.** A restriction on a competing offering does not read to a user as a restriction on a competitor. It reads as a question that the user cannot answer about themselves. The manifesto above is the primary evidence for that, in the words of the people who forked. That bears on [principle 9](00-vision-and-scope.md#design-principles), which builds an integration before a replacement, and on [Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate), which makes an external consumer the trigger for four emitters. Under such terms, every adjacent project that considers an integration has to ask a lawyer whether it competes.
+
+**What it contradicts.** The reading that a relicensing destroys a project is not what these cases show. Both licensors still exist and both still sell. What the cases show is narrower and more useful. The change bought each licensor a permanent, well-funded fork, transferred stewardship of the open version to a foundation controlled by others, and cost the name. The trademark was the one asset that stayed, which is why [Q10](09-open-questions.md#q10--naming)'s namespace is a governance instrument rather than a license one.
+
+The OSI's stated position closes the naming half. It rejected the SSPL because a restriction on a field of endeavor violates the Open Source Definition. It calls a license that grants source visibility without those rights "fauxpen source". A project that adopts such terms may not describe itself as open source, whatever else it may do.
+
+### S.2 The contribution agreement is the relicensing lever, not the license
+
+What makes a unilateral relicensing possible is the inbound agreement.
+
+The Developer Certificate of Origin, version 1.1, is a certification and not a grant. A contributor certifies two things. They wrote the contribution, or they hold the right to submit it under the project's license. And the contribution is a public record. The certificate transfers no other right to anybody.
+
+A contributor agreement can transfer more. The widely-used guidance lists four cases where one earns its friction, and the fourth is the relevant one. It is a project that "uses copyleft licensing but needs a proprietary version". The same guidance records the default for everyone else. "An open source license implicitly serves as both the inbound and outbound license" for the vast majority of projects. It also records a cost with a named example. One large runtime project removed its agreement to lower the barrier to entry and broaden the contributor base.
+
+**This sharpens a recommendation rather than only informing it.** The unique power an agreement confers is the power to change the terms later without asking. §S.1 is the record of what exercising that power produced. A project that does not want the power should not collect it, and the certificate is what makes the promise structural instead of stated.
+
+> **Applied:** the recommendation and the ratification list in [Q11](09-open-questions.md#q11--license-and-distribution-posture).
+
+### S.3 Where the closest analog draws the commercial line
+
+[Spec 0](00-vision-and-scope.md#what-we-do-not-build) names Vale as the closest observed analog to this engine. Vale is MIT-licensed. Its author asks for sponsorship and sells two hosted products beside the tool. One is a platform to build and maintain style guides. The other is a layer that manages configuration and rules in a browser. The command-line checker is not the product. The place that a person cannot easily self-host is.
+
+That is the line [Q7](09-open-questions.md#q7--scope-of-the-mcp-surface) and [Q17](09-open-questions.md#q17--governed-access-and-the-solution-layer) both left open, when each recorded that nobody has said what a hosted server is. It is also where [Q8](09-open-questions.md#q8--probe-cost-and-cadence) found the only per-run cost in the specification. An observed case that draws the line where this specification's own open points already sit is stronger evidence than an argument would have been.
+
+> **Applied:** the placement of a commercial tier in [Q11](09-open-questions.md#q11--license-and-distribution-posture).
+
+### S.4 Gradual adoption is a declaration in the tree, never a flag on the run
+
+The typed-language migrations are the closest analog to a corpus that was never valid. The strongest of them made the strictness level a property of the file.
+
+Sorbet reads a `# typed:` sigil at the top of each Ruby file, with five levels: `ignore`, `false`, `true`, `strict` and `strong`. The default for a file with no sigil is `# typed: false`, at which the checker reports only syntax, constant resolution and signature correctness. The stated purpose of the levels is gradual adoption, one file at a time.
+
+Two properties of that design are the finding, and neither is about types. **The level is committed, reviewed and diffable**, so two runs over one tree agree and no invocation of the tool changes a verdict. **The default is the level at which almost nothing fires**, so an untouched file is checked rather than exempted and stays in the denominator.
+
+Headwater holds both properties already, and reached them from another direction. The regimes are declared per kind and per shelf, in a taxonomy that is committed and reviewed. And [Q3](09-open-questions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) declared `controlled: none` on the base package, which makes it the level at which almost nothing fires. The sigil and the base package are one device. The contribution of the source is to refuse the alternative that [Q12](09-open-questions.md#q12--migration-path-for-an-existing-corpus) leaned toward, which expressed the same intent as a flag on the run.
+
+> **Applied:** the refusal of a gating `--since` in [spec 6](06-engine-architecture.md#cli), and first contact in [spec 7](07-distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy).
+
+### S.5 Grandfathering has a scale at which it lies
+
+Three grandfathering mechanisms were read, and they differ in the property that decides first contact.
+
+| Tool | What it records | What happens when somebody fixes a violation |
+|---|---|---|
+| RuboCop `.rubocop_todo.yml` | A raised `Max` for a metric cop, a list of excluded files, or the cop disabled entirely | The documentation states no report. A person re-runs the generator |
+| ESLint `eslint-suppressions.json` | A count of suppressed violations per rule per file | The run **fails**: "There are suppressions left that do not occur anymore." A prune flag removes them |
+| This repository's `.ste-lint-baseline.json` | A hash of the file, the rule, and the offending text | The hash stops matching, so the entry becomes dead weight. Nothing reports it |
+
+**The first row carries a number, and the number is the finding.** The generator excludes offending files one at a time until an exclusion limit, and the default limit is 15 files. Past that limit it disables the cop entirely rather than carrying a longer list. That is a reasonable default for a mature codebase that adds one rule. It is precisely wrong for first contact, which is the one moment at which every rule exceeds any such threshold. A mechanism that degrades from per-instance accounting to whole-rule silence produces the failure that [spec 4](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for) exists to forbid. It produces that failure when the corpus is least trustworthy.
+
+**The second row carries the property that this repository's own baseline lacks.** A suppression that no longer matches is an error rather than dead weight. Headwater's `migration-pending` findings already hold the stronger version of that. A payload declares a pair set, and a pair that passes is a task that closes. What the source adds is the argument for a report of the remaining count on every run.
+
+> **Applied:** the no-threshold rule and the reported count in [spec 7](07-distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy) and [spec 4](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for).
+
+### S.6 What predicts adoption, and which entry supplies each attribute
+
+Rogers' account of diffusion names five attributes of an innovation that predict its rate of adoption: relative advantage, compatibility, complexity, observability and trialability. Trialability is the ability to experiment before a commitment. Observability is whether the benefits are visible, and whether a potential adopter can see somebody else in use of the thing. Both work by a reduction of uncertainty rather than by an increase in benefit.
+
+Read against the register, the mapping is exact and it explains the order in which the last three entries had to close. [Q11](09-open-questions.md#q11--license-and-distribution-posture) and [Q12](09-open-questions.md#q12--migration-path-for-an-existing-corpus) are the whole of trialability. [Q16](09-open-questions.md#q16--public-presence) is the whole of observability. The theory says that neither substitutes for the other. That is why a site which describes a tool nobody can run is the wrong artifact to ship first.
+
+**The uncomfortable half is the last row.** Observability is supplied by visible results, and [principle 11](00-vision-and-scope.md#design-principles) forbids the publication of a result that no run produced. So the attribute that a site exists to supply is the one this project has decided it may not fabricate. That is the correct trade, and it is worth a statement here because the pressure to relax it will arrive exactly when the site does.
+
+### S.7 Four documentation modes, found here before they were consulted
+
+Diátaxis names four kinds of documentation on two axes, practical against theoretical and specific against general, which yield tutorials, how-to guides, reference and explanation. Its claim is that content, style and organization all follow from a separation of the four.
+
+This reaches [Q16](09-open-questions.md#q16--public-presence) through [principle 8](00-vision-and-scope.md#design-principles) rather than as advice. A site generated from the corpus has sections that are shelves, and page types that are kinds. So the four modes are a candidate kind set for a documentation-site bundle. The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md#five-first-runs) reached one half of that split independently, and against this repository. The specification documents state a model and argue for it in one file, while `docs/evaluations/` already carries the argument. That is reference against explanation, found by measurement before anybody read the framework.
+
+### S.8 What this section confirms, sharpens and contradicts
+
+**Confirms.** A permissive license and an on-ramp are the two halves of trialability, and both are cheap to supply and expensive to retrofit. A grandfathering mechanism needs an owner and an expiry, which [Q21](09-open-questions.md#q21--terminological-succession-and-validity-under-merge) already said about this repository's own baseline.
+
+**Sharpens.** The reason to prefer a permissive license here is not ideology and not popularity. It is [spec 6](06-engine-architecture.md#library)'s embedding requirement, [Q13](09-open-questions.md#q13--linkml-and-shacl-as-substrate)'s external consumers, and the resolution of an overlay, which puts base content inside an adopter's own artifact.
+
+**Contradicts.** Two readings that this survey went in holding. That a relicensing simply kills a project, which the retrospective above refuses. And that a documented gradual-adoption mode belongs in the runner, which the sigil design refutes by shipping the alternative and keeping determinism.
+
+---
+
 ## Summary
 
 | Source | Verdict | Outcome |
@@ -929,3 +1035,10 @@ It belongs here as well, in a second reading. A surface that nobody measured is 
 | Confluence and SharePoint permission models | A second permission model diverges in its derived structure, and does not scale | Confirms one permission system, and it is the platform's |
 | Microsoft security servicing criteria, ISO 29147/30111, the CRA | The obligation attaches to the published claim. Publish the non-boundaries too | Applied — the claim and the five non-claims (spec 6) |
 | Cross-fork object reference on a large forge | Repository permissions hold for an unforked tip, and are qualified otherwise | Recorded as a qualification on **Q17** |
+| BUSL and SSPL relicensing, OpenTofu and Valkey, the OSI position | A restriction on a competing offering is a question the user cannot answer about themselves. The licensor keeps the trademark and loses the fork | Applied — the narrowed field and the namespace argument. **Q11** pending ratification |
+| The Developer Certificate of Origin against a contributor agreement | The one power an agreement adds is the power to change the terms later | Applied — the certificate, and no agreement, in the Q11 recommendation |
+| Vale's hosted products | The closest analog ships the checker free and sells the hosted layer | Applied — where a commercial tier could sit (**Q11**, **Q7**, **Q17**) |
+| Sorbet's per-file sigil | Gradual adoption is a declaration in the tree, and the untouched file stays in the denominator | Applied — a gating `--since` refused (spec 6). **Q12** closed |
+| RuboCop's exclusion limit, ESLint's suppressions file | A grandfathering mechanism has a scale at which it switches a rule off and says nothing | Applied — no threshold, and the count reported on every run (specs 4, 7) |
+| Rogers, diffusion of innovations | Trialability and observability reduce uncertainty by different routes, and neither substitutes | Applied — the order in which Q11, Q12 and Q16 had to close |
+| Diátaxis | Four modes on two axes, and this repository found one of the splits first | Noted as a candidate kind set for a documentation-site bundle. **Q16** closed |

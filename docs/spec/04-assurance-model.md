@@ -268,6 +268,7 @@ Three consequences deserve a plain statement:
 - **A document that matched no check is a finding**, not a silent success. Usually it means that a shelf pattern is wrong or that a file is misplaced, and both are worth attention.
 - **Coverage is reported on clean runs too.** "No findings across 412 of 412 documents" and "no findings across 380 of 412" are very different results. A report that cannot distinguish them is not trustworthy.
 - **Parse failures are findings, never omissions.** A file that the engine cannot read is reported as such and counted. It does not drop out of the denominator.
+- **Declared debt is counted, and the count is reported on every run.** A corpus under a migration state carries `migration-pending` findings, and a corpus at first contact carries the whole [adoption payload](07-distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy). Those documents are checked, so coverage holds. What the report adds is the number of open pairs. A payload that never shrinks is then visible from the second run rather than at its expiry.
 
 This is the assurance model applied to itself. The system insists that every obligation carries a disposition, and that visible incompleteness beats apparent completeness. It owes the same discipline to its own coverage.
 
@@ -341,3 +342,5 @@ The controls above verify *form*. One question is semantic: does a specification
 ## The system's own assurance
 
 Headwater's obligations, controls, and gaps live in Headwater's own corpus and are checked in Headwater's own CI. The same command that an adopter runs generates the coverage numbers that we publish for the project. If we exempt ourselves from something, that exemption is visible in the register. That is exactly the property that we ask adopters to accept.
+
+**The public surface is under the same rule, because it is a projection too.** The site that describes Headwater is generated from this corpus ([Q16](09-open-questions.md#q16--public-presence)). So **every number on it comes from the register, and a claim with no instrument is generated as unmeasured**. That is [principle 11](00-vision-and-scope.md#design-principles) given a publication surface. Two consequences follow. A hand-written figure on the site is a finding, in the way that a hand-edited shelf index is. And a self-assessment states that it is self-published, because [spec 11 §I.4](11-adjacent-work.md#i4-two-things-to-be-careful-about) applies that standard to a neighbor and [principle 8](00-vision-and-scope.md#design-principles) applies it here.
