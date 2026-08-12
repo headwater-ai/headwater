@@ -271,8 +271,14 @@ pub fn run(
             scope::neighbourhood_scope::<participation::Participation<'_>>(),
         ),
         (voice::RULE, scope::document_scope::<voice::Voice>()),
-        (language::RULE, scope::document_scope::<language::Language>()),
-        (sections::RULE, scope::document_scope::<sections::Sections>()),
+        (
+            language::RULE,
+            scope::document_scope::<language::Language>(),
+        ),
+        (
+            sections::RULE,
+            scope::document_scope::<sections::Sections>(),
+        ),
         (
             fragment::RULE,
             scope::document_scope::<fragment::Fragments>(),

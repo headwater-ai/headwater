@@ -89,7 +89,8 @@ struct Category {
 const CATEGORIES: [Category; 3] = [
     Category {
         name: "future_intent",
-        instead: "state what the system does now, or move the sentence to a document whose kind narrates",
+        instead:
+            "state what the system does now, or move the sentence to a document whose kind narrates",
         patterns: &[
             "will be",
             "will become",

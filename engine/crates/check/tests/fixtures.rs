@@ -18,9 +18,8 @@ use headwater_census::walk::Corpus;
 use headwater_check::scope::{over_documents, over_edges, Digests};
 use headwater_check::{
     coverage, endpoint, facet_required, facet_value, fragment, language, participation, placement,
-    reciprocity, sections, voice, Cache,
-    Context, Date, Declared, Detail, DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain,
-    Outcome, Register, Run, Shape,
+    reciprocity, sections, voice, Cache, Context, Date, Declared, Detail, DocumentCheck,
+    DocumentView, EdgeCheck, EdgeView, Grain, Outcome, Register, Run, Shape,
 };
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;

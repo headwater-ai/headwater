@@ -219,7 +219,10 @@ impl DocumentCheck for Language {
             if let Some(word) = contraction(&sentence.authored) {
                 findings.push(at(
                     Severity::Error,
-                    format!("`{}` admits no contraction, and this sentence writes `{word}`", bound.regime),
+                    format!(
+                        "`{}` admits no contraction, and this sentence writes `{word}`",
+                        bound.regime
+                    ),
                     format!("write `{word}` out in full"),
                 ));
             }
@@ -320,7 +323,10 @@ mod tests {
     /// report the whole specification.
     #[test]
     fn a_possessive_is_not_a_contraction() {
-        assert_eq!(contraction("Headwater's own corpus and the engine's lock"), None);
+        assert_eq!(
+            contraction("Headwater's own corpus and the engine's lock"),
+            None
+        );
         assert_eq!(contraction("the adopter's overlay"), None);
         assert_eq!(contraction("it does not hold"), None);
     }

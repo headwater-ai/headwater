@@ -152,7 +152,10 @@ impl Coverage {
         let mut reasons: Vec<(&str, usize)> = Vec::new();
         for document in &self.documents {
             for (_, reason) in &document.skipped {
-                match reasons.iter_mut().find(|(known, _)| *known == reason.as_str()) {
+                match reasons
+                    .iter_mut()
+                    .find(|(known, _)| *known == reason.as_str())
+                {
                     Some((_, count)) => *count += 1,
                     None => reasons.push((reason.as_str(), 1)),
                 }

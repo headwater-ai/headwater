@@ -90,10 +90,7 @@ impl DocumentCheck for Fragments {
                 path: view.path().to_string(),
                 line: link.span.start.line,
                 column: link.span.start.col,
-                message: format!(
-                    "`{}` names no heading of this document",
-                    link.destination
-                ),
+                message: format!("`{}` names no heading of this document", link.destination),
                 remediation: format!(
                     "point it at a heading of {}, or write the heading it names",
                     view.path()
@@ -151,9 +148,15 @@ mod tests {
 
     #[test]
     fn an_em_dash_leaves_the_spaces_around_it() {
-        assert_eq!(slug("Q5 — Voice checking depth"), "q5--voice-checking-depth");
+        assert_eq!(
+            slug("Q5 — Voice checking depth"),
+            "q5--voice-checking-depth"
+        );
         assert_eq!(slug("`$package.optional`"), "packageoptional");
-        assert_eq!(slug("Two phases, and why the order matters"), "two-phases-and-why-the-order-matters");
+        assert_eq!(
+            slug("Two phases, and why the order matters"),
+            "two-phases-and-why-the-order-matters"
+        );
     }
 
     #[test]

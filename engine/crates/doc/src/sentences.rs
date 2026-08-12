@@ -43,7 +43,9 @@ use headwater_yaml::{Position, Span};
 ///
 /// The list is closed and short on purpose. Each entry is a string this corpus
 /// writes, and an entry that nothing writes is a rule nobody can test.
-const ABBREVIATIONS: [&str; 8] = ["e.g.", "i.e.", "cf.", "etc.", "vs.", "al.", "approx.", "no."];
+const ABBREVIATIONS: [&str; 8] = [
+    "e.g.", "i.e.", "cf.", "etc.", "vs.", "al.", "approx.", "no.",
+];
 
 /// One sentence of one document.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -174,7 +176,9 @@ fn ends_a_sentence(chars: &[char], index: usize, block: &Block, links: &[Link]) 
 /// and that is the guard that keeps an abbreviation the list below misses from
 /// splitting a sentence in two.
 fn opens_a_sentence(c: char) -> bool {
-    c.is_uppercase() || c.is_ascii_digit() || matches!(c, '"' | '“' | '(' | '[' | '`' | '*' | '_' | '§')
+    c.is_uppercase()
+        || c.is_ascii_digit()
+        || matches!(c, '"' | '“' | '(' | '[' | '`' | '*' | '_' | '§')
 }
 
 /// Whether the character at `index` is inside a prose link.
@@ -399,7 +403,10 @@ mod tests {
     fn a_code_span_opens_a_sentence() {
         assert_eq!(
             texts("The reasoning binds it. `scope()` is a method it declares.\n"),
-            ["The reasoning binds it.", "scope() is a method it declares."]
+            [
+                "The reasoning binds it.",
+                "scope() is a method it declares."
+            ]
         );
     }
 
@@ -459,6 +466,9 @@ mod tests {
 
     #[test]
     fn a_fenced_block_holds_no_sentence() {
-        assert_eq!(texts("```\nfn main() { one(); two(); }\n```\n"), Vec::<String>::new());
+        assert_eq!(
+            texts("```\nfn main() { one(); two(); }\n```\n"),
+            Vec::<String>::new()
+        );
     }
 }
