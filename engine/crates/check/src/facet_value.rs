@@ -47,12 +47,23 @@ use crate::shape::Shape;
 
 pub const RULE: &str = "facet.value.not_permitted";
 
+/// One enumerated facet, and the values it admits.
+struct Enumerated {
+    facet: String,
+    values: Vec<String>,
+}
+
+/// Every enumerated facet one kind may carry.
+struct Admitted {
+    kind: String,
+    /// In facet declaration order, so two runs report two violations in one
+    /// order.
+    facets: Vec<Enumerated>,
+}
+
 /// The check, generated from the facet declarations.
 pub struct Values {
-    /// Each kind, and every enumerated facet a document of it may carry, with
-    /// the set. In facet declaration order, so two runs report two violations
-    /// in one order.
-    by_kind: Vec<(String, Vec<(String, Vec<String>)>)>,
+    admitted: Vec<Admitted>,
 }
 
 impl Values {
@@ -64,7 +75,7 @@ impl Values {
             .filter(|facet| !facet.values.is_empty())
             .collect();
         Values {
-            by_kind: shape
+            admitted: shape
                 .kinds
                 .iter()
                 .map(|kind| {
@@ -73,25 +84,28 @@ impl Values {
                         .iter()
                         .flat_map(|step| step.forbid.iter().map(String::as_str))
                         .collect();
-                    (
-                        kind.name.clone(),
-                        enumerated
+                    Admitted {
+                        kind: kind.name.clone(),
+                        facets: enumerated
                             .iter()
                             .filter(|facet| !forbidden.contains(&facet.name.as_str()))
-                            .map(|facet| (facet.name.clone(), facet.values.clone()))
-                            .collect::<Vec<_>>(),
-                    )
+                            .map(|facet| Enumerated {
+                                facet: facet.name.clone(),
+                                values: facet.values.clone(),
+                            })
+                            .collect(),
+                    }
                 })
-                .filter(|(_, facets)| !facets.is_empty())
+                .filter(|admitted| !admitted.facets.is_empty())
                 .collect(),
         }
     }
 
-    fn admitted_by(&self, kind: &str) -> &[(String, Vec<String>)] {
-        self.by_kind
+    fn admitted_by(&self, kind: &str) -> &[Enumerated] {
+        self.admitted
             .iter()
-            .find(|(known, _)| known == kind)
-            .map(|(_, facets)| facets.as_slice())
+            .find(|admitted| admitted.kind == kind)
+            .map(|admitted| admitted.facets.as_slice())
             .unwrap_or_default()
     }
 }
@@ -109,7 +123,7 @@ impl DocumentCheck for Values {
         let findings = self
             .admitted_by(view.kind())
             .iter()
-            .filter_map(|(facet, values)| {
+            .filter_map(|Enumerated { facet, values }| {
                 let entry = view.facets().entry(facet)?;
                 // Absent is the required-facet rule's business, and a value
                 // this engine cannot read as a scalar is the meta-schema's.

@@ -99,8 +99,8 @@ pub use finding::{Finding, Severity};
 pub use instance::{Input, Instance, Outcome};
 pub use register::{Bound, Register};
 pub use scope::{
-    DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain, NeighbourhoodCheck,
-    NeighbourhoodView, Scope,
+    DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain, NeighbourhoodCheck, NeighbourhoodView,
+    Scope,
 };
 pub use shape::Shape;
 

@@ -260,8 +260,9 @@ fn a_clock_that_moved_is_not_served_from_the_entry_before_it() {
         outside
             .instances
             .iter()
-            .filter(|instance| instance.rule == headwater_check::participation::RULE
-                && instance.ran())
+            .filter(
+                |instance| instance.rule == headwater_check::participation::RULE && instance.ran()
+            )
             .count(),
         "{:?}",
         outside.cache

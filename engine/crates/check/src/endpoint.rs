@@ -150,41 +150,44 @@ impl EdgeCheck for Endpoints<'_> {
         let (source, target) = match half.direction {
             Direction::AsDeclared => (writer, other),
             Direction::Inverse => (
-                Endpoint { key: "from", ..other },
-                Endpoint { key: "to", ..writer },
+                Endpoint {
+                    key: "from",
+                    ..other
+                },
+                Endpoint {
+                    key: "to",
+                    ..writer
+                },
             ),
         };
 
         let (line, column) = at(Some(half.span));
-        let findings = [
-            (&source, &relation.from),
-            (&target, &relation.to),
-        ]
-        .into_iter()
-        .filter(|(end, permitted)| !self.admits(permitted, end.kind))
-        .map(|(end, permitted)| Finding {
-            rule: self::RULE,
-            severity: Severity::Error,
-            obligation: None,
-            path: half.source.path.clone(),
-            line,
-            column,
-            message: format!(
-                "`{}` declares `{}: [{}]`, and `{}` at that end has the kind `{}`",
-                relation.name,
-                end.key,
-                permitted.join(", "),
-                end.id,
-                end.kind
-            ),
-            remediation: format!(
-                "declare this relation between kinds `{}` permits, or widen its `{}` in the \
+        let findings = [(&source, &relation.from), (&target, &relation.to)]
+            .into_iter()
+            .filter(|(end, permitted)| !self.admits(permitted, end.kind))
+            .map(|(end, permitted)| Finding {
+                rule: self::RULE,
+                severity: Severity::Error,
+                obligation: None,
+                path: half.source.path.clone(),
+                line,
+                column,
+                message: format!(
+                    "`{}` declares `{}: [{}]`, and `{}` at that end has the kind `{}`",
+                    relation.name,
+                    end.key,
+                    permitted.join(", "),
+                    end.id,
+                    end.kind
+                ),
+                remediation: format!(
+                    "declare this relation between kinds `{}` permits, or widen its `{}` in the \
                  taxonomy; the document at that end is {}",
-                relation.name, end.key, end.path
-            ),
-            fixable: false,
-        })
-        .collect();
+                    relation.name, end.key, end.path
+                ),
+                fixable: false,
+            })
+            .collect();
         Outcome::failed(findings)
     }
 }

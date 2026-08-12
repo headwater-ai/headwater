@@ -686,7 +686,14 @@ mod tests {
     #[test]
     fn an_input_with_no_digest_is_not_keyed() {
         assert_eq!(
-            cache().key("r", 1, Scope::document(false, false), "a.md", &inputs(None), None),
+            cache().key(
+                "r",
+                1,
+                Scope::document(false, false),
+                "a.md",
+                &inputs(None),
+                None
+            ),
             None
         );
     }

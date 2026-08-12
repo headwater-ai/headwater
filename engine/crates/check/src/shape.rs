@@ -292,8 +292,12 @@ fn read_kind(name: &str, value: &Value, span: Span) -> Result<Kind, DeclarationE
     Ok(Kind {
         name: name.to_string(),
         is_a: scalar(map, "is_a"),
-        require: facets.map(|map| sequence(map, "require")).unwrap_or_default(),
-        forbid: facets.map(|map| sequence(map, "forbid")).unwrap_or_default(),
+        require: facets
+            .map(|map| sequence(map, "require"))
+            .unwrap_or_default(),
+        forbid: facets
+            .map(|map| sequence(map, "forbid"))
+            .unwrap_or_default(),
         expectations: read_expectations(map),
         span,
     })
@@ -430,12 +434,19 @@ kinds:
     #[test]
     fn a_value_set_reads_from_a_vocabulary_and_from_a_plain_list() {
         let shape = shape(SOURCE);
-        assert_eq!(shape.facet("status").expect("declared").values, ["draft", "current"]);
+        assert_eq!(
+            shape.facet("status").expect("declared").values,
+            ["draft", "current"]
+        );
         assert_eq!(
             shape.facet("doc_type").expect("declared").values,
             ["design_spec", "evaluation"]
         );
-        assert!(shape.facet("status_since").expect("declared").values.is_empty());
+        assert!(shape
+            .facet("status_since")
+            .expect("declared")
+            .values
+            .is_empty());
     }
 
     /// The chain is what a required-facet check reads, and it is the whole of
@@ -460,7 +471,9 @@ kinds:
     #[test]
     fn a_forbidden_facet_is_never_owed() {
         let shape = shape(&SOURCE.replace("      - {value: draft, role: initial}\n", ""));
-        assert!(!shape.required_facets("evaluation").contains(&"doc_type".to_string()));
+        assert!(!shape
+            .required_facets("evaluation")
+            .contains(&"doc_type".to_string()));
     }
 
     #[test]
@@ -487,12 +500,17 @@ kinds:
         assert_eq!(expectation.id, "evidence-cited");
         assert_eq!(expectation.relation, "cited_by");
         assert_eq!(expectation.to_kind.as_deref(), Some("decision_register"));
-        assert_eq!(expectation.when, [("status".to_string(), "current".to_string())]);
+        assert_eq!(
+            expectation.when,
+            [("status".to_string(), "current".to_string())]
+        );
         assert_eq!(expectation.within_days, Some(30));
         assert_eq!(expectation.since_role, "state_entered");
         assert_eq!(expectation.severity, Some(Severity::Warn));
         assert_eq!(
-            shape.facet_in_role("state_entered").map(|facet| facet.name.as_str()),
+            shape
+                .facet_in_role("state_entered")
+                .map(|facet| facet.name.as_str()),
             Some("status_since")
         );
     }
