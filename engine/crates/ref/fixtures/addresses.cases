@@ -1,0 +1,41 @@
+# One input per line. A blank line and a `#` line are skipped, and `~` on its
+# own is the empty string, which no other notation here can write.
+
+# --- what this repository, its bundle and its package already write ---------
+shelves.decisions.path
+identifier_schemes.decision_id.pattern
+vocabularies.lifecycle_state
+kinds.design_spec.identifier
+kinds.decision_register.language
+regimes.language.ste_house
+regimes.voice.narrative
+relations.forbids
+shelves.playbooks
+kinds.playbook
+
+# --- the shapes the grammar admits and nothing has written yet --------------
+# One segment is an address. It names a whole declaration, and `remove:` is
+# where that is useful.
+shelves
+# Digits and `_` are segment characters, and case is kept.
+kinds.adr_2
+kinds.ADR
+# A list index parses, and this is where the grammar stops. `0` is a legal key
+# name, so no lexical rule can tell an index from a key. The refusal is the
+# resolver's, on the node the address lands on: an address that reaches into a
+# list is an error, because a list position is not stable across an upstream
+# release, and `add_to` and `remove_from` are what a list takes instead.
+regimes.lifecycle.standard.transitions.0
+
+# --- what the grammar refuses -----------------------------------------------
+~
+.kinds
+kinds.
+kinds..playbook
+# A hyphen is refused today. Nothing in the language needs one, and Q2 settles
+# the direction to guess in: relaxing a rule later is free, and adding one later
+# is a finding against every source that already used the form.
+kinds.play-book
+kinds.play book
+# A reference is not an address.
+$vocabularies.lifecycle_state

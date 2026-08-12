@@ -1,0 +1,13 @@
+$vocabularies.lifecycle_state => root vocabularies, address lifecycle_state
+$vocabularies.audience => root vocabularies, address audience
+$package.optional.forbids => root package, address optional / forbids
+~ => error at 0: there is nothing to read; an address names at least one segment, and a reference names a root and at least one segment in it
+$ => error at 1: there is nothing to read; an address names at least one segment, and a reference names a root and at least one segment in it
+vocabularies.lifecycle_state => error at 0: a reference opens with `$`; without it this is an address, and an address is legal only where nothing else can be written
+$vocabularies => error at 1: `$vocabularies` names a root and nothing in it; a reference names what it reads
+$package => error at 1: `$package` names a root and nothing in it; a reference names what it reads
+$facets.status => error at 1: `facets` is not a reference root; the roots are `vocabularies` and `package`
+$Vocabularies.audience => error at 1: `Vocabularies` is not a reference root; the roots are `vocabularies` and `package`
+$.audience => error at 1: an empty segment; `.` separates two segments and never opens or closes an address
+$vocabularies. => error at 14: an empty segment; `.` separates two segments and never opens or closes an address
+$vocabularies..audience => error at 14: an empty segment; `.` separates two segments and never opens or closes an address

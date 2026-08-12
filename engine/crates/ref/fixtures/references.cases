@@ -1,0 +1,23 @@
+# One input per line. A blank line and a `#` line are skipped, and `~` on its
+# own is the empty string.
+
+# --- the two uses that are written down anywhere ----------------------------
+$vocabularies.lifecycle_state
+$vocabularies.audience
+$package.optional.forbids
+
+# --- what the grammar refuses -----------------------------------------------
+~
+$
+# An address is not a reference. The message says which of the two this is.
+vocabularies.lifecycle_state
+# A root and nothing in it. The root set is closed, so this could only ever
+# mean the whole block, and no position takes one.
+$vocabularies
+$package
+# The root set is closed and case-sensitive.
+$facets.status
+$Vocabularies.audience
+$.audience
+$vocabularies.
+$vocabularies..audience

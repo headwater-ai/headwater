@@ -1,0 +1,28 @@
+# A scalar in a position the meta-schema says admits a reference. One input per
+# line. A blank line and a `#` line are skipped, and `~` on its own is the empty
+# string.
+
+# --- a reference ------------------------------------------------------------
+$vocabularies.lifecycle_state
+
+# --- a literal --------------------------------------------------------------
+~
+draft
+# A `$` that does not open the scalar is an ordinary character. This is an
+# identifier scheme pattern, and it is typed as a string, so nothing would call
+# this function on it either.
+^DR-[A-Z]{2,6}-[0-9]{4}$
+
+# --- the escape -------------------------------------------------------------
+# Quoting cannot escape, because a quoted scalar and a plain one are one value
+# under Q2. So the escape is in the sublanguage: `$$` stands for one literal
+# `$`, and one `$` is removed from whatever follows.
+$$vocabularies.lifecycle_state
+$$
+$$$x
+
+# --- a malformed reference is an error, not a literal ------------------------
+# The alternative reading is worse: a typed root that fell back to a literal
+# would put the text `$vocabularise.audience` into a facet's value set, and
+# nothing downstream would report it.
+$vocabularise.audience
