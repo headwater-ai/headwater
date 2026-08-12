@@ -1,7 +1,7 @@
 9:1: replace: `replace` is not an overlay operation; the operations are `add`, `override`, `remove`, `add_to` and `remove_from`
 13:3: add.kinds.decision.tone: `kinds.decision.tone` names nothing the meta-schema declares; `tone` is the segment that stops it
 14:3: add.identifier_schemes.decision_id.pattern.prefix: `identifier_schemes.decision_id.pattern.prefix` continues below `identifier_schemes.decision_id.pattern`, which holds a value rather than a tree
-15:3: add: `shelves.play-books` is not an address: the character `-` is not allowed in a segment; a segment holds letters, digits and `_`
+15:3: add: `shelves.play books` is not an address: the character ` ` is not allowed in a segment; a segment holds letters, digits, `_` and `-`
 16:25: add.facets.status.values: a sequence belongs here, and this is a scalar
 17:3: add.package.optional.forbids: `package.optional.forbids` opens on the reserved root `package`; the publisher's library of defined content is read with a reference and never named by an address
 20:5: remove.kinds.decision.sections.require.0: `kinds.decision.sections.require.0` addresses a position inside the list at `kinds.decision.sections.require`; a list position does not survive an upstream release, and `add_to` and `remove_from` are what a list takes instead

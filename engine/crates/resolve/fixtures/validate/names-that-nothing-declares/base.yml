@@ -48,6 +48,21 @@ shelves:
     discriminator: doc_type            # no such facet
     kinds: [decision, proposal]        # `proposal` again
 
+obligations:
+  OB-ACME-1:
+    statement: Every live decision is reachable from an artifact it constrains
+    rationale: Rationale nobody can find from the thing it explains is rationale nobody reads
+    class: cohesion
+    prevents: process.traceability
+    severity: medium
+
+controls:
+  CT-ACME-1:
+    mechanism: check:relation.reciprocity.missing
+    discharges: [OB-ACME-1, OB-ACME-9]   # `OB-ACME-9` is declared nowhere
+    trigger: pull_request
+    posture: advisory
+
 mappings:
   - to: other/taxonomy
     kinds:

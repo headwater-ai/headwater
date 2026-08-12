@@ -44,7 +44,7 @@ pub fn skipped() -> &'static [(&'static str, &'static str)] {
     &SKIPPED
 }
 
-/// Validate a taxonomy source: the eleven declarations and their shapes.
+/// Validate a taxonomy source: the thirteen declarations and their shapes.
 pub fn taxonomy(schema: &MetaSchema, root: &Spanned<Value>) -> Vec<MetaError> {
     let mut out = Vec::new();
     let Some(map) = root.value.as_map() else {

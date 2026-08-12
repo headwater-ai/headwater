@@ -2,15 +2,22 @@
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
      36 instances of shelf.placement_is_primary
      86 instances of relation.reciprocity.missing
+rules, and the obligation each one serves
+  shelf.placement_is_primary
+    OB-PLACE-1
+  relation.reciprocity.missing
+    OB-REL-1
+  coverage.document_unchecked
+    OB-COV-2
 3 findings
       3 warn
 
 docs/reviews/core-concepts-findings-assessment.md warn
-  coverage.document_unchecked: this document is classified and all 1 of its check instances were skipped
+  coverage.document_unchecked (OB-COV-2): this document is classified and all 1 of its check instances were skipped
   fix: check that the shelf pattern claims the right files, and that the kind declares something a check reads
 docs/reviews/ste-editorial-pass-findings.md warn
-  coverage.document_unchecked: this document is classified and all 1 of its check instances were skipped
+  coverage.document_unchecked (OB-COV-2): this document is classified and all 1 of its check instances were skipped
   fix: check that the shelf pattern claims the right files, and that the kind declares something a check reads
 docs/spec/08-design-departures.md warn
-  coverage.document_unchecked: this document is classified and all 1 of its check instances were skipped
+  coverage.document_unchecked (OB-COV-2): this document is classified and all 1 of its check instances were skipped
   fix: check that the shelf pattern claims the right files, and that the kind declares something a check reads

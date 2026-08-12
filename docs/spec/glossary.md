@@ -679,7 +679,7 @@ A bounded exemption scoped to a file or a block, with an expiry and a reason fro
 
 ### Taxonomy
 
-The declared structure of a corpus, in eleven declarations: purposes, facets, regimes, relations, anchors, shelves, kinds, identifier schemes, core, mappings, and projections. It is data, not code. See [spec 2](02-taxonomy-model.md#the-eleven-declarations).
+The declared structure of a corpus, in thirteen declarations: purposes, facets, regimes, relations, anchors, shelves, kinds, identifier schemes, core, mappings, projections, obligations, and controls. It is data, not code. See [spec 2](02-taxonomy-model.md#the-thirteen-declarations).
 
 ### Taxonomy package
 
@@ -723,7 +723,7 @@ The scheduled comparison of the [pin](#pin) against the publisher's latest relea
 
 ### Vocabulary
 
-A named value set that facets reference. It is authoring syntax, validated as part of `facets`, and not a concept that anyone must learn first. See [spec 2](02-taxonomy-model.md#the-eleven-declarations).
+A named value set that facets reference. It is authoring syntax, validated as part of `facets`, and not a concept that anyone must learn first. See [spec 2](02-taxonomy-model.md#the-thirteen-declarations).
 
 ### Voice regime
 

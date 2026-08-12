@@ -30,7 +30,7 @@ How the system knows that it works, and admits where it does not.
 
 ## Assurance, not enforcement
 
-Enforcement implies a gate that stops bad things. Real documentation systems need four different postures, because no single gate catches enough:
+Enforcement implies a gate that stops bad things. Real documentation systems need four different classes of control, because no single gate catches enough:
 
 | Class | Acts | Example |
 |---|---|---|
@@ -91,25 +91,29 @@ An obligation is a stable, identified invariant that the corpus commits to. It i
 
 ```yaml
 obligations:
-  - id: OB-001
+  OB-001:
     statement: Behavior-changing code updates its governing specification in the same change
     rationale: A stale specification actively misleads humans, agents, and auditors
     class: cohesion
     prevents: content.outdated          # observed defect class
     severity: high
-  - id: OB-014
+  OB-014:
     statement: Every live decision is reachable from at least one artifact it constrains
     rationale: Rationale nobody can find from the thing it explains is rationale nobody reads
     class: cohesion
     prevents: process.traceability
     severity: medium
-  - id: OB-022
+  OB-022:
     statement: A document is usable by its declared audience without tacit context
     rationale: Form-correct prose can still be unusable, and nothing structural detects it
     class: coherence
     prevents: content.incomplete
     severity: high
 ```
+
+**The identifier is the key, and not a member.** An earlier draft wrote each entry as an item of a list, with the identifier under `id`. No address reaches inside a list ([spec 2](02-taxonomy-model.md#the--reference-sublanguage)), so no bundle could ever contribute an obligation. A bundle that adds a kind also adds the obligations that its rules serve. Keyed by the identifier, two bundles that add two obligations write two disjoint addresses, which is what the confluence rule of [spec 7](07-distribution-and-federation.md#bundles-are-publisher-overlays-in-the-other-direction) needs.
+
+**The severity here is the obligation's, and a finding carries a different one.** Two scales share one word. This one says how much the invariant matters, and the coverage report reads it to answer what fraction of obligations are verified by severity. A finding reports the severity of the check that produced it ([spec 12](12-check-layer.md#severity-is-the-checks-posture-is-the-controls)), on the scale `error`, `warn` and `info`. The [worked finding](#findings) below carries `error` against OB-014, which carries `medium`. Neither value is derivable from the other, and a reader who takes them for one field misreads both reports.
 
 ### Obligations are derived from observed defects, not invented
 
@@ -130,12 +134,12 @@ A control declares what discharges an obligation, when it runs, and what posture
 
 ```yaml
 controls:
-  - id: CT-007
-    mechanism: check:relation-reciprocity
+  CT-007:
+    mechanism: check:relation.reciprocity.missing
     discharges: [OB-014]
     trigger: pull_request
     posture: blocking
-  - id: CT-021
+  CT-021:
     mechanism: scheduled:staleness-sweep
     discharges: [OB-003]
     trigger: weekly
@@ -143,7 +147,9 @@ controls:
     handoff: task-per-finding
 ```
 
-Controls are validated like anything else. A control that names a mechanism that the engine does not implement, or a pipeline that does not exist, is a finding. A register that claims coverage that it does not have is worse than no register.
+Controls are validated like anything else. A control that names a mechanism that the engine does not implement, or a pipeline that does not exist, is a finding. A register that claims coverage that it does not have is worse than no register. `taxonomy validate` runs the half of that which one taxonomy can decide: every identifier under `discharges` names an obligation that the resolved taxonomy declares.
+
+**The mechanism is where a rule meets its obligation.** A mechanism that opens with `check:` names the identifier of a rule. The engine binds every finding of that rule to the obligation that the control discharges. So the binding is data, and an adopter rebinds a rule by an edit to a package rather than to the code that runs it.
 
 ## Every obligation has exactly one disposition
 

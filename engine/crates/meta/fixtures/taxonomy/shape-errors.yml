@@ -21,7 +21,10 @@ facets:
 
 anchors:
   code_path: {resolver: source-tree, cache: true}
+  # A hyphen is a segment character since obligations arrived keyed by an
+  # identifier, so this key is addressable and the case is here to say so.
   work-item: {resolver: ado-snapshot}
+  work item: {resolver: ado-snapshot}
 
 kinds:
   decision:

@@ -40,3 +40,34 @@ relations:
     family: evidence
     from: [design_spec]
     to:   [governed_document]
+
+# Two rules reach an obligation here and one does not, because both states are
+# worth recording. A finding names the obligation that the control binds it to,
+# and a rule that no control names says so in the report rather than carrying a
+# quiet `None`. The base package binds all three.
+
+obligations:
+  OB-FIX-1:
+    statement: A relation that requires reciprocity is declared at both of its ends
+    rationale: One half of a pair is a claim the document at the other end never made
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+  OB-FIX-2:
+    statement: A document does not restate in metadata what its placement already states
+    rationale: A restatement is a second truth that eventually disagrees with the first
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+
+controls:
+  CT-FIX-1:
+    mechanism: check:relation.reciprocity.missing
+    discharges: [OB-FIX-1]
+    trigger: pull_request
+    posture: advisory
+  CT-FIX-2:
+    mechanism: check:shelf.placement_is_primary
+    discharges: [OB-FIX-2]
+    trigger: pull_request
+    posture: advisory

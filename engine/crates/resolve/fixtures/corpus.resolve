@@ -52,6 +52,8 @@ declarations, by member count
   identifier_schemes: 5 members
   core: 1 member
   projections: 1 item
+  obligations: 5 members
+  controls: 3 members
 
 `taxonomy validate`: valid
 
@@ -61,7 +63,7 @@ rule by rule
   reference well-formedness
     over one source: every address and every `$`-reference parses, and stands where one may
   referential integrity
-    on the result: every name a declaration reads is declared, and every relation endpoint is a kind or an anchor kind. The `$`-reference half runs at merge time, because a reference that reads nothing stops the merge
+    on the result: every name a declaration reads is declared, every relation endpoint is a kind or an anchor kind, and every control discharges a declared obligation. The `$`-reference half runs at merge time, because a reference that reads nothing stops the merge
   anchor integrity
     on the result: one resolver per anchor kind, and no two anchor kinds share a namespace
   identifier integrity (in part)

@@ -96,15 +96,20 @@ impl std::fmt::Display for Address {
     }
 }
 
-/// A segment holds letters, digits and `_`.
+/// A segment holds letters, digits, `_` and `-`.
 ///
 /// `.` is excluded because it is the separator, and that exclusion is
 /// permanent: a key with a dot in it would make an address ambiguous, so the
-/// meta-schema refuses to declare one. Every other exclusion is provisional,
-/// `-` among them. [Q2](../../../docs/spec/09-decisions.md#q2--schema-format)
-/// settles the direction to guess in — a rule can be relaxed later at no cost,
-/// and cannot be added later without a finding against every source that
+/// meta-schema refuses to declare one.
+///
+/// `-` was excluded and is not. Spec 2 called that refusal provisional and said
+/// what would end it, and
+/// [#52](https://github.com/headwater-ai/headwater/issues/52) is what needed it:
+/// `obligations` and `controls` are keyed by the identifier, and every
+/// identifier that spec 4 writes holds a hyphen. Relaxing the rule is the free
+/// direction that [Q2](../../../docs/spec/09-decisions.md#q2--schema-format)
+/// settles. Adding one later would be a finding against every source that had
 /// already used the form.
 fn is_segment_character(found: char) -> bool {
-    found.is_ascii_alphanumeric() || found == '_'
+    found.is_ascii_alphanumeric() || found == '_' || found == '-'
 }

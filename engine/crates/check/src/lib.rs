@@ -32,10 +32,12 @@
 //! and there is no inventory to report. That is
 //! [#58](https://github.com/headwater-ai/headwater/issues/58).
 //!
-//! **The obligation register.** Two of the three rules below name no
-//! obligation, because an obligation is data and no package this repository
-//! resolves declares any. See [`finding`], which states the gap where a reader
-//! of a finding meets it.
+//! **The generated obligation register.** Every rule below now names the
+//! obligation it serves, because the base package declares `obligations` and
+//! `controls` and [`register`] is the path from a rule to its obligation. What
+//! is absent is the register as an artifact: coverage by obligation,
+//! dispositions, and the control health that spec 4 asks a projection to carry.
+//! That is [#59](https://github.com/headwater-ai/headwater/issues/59).
 //!
 //! # Phase A outcomes stay in Phase A
 //!
@@ -44,18 +46,20 @@
 //! re-report them as findings. The census and the graph already account for
 //! every one of them, each with the row or the exception line that names the
 //! author who can act, and a second report of one fact sends that author to two
-//! places. Giving those outcomes a severity needs the obligation register, so
-//! the two arrive together.
+//! places. Turning them into findings needs an obligation for each class, which
+//! the base package does not declare, and #59 is where that lands.
 
 pub mod coverage;
 pub mod finding;
 pub mod instance;
 pub mod placement;
 pub mod reciprocity;
+pub mod register;
 
 pub use coverage::Coverage;
 pub use finding::{Finding, Severity};
 pub use instance::{Instance, Outcome};
+pub use register::{Bound, Register};
 
 use headwater_census::census::Census;
 use headwater_census::shelves::Taxonomy;
@@ -78,6 +82,10 @@ pub struct Run {
     /// [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
     /// fixes.
     pub findings: Vec<Finding>,
+    /// What each rule serves, in [`RULES`] order. A rule that reaches no
+    /// obligation is in this list too, because a rule that cannot say which
+    /// invariant it protects is what spec 4 asks a reader to notice.
+    pub served: Vec<(&'static str, Bound)>,
 }
 
 /// Run every check over one census and the graph built from it.
@@ -91,6 +99,7 @@ pub fn run(
     graph: &Graph,
     taxonomy: &Taxonomy,
     declarations: &Declarations,
+    register: &Register,
 ) -> Run {
     let mut instances = placement::run(census, taxonomy);
     instances.extend(reciprocity::run(graph, declarations));
@@ -103,10 +112,26 @@ pub fn run(
         .collect();
     findings.extend(coverage.findings());
 
+    // The obligation is stamped here rather than written into each rule,
+    // because the binding is data. A rule states its id, a control names that
+    // id and the obligations it discharges, and one place reads the two
+    // together. See [`register`] for why that place is not the check.
+    let served: Vec<(&'static str, Bound)> = RULES
+        .iter()
+        .map(|rule| (*rule, register.bound(rule)))
+        .collect();
+    for finding in &mut findings {
+        finding.obligation = match served.iter().find(|(rule, _)| *rule == finding.rule) {
+            Some((_, Bound::To(obligation))) => Some(obligation.clone()),
+            _ => None,
+        };
+    }
+
     Run {
         instances,
         coverage,
         findings: finding::sorted(findings),
+        served,
     }
 }
 
@@ -175,6 +200,25 @@ impl Run {
             if count > 0 {
                 let _ = writeln!(out, "  {count:5} instances of {rule}");
             }
+        }
+
+        // What each rule serves. Spec 4 asks every finding to name its
+        // obligation, so a rule that names none is a fact about the taxonomy
+        // and it belongs beside the counts rather than in a reader's inference.
+        out.push_str("rules, and the obligation each one serves\n");
+        for (rule, bound) in &self.served {
+            let _ = match bound {
+                Bound::To(obligation) => writeln!(out, "  {rule}\n    {obligation}"),
+                Bound::Unnamed => writeln!(
+                    out,
+                    "  {rule}\n    no control names this rule, so its findings name no obligation"
+                ),
+                Bound::Several(obligations) => writeln!(
+                    out,
+                    "  {rule}\n    reaches {}, and a finding names one obligation, so it names none",
+                    obligations.join(", ")
+                ),
+            };
         }
 
         let _ = writeln!(out, "{} findings", self.findings.len());

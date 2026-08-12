@@ -155,3 +155,82 @@ core:
 
 projections:
   - {kind: shelf_index, for: [decisions, specifications], output: "{shelf}/README.md"}
+
+# Spec 4 (Obligations are data) rules that every finding names the obligation it
+# serves, and spec 12 makes that a required method on a check. An obligation is
+# data, so it is declared here or it is nowhere. The set below is derived the
+# way the rest of this file is: one obligation for each check that these
+# declarations generate, and the three coverage obligations that spec 4 states
+# for every corpus.
+#
+# The key is the identifier. `prevents` names a class of the documentation
+# defect taxonomy that spec 4 walks, and no declaration in the language holds
+# that taxonomy yet.
+
+obligations:
+
+  OB-COV-1:
+    statement: Every file under the corpus root is classified, or reported as unclassifiable
+    rationale: The most broken document is the one that classification is most likely to miss, and a run that never saw it reports nothing about it
+    class: cohesion
+    prevents: process.maintenance
+    severity: high
+
+  OB-COV-2:
+    statement: Every classified document is routed to at least one check
+    rationale: A document that matched no check is indistinguishable from a document that passed every check
+    class: cohesion
+    prevents: process.maintenance
+    severity: high
+
+  OB-COV-3:
+    statement: Every run reports what it saw, classified, checked and skipped, with a reason for each skip
+    rationale: No findings across 380 of 412 documents is a different result from no findings across 412, and a report that cannot tell the two apart earns no trust
+    class: cohesion
+    prevents: process.traceability
+    severity: medium
+
+  OB-REL-1:
+    statement: A relation that requires reciprocity is declared at both of its ends
+    rationale: One half of a pair is a claim that the document at the other end never made
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+
+  OB-PLACE-1:
+    statement: A document does not restate in metadata what its placement already states
+    rationale: A restatement is a second truth that eventually disagrees with the first
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+
+# A control names the mechanism that discharges an obligation. The engine reads
+# one mechanism prefix, `check:`, and what follows it is the id of a rule. That
+# is the binding a finding travels along: a rule reaches its obligation through
+# the control that names it.
+#
+# OB-COV-1 and OB-COV-3 carry no control here, and that is visible rather than
+# hidden. Neither is discharged by a rule. The census classifies every file and
+# the runner reports coverage, so both mechanisms are phases of the engine that
+# no `check:` prefix names. Spec 4 gives such an obligation the disposition
+# `gap`, and the language has no member that says so. Spec 13 carries it.
+
+controls:
+
+  CT-COV-2:
+    mechanism: check:coverage.document_unchecked
+    discharges: [OB-COV-2]
+    trigger: pull_request
+    posture: advisory
+
+  CT-REL-1:
+    mechanism: check:relation.reciprocity.missing
+    discharges: [OB-REL-1]
+    trigger: pull_request
+    posture: advisory
+
+  CT-PLACE-1:
+    mechanism: check:shelf.placement_is_primary
+    discharges: [OB-PLACE-1]
+    trigger: pull_request
+    posture: advisory

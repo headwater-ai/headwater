@@ -105,11 +105,11 @@ M2 starts with the sublanguage, because the meta-schema and the resolver both re
 
 **The grammar cannot refuse a list index, and the fixture says so rather than hiding it.** `regimes.lifecycle.standard.transitions.0` parses, because `0` is a legal key name and no lexical rule tells an index from a key. The refusal is the meta-schema's, which knows which positions hold a list and needs no tree to answer. That is the one rule of the section that the parser does not carry.
 
-Two rules here are guesses, and both guess in the direction that Q2 settled for the loader. A segment holds letters, digits and `_`, so a hyphen is refused today. A reference points at a value and never at a second reference. Each is cheap to relax and expensive to add later, which is the only asymmetry that decides such a question before a use exists.
+One rule here is a guess, and it guesses in the direction that Q2 settled for the loader: a reference points at a value and never at a second reference. It is cheap to relax and expensive to add later, which is the only asymmetry that decides such a question before a use exists. A second guess of that shape has since been relaxed. A segment refused a hyphen until `obligations` and `controls` arrived keyed by an identifier, and every identifier spec 4 writes holds one.
 
 ## What the meta-schema settles, and the two collisions it found
 
-`crates/meta/meta-schema.yml` is [spec 2](../docs/spec/02-taxonomy-model.md#the-meta-schema)'s meta-schema section as a file, and `crates/meta` is the reader of that file. The eleven declarations, `vocabularies`, and the three fields that name a taxonomy are the closed root set. Every declaration has a shape, every scalar has a type, and every closed value set is written out.
+`crates/meta/meta-schema.yml` is [spec 2](../docs/spec/02-taxonomy-model.md#the-meta-schema)'s meta-schema section as a file, and `crates/meta` is the reader of that file. The thirteen declarations, `vocabularies`, and the three fields that name a taxonomy are the closed root set. Every declaration has a shape, every scalar has a type, and every closed value set is written out.
 
 **The file is in the dialect it describes, and that is the whole of "its own dialect".** It goes through `headwater-yaml` on the Q2 rulings, exactly as a taxonomy source does. [Q2](../docs/spec/09-decisions.md#q2--schema-format) rules that JSON Schema is an emitted export and never the validator, and spec 2 shows the reason in its own text: the language carries `$`-references and no JSON Schema keyword resolves one. A second language for the schema would be a second dialect to keep in step with the first, and the two would drift at the first ruling that only one of them heard.
 

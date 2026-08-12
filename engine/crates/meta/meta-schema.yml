@@ -45,8 +45,8 @@ version: 0.1.0
 
 # --- the root of a taxonomy source ------------------------------------------
 #
-# The root set is closed (spec 2, The `$`-reference sublanguage). Eleven of
-# these are the eleven declarations. `vocabularies` is authoring syntax that
+# The root set is closed (spec 2, The `$`-reference sublanguage). Thirteen of
+# these are the thirteen declarations. `vocabularies` is authoring syntax that
 # facets reference, and the three above it name the taxonomy and what it
 # extends.
 #
@@ -74,6 +74,16 @@ declarations:
   core: {block: core}
   mappings: {seq: {block: mapping}}
   projections: {seq: {block: projection}}
+
+  # The two roots that spec 4 writes and spec 2 had no room for. Both are keyed
+  # by the identifier, where spec 4's own examples wrote the identifier as an
+  # `id` member of a list item. The key is the identifier because a bundle has
+  # to reach these blocks: an overlay writes an address, an address never
+  # reaches inside a list, and a bundle that adds a kind adds the obligations
+  # that the kind's rules serve. Two bundles that add two obligations then write
+  # two disjoint addresses, which is what the confluence rule of spec 7 needs.
+  obligations: {map: {block: obligation}}
+  controls: {map: {block: control}}
 
 # --- the root of an overlay source ------------------------------------------
 #
@@ -351,3 +361,59 @@ definitions:
   projection_pin:
     members:
       anchor: {scalar: string, required: true}
+
+  # --- obligations and controls ---------------------------------------------
+  #
+  # Spec 4 (Obligations are data, Controls are data) writes both blocks, and
+  # every member below is a member it writes. Two of its members are gone: the
+  # `id` of each entry is the key, for the reason the declaration carries.
+  #
+  # Every member here is required of the *source*, and no second notion of
+  # required is needed for these two blocks. An entry is written whole or not at
+  # all: a source that omits a member is refused where it is written, an overlay
+  # operation's value is read against this shape, and a `remove` of a required
+  # member is refused at merge time. The facet case that spec 13 records is a
+  # different one, because a base declares a facet and an overlay refines it. No
+  # adopter completes a publisher's obligation. An adopter that holds a
+  # different invariant declares an obligation of their own.
+
+  obligation:
+    members:
+      statement: {scalar: string, required: true}
+      rationale: {scalar: string, required: true}
+      # guess: spec 4 gives the two classes a section and a table, and it states
+      # no set. The line between them moves when a judgment becomes data, and
+      # that moves an obligation from one of these values to the other.
+      class: {enum: [cohesion, coherence], required: true}
+      # gap: `prevents` names a class of a documentation-defect taxonomy that
+      # spec 4 derives empirically and no declaration here holds. Spec 4 walks
+      # nine classes in prose, and an adopter with their own defect taxonomy
+      # writes a class this file never saw. A closed set would refuse them.
+      prevents: {scalar: string, required: true}
+      # guess: spec 4 writes `high` and `medium` on its own obligations, and
+      # `low` is the third that a register with two severities does not need to
+      # write. This is not the severity a check reports: spec 12 rules that
+      # severity is the check's, and the finding of spec 4's own example carries
+      # `error` against an obligation that carries `medium`.
+      severity: {enum: [high, medium, low], required: true}
+
+  control:
+    members:
+      # gap: spec 4 writes `check:relation-reciprocity` and
+      # `scheduled:staleness-sweep`, and states no grammar for the prefix or for
+      # what follows it. The engine reads one prefix: `check:` names a rule id,
+      # and that is what binds a finding to the obligation it serves. A
+      # mechanism with any other prefix binds nothing yet.
+      mechanism: {scalar: string, required: true}
+      discharges: {seq: {scalar: string}, required: true}
+      # gap: spec 4 writes `pull_request` and `weekly`, which are an event and a
+      # cadence. Nothing states either set or how the two live in one member.
+      trigger: {scalar: string, required: true}
+      # gap: spec 4 writes `blocking` on one control and `detective` on the
+      # other. The first is the promotion path (advisory to blocking) and the
+      # second is one of the four control classes. One member holds values from
+      # two vocabularies, and spec 13 carries it.
+      posture: {scalar: string, required: true}
+      # Spec 4 writes one value, `task-per-finding`, and the member is optional
+      # because a control that reports in place hands off to nobody.
+      handoff: {scalar: string}

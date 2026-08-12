@@ -23,7 +23,7 @@
 //! Spec 2 lists what `headwater taxonomy validate` checks. Four of those items
 //! are decidable over a single source and the rest read a *resolved* taxonomy:
 //!
-//! - **structural conformance** — the eleven declarations, their members, the
+//! - **structural conformance** — the thirteen declarations, their members, the
 //!   type of every scalar, and every closed value set.
 //! - **reference well-formedness** — every address and every `$`-reference
 //!   parses, a reference stands only where the meta-schema admits one, and a

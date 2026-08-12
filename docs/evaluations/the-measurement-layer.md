@@ -88,7 +88,7 @@ Nine rulings bind this group, and neither entry may revisit them.
 
 **A relation instance is an object with declared attributes, and each attribute declares an owning end.** [Q4](../spec/09-open-questions.md#q4--relation-storage) settled it, and made the cue a source-owned attribute. [Spec 2](../spec/02-taxonomy-model.md#instance-attributes-and-which-end-owns-each-one) carries the declaration.
 
-**The declaration count is eleven, and a use of an existing mechanism earns no name.** [Spec 2](../spec/02-taxonomy-model.md#the-eleven-declarations) removed three declarations on that rule and refused two more.
+**The declaration count is eleven, and a use of an existing mechanism earns no name.** [Spec 2](../spec/02-taxonomy-model.md#the-thirteen-declarations) removed three declarations on that rule and refused two more.
 
 ## Prior art and observed applications
 

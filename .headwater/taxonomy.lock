@@ -10,12 +10,12 @@
 
 lock:
   format: 1
-  digest: sha256:ecf6b85268b59ff7c17ab099450a02f371dcdf31822ae7bad346769015a80795
+  digest: sha256:22c04236d01833b67d6d8ee6184f9591bd22336dbf200e3ad5583e953f9510cf
   package: headwater/standard
   version: 1.0.0
   sources:
     - path: packages/headwater-standard/taxonomy.yml
-      digest: sha256:82663c7e54fd08e98336e80979a94df217103dce1eec51b68ec5587f73863aa4
+      digest: sha256:2c871b5f0271c74ad24290bcad75e0d7204864417393a14849198d8287b43953
     - path: docs/taxonomies/design-spec/bundle.yml
       digest: sha256:0dd73708d7200b7b02389a7dc8811ddc80ab61ece7892efd7391cdf504d6bda0
     - path: .headwater/overlay.yml
@@ -405,3 +405,53 @@ resolved:
         - decisions
         - specifications
       output: "{shelf}/README.md"
+  obligations:
+    OB-COV-1:
+      statement: "Every file under the corpus root is classified, or reported as unclassifiable"
+      rationale: "The most broken document is the one that classification is most likely to miss, and a run that never saw it reports nothing about it"
+      class: cohesion
+      prevents: process.maintenance
+      severity: high
+    OB-COV-2:
+      statement: "Every classified document is routed to at least one check"
+      rationale: "A document that matched no check is indistinguishable from a document that passed every check"
+      class: cohesion
+      prevents: process.maintenance
+      severity: high
+    OB-COV-3:
+      statement: "Every run reports what it saw, classified, checked and skipped, with a reason for each skip"
+      rationale: "No findings across 380 of 412 documents is a different result from no findings across 412, and a report that cannot tell the two apart earns no trust"
+      class: cohesion
+      prevents: process.traceability
+      severity: medium
+    OB-REL-1:
+      statement: "A relation that requires reciprocity is declared at both of its ends"
+      rationale: "One half of a pair is a claim that the document at the other end never made"
+      class: cohesion
+      prevents: content.inconsistent
+      severity: medium
+    OB-PLACE-1:
+      statement: "A document does not restate in metadata what its placement already states"
+      rationale: "A restatement is a second truth that eventually disagrees with the first"
+      class: cohesion
+      prevents: content.inconsistent
+      severity: medium
+  controls:
+    CT-COV-2:
+      mechanism: "check:coverage.document_unchecked"
+      discharges:
+        - OB-COV-2
+      trigger: pull_request
+      posture: advisory
+    CT-REL-1:
+      mechanism: "check:relation.reciprocity.missing"
+      discharges:
+        - OB-REL-1
+      trigger: pull_request
+      posture: advisory
+    CT-PLACE-1:
+      mechanism: "check:shelf.placement_is_primary"
+      discharges:
+        - OB-PLACE-1
+      trigger: pull_request
+      posture: advisory

@@ -131,7 +131,7 @@ That is the coverage doctrine of [spec 4](04-assurance-model.md#no-silent-passes
 
 ### An export profile carries a filter
 
-The export is the point where a corpus meets a reader that it does not control, so it is where a corpus decides what leaves. An **export profile** is an entry under `projections` ([spec 2](02-taxonomy-model.md#the-eleven-declarations)). It names an audience, an emitter target, an output path, a **filter** over facet values, and a **tombstone grain**. A corpus with one audience declares one profile with no filter, which is the first release ([Q17](09-decisions.md#q17--governed-access-and-the-solution-layer)).
+The export is the point where a corpus meets a reader that it does not control, so it is where a corpus decides what leaves. An **export profile** is an entry under `projections` ([spec 2](02-taxonomy-model.md#the-thirteen-declarations)). It names an audience, an emitter target, an output path, a **filter** over facet values, and a **tombstone grain**. A corpus with one audience declares one profile with no filter, which is the first release ([Q17](09-decisions.md#q17--governed-access-and-the-solution-layer)).
 
 **The filter runs at export, and there is no reader to identify.** A profile filters for a destination and never for a person. So the engine holds no principals, evaluates no permission at request time, issues no credential, and records no read. The bytes of a filtered export live in a repository. The permissions of the hosting platform on that repository decide who reads them, exactly as they decide who reads the Markdown. One permission system, and it is not ours.
 
