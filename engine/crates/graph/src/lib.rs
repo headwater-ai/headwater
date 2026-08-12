@@ -57,7 +57,7 @@ pub mod edges;
 pub mod index;
 pub mod links;
 
-pub use declarations::{Declarations, Direction};
+pub use declarations::{Declarations, Direction, Reciprocal};
 pub use edges::{Edge, Target, Unbound};
 pub use index::{Index, Node};
 
