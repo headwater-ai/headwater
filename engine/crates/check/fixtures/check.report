@@ -1,0 +1,49 @@
+9 seen, 8 classified, 7 checked, 12 check instances
+      4 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+      8 instances of shelf.placement_is_primary
+      4 instances of relation.reciprocity.missing
+5 findings
+      4 error
+      1 warn
+
+instances
+  shelf.placement_is_primary check/evaluations/alpha.md
+    passed
+  shelf.placement_is_primary check/evaluations/beta.md
+    passed
+  shelf.placement_is_primary check/evaluations/delta.md
+    passed
+  shelf.placement_is_primary check/evaluations/gamma.md
+    failed
+  shelf.placement_is_primary check/spec/00-both-halves.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  shelf.placement_is_primary check/spec/01-one-half.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  shelf.placement_is_primary check/spec/02-cited-only.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  shelf.placement_is_primary check/spec/03-no-instance.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  relation.reciprocity.missing check/spec/00-both-halves.md + check/evaluations/alpha.md
+    passed
+  relation.reciprocity.missing check/evaluations/delta.md + check/spec/02-cited-only.md
+    failed
+  relation.reciprocity.missing check/evaluations/gamma.md + check/spec/00-both-halves.md
+    failed
+  relation.reciprocity.missing check/spec/01-one-half.md + check/evaluations/beta.md
+    failed
+
+check/evaluations/delta.md:5:7 error
+  relation.reciprocity.missing: `EVAL-FIX-delta` declares `cited_by: SPEC-FIX-cited-only`, and `cites_evidence` requires both ends, so check/spec/02-cited-only.md owes `cites_evidence`
+  fix (mechanical): add `cites_evidence: EVAL-FIX-delta` under `relations:` in check/spec/02-cited-only.md
+check/evaluations/gamma.md:3:1 error
+  shelf.placement_is_primary: `evaluations` is homogeneous and carries the kind `evaluation`, and this document restates it as `doc_type: evaluation`
+  fix (mechanical): remove `doc_type` from the front matter of check/evaluations/gamma.md
+check/evaluations/gamma.md:6:7 error
+  relation.reciprocity.missing: `EVAL-FIX-gamma` declares `cited_by: SPEC-FIX-both-halves`, and `cites_evidence` requires both ends, so check/spec/00-both-halves.md owes `cites_evidence`
+  fix (mechanical): add `cites_evidence: EVAL-FIX-gamma` under `relations:` in check/spec/00-both-halves.md
+check/spec/01-one-half.md:6:7 error
+  relation.reciprocity.missing: `SPEC-FIX-one-half` declares `cites_evidence: EVAL-FIX-beta`, and `cites_evidence` requires both ends, so check/evaluations/beta.md owes `cited_by`
+  fix (mechanical): add `cited_by: SPEC-FIX-one-half` under `relations:` in check/evaluations/beta.md
+check/spec/03-no-instance.md warn
+  coverage.document_unchecked: this document is classified and all 1 of its check instances were skipped
+  fix: check that the shelf pattern claims the right files, and that the kind declares something a check reads

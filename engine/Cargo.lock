@@ -23,6 +23,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "headwater-check"
+version = "0.0.0"
+dependencies = [
+ "headwater-census",
+ "headwater-graph",
+ "headwater-yaml",
+]
+
+[[package]]
+name = "headwater-cli"
+version = "0.0.0"
+dependencies = [
+ "headwater-census",
+ "headwater-check",
+ "headwater-graph",
+]
+
+[[package]]
 name = "headwater-doc"
 version = "0.0.0"
 dependencies = [
