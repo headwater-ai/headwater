@@ -110,6 +110,6 @@ rule by rule
     on the result: every projection writes a relative path that stays inside the corpus root
     not decided: the collision with an authored path, which needs the census. `generate --check` is where that lands
 
-not decided anywhere
+not decided anywhere: 1
   the blame half of a dependent-key `remove`
     spec 2 fails a `remove` when a surviving declaration still references the removed key. Referential integrity over the result now catches every such orphan, including the bare strings that no reference names, so the rule holds. What is missing is the message: the finding names the declaration that reads a name nobody declares, and not the operation that removed it. Spec 13 carries it

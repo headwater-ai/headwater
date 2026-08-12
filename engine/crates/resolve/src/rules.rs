@@ -244,19 +244,17 @@ pub fn render() -> String {
         match ran {
             Ran::Source(how) => out.push_str(&format!("  {rule}\n    over one source: {how}\n")),
             Ran::Merge(how) => out.push_str(&format!("  {rule}\n    at merge time: {how}\n")),
-            Ran::Resolved(how) => {
-                out.push_str(&format!("  {rule}\n    on the result: {how}\n"))
-            }
+            Ran::Resolved(how) => out.push_str(&format!("  {rule}\n    on the result: {how}\n")),
             Ran::Partly { decides, waits } => out.push_str(&format!(
                 "  {rule} (in part)\n    on the result: {decides}\n    not decided: {waits}\n"
             )),
         }
     }
-    if !WAITING.is_empty() {
-        out.push_str("\nnot decided anywhere\n");
-        for (rule, why) in WAITING {
-            out.push_str(&format!("  {rule}\n    {why}\n"));
-        }
+    // The heading carries its own count, so a list that empties says so rather
+    // than looking like a list nobody printed.
+    out.push_str(&format!("\nnot decided anywhere: {}\n", WAITING.len()));
+    for (rule, why) in WAITING {
+        out.push_str(&format!("  {rule}\n    {why}\n"));
     }
     out
 }
@@ -343,15 +341,25 @@ impl<'a> View<'a> {
         let Some(items) = self.root.get(block).and_then(|node| node.value.as_seq()) else {
             return Vec::new();
         };
-        items.iter().filter_map(|item| item.value.as_map()).collect()
+        items
+            .iter()
+            .filter_map(|item| item.value.as_map())
+            .collect()
     }
 
     fn names(&self, block: &str) -> BTreeSet<&'a str> {
-        self.members(block).into_iter().map(|(name, _)| name).collect()
+        self.members(block)
+            .into_iter()
+            .map(|(name, _)| name)
+            .collect()
     }
 
     fn regimes(&self, family: &str) -> BTreeSet<&'a str> {
-        let Some(regimes) = self.root.get("regimes").and_then(|node| node.value.as_map()) else {
+        let Some(regimes) = self
+            .root
+            .get("regimes")
+            .and_then(|node| node.value.as_map())
+        else {
             return BTreeSet::new();
         };
         let Some(map) = regimes.get(family).and_then(|node| node.value.as_map()) else {
@@ -527,7 +535,12 @@ fn referential_integrity(view: &View, out: &mut Vec<ResolveError>) {
             }
         }
         if let Some(scheme) = block(body, "identifier").and_then(|node| text(node, "scheme")) {
-            reads(at("identifier.scheme"), "identifier scheme", scheme, &schemes);
+            reads(
+                at("identifier.scheme"),
+                "identifier scheme",
+                scheme,
+                &schemes,
+            );
         }
         if let Some(contract) = block(body, "facets") {
             for member in ["require", "optional", "forbid"] {
@@ -584,7 +597,12 @@ fn referential_integrity(view: &View, out: &mut Vec<ResolveError>) {
             reads(at("purpose"), "purpose", purpose, &purposes);
         }
         if let Some(scheme) = text(body, "identifier_scheme") {
-            reads(at("identifier_scheme"), "identifier scheme", scheme, &schemes);
+            reads(
+                at("identifier_scheme"),
+                "identifier scheme",
+                scheme,
+                &schemes,
+            );
         }
     }
 
@@ -630,8 +648,10 @@ fn anchor_integrity(view: &View, out: &mut Vec<ResolveError>) {
             out.push(refusal(
                 RULE,
                 &format!("anchors.{anchor}.resolver"),
-                format!("claims the resolver namespace `{resolver}`, and `anchors.{other}` \
-                         already claims it. One string would then resolve two ways"),
+                format!(
+                    "claims the resolver namespace `{resolver}`, and `anchors.{other}` \
+                         already claims it. One string would then resolve two ways"
+                ),
             ));
         }
     }
@@ -877,14 +897,24 @@ fn lifecycle_soundness(view: &View, out: &mut Vec<ResolveError>) {
     let known: BTreeSet<&str> = states.iter().map(|(value, _)| value.as_str()).collect();
     let retained: BTreeSet<&str> = states
         .iter()
-        .filter(|(_, role)| role.as_deref().is_some_and(|role| role.starts_with("terminal")))
+        .filter(|(_, role)| {
+            role.as_deref()
+                .is_some_and(|role| role.starts_with("terminal"))
+        })
         .map(|(value, _)| value.as_str())
         .collect();
 
-    let Some(regimes) = view.root.get("regimes").and_then(|node| node.value.as_map()) else {
+    let Some(regimes) = view
+        .root
+        .get("regimes")
+        .and_then(|node| node.value.as_map())
+    else {
         return;
     };
-    let Some(family) = regimes.get("lifecycle").and_then(|node| node.value.as_map()) else {
+    let Some(family) = regimes
+        .get("lifecycle")
+        .and_then(|node| node.value.as_map())
+    else {
         return;
     };
     for entry in family {
@@ -999,8 +1029,10 @@ fn relation_coherence(view: &View, out: &mut Vec<ResolveError>) {
             (Some("multinuclear"), Some(end)) => out.push(refusal(
                 RULE,
                 &at("nucleus"),
-                format!("names `{end}`, and a multinuclear relation has no nucleus. Both ends \
-                         stand alone"),
+                format!(
+                    "names `{end}`, and a multinuclear relation has no nucleus. Both ends \
+                         stand alone"
+                ),
             )),
             _ => {}
         }
@@ -1039,10 +1071,7 @@ fn expectations(view: &View, out: &mut Vec<ResolveError>) {
     const RULE: &str = "expectation well-formedness";
     let shelved = view.shelved_kinds();
     for (kind, expectation) in expectations_of(view) {
-        let at = format!(
-            "kinds.{kind}.relations.expect.{}",
-            id_of(expectation)
-        );
+        let at = format!("kinds.{kind}.relations.expect.{}", id_of(expectation));
         let target = text(expectation, "to_kind").unwrap_or_default();
         if view.kind(target).is_some() && !shelved.contains_key(target) {
             out.push(refusal(
@@ -1072,7 +1101,9 @@ fn expectations(view: &View, out: &mut Vec<ResolveError>) {
                     out.push(refusal(
                         RULE,
                         &format!("{at}.to_kind"),
-                        format!("names `{target}`, and `{named}` does not admit it at its target end"),
+                        format!(
+                            "names `{target}`, and `{named}` does not admit it at its target end"
+                        ),
                     ));
                 }
             }
@@ -1174,7 +1205,7 @@ fn facet_canons(view: &View, out: &mut Vec<ResolveError>) {
             )),
             Some("mutable") => {
                 for (at, text) in mutable_positions(view) {
-                    if placeholders(&text).contains(&facet.to_string()) {
+                    if placeholders(&text).contains(facet) {
                         out.push(refusal(
                             RULE,
                             &at,
@@ -1334,8 +1365,10 @@ fn mapping_integrity(view: &View, out: &mut Vec<ResolveError>) {
                     out.push(refusal(
                         RULE,
                         &at("facet_values"),
-                        format!("keys `{key}`, and the key is a facet and one of its values \
-                                 joined by a dot"),
+                        format!(
+                            "keys `{key}`, and the key is a facet and one of its values \
+                                 joined by a dot"
+                        ),
                     ));
                     continue;
                 };
@@ -1355,7 +1388,9 @@ fn mapping_integrity(view: &View, out: &mut Vec<ResolveError>) {
                             out.push(refusal(
                                 RULE,
                                 &at("facet_values"),
-                                format!("maps `{facet}.{value}`, and `{facet}` holds no such value"),
+                                format!(
+                                    "maps `{facet}.{value}`, and `{facet}` holds no such value"
+                                ),
                             ));
                         }
                     }
@@ -1578,7 +1613,12 @@ fn core_requirements<'a>(view: &View<'a>) -> Vec<&'a Mapping> {
         .and_then(|node| node.value.as_map())
         .and_then(|core| core.get("requires"))
         .and_then(|node| node.value.as_seq())
-        .map(|items| items.iter().filter_map(|item| item.value.as_map()).collect())
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| item.value.as_map())
+                .collect()
+        })
         .unwrap_or_default()
 }
 

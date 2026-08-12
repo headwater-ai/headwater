@@ -64,7 +64,7 @@
 
 pub mod sha256;
 
-use headwater_resolve::{ResolveError, ResolveErrorKind, Resolution, Source};
+use headwater_resolve::{Resolution, ResolveError, ResolveErrorKind, Source};
 use headwater_yaml::{Mapping, Span};
 use std::path::{Path, PathBuf};
 
@@ -110,10 +110,15 @@ pub enum LockError {
     Unreadable(String),
     Malformed(String),
     /// A later format than this engine knows.
-    Format { found: String },
+    Format {
+        found: String,
+    },
     /// The digest does not match the taxonomy beside it, so somebody edited one
     /// of the two by hand.
-    Tampered { declared: String, actual: String },
+    Tampered {
+        declared: String,
+        actual: String,
+    },
 }
 
 impl std::fmt::Display for LockError {
@@ -253,7 +258,12 @@ pub fn at(root: &Path) -> Result<Lock, LockError> {
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
             return Err(LockError::Absent(path))
         }
-        Err(error) => return Err(LockError::Unreadable(format!("{}: {error}", path.display()))),
+        Err(error) => {
+            return Err(LockError::Unreadable(format!(
+                "{}: {error}",
+                path.display()
+            )))
+        }
     };
     read(&text)
 }
@@ -372,12 +382,11 @@ mod tests {
     use super::*;
 
     fn resolved(source: &str) -> (Vec<Source>, Resolution) {
-        let sources = vec![Source::from_text(
-            "base.yml",
-            headwater_resolve::Role::Taxonomy,
-            source,
-        )
-        .expect("the source loads")];
+        let sources =
+            vec![
+                Source::from_text("base.yml", headwater_resolve::Role::Taxonomy, source)
+                    .expect("the source loads"),
+            ];
         let resolution = headwater_resolve::resolve(&sources).expect("it resolves");
         (sources, resolution)
     }
@@ -423,10 +432,7 @@ core:
         // digest left alone.
         let tampered = text.replace("homogeneous: true", "homogeneous: false");
         assert!(tampered != text);
-        assert!(matches!(
-            read(&tampered),
-            Err(LockError::Tampered { .. })
-        ));
+        assert!(matches!(read(&tampered), Err(LockError::Tampered { .. })));
     }
 
     #[test]
@@ -448,19 +454,21 @@ core:
         );
         let (sources, resolution) = resolved(&source);
         let refused = write("acme/fixture", "1.0.0", &sources, &resolution);
-        assert!(refused.is_err(), "a lock was written for an invalid taxonomy");
+        assert!(
+            refused.is_err(),
+            "a lock was written for an invalid taxonomy"
+        );
     }
 
     #[test]
     fn the_body_of_a_lock_is_the_canonical_text_indented_and_nothing_else() {
         let (sources, resolution) = resolved(VALID);
         let text = write("acme/fixture", "1.0.0", &sources, &resolution).expect("it validates");
-        let body: String = text
-            .lines()
-            .skip_while(|line| *line != "resolved:")
-            .skip(1)
-            .map(|line| format!("{}\n", line.strip_prefix("  ").unwrap_or(line)))
-            .collect();
+        let mut body = String::new();
+        for line in text.lines().skip_while(|line| *line != "resolved:").skip(1) {
+            body.push_str(line.strip_prefix("  ").unwrap_or(line));
+            body.push('\n');
+        }
         assert_eq!(body, resolution.render());
     }
 
@@ -482,5 +490,4 @@ core:
         // not there: the lock cannot claim it still agrees.
         assert_eq!(lock.moved(Path::new("/nonexistent")), vec!["base.yml"]);
     }
-
 }

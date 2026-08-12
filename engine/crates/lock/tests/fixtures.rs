@@ -53,13 +53,12 @@ fn compare(path: &Path, actual: &str) {
 
 /// The resolver's own cases, which are the overlay sets that exist.
 fn cases() -> Vec<PathBuf> {
-    let mut found: Vec<PathBuf> = std::fs::read_dir(
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../resolve/fixtures/cases"),
-    )
-    .expect("the resolver's case directory")
-    .map(|entry| entry.expect("a directory entry").path())
-    .filter(|path| path.is_dir())
-    .collect();
+    let mut found: Vec<PathBuf> =
+        std::fs::read_dir(Path::new(env!("CARGO_MANIFEST_DIR")).join("../resolve/fixtures/cases"))
+            .expect("the resolver's case directory")
+            .map(|entry| entry.expect("a directory entry").path())
+            .filter(|path| path.is_dir())
+            .collect();
     found.sort();
     found
 }
@@ -94,7 +93,11 @@ fn sources(case: &Path) -> Vec<Source> {
 fn every_order_of_an_overlay_set_produces_one_digest() {
     let mut out = String::new();
     for case in cases() {
-        let name = case.file_name().expect("a name").to_string_lossy().to_string();
+        let name = case
+            .file_name()
+            .expect("a name")
+            .to_string_lossy()
+            .to_string();
         let sources = sources(&case);
         let (base, overlays) = sources.split_first().expect("a base");
 
@@ -181,7 +184,10 @@ fn the_committed_lock_is_what_the_sources_resolve_to() {
     );
 
     let lock = headwater_lock::read(&committed).expect("the committed lock reads");
-    assert!(lock.moved(&root).is_empty(), "a source moved under the lock");
+    assert!(
+        lock.moved(&root).is_empty(),
+        "a source moved under the lock"
+    );
 
     let mut out = String::new();
     out.push_str(&format!("{} {}\n", lock.package, lock.version));
