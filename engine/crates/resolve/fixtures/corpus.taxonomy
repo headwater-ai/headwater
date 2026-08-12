@@ -408,6 +408,30 @@ obligations:
     class: cohesion
     prevents: content.inconsistent
     severity: medium
+  OB-FACET-1:
+    statement: "Every facet a kind requires is declared by every document of that kind"
+    rationale: "A facet nobody declared is a question the corpus cannot answer about itself, and the reader who asks it gets silence rather than a gap"
+    class: cohesion
+    prevents: content.incomplete
+    severity: high
+  OB-FACET-2:
+    statement: "A facet with a declared value set carries one of the values in that set"
+    rationale: "A value outside the set is a state that no reader, no query and no projection can act on, and it reads as a state rather than as an error"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+  OB-REL-2:
+    statement: "Both ends of a relation instance are kinds that the relation permits"
+    rationale: "An edge between kinds a relation forbids is an assertion that the taxonomy never sanctioned, and every query over that relation inherits it"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+  OB-REL-3:
+    statement: "A participation expectation is met inside the window the taxonomy declares"
+    rationale: "A document that nothing links to inside its window is work that reached nobody, and the corpus cannot tell that from work nobody needed"
+    class: cohesion
+    prevents: process.maintenance
+    severity: low
 controls:
   CT-COV-2:
     mechanism: "check:coverage.document_unchecked"
@@ -425,5 +449,29 @@ controls:
     mechanism: "check:shelf.placement_is_primary"
     discharges:
       - OB-PLACE-1
+    trigger: pull_request
+    posture: advisory
+  CT-FACET-1:
+    mechanism: "check:facet.required.missing"
+    discharges:
+      - OB-FACET-1
+    trigger: pull_request
+    posture: advisory
+  CT-FACET-2:
+    mechanism: "check:facet.value.not_permitted"
+    discharges:
+      - OB-FACET-2
+    trigger: pull_request
+    posture: advisory
+  CT-REL-2:
+    mechanism: "check:relation.endpoint.not_permitted"
+    discharges:
+      - OB-REL-2
+    trigger: pull_request
+    posture: advisory
+  CT-REL-3:
+    mechanism: "check:relation.participation.overdue"
+    discharges:
+      - OB-REL-3
     trigger: pull_request
     posture: advisory

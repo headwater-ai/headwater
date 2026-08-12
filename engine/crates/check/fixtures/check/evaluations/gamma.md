@@ -1,6 +1,9 @@
 ---
 id: EVAL-FIX-gamma
 doc_type: evaluation
+status: current
+status_since: 2026-01-05
+summary: A document that restates in metadata the kind its shelf already carries.
 relations:
   cited_by:
     - SPEC-FIX-both-halves

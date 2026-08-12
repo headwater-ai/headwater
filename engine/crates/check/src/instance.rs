@@ -69,11 +69,37 @@ pub struct Input {
 pub enum Outcome {
     /// It ran and found nothing.
     Passed,
-    /// It ran and found something.
-    Failed(Box<Finding>),
+    /// It ran and found something. Spec 12 gives a check the signature
+    /// `check(view, ctx) -> [Finding]`, and the list is not a formality: one
+    /// document can omit four facets that its kind requires, and each omission
+    /// is a separate line for a separate author to add. A verdict that named
+    /// the first would make the other three cost one run each to discover.
+    ///
+    /// Never empty. A check with nothing to say returns [`Outcome::Passed`],
+    /// and [`Outcome::failed`] is the constructor that holds the two apart.
+    Failed(Vec<Finding>),
     /// It did not run, and the reason is visible rather than silent
     /// ([spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)).
     Skipped(&'static str),
+}
+
+impl Outcome {
+    /// The verdict of a check that collected its findings as it went.
+    ///
+    /// An empty list is a pass, which is the one place the two are decided
+    /// together. A check that built the distinction itself would eventually get
+    /// it wrong in one rule and report a failure with nothing in it.
+    pub fn failed(findings: Vec<Finding>) -> Self {
+        match findings.is_empty() {
+            true => Outcome::Passed,
+            false => Outcome::Failed(findings),
+        }
+    }
+
+    /// One finding, for a rule that can only ever have one.
+    pub fn failed_with(finding: Finding) -> Self {
+        Outcome::Failed(vec![finding])
+    }
 }
 
 impl Instance {
@@ -107,10 +133,12 @@ impl Instance {
         !matches!(self.outcome, Outcome::Skipped(_))
     }
 
-    pub fn finding(&self) -> Option<&Finding> {
+    /// Every finding this instance reached, and none for one that passed or
+    /// was skipped.
+    pub fn findings(&self) -> &[Finding] {
         match &self.outcome {
-            Outcome::Failed(finding) => Some(finding),
-            _ => None,
+            Outcome::Failed(findings) => findings,
+            _ => &[],
         }
     }
 

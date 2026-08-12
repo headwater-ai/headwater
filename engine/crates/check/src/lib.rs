@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The minimal runner: two generated checks, coverage against the census, and
-//! text findings in one order.
+//! The runner: six generated checks, coverage against the census, and text
+//! findings in one order.
 //!
 //! [Spec 12](../../../../docs/spec/12-check-layer.md#two-phases-and-why-the-order-matters)
 //! splits a run in two. Phase A classifies and builds, and it is
@@ -8,12 +8,25 @@
 //! the graph that Phase A produced, and it is this crate. The order is the
 //! answer to the silent pass: the denominator is fixed before any check starts.
 //!
+//! # Where the rules come from
+//!
+//! Six of the seven are **generated**. None of them names a facet, a kind, a
+//! relation or a number of days: each reads a declaration out of the resolved
+//! taxonomy and instantiates itself over whatever that declaration produced.
+//! That is what [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)
+//! means by "a new facet or relation in the taxonomy produces its checks with
+//! no code", and it is why the rule list is short while the instance count is
+//! not. The seventh, [`coverage`], is the runner's own accounting.
+//!
+//! Three of the five origins are represented. Shape and Graph are here. Corpus,
+//! Document and Plugin are not: Document checks are
+//! [#57](https://github.com/headwater-ai/headwater/issues/57), and neither of
+//! the other two has a rule that needs it yet.
+//!
 //! # What is deliberately absent, and where each piece goes
 //!
-//! This runner is the thinnest thing that closes the loop over a real corpus,
-//! which is what [M1](https://github.com/headwater-ai/headwater/milestone/1)
-//! exists to do. Three parts of the designed check layer are not here, and
-//! none of them is an oversight.
+//! Three parts of the designed check layer are not here, and none of them is an
+//! oversight.
 //!
 //! **Change-scoped evaluation.** Every instance is created on every run, and
 //! `--changed-only` does not exist. What does exist is the cache the same
@@ -40,14 +53,19 @@
 //! rules that a check receives a scoped view and cannot ask for a wider one,
 //! and that the enforcement is the feature. Each rule below implements one
 //! scope trait, and that trait is the only way to receive the matching view.
-//! [`run`] names the two checks it runs, which is the whole of registration.
+//! [`run`] names the six checks it runs, which is the whole of registration.
 //! The scope a trait fixes is now read twice: once for the report, and once as
-//! a component of the cache key that spec 12 derives from the same fact.
+//! a component of the cache key that spec 12 derives from the same fact. The
+//! injected clock rides the same declaration, so a rule that reads a date
+//! cannot be left out of its own key ([`cache`]).
 //!
-//! `Neighbourhood`, `Shelf` and a corpus-scoped *trait* are absent, and the
-//! reason is the one this module already applies to a cache: no rule needs
-//! one. Spec 12 leaves the first two open, and [`coverage`] states why a
-//! corpus-grained rule is the runner's accounting rather than a check.
+//! `Neighbourhood` is here, at depth 1, because
+//! [`participation`] needed a grain that `Edge` does not reach: an edge-scoped
+//! instance exists per edge, and a participation expectation is about an edge
+//! that nobody declared. `Shelf` and a corpus-scoped *trait* are still absent,
+//! and the reason is the one this module already applies to a cache: no rule
+//! needs one. [`coverage`] states why a corpus-grained rule is the runner's
+//! accounting rather than a check.
 //!
 //! # Phase A outcomes stay in Phase A
 //!
@@ -60,20 +78,31 @@
 //! the base package does not declare, and #59 is where that lands.
 
 pub mod cache;
+pub mod context;
 pub mod coverage;
+pub mod endpoint;
+pub mod facet_required;
+pub mod facet_value;
 pub mod finding;
 pub mod instance;
+pub mod participation;
 pub mod placement;
 pub mod reciprocity;
 pub mod register;
 pub mod scope;
+pub mod shape;
 
 pub use cache::Cache;
+pub use context::{Context, Date};
 pub use coverage::Coverage;
 pub use finding::{Finding, Severity};
 pub use instance::{Input, Instance, Outcome};
 pub use register::{Bound, Register};
-pub use scope::{DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain, Scope};
+pub use scope::{
+    DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain, NeighbourhoodCheck,
+    NeighbourhoodView, Scope,
+};
+pub use shape::Shape;
 
 use headwater_census::census::Census;
 use headwater_census::shelves::Taxonomy;
@@ -81,10 +110,38 @@ use headwater_graph::{Declarations, Graph};
 
 /// The rules this runner carries, in the order a report lists them.
 ///
-/// Two are generated from the taxonomy and one is the coverage guarantee
+/// Six are generated from the taxonomy and one is the coverage guarantee
 /// itself. A rule that is generated has no entry of its own anywhere: the list
 /// is the *templates*, and the instance count is what a taxonomy decides.
-pub const RULES: [&str; 3] = [placement::RULE, reciprocity::RULE, coverage::RULE];
+///
+/// The order is the five origins of
+/// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
+/// which is Shape, then Graph, then the runner's own accounting.
+pub const RULES: [&str; 7] = [
+    facet_required::RULE,
+    facet_value::RULE,
+    placement::RULE,
+    reciprocity::RULE,
+    endpoint::RULE,
+    participation::RULE,
+    coverage::RULE,
+];
+
+/// The declarations one run reads, from a taxonomy that is already resolved.
+///
+/// Four readers, each with the list of fields its own phase needs, and this is
+/// where they arrive together. See [`shape`] for why widening one reader was
+/// the alternative and what it would have cost.
+pub struct Declared<'a> {
+    /// Shelves and abstract kinds, which is what kind resolution read.
+    pub taxonomy: &'a Taxonomy,
+    /// Facets, the kind hierarchy, and the participation expectations.
+    pub shape: &'a Shape,
+    /// Relation types and anchor kinds.
+    pub relations: &'a Declarations,
+    /// Obligations and controls: the path from a rule to what it serves.
+    pub register: &'a Register,
+}
 
 /// One run of the check layer over one corpus.
 #[derive(Clone, Debug)]
@@ -124,25 +181,40 @@ pub struct Serves {
 pub fn run(
     census: &Census,
     graph: &Graph,
-    taxonomy: &Taxonomy,
-    declarations: &Declarations,
-    register: &Register,
+    declared: &Declared<'_>,
+    ctx: &Context,
     cache: &mut Cache,
 ) -> Run {
-    // Registration, in full: two checks, each named once. The scope trait each
+    // Registration, in full: six checks, each named once. The scope trait each
     // one implements decides what it is handed, so this function cannot widen
     // a view by calling the wrong instantiation.
-    let placement = placement::Placement::over(taxonomy);
-    let reciprocity = reciprocity::Reciprocity::over(declarations);
+    let required = facet_required::Required::over(declared.shape);
+    let values = facet_value::Values::over(declared.shape);
+    let placement = placement::Placement::over(declared.taxonomy);
+    let reciprocity = reciprocity::Reciprocity::over(declared.relations);
+    let endpoints = endpoint::Endpoints::over(declared.relations, declared.shape);
+    let participation = participation::Participation::over(declared.shape, declared.relations);
+
     let digests = scope::Digests::of(census);
-    let mut instances = scope::over_documents(&placement, census, cache);
-    instances.extend(scope::over_edges(&reciprocity, graph, &digests, cache));
+    let mut instances = scope::over_documents(&required, census, ctx, cache);
+    instances.extend(scope::over_documents(&values, census, ctx, cache));
+    instances.extend(scope::over_documents(&placement, census, ctx, cache));
+    instances.extend(scope::over_edges(&reciprocity, graph, &digests, ctx, cache));
+    instances.extend(scope::over_edges(&endpoints, graph, &digests, ctx, cache));
+    instances.extend(scope::over_neighbourhoods(
+        &participation,
+        census,
+        graph,
+        &digests,
+        ctx,
+        cache,
+    ));
 
     let coverage = Coverage::of(census, &instances);
 
     let mut findings: Vec<Finding> = instances
         .iter()
-        .filter_map(|instance| instance.finding().cloned())
+        .flat_map(|instance| instance.findings().iter().cloned())
         .collect();
     findings.extend(coverage.findings());
 
@@ -152,6 +224,14 @@ pub fn run(
     // together. See [`register`] for why that place is not the check.
     let served: Vec<Serves> = [
         (
+            facet_required::RULE,
+            scope::document_scope::<facet_required::Required>(),
+        ),
+        (
+            facet_value::RULE,
+            scope::document_scope::<facet_value::Values>(),
+        ),
+        (
             placement::RULE,
             scope::document_scope::<placement::Placement>(),
         ),
@@ -159,13 +239,21 @@ pub fn run(
             reciprocity::RULE,
             scope::edge_scope::<reciprocity::Reciprocity>(),
         ),
+        (
+            endpoint::RULE,
+            scope::edge_scope::<endpoint::Endpoints<'_>>(),
+        ),
+        (
+            participation::RULE,
+            scope::neighbourhood_scope::<participation::Participation<'_>>(),
+        ),
         (coverage::RULE, coverage::SCOPE),
     ]
     .into_iter()
     .map(|(rule, scope)| Serves {
         rule,
         scope,
-        obligation: register.bound(rule),
+        obligation: declared.register.bound(rule),
     })
     .collect();
     for finding in &mut findings {

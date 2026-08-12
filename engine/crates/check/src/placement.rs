@@ -112,7 +112,7 @@ impl DocumentCheck for Placement {
             .map(|scalar| scalar.text.clone())
             .unwrap_or_else(|| entry.value.value.kind_name().to_string());
         let kind = view.kind();
-        Outcome::Failed(Box::new(Finding {
+        Outcome::failed_with(Finding {
             rule: self::RULE,
             severity: Severity::Error,
             obligation: None,
@@ -125,6 +125,6 @@ impl DocumentCheck for Placement {
             ),
             remediation: format!("remove `{facet}` from the front matter of {}", view.path()),
             fixable: true,
-        }))
+        })
     }
 }

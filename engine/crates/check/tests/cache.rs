@@ -18,7 +18,7 @@
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
-use headwater_check::{Cache, Detail, Register, Run};
+use headwater_check::{Cache, Context, Date, Declared, Detail, Register, Run, Shape};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
@@ -27,6 +27,13 @@ use std::path::{Path, PathBuf};
 /// A lock digest. The runs below share a taxonomy, so they share this too, and
 /// one test changes it on purpose.
 const LOCK: &str = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
+
+/// The date these runs are evaluated at, unless one of them says otherwise.
+const TODAY: &str = "2026-08-12";
+
+fn at(date: &str) -> Context {
+    Context::at(Date::parse(date).expect("a date"))
+}
 
 fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
@@ -64,6 +71,10 @@ fn copy(from: &Path, to: &Path) {
 }
 
 fn run_over(root: &Path, cache: &mut Cache) -> Run {
+    run_at(root, &at(TODAY), cache)
+}
+
+fn run_at(root: &Path, ctx: &Context, cache: &mut Cache) -> Run {
     let source = std::fs::read_to_string(fixtures_dir().join("check.taxonomy.yml"))
         .expect("the fixture taxonomy");
     let loaded = headwater_yaml::load(&source).expect("it loads");
@@ -73,6 +84,7 @@ fn run_over(root: &Path, cache: &mut Cache) -> Run {
     let taxonomy = Taxonomy::read(declared).expect("the taxonomy reads");
     let declarations = Declarations::read(declared).expect("the declarations read");
     let register = Register::read(declared).expect("the register reads");
+    let shape = Shape::read(declared).expect("the shape reads");
     let taken = census::take(&corpus, &taxonomy);
     let graph = Graph::build(
         &taken,
@@ -81,7 +93,18 @@ fn run_over(root: &Path, cache: &mut Cache) -> Run {
         &corpus,
         &Config::default(),
     );
-    headwater_check::run(&taken, &graph, &taxonomy, &declarations, &register, cache)
+    headwater_check::run(
+        &taken,
+        &graph,
+        &Declared {
+            taxonomy: &taxonomy,
+            shape: &shape,
+            relations: &declarations,
+            register: &register,
+        },
+        ctx,
+        cache,
+    )
 }
 
 /// Three runs over one tree: no cache, a cold cache, a warm one.
@@ -192,6 +215,57 @@ fn an_edited_document_is_evaluated_again() {
     assert!(touched > 1, "the edited document is read by one instance");
     assert_eq!(after.cache.misses, touched, "{:?}", after.cache);
     assert!(after.cache.hits > touched, "{:?}", after.cache);
+}
+
+/// A day that passed is not served from the entry written before it.
+///
+/// This is the hole [spec 13](../../../../docs/spec/13-open-obligations.md)
+/// recorded against the key, closed and then held closed. `zeta.md` is inside
+/// its participation window on the first date and outside it on the second, so
+/// the two runs reach two verdicts over a corpus whose bytes never moved.
+///
+/// The `--no-cache` differential cannot catch this failure, which is why this
+/// test exists beside it: that comparison holds one value of the clock on both
+/// sides, so a key with no clock in it passes the differential and still serves
+/// yesterday's answer.
+#[test]
+fn a_clock_that_moved_is_not_served_from_the_entry_before_it() {
+    let root = corpus_for("clock");
+
+    let mut cold = Cache::at(&root, LOCK);
+    let inside = run_at(&root, &at("2026-08-12"), &mut cold);
+    cold.write(&root);
+
+    let mut warm = Cache::at(&root, LOCK);
+    let outside = run_at(&root, &at("2026-09-30"), &mut warm);
+
+    assert_ne!(
+        inside.render(Detail::EveryInstance),
+        outside.render(Detail::EveryInstance),
+        "the window did not close, so this test proves nothing"
+    );
+    assert_eq!(
+        outside.render(Detail::EveryInstance),
+        run_at(&root, &at("2026-09-30"), &mut Cache::disabled()).render(Detail::EveryInstance),
+        "the cached run served a verdict reached on another day"
+    );
+
+    // And only the rule that reads the clock was evaluated again. A key that
+    // carried the date for every rule would also pass the assertions above, and
+    // it would be a cache that never serves anything the day after it is
+    // written.
+    assert!(outside.cache.hits > 0, "{:?}", outside.cache);
+    assert_eq!(
+        outside.cache.misses,
+        outside
+            .instances
+            .iter()
+            .filter(|instance| instance.rule == headwater_check::participation::RULE
+                && instance.ran())
+            .count(),
+        "{:?}",
+        outside.cache
+    );
 }
 
 /// A taxonomy that moved invalidates every entry, with nobody clearing a
