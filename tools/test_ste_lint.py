@@ -53,15 +53,6 @@ check("stock phrase",
       "The identifier is load-bearing for the corpus.\n", ["stock-phrase"])
 check("leverage as a verb",
       "The engine leverages the graph to find conflicts.\n", ["stock-phrase"])
-check("sentence at the limit passes",
-      "This one sentence runs past the twenty-five word limit because it keeps "
-      "adding clauses and more clauses and yet more clauses until it finally stops.\n",
-      [], ["sentence-length"])
-check("over-long sentence",
-      "This one sentence runs past the twenty-five word limit because it keeps "
-      "adding clauses and more clauses and yet more clauses and still more "
-      "clauses until it finally stops.\n",
-      ["sentence-length"])
 check("paragraph with too many sentences",
       "One. Two. Three. Four. Five. Six. Seven.\n", ["paragraph-sentences"])
 check("progressive verb form",
@@ -111,20 +102,15 @@ check("a bibliography line is a list, not a sentence",
       "Mann & Thompson, *Rhetorical Structure Theory* (1988) · Hobbs, *On the "
       "Coherence and Structure of Discourse* (1985) · Kehler, *Coherence, "
       "Reference, and the Theory of Grammar* (2002)\n",
-      [], ["sentence-length", "paragraph-sentences"])
+      [], ["paragraph-sentences"])
 check("a bibliography line still gets the word-level checks",
       "Sources — Smith, *Organisation of Things* (1990) · Jones, *More* (1991) · "
       "Patel, *Even More* (1992)\n",
       ["british-spelling"])
 check("one interpunct is not a reference list",
-      "The engine reads the view · and this one long sentence must still be "
-      "counted because it keeps going and going and going well past the "
-      "stated limit.\n",
-      ["sentence-length"])
-check("a parenthetical counts as one word",
-      "The engine reads the view (which carries the scoped subset of the corpus "
-      "graph, plus every declaration that applies to it) and returns.\n",
-      [], ["sentence-length"])
+      "The engine reads the view · and each of these clauses is one sentence, "
+      "not an entry in a bibliography. One. Two. Three. Four. Five. Six.\n",
+      ["paragraph-sentences"])
 check("an inline allow comment suppresses its rule",
       "The engine doesn't read the file. <!-- ste-lint: allow contraction -->\n",
       [], ["contraction"])
@@ -162,16 +148,19 @@ if len(ste.split_sentences("does it classify? does it pass? do they match?")) !=
 if len(ste.split_sentences('It answers "does this prevent?" — which is a filter.')) != 1:
     FAILURES.append("split_sentences: a quoted question must not split")
 
-check("a sentence may open with a lower-case link",
-      "To detect that two documents disagree is to reason about what prose asserts. "
-      "[spec 1](01-conceptual-model.md) forswears that, and [spec 4](04.md) confirms "
-      "that it is undecidable structurally.\n",
-      [], ["sentence-length"])
-check("a sentence may open with a section mark",
-      "Every integration recorded so far points out of the corpus — TrustGraph "
-      "ingestion, the OKF bundle, and the LinkML and SKOS emissions. §J prices "
-      "TrustGraph as cheap on exactly that ground: nothing flows back in.\n",
-      [], ["sentence-length"])
+# The two cases below used to be asserted through the sentence-length rule,
+# which found the false split by reporting one over-long sentence where there
+# were two. That rule now lives in the engine, so the splitter is asserted
+# directly. It stays under test here because the paragraph limit and the three
+# voice rules still read it.
+if len(ste.split_sentences(
+        "To detect that two documents disagree is to reason about what prose "
+        "asserts. [spec 1](01-conceptual-model.md) forswears that.")) != 2:
+    FAILURES.append("split_sentences: a sentence may open with a lower-case link")
+if len(ste.split_sentences(
+        "Every integration points out of the corpus. §J prices TrustGraph as "
+        "cheap on exactly that ground.")) != 2:
+    FAILURES.append("split_sentences: a sentence may open with a section mark")
 
 if FAILURES:
     print(f"{len(FAILURES)} test(s) failed:")

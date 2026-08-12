@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The runner: ten checks, coverage against the census, and text findings in
-//! one order.
+//! The runner: eleven checks, coverage against the census, a published read
+//! set, a suppression inventory, and text findings in one order.
 //!
 //! [Spec 12](../../../../docs/spec/12-check-layer.md#two-phases-and-why-the-order-matters)
 //! splits a run in two. Phase A classifies and builds, and it is
@@ -32,20 +32,20 @@
 //!
 //! # What is deliberately absent, and where each piece goes
 //!
-//! Three parts of the designed check layer are not here, and none of them is an
-//! oversight.
+//! Two parts of the designed check layer are not here, and neither is an
+//! oversight. Suppression used to be the third. It is now [`suppression`]: the
+//! runner filters findings, records what it filtered, and feeds the inventory
+//! into the coverage report, which is where spec 12 puts it.
 //!
-//! **Change-scoped evaluation.** Every instance is created on every run, and
-//! `--changed-only` does not exist. What does exist is the cache the same
-//! sentence of spec 12 needs first: an instance is keyed on the content hashes
-//! of what it read, and [`cache`] serves the ones nothing touched. That does
-//! not make a run partial — every instance still has an outcome and coverage
-//! counts what it counted — and a run that evaluates less of the corpus is
-//! [#58](https://github.com/headwater-ai/headwater/issues/58).
-//!
-//! **Suppression.** A finding here cannot be suppressed, so nothing is filtered
-//! and there is no inventory to report. That is
-//! [#58](https://github.com/headwater-ai/headwater/issues/58).
+//! **Change-scoped evaluation, under the name `--changed-only`.** Every
+//! instance is created on every run, and the flag does not exist.
+//! [#58](https://github.com/headwater-ai/headwater/issues/58) declined to build
+//! it and measured why: an instance is keyed on the content hashes of what it
+//! read, and [`cache`] serves the ones nothing touched, so a warm run over this
+//! repository takes 30 ms against 300 ms with no cache. The cache derives what
+//! moved from the bytes rather than from a list a caller supplies, and spec 6
+//! forbids a flag that puts an input into a verdict which no reviewer sees.
+//! What is left unscoped is Phase A, which no flag reaches.
 //!
 //! **The generated obligation register.** Every rule below now names the
 //! obligation it serves, because the base package declares `obligations` and
@@ -60,7 +60,7 @@
 //! rules that a check receives a scoped view and cannot ask for a wider one,
 //! and that the enforcement is the feature. Each rule below implements one
 //! scope trait, and that trait is the only way to receive the matching view.
-//! [`run`] names the six checks it runs, which is the whole of registration.
+//! [`run`] names the ten checks it runs, which is the whole of registration.
 //! The scope a trait fixes is now read twice: once for the report, and once as
 //! a component of the cache key that spec 12 derives from the same fact. The
 //! injected clock rides the same declaration, so a rule that reads a date
@@ -96,11 +96,13 @@ pub mod instance;
 pub mod language;
 pub mod participation;
 pub mod placement;
+pub mod readset;
 pub mod reciprocity;
 pub mod register;
 pub mod scope;
 pub mod sections;
 pub mod shape;
+pub mod suppression;
 pub mod voice;
 
 pub use cache::Cache;
@@ -108,12 +110,14 @@ pub use context::{Context, Date};
 pub use coverage::Coverage;
 pub use finding::{Finding, Severity};
 pub use instance::{Input, Instance, Outcome};
+pub use readset::ReadSet;
 pub use register::{Bound, Register};
 pub use scope::{
     DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain, NeighbourhoodCheck, NeighbourhoodView,
     Scope,
 };
 pub use shape::Shape;
+pub use suppression::Inventory;
 
 use headwater_census::census::Census;
 use headwater_census::shelves::Taxonomy;
@@ -121,7 +125,7 @@ use headwater_graph::{Declarations, Graph};
 
 /// The rules this runner carries, in the order a report lists them.
 ///
-/// Six are generated from the taxonomy and one is the coverage guarantee
+/// Ten are generated from the taxonomy and one is the coverage guarantee
 /// itself. A rule that is generated has no entry of its own anywhere: the list
 /// is the *templates*, and the instance count is what a taxonomy decides.
 ///
@@ -148,6 +152,14 @@ pub const RULES: [&str; 11] = [
 /// where they arrive together. See [`shape`] for why widening one reader was
 /// the alternative and what it would have cost.
 pub struct Declared<'a> {
+    /// The digest of the lock these four came out of.
+    ///
+    /// It is here rather than on [`Context`] because it is a fact about the
+    /// taxonomy and not an injected value, and it is here rather than nowhere
+    /// because [`ReadSet`] has to carry it: a lock that moved voids every
+    /// result at once, and a gate reading a read set with no lock in it would
+    /// decide that a verdict survived a taxonomy change.
+    pub lock: &'a str,
     /// Shelves and abstract kinds, which is what kind resolution read.
     pub taxonomy: &'a Taxonomy,
     /// Facets, the kind hierarchy, and the participation expectations.
@@ -164,14 +176,22 @@ pub struct Run {
     /// Every instance of every check, in the order the checks are listed.
     pub instances: Vec<Instance>,
     pub coverage: Coverage,
-    /// Every finding, in the one order
+    /// Every finding a reader sees, in the one order
     /// [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
-    /// fixes.
+    /// fixes. A finding an author suppressed is not here, and it is in
+    /// [`Run::suppressions`] instead.
     pub findings: Vec<Finding>,
+    /// What this run's authors suppressed, and what became of each directive.
+    /// See [`suppression`]: the filter is the runner's, and a check never sees
+    /// it.
+    pub suppressions: Inventory,
     /// What each rule sees and what it serves, in [`RULES`] order. A rule that
     /// reaches no obligation is in this list too, because a rule that cannot
     /// say which invariant it protects is what spec 4 asks a reader to notice.
     pub served: Vec<Serves>,
+    /// The union of what this run read, with the lock, the clock and the check
+    /// versions beside it. See [`readset`].
+    pub read_set: ReadSet,
     /// What this run did with its cache. Deliberately outside [`Run::render`]:
     /// see [`cache`] for why a hit count is not part of a verdict.
     pub cache: cache::Report,
@@ -184,6 +204,10 @@ pub struct Serves {
     /// Derived from the trait the check implements, and never stated beside
     /// it. See [`scope`] for why that distinction is the whole feature.
     pub scope: Scope,
+    /// Which edition of the rule ran. Read off the same trait as the scope,
+    /// and for the same reason: it is a component of every key this run wrote,
+    /// so a read set that stated a different one would describe another run.
+    pub version: u32,
     pub obligation: Bound,
 }
 
@@ -200,7 +224,7 @@ pub fn run(
     ctx: &Context,
     cache: &mut Cache,
 ) -> Run {
-    // Registration, in full: six checks, each named once. The scope trait each
+    // Registration, in full: ten checks, each named once. The scope trait each
     // one implements decides what it is handed, so this function cannot widen
     // a view by calling the wrong instantiation.
     let required = facet_required::Required::over(declared.shape);
@@ -249,46 +273,60 @@ pub fn run(
         (
             facet_required::RULE,
             scope::document_scope::<facet_required::Required>(),
+            scope::document_version::<facet_required::Required>(),
         ),
         (
             facet_value::RULE,
             scope::document_scope::<facet_value::Values>(),
+            scope::document_version::<facet_value::Values>(),
         ),
         (
             placement::RULE,
             scope::document_scope::<placement::Placement>(),
+            scope::document_version::<placement::Placement>(),
         ),
         (
             reciprocity::RULE,
             scope::edge_scope::<reciprocity::Reciprocity>(),
+            scope::edge_version::<reciprocity::Reciprocity>(),
         ),
         (
             endpoint::RULE,
             scope::edge_scope::<endpoint::Endpoints<'_>>(),
+            scope::edge_version::<endpoint::Endpoints<'_>>(),
         ),
         (
             participation::RULE,
             scope::neighbourhood_scope::<participation::Participation<'_>>(),
+            scope::neighbourhood_version::<participation::Participation<'_>>(),
         ),
-        (voice::RULE, scope::document_scope::<voice::Voice>()),
+        (
+            voice::RULE,
+            scope::document_scope::<voice::Voice>(),
+            scope::document_version::<voice::Voice>(),
+        ),
         (
             language::RULE,
             scope::document_scope::<language::Language>(),
+            scope::document_version::<language::Language>(),
         ),
         (
             sections::RULE,
             scope::document_scope::<sections::Sections>(),
+            scope::document_version::<sections::Sections>(),
         ),
         (
             fragment::RULE,
             scope::document_scope::<fragment::Fragments>(),
+            scope::document_version::<fragment::Fragments>(),
         ),
-        (coverage::RULE, coverage::SCOPE),
+        (coverage::RULE, coverage::SCOPE, coverage::VERSION),
     ]
     .into_iter()
-    .map(|(rule, scope)| Serves {
+    .map(|(rule, scope, version)| Serves {
         rule,
         scope,
+        version,
         obligation: declared.register.bound(rule),
     })
     .collect();
@@ -302,11 +340,35 @@ pub fn run(
         };
     }
 
+    // The filter is here, after every instance has an outcome and after the
+    // obligation is stamped. So a cache holds what a check decided, an
+    // inventory holds what a reader did not see, and the two cannot drift
+    // ([`suppression`]).
+    let (declared_suppressions, refused) = suppression::declared(census, &RULES);
+    let (findings, suppressions) = suppression::apply(
+        finding::sorted(findings),
+        declared_suppressions,
+        refused,
+        ctx.now(),
+    );
+
+    let read_set = ReadSet::of(
+        declared.lock,
+        ctx.now(),
+        served
+            .iter()
+            .map(|served| (served.rule, served.version))
+            .collect(),
+        &instances,
+    );
+
     Run {
         instances,
         coverage,
-        findings: finding::sorted(findings),
+        findings,
+        suppressions,
         served,
+        read_set,
         cache: cache.report(),
     }
 }
@@ -383,11 +445,22 @@ impl Run {
         use std::fmt::Write;
         let mut out = String::new();
         out.push_str(&self.coverage.render());
+        // Spec 12 puts the read set here, "beside its coverage numbers". The
+        // size is beside them and the union is an artifact of its own, because
+        // a hash of every document is a thing a gate reads and a thing a
+        // recorded report would re-bless on every edit to a paragraph.
+        let _ = writeln!(out, "{}", self.read_set.summary());
         for (rule, count) in self.per_rule() {
             if count > 0 {
                 let _ = writeln!(out, "  {count:5} instances of {rule}");
             }
         }
+
+        // Spec 4 puts the suppression inventory in the coverage report, and
+        // this is it. It is above the rule list rather than below the findings
+        // for the reason coverage is above everything: a reader who stops here
+        // has read what this run did not report as well as what it did.
+        out.push_str(&self.suppressions.render());
 
         // What each rule sees and what it serves. Spec 4 asks every finding to
         // name its obligation, so a rule that names none is a fact about the

@@ -56,6 +56,12 @@ pub const RULE: &str = "coverage.document_unchecked";
 /// rather than derived from a trait: this rule receives no view.
 pub const SCOPE: Scope = Scope::corpus();
 
+/// Which edition of this rule reached a verdict, stated here for the reason
+/// [`SCOPE`] is: no trait carries it. It is published in the read set beside
+/// every other rule's, because a reader of that artifact is asking which
+/// engine produced the result and this rule produces some of it.
+pub const VERSION: u32 = 1;
+
 /// One document, and what this run did about it.
 #[derive(Clone, Debug)]
 pub struct Document {

@@ -6,10 +6,16 @@ This is step 4 of the ste-editor skill ("mechanical check on the result") turned
 into a script, plus the two repo rules from CLAUDE.md that are exact string
 matches: no hard-wrapped Markdown, and no stock AI phrasing.
 
-It checks the *house* profile by default: the structural rules (sentence and
-paragraph limits, voice, verb forms) and spelling, but not the closed ASD-STE100
+It checks the *house* profile by default: the structural rules (paragraph
+limits, voice, verb forms) and spelling, but not the closed ASD-STE100
 dictionary. Pass --profile strict to also check every word against
 `approved-words.txt`; that profile is for procedures, not for descriptive specs.
+
+This script is scaffolding, and it is meant to shrink rather than to grow. The
+sentence-length rule (STE rule 6.3) has left it: `language.controlled.not_met`
+in the engine reads the same limit out of the taxonomy, over a real CommonMark
+parse and the sentence splitter that spec 12 holds as a correctness root. What
+stays here is what the engine does not yet check.
 
 Errors block a commit. Warnings are advisory: the passive/progressive/auxiliary
 detectors are regex guesses and misfire often enough that blocking on them would
@@ -50,7 +56,6 @@ BASELINE_FILE = ".ste-lint-baseline.json"
 
 # --- limits ------------------------------------------------------------------
 
-MAX_SENTENCE_WORDS = 25  # rule 6.3, descriptive text
 MAX_PARAGRAPH_SENTENCES = 6  # rule 6.6
 MAX_HEADING_WORDS = 12
 
@@ -176,7 +181,6 @@ RULES = {
     "contraction": SEVERITY_ERROR,
     "british-spelling": SEVERITY_ERROR,
     "stock-phrase": SEVERITY_ERROR,
-    "sentence-length": SEVERITY_ERROR,
     "heading-length": SEVERITY_WARN,
     "paragraph-sentences": SEVERITY_WARN,
     "progressive": SEVERITY_WARN,
@@ -227,7 +231,7 @@ def normalize_for_hash(text: str) -> str:
 
 # --- Markdown parsing --------------------------------------------------------
 
-# <!-- ste-lint: allow sentence-length, passive # optional reason after the hash -->
+# <!-- ste-lint: allow contraction, passive # optional reason after the hash -->
 ALLOW_COMMENT = re.compile(r"<!--\s*ste-lint:\s*allow\s+([a-z][a-z,\s-]*?)\s*(?:#[^>]*)?-->")
 FENCE = re.compile(r"^\s{0,3}(```+|~~~+)")
 HEADING = re.compile(r"^\s{0,3}#{1,6}\s")
@@ -474,14 +478,6 @@ def check_prose(path: str, unit: Unit, text: str, findings: list[Finding]) -> No
 
     for sentence in sentences:
         sentence = unmark(sentence)
-        words = count_words(sentence)
-        if words > MAX_SENTENCE_WORDS:
-            findings.append(
-                Finding(path, unit.line, "sentence-length",
-                        f"{words} words, limit is {MAX_SENTENCE_WORDS} (rule 6.3): "
-                        f"{sentence[:70]}…",
-                        sentence)
-            )
         for pattern, rule, note in (
             (PROGRESSIVE, "progressive", 'no "-ing" verb forms (rule 3.4)'),
             (PASSIVE, "passive", "use the active voice (rules 3.1-3.3)"),

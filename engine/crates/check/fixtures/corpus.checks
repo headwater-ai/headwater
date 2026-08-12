@@ -1,6 +1,7 @@
 61 seen, 36 classified, 36 checked, 392 check instances
      26 skipped: this document writes no fragment into itself
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+36 documents in the read set
      36 instances of facet.required.missing
      36 instances of facet.value.not_permitted
      36 instances of shelf.placement_is_primary
@@ -10,6 +11,11 @@
      17 instances of voice.forbidden_construction
      16 instances of language.controlled.not_met
      36 instances of link.fragment.unresolved
+suppressions
+  2 findings hidden by 2 directives
+      2 false_positive
+      2 of language.controlled.not_met
+      2 on the shelf spec_series
 rules, and for each the scope that binds it and what it serves
   facet.required.missing
     document scope, one document and its front matter

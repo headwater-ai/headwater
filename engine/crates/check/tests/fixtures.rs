@@ -4,7 +4,7 @@
 //! [Spec 12](../../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor: "every check ships with at least one fixture that it fails
 //! and one that it passes." The tree under `fixtures/check/` carries both for
-//! each of the seven rules, and `check.report` records every instance and every
+//! each of the eleven rules, and `check.report` records every instance and every
 //! finding it produces.
 //!
 //!     HEADWATER_BLESS=1 cargo test -p headwater-check --test fixtures
@@ -24,6 +24,7 @@ use headwater_check::{
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
+use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};
 
 /// The date every recorded report is evaluated at.
@@ -71,16 +72,11 @@ fn compare(recorded: &Path, actual: &str) {
 }
 
 /// One run over one corpus: the whole pipeline, in the order spec 6 draws it.
-fn run_over(corpus: &Corpus, root: &headwater_yaml::Mapping, cache: &mut Cache) -> Run {
-    run_at(corpus, root, &pinned(), cache)
+fn run_over(corpus: &Corpus, root: &Mapping, lock: &str, cache: &mut Cache) -> Run {
+    run_at(corpus, root, lock, &pinned(), cache)
 }
 
-fn run_at(
-    corpus: &Corpus,
-    root: &headwater_yaml::Mapping,
-    ctx: &Context,
-    cache: &mut Cache,
-) -> Run {
+fn run_at(corpus: &Corpus, root: &Mapping, lock: &str, ctx: &Context, cache: &mut Cache) -> Run {
     let taxonomy = Taxonomy::read(root).expect("the taxonomy reads");
     let declarations = Declarations::read(root).expect("the declarations read");
     let register = Register::read(root).expect("the register reads");
@@ -97,6 +93,7 @@ fn run_at(
         &taken,
         &graph,
         &Declared {
+            lock,
             taxonomy: &taxonomy,
             shape: &shape,
             relations: &declarations,
@@ -110,7 +107,16 @@ fn run_at(
 fn fixture_run() -> Run {
     let corpus = Corpus::new(fixtures_dir(), "check");
     let root = load_map(&fixtures_dir().join("check.taxonomy.yml"));
-    run_over(&corpus, &root, &mut Cache::disabled())
+    run_over(&corpus, &root, &fixture_lock(), &mut Cache::disabled())
+}
+
+/// The fixture tree has no lock, so the digest of its taxonomy source stands
+/// in for one. It is the same fact a lock digest is: the bytes every result in
+/// this tree rests on.
+fn fixture_lock() -> String {
+    let source = std::fs::read_to_string(fixtures_dir().join("check.taxonomy.yml"))
+        .expect("the fixture taxonomy");
+    headwater_hash::hex(source.as_bytes())
 }
 
 /// The fixture tree as Phase A leaves it, which is what a scoped view is built
@@ -129,16 +135,18 @@ fn corpus_run() -> Run {
 fn cached_corpus_run(cache: &mut Cache) -> Run {
     let root = repository_root();
     let resolved = repository(&root);
+    let lock = headwater_lock::at(&root).expect("the committed lock");
     run_over(
         &corpus_of(&root, &resolved),
         &resolved.resolution.taxonomy,
+        &lock.digest,
         cache,
     )
 }
 
 /// One taxonomy source, loaded. The fixture taxonomy is written whole, and a
 /// source with no overlays over it is a resolved taxonomy already.
-fn load_map(path: &Path) -> headwater_yaml::Mapping {
+fn load_map(path: &Path) -> Mapping {
     let source =
         std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     headwater_yaml::load(&source)
@@ -480,6 +488,7 @@ fn the_injected_clock_changes_a_verdict_and_nothing_else_does() {
     let later = run_at(
         &corpus,
         &root,
+        &fixture_lock(),
         &Context::at(Date::parse("2026-09-30").expect("a date")),
         &mut Cache::disabled(),
     );
@@ -555,6 +564,55 @@ fn an_edge_instance_is_counted_against_both_of_its_endpoints() {
     assert!(run.coverage.unaccounted.is_empty());
 }
 
+/// A suppressed finding leaves the report and never leaves the instance.
+///
+/// That is the property that keeps a cache honest. `crates/check/src/cache.rs`
+/// stores the outcome of an instance, so a filter applied inside a check would
+/// write a `Passed` record for a verdict that failed, and the inventory would
+/// then lose the entry it exists to count for as long as that record lived.
+/// The filter is the runner's and it runs after every outcome is fixed.
+///
+/// The fixture carries all four states of a directive, and each one is a
+/// different piece of news: applied, expired, unused, refused.
+#[test]
+fn a_suppressed_finding_leaves_the_report_and_stays_in_the_instance() {
+    let run = fixture_run();
+    let suppressed = "check/spec/10-suppressed.md";
+
+    // Nothing of the two suppressed rules reaches the report for that file.
+    assert!(
+        !run.findings
+            .iter()
+            .any(|finding| finding.path == suppressed && finding.rule == voice::RULE),
+        "a suppressed voice finding reached the report"
+    );
+
+    // And the instance that produced one still holds it, which is what the
+    // cache stores.
+    let instance = run
+        .instances
+        .iter()
+        .find(|instance| instance.rule == voice::RULE && instance.at() == suppressed)
+        .expect("the voice instance over the suppressed fixture");
+    assert!(
+        matches!(instance.outcome, Outcome::Failed(_)),
+        "{:?}",
+        instance.outcome
+    );
+
+    // The expired directive is the other half: its finding is reported.
+    assert!(
+        run.findings
+            .iter()
+            .any(|finding| finding.path == suppressed && finding.rule == language::RULE),
+        "the expired directive suppressed a finding anyway"
+    );
+
+    assert_eq!(run.suppressions.hidden(), 2);
+    assert_eq!(run.suppressions.by_shelf(), vec![("spec_series", 2)]);
+    assert_eq!(run.suppressions.refused.len(), 1);
+}
+
 /// OB-COV-2 is about classified documents, and only those.
 ///
 /// A classified document that no rule read is a finding. An unclassified one is
@@ -570,8 +628,8 @@ fn a_classified_document_with_no_instance_is_a_finding_and_an_untyped_one_is_not
         .map(|finding| finding.path.as_str())
         .collect();
     assert_eq!(paths, ["check/spec/03-no-instance.md"]);
-    assert_eq!(run.coverage.seen(), 17);
-    assert_eq!(run.coverage.classified(), 16);
+    assert_eq!(run.coverage.seen(), 18);
+    assert_eq!(run.coverage.classified(), 17);
 }
 
 /// The coverage numbers are computed against the census and never against the
@@ -697,7 +755,7 @@ fn a_document_check_receives_the_body_only_when_it_declares_it() {
     let declared = over_documents(&Reader::<true>, &census, &pinned(), &mut Cache::disabled());
     let did_not = over_documents(&Reader::<false>, &census, &pinned(), &mut Cache::disabled());
 
-    assert_eq!(declared.len(), 16, "one instance per typed document");
+    assert_eq!(declared.len(), 17, "one instance per typed document");
     assert_eq!(declared.len(), did_not.len());
     assert!(declared
         .iter()

@@ -32,9 +32,11 @@
 //!
 //! For the same reason a cache does not make a run partial. Every instance is
 //! created, every instance has an outcome, and coverage counts what it counted
-//! before. A run that evaluates less of the corpus is `--changed-only`, which
-//! is [#58](https://github.com/headwater-ai/headwater/issues/58), and that one
-//! does have to decide what coverage means over a partial pass.
+//! before. That is the whole of what a partial run would have had to decide,
+//! and [#58](https://github.com/headwater-ai/headwater/issues/58) found that
+//! there is nothing left for one to do: the work a `--changed-only` flag would
+//! scope is the work this module already skips, and it derives what moved from
+//! the bytes rather than from a list that a caller supplies.
 //!
 //! # What the key covers, and how the fourth component arrived
 //!
