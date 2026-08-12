@@ -1,0 +1,161 @@
+headwater/taxonomy 0.1.0
+
+declarations
+  taxonomy (required) scalar:string
+  version (required) scalar:string
+  extends one of [scalar:string | scalar:null]
+  vocabularies map of seq of one of [scalar:string | members
+          value (required) scalar:string
+          role enum[initial live terminal-retained]]
+  purposes map of members
+      intent (required) scalar:string
+      answers seq of scalar:string
+  facets map of members
+      role enum[state state_entered created freshness scent]
+      values seq reference:allowed of one of [scalar:string | members
+            value (required) scalar:string
+            role enum[initial live terminal-retained]]
+      type enum[string integer boolean date duration]
+      required scalar:boolean
+      severity enum[error warn info]
+      stale_after_days scalar:integer
+      volatility enum[stable mutable]
+      guidance map of scalar:string
+  regimes members
+    voice map of members
+        forbid seq of scalar:string
+    lifecycle map of members
+        initial (required) scalar:string
+        transitions (required) map of seq of scalar:string
+        terminal seq of scalar:string
+        retain_terminal scalar:boolean
+    language map of members
+        tag (required) scalar:string
+        controlled scalar:string
+        profile scalar:string
+        retired_terms seq of members
+            term (required) scalar:string
+            reason (required) scalar:string
+            replacement scalar:string
+  relations map of members
+      family (required) enum[succession derivation governance evidence composition association]
+      from (required) seq of scalar:string
+      to (required) seq of scalar:string
+      inverse scalar:string
+      reciprocal enum[required symmetric optional]
+      nuclearity enum[multinuclear nucleus-satellite]
+      nucleus enum[from to]
+      inherits seq of scalar:string
+      cardinality enum[one many]
+      created_by (required) enum[author scaffold generator hook agent import]
+      attributes map of members
+          type enum[string integer boolean date duration]
+          values seq of scalar:string
+          owner (required) enum[source target edge]
+      on_target members
+        set_state (required) scalar:string
+      invalid_when members
+        both map of scalar:string
+  anchors map of members
+      resolver (required) scalar:string
+  shelves map of members
+      path (required) scalar:string
+      homogeneous (required) scalar:boolean
+      kind scalar:string
+      discriminator scalar:string
+      kinds seq of scalar:string
+      group_by scalar:string
+      layout scalar:string
+  kinds map of members
+      abstract scalar:boolean
+      is_a scalar:string
+      purpose scalar:string
+      identifier members
+        scheme (required) scalar:string
+      voice scalar:string
+      lifecycle scalar:string
+      language scalar:string
+      facets members
+        require seq of scalar:string
+        optional seq of scalar:string
+        forbid seq of scalar:string
+      sections members
+        require seq of scalar:string
+        optional seq of scalar:string
+      relations members
+        expect seq of members
+            id (required) scalar:string
+            relation (required) scalar:string
+            to_kind (required) scalar:string
+            when map of scalar:string
+            within (required) scalar:duration
+            since (required) enum[created state_entered]
+            severity enum[error warn info]
+            rationale (required) scalar:string
+  identifier_schemes map of members
+      pattern (required) scalar:string
+      namespace (required) scalar:string
+      allocation (required) scalar:string
+  core members
+    requires (required) seq of one of [members
+          facet_role (required) enum[state state_entered created freshness scent] | members
+          purpose (required) scalar:string | members
+          relation_family (required) enum[succession derivation governance evidence composition association]
+          lifecycle_sensitive scalar:boolean | members
+          identifier_scheme (required) scalar:string]
+  mappings seq of members
+      to (required) scalar:string
+      kinds map of members
+          relation (required) enum[exactMatch closeMatch broadMatch narrowMatch relatedMatch]
+          target (required) scalar:string
+      facet_values map addressable:false of members
+          relation (required) enum[exactMatch closeMatch broadMatch narrowMatch relatedMatch]
+          target (required) scalar:string
+  projections seq of members
+      kind (required) scalar:string
+      for seq of scalar:string
+      output (required) scalar:string
+      profile scalar:string
+      format scalar:string
+      filter members
+        include map of seq of scalar:string
+        exclude map of seq of scalar:string
+      tombstone enum[counted sealed]
+      from members
+        anchor (required) scalar:string
+
+operations
+  taxonomy scalar:string
+  bundle scalar:string
+  extends scalar:string
+  requires seq of scalar:string
+  add map addressable:false of free (the shape at the addressed node decides this)
+  override map addressable:false of free (the shape at the addressed node decides this)
+  add_to map addressable:false of free (the shape at the addressed node decides this)
+  remove_from map addressable:false of free (the shape at the addressed node decides this)
+  remove seq of scalar:string
+
+unconstrained
+  add: the shape at the addressed node decides this
+  add_to: the shape at the addressed node decides this
+  override: the shape at the addressed node decides this
+  remove_from: the shape at the addressed node decides this
+
+not run without a resolved taxonomy
+  referential integrity: a reference resolves over the merged tree, so a name that an overlay supplies is not there yet
+  anchor integrity: a resolver namespace collides across the base and every bundle, and one source holds only its own
+  identifier integrity: two schemes collide across sources, and this repository's overlay mints four against a base that has one
+  coverage: a shelf reaches a kind that a bundle may declare
+  kind inheritance: `is_a` names a kind that the base declares and the bundle extends
+  purpose completeness: a purpose is declared in one source and served by a kind in another
+  determinism: two shelf patterns collide across sources
+  role uniqueness: two facets claim one role across sources
+  lifecycle soundness: an overlay may override the state vocabulary that the machine runs over
+  relation coherence: `inherits` names facets that exist on both ends, and an end may be a kind from another source
+  expectation well-formedness: an expectation names a relation and kinds that another source may declare
+  core satisfiability: the core is checked on the result, and never on an operation
+  facet canons: relevance asks whether any check reads the facet, over the resolved taxonomy
+  kind rigidity: a kind name collides with a lifecycle-state value, and an overlay may replace the vocabulary
+  edge provenance: `created_by` is required here, and whether the resolved relation set is author-free is the audit's
+  overlay confluence: an overlay set is more than one source by definition
+  mapping integrity: a mapping names kinds in two taxonomies, and neither is resolved here

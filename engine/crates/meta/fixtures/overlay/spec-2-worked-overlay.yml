@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Spec 2's own worked overlay, under Customization by composition, plus the
+# enabling line from the decision-relation vocabulary. Three operations and a
+# reference in the one place an overlay writes one: an operation's whole value.
+taxonomy: acme-engineering
+extends: headwater/standard@2.1.0
+
+override:
+  shelves.decisions.path: docs/adr/**
+  identifier_schemes.decision_id.pattern: "ADR-{namespace}-{seq:03d}"
+  vocabularies.lifecycle_state:
+    - {value: draft, role: initial}
+    - {value: active, role: live}
+    - {value: retired, role: terminal-retained}
+
+add:
+  shelves.playbooks:
+    path: docs/playbooks/**
+    homogeneous: true
+    kind: playbook
+  kinds.playbook:
+    purpose: procedure
+    lifecycle: standard
+  relations.forbids: $package.optional.forbids
+
+remove:
+  - shelves.proposals
+  - relations.refines

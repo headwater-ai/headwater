@@ -58,6 +58,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "headwater-meta"
+version = "0.0.0"
+dependencies = [
+ "headwater-census",
+ "headwater-ref",
+ "headwater-yaml",
+]
+
+[[package]]
 name = "headwater-ref"
 version = "0.0.0"
 dependencies = [

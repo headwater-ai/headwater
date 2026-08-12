@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Every closed value set the meta-schema carries, each one written wrongly once.
+# The role registry, the relation families and the `created_by` set are closed
+# in spec 2 itself; the rest are marked as guesses in `meta-schema.yml`.
+taxonomy: acme
+version: 1.0.0
+
+facets:
+  status: {role: state_of_the_art, type: date}
+  summary: {role: scent, type: prose}
+  audience: {severity: fatal, volatility: sometimes}
+
+relations:
+  supersedes:
+    family: temporal
+    from: [decision]
+    to: [decision]
+    nuclearity: bicameral
+    cardinality: several
+    reciprocal: encouraged
+    created_by: whoever_noticed
+  refines:
+    family: derivation
+    from: [decision]
+    to: [decision]
+    nucleus: middle
+    created_by: agent
+    attributes:
+      cue: {type: string, owner: nobody}
+
+kinds:
+  decision:
+    abstract: perhaps
+    relations:
+      expect:
+        - id: late
+          relation: implemented_by
+          to_kind: specification
+          within: soon
+          since: first_noticed
+          rationale: a window with no unit is a mood
+
+core:
+  requires:
+    - facet_role: importance
+    - {}

@@ -1,0 +1,1 @@
+25:22: add.relations.forbids: `$package.optional.forbids` is a reference, and a literal is what belongs here; a reference stands only where the meta-schema admits one, and never in the position that a reference reads

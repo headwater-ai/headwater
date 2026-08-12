@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Where a reference may stand, and where it may not.
+#
+# `facets.*.values` is the one position in a taxonomy source that admits one. A
+# vocabulary entry does not, and that is what makes "a reference points at a
+# value and never at a second reference" a rule of shape rather than a rule the
+# resolver has to carry: the position a reference reads refuses a reference.
+taxonomy: acme
+version: 1.0.0
+
+vocabularies:
+  lifecycle_state: $vocabularies.upstream_states
+  audience: [engineer, operator]
+
+facets:
+  status: {values: $vocabularies.lifecycle_state}
+  reader: {values: $vocabularies.audience}
+  owner: {type: $vocabularies.types}
+  pattern_holder: {type: string, guidance: {a: "^DR-[A-Z]{2,6}$"}}
+
+shelves:
+  decisions:
+    path: $vocabularies.paths
+    homogeneous: true
+
+identifier_schemes:
+  decision_id:
+    pattern: "^DR-[A-Z]{2,6}-[0-9]{4}$"
+    namespace: repo
+    allocation: reconcile-first
+
+kinds:
+  decision:
+    purpose: $vocabularise.rationale

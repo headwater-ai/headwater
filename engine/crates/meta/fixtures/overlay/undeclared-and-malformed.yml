@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# An operation that does not exist, an address that names nothing the
+# meta-schema declares, an address that continues below a scalar, an address
+# the grammar itself refuses, and a value of the wrong shape for the node the
+# address lands on.
+taxonomy: acme
+
+replace:
+  kinds.decision: {purpose: rationale}
+
+add:
+  kinds.decision.tone: brisk
+  identifier_schemes.decision_id.pattern.prefix: DR
+  shelves.play-books: {path: docs/playbooks/**, homogeneous: true}
+  facets.status.values: draft
+  package.optional.forbids: {family: governance}
+
+remove:
+  - kinds.decision.sections.require.0
+  - relations.refines

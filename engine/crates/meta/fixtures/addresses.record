@@ -1,0 +1,15 @@
+kinds.design_spec.identifier => lands on members(scheme)
+kinds.design_spec.language => lands on scalar:string
+shelves.decisions.path => lands on scalar:string
+regimes.language.ste_house => lands on members(tag controlled profile retired_terms)
+regimes.lifecycle.standard.transitions => lands on map of seq of scalar:string
+regimes.lifecycle.standard.transitions.draft => lands on seq of scalar:string
+regimes.lifecycle.standard.transitions.draft.0 => inside the list at `regimes.lifecycle.standard.transitions.draft`
+core.requires => lands on seq of one of 4 alternatives
+core.requires.0 => inside the list at `core.requires`
+projections.0 => inside the list at `projections`
+kinds.decision.sections.require.0 => inside the list at `kinds.decision.sections.require`
+identifier_schemes.decision_id.pattern.prefix => below the scalar at `identifier_schemes.decision_id.pattern`
+facets.status.values => lands on seq reference:allowed of one of 2 alternatives
+package.optional.forbids => undeclared at `package`
+vocabularies.lifecycle_state => lands on seq of one of 2 alternatives

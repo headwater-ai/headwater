@@ -1,0 +1,4 @@
+13:20: vocabularies.lifecycle_state: `$vocabularies.upstream_states` is a reference, and a literal is what belongs here; a reference stands only where the meta-schema admits one, and never in the position that a reference reads
+19:17: facets.owner.type: `$vocabularies.types` is a reference, and a literal is what belongs here; a reference stands only where the meta-schema admits one, and never in the position that a reference reads
+24:11: shelves.decisions.path: `$vocabularies.paths` is a reference, and a literal is what belongs here; a reference stands only where the meta-schema admits one, and never in the position that a reference reads
+35:14: kinds.decision.purpose: `$vocabularise.rationale` opens with the reference sigil and `vocabularise` is not a reference root; the roots are `vocabularies` and `package`

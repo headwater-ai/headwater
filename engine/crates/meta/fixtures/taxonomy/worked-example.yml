@@ -1,0 +1,180 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Spec 2's own worked shape, trimmed to what one file needs to exercise every
+# declaration at least once. If the meta-schema refuses this, it refuses the
+# specification's own illustration.
+taxonomy: acme-engineering
+version: 3.2.0
+extends: headwater/standard@2.1.0
+
+vocabularies:
+  lifecycle_state:
+    - {value: draft, role: initial}
+    - {value: current, role: live}
+    - {value: superseded, role: terminal-retained}
+  audience: [engineer, operator, integrator, auditor]
+
+purposes:
+  rationale:
+    intent: explain why a choice was made and what it forecloses
+    answers: ["why is it this way", "what was rejected"]
+  behavior:
+    intent: state what the system does, as it is now
+    answers: ["what does this component do"]
+
+facets:
+  status:
+    role: state
+    values: $vocabularies.lifecycle_state
+    required: true
+    volatility: mutable
+  status_since: {role: state_entered, type: date, required: true}
+  last_verified: {role: freshness, type: date, stale_after_days: 180}
+  summary: {role: scent, type: string, required: true}
+  audience:
+    values: $vocabularies.audience
+    required: false
+    severity: warn
+    guidance:
+      engineer: somebody who changes the system
+      operator: somebody who runs it
+
+regimes:
+  voice:
+    declarative: {forbid: [future_intent, change_narration, phased_rollout]}
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current, deprecated], current: [superseded]}
+      terminal: [superseded]
+      retain_terminal: true
+  language:
+    default:
+      tag: en-US
+      controlled: ste-house
+      retired_terms:
+        - {term: reference system, reason: the design stands on its own}
+        - {term: docgov, replacement: Headwater, reason: the name was settled in Q10}
+
+relations:
+  supersedes:
+    family: succession
+    from: [decision]
+    to: [decision]
+    inverse: superseded_by
+    reciprocal: required
+    nuclearity: multinuclear
+    on_target: {set_state: superseded}
+    created_by: scaffold
+  derives_from:
+    family: derivation
+    from: [agent_rule]
+    to: [standard]
+    nuclearity: nucleus-satellite
+    nucleus: to
+    inherits: [status, last_verified]
+    created_by: generator
+  governs:
+    family: governance
+    from: [standard, specification]
+    to: [code_path]
+    cardinality: many
+    created_by: author
+  conflicts_with:
+    family: association
+    from: [decision]
+    to: [decision]
+    reciprocal: symmetric
+    nuclearity: multinuclear
+    invalid_when: {both: {status: current}}
+    created_by: agent
+  cites:
+    family: association
+    from: [decision]
+    to: [decision]
+    created_by: hook
+    attributes:
+      cue: {type: string, owner: source}
+      verified_revision: {type: string, owner: edge}
+
+anchors:
+  code_path: {resolver: source-tree}
+  ado_work_item: {resolver: ado-snapshot}
+
+shelves:
+  decisions:
+    path: docs/decisions/**
+    homogeneous: true
+    kind: decision
+    group_by: domain
+  governance:
+    path: docs/governance/**
+    homogeneous: false
+    discriminator: doc_type
+    kinds: [standard, methodology, runbook]
+    layout: "{domain}/{component}/{aspect}.md"
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status, status_since, last_verified, summary]}
+  decision:
+    is_a: governed_document
+    purpose: rationale
+    identifier: {scheme: decision_id}
+    voice: declarative
+    lifecycle: standard
+    language: default
+    facets:
+      require: [audience]
+      forbid: [doc_type]
+    sections:
+      require: [Context, Decision, Consequences]
+      optional: [Alternatives considered]
+    relations:
+      expect:
+        - id: decision-realized
+          relation: implemented_by
+          to_kind: specification
+          when: {status: current}
+          within: 90d
+          since: state_entered
+          severity: warn
+          rationale: a decision nothing implements is either not a decision or not done
+
+identifier_schemes:
+  decision_id:
+    pattern: "DR-{namespace}-{seq:04d}"
+    namespace: repo
+    allocation: reconcile-first
+
+core:
+  requires:
+    - facet_role: state
+    - facet_role: freshness
+    - facet_role: scent
+    - purpose: rationale
+    - purpose: behavior
+    - relation_family: succession
+      lifecycle_sensitive: true
+    - identifier_scheme: namespaced
+
+mappings:
+  - to: platform/headwater-taxonomy@2.0.0
+    kinds:
+      decision: {relation: exactMatch, target: adr}
+      specification: {relation: broadMatch, target: component_spec}
+    facet_values:
+      status.current: {relation: exactMatch, target: state.active}
+
+projections:
+  - {kind: shelf_index, for: [decisions, governance], output: "{shelf}/README.md"}
+  - kind: graph_export
+    profile: partner
+    format: json
+    output: .headwater/export/partner.json
+    filter: {exclude: {confidentiality: [internal, secret]}}
+    tombstone: counted
+  - kind: transcription
+    from: {anchor: ado_work_item}
+    output: docs/requirements/
