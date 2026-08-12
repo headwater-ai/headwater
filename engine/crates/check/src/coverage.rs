@@ -67,7 +67,7 @@ pub struct Document {
     pub created: usize,
     pub ran: usize,
     /// One entry per skipped instance: the rule, and why it did not run.
-    pub skipped: Vec<(&'static str, &'static str)>,
+    pub skipped: Vec<(&'static str, String)>,
 }
 
 /// What this run looked at.
@@ -112,8 +112,8 @@ impl Coverage {
                 };
                 document.created += 1;
                 match instance.outcome {
-                    InstanceOutcome::Skipped(reason) => {
-                        document.skipped.push((instance.rule, reason))
+                    InstanceOutcome::Skipped(ref reason) => {
+                        document.skipped.push((instance.rule, reason.clone()))
                     }
                     _ => document.ran += 1,
                 }
@@ -148,13 +148,13 @@ impl Coverage {
 
     /// Each skip reason, with the number of instances it covers, in the order
     /// the reasons first appear.
-    pub fn skips(&self) -> Vec<(&'static str, usize)> {
-        let mut reasons: Vec<(&'static str, usize)> = Vec::new();
+    pub fn skips(&self) -> Vec<(&str, usize)> {
+        let mut reasons: Vec<(&str, usize)> = Vec::new();
         for document in &self.documents {
             for (_, reason) in &document.skipped {
-                match reasons.iter_mut().find(|(known, _)| known == reason) {
+                match reasons.iter_mut().find(|(known, _)| *known == reason.as_str()) {
                     Some((_, count)) => *count += 1,
-                    None => reasons.push((reason, 1)),
+                    None => reasons.push((reason.as_str(), 1)),
                 }
             }
         }

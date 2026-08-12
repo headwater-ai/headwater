@@ -40,6 +40,21 @@ facets:
   doc_type:
     volatility: stable
 
+# Two voice regimes and two language regimes, because each family has two
+# outcomes worth a fixture. One of each is a declaration this engine has rules
+# for. The other names a category and a profile it does not know, and the
+# instance over it skips with that name in the reason rather than passing
+# silently — which is the whole of what the meta-schema's `gap` marker costs at
+# run time.
+
+regimes:
+  voice:
+    declarative: {forbid: [future_intent, change_narration, phased_rollout]}
+    guarded: {forbid: [hedging]}
+  language:
+    ste_house: {tag: en-US, controlled: ASD-STE100, profile: house}
+    ste_strict: {tag: en-US, controlled: ASD-STE100, profile: strict}
+
 kinds:
   governed_document:
     abstract: true
@@ -47,6 +62,8 @@ kinds:
 
   design_spec:
     is_a: governed_document
+    voice: declarative
+    language: ste_house
 
   evaluation:
     is_a: governed_document
@@ -61,6 +78,16 @@ kinds:
           severity: warn
           rationale: an evaluation that no specification cites closed nothing
 
+  # The kind that carries a section contract, and the two regimes this engine
+  # cannot read. A contract on `design_spec` would put a section requirement on
+  # every document the other rules use, and a fixture that has to satisfy four
+  # rules at once is one nobody can read.
+  decision_record:
+    is_a: governed_document
+    voice: guarded
+    language: ste_strict
+    sections: {require: [Context, Decision]}
+
   # A kind that forbids every facet the two Shape rules read, so neither of them
   # generates an instance over it. That is what leaves a classified document
   # with no instance at all, which is the failing fixture the coverage rule
@@ -74,7 +101,7 @@ shelves:
     path: check/spec/**
     homogeneous: false
     discriminator: doc_type
-    kinds: [design_spec, note]
+    kinds: [design_spec, note, decision_record]
   evaluations:
     path: check/evaluations/**
     homogeneous: true
@@ -141,6 +168,31 @@ obligations:
     prevents: process.maintenance
     severity: low
 
+  OB-FIX-7:
+    statement: Prose of a kind under a voice regime does not use the constructions it forbids
+    rationale: A specification that narrates change cannot be read for what holds now
+    class: cohesion
+    prevents: content.inconsistent
+    severity: low
+  OB-FIX-8:
+    statement: Prose of a kind under a language regime obeys the controlled language it names
+    rationale: A rule that lives in a contributing guide is a rule no check can read
+    class: cohesion
+    prevents: content.unclear
+    severity: low
+  OB-FIX-9:
+    statement: Every section a kind requires is a heading of every document of that kind
+    rationale: A document missing a section answers a question its kind promised to answer
+    class: cohesion
+    prevents: content.incomplete
+    severity: high
+  OB-FIX-10:
+    statement: A fragment a document writes into itself names a heading of that document
+    rationale: A link that lands nowhere costs the reader the paragraph it was written for
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+
 controls:
   CT-FIX-1:
     mechanism: check:relation.reciprocity.missing
@@ -170,5 +222,25 @@ controls:
   CT-FIX-6:
     mechanism: check:relation.participation.overdue
     discharges: [OB-FIX-6]
+    trigger: pull_request
+    posture: advisory
+  CT-FIX-7:
+    mechanism: check:voice.forbidden_construction
+    discharges: [OB-FIX-7]
+    trigger: pull_request
+    posture: advisory
+  CT-FIX-8:
+    mechanism: check:language.controlled.not_met
+    discharges: [OB-FIX-8]
+    trigger: pull_request
+    posture: advisory
+  CT-FIX-9:
+    mechanism: check:section.required.missing
+    discharges: [OB-FIX-9]
+    trigger: pull_request
+    posture: advisory
+  CT-FIX-10:
+    mechanism: check:link.fragment.unresolved
+    discharges: [OB-FIX-10]
     trigger: pull_request
     posture: advisory

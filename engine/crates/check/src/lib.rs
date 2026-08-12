@@ -84,13 +84,17 @@ pub mod endpoint;
 pub mod facet_required;
 pub mod facet_value;
 pub mod finding;
+pub mod fragment;
 pub mod instance;
+pub mod language;
 pub mod participation;
 pub mod placement;
 pub mod reciprocity;
 pub mod register;
 pub mod scope;
+pub mod sections;
 pub mod shape;
+pub mod voice;
 
 pub use cache::Cache;
 pub use context::{Context, Date};
@@ -117,13 +121,17 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 7] = [
+pub const RULES: [&str; 11] = [
     facet_required::RULE,
     facet_value::RULE,
     placement::RULE,
     reciprocity::RULE,
     endpoint::RULE,
     participation::RULE,
+    voice::RULE,
+    language::RULE,
+    sections::RULE,
+    fragment::RULE,
     coverage::RULE,
 ];
 
@@ -194,6 +202,10 @@ pub fn run(
     let reciprocity = reciprocity::Reciprocity::over(declared.relations);
     let endpoints = endpoint::Endpoints::over(declared.relations, declared.shape);
     let participation = participation::Participation::over(declared.shape, declared.relations);
+    let voice = voice::Voice::over(declared.shape);
+    let language = language::Language::over(declared.shape);
+    let sections = sections::Sections::over(declared.shape);
+    let fragments = fragment::Fragments;
 
     let digests = scope::Digests::of(census);
     let mut instances = scope::over_documents(&required, census, ctx, cache);
@@ -209,6 +221,10 @@ pub fn run(
         ctx,
         cache,
     ));
+    instances.extend(scope::over_documents(&voice, census, ctx, cache));
+    instances.extend(scope::over_documents(&language, census, ctx, cache));
+    instances.extend(scope::over_documents(&sections, census, ctx, cache));
+    instances.extend(scope::over_documents(&fragments, census, ctx, cache));
 
     let coverage = Coverage::of(census, &instances);
 
@@ -247,6 +263,13 @@ pub fn run(
             participation::RULE,
             scope::neighbourhood_scope::<participation::Participation<'_>>(),
         ),
+        (voice::RULE, scope::document_scope::<voice::Voice>()),
+        (language::RULE, scope::document_scope::<language::Language>()),
+        (sections::RULE, scope::document_scope::<sections::Sections>()),
+        (
+            fragment::RULE,
+            scope::document_scope::<fragment::Fragments>(),
+        ),
         (coverage::RULE, coverage::SCOPE),
     ]
     .into_iter()
@@ -283,6 +306,17 @@ pub enum Detail {
     EveryInstance,
     /// The totals, and every finding.
     Findings,
+    /// The totals alone: coverage, the instances each rule created, and what
+    /// each rule serves. No finding, and no count of findings.
+    ///
+    /// Right for a recorded run over a corpus of *prose*, and wrong for a
+    /// fixture tree. A finding of a Document-origin rule is a function of a
+    /// sentence, and a sentence changes on most commits: a file that records
+    /// them is a file that is re-blessed rather than read. What a regression
+    /// moves is above this line — the denominator, the instance count per rule,
+    /// and the obligation each rule reaches — and none of that moves when an
+    /// author rewrites a paragraph.
+    Totals,
 }
 
 impl Run {
@@ -366,10 +400,12 @@ impl Run {
             };
         }
 
-        let _ = writeln!(out, "{} findings", self.findings.len());
-        for (severity, count) in self.counts() {
-            if count > 0 {
-                let _ = writeln!(out, "  {count:5} {severity}");
+        if detail != Detail::Totals {
+            let _ = writeln!(out, "{} findings", self.findings.len());
+            for (severity, count) in self.counts() {
+                if count > 0 {
+                    let _ = writeln!(out, "  {count:5} {severity}");
+                }
             }
         }
 
@@ -390,7 +426,7 @@ impl Run {
             }
         }
 
-        if !self.findings.is_empty() {
+        if !self.findings.is_empty() && detail != Detail::Totals {
             out.push('\n');
             for finding in &self.findings {
                 out.push_str(&finding.render());

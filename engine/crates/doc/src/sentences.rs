@@ -36,7 +36,7 @@
 //! is that construction: a block another author wrote produces no sentence, so
 //! no rule downstream declares an exemption for one.
 
-use crate::body::{Block, BlockKind, Body, Ownership, Run};
+use crate::body::{Block, BlockKind, Body, Link, Ownership, Run};
 use headwater_yaml::{Position, Span};
 
 /// The abbreviations whose period ends no sentence.
@@ -87,11 +87,14 @@ fn collapse_parentheticals(text: &str) -> String {
 
 /// Every sentence of a body, in document order.
 pub fn of(body: &Body) -> Vec<Sentence> {
-    body.blocks.iter().flat_map(of_block).collect()
+    body.blocks
+        .iter()
+        .flat_map(|block| of_block(block, &body.links))
+        .collect()
 }
 
 /// The sentences of one block, and none for a block that holds no prose.
-fn of_block(block: &Block) -> Vec<Sentence> {
+fn of_block(block: &Block, links: &[Link]) -> Vec<Sentence> {
     if block.quote_depth > 0 || matches!(block.kind, BlockKind::Code | BlockKind::Html) {
         return Vec::new();
     }
@@ -102,7 +105,7 @@ fn of_block(block: &Block) -> Vec<Sentence> {
     let mut start = 0usize;
     let mut index = 0usize;
     while index < chars.len() {
-        if ends_a_sentence(&chars, index, block) {
+        if ends_a_sentence(&chars, index, block, links) {
             // The break is after the terminator and any closing punctuation,
             // and the whitespace between the two sentences belongs to neither.
             let end = index + 1;
@@ -118,7 +121,7 @@ fn of_block(block: &Block) -> Vec<Sentence> {
 }
 
 /// Whether the character at `index` closes a sentence.
-fn ends_a_sentence(chars: &[char], index: usize, block: &Block) -> bool {
+fn ends_a_sentence(chars: &[char], index: usize, block: &Block, links: &[Link]) -> bool {
     let c = chars[index];
     if !matches!(c, '.' | '!' | '?') {
         return false;
@@ -149,6 +152,17 @@ fn ends_a_sentence(chars: &[char], index: usize, block: &Block) -> bool {
         // A run of questions may continue in lower case, and a period may not:
         // splitting on `cf. the projection` is the failure that guard prevents.
         Some(_) if c != '.' => true,
+        // A code span opens a sentence whatever letter it starts with. The
+        // parser removed the backticks, so `\`scope()\` is a method` reaches
+        // this rule as a lower-case `s`, and the case test alone would merge it
+        // into the sentence before it. Found by differential against
+        // `tools/ste-lint.py`, which stands a `CODE` token in its place and so
+        // never met this.
+        Some(_) if ownership_at(block, opening) == Ownership::Code => true,
+        // A link opens a sentence on the same terms and for the same reason.
+        // The parser removed the brackets, so `[spec 1](…) explicitly forswears
+        // that` reaches this rule as a lower-case `s`.
+        Some(_) if opens_a_link(block, opening, links) => true,
         Some(next) => opens_a_sentence(*next),
     }
 }
@@ -161,6 +175,18 @@ fn ends_a_sentence(chars: &[char], index: usize, block: &Block) -> bool {
 /// splitting a sentence in two.
 fn opens_a_sentence(c: char) -> bool {
     c.is_uppercase() || c.is_ascii_digit() || matches!(c, '"' | '“' | '(' | '[' | '`' | '*' | '_' | '§')
+}
+
+/// Whether the character at `index` is inside a prose link.
+///
+/// A link is the second construct whose markup the parse removed, and the two
+/// have to be recognized here rather than by a rule that reads the text: a rule
+/// downstream sees the link's text and nothing that says it was a link.
+fn opens_a_link(block: &Block, index: usize, links: &[Link]) -> bool {
+    let at = position(block, index).offset;
+    links
+        .iter()
+        .any(|link| link.span.start.offset <= at && at < link.span.end.offset)
 }
 
 fn closes_an_abbreviation(chars: &[char], index: usize) -> bool {
@@ -303,6 +329,16 @@ mod tests {
         of(&scan(source, source, 0))
     }
 
+    /// The second half of the same defect: a link's text is usually lower case,
+    /// and the brackets that would have said so are gone by the time a rule
+    /// reads it.
+    #[test]
+    fn a_link_opens_a_sentence() {
+        let texts = texts("It reasons about prose. [spec 1](01.md) forswears that.\n");
+        assert_eq!(texts.len(), 2);
+        assert_eq!(texts[1], "spec 1 forswears that.");
+    }
+
     fn texts(source: &str) -> Vec<String> {
         sentences(source)
             .into_iter()
@@ -353,6 +389,17 @@ mod tests {
         assert_eq!(
             texts("The linter is `tools/ste-lint.py` today and it blocks at commit.\n").len(),
             1
+        );
+    }
+
+    /// The defect the differential against `tools/ste-lint.py` found. The
+    /// parser removes the backticks, so a sentence that opens with a code span
+    /// opens in whatever case the code is written in.
+    #[test]
+    fn a_code_span_opens_a_sentence() {
+        assert_eq!(
+            texts("The reasoning binds it. `scope()` is a method it declares.\n"),
+            ["The reasoning binds it.", "scope() is a method it declares."]
         );
     }
 

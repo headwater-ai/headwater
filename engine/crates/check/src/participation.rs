@@ -165,7 +165,7 @@ impl NeighbourhoodCheck for Participation<'_> {
 
     fn evaluate(&self, view: &NeighbourhoodView<'_>) -> Outcome {
         let Some(now) = view.now() else {
-            return Outcome::Skipped(NO_CLOCK);
+            return Outcome::Skipped(NO_CLOCK.to_string());
         };
 
         let mut findings = Vec::new();
@@ -256,7 +256,7 @@ impl NeighbourhoodCheck for Participation<'_> {
 
         match (findings.is_empty(), unreadable) {
             (false, _) => Outcome::Failed(findings),
-            (true, Some(reason)) => Outcome::Skipped(reason),
+            (true, Some(reason)) => Outcome::Skipped(reason.to_string()),
             (true, None) => Outcome::Passed,
         }
     }

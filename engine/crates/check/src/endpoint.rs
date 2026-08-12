@@ -116,21 +116,21 @@ impl EdgeCheck for Endpoints<'_> {
         // The declared half when a document wrote it, because its span is the
         // line the author of the source document is looking at.
         let Some(half) = view.declared_half().or_else(|| view.inverse_half()) else {
-            return Outcome::Skipped(NO_HALF);
+            return Outcome::Skipped(NO_HALF.to_string());
         };
         let Some(relation) = self
             .declared
             .iter()
             .find(|known| known.name == half.declared)
         else {
-            return Outcome::Skipped(NO_RELATION);
+            return Outcome::Skipped(NO_RELATION.to_string());
         };
 
         let Target::Document { id, path, kind } = &half.target else {
             // An anchor, a withheld target or an unbound one. None of the three
             // is a document pair, and `declared_triple` already declines to
             // group them, so this is unreachable rather than tolerated.
-            return Outcome::Skipped(NO_RELATION);
+            return Outcome::Skipped(NO_RELATION.to_string());
         };
         let writer = Endpoint {
             key: "from",

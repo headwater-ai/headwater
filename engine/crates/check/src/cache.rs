@@ -480,7 +480,7 @@ mod tests {
             decode("r", &encode(&Outcome::Passed).expect("stored")),
             Some(Outcome::Passed)
         ));
-        assert_eq!(encode(&Outcome::Skipped("a reason")), None);
+        assert_eq!(encode(&Outcome::Skipped("a reason".to_string())), None);
     }
 
     /// A record from a later engine, a truncated one, and a corrupted one are
