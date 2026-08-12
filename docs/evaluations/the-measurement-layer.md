@@ -88,7 +88,7 @@ Nine rulings bind this group, and neither entry may revisit them.
 
 **A relation instance is an object with declared attributes, and each attribute declares an owning end.** [Q4](../spec/09-open-questions.md#q4--relation-storage) settled it, and made the cue a source-owned attribute. [Spec 2](../spec/02-taxonomy-model.md#instance-attributes-and-which-end-owns-each-one) carries the declaration.
 
-**The declaration count is eleven, and a use of an existing mechanism earns no name.** [Spec 2](../spec/02-taxonomy-model.md#the-thirteen-declarations) removed three declarations on that rule and refused two more.
+**The declaration count is thirteen, and a use of an existing mechanism earns no name.** [Spec 2](../spec/02-taxonomy-model.md#the-thirteen-declarations) removed three declarations on that rule and refused two more.
 
 ## Prior art and observed applications
 
@@ -161,7 +161,7 @@ This is the storage half of Q8, and the mechanism landed one group earlier.
 
 A run emits a **transcript**: the ordered tool-call events with their arguments and result identities, the identifiers of any produced artifact, the final closed-set answer, and the run identity. The run identity is the model and its served version, the corpus tree hash, the taxonomy lock hash, the probe selection hash, the rotation seed, the harness version, the arm, and the time. **The model's prose is not in the transcript.** That omission is the enforcement, in the same way that scope enforcement is the feature in [spec 12](../spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on).
 
-A transcript is a **committed snapshot** that a `probe_run` anchor resolver reads. [Q19](../spec/09-open-questions.md#q19--inbound-integration-an-external-system-of-record) already built this: exactly one resolver owns an anchor kind, and a resolver reads repository content or a committed snapshot that carries its fetch time and its upstream identity. A probe run is an external system of record, and the specification needs nothing new to hold one. The declaration count stays at eleven.
+A transcript is a **committed snapshot** that a `probe_run` anchor resolver reads. [Q19](../spec/09-open-questions.md#q19--inbound-integration-an-external-system-of-record) already built this: exactly one resolver owns an anchor kind, and a resolver reads repository content or a committed snapshot that carries its fetch time and its upstream identity. A probe run is an external system of record, and the specification needs nothing new to hold one. The declaration count stays at thirteen.
 
 The **probe result** is a document, and it is a projection over the transcript, the expectations, and the grader version. Its warrant is **`regenerated`**, and `generate --check` proves it. That answers the question that this group inherited.
 

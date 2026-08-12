@@ -299,7 +299,7 @@ A [projection](#projection) of the graph for a consumer outside the engine. The 
 
 ### Export profile
 
-An entry under `projections` that names an audience, an emitter target, an output path, a filter over facet values, and a [tombstone grain](#tombstone-grain). It is not a twelfth declaration. A corpus with one audience declares one profile and no filter. See [spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter).
+An entry under `projections` that names an audience, an emitter target, an output path, a filter over facet values, and a [tombstone grain](#tombstone-grain). It is not a fourteenth declaration. A corpus with one audience declares one profile and no filter. See [spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter).
 
 ### External anchor
 

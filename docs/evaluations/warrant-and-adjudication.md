@@ -319,7 +319,7 @@ Twenty-four changes follow, and all are applied.
 | [Spec 1](../spec/01-conceptual-model.md#warrant) | No edge may let unwarranted content govern the reading of warranted content, and anchors are outside the rule |
 | [Spec 1](../spec/01-conceptual-model.md#the-authored-form) | The relation example drops the adjudication attributes, which Q18 replaced with a document |
 | [Spec 2](../spec/02-taxonomy-model.md#shape) | The worked taxonomy gains a transcription projection with its pin |
-| [Spec 2](../spec/02-taxonomy-model.md#the-thirteen-declarations) | The count stays at eleven. A snapshot pin is an anchor resolver, and a transcription is a projection |
+| [Spec 2](../spec/02-taxonomy-model.md#the-thirteen-declarations) | The count stays at thirteen. A snapshot pin is an anchor resolver, and a transcription is a projection |
 | [Spec 2](../spec/02-taxonomy-model.md#the-decision-relation-vocabulary) | `overrides` is the adjudication edge, and it declares an inverse with required reciprocity |
 | [Spec 2](../spec/02-taxonomy-model.md#instance-attributes-and-which-end-owns-each-one) | The attribute example loses the adjudication pair, and Q18's ruling is recorded where Q4 pointed at it |
 | [Spec 2](../spec/02-taxonomy-model.md#behavior-at-the-limits) | The warrant edge rule, stated where the generated Graph checks live |
