@@ -36,7 +36,15 @@ fn fixtures_dir() -> PathBuf {
 /// it, so that two tests never write to one corpus.
 fn corpus_for(case: &str) -> PathBuf {
     let root = Path::new(env!("CARGO_TARGET_TMPDIR")).join(case);
-    let _ = std::fs::remove_dir_all(&root);
+    // A tree left by the run before this one. Removing it has to work, and a
+    // failure says so here rather than as a confusing error from the copy: a
+    // corpus half of one run and half of another would fail these tests for a
+    // reason that has nothing to do with the cache.
+    match std::fs::remove_dir_all(&root) {
+        Ok(()) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => panic!("{} will not clear: {error}", root.display()),
+    }
     copy(&fixtures_dir().join("check"), &root.join("check"));
     root
 }

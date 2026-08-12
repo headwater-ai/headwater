@@ -2,4 +2,10 @@
 .claude/state/
 .claude/worktrees/
 
+# The check cache. The lock beside it is committed, because a reviewer reads
+# the taxonomy a verdict came from. This one holds no fact of its own: every
+# entry is recomputable from the tree it was written over, and a run that finds
+# none is slower and never different.
+.headwater/cache/
+
 __pycache__/
