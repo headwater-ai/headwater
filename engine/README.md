@@ -23,6 +23,7 @@ The mount is read only and the target directory sits inside the container, so a 
 | `headwater-yaml` | [M1](https://github.com/headwater-ai/headwater/milestone/1) | Reads a taxonomy source as YAML 1.2, on the Q2 dialect rules, and keeps a span on every node |
 | `headwater-doc` | [M1](https://github.com/headwater-ai/headwater/milestone/1) | Reads a document: the front-matter block through the loader, and the body as CommonMark |
 | `headwater-census` | [M1](https://github.com/headwater-ai/headwater/milestone/1) | Walks a corpus root, resolves a kind for each document, and reports what became of every file |
+| `headwater-graph` | [M1](https://github.com/headwater-ai/headwater/milestone/1) | Resolves `relations:` into edges, indexes identifiers, binds external anchors, and reports what did not resolve |
 
 ## Why the loader came first
 
@@ -55,6 +56,18 @@ The census is the denominator. [Spec 12](../docs/spec/12-check-layer.md) puts it
 
 Two questions reached this crate with no answer anywhere, and both are now recorded in [13 — Open obligations](../docs/spec/13-open-obligations.md) rather than settled here. Spec 2 says the most specific shelf pattern wins and never says what specificity is; `pattern.rs` states the ordering it uses. Spec 2's fourth resolution step is a path-pattern refinement that nothing gives a syntax, so the step is absent rather than guessed at.
 
+## What the graph build adds, and the three things it had to decide
+
+The graph build is the phase [spec 6](../docs/spec/06-engine-architecture.md) puts between the census and every check: it "resolves relations into edges, indexes identifiers, binds external anchors, and reports what it could not resolve". Over this repository it finds 36 nodes, 203 declared edge halves, 3 anchors and 1906 prose links, and nothing in either set fails to resolve. `tools/abox-check.py` counts the same 36 documents and the same 203 halves, which is the cross-check that the census pass also has while both stand-ins last.
+
+**The census now hands over the document it read.** A row carries the parsed document rather than the path to parse again. Two passes over one corpus can differ — by an edit between them, or by one rule drifting from the other — and the two accounts that would differ here are the denominator and the graph, which is the pair that coverage is computed from. The cost is that a census holds the corpus in memory, and the phase that makes that a streaming pass is the runner in [M3](https://github.com/headwater-ai/headwater/milestone/3).
+
+**Either half of a reciprocal pair may be the one that is written.** This corpus writes both: `cites_evidence` on the citing document and `cited_by` on the cited one, 81 times each. So an edge carries the name its author wrote and the relation that name resolves to, and `Edge::declared_triple` normalizes the two halves of one pair to one triple. A build that read only the forward name would report every reciprocal half in this corpus as an undeclared relation.
+
+**A dangling edge and an untyped target are two reports.** The identifier index has two shelves. The typed one is the node set, because both ends of a declared relation are kinds. The second holds every other document that still declares an identifier, and it exists so that an edge naming one of them says *fix that document* rather than *fix this link*. Told apart, each report reaches an author who can act on it; reported as one class, the first sends its author to repair a link that is already correct.
+
+Three questions reached this crate with no answer anywhere, and all three are in [13 — Open obligations](../docs/spec/13-open-obligations.md) rather than settled here. Spec 2 requires that an anchor string normalize and states no rule that does it. Nothing orders the two ends of a relation that admits a document and an anchor alike. And an anchor that resolves inside a declared corpus exclusion matches none of the three outcomes that spec 1 fixes.
+
 ## The fixtures are the deliverable
 
 `crates/yaml/fixtures/` holds the corpus. `accept/` pairs a source with the tree it loads to, span by span. `reject/` pairs a source with the text an author would read. Both expectations are recorded files rather than assertions in Rust, so that the rules survive the replacement of the code under them.
@@ -62,12 +75,15 @@ Two questions reached this crate with no answer anywhere, and both are now recor
     HEADWATER_BLESS=1 cargo test -p headwater-yaml --test fixtures
     HEADWATER_BLESS=1 cargo test -p headwater-doc --test fixtures
     HEADWATER_BLESS=1 cargo test -p headwater-census --test fixtures
+    HEADWATER_BLESS=1 cargo test -p headwater-graph --test fixtures
 
 That re-records every expectation. Read the diff before committing it, because a blessed fixture *is* the change.
 
 `crates/doc/fixtures/` follows the same shape, with `.parse` for an accepted document. It adds one file that is not a pair: `corpus.exceptions` records every document under `docs/` that this repository cannot parse, and nothing about the ones it can. A parser is not the component that decides what a corpus should hold — an untyped file is a finding of the census, which is [#44](https://github.com/headwater-ai/headwater/issues/44) — so a refusal is recorded rather than raised. Recording only the exceptions is what keeps the file quiet: adding a well-formed document changes nothing, and adding one the engine cannot read changes a committed file and asks somebody to look.
 
 `crates/census/fixtures/` holds two recorded censuses and the tree that the first one walks. `walk.census` records every row of the pathological tree, because every row of it is the point. `corpus.census` records this repository, and it prints the totals plus every row that is *not* a typed document. That is the same argument the exception list makes, with the count kept: a corpus adds a typed document most weeks, and a recorded file that changes on every commit is a file nobody reads, while the totals still account for every file, so a shrinking denominator still shows up in the diff. A test holds the two records to each other — a file the parser refuses may never come back typed, and an unreadable row may never appear without appearing in the parser's list too.
+
+`crates/graph/fixtures/` follows the census's shape for the same reasons. `graph/` is a tree with one document per resolution outcome, and `graph.report` records every node, every edge and every link binding it produces. `corpus.graph` records this repository at the exceptions grain, and today it is the totals plus three anchors, because nothing in this corpus fails to resolve. It keeps the node and edge counts and drops the prose-link accounting, which is a narrower grain than the census keeps and it is chosen for the same reason. A node count moves when somebody adds a document, and a link count moves when somebody writes a sentence with a link in it. A recorded file that changes on nearly every commit is a file nobody reads, so what survives here is the number a regression moves: how many links did not resolve. A test holds the graph to the census: every node of the graph is a typed row, and every edge has a source that is a node.
 
 ## What is deliberately absent
 
