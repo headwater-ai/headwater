@@ -18,6 +18,8 @@ Three checks then run: OWL-RL closure over the combined graph, SHACL validation 
 
 **One thing had to be scraped rather than read.** The base package has no machine-readable home in this repository. Its only committed copy is a fenced YAML block inside [the first-run walkthrough](default-taxonomy-first-run.md#the-base-derived-rather-than-chosen), so the emitter parses it out of the Markdown. That is a finding in its own right and it is listed at the end.
 
+**One thing the emitter invents rather than reads.** No document in this corpus carries a declared identifier, so the emitter mints an IRI for each one from its repository path. `docs/spec/09-decisions.md` becomes `https://w3id.org/headwater/corpus/docs/spec/09-decisions.md`. That IRI holds only while the file stays where it is, and a rename breaks every reference to it. [13 — Open obligations](../spec/13-open-obligations.md) records the remedy under the identifier scheme grammar, which declares the prefix, the namespace and the local part as separate fields.
+
 ## What the run reports
 
 | Measure | Result |
