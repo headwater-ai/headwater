@@ -309,7 +309,6 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
     ExitCode::SUCCESS
 }
 
-
 /// Phase A, once, for every verb that reads a corpus.
 ///
 /// The taxonomy comes from the lock and the corpus block comes from the

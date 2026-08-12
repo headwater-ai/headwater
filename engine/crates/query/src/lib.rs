@@ -182,7 +182,11 @@ impl<'a> Surface<'a> {
 
     /// Every classified document, in the census's own path order.
     pub fn documents(&self) -> Vec<Document<'a>> {
-        self.census.rows.iter().filter_map(|row| self.of(row)).collect()
+        self.census
+            .rows
+            .iter()
+            .filter_map(|row| self.of(row))
+            .collect()
     }
 
     /// One census row as a document, and `None` for a row that carries no kind.

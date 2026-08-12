@@ -1313,7 +1313,10 @@ controls:
             ),
             "{messages:?}"
         );
-        assert!(messages[1].contains("control CT-1 names the mechanism"), "{messages:?}");
+        assert!(
+            messages[1].contains("control CT-1 names the mechanism"),
+            "{messages:?}"
+        );
         assert!(
             projection.render().contains("1 obligations: 0 verified"),
             "{}",

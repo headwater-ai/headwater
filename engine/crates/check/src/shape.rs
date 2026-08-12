@@ -737,7 +737,10 @@ kinds:
         );
         let purpose = shape.purposes.first().expect("declared");
         assert_eq!(purpose.name, "rationale");
-        assert_eq!(purpose.intent.as_deref(), Some("explain why a choice was made"));
+        assert_eq!(
+            purpose.intent.as_deref(),
+            Some("explain why a choice was made")
+        );
         assert_eq!(purpose.answers.len(), 2);
 
         assert_eq!(

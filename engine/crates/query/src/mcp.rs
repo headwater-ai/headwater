@@ -191,17 +191,11 @@ fn tools() -> Json {
                                     tool.argument.to_string(),
                                     Json::object([
                                         ("type", Json::string("string")),
-                                        (
-                                            "description",
-                                            Json::string(tool.argument_description),
-                                        ),
+                                        ("description", Json::string(tool.argument_description)),
                                     ]),
                                 )]),
                             ),
-                            (
-                                "required",
-                                Json::Array(vec![Json::string(tool.argument)]),
-                            ),
+                            ("required", Json::Array(vec![Json::string(tool.argument)])),
                         ]),
                     ),
                     (
@@ -245,7 +239,10 @@ fn call(surface: &Surface<'_>, message: &Mapping) -> Result<Json, Failure> {
         .and_then(|map| scalar(map, tool.argument))
         .ok_or_else(|| Failure {
             code: -32602,
-            message: format!("`{}` takes `{}`, and none was given", tool.name, tool.argument),
+            message: format!(
+                "`{}` takes `{}`, and none was given",
+                tool.name, tool.argument
+            ),
         })?;
 
     let text = match tool.name {
