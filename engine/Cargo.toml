@@ -1,6 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 [workspace]
-members = ["crates/census", "crates/doc", "crates/graph", "crates/yaml"]
+members = [
+    "crates/census",
+    "crates/check",
+    "crates/cli",
+    "crates/doc",
+    "crates/graph",
+    "crates/yaml",
+]
 resolver = "2"
 
 [workspace.package]

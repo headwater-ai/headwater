@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the fixture tree is checked against. It is the smallest shape in
+# which both generated checks have something to generate from: one homogeneous
+# shelf and one heterogeneous one, one relation that requires reciprocity and
+# one that says nothing about it.
+#
+# It is not a resolved package. `standin` puts the real one together, and this
+# file is written out because a fixture that depended on the base package would
+# change whenever the base does.
+
+kinds:
+  governed_document: {abstract: true}
+  design_spec: {is_a: governed_document}
+  evaluation:  {is_a: governed_document}
+
+shelves:
+  spec_series:
+    path: check/spec/**
+    homogeneous: false
+    discriminator: doc_type
+    kinds: [design_spec]
+  evaluations:
+    path: check/evaluations/**
+    homogeneous: true
+    kind: evaluation
+
+relations:
+  cites_evidence:
+    family: evidence
+    from: [design_spec]
+    to:   [evaluation]
+    inverse: cited_by
+    reciprocal: required
+
+  # No `reciprocal`, so no instance of the reciprocity check is generated over
+  # it. That is the half of "generated from the taxonomy" that a corpus with one
+  # relation cannot show.
+  assesses:
+    family: evidence
+    from: [design_spec]
+    to:   [governed_document]

@@ -1,0 +1,79 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The loop, closed over this repository. Two jobs, and they answer two different
+# questions.
+#
+#   engine    does the code hold to its own fixtures?
+#   headwater does this corpus hold to its own taxonomy?
+#
+# The second is advisory and it stays that way until a rule earns a promotion.
+# The posture is not set here: `headwater check` exits 0 with findings on stdout
+# unless it is given `--strict`, which is the default spec 6 fixes. So a
+# promotion is one flag on one line, with the diff that added it as its audit
+# trail, rather than a `continue-on-error` that hides which rules block.
+#
+# No third-party action beyond `actions/checkout`. The runner image ships a
+# recent stable Rust, and a pinned floor is what the container command in
+# `engine/README.md` is for.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  engine:
+    name: Engine tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: The toolchain this build needs
+        # Rust 1.85 or later. `saphyr-parser` is on edition 2024, and an older
+        # cargo reports `feature edition2024 is required` and nothing else.
+        run: |
+          rustup update --no-self-update stable
+          rustup default stable
+          cargo --version
+      - name: Format
+        run: cargo fmt --check
+        working-directory: engine
+      - name: Lint
+        run: cargo clippy --all-targets -- -D warnings
+        working-directory: engine
+      - name: Test
+        run: cargo test
+        working-directory: engine
+
+  headwater:
+    name: headwater check (advisory)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: The toolchain this build needs
+        run: |
+          rustup update --no-self-update stable
+          rustup default stable
+      - name: Build the engine
+        run: cargo build --release -p headwater-cli
+        working-directory: engine
+      - name: Check this corpus
+        # No `--strict`. Advisory, on purpose: a tool that blocks on first
+        # contact is removed, and a removed tool catches nothing.
+        #
+        # One run, read twice. A second invocation would be a second pass over
+        # one corpus, which is the thing the census and the graph are built to
+        # avoid one layer down.
+        run: |
+          ./engine/target/release/headwater check | tee headwater-check.txt
+          {
+            echo '## `headwater check`'
+            echo
+            echo '```'
+            cat headwater-check.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

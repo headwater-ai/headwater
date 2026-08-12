@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "headwater-check"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+# The census is the denominator. Coverage is computed against it and never
+# against the set of documents that classified.
+headwater-census = { path = "../census" }
+
+# The graph is what a Graph-origin check reads.
+headwater-graph = { path = "../graph" }
+
+# A finding anchors at a line, and a span is where the line comes from.
+headwater-yaml = { path = "../yaml" }

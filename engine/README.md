@@ -3,6 +3,7 @@
 The first code meant to survive. The [Q1 spike](../spike) retired four risks and says in its own README that it is not the start of an engine; this is, and it starts at the bottom of the pipeline that [spec 6](../docs/spec/06-engine-architecture.md) draws.
 
     cargo test
+    cargo run -p headwater-cli -- check --root ..
 
 Needs Rust 1.85 or later. The floor comes from `saphyr-parser`, which is on edition 2024. A distribution `cargo` older than that reports `feature edition2024 is required` and nothing else, so check the toolchain first when a clean checkout will not build.
 
@@ -24,6 +25,8 @@ The mount is read only and the target directory sits inside the container, so a 
 | `headwater-doc` | [M1](https://github.com/headwater-ai/headwater/milestone/1) | Reads a document: the front-matter block through the loader, and the body as CommonMark |
 | `headwater-census` | [M1](https://github.com/headwater-ai/headwater/milestone/1) | Walks a corpus root, resolves a kind for each document, and reports what became of every file |
 | `headwater-graph` | [M1](https://github.com/headwater-ai/headwater/milestone/1) | Resolves `relations:` into edges, indexes identifiers, binds external anchors, and reports what did not resolve |
+| `headwater-check` | [M1](https://github.com/headwater-ai/headwater/milestone/1) | Runs two checks generated from the taxonomy, and computes coverage against the census |
+| `headwater-cli` | [M1](https://github.com/headwater-ai/headwater/milestone/1) | The `headwater` binary. One verb, `check`, and it is what CI runs |
 
 ## Why the loader came first
 
@@ -68,6 +71,20 @@ The graph build is the phase [spec 6](../docs/spec/06-engine-architecture.md) pu
 
 Three questions reached this crate with no answer anywhere, and all three are in [13 — Open obligations](../docs/spec/13-open-obligations.md) rather than settled here. Spec 2 requires that an anchor string normalize and states no rule that does it. Nothing orders the two ends of a relation that admits a document and an anchor alike. And an anchor that resolves inside a declared corpus exclusion matches none of the three outcomes that spec 1 fixes.
 
+## What the runner adds, and the four things it had to decide
+
+The runner is Phase B of [spec 12](../docs/spec/12-check-layer.md#two-phases-and-why-the-order-matters). Phase A is the census and the graph, and it fixes the denominator before any check starts. Over this repository the run is 61 files seen, 36 classified, 33 checked, 122 check instances and 3 findings. Every one of the three findings is the coverage rule reporting a classified document that no rule read, which is exactly the report OB-COV-2 exists to produce.
+
+**M1 ends with a binary, and the epic decided that rather than taste.** [#46](https://github.com/headwater-ai/headwater/issues/46) held the choice open between a `headwater` binary and a test that CI runs. M1 is done when the loop "runs in this repository's CI over `docs/`, **advisory**", and a test cannot be advisory: a failing test fails the job, which is the opposite posture. Exit status is what CI reads, so the component that owns the posture is the one that exits. `headwater check` exits 0 with findings on stdout, and `--strict` is the gate ([spec 6](../docs/spec/06-engine-architecture.md#cli)). The workflow needs no `continue-on-error`, and a promotion to blocking is one flag with a diff behind it.
+
+**Both checks are generated from the taxonomy, and neither names a declaration.** The reciprocity check reads the relations that declare `reciprocal: required`, and the placement check reads the facets that a heterogeneous shelf uses as its discriminator. A taxonomy that declares one more relation or one more shelf gets one more check, and neither source file changes. That is the property that separates a generated check from a written one, and `crates/check/fixtures/` asserts it directly: the fixture taxonomy declares a second relation with no `reciprocal`, a document writes an edge of it, and no instance appears over that edge.
+
+**A check instance is counted against every document it read, and not against one end.** [Spec 12](../docs/spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on) fixes what an edge-scoped instance reads: "one relation instance **and both endpoints**". A reciprocity instance over a pair therefore counts against both files. Attributing it to the declaring end alone is the silent pass one level up: the document at the receiving end *is* checked, the rule fires when that document is the one missing its half, and a coverage report that called it unchecked would send its author to look at a shelf pattern that is already right. Over this repository the difference is four documents.
+
+**The heterogeneous half of "placement is primary" is a skip and not a pass.** [Spec 2](../docs/spec/02-taxonomy-model.md#placement-is-primary-metadata-fills-the-gap) states one rule with two halves, and only one of them is a check. On a homogeneous shelf a discriminator in front matter is the second truth the rule forbids. On a heterogeneous shelf the discriminator is what metadata is for, and kind resolution already decided it — a document whose discriminator is missing or not admitted carries no kind, and the census reports it. An instance that reported a foregone pass would let coverage count a document as checked by a rule that could never fail, so the instance is skipped with its reason and the report prints the count.
+
+Two things the runner meets are gaps rather than decisions, and [13 — Open obligations](../docs/spec/13-open-obligations.md) carries them. A finding names the obligation it serves, and an obligation is data that no package here declares, so two of the three rules name none and take the engine's own severity. Spec 12 also calls a dangling edge and an unclassifiable path *structural findings* of Phase A, and this runner leaves them in the census and the graph rather than reporting each one twice.
+
 ## The fixtures are the deliverable
 
 `crates/yaml/fixtures/` holds the corpus. `accept/` pairs a source with the tree it loads to, span by span. `reject/` pairs a source with the text an author would read. Both expectations are recorded files rather than assertions in Rust, so that the rules survive the replacement of the code under them.
@@ -76,6 +93,7 @@ Three questions reached this crate with no answer anywhere, and all three are in
     HEADWATER_BLESS=1 cargo test -p headwater-doc --test fixtures
     HEADWATER_BLESS=1 cargo test -p headwater-census --test fixtures
     HEADWATER_BLESS=1 cargo test -p headwater-graph --test fixtures
+    HEADWATER_BLESS=1 cargo test -p headwater-check --test fixtures
 
 That re-records every expectation. Read the diff before committing it, because a blessed fixture *is* the change.
 
@@ -85,6 +103,12 @@ That re-records every expectation. Read the diff before committing it, because a
 
 `crates/graph/fixtures/` follows the census's shape for the same reasons. `graph/` is a tree with one document per resolution outcome, and `graph.report` records every node, every edge and every link binding it produces. `corpus.graph` records this repository at the exceptions grain, and today it is the totals plus three anchors, because nothing in this corpus fails to resolve. It keeps the node and edge counts and drops the prose-link accounting, which is a narrower grain than the census keeps and it is chosen for the same reason. A node count moves when somebody adds a document, and a link count moves when somebody writes a sentence with a link in it. A recorded file that changes on nearly every commit is a file nobody reads, so what survives here is the number a regression moves: how many links did not resolve. A test holds the graph to the census: every node of the graph is a typed row, and every edge has a source that is a node.
 
+`crates/check/fixtures/` carries the floor [spec 12](../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship) sets: "every check ships with at least one fixture that it fails and one that it passes." The tree under `check/` holds both for each of the three rules, including both directions of a missing reciprocal half, and `check.report` records every instance and every finding it produces. `corpus.checks` records this repository at the same grain the graph uses: the coverage totals, the instance count per rule, and every finding, with no per-document rows. Those numbers move when somebody adds a document or declares an edge, which is the event the record exists to show, and they do not move when somebody writes a paragraph.
+
 ## What is deliberately absent
 
 The loader knows the dialect and nothing about the meaning. It does not require the root to be a mapping, it does not know that `kinds` is a declaration, and it resolves no `$`-reference. All three are shape, the meta-schema owns shape, and the meta-schema is [M2](https://github.com/headwater-ai/headwater/milestone/2). A loader that guessed at any of them would be a second schema that nobody declared.
+
+The runner is the thinnest thing that closes the loop, and four parts of the designed check layer are not in it. A check declares no scope and no view enforces one, which is [#54](https://github.com/headwater-ai/headwater/issues/54). Nothing is cached and nothing is change-scoped, which is [#55](https://github.com/headwater-ai/headwater/issues/55), and a cache before a sound cache key is the correctness root spec 12 warns about. No finding can be suppressed, so there is no suppression inventory, which is [#58](https://github.com/headwater-ai/headwater/issues/58). And no rule can name an obligation, because obligations are declarations that [#52](https://github.com/headwater-ai/headwater/issues/52) supplies.
+
+Where the taxonomy comes from is the fifth. `headwater check` reads it through `headwater_census::standin`, so the binary runs in this repository and nowhere else. The resolver is [#50](https://github.com/headwater-ai/headwater/issues/50), and the stand-in dies with it.

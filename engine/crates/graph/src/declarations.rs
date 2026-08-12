@@ -26,6 +26,14 @@
 //! are permitted is a Graph check
 //! ([#56](https://github.com/headwater-ai/headwater/issues/56)), and an edge
 //! carries the kinds at both ends so that the check has them.
+//!
+//! **`reciprocal`** is carried and never read here either, for the reason that
+//! makes it worth carrying. A reciprocity check is *generated* from the
+//! relation declaration rather than written
+//! ([spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)),
+//! so the declared value is the whole input to it. Resolution never consults
+//! it, because a half that nobody wrote is a missing edge rather than a
+//! mis-resolved one.
 
 use headwater_census::shelves::DeclarationError;
 use headwater_yaml::{Mapping, Span, Value};
@@ -47,9 +55,34 @@ pub struct Relation {
     pub to: Vec<String>,
     /// The name of the other half, when the relation declares one.
     pub inverse: Option<String>,
+    /// What the relation says about the half nobody wrote.
+    pub reciprocal: Reciprocal,
     /// The span of the relation's name, which a finding about the
     /// *declaration* points at.
     pub span: Span,
+}
+
+/// What a relation declares about its other half.
+///
+/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#behavior-at-the-limits)
+/// gives the vocabulary. The set is closed here, and a value outside it reads
+/// as [`Reciprocal::Unknown`] rather than as an error, because the meta-schema
+/// owns the value set and it is
+/// [M2](https://github.com/headwater-ai/headwater/milestone/2). A generated
+/// check reads `Required` and nothing else, so an unrecognized value produces
+/// no instance instead of a guess.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Reciprocal {
+    /// The relation declares nothing, so the half nobody wrote is not missing.
+    Absent,
+    /// Both documents declare the pair, and a half that nobody wrote is a
+    /// finding.
+    Required,
+    /// The relation is its own inverse.
+    Symmetric,
+    /// A word this engine does not know, kept as written so that a report can
+    /// name it.
+    Unknown(String),
 }
 
 /// A non-document node type that a relation may target.
@@ -187,6 +220,16 @@ fn read_relation(name: &str, value: &Value, span: Span) -> Result<Relation, Decl
             .get("inverse")
             .and_then(|value| value.value.as_scalar())
             .map(|scalar| scalar.text.clone()),
+        reciprocal: match map
+            .get("reciprocal")
+            .and_then(|value| value.value.as_scalar())
+            .map(|scalar| scalar.text.as_str())
+        {
+            None => Reciprocal::Absent,
+            Some("required") => Reciprocal::Required,
+            Some("symmetric") => Reciprocal::Symmetric,
+            Some(other) => Reciprocal::Unknown(other.to_string()),
+        },
         span,
     })
 }
@@ -276,6 +319,22 @@ anchors:
         assert_eq!(
             declarations.anchor("code_path").unwrap().resolver,
             "source-tree"
+        );
+    }
+
+    /// The generated reciprocity check reads this and nothing else, so a value
+    /// outside the closed set may not read as `required` and may not vanish.
+    #[test]
+    fn the_reciprocal_declaration_reads_as_a_closed_set_with_a_home_for_the_rest() {
+        let declarations = read(SOURCE).expect("reads");
+        assert_eq!(declarations.relations[0].reciprocal, Reciprocal::Required);
+        assert_eq!(declarations.relations[1].reciprocal, Reciprocal::Absent);
+
+        let invented =
+            read("relations:\n  r:\n    to: [x]\n    reciprocal: mutual\n").expect("reads");
+        assert_eq!(
+            invented.relations[0].reciprocal,
+            Reciprocal::Unknown("mutual".into())
         );
     }
 
