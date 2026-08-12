@@ -2,12 +2,15 @@
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
      36 instances of shelf.placement_is_primary
      86 instances of relation.reciprocity.missing
-rules, and the obligation each one serves
+rules, and for each the scope that binds it and what it serves
   shelf.placement_is_primary
+    document scope, one document and its front matter
     OB-PLACE-1
   relation.reciprocity.missing
+    edge scope, one relation instance and both endpoints
     OB-REL-1
   coverage.document_unchecked
+    corpus scope, every row of the census, and it is a barrier
     OB-COV-2
 3 findings
       3 warn

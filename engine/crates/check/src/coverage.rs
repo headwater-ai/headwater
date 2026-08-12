@@ -30,11 +30,31 @@
 //! already a row of the census with its own outcome, and a second report of one
 //! fact sends its author to two places.
 
+//! # Corpus grain, and why no view enforces it
+//!
+//! This rule reads every row of the census, so its grain is `Corpus` and a
+//! report says so. What it is not is a corpus-scoped *check*, and the reason
+//! is worth stating rather than discovering. An instance is what coverage
+//! counts, so an instance of this rule over the corpus would read every
+//! document and account every one of them as checked. The rule would then
+//! make its own finding unreachable.
+//!
+//! So coverage is the runner's accounting over the instance record, which is
+//! where [spec 12](../../../../docs/spec/12-check-layer.md#instances-and-why-coverage-needs-them)
+//! puts it: "coverage accounting then comes directly from this, with no added
+//! mechanism". It states [`SCOPE`] for a reader and receives no view, so the
+//! enforcement question does not arise for it.
+
 use crate::finding::{Finding, Severity};
 use crate::instance::{Instance, Outcome as InstanceOutcome};
+use crate::scope::Scope;
 use headwater_census::census::Census;
 
 pub const RULE: &str = "coverage.document_unchecked";
+
+/// The grain this rule has. See the module comment for why it is stated here
+/// rather than derived from a trait: this rule receives no view.
+pub const SCOPE: Scope = Scope::corpus();
 
 /// One document, and what this run did about it.
 #[derive(Clone, Debug)]

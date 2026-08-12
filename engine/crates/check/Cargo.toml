@@ -13,6 +13,10 @@ headwater-census = { path = "../census" }
 # The graph is what a Graph-origin check reads.
 headwater-graph = { path = "../graph" }
 
+# A document-scoped view carries a parsed document, and the body is the half
+# that only a check which declares `NEEDS_BODY` receives.
+headwater-doc = { path = "../doc" }
+
 # A finding anchors at a line, and a span is where the line comes from.
 headwater-yaml = { path = "../yaml" }
 

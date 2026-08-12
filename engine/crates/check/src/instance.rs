@@ -54,6 +54,19 @@ pub enum Outcome {
 }
 
 impl Instance {
+    /// One instance, from what the view carried and what the check made of it.
+    ///
+    /// [`crate::scope`] is the only caller, and that is the point: the read
+    /// set comes from the view rather than from the check, so a check cannot
+    /// record that it read less than it was handed.
+    pub fn of(rule: &'static str, reads: impl Reads, outcome: Outcome) -> Self {
+        Instance {
+            rule,
+            reads: reads.paths(),
+            outcome,
+        }
+    }
+
     pub fn passed(rule: &'static str, reads: impl Reads) -> Self {
         Instance {
             rule,

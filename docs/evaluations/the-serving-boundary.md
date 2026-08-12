@@ -242,7 +242,7 @@ It also decides the whole identity branch by removing it. Object capabilities, m
 
 The mechanism is small, and every part of it exists.
 
-A taxonomy declares one or more **export profiles** under `projections`. A profile names an audience, an output path, an emitter target, and a **filter**: a predicate over facet values. The declaration count stays at eleven ([spec 2](../spec/02-taxonomy-model.md#the-thirteen-declarations)), because a profile is a projection and not a twelfth declaration.
+A taxonomy declares one or more **export profiles** under `projections`. A profile names an audience, an output path, an emitter target, and a **filter**: a predicate over facet values. The declaration count stays at thirteen ([spec 2](../spec/02-taxonomy-model.md#the-thirteen-declarations)), because a profile is a projection and not a fourteenth declaration.
 
 Six rules make the filter honest, and three of them are copied from rules that already hold.
 
@@ -431,7 +431,7 @@ Twenty-seven changes follow, and all are applied.
 | [Spec 1](../spec/01-conceptual-model.md#projections) | A projection may be filtered, and a filtered projection says so |
 | [Spec 1](../spec/01-conceptual-model.md#projections) | The corpus descriptor is a projection, engine-defined and non-optional, and its path is the engine's |
 | [Spec 1](../spec/01-conceptual-model.md#external-anchor) | Anchor resolution has three outcomes, and `withheld` is never reported as unresolved |
-| [Spec 2](../spec/02-taxonomy-model.md#the-thirteen-declarations) | An export profile is an entry under `projections`, and the declaration count stays at eleven |
+| [Spec 2](../spec/02-taxonomy-model.md#the-thirteen-declarations) | An export profile is an entry under `projections`, and the declaration count stays at thirteen |
 | [Spec 2](../spec/02-taxonomy-model.md#shape) | The worked taxonomy gains a filtered export profile |
 | [Spec 2](../spec/02-taxonomy-model.md#behavior-at-the-limits) | The third anchor-resolution outcome, stated where the resolver rules live |
 | [Spec 4](../spec/04-assurance-model.md#where-promotion-does-not-apply) | Where promotion does not apply, and the general rule that produces the exception |
