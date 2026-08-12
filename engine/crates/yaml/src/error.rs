@@ -49,27 +49,40 @@ impl std::fmt::Display for LoadError {
         if self.span != Span::default() {
             write!(f, "{}: ", self.span.start)?;
         }
-        match &self.kind {
+        write!(f, "{}", self.kind)
+    }
+}
+
+/// The message is on the kind rather than on the error, so that a caller which
+/// carries the rejection in its own error type — a document parser reporting on
+/// its front matter — reuses this wording instead of writing a second one. Two
+/// wordings of one rule drift, and the second one is always the stale one.
+impl std::fmt::Display for ErrorKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
             ErrorKind::Syntax(message) => write!(f, "{message}"),
+            // None of these four names the kind of source it is refusing.
+            // The rulings hold for a taxonomy source and for a document's
+            // front matter alike, and a message that named one of the two
+            // would read as a rule from somewhere else in half the places an
+            // author meets it.
             ErrorKind::Anchor => write!(
                 f,
-                "an anchor is not allowed in a taxonomy source; \
-                 the $-reference is the reuse mechanism an overlay can address"
+                "an anchor is not allowed; the $-reference is the reuse \
+                 mechanism, and an anchor is a second one that nothing can address"
             ),
             ErrorKind::Alias => write!(
                 f,
-                "an alias is not allowed in a taxonomy source; \
-                 the $-reference is the reuse mechanism an overlay can address"
+                "an alias is not allowed; the $-reference is the reuse \
+                 mechanism, and an alias is a second one that nothing can address"
             ),
             ErrorKind::MergeKey => write!(
                 f,
-                "a merge key is not allowed in a taxonomy source; \
-                 write the keys out, or use a $-reference"
+                "a merge key is not allowed; write the keys out, or use a $-reference"
             ),
             ErrorKind::Tag(tag) => write!(
                 f,
-                "the tag `{tag}` is not allowed in a taxonomy source; \
-                 a scalar takes its type from the meta-schema"
+                "the tag `{tag}` is not allowed; a scalar takes its type from the meta-schema"
             ),
             ErrorKind::DuplicateKey { key, first } => write!(
                 f,
@@ -80,10 +93,9 @@ impl std::fmt::Display for LoadError {
                 f,
                 "a key must be a scalar; nothing can address a key that is not one"
             ),
-            ErrorKind::SecondDocument => write!(
-                f,
-                "a taxonomy source holds one document, and this is the second"
-            ),
+            ErrorKind::SecondDocument => {
+                write!(f, "a source holds one document, and this is the second")
+            }
             ErrorKind::Empty => write!(f, "the source holds no document"),
         }
     }

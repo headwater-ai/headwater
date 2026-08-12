@@ -8,16 +8,69 @@
 //! running the loader three times.
 
 use crate::error::{ErrorKind, LoadError};
-use crate::span::{Position, Span, Spanned};
+use crate::span::{Origin, Position, Span, Spanned};
 use crate::value::{Entry, Mapping, Scalar, Style, Value};
 use saphyr_parser::{Event, Parser, ScalarStyle, ScanError};
+
+/// What the loader accepts, and where the source sits.
+///
+/// Exactly one of the Q2 rulings turned out to mean different things for a
+/// taxonomy source and for a document's front matter, and this type is that
+/// difference. Every other ruling — the core schema, duplicate keys, anchors,
+/// aliases, merge keys, explicit tags, one document — holds identically in both
+/// places, for the reason it was made. A duplicate facet leaves a reviewer and a
+/// resolver reading different values. An alias in front matter is a second reuse
+/// mechanism that `check --fix` cannot rewrite one key at a time. A tag still
+/// declares a type that the meta-schema owns.
+///
+/// The dialect is a parameter here rather than a second loader elsewhere,
+/// because a second loader is a second dialect that nobody declared, and it
+/// drifts on the first rule that changes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub struct Options {
+    /// Where the source begins in the file that carries it.
+    pub origin: Origin,
+    /// Whether a source with no document in it loads as an empty mapping.
+    ///
+    /// A *taxonomy source* that declares nothing is a mistake, and it is the
+    /// one rejection with no position to report. A *document* whose front
+    /// matter is empty is a document with no facets, which is an ordinary state
+    /// of an untyped file. Refusing it here would turn an untyped document into
+    /// a parse failure, and the census would then count it as a file the engine
+    /// could not read rather than as a file nobody has typed — the exact
+    /// distinction the census exists to draw. So the missing-facet finding
+    /// belongs to the component that knows which facets are required, and this
+    /// flag is how the loader gets out of its way.
+    pub empty_is_a_mapping: bool,
+}
+
+impl Options {
+    /// The Q2 rules for a taxonomy source, which is the whole of its file.
+    pub const TAXONOMY_SOURCE: Options = Options {
+        origin: Origin::WHOLE_FILE,
+        empty_is_a_mapping: false,
+    };
+
+    /// The rules for a document's front matter, at `origin`.
+    pub fn front_matter(origin: Origin) -> Self {
+        Options {
+            origin,
+            empty_is_a_mapping: true,
+        }
+    }
+}
 
 /// Load a taxonomy source.
 ///
 /// The errors come back in source order, and the list is empty only when the
 /// result is `Ok`.
 pub fn load(source: &str) -> Result<Spanned<Value>, Vec<LoadError>> {
-    let offsets = ByteOffsets::new(source);
+    load_with(source, Options::TAXONOMY_SOURCE)
+}
+
+/// Load a source on a chosen dialect, from a chosen position in its file.
+pub fn load_with(source: &str, options: Options) -> Result<Spanned<Value>, Vec<LoadError>> {
+    let offsets = ByteOffsets::new(source, options.origin);
     let mut events: Vec<(Ev, Span)> = Vec::new();
 
     for item in Parser::new_from_str(source) {
@@ -32,6 +85,16 @@ pub fn load(source: &str) -> Result<Spanned<Value>, Vec<LoadError>> {
     let root = build_document(&events, &mut errors);
     match root {
         Some(root) if errors.is_empty() => Ok(root),
+        None if errors.is_empty() && options.empty_is_a_mapping => {
+            // A zero-width span at the origin. The block that should have held
+            // the facets is the only thing a finding about a missing one can
+            // point at, and the caller knows where that block ends.
+            let at = Position::new(options.origin.line, 1, options.origin.byte);
+            Ok(Spanned::new(
+                Value::Map(Mapping::default()),
+                Span::new(at, at),
+            ))
+        }
         _ => {
             if errors.is_empty() {
                 errors.push(LoadError::new(ErrorKind::Empty, Span::default()));
@@ -51,13 +114,18 @@ pub fn load(source: &str) -> Result<Spanned<Value>, Vec<LoadError>> {
 struct ByteOffsets {
     /// Byte offset per char index, with one extra entry for the end.
     table: Vec<usize>,
+    /// The file position of this source's first byte. Applying it here is what
+    /// keeps a front-matter span from needing a second pass over the tree,
+    /// where one forgotten field — the `first` position of a duplicate key, say
+    /// — would point into the wrong file coordinates and look right.
+    origin: Origin,
 }
 
 impl ByteOffsets {
-    fn new(source: &str) -> Self {
+    fn new(source: &str, origin: Origin) -> Self {
         let mut table: Vec<usize> = source.char_indices().map(|(byte, _)| byte).collect();
         table.push(source.len());
-        Self { table }
+        Self { table, origin }
     }
 
     fn offset(&self, char_index: usize) -> usize {
@@ -72,7 +140,14 @@ impl ByteOffsets {
         // spike found this and `marker_columns_are_zero_indexed` below is the
         // standing test, so that a fixed upstream fails loudly rather than
         // shifting every column by one.
-        Position::new(marker.line(), marker.col() + 1, self.offset(marker.index()))
+        //
+        // The origin corrects the line and the byte and never the column,
+        // because a nested source starts at a line start. `Origin` says so.
+        Position::new(
+            marker.line() + self.origin.line - 1,
+            marker.col() + 1,
+            self.offset(marker.index()) + self.origin.byte,
+        )
     }
 
     fn span(&self, span: saphyr_parser::Span) -> Span {
@@ -439,6 +514,65 @@ mod tests {
         let errors = load("a: &x 1\nb: *x\na: 2\n").expect_err("rejected");
         let lines: Vec<usize> = errors.iter().map(|e| e.span.start.line).collect();
         assert_eq!(lines, vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn an_origin_moves_every_line_and_byte_and_no_column() {
+        // The block a document's front matter sits in: line 1 is the `---`, so
+        // the YAML starts on file line 2 at byte 4.
+        let source = "id: SPEC-HW-check-layer\nsequence: 12\n";
+        let root = load_with(source, Options::front_matter(Origin::new(2, 4))).expect("loads");
+        let map = root.as_map().expect("a mapping");
+        let span = map.key_span("sequence").expect("the sequence key");
+        assert_eq!((span.start.line, span.start.col), (3, 1));
+        assert_eq!(span.start.offset, 4 + 24);
+    }
+
+    #[test]
+    fn an_origin_reaches_the_position_inside_a_duplicate_key_error() {
+        // The `first` position is the field a shift applied after the fact
+        // forgets, and a wrong one names a line the author did not write on.
+        let errors = load_with("a: 1\na: 2\n", Options::front_matter(Origin::new(2, 4)))
+            .expect_err("rejected");
+        match &errors[0].kind {
+            ErrorKind::DuplicateKey { first, .. } => {
+                assert_eq!(first.start.line, 2);
+                assert_eq!(errors[0].span.start.line, 3);
+            }
+            other => panic!("wrong error: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn an_empty_taxonomy_source_is_an_error_and_empty_front_matter_is_not() {
+        assert_eq!(kinds(""), vec![ErrorKind::Empty]);
+        let root = load_with("", Options::front_matter(Origin::new(2, 4))).expect("loads");
+        let map = root.as_map().expect("a mapping");
+        assert!(map.is_empty());
+        assert_eq!(root.span.start.line, 2);
+        assert_eq!(root.span.start.offset, 4);
+    }
+
+    #[test]
+    fn front_matter_keeps_every_other_ruling() {
+        // The dialect differs in one place. A test says so, because the cheap
+        // way to add a second loader is to relax one more rule at a time.
+        let at = Options::front_matter(Origin::WHOLE_FILE);
+        for source in [
+            "a: &x 1\n",
+            "a: 1\nb: *x\n",
+            "a: 1\n<<:\n  b: 2\n",
+            "a: !!str 1\n",
+            "a: 1\na: 2\n",
+        ] {
+            assert!(
+                load_with(source, at).is_err(),
+                "front matter accepted {source:?}"
+            );
+        }
+        let root = load_with("stable: no\n", at).expect("loads");
+        let map = root.as_map().unwrap();
+        assert_eq!(map.get("stable").unwrap().as_scalar().unwrap().text, "no");
     }
 
     #[test]

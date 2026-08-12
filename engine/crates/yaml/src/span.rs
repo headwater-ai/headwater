@@ -61,6 +61,38 @@ impl std::fmt::Display for Span {
     }
 }
 
+/// Where a nested source begins in the file that carries it.
+///
+/// A document's front matter is a YAML source inside a Markdown file, and every
+/// span the loader reports about it has to read in the coordinates of the file
+/// rather than of the block. The correction is a line count and a byte count,
+/// and it is *not* a column count: the block starts at the beginning of a line,
+/// so every column inside it is already a file column. A nested source that did
+/// not start at a line start would need a third correction, applied to its first
+/// line alone, and nothing in this system produces one.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Origin {
+    /// The file line the nested source's line 1 is.
+    pub line: usize,
+    /// The file byte offset of the nested source's first byte.
+    pub byte: usize,
+}
+
+impl Origin {
+    /// A source that is the whole file.
+    pub const WHOLE_FILE: Origin = Origin { line: 1, byte: 0 };
+
+    pub fn new(line: usize, byte: usize) -> Self {
+        Self { line, byte }
+    }
+}
+
+impl Default for Origin {
+    fn default() -> Self {
+        Origin::WHOLE_FILE
+    }
+}
+
 /// A value that knows where it came from.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Spanned<T> {

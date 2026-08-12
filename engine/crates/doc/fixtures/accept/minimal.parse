@@ -1,0 +1,10 @@
+front matter 1:1(0)-4:4(34)
+  key "id" 2:1(4)-2:3(6)
+    scalar plain "DR-0001" 2:5(8)-2:12(15)
+  key "kind" 3:1(16)-3:5(20)
+    scalar plain "decision" 3:7(22)-3:15(30)
+body
+  heading h1 6:1(36)-7:1(60)
+    authored "The smallest document" 6:3(38)-6:24(59)
+  paragraph 8:1(61)-9:1(94)
+    authored "One paragraph, and nothing else." 8:1(61)-8:33(93)

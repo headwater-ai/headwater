@@ -1,3 +1,3 @@
-3:1: an anchor is not allowed in a taxonomy source; the $-reference is the reuse mechanism an overlay can address
-6:13: an alias is not allowed in a taxonomy source; the $-reference is the reuse mechanism an overlay can address
+3:1: an anchor is not allowed; the $-reference is the reuse mechanism, and an anchor is a second one that nothing can address
+6:13: an alias is not allowed; the $-reference is the reuse mechanism, and an alias is a second one that nothing can address
 9:3: duplicate key `decision`, first declared at 6:3

@@ -1,0 +1,8 @@
+front matter 1:1(0)-2:4(7)
+body
+  paragraph 4:1(9)-7:1(204)
+    authored "A document with a block and no facets in it. This is an untyped document rather" 4:1(9)-4:80(88)
+    authored " " 4:80(88)-5:1(89)
+    authored "than an unreadable file, which is the one place the front-matter dialect differs" 5:1(89)-5:81(169)
+    authored " " 5:81(169)-6:1(170)
+    authored "from the taxonomy-source dialect." 6:1(170)-6:34(203)

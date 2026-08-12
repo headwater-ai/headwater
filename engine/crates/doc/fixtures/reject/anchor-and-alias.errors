@@ -1,0 +1,2 @@
+2:1: an anchor is not allowed; the $-reference is the reuse mechanism, and an anchor is a second one that nothing can address
+4:13: an alias is not allowed; the $-reference is the reuse mechanism, and an alias is a second one that nothing can address
