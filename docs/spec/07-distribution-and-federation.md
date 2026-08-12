@@ -105,7 +105,9 @@ The cost is the one that overlays already carry, one level up. A resolved taxono
 
 A package declares a **core**: the semantics that an overlay may extend but never remove or redefine ([spec 2](02-taxonomy-model.md#the-immutable-core)). Without one, "the same taxonomy" is not a meaningful claim. If a consumer may override anything, two consumers of one package can share no structure at all.
 
-The core is **semantic, not lexical**. It constrains roles and purposes, never names or paths. A consumer may rename every shelf, relocate every directory, and replace every identifier pattern and every lifecycle value, and still satisfy the core. The condition: after resolution, some facet still has the state role, some kind still serves the `rationale` purpose, and lineage remains expressible and lifecycle-sensitive.
+The core is **semantic, not lexical**, with one exception that it names. It constrains roles and purposes, never names or paths. A consumer may rename every shelf, relocate every directory, and replace identifier patterns except the namespace and every lifecycle value, and still satisfy the core. The condition: after resolution, some facet still has the state role, some kind still serves the `rationale` purpose, and lineage remains expressible and lifecycle-sensitive.
+
+The exception is the identifier namespace, which `core` requires and no overlay may remove ([spec 2](02-taxonomy-model.md#the-immutable-core)). It is lexical because the alternative is unrecoverable rather than merely untidy.
 
 That is what makes the package a workable boundary object. It is plastic enough to adapt to local practice, and strong enough to keep a common identity across sites. Local form is fully negotiable. Shared meaning is not.
 

@@ -44,7 +44,7 @@ Nine items, and each one is data or a deferred component. So the first real adop
 
 ## Design work that nothing blocks
 
-Six items. The first comes from the register. The other five arrived from the [design-spec taxonomy](../taxonomies/design-spec/doctrine.md#findings), which is the first library entry to write a bundle out as YAML. No adopter and no measurement gates any of them.
+Eight items. The first comes from the register. Five arrived from the [design-spec taxonomy](../taxonomies/design-spec/doctrine.md#findings), which is the first library entry to write a bundle out as YAML. The last two arrived from a review of the identifier schemes. No adopter and no measurement gates any of them.
 
 **The `$`-reference sublanguage** ([Q2](09-decisions.md#q2--schema-format)). It has three uses and no grammar, and it needs one definition before the meta-schema ships. No adopter and no measurement gates this one.
 
@@ -57,6 +57,10 @@ Six items. The first comes from the register. The other five arrived from the [d
 **A participation expectation names one target kind** ([spec 2](02-taxonomy-model.md#participation-expectations)). The declaration carries one `to_kind`. A corpus that expects a citation from any one of several register kinds cannot state that. An abstract kind over those kinds expresses it, at the cost of a kind that exists only as a target.
 
 **Two meta-schema surfaces have a required declaration and no stated form** ([Q2](09-decisions.md#q2--schema-format)). A facet declares `volatility`, and no value set states what it may hold. The [ascertainability canon](02-taxonomy-model.md#facet-acceptance-tests) requires guidance on every enum value, and no syntax carries it. A third surface is smaller and it belongs beside them. [Spec 7](07-distribution-and-federation.md#publishing) declares bundles in the package manifest, and nothing fixes the shape of the file that holds one. The first library entry guessed all three, and it recorded each guess.
+
+**The identifier scheme grammar** ([spec 2](02-taxonomy-model.md#the-eleven-declarations), [spec 3](03-authoring-and-lifecycle.md#identifiers)). The same review closed the namespace gap in place, so `core` now requires one and `taxonomy validate` checks it. What stays open is the shape of a scheme: the prefix that discriminates the kind is a literal inside the `pattern` string. So the engine cannot read the prefix that it mints, and identifier integrity validates the whole pattern rather than its parts. A grammar that declares the prefix, the namespace, and the local part as separate fields makes disjointness decidable by construction. It also lets an RDF projection derive a document IRI rather than invent one. That is a meta-schema change, so it costs a taxonomy major version once the meta-schema ships, and nothing today.
+
+**The scope of a sub-document identifier** ([spec 2](02-taxonomy-model.md#contract-sidecars-the-specification-as-oracle)). Acceptance criteria are one of the five artifacts that receive a stable identifier, and a contract sidecar gives them one. Nothing says what scopes that identifier. Allocation is reconcile-first over the corpus, which is the wrong denominator if a criterion numbers within its requirement. Nobody has minted a criterion, because no specification of the sidecar exists. This is the other half of *identity below the grain of a document* above, and the two differ in their remedy. That item converts an entry into a document, and a criterion stays inside a sidecar and needs a parent to number against.
 
 ## What else each decision left open
 
