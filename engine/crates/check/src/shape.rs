@@ -40,6 +40,11 @@ pub struct Shape {
     /// In declaration order, because a report is read by a person.
     pub facets: Vec<Facet>,
     pub kinds: Vec<Kind>,
+    /// `purposes`, the reader intents the corpus serves. Spec 2 declares them
+    /// once at the taxonomy level and has kinds reference them, and
+    /// [spec 5](../../../../docs/spec/05-ai-integration.md#intent-time-routing)
+    /// routes a task description over them before it reads any prose.
+    pub purposes: Vec<Purpose>,
     /// `regimes.voice`, which a Document check reads through the kind that
     /// binds it.
     pub voice: Vec<VoiceRegime>,
@@ -98,11 +103,31 @@ pub struct Facet {
     pub span: Span,
 }
 
+/// A reader intent the corpus serves, as `purposes` declares it.
+///
+/// Both members are prose an author wrote for a reader, and routing reads them
+/// as the terms a task description is matched against. `answers` carries the
+/// questions the purpose answers, which is the closest thing a taxonomy holds
+/// to a task description, so it is the stronger of the two signals.
+#[derive(Clone, Debug)]
+pub struct Purpose {
+    pub name: String,
+    /// What a document serving this purpose is for, in one sentence.
+    pub intent: Option<String>,
+    /// The questions this purpose answers, as the declaration writes them.
+    pub answers: Vec<String>,
+    pub span: Span,
+}
+
 /// A kind, read down to what a generated check needs.
 #[derive(Clone, Debug)]
 pub struct Kind {
     pub name: String,
     pub is_a: Option<String>,
+    /// The reader intent this kind serves, as this kind declares it. Spec 2
+    /// permits a concrete kind to inherit one from an abstract parent, and
+    /// [`Shape::purpose_of`] is the inherited answer.
+    pub purpose: Option<String>,
     /// `facets.require`, as this kind declares it and without its ancestors.
     /// [`Shape::required_facets`] is the inherited set.
     pub require: Vec<String>,
@@ -189,6 +214,29 @@ impl Shape {
                 other => errors.push(DeclarationError {
                     message: format!("`kinds` is {}, and it names kinds", other.kind_name()),
                     span: kinds.span,
+                }),
+            }
+        }
+
+        if let Some(purposes) = root.get("purposes") {
+            match &purposes.value {
+                Value::Map(map) => {
+                    for entry in map {
+                        let body = entry.value.value.as_map();
+                        shape.purposes.push(Purpose {
+                            name: entry.key.value.clone(),
+                            intent: body.and_then(|map| scalar(map, "intent")),
+                            answers: body.map(|map| sequence(map, "answers")).unwrap_or_default(),
+                            span: entry.key.span,
+                        });
+                    }
+                }
+                other => errors.push(DeclarationError {
+                    message: format!(
+                        "`purposes` is {}, and it names reader intents",
+                        other.kind_name()
+                    ),
+                    span: purposes.span,
                 }),
             }
         }
@@ -310,6 +358,22 @@ impl Shape {
         chain
     }
 
+    /// The purpose a kind serves, through the chain that declares it.
+    ///
+    /// Spec 2: "Every concrete kind declares the reader intent that it serves,
+    /// or inherits it from an abstract parent." So this walks the same chain
+    /// [`Shape::voice_of`] walks, and a kind under a parent that declares one
+    /// serves it. A name no `purposes` block declares reads as no purpose
+    /// rather than as an invented one: `taxonomy validate` owns referential
+    /// integrity, and a reader that invented a node would hide the defect.
+    pub fn purpose_of(&self, kind: &str) -> Option<&Purpose> {
+        let name = self
+            .ancestry(kind)
+            .into_iter()
+            .find_map(|step| step.purpose.clone())?;
+        self.purposes.iter().find(|purpose| purpose.name == name)
+    }
+
     /// Whether a kind is an `ancestor`, itself included.
     ///
     /// This is what makes `to: [governed_document]` admit a `review_record`. A
@@ -410,6 +474,7 @@ fn read_kind(name: &str, value: &Value, span: Span) -> Result<Kind, DeclarationE
     Ok(Kind {
         name: name.to_string(),
         is_a: scalar(map, "is_a"),
+        purpose: scalar(map, "purpose"),
         require: facets
             .map(|map| sequence(map, "require"))
             .unwrap_or_default(),
@@ -654,5 +719,36 @@ kinds:
         // And with no `id`, the relation names it, so a report never prints an
         // expectation with no name at all.
         assert_eq!(expectation.id, "r");
+    }
+
+    /// A purpose is declared once and referenced by kinds, and a concrete kind
+    /// may inherit the one its abstract parent declares.
+    #[test]
+    fn a_kind_serves_the_purpose_it_declares_or_the_one_it_inherits() {
+        let shape = shape(
+            "purposes:\n  \
+             rationale:\n    intent: explain why a choice was made\n    \
+             answers: [\"why is it this way\", \"what was rejected\"]\n\
+             kinds:\n  \
+             governed_document: {abstract: true, purpose: rationale}\n  \
+             decision: {is_a: governed_document}\n  \
+             note: {purpose: nowhere}\n  \
+             bare: {}\n",
+        );
+        let purpose = shape.purposes.first().expect("declared");
+        assert_eq!(purpose.name, "rationale");
+        assert_eq!(purpose.intent.as_deref(), Some("explain why a choice was made"));
+        assert_eq!(purpose.answers.len(), 2);
+
+        assert_eq!(
+            shape.purpose_of("decision").map(|p| p.name.as_str()),
+            Some("rationale"),
+            "the parent declares it"
+        );
+        // A purpose no `purposes` block declares is no purpose here. Referential
+        // integrity is `taxonomy validate`'s, and a reader that invented the
+        // node would hide the defect from the report that names it.
+        assert!(shape.purpose_of("note").is_none());
+        assert!(shape.purpose_of("bare").is_none());
     }
 }

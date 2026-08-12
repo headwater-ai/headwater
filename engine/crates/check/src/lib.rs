@@ -116,7 +116,7 @@ pub use scope::{
     DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain, NeighbourhoodCheck, NeighbourhoodView,
     Scope,
 };
-pub use shape::Shape;
+pub use shape::{Purpose, Shape};
 pub use suppression::Inventory;
 
 use headwater_census::census::Census;
