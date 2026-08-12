@@ -12,3 +12,17 @@ taxonomy:
   version: 1.0.0
   bundles: [design-spec]
   overlay: .headwater/overlay.yml
+
+# What the census walks, and what it declares is not corpus content. The census
+# reports a row for every file either way, so an exclusion changes what a row
+# says and never whether there is one.
+corpus:
+  root: docs
+  exclude:
+    - path: docs/taxonomies/**
+      reason: >-
+        package content. This directory is the design-spec library entry, and a
+        taxonomy package that lives inside the corpus it types has no home in
+        the shelf model. Nothing in the base package or in the entry says
+        whether package content is corpus content, and spec 13 records the gap;
+        this repository answers it locally, here, with a reason.

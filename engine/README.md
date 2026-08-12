@@ -22,6 +22,7 @@ The mount is read only and the target directory sits inside the container, so a 
 |---|---|---|
 | `headwater-yaml` | [M1](https://github.com/headwater-ai/headwater/milestone/1) | Reads a taxonomy source as YAML 1.2, on the Q2 dialect rules, and keeps a span on every node |
 | `headwater-doc` | [M1](https://github.com/headwater-ai/headwater/milestone/1) | Reads a document: the front-matter block through the loader, and the body as CommonMark |
+| `headwater-census` | [M1](https://github.com/headwater-ai/headwater/milestone/1) | Walks a corpus root, resolves a kind for each document, and reports what became of every file |
 
 ## Why the loader came first
 
@@ -44,16 +45,29 @@ Ownership is the second half of that entry. Spec 12 puts the author-owned span o
 
 Front matter goes through `headwater-yaml` rather than through a second tree builder, and [#43](https://github.com/headwater-ai/headwater/issues/43) asked which Q2 rulings survive that move. All but one. The core schema, duplicate keys, anchors, aliases, merge keys, explicit tags and the one-document rule each hold for the reason it was made. The exception is an empty source: a taxonomy source that declares nothing is a mistake, while a document with an empty block is an untyped document, and refusing it would make the census count a file the engine could not read rather than a file nobody has typed. That is the distinction the census exists to draw, so the dialect is a parameter of the loader — `headwater_yaml::Options` — rather than a second loader that drifts from the first.
 
+## What the census adds, and the two questions it had to answer
+
+The census is the denominator. [Spec 12](../docs/spec/12-check-layer.md) puts it before any check runs, so that a document which failed to classify is *visibly* unchecked rather than silently absent, and it names both halves of `headwater-census` a correctness root. The two halves share a crate because they share one failure: each produces a systematically green result when it is wrong. A walk that misses a subtree reports nothing about it. A resolution that assigns the wrong kind runs the wrong checks and passes them.
+
+**A symlink is an entry and it is never followed.** To follow one either duplicates a file that the denominator already holds, or leaves the corpus root, or loops. `crates/census/fixtures/walk/` holds all four link cases plus the rest of the pathological tree that spec 12 asks for by name, and `walk.census` records what the walk makes of each.
+
+**An exclusion changes what a row says and never whether there is one.** The excluded files stay in the walk and stay in the count, because a subtree that vanishes from the report is exactly the conversion of an accounting into a silence that [spec 7](../docs/spec/07-distribution-and-federation.md) forbids under a different mechanism.
+
+Two questions reached this crate with no answer anywhere, and both are now recorded in [13 — Open obligations](../docs/spec/13-open-obligations.md) rather than settled here. Spec 2 says the most specific shelf pattern wins and never says what specificity is; `pattern.rs` states the ordering it uses. Spec 2's fourth resolution step is a path-pattern refinement that nothing gives a syntax, so the step is absent rather than guessed at.
+
 ## The fixtures are the deliverable
 
 `crates/yaml/fixtures/` holds the corpus. `accept/` pairs a source with the tree it loads to, span by span. `reject/` pairs a source with the text an author would read. Both expectations are recorded files rather than assertions in Rust, so that the rules survive the replacement of the code under them.
 
     HEADWATER_BLESS=1 cargo test -p headwater-yaml --test fixtures
     HEADWATER_BLESS=1 cargo test -p headwater-doc --test fixtures
+    HEADWATER_BLESS=1 cargo test -p headwater-census --test fixtures
 
 That re-records every expectation. Read the diff before committing it, because a blessed fixture *is* the change.
 
 `crates/doc/fixtures/` follows the same shape, with `.parse` for an accepted document. It adds one file that is not a pair: `corpus.exceptions` records every document under `docs/` that this repository cannot parse, and nothing about the ones it can. A parser is not the component that decides what a corpus should hold — an untyped file is a finding of the census, which is [#44](https://github.com/headwater-ai/headwater/issues/44) — so a refusal is recorded rather than raised. Recording only the exceptions is what keeps the file quiet: adding a well-formed document changes nothing, and adding one the engine cannot read changes a committed file and asks somebody to look.
+
+`crates/census/fixtures/` holds two recorded censuses and the tree that the first one walks. `walk.census` records every row of the pathological tree, because every row of it is the point. `corpus.census` records this repository, and it prints the totals plus every row that is *not* a typed document. That is the same argument the exception list makes, with the count kept: a corpus adds a typed document most weeks, and a recorded file that changes on every commit is a file nobody reads, while the totals still account for every file, so a shrinking denominator still shows up in the diff. A test holds the two records to each other — a file the parser refuses may never come back typed, and an unreadable row may never appear without appearing in the parser's list too.
 
 ## What is deliberately absent
 
