@@ -158,6 +158,15 @@ impl Body {
     pub fn authored(&self) -> impl Iterator<Item = &Block> {
         self.blocks.iter().filter(|block| block.quote_depth == 0)
     }
+
+    /// Every sentence this document's own author wrote, in document order.
+    ///
+    /// [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+    /// holds segmentation here rather than in a rule, with the spans and the
+    /// author-owned text. See [`crate::sentences`].
+    pub fn sentences(&self) -> Vec<crate::sentences::Sentence> {
+        crate::sentences::of(self)
+    }
 }
 
 /// The extensions the scan enables, and no others.
