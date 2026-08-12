@@ -2,19 +2,7 @@
   "comment": "Pre-existing STE violations, grandfathered. Regenerate with tools/ste-lint.py --update-baseline. Editing the offending text invalidates its entry, so touched prose must be fixed.",
   "version": 1,
   "entries": {
-    "1915f324098f7104": "docs/spec/11-adjacent-work.md: sentence-length: It is in the same family as the OKF export, and equally cheap to hold: the arrow points out of the c",
-    "2777ea248484c4c7": "docs/spec/07-distribution-and-federation.md: sentence-length: evaluates the repository against rules that the taxonomy package ships \u2014 checks wired in CI, gates r",
-    "3918c6e0b2ac8d61": "docs/spec/11-adjacent-work.md: sentence-length: In TrustGraph, an LLM extracts the graph: documents are feedstock, dissolved into triples, and the 1",
-    "44d094538b5af3b7": "docs/spec/03-authoring-and-lifecycle.md: sentence-length: The mechanical parts are these: the facet is present and valid, pointers resolve,  CODE  contains it",
-    "4beacb8a2fb8f038": "docs/spec/03-authoring-and-lifecycle.md: sentence-length: Spec 5 argues that an agent that drafts from evidence already present in the commit, the ticket, and",
     "4de16edb1e052ff2": "docs/spec/02-taxonomy-model.md: stock-phrase: robust",
-    "588c3aa87bcbcd7d": "docs/spec/02-taxonomy-model.md: sentence-length: This is decomposition by validation regime \u2014 the two halves are checked by different means \u2014 not a n",
-    "5b4427466c3df122": "docs/spec/11-adjacent-work.md: sentence-length: That reframes the question from \"does LinkML cover enough?\" to \"is a two-layer architecture \u2014 standa",
-    "600128b8f31107b7": "docs/spec/09-open-questions.md: sentence-length: Every case that motivates the question \u2014 contractor, partner, adjacent business unit, \"show the topo",
-    "7e7c6c547eda067e": "docs/spec/02-taxonomy-model.md: sentence-length: Directory placement carries the primary classification, because it is the signal that a reader sees ",
-    "9fecfe84399e4ea6": "docs/spec/11-adjacent-work.md: semicolon: Recorded: counterweight evidence added to Q13; provenance precedent added to Q15",
-    "b11762bf839a3814": "docs/spec/12-check-layer.md: sentence-length: To regenerate a stale projection, to add a missing reciprocal link, to normalize front-matter key or",
-    "b71a979f9414f92a": "docs/spec/10-theoretical-foundations.md: sentence-length: Change: none to the model \u2014 but use the meta-properties as the taxonomy-review vocabulary, and add a",
-    "dceea97181ec8609": "docs/spec/04-assurance-model.md: sentence-length: When coverage is read against capture cost and efficacy, it becomes a trade: this much assurance, at"
+    "9fecfe84399e4ea6": "docs/spec/11-adjacent-work.md: semicolon: Recorded: counterweight evidence added to Q13; provenance precedent added to Q15"
   }
 }

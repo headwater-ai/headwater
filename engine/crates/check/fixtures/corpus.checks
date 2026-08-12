@@ -11,6 +11,11 @@
      17 instances of voice.forbidden_construction
      16 instances of language.controlled.not_met
      36 instances of link.fragment.unresolved
+suppressions
+  2 findings hidden by 2 directives
+      2 false_positive
+      2 of language.controlled.not_met
+      2 on the shelf spec_series
 rules, and for each the scope that binds it and what it serves
   facet.required.missing
     document scope, one document and its front matter
