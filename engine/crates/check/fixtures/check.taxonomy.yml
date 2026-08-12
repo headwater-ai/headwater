@@ -269,8 +269,11 @@ obligations:
       gap:
         owner: the fixture tree
 
-  # Discharged on paper by a control whose mechanism this engine does not
-  # implement. The failing fixture of `control.mechanism.unimplemented`.
+  # Claimed on paper by a control whose mechanism this engine does not
+  # implement. The failing fixture of `control.mechanism.unimplemented`, and of
+  # `obligation.disposition.not_one` as well: a control the engine cannot run
+  # discharges nothing, and this obligation states no disposition of its own, so
+  # it carries none.
   OB-FIX-18:
     statement: A deprecated document names what replaced it
     rationale: A reader who lands on a dead end has to search for the live one
@@ -286,6 +289,19 @@ obligations:
     class: cohesion
     prevents: content.outdated
     severity: low
+
+  # A stated gap, and a control that claims it under a mechanism this engine
+  # does not implement. The gap is what the register goes with, because nothing
+  # discharges it, and the two dispositions on the page are still reported.
+  OB-FIX-20:
+    statement: A document names the audience it is written for
+    rationale: Prose written for nobody in particular is read by nobody in particular
+    class: coherence
+    prevents: presentation.readability
+    severity: low
+    disposition:
+      gap:
+        owner: the fixture tree
 
 controls:
   CT-FIX-1:
@@ -405,3 +421,14 @@ controls:
         window: two release cycles
         threshold: one finding in twenty is wrong
         sample: sixty findings, adjudicated at the periodic triage
+
+  # A second mechanism this engine does not implement, under the other prefix
+  # it reads, over an obligation that states a gap. The gap is the disposition
+  # the register goes with, because nothing discharges it, and the claim on the
+  # page is reported beside it.
+  CT-FIX-17:
+    mechanism: phase:no.such.phase
+    discharges: [OB-FIX-20]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
