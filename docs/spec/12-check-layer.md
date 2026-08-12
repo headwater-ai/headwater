@@ -2,7 +2,7 @@
 id: SPEC-HW-check-layer
 status: current
 status_since: 2026-08-02
-last_verified: 2026-08-11
+last_verified: 2026-08-12
 summary: What a check is, how a scope constrains it, where it comes from, and what the check layer owes the engine.
 doc_type: design_spec
 sequence: 12
@@ -118,7 +118,7 @@ The same reasoning binds the plugin interface below. `scope()` there is a method
 
 Point 2 above gives a cache key. The same set has a second use, and it is the one that [spec 4](04-assurance-model.md#a-verdict-is-about-one-state-of-the-corpus) needs to make a verdict honest under merge.
 
-The **read set** of a run is the union of the in-scope inputs that produced its results. That is the content hash of every document and edge that an instance read. It also holds the taxonomy lock hash, the check versions, and the injected values. Every run already computes it, one instance at a time. The key is a hash of exactly those inputs, and a key that omits one is a correctness bug. What is new is that the run reports the union beside its coverage numbers.
+The set is the view's and never the check's. The runner records what it handed an instance. So a check cannot report that it read less than it received, and the section above is what makes the record true. The **read set** of a run is the union of the in-scope inputs that produced its results. That is the content hash of every document and edge that an instance read. It also holds the taxonomy lock hash, the check versions, and the injected values. Every run already computes it, one instance at a time. The key is a hash of exactly those inputs, and a key that omits one is a correctness bug. What is new is that the run reports the union beside its coverage numbers.
 
 **A merge is then an ordinary change.** Given the merge result and the tree that a run evaluated, the engine derives the invalidated instances the way it derives them from any diff. An empty result means that the verdict still applies. A non-empty result voids it, and the recomputation is change-scoped over the union of the two changes rather than a full pass.
 
@@ -199,18 +199,18 @@ Same corpus, same lock, same injected clock, byte-identical output. That is what
 The interface is deliberately narrow:
 
 ```
-Check {
-  id()          -> CheckId
-  obligation()  -> ObligationId      // required — spec 4 admits no orphan checks
-  scope()       -> Scope
-  severity()    -> Severity
-  evaluate(view: &ScopedView) -> [Finding]
+DocumentCheck {                      // one trait per scope, and the trait is the declaration
+  id()        -> CheckId
+  severity()  -> Severity
+  evaluate(view: &DocumentView) -> [Finding]
 }
 ```
 
 No filesystem, no network, no clock, no graph mutation. A plugin receives the same scoped view that a built-in check receives, and the same scope enforcement binds it. Thus a third-party check cannot break caching, cannot introduce non-determinism, and cannot see more of the corpus than it declared.
 
-`obligation()` is required so that the plugin surface does not become the place where rules escape the "every rule earns its place" discipline.
+**The scope is the trait, so a host is never handed a scope claim to trust.** A plugin that wants to compare siblings implements the corpus-scoped trait, which is the only way to receive a corpus view. That is the rule of the section above, applied where it matters most.
+
+**The obligation is not a method here, and the rule that made it one still holds.** Spec 4 admits no orphan check, and the binding between a rule and an obligation is data. A control names the mechanism `check:<id>` and the obligations that it discharges ([spec 4](04-assurance-model.md#controls-are-data)). The runner reads that register and stamps the finding. A check that named its own obligation would be a second source of truth for one binding. It could also name an identifier that no register holds. So the plugin surface is still not the place where a rule escapes the "every rule earns its place" discipline. A run names every rule that no control names. That is a report rather than a method signature. An adopter can then rebind a rule with no edit to code that they do not own.
 
 ## Where the LLM coherence sweep fits
 
