@@ -12,14 +12,8 @@
 //!
 //! This runner is the thinnest thing that closes the loop over a real corpus,
 //! which is what [M1](https://github.com/headwater-ai/headwater/milestone/1)
-//! exists to do. Four parts of the designed check layer are not here, and none
-//! of them is an oversight.
-//!
-//! **Scope as a type.** [Spec 12](../../../../docs/spec/12-check-layer.md#the-declaration-is-a-type-not-a-returned-value)
-//! rules that a check receives a scoped view and cannot ask for a wider one,
-//! and that the enforcement is the feature. Both checks here take the whole
-//! census or the whole graph, so neither declares a scope and no view enforces
-//! one. That is [#54](https://github.com/headwater-ai/headwater/issues/54).
+//! exists to do. Three parts of the designed check layer are not here, and
+//! none of them is an oversight.
 //!
 //! **The cache, and change-scoped evaluation.** Every instance runs on every
 //! run. Nothing is keyed, nothing is reused, and `--changed-only` does not
@@ -39,6 +33,21 @@
 //! dispositions, and the control health that spec 4 asks a projection to carry.
 //! That is [#59](https://github.com/headwater-ai/headwater/issues/59).
 //!
+//! # Scope is a type, and [`scope`] is where that holds
+//!
+//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-declaration-is-a-type-not-a-returned-value)
+//! rules that a check receives a scoped view and cannot ask for a wider one,
+//! and that the enforcement is the feature. Each rule below implements one
+//! scope trait, and that trait is the only way to receive the matching view.
+//! This function names the two checks it runs, which is the whole of
+//! registration until [#55](https://github.com/headwater-ai/headwater/issues/55)
+//! keys a cache on what a scope fixes.
+//!
+//! `Neighbourhood`, `Shelf` and a corpus-scoped *trait* are absent, and the
+//! reason is the one this module already applies to a cache: no rule needs
+//! one. Spec 12 leaves the first two open, and [`coverage`] states why a
+//! corpus-grained rule is the runner's accounting rather than a check.
+//!
 //! # Phase A outcomes stay in Phase A
 //!
 //! Spec 12 calls an unparseable file, an unclassifiable path, a dangling edge
@@ -55,11 +64,13 @@ pub mod instance;
 pub mod placement;
 pub mod reciprocity;
 pub mod register;
+pub mod scope;
 
 pub use coverage::Coverage;
 pub use finding::{Finding, Severity};
 pub use instance::{Instance, Outcome};
 pub use register::{Bound, Register};
+pub use scope::{DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain, Scope};
 
 use headwater_census::census::Census;
 use headwater_census::shelves::Taxonomy;
@@ -82,10 +93,20 @@ pub struct Run {
     /// [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
     /// fixes.
     pub findings: Vec<Finding>,
-    /// What each rule serves, in [`RULES`] order. A rule that reaches no
-    /// obligation is in this list too, because a rule that cannot say which
-    /// invariant it protects is what spec 4 asks a reader to notice.
-    pub served: Vec<(&'static str, Bound)>,
+    /// What each rule sees and what it serves, in [`RULES`] order. A rule that
+    /// reaches no obligation is in this list too, because a rule that cannot
+    /// say which invariant it protects is what spec 4 asks a reader to notice.
+    pub served: Vec<Serves>,
+}
+
+/// One rule, the scope that binds it, and the obligation it serves.
+#[derive(Clone, Debug)]
+pub struct Serves {
+    pub rule: &'static str,
+    /// Derived from the trait the check implements, and never stated beside
+    /// it. See [`scope`] for why that distinction is the whole feature.
+    pub scope: Scope,
+    pub obligation: Bound,
 }
 
 /// Run every check over one census and the graph built from it.
@@ -101,8 +122,13 @@ pub fn run(
     declarations: &Declarations,
     register: &Register,
 ) -> Run {
-    let mut instances = placement::run(census, taxonomy);
-    instances.extend(reciprocity::run(graph, declarations));
+    // Registration, in full: two checks, each named once. The scope trait each
+    // one implements decides what it is handed, so this function cannot widen
+    // a view by calling the wrong instantiation.
+    let placement = placement::Placement::over(taxonomy);
+    let reciprocity = reciprocity::Reciprocity::over(declarations);
+    let mut instances = scope::over_documents(&placement, census);
+    instances.extend(scope::over_edges(&reciprocity, graph));
 
     let coverage = Coverage::of(census, &instances);
 
@@ -116,13 +142,30 @@ pub fn run(
     // because the binding is data. A rule states its id, a control names that
     // id and the obligations it discharges, and one place reads the two
     // together. See [`register`] for why that place is not the check.
-    let served: Vec<(&'static str, Bound)> = RULES
-        .iter()
-        .map(|rule| (*rule, register.bound(rule)))
-        .collect();
+    let served: Vec<Serves> = [
+        (
+            placement::RULE,
+            scope::document_scope::<placement::Placement>(),
+        ),
+        (
+            reciprocity::RULE,
+            scope::edge_scope::<reciprocity::Reciprocity>(),
+        ),
+        (coverage::RULE, coverage::SCOPE),
+    ]
+    .into_iter()
+    .map(|(rule, scope)| Serves {
+        rule,
+        scope,
+        obligation: register.bound(rule),
+    })
+    .collect();
     for finding in &mut findings {
-        finding.obligation = match served.iter().find(|(rule, _)| *rule == finding.rule) {
-            Some((_, Bound::To(obligation))) => Some(obligation.clone()),
+        finding.obligation = match served.iter().find(|served| served.rule == finding.rule) {
+            Some(Serves {
+                obligation: Bound::To(obligation),
+                ..
+            }) => Some(obligation.clone()),
             _ => None,
         };
     }
@@ -202,20 +245,25 @@ impl Run {
             }
         }
 
-        // What each rule serves. Spec 4 asks every finding to name its
-        // obligation, so a rule that names none is a fact about the taxonomy
-        // and it belongs beside the counts rather than in a reader's inference.
-        out.push_str("rules, and the obligation each one serves\n");
-        for (rule, bound) in &self.served {
-            let _ = match bound {
-                Bound::To(obligation) => writeln!(out, "  {rule}\n    {obligation}"),
+        // What each rule sees and what it serves. Spec 4 asks every finding to
+        // name its obligation, so a rule that names none is a fact about the
+        // taxonomy and it belongs beside the counts rather than in a reader's
+        // inference. The scope is here for the same reason and one more: spec
+        // 12 asks that the count of the barriers be a number a reader can
+        // read, rather than a property discovered under load.
+        out.push_str("rules, and for each the scope that binds it and what it serves\n");
+        for served in &self.served {
+            let rule = served.rule;
+            let _ = writeln!(out, "  {rule}\n    {}", served.scope.render());
+            let _ = match &served.obligation {
+                Bound::To(obligation) => writeln!(out, "    {obligation}"),
                 Bound::Unnamed => writeln!(
                     out,
-                    "  {rule}\n    no control names this rule, so its findings name no obligation"
+                    "    no control names this rule, so its findings name no obligation"
                 ),
                 Bound::Several(obligations) => writeln!(
                     out,
-                    "  {rule}\n    reaches {}, and a finding names one obligation, so it names none",
+                    "    reaches {}, and a finding names one obligation, so it names none",
                     obligations.join(", ")
                 ),
             };

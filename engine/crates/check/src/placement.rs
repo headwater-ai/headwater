@@ -34,11 +34,21 @@
 //! At the restated facet, because that is the line to delete. The fix is
 //! mechanical and total: the shelf already carries the kind, so removing the
 //! key loses nothing.
+//!
+//! # The scope, and what it costs this check
+//!
+//! [`DocumentCheck`] is the whole declaration: one document, and the front
+//! matter without the body. The rule needs no more, and the type is now what
+//! says so ([spec 12](../../../../docs/spec/12-check-layer.md#the-declaration-is-a-type-not-a-returned-value)).
+//!
+//! The taxonomy is not in that view, so the discriminator set is read once
+//! when the check is built rather than per document. That is the right split
+//! and not a workaround: the generation step reads the taxonomy, and the
+//! evaluation step reads one document.
 
 use crate::finding::{at, Finding, Severity};
-use crate::instance::Instance;
-use headwater_census::census::{Census, Outcome};
-use headwater_census::resolve::Step;
+use crate::instance::Outcome;
+use crate::scope::{DocumentCheck, DocumentView};
 use headwater_census::shelves::{ShelfBody, Taxonomy};
 
 pub const RULE: &str = "shelf.placement_is_primary";
@@ -47,85 +57,70 @@ const HETEROGENEOUS: &str =
     "the shelf is heterogeneous, so the discriminator is the gap metadata fills, \
      and kind resolution already read it";
 
-/// Instantiate the check over a census: one instance per typed document.
-pub fn run(census: &Census, taxonomy: &Taxonomy) -> Vec<Instance> {
-    // The generation step, in full: every facet that a heterogeneous shelf uses
-    // as its discriminator, in declaration order and without repeats.
-    let mut discriminators: Vec<&str> = Vec::new();
-    for shelf in &taxonomy.shelves {
-        let ShelfBody::Heterogeneous { discriminator, .. } = &shelf.body else {
-            continue;
-        };
-        if !discriminators.contains(&discriminator.as_str()) {
-            discriminators.push(discriminator);
-        }
-    }
+/// The check, generated from the shelf declarations.
+pub struct Placement {
+    /// Every facet that a heterogeneous shelf uses as its discriminator, in
+    /// declaration order and without repeats.
+    discriminators: Vec<String>,
+}
 
-    let mut instances = Vec::new();
-    for row in &census.rows {
-        let Outcome::Typed { kind, derivation } = &row.outcome else {
-            continue;
-        };
-        // Which shelf, and which of the two bodies it has, from the derivation
-        // the census recorded. Reading it back costs nothing and it cannot
-        // disagree with the resolution that produced the kind.
-        let Some(shelf) = derivation.steps.iter().find_map(|step| match step {
-            Step::PlacementCarriesTheKind { shelf, .. } => Some(shelf),
-            _ => None,
-        }) else {
-            instances.push(Instance::skipped(RULE, row.path.clone(), HETEROGENEOUS));
-            continue;
-        };
-
-        let Some(document) = &row.document else {
-            // A typed row always carries the document it read, so this is
-            // unreachable. It is a skip rather than a panic for the reason a
-            // check never panics: one bad row must not silence the corpus.
-            instances.push(Instance::skipped(
-                RULE,
-                row.path.clone(),
-                "the row carries no document to read",
-            ));
-            continue;
-        };
-
-        let restated = discriminators
-            .iter()
-            .find_map(|facet| document.facets.entry(facet).map(|entry| (*facet, entry)));
-
-        instances.push(match restated {
-            None => Instance::passed(RULE, row.path.clone()),
-            Some((facet, entry)) => {
-                let (line, column) = at(Some(entry.key.span));
-                let value = entry
-                    .value
-                    .value
-                    .as_scalar()
-                    .map(|scalar| scalar.text.clone())
-                    .unwrap_or_else(|| entry.value.value.kind_name().to_string());
-                Instance::failed(
-                    RULE,
-                    row.path.clone(),
-                    Finding {
-                        rule: RULE,
-                        severity: Severity::Error,
-                        obligation: None,
-                        path: row.path.clone(),
-                        line,
-                        column,
-                        message: format!(
-                            "`{shelf}` is homogeneous and carries the kind `{kind}`, \
-                             and this document restates it as `{facet}: {value}`"
-                        ),
-                        remediation: format!(
-                            "remove `{facet}` from the front matter of {}",
-                            row.path
-                        ),
-                        fixable: true,
-                    },
-                )
+impl Placement {
+    /// The generation step, in full.
+    pub fn over(taxonomy: &Taxonomy) -> Self {
+        let mut discriminators: Vec<String> = Vec::new();
+        for shelf in &taxonomy.shelves {
+            let ShelfBody::Heterogeneous { discriminator, .. } = &shelf.body else {
+                continue;
+            };
+            if !discriminators.contains(discriminator) {
+                discriminators.push(discriminator.clone());
             }
-        });
+        }
+        Placement { discriminators }
     }
-    instances
+}
+
+impl DocumentCheck for Placement {
+    const RULE: &'static str = self::RULE;
+
+    fn evaluate(&self, view: &DocumentView<'_>) -> Outcome {
+        // Which of the two bodies the shelf has, from the derivation the
+        // census recorded. Reading it back costs nothing and it cannot
+        // disagree with the resolution that produced the kind.
+        let Some(shelf) = view.placed_on() else {
+            return Outcome::Skipped(HETEROGENEOUS);
+        };
+
+        let restated = self
+            .discriminators
+            .iter()
+            .find_map(|facet| view.facets().entry(facet).map(|entry| (facet, entry)));
+
+        let Some((facet, entry)) = restated else {
+            return Outcome::Passed;
+        };
+
+        let (line, column) = at(Some(entry.key.span));
+        let value = entry
+            .value
+            .value
+            .as_scalar()
+            .map(|scalar| scalar.text.clone())
+            .unwrap_or_else(|| entry.value.value.kind_name().to_string());
+        let kind = view.kind();
+        Outcome::Failed(Box::new(Finding {
+            rule: self::RULE,
+            severity: Severity::Error,
+            obligation: None,
+            path: view.path().to_string(),
+            line,
+            column,
+            message: format!(
+                "`{shelf}` is homogeneous and carries the kind `{kind}`, \
+                 and this document restates it as `{facet}: {value}`"
+            ),
+            remediation: format!("remove `{facet}` from the front matter of {}", view.path()),
+            fixable: true,
+        }))
+    }
 }

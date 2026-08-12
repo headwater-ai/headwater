@@ -12,9 +12,14 @@
 //! Read the diff before committing it. A blessed fixture is the change.
 
 use headwater_census::census;
+use headwater_census::census::Census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
-use headwater_check::{coverage, placement, reciprocity, Detail, Register, Run};
+use headwater_check::scope::{over_documents, over_edges};
+use headwater_check::{
+    coverage, placement, reciprocity, Detail, DocumentCheck, DocumentView, EdgeCheck, EdgeView,
+    Grain, Outcome, Register, Run,
+};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
@@ -70,6 +75,15 @@ fn fixture_run() -> Run {
     let corpus = Corpus::new(fixtures_dir(), "check");
     let root = load_map(&fixtures_dir().join("check.taxonomy.yml"));
     run_over(&corpus, &root)
+}
+
+/// The fixture tree as Phase A leaves it, which is what a scoped view is built
+/// from.
+fn fixture_census() -> Census {
+    let corpus = Corpus::new(fixtures_dir(), "check");
+    let root = load_map(&fixtures_dir().join("check.taxonomy.yml"));
+    let taxonomy = Taxonomy::read(&root).expect("the taxonomy reads");
+    census::take(&corpus, &taxonomy)
 }
 
 fn corpus_run() -> Run {
@@ -287,5 +301,124 @@ fn the_denominator_is_the_census_and_not_the_classified_set() {
     );
     for (row, document) in taken.rows.iter().zip(&run.coverage.documents) {
         assert_eq!(row.path, document.path, "coverage lost the census order");
+    }
+}
+
+/// Every rule reports a scope, and each one comes from the trait that binds it.
+///
+/// The order is [`headwater_check::RULES`], because a report that listed the
+/// scopes in one order and the instance counts in another would be two lists
+/// that a reader has to reconcile.
+#[test]
+fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
+    let run = fixture_run();
+    let listed: Vec<&str> = run.served.iter().map(|served| served.rule).collect();
+    assert_eq!(listed, headwater_check::RULES.to_vec());
+
+    let grains: Vec<Grain> = run
+        .served
+        .iter()
+        .map(|served| served.scope.grain())
+        .collect();
+    assert_eq!(grains, [Grain::Document, Grain::Edge, Grain::Corpus]);
+
+    // The placement check reads front matter and never a body, and the report
+    // says so rather than leaving a reader to infer it from the rule name.
+    assert!(!run.served[0].scope.needs_body());
+    assert_eq!(
+        run.served[0].scope.render(),
+        "document scope, one document and its front matter"
+    );
+}
+
+/// A document check receives the body only when it declares that it needs one.
+///
+/// This is scope enforcement at the one grain where it is observable at run
+/// time. The rest is structural: `DocumentView` has no accessor for a second
+/// document, so a document-scoped check cannot read a sibling and no test can
+/// be written that catches it doing so.
+#[test]
+fn a_document_check_receives_the_body_only_when_it_declares_it() {
+    struct Reader<const BODY: bool>;
+
+    impl<const BODY: bool> DocumentCheck for Reader<BODY> {
+        const RULE: &'static str = "test.body_arrives";
+        const NEEDS_BODY: bool = BODY;
+
+        fn evaluate(&self, view: &DocumentView<'_>) -> Outcome {
+            match view.body() {
+                Some(_) => Outcome::Skipped("the body arrived"),
+                None => Outcome::Passed,
+            }
+        }
+    }
+
+    let census = fixture_census();
+    let declared = over_documents(&Reader::<true>, &census);
+    let did_not = over_documents(&Reader::<false>, &census);
+
+    assert_eq!(declared.len(), 8, "one instance per typed document");
+    assert_eq!(declared.len(), did_not.len());
+    assert!(declared
+        .iter()
+        .all(|instance| matches!(instance.outcome, Outcome::Skipped(_))));
+    assert!(did_not
+        .iter()
+        .all(|instance| matches!(instance.outcome, Outcome::Passed)));
+}
+
+/// The runner records what the view carried, and never what the check says.
+///
+/// A check that reports nothing at all still produces instances that read what
+/// its scope fixes: one document at document grain, and both endpoints at edge
+/// grain. That is the property every cache key and every coverage number
+/// rests on, and it is the one a returned scope cannot give.
+#[test]
+fn the_read_set_of_an_instance_comes_from_the_view_and_not_from_the_check() {
+    struct Quiet;
+
+    impl EdgeCheck for Quiet {
+        const RULE: &'static str = "test.every_pair";
+
+        fn evaluate(&self, _view: &EdgeView<'_>) -> Outcome {
+            Outcome::Passed
+        }
+    }
+
+    struct Silent;
+
+    impl DocumentCheck for Silent {
+        const RULE: &'static str = "test.every_document";
+
+        fn evaluate(&self, _view: &DocumentView<'_>) -> Outcome {
+            Outcome::Passed
+        }
+    }
+
+    let census = fixture_census();
+    let corpus = Corpus::new(fixtures_dir(), "check");
+    let root = load_map(&fixtures_dir().join("check.taxonomy.yml"));
+    let declarations = Declarations::read(&root).expect("the declarations read");
+    let graph = Graph::build(
+        &census,
+        &declarations,
+        &Resolvers::over(&corpus),
+        &corpus,
+        &Config::default(),
+    );
+
+    for instance in over_documents(&Silent, &census) {
+        assert_eq!(instance.reads.len(), 1, "{instance:#?}");
+    }
+
+    // A check with no generation step of its own gets every declared pair,
+    // where the reciprocity rule declares `required` and gets four of them.
+    let every = over_edges(&Quiet, &graph);
+    assert!(
+        every.len() > 4,
+        "the fixture tree declares a pair that requires no reciprocity"
+    );
+    for instance in &every {
+        assert_eq!(instance.reads.len(), 2, "{instance:#?}");
     }
 }

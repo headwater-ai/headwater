@@ -37,99 +37,98 @@
 //! The fix is mechanical and total, which is the bar
 //! [spec 12](../../../../docs/spec/12-check-layer.md#fixability) sets: the
 //! missing half is derivable from the half that exists, with no judgment.
+//!
+//! # The scope
+//!
+//! [`EdgeCheck`] is the declaration, and it is the whole of it: one relation
+//! instance and both endpoints. The view carries the halves and the two
+//! documents they join, and the read set it fixes is what coverage counts the
+//! instance against. Both ends, and never the declaring end alone.
 
 use crate::finding::{at, Finding, Severity};
-use crate::instance::Instance;
+use crate::instance::Outcome;
+use crate::scope::{EdgeCheck, EdgeView};
 use headwater_graph::declarations::Relation;
-use headwater_graph::{Declarations, Direction, Edge, Graph, Reciprocal, Target};
+use headwater_graph::{Declarations, Reciprocal, Target};
 
 pub const RULE: &str = "relation.reciprocity.missing";
 
-/// Instantiate the check over a graph: one instance per declared pair.
-pub fn run(graph: &Graph, declarations: &Declarations) -> Vec<Instance> {
-    // The generation step, in full: read the declarations, and take the ones
-    // that say `required`.
-    let required: Vec<&Relation> = declarations
-        .relations
-        .iter()
-        .filter(|relation| relation.reciprocal == Reciprocal::Required)
-        .collect();
+/// A pair that carries no half at all, which grouping never produces. Recorded
+/// rather than panicked on, because a panic inside a check is a run that
+/// reports nothing about the rest of the corpus.
+const NO_HALF: &str = "the pair carries no declared half";
 
-    // Group the halves by the triple they normalize to. The edges arrive in
-    // path order, so the groups come out in a stable order with no sort here.
-    let mut pairs: Vec<(String, Vec<&Edge>)> = Vec::new();
-    for edge in &graph.edges {
-        // An anchor and an unbound target are not document pairs, and
-        // `declared_triple` says so by returning nothing.
-        let Some((source, relation, target)) = edge.declared_triple() else {
-            continue;
-        };
-        if !required.iter().any(|r| r.name == relation) {
-            continue;
-        }
-        let key = format!("{source}\u{1f}{relation}\u{1f}{target}");
-        match pairs.iter_mut().find(|(known, _)| known == &key) {
-            Some((_, halves)) => halves.push(edge),
-            None => pairs.push((key, vec![edge])),
-        }
-    }
+/// A pair of a relation that the declarations no longer hold. Unreachable for
+/// the same reason and recorded on the same terms: the generation step took
+/// the relation from those declarations.
+const NO_RELATION: &str = "no declaration holds the relation this pair declares";
 
-    pairs
-        .into_iter()
-        .map(|(_, halves)| instance(&halves, declarations))
-        .collect()
+/// The check, generated from the relation declarations.
+pub struct Reciprocity<'a> {
+    /// The relations that say `required`, which is the generation step in full.
+    required: Vec<&'a Relation>,
 }
 
-fn instance(halves: &[&Edge], declarations: &Declarations) -> Instance {
-    // One half written from the source end, and one from the target end. A
-    // pair is reciprocal when a document at each end declared it.
-    let forward = halves
-        .iter()
-        .find(|edge| edge.direction == Direction::AsDeclared);
-    let backward = halves
-        .iter()
-        .find(|edge| edge.direction == Direction::Inverse);
+impl<'a> Reciprocity<'a> {
+    pub fn over(declarations: &'a Declarations) -> Self {
+        Reciprocity {
+            required: declarations
+                .relations
+                .iter()
+                .filter(|relation| relation.reciprocal == Reciprocal::Required)
+                .collect(),
+        }
+    }
+}
 
-    let (written, missing) = match (forward, backward) {
-        // Both ends wrote it. One instance, read against both endpoints.
-        (Some(edge), Some(_)) => return Instance::passed(RULE, ends(edge)),
-        (Some(edge), None) => (*edge, Missing::TheInverseHalf),
-        (None, Some(edge)) => (*edge, Missing::TheDeclaredHalf),
-        (None, None) => unreachable!("a pair with no half is never grouped"),
-    };
+impl EdgeCheck for Reciprocity<'_> {
+    const RULE: &'static str = self::RULE;
 
-    let relation = declarations
-        .relations
-        .iter()
-        .find(|r| r.name == written.declared)
-        .expect("the pair was grouped by a relation that requires reciprocity");
+    fn instantiates(&self, relation: &str) -> bool {
+        self.required.iter().any(|known| known.name == relation)
+    }
 
-    // The far end of the half that exists is the document that owes the other
-    // half, whichever half that is. See the module comment.
-    let owed_by = match &written.target {
-        Target::Document { path, .. } => path.clone(),
-        // Unreachable: `declared_triple` returns nothing for every other
-        // target. Stated rather than unwrapped, because a panic inside a check
-        // is a run that reports nothing about the rest of the corpus.
-        _ => written.raw_target.clone(),
-    };
-    let (name, target) = match missing {
-        Missing::TheInverseHalf => (
-            relation
-                .inverse
-                .clone()
-                .unwrap_or_else(|| relation.name.clone()),
-            written.source.id.clone(),
-        ),
-        Missing::TheDeclaredHalf => (relation.name.clone(), written.source.id.clone()),
-    };
+    fn evaluate(&self, view: &EdgeView<'_>) -> Outcome {
+        // One half written from the source end, and one from the target end. A
+        // pair is reciprocal when a document at each end declared it.
+        let (written, missing) = match (view.declared_half(), view.inverse_half()) {
+            // Both ends wrote it. One instance, read against both endpoints.
+            (Some(_), Some(_)) => return Outcome::Passed,
+            (Some(edge), None) => (edge, Missing::TheInverseHalf),
+            (None, Some(edge)) => (edge, Missing::TheDeclaredHalf),
+            (None, None) => return Outcome::Skipped(NO_HALF),
+        };
 
-    let (line, column) = at(Some(written.span));
-    Instance::failed(
-        RULE,
-        ends(written),
-        Finding {
-            rule: RULE,
+        let Some(relation) = self
+            .required
+            .iter()
+            .find(|known| known.name == written.declared)
+        else {
+            return Outcome::Skipped(NO_RELATION);
+        };
+
+        // The far end of the half that exists is the document that owes the
+        // other half, whichever half that is. See the module comment.
+        let owed_by = match &written.target {
+            Target::Document { path, .. } => path.clone(),
+            // Unreachable: `declared_triple` returns nothing for every other
+            // target, so no such edge is ever grouped into a pair.
+            _ => written.raw_target.clone(),
+        };
+        let (name, target) = match missing {
+            Missing::TheInverseHalf => (
+                relation
+                    .inverse
+                    .clone()
+                    .unwrap_or_else(|| relation.name.clone()),
+                written.source.id.clone(),
+            ),
+            Missing::TheDeclaredHalf => (relation.name.clone(), written.source.id.clone()),
+        };
+
+        let (line, column) = at(Some(written.span));
+        Outcome::Failed(Box::new(Finding {
+            rule: self::RULE,
             severity: Severity::Error,
             obligation: None,
             path: written.source.path.clone(),
@@ -141,23 +140,8 @@ fn instance(halves: &[&Edge], declarations: &Declarations) -> Instance {
             ),
             remediation: format!("add `{name}: {target}` under `relations:` in {owed_by}"),
             fixable: true,
-        },
-    )
-}
-
-/// The two documents an edge-scoped instance reads: the declaring end and the
-/// far end, in that order.
-///
-/// The far end of an edge that bound to no document is not a document, so an
-/// instance over it reads one file. `declared_triple` never groups such an
-/// edge, so the fallback is unreachable and it is written rather than
-/// unwrapped: a panic inside a check silences the rest of the corpus.
-fn ends(edge: &Edge) -> Vec<String> {
-    let mut reads = vec![edge.source.path.clone()];
-    if let Target::Document { path, .. } = &edge.target {
-        reads.push(path.clone());
+        }))
     }
-    reads
 }
 
 /// Which half nobody wrote.

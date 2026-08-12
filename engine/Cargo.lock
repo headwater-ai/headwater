@@ -29,6 +29,7 @@ name = "headwater-check"
 version = "0.0.0"
 dependencies = [
  "headwater-census",
+ "headwater-doc",
  "headwater-graph",
  "headwater-resolve",
  "headwater-yaml",
