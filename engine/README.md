@@ -6,6 +6,16 @@ The first code meant to survive. The [Q1 spike](../spike) retired four risks and
 
 Needs Rust 1.85 or later. The floor comes from `saphyr-parser`, which is on edition 2024. A distribution `cargo` older than that reports `feature edition2024 is required` and nothing else, so check the toolchain first when a clean checkout will not build.
 
+## Format and lint
+
+A machine that installed Rust from its distribution usually has neither rustfmt nor clippy, and adding them changes a toolchain that other work depends on. A container answers both, and it pins the floor version at the same time:
+
+    docker run --rm -v "$PWD/..":/w:ro -w /w/engine \
+      -e CARGO_HOME=/tmp/cargo -e CARGO_TARGET_DIR=/tmp/target \
+      rust:1.85-slim sh -c "rustup component add rustfmt clippy && cargo fmt --check && cargo clippy --all-targets && cargo test"
+
+The mount is read only and the target directory sits inside the container, so a run leaves nothing behind and writes nothing into the checkout. The slim image carries neither component, which is why the command adds them.
+
 ## What is here
 
 | Crate | Milestone | What it does |

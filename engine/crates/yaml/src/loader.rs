@@ -356,7 +356,10 @@ mod tests {
         let blank = map.get("blank").unwrap().as_scalar().unwrap();
         let empty = map.get("empty").unwrap().as_scalar().unwrap();
         assert_eq!((blank.text.as_str(), blank.style), ("~", Style::Plain));
-        assert_eq!((empty.text.as_str(), empty.style), ("", Style::DoubleQuoted));
+        assert_eq!(
+            (empty.text.as_str(), empty.style),
+            ("", Style::DoubleQuoted)
+        );
     }
 
     #[test]
@@ -388,7 +391,10 @@ mod tests {
         // span points an author one line past the `&`.
         let errors = load("defaults: &defaults\n  abstract: false\n").expect_err("rejected");
         assert_eq!(errors[0].kind, ErrorKind::Anchor);
-        assert_eq!((errors[0].span.start.line, errors[0].span.start.col), (1, 1));
+        assert_eq!(
+            (errors[0].span.start.line, errors[0].span.start.col),
+            (1, 1)
+        );
     }
 
     #[test]

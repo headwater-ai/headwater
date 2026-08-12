@@ -83,7 +83,10 @@ fn rejected_sources_report_the_recorded_errors() {
     for path in cases(&fixtures_dir().join("reject")) {
         let source = std::fs::read_to_string(&path).expect("cannot read the fixture");
         match load(&source) {
-            Ok(_) => panic!("{} was accepted, and the fixture says it must not be", path.display()),
+            Ok(_) => panic!(
+                "{} was accepted, and the fixture says it must not be",
+                path.display()
+            ),
             Err(errors) => compare(&path, "errors", &render(&errors)),
         }
     }
