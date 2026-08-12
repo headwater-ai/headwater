@@ -112,12 +112,10 @@ pub fn respond(surface: &Surface<'_>, request: &str) -> Option<String> {
     let parsed = headwater_yaml::load(request).ok()?;
     let message = parsed.value.as_map()?;
     let method = scalar(message, "method").unwrap_or_default();
-    let id = match message.get("id") {
-        Some(node) => raw(&node.value),
-        // A notification. `notifications/initialized` is the one this server
-        // receives, and any other is ignored on the same rule.
-        None => return None,
-    };
+    // A message with no `id` is a notification, and the `?` is the return.
+    // `notifications/initialized` is the one this server receives, and any
+    // other is ignored on the same rule.
+    let id = raw(&message.get("id")?.value);
 
     let result = match method.as_str() {
         "initialize" => Ok(Json::object([
