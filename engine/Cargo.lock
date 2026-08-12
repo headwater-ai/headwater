@@ -89,6 +89,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "headwater-query"
+version = "0.0.0"
+dependencies = [
+ "headwater-census",
+ "headwater-check",
+ "headwater-graph",
+ "headwater-lock",
+ "headwater-resolve",
+ "headwater-yaml",
+]
+
+[[package]]
 name = "headwater-ref"
 version = "0.0.0"
 dependencies = [
