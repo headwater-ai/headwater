@@ -65,6 +65,18 @@ pub struct Row {
     /// Relative to the repository root, with `/` separators.
     pub path: String,
     pub outcome: Outcome,
+    /// The document this row read, when it read one.
+    ///
+    /// The census is the denominator, and the graph build is the next phase
+    /// over it ([spec 6](../../../../docs/spec/06-engine-architecture.md)). A
+    /// phase that re-opened each file would read a corpus that the census had
+    /// already read, and the two accounts could then differ — by an edit
+    /// between the two passes, or by one rule drifting from the other. So the
+    /// row carries what it parsed rather than the path to parse again.
+    ///
+    /// It is `None` where nothing parsed: an excluded file, a file that is not
+    /// Markdown, an unwalkable entry, and a file the engine could not read.
+    pub document: Option<Box<headwater_doc::Document>>,
 }
 
 /// What became of one file. Closed, and matched exhaustively everywhere.
@@ -137,35 +149,43 @@ pub enum Detail {
 pub fn take(corpus: &Corpus, taxonomy: &Taxonomy) -> Census {
     let rows = walk::walk(corpus)
         .into_iter()
-        .map(|entry| Row {
-            outcome: outcome_of(&entry, taxonomy),
-            path: entry.path,
+        .map(|entry| {
+            let (outcome, document) = outcome_of(&entry, taxonomy);
+            Row {
+                outcome,
+                document,
+                path: entry.path,
+            }
         })
         .collect();
     Census { rows }
 }
 
-fn outcome_of(entry: &walk::Entry, taxonomy: &Taxonomy) -> Outcome {
+type Read = (Outcome, Option<Box<headwater_doc::Document>>);
+
+fn outcome_of(entry: &walk::Entry, taxonomy: &Taxonomy) -> Read {
     match &entry.kind {
         EntryKind::Symlink { target } => {
-            return Outcome::Unwalkable(Unwalkable::Symlink {
+            return unread(Outcome::Unwalkable(Unwalkable::Symlink {
                 target: target.clone(),
-            })
+            }))
         }
         EntryKind::UnreadableDirectory { error } => {
-            return Outcome::Unwalkable(Unwalkable::UnreadableDirectory {
+            return unread(Outcome::Unwalkable(Unwalkable::UnreadableDirectory {
                 error: error.clone(),
-            })
+            }))
         }
-        EntryKind::UnreadableName => return Outcome::Unwalkable(Unwalkable::UnreadableName),
+        EntryKind::UnreadableName => {
+            return unread(Outcome::Unwalkable(Unwalkable::UnreadableName))
+        }
         EntryKind::File => {}
     }
 
     if let Some(exclusion) = &entry.excluded_by {
-        return Outcome::Excluded {
+        return unread(Outcome::Excluded {
             pattern: exclusion.pattern.source().to_string(),
             reason: exclusion.reason.clone(),
-        };
+        });
     }
 
     // The extension test is exact and lower case. A `.MD` file is a row that
@@ -174,15 +194,15 @@ fn outcome_of(entry: &walk::Entry, taxonomy: &Taxonomy) -> Outcome {
     // filesystems, and the census would then disagree with itself across
     // machines.
     if !entry.path.ends_with(".md") {
-        return Outcome::NotADocument;
+        return unread(Outcome::NotADocument);
     }
 
     let source = match std::fs::read(&entry.on_disk) {
         Ok(bytes) => match String::from_utf8(bytes) {
             Ok(text) => text,
-            Err(_) => return Outcome::Unreadable(Unreadable::NotText),
+            Err(_) => return unread(Outcome::Unreadable(Unreadable::NotText)),
         },
-        Err(error) => return Outcome::Unreadable(Unreadable::Io(error.to_string())),
+        Err(error) => return unread(Outcome::Unreadable(Unreadable::Io(error.to_string()))),
     };
 
     // The one distinction this module exists to keep: a file with no block is
@@ -191,22 +211,22 @@ fn outcome_of(entry: &walk::Entry, taxonomy: &Taxonomy) -> Outcome {
     let parsed = match headwater_doc::parse(&source) {
         Ok(document) => Some(document),
         Err(errors) if errors.iter().any(|e| e.reason == Reason::NoFrontMatter) => None,
-        Err(errors) => return Outcome::Unreadable(Unreadable::FrontMatter(errors)),
+        Err(errors) => return unread(Outcome::Unreadable(Unreadable::FrontMatter(errors))),
     };
 
     let Some(document) = parsed else {
         // Step 1 needs a path and nothing else, so it still runs.
-        return match resolve::shelf_for(&entry.path, taxonomy) {
+        return unread(match resolve::shelf_for(&entry.path, taxonomy) {
             resolve::ShelfMatch::Matched { .. } => Outcome::Untyped(Untyped::NoFrontMatter),
             resolve::ShelfMatch::Stopped(stop) => Outcome::Untyped(Untyped::Unresolved {
                 reason: stop.reason.clone(),
                 derivation: Box::new(stop.into_resolution()),
             }),
-        };
+        });
     };
 
     let resolution = resolve::resolve(&entry.path, &document.facets, taxonomy);
-    match &resolution.outcome {
+    let outcome = match &resolution.outcome {
         resolve::Outcome::Typed(kind) => Outcome::Typed {
             kind: kind.clone(),
             derivation: Box::new(resolution.clone()),
@@ -215,7 +235,13 @@ fn outcome_of(entry: &walk::Entry, taxonomy: &Taxonomy) -> Outcome {
             reason: reason.clone(),
             derivation: Box::new(resolution.clone()),
         }),
-    }
+    };
+    (outcome, Some(Box::new(document)))
+}
+
+/// An outcome that no document backs, because nothing parsed.
+fn unread(outcome: Outcome) -> Read {
+    (outcome, None)
 }
 
 impl Outcome {
@@ -448,6 +474,30 @@ mod tests {
             "{:?}",
             row.outcome
         );
+    }
+
+    #[test]
+    fn a_row_carries_the_document_it_read_and_no_other_row_carries_one() {
+        // The graph build reads front matter and prose links off these rows.
+        // A phase that opened the file again would be a second read of one
+        // corpus, and two reads can disagree.
+        let census = take(&corpus(), &taxonomy());
+        for row in &census.rows {
+            let parsed = row.document.is_some();
+            match &row.outcome {
+                Outcome::Typed { .. } => assert!(parsed, "{} is typed and empty", row.path),
+                Outcome::Untyped(Untyped::NoFrontMatter) => {
+                    assert!(!parsed, "{} has no block to carry", row.path)
+                }
+                Outcome::Excluded { .. }
+                | Outcome::NotADocument
+                | Outcome::Unwalkable(_)
+                | Outcome::Unreadable(_) => {
+                    assert!(!parsed, "{} carries a document nothing read", row.path)
+                }
+                Outcome::Untyped(Untyped::Unresolved { .. }) => {}
+            }
+        }
     }
 
     #[test]

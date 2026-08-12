@@ -13,8 +13,9 @@
 
 use headwater_census::census::{self, Detail, Outcome};
 use headwater_census::shelves::Taxonomy;
+use headwater_census::standin;
 use headwater_census::walk::{Corpus, Exclusion};
-use headwater_yaml::{Entry, Mapping, Span, Spanned, Value};
+use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};
 
 fn fixtures_dir() -> PathBuf {
@@ -178,139 +179,16 @@ fn the_census_and_the_parsers_exception_list_agree() {
 
 // --- the M1 stand-in for overlay resolution ----------------------------------
 //
-// The consumer declaration names a package, a bundle selection and an overlay,
-// and resolving those three into one taxonomy is the overlay resolver, which is
-// [#50](https://github.com/headwater-ai/headwater/issues/50). Until it exists,
-// this test needs shelves from somewhere, and the somewhere is here: the base
-// package's `shelves` and `kinds` blocks, then every `shelves.*` and `kinds.*`
-// address that the bundle and the overlay add.
-//
-// It is add-only and it does no confluence check, which is exactly the part
-// that makes it a stand-in rather than a resolver. `tools/abox-check.py` does
-// the same thing in Python and for the same reason; both go away together.
-
-const BASE: &str = "docs/evaluations/default-taxonomy-first-run.md";
-const BUNDLE: &str = "docs/taxonomies/design-spec/bundle.yml";
-const OVERLAY: &str = ".headwater/overlay.yml";
-const CONSUMER: &str = ".headwater/taxonomy.yml";
+// It lives in `headwater_census::standin`, and its module comment says what it
+// is and what it is not. Two readers now need the base package, the bundle and
+// the overlay put together — this test and the graph build's — and two copies
+// of a stand-in can disagree about the taxonomy while each one passes its own
+// fixtures.
 
 fn resolved_taxonomy(root: &Path) -> Taxonomy {
-    let base = base_package(root);
-    let mut shelves = Vec::new();
-    let mut kinds = Vec::new();
-    collect_block(&base, "shelves", &mut shelves);
-    collect_block(&base, "kinds", &mut kinds);
-
-    for source in [BUNDLE, OVERLAY] {
-        let overlay = load_map(&root.join(source));
-        let Some(adds) = overlay.get("add").and_then(|value| value.value.as_map()) else {
-            continue;
-        };
-        for entry in adds {
-            collect_add(entry, "shelves.", &mut shelves);
-            collect_add(entry, "kinds.", &mut kinds);
-        }
-    }
-
-    let synthetic = Mapping::new(vec![
-        named("shelves", Value::Map(Mapping::new(shelves))),
-        named("kinds", Value::Map(Mapping::new(kinds))),
-    ]);
-    Taxonomy::read(&synthetic).expect("the resolved taxonomy reads")
+    Taxonomy::read(&standin::resolved(root)).expect("the resolved taxonomy reads")
 }
 
-/// The base package, which is committed as a fenced block inside an evaluation
-/// and nowhere else. The parser can find it, which is the tidy part of an
-/// otherwise untidy arrangement: the block is code in a Markdown body, and
-/// `headwater_doc` already reports the body's code blocks.
-fn base_package(root: &Path) -> Mapping {
-    let source = std::fs::read_to_string(root.join(BASE)).expect("the first-run walkthrough");
-    let document = headwater_doc::parse(&source).expect("the walkthrough parses");
-    for block in &document.body.blocks {
-        let text = block.text();
-        if !text.contains("package: headwater/standard") {
-            continue;
-        }
-        return headwater_yaml::load(&text)
-            .expect("the base package loads")
-            .value
-            .as_map()
-            .expect("the base package is a mapping")
-            .clone();
-    }
-    panic!("no base package in {BASE}");
-}
-
-fn collect_block(root: &Mapping, key: &str, into: &mut Vec<Entry>) {
-    let Some(block) = root.get(key).and_then(|value| value.value.as_map()) else {
-        return;
-    };
-    into.extend(block.iter().cloned());
-}
-
-/// One `add` address, if it names a member of `block` directly.
-///
-/// A deeper address (`kinds.design_spec.identifier`) reaches inside a member
-/// that a previous operation declared, and this stand-in does not merge. It
-/// skips them, and it can: no address of that shape declares a shelf or an
-/// abstract kind, which are the only two things kind resolution reads.
-fn collect_add(entry: &Entry, block: &str, into: &mut Vec<Entry>) {
-    let Some(name) = entry.key.value.strip_prefix(block) else {
-        return;
-    };
-    if name.contains('.') {
-        return;
-    }
-    into.push(Entry {
-        key: Spanned::new(name.to_string(), entry.key.span),
-        value: entry.value.clone(),
-    });
-}
-
-/// The corpus root and the exclusions, from the consumer declaration.
 fn corpus_of(root: &Path) -> Corpus {
-    let consumer = load_map(&root.join(CONSUMER));
-    let block = consumer
-        .get("corpus")
-        .and_then(|value| value.value.as_map())
-        .expect("the consumer declaration names a corpus");
-    let corpus_root = block
-        .get("root")
-        .and_then(|value| value.value.as_scalar())
-        .expect("the corpus names a root")
-        .text
-        .clone();
-
-    let exclusions = block
-        .get("exclude")
-        .and_then(|value| value.value.as_seq())
-        .map(|items| {
-            items
-                .iter()
-                .map(|item| {
-                    let item = item.value.as_map().expect("an exclusion is a mapping");
-                    let path = item
-                        .get("path")
-                        .and_then(|value| value.value.as_scalar())
-                        .expect("an exclusion names a path");
-                    // The reason is not optional. An exclusion with no reason is
-                    // a silent pass with a configuration file in front of it.
-                    let reason = item
-                        .get("reason")
-                        .and_then(|value| value.value.as_scalar())
-                        .expect("an exclusion states a reason");
-                    Exclusion::new(&path.text, &reason.text)
-                })
-                .collect()
-        })
-        .unwrap_or_default();
-
-    Corpus::new(root, &corpus_root).excluding(exclusions)
-}
-
-fn named(key: &str, value: Value) -> Entry {
-    Entry {
-        key: Spanned::new(key.to_string(), Span::default()),
-        value: Spanned::new(value, Span::default()),
-    }
+    standin::corpus(root)
 }

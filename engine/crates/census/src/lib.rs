@@ -46,6 +46,7 @@ pub mod census;
 pub mod pattern;
 pub mod resolve;
 pub mod shelves;
+pub mod standin;
 pub mod walk;
 
 pub use census::{Census, Detail, Row};
