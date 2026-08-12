@@ -109,6 +109,7 @@ Eighteen items. The first comes from the register. Five arrived from the [design
 
 The three classes above do not exhaust the eighteen decisions that carry open work. The rest sits here, under the decision that produced each item.
 
+- **[Q2 — Schema format](09-decisions.md#q2--schema-format).** Whether the loader is right to refuse an explicit YAML tag. Q2 lists four loader rulings and names no fifth. The engine adds one, and it derives the addition from Q2's own argument against an alias. A tag is a second way to declare a type, and it competes with the meta-schema that Q2 made authoritative. The rule costs one deletion and one fixture if it turns out wrong.
 - **[Q4 — Relation storage](09-decisions.md#q4--relation-storage).** The friction signal survives in a narrower form. If authors still declare the same link twice at a rate the fix does not absorb, this ruling is wrong and the annotation question returns.
 - **[Q8 — Probe cost and cadence](09-decisions.md#q8--probe-cost-and-cadence).** How a probe reaches a harvesting tier, which has no tier to try it on. The retention policy for transcripts, whose size nobody has measured. Whether any adopter ever pays for a campaign is a business-model question, and [Q11](09-decisions.md#q11--license-and-distribution-posture) places it rather than answers it.
 - **[Q9 — Multi-repository corpora](09-decisions.md#q9--multi-repository-corpora).** Whether a harvesting tier owes conformance rules of its own, because `headwater conformance` evaluates one repository.
