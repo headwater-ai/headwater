@@ -33,7 +33,7 @@ The four rulings, and where each one lives:
 - **Anchors, aliases and merge keys are forbidden.** `loader.rs`. The `$`-reference is the reuse mechanism, and an alias is a second one that no overlay can address.
 - **Scalar types come from the meta-schema and never from the YAML resolver.** `value.rs` has no `Null` variant and no `Bool`. A scalar keeps its text and the style it was written in, and nothing types it until a declared type asks.
 
-One rule is derived rather than quoted, and the crate documentation says so where a reader meets it: an explicit tag is refused, because a tag is a second typing mechanism competing with the meta-schema that Q2 just made authoritative.
+A fifth ruling reached Q2 from this direction rather than the other. The engine derived it from the alias argument, and the decision then accepted it: an explicit tag is refused, because a tag declares a type and the meta-schema is the authority on type. Q2 records why it settled the rule instead of deferring it — a loader can relax a rule later at no cost, and cannot add one later without a finding against every source that already used the form.
 
 ## The fixtures are the deliverable
 

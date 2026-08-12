@@ -18,11 +18,13 @@
 //!   scalar keeps its text and its style, and [`core_schema`] turns that pair
 //!   into a type only where a declared type asks for one.
 //!
-//! One rule here is derived rather than quoted, and it is called out in
-//! [`error::ErrorKind::Tag`]: an explicit tag is refused. Q2 forbids an alias
-//! because it is a second reuse mechanism that no overlay can address, and a
-//! tag is a second *typing* mechanism with the same defect, competing with the
-//! meta-schema that Q2 just made authoritative.
+//! A fifth ruling reached Q2 from this direction rather than the other. The
+//! engine derived it from the alias argument, and the decision then accepted
+//! it: an explicit tag is refused, because a tag declares a type and the
+//! meta-schema is the authority on type. Q2 records why it settled the rule
+//! instead of deferring it — a loader can relax a rule later at no cost, and
+//! cannot add one later without a finding against every source that already
+//! used the form.
 //!
 //! # Example
 //!
