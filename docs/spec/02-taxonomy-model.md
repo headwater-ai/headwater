@@ -197,6 +197,7 @@ core:                                  # what overlays may never remove or redef
     - purpose: behavior
     - relation_family: succession
       lifecycle_sensitive: true
+    - identifier_scheme: namespaced    # rename at will, never drop the namespace
 
 projections:
   - kind: shelf_index
@@ -547,7 +548,9 @@ core:
 
 Without this, "the same taxonomy" means nothing. If a consumer may override or remove anything, two consumers of one package can share no structure at all. The publisher then has no answer to "are they still using the method?"
 
-**The core is semantic, not lexical.** It constrains *roles and purposes*, never names or paths. An adopter may rename every shelf, relocate every directory, change every identifier pattern, and replace the lifecycle vocabulary — and still satisfy the core. The condition is that after resolution *some* facet carries the state role, *some* kind serves the `rationale` purpose, and lineage remains expressible and lifecycle-sensitive.
+**The core is semantic, not lexical.** It constrains *roles and purposes*, never names or paths. An adopter may rename every shelf, relocate every directory, change identifier patterns except the namespace, and replace the lifecycle vocabulary — and still satisfy the core. The condition is that after resolution *some* facet carries the state role, *some* kind serves the `rationale` purpose, and lineage remains expressible and lifecycle-sensitive.
+
+The identifier namespace is the one lexical requirement, and it earns the exception. An identifier is minted to travel: it appears in commit messages, code comments, tickets, and agent prompts ([spec 3](03-authoring-and-lifecycle.md#identifiers)). A corpus can rewrite its own documents at any time, and it can never rewrite a ticket that somebody else owns. So a namespace is cheap at minting and unrecoverable later, which is the whole of [departure 7](08-design-departures.md#7-identifier-namespacing-arrives-late).
 
 That is the boundary-object property stated precisely: plastic enough to adapt to local practice, robust enough to keep a common identity across sites. Local form is entirely negotiable. Shared meaning is not.
 
@@ -666,7 +669,7 @@ extends: headwater/standard@2.1.0
 
 override:
   shelves.decisions.path: docs/adr/**            # we call them ADRs
-  identifier_schemes.decision_id.pattern: "ADR-{seq:03d}"
+  identifier_schemes.decision_id.pattern: "ADR-{namespace}-{seq:03d}"   # rename at will, the namespace stays
   vocabularies.lifecycle_state:                  # our lifecycle, our names
     - {value: draft,   role: initial}
     - {value: active,  role: live}
@@ -713,6 +716,7 @@ The taxonomy language has a formal schema, published with the engine and version
 - structural conformance to the meta-schema.
 - referential integrity — every referenced vocabulary, regime, kind, facet, and purpose exists. Every relation endpoint is a declared kind or a declared anchor kind.
 - **anchor integrity** — every anchor kind names exactly one resolver, and no two anchor kinds claim the same resolver namespace.
+- **identifier integrity** — every identifier scheme carries the namespace that `core` requires, and no two schemes in one namespace admit the same string. A scheme whose strings another scheme's pattern also matches is a validation error, for the reason that two shelf patterns over one path are.
 - coverage — every shelf resolves to at least one kind. Every concrete kind is reachable from at least one shelf. An abstract kind is reachable from none, and says so.
 - **kind inheritance** — `is_a` names a declared abstract kind. The chain terminates and holds no cycle. No child un-requires what a parent requires, and no child forbids a facet that a parent requires.
 - **purpose completeness** — every concrete kind has a purpose, declared or inherited, and every declared purpose is served by at least one concrete kind.
