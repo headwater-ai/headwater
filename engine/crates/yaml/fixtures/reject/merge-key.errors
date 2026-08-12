@@ -1,1 +1,1 @@
-5:5: a merge key is not allowed in a taxonomy source; write the keys out, or use a $-reference
+5:5: a merge key is not allowed; write the keys out, or use a $-reference
