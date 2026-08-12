@@ -130,10 +130,7 @@ impl Register {
                     }
                 }
                 other => errors.push(DeclarationError {
-                    message: format!(
-                        "`controls` is {}, and it names controls",
-                        other.kind_name()
-                    ),
+                    message: format!("`controls` is {}, and it names controls", other.kind_name()),
                     span: controls.span,
                 }),
             }
@@ -270,7 +267,10 @@ controls:
     /// as one rather than as a rule bound to nothing in particular.
     #[test]
     fn a_rule_that_no_control_names_is_unnamed() {
-        assert_eq!(register(ONE).bound("shelf.placement_is_primary"), Bound::Unnamed);
+        assert_eq!(
+            register(ONE).bound("shelf.placement_is_primary"),
+            Bound::Unnamed
+        );
     }
 
     /// A mechanism that names no rule of this engine binds nothing, and it is

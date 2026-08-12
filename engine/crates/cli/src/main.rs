@@ -40,8 +40,8 @@
 use headwater_census::census::{self, Detail as CensusDetail};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
-use headwater_graph::anchors::Resolvers;
 use headwater_check::Register;
+use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Detail as GraphDetail, Graph};
 use headwater_resolve::render_errors;
