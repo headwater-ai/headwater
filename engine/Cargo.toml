@@ -6,6 +6,7 @@ members = [
     "crates/cli",
     "crates/doc",
     "crates/graph",
+    "crates/lock",
     "crates/meta",
     "crates/ref",
     "crates/resolve",
