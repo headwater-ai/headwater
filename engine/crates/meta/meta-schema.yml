@@ -1,0 +1,353 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The meta-schema of the taxonomy language, expressed in the dialect it
+# describes. Spec 2 (The meta-schema) is the prose; this file is that prose as
+# data, and `headwater-meta` is the reader of this file.
+#
+# It is YAML 1.2 on the Q2 loader rulings, exactly as a taxonomy source is: the
+# core schema, no anchors, no aliases, no merge keys, no explicit tags, and a
+# duplicate key is an error. Nothing here is JSON Schema, because Q2 rules that
+# JSON Schema is an emitted export and never the validator.
+#
+# ## The shape language
+#
+# A shape is a mapping that carries exactly one form key:
+#
+#   scalar: <type>    one of string, integer, boolean, date, duration, null
+#   enum: [ ... ]     a closed value set
+#   seq: <shape>      a sequence, every item of that shape
+#   map: <shape>      an open mapping; every key is an address segment
+#   members: {...}    a closed mapping, one shape per declared member
+#   block: <name>     a shape declared once under `definitions`
+#   one_of: [ ... ]   the first alternative that accepts the node
+#   free: <reason>    a node the meta-schema does not constrain, and why
+#
+# and two modifiers:
+#
+#   required: true       the member must be present (the default is false)
+#   reference: allowed   a `$`-reference may stand here (the default refuses one)
+#
+# `free` is the honest form of a gap. Every use carries the reason, so a reader
+# can count what the specification has not yet given a shape, and spec 13
+# carries each one.
+#
+# ## Two markers in the comments
+#
+# `guess:` marks a value set that this file closes and the specification does
+# not state. Q2 settles the direction: a rule relaxes later at no cost and
+# cannot be added later without a finding against every source that already
+# used the form.
+#
+# `gap:` marks a surface the specification requires and gives no form.
+
+meta_schema: headwater/taxonomy
+version: 0.1.0
+
+# --- the root of a taxonomy source ------------------------------------------
+#
+# The root set is closed (spec 2, The `$`-reference sublanguage). Eleven of
+# these are the eleven declarations. `vocabularies` is authoring syntax that
+# facets reference, and the three above it name the taxonomy and what it
+# extends.
+#
+# `package` is absent deliberately. It is a reserved reference root, and no
+# taxonomy may declare a block with that name. A package *manifest* (spec 7,
+# Publishing) is a different file with a different root set, and it is that
+# file which names the package.
+
+declarations:
+
+  taxonomy: {scalar: string, required: true}
+  version: {scalar: string, required: true}
+  extends: {one_of: [{scalar: string}, {scalar: null}]}
+
+  vocabularies: {map: {seq: {one_of: [{scalar: string}, {block: vocabulary_value}]}}}
+
+  purposes: {map: {block: purpose}}
+  facets: {map: {block: facet}}
+  regimes: {block: regimes}
+  relations: {map: {block: relation}}
+  anchors: {map: {block: anchor}}
+  shelves: {map: {block: shelf}}
+  kinds: {map: {block: kind}}
+  identifier_schemes: {map: {block: identifier_scheme}}
+  core: {block: core}
+  mappings: {seq: {block: mapping}}
+  projections: {seq: {block: projection}}
+
+# --- the root of an overlay source ------------------------------------------
+#
+# An overlay is a taxonomy source of a second shape: operations at addresses
+# rather than declarations (spec 2, Customization by composition). A bundle is
+# an overlay that a publisher ships and that holds `add` alone (spec 7).
+#
+# The value of an operation is validated against the shape at the address it
+# names, which is what makes one meta-schema serve both roots.
+
+operations:
+
+  taxonomy: {scalar: string}
+  bundle: {scalar: string}
+  extends: {scalar: string}
+  requires: {seq: {scalar: string}}
+
+  # The key of an operation is an address rather than a segment, so it holds
+  # dots, and the value is decided by the shape at the node the address names.
+  add: {map: {free: the shape at the addressed node decides this}, addressable: false}
+  override: {map: {free: the shape at the addressed node decides this}, addressable: false}
+  add_to: {map: {free: the shape at the addressed node decides this}, addressable: false}
+  remove_from: {map: {free: the shape at the addressed node decides this}, addressable: false}
+  remove: {seq: {scalar: string}}
+
+definitions:
+
+  # --- vocabularies ---------------------------------------------------------
+
+  vocabulary_value:
+    members:
+      value: {scalar: string, required: true}
+      # guess: spec 2 uses initial, live and terminal-retained, and states no set.
+      role: {enum: [initial, live, terminal-retained]}
+
+  # --- purposes -------------------------------------------------------------
+
+  purpose:
+    members:
+      intent: {scalar: string, required: true}
+      answers: {seq: {scalar: string}}
+
+  # --- facets ---------------------------------------------------------------
+
+  facet:
+    members:
+      # The role registry is closed and spec 2 states it here rather than
+      # anywhere else. A role outside this line is a validation error, and to
+      # add one is a meta-schema change.
+      role: {enum: [state, state_entered, created, freshness, scent]}
+      # The one position in a taxonomy source where a reference is written.
+      values: {seq: {one_of: [{scalar: string}, {block: vocabulary_value}]}, reference: allowed}
+      # guess: the types the base package and the first bundle write.
+      type: {enum: [string, integer, boolean, date, duration]}
+      required: {scalar: boolean}
+      # guess: the three values a check reports (spec 12). The obligation
+      # severities of spec 4 are a different surface.
+      severity: {enum: [error, warn, info]}
+      stale_after_days: {scalar: integer}
+      # guess: the permanence canon names `mutable` and implies its complement.
+      volatility: {enum: [stable, mutable]}
+      # gap: the ascertainability canon requires guidance on every enum value
+      # and no syntax carries it. This is the form the first library entry
+      # guessed, adopted here so that the entry validates.
+      guidance: {map: {scalar: string}}
+
+  # --- regimes --------------------------------------------------------------
+  #
+  # Three families, and the set is closed: voice, lifecycle and language.
+
+  regimes:
+    members:
+      voice: {map: {block: voice_regime}}
+      lifecycle: {map: {block: lifecycle_regime}}
+      language: {map: {block: language_regime}}
+
+  voice_regime:
+    members:
+      # gap: spec 3 names the forbidden constructions in prose and no value set
+      # states them.
+      forbid: {seq: {scalar: string}}
+
+  lifecycle_regime:
+    members:
+      initial: {scalar: string, required: true}
+      transitions: {map: {seq: {scalar: string}}, required: true}
+      terminal: {seq: {scalar: string}}
+      retain_terminal: {scalar: boolean}
+
+  language_regime:
+    members:
+      tag: {scalar: string, required: true}
+      # gap: spec 2 names `none`, `ste-house` and `ste-strict`, and this
+      # repository's own overlay writes `ASD-STE100` with a separate `profile`.
+      # A closed set here would refuse a committed source.
+      controlled: {scalar: string}
+      profile: {scalar: string}
+      retired_terms: {seq: {block: retired_term}}
+
+  retired_term:
+    members:
+      term: {scalar: string, required: true}
+      reason: {scalar: string, required: true}
+      replacement: {scalar: string}
+
+  # --- relations ------------------------------------------------------------
+
+  relation:
+    members:
+      family: {enum: [succession, derivation, governance, evidence, composition, association], required: true}
+      from: {seq: {scalar: string}, required: true}
+      to: {seq: {scalar: string}, required: true}
+      inverse: {scalar: string}
+      # guess: spec 2 writes `required` and `symmetric`, and a relation with
+      # neither is what `optional` names.
+      reciprocal: {enum: [required, symmetric, optional]}
+      nuclearity: {enum: [multinuclear, nucleus-satellite]}
+      nucleus: {enum: [from, to]}
+      inherits: {seq: {scalar: string}}
+      # guess: spec 2 writes `many` and the unwritten default is one.
+      cardinality: {enum: [one, many]}
+      created_by: {enum: [author, scaffold, generator, hook, agent, import], required: true}
+      attributes: {map: {block: relation_attribute}}
+      on_target: {block: on_target}
+      invalid_when: {block: invalid_when}
+
+  relation_attribute:
+    members:
+      # The value space is a facet's value space, and never a reference.
+      type: {enum: [string, integer, boolean, date, duration]}
+      values: {seq: {scalar: string}}
+      owner: {enum: [source, target, edge], required: true}
+
+  on_target:
+    members:
+      set_state: {scalar: string, required: true}
+
+  invalid_when:
+    members:
+      # gap: spec 2 shows `both` and states no other form of the condition.
+      both: {map: {scalar: string}}
+
+  # --- anchors --------------------------------------------------------------
+
+  anchor:
+    members:
+      resolver: {scalar: string, required: true}
+
+  # --- shelves --------------------------------------------------------------
+
+  shelf:
+    members:
+      # gap: nothing states which glob constructs a shelf path admits, and
+      # nothing states what makes one pattern more specific than another.
+      path: {scalar: string, required: true}
+      homogeneous: {scalar: boolean, required: true}
+      kind: {scalar: string}
+      discriminator: {scalar: string}
+      kinds: {seq: {scalar: string}}
+      group_by: {scalar: string}
+      layout: {scalar: string}
+
+  # --- kinds ----------------------------------------------------------------
+
+  kind:
+    members:
+      abstract: {scalar: boolean}
+      is_a: {scalar: string}
+      purpose: {scalar: string}
+      identifier: {block: kind_identifier}
+      voice: {scalar: string}
+      lifecycle: {scalar: string}
+      language: {scalar: string}
+      facets: {block: facet_contract}
+      sections: {block: section_contract}
+      relations: {block: kind_relations}
+
+  kind_identifier:
+    members:
+      scheme: {scalar: string, required: true}
+
+  facet_contract:
+    members:
+      require: {seq: {scalar: string}}
+      optional: {seq: {scalar: string}}
+      forbid: {seq: {scalar: string}}
+
+  section_contract:
+    members:
+      require: {seq: {scalar: string}}
+      optional: {seq: {scalar: string}}
+
+  kind_relations:
+    members:
+      expect: {seq: {block: expectation}}
+
+  expectation:
+    members:
+      id: {scalar: string, required: true}
+      relation: {scalar: string, required: true}
+      to_kind: {scalar: string, required: true}
+      when: {map: {scalar: string}}
+      within: {scalar: duration, required: true}
+      since: {enum: [created, state_entered], required: true}
+      severity: {enum: [error, warn, info]}
+      rationale: {scalar: string, required: true}
+
+  # --- identifier schemes ---------------------------------------------------
+
+  identifier_scheme:
+    members:
+      # gap: the prefix that discriminates a kind is a literal inside this
+      # string, so the engine cannot read the prefix it mints.
+      pattern: {scalar: string, required: true}
+      namespace: {scalar: string, required: true}
+      # gap: spec 2 writes `reconcile-first` and this repository's overlay
+      # writes `minted-once`. No set is stated.
+      allocation: {scalar: string, required: true}
+
+  # --- the core -------------------------------------------------------------
+  #
+  # One requirement per entry, and the key present is what says which kind of
+  # requirement it is.
+
+  core:
+    members:
+      requires: {seq: {block: core_requirement}, required: true}
+
+  core_requirement:
+    one_of:
+      - {members: {facet_role: {enum: [state, state_entered, created, freshness, scent], required: true}}}
+      - {members: {purpose: {scalar: string, required: true}}}
+      - {members: {relation_family: {enum: [succession, derivation, governance, evidence, composition, association], required: true}, lifecycle_sensitive: {scalar: boolean}}}
+      - {members: {identifier_scheme: {scalar: string, required: true}}}
+
+  # --- mappings -------------------------------------------------------------
+
+  mapping:
+    members:
+      to: {scalar: string, required: true}
+      kinds: {map: {block: skos_mapping}}
+      # The key is a facet and one of its values, written `status.current`, so
+      # it holds a dot and no address can name it. Spec 2 states both halves of
+      # that collision and reconciles neither: a mapping key is written this way
+      # in its own worked example, and the sublanguage says the meta-schema
+      # refuses to declare a key that holds a dot. The reading here is that no
+      # overlay reaches inside `facet_values`, and spec 13 carries the finding.
+      facet_values: {map: {block: skos_mapping}, addressable: false}
+
+  skos_mapping:
+    members:
+      relation: {enum: [exactMatch, closeMatch, broadMatch, narrowMatch, relatedMatch], required: true}
+      target: {scalar: string, required: true}
+
+  # --- projections ----------------------------------------------------------
+
+  projection:
+    members:
+      # gap: the projection kinds are named across spec 2 and spec 6 and no
+      # value set collects them.
+      kind: {scalar: string, required: true}
+      for: {seq: {scalar: string}}
+      output: {scalar: string, required: true}
+      profile: {scalar: string}
+      format: {scalar: string}
+      filter: {block: projection_filter}
+      tombstone: {enum: [counted, sealed]}
+      from: {block: projection_pin}
+
+  projection_filter:
+    members:
+      include: {map: {seq: {scalar: string}}}
+      exclude: {map: {seq: {scalar: string}}}
+
+  projection_pin:
+    members:
+      anchor: {scalar: string, required: true}

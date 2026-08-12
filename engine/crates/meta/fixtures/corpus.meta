@@ -1,0 +1,9 @@
+docs/evaluations/default-taxonomy-first-run.md (a fenced block, not a file)
+  1:1: package: `package` is a reserved reference root, and no taxonomy may declare a block with that name; a package manifest is a separate file, and a taxonomy source names itself with `taxonomy`
+  0:0: : `taxonomy` is required here and it is absent
+
+docs/taxonomies/design-spec/bundle.yml
+  valid
+
+.headwater/overlay.yml
+  valid

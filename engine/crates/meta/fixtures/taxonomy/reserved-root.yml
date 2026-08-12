@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# `package` is a reference root, so no taxonomy may declare a block with that
+# name. This is the shape the one committed copy of the base package is written
+# in: a package manifest's name key at the head of a taxonomy source.
+package: headwater/standard
+version: 1.0.0
+
+anchors:
+  code_path: {resolver: source-tree}

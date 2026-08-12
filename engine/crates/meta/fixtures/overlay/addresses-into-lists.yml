@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The rule the grammar could not carry. Every key below parses as an address,
+# because `0` is a legal key name and no lexical rule tells an index from a
+# key. What refuses them is the meta-schema, which knows which positions hold
+# lists. `add_to` and `remove_from` are what a list takes instead, and the last
+# two operations show the pair working.
+bundle: wrong
+extends: headwater/standard@1.0.0
+
+add:
+  regimes.lifecycle.standard.transitions.draft.0: current
+  core.requires.0: {facet_role: state}
+  projections.0: {kind: shelf_index, output: "{shelf}/README.md"}
+  kinds.decision.sections.require.1: Consequences
+
+add_to:
+  kinds.decision.sections.require: [Alternatives considered]
+  shelves.decisions.path: docs/adr/**
+
+remove_from:
+  regimes.lifecycle.standard.transitions.draft: [deprecated]

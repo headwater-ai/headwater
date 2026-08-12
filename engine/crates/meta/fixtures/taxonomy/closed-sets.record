@@ -1,0 +1,16 @@
+10:18: facets.status.role: `state_of_the_art` is outside the value set; the values are `state`, `state_entered`, `created`, `freshness`, `scent`
+11:32: facets.summary.type: `prose` is outside the value set; the values are `string`, `integer`, `boolean`, `date`, `duration`
+12:24: facets.audience.severity: `fatal` is outside the value set; the values are `error`, `warn`, `info`
+12:43: facets.audience.volatility: `sometimes` is outside the value set; the values are `stable`, `mutable`
+16:13: relations.supersedes.family: `temporal` is outside the value set; the values are `succession`, `derivation`, `governance`, `evidence`, `composition`, `association`
+19:17: relations.supersedes.nuclearity: `bicameral` is outside the value set; the values are `multinuclear`, `nucleus-satellite`
+20:18: relations.supersedes.cardinality: `several` is outside the value set; the values are `one`, `many`
+21:17: relations.supersedes.reciprocal: `encouraged` is outside the value set; the values are `required`, `symmetric`, `optional`
+22:17: relations.supersedes.created_by: `whoever_noticed` is outside the value set; the values are `author`, `scaffold`, `generator`, `hook`, `agent`, `import`
+27:14: relations.refines.nucleus: `middle` is outside the value set; the values are `from`, `to`
+30:34: relations.refines.attributes.cue.owner: `nobody` is outside the value set; the values are `source`, `target`, `edge`
+34:15: kinds.decision.abstract: `perhaps` is not boolean; a scalar takes its type from the meta-schema
+40:19: kinds.decision.relations.expect.0.within: `soon` is not duration; a scalar takes its type from the meta-schema
+41:18: kinds.decision.relations.expect.0.since: `first_noticed` is outside the value set; the values are `created`, `state_entered`
+46:7: core.requires.0: no form the meta-schema admits here accepts this; a core requirement names exactly one of a facet role, a purpose, a relation family or an identifier scheme
+47:7: core.requires.1: no form the meta-schema admits here accepts this; a core requirement names exactly one of a facet role, a purpose, a relation family or an identifier scheme

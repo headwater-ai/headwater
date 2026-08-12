@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The least a taxonomy source can be. Every declaration but the two that name
+# the taxonomy is optional here, because a source is one of several that a
+# resolver merges, and a bundle that declares only kinds is a legal source.
+taxonomy: acme-engineering
+version: 3.2.0
+extends: headwater/standard@2.1.0

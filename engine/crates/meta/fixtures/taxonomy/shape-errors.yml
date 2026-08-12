@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# A declaration that is not there, a member that is not declared, a required
+# member left out, a form written for another form, and a declared key that no
+# address can reach.
+version: 1.0.0
+
+sequences:
+  chain: [proposal, decision, specification]
+
+purposes:
+  rationale:
+    answers: explain why
+
+facets:
+  status:
+    role: state
+    values: {draft: yes, current: no}
+  status.since:
+    type: date
+
+anchors:
+  code_path: {resolver: source-tree, cache: true}
+  work-item: {resolver: ado-snapshot}
+
+kinds:
+  decision:
+    sections: {require: Context}
+
+core:
+  requires:
+    facet_role: state

@@ -28,6 +28,7 @@ The mount is read only and the target directory sits inside the container, so a 
 | `headwater-check` | [M1](https://github.com/headwater-ai/headwater/milestone/1) | Runs two checks generated from the taxonomy, and computes coverage against the census |
 | `headwater-cli` | [M1](https://github.com/headwater-ai/headwater/milestone/1) | The `headwater` binary. One verb, `check`, and it is what CI runs |
 | `headwater-ref` | [M2](https://github.com/headwater-ai/headwater/milestone/2) | The `$`-reference sublanguage: an overlay address, and a reference into a vocabulary or a package |
+| `headwater-meta` | [M2](https://github.com/headwater-ai/headwater/milestone/2) | The meta-schema, as a file in the dialect it describes, and what it decides over one source |
 
 ## Why the loader came first
 
@@ -98,6 +99,22 @@ M2 starts with the sublanguage, because the meta-schema and the resolver both re
 
 Two rules here are guesses, and both guess in the direction that Q2 settled for the loader. A segment holds letters, digits and `_`, so a hyphen is refused today. A reference points at a value and never at a second reference. Each is cheap to relax and expensive to add later, which is the only asymmetry that decides such a question before a use exists.
 
+## What the meta-schema settles, and the two collisions it found
+
+`crates/meta/meta-schema.yml` is [spec 2](../docs/spec/02-taxonomy-model.md#the-meta-schema)'s meta-schema section as a file, and `crates/meta` is the reader of that file. The eleven declarations, `vocabularies`, and the three fields that name a taxonomy are the closed root set. Every declaration has a shape, every scalar has a type, and every closed value set is written out.
+
+**The file is in the dialect it describes, and that is the whole of "its own dialect".** It goes through `headwater-yaml` on the Q2 rulings, exactly as a taxonomy source does. [Q2](../docs/spec/09-decisions.md#q2--schema-format) rules that JSON Schema is an emitted export and never the validator, and spec 2 shows the reason in its own text: the language carries `$`-references and no JSON Schema keyword resolves one. A second language for the schema would be a second dialect to keep in step with the first, and the two would drift at the first ruling that only one of them heard.
+
+**Four rules of the twenty-one run here, and the other seventeen are named rather than skipped quietly.** Structural conformance, reference well-formedness, the reserved root, and the refusal of an address into a list are decidable over one source. Everything else — referential integrity, confluence, core satisfiability and the rest — reads a *resolved* tree. `validate::SKIPPED` holds each one with the reason it waits, and `fixtures/schema.record` prints the list, so a caller reports what it did not run instead of a pass it did not earn.
+
+**The three rules [#48](https://github.com/headwater-ai/headwater/issues/48) could not put in the grammar land here, and one of them changed shape on the way.** An address into a list is refused by the meta-schema and not by the resolver, because the meta-schema already knows which positions hold lists and the answer needs no tree. `package` is refused as a declared root and as the head of an address. And "a reference points at a value and never at a second reference" is a rule of *shape*: the position that a reference reads is not `reference: allowed`, so `vocabularies.a: $vocabularies.b` fails on form rather than on a rule that the resolver has to carry.
+
+**The base package does not validate, and the collision is in the specification rather than in the file.** `corpus.meta` records this repository's three sources. The design-spec bundle and the adopter overlay are valid. The base package is refused twice, on one word: its only committed copy opens `package: headwater/standard`, and spec 2 makes `package` a reserved reference root that no taxonomy may declare. [Spec 7](../docs/spec/07-distribution-and-federation.md#publishing) names a *package manifest* with exactly that key, so the two files are meant to be two files, and the one that exists is playing both parts. [13 — Open obligations](../docs/spec/13-open-obligations.md) carries the finding beside the one it already had about the base having no file of its own.
+
+**A mapping key in the specification's own example cannot be addressed.** `mappings[].facet_values` is keyed `status.current`, a facet and one of its values joined by a dot, and the same specification says that the meta-schema refuses to declare a key holding a dot, because an address over it would be ambiguous. Both clauses are spec 2's. The file takes the reading that no overlay reaches inside `facet_values`, writes `addressable: false` there, and spec 13 carries the rest.
+
+Six value sets here are closed tighter than the specification states, each marked `guess:` in the file, and eight surfaces are marked `gap:` where a declaration is required and no form is given. Both markers follow the direction Q2 settled: a rule relaxes later at no cost, and cannot be added later without a finding against every source that already used the form.
+
 ## The fixtures are the deliverable
 
 `crates/yaml/fixtures/` holds the corpus. `accept/` pairs a source with the tree it loads to, span by span. `reject/` pairs a source with the text an author would read. Both expectations are recorded files rather than assertions in Rust, so that the rules survive the replacement of the code under them.
@@ -108,6 +125,7 @@ Two rules here are guesses, and both guess in the direction that Q2 settled for 
     HEADWATER_BLESS=1 cargo test -p headwater-graph --test fixtures
     HEADWATER_BLESS=1 cargo test -p headwater-check --test fixtures
     HEADWATER_BLESS=1 cargo test -p headwater-ref --test fixtures
+    HEADWATER_BLESS=1 cargo test -p headwater-meta --test fixtures
 
 That re-records every expectation. Read the diff before committing it, because a blessed fixture *is* the change.
 
@@ -117,11 +135,15 @@ That re-records every expectation. Read the diff before committing it, because a
 
 `crates/graph/fixtures/` follows the census's shape for the same reasons. `graph/` is a tree with one document per resolution outcome, and `graph.report` records every node, every edge and every link binding it produces. `corpus.graph` records this repository at the exceptions grain, and today it is the totals plus three anchors, because nothing in this corpus fails to resolve. It keeps the node and edge counts and drops the prose-link accounting, which is a narrower grain than the census keeps and it is chosen for the same reason. A node count moves when somebody adds a document, and a link count moves when somebody writes a sentence with a link in it. A recorded file that changes on nearly every commit is a file nobody reads, so what survives here is the number a regression moves: how many links did not resolve. A test holds the graph to the census: every node of the graph is a typed row, and every edge has a source that is a node.
 
+`crates/meta/fixtures/` holds four sets. `taxonomy/` and `overlay/` pair a source with its verdict, and a source that passes records the word `valid`, because a record that was empty on a pass and empty on a missing fixture would say the same thing twice. `schema.record` is the meta-schema as the crate read it, and it is the file to read in a diff when `meta-schema.yml` changes, because a shape edit is otherwise visible only in the cases it moves. `addresses.record` asks the meta-schema where each of a list of addresses lands, which is the question the resolver of [#50](https://github.com/headwater-ai/headwater/issues/50) asks before it merges anything. `corpus.meta` records this repository's own three sources at the grain the graph and the check records use: the verdict per source and nothing else.
+
 `crates/check/fixtures/` carries the floor [spec 12](../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship) sets: "every check ships with at least one fixture that it fails and one that it passes." The tree under `check/` holds both for each of the three rules, including both directions of a missing reciprocal half, and `check.report` records every instance and every finding it produces. `corpus.checks` records this repository at the same grain the graph uses: the coverage totals, the instance count per rule, and every finding, with no per-document rows. Those numbers move when somebody adds a document or declares an edge, which is the event the record exists to show, and they do not move when somebody writes a paragraph.
 
 ## What is deliberately absent
 
-The loader knows the dialect and nothing about the meaning. It does not require the root to be a mapping, it does not know that `kinds` is a declaration, and it resolves no `$`-reference. All three are shape, the meta-schema owns shape, and the meta-schema is [M2](https://github.com/headwater-ai/headwater/milestone/2). A loader that guessed at any of them would be a second schema that nobody declared. `headwater-ref` is the third of those in part: it says whether a reference is well formed, and nothing resolves one until the resolver of [#50](https://github.com/headwater-ai/headwater/issues/50).
+The loader knows the dialect and nothing about the meaning. It does not require the root to be a mapping, it does not know that `kinds` is a declaration, and it resolves no `$`-reference. All three are shape, and shape is `headwater-meta`'s. A loader that guessed at any of them would be a second schema that nobody declared. The third one is still open at the far end: `headwater-meta` says where a reference may stand and whether it parses, and nothing resolves one until the resolver of [#50](https://github.com/headwater-ai/headwater/issues/50).
+
+Nothing in the pipeline calls the meta-schema yet, and that is the shape of M2 rather than an omission. `headwater check` reads its taxonomy through the stand-in, which merges three sources without validating any of them, and a verb that validates is [`headwater taxonomy validate`](https://github.com/headwater-ai/headwater/issues/51). To wire the validator in front of the stand-in would report the base package as invalid on every run of CI, over a rule that the resolver is the component to fix.
 
 The runner is the thinnest thing that closes the loop, and four parts of the designed check layer are not in it. A check declares no scope and no view enforces one, which is [#54](https://github.com/headwater-ai/headwater/issues/54). Nothing is cached and nothing is change-scoped, which is [#55](https://github.com/headwater-ai/headwater/issues/55), and a cache before a sound cache key is the correctness root spec 12 warns about. No finding can be suppressed, so there is no suppression inventory, which is [#58](https://github.com/headwater-ai/headwater/issues/58). And no rule can name an obligation, because obligations are declarations that [#52](https://github.com/headwater-ai/headwater/issues/52) supplies.
 
