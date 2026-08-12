@@ -186,6 +186,7 @@ headwater new        <kind> [--title ...]
 headwater route      <task description>
 headwater query      <expression>
 headwater explain    <path|identifier>
+headwater mcp
 headwater export     [--profile ...] [--format json|jsonschema|shacl|rdf|skos|okf|linkml] [--check]
 headwater taxonomy   validate | resolve | diff | migrate | audit
 headwater coverage   [--format ...]
@@ -218,7 +219,7 @@ The CLI is a thin shell over a library API — load, graph, check, query, genera
 
 ### MCP server
 
-The MCP server is the agent-facing surface of the same library ([AI integration](05-ai-integration.md)).
+The MCP server is the agent-facing surface of the same library ([AI integration](05-ai-integration.md)). `headwater mcp` starts it on standard input and output, over the corpus that the same lock and the same `corpus:` block describe. It registers the query class alone, and spec 5 gives the reason that the registration rather than the annotation is what carries the property.
 
 ### CI adapters
 
