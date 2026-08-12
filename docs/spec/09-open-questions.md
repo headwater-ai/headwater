@@ -1,3 +1,24 @@
+---
+id: REG-HW-open-questions
+status: superseded
+status_since: 2026-08-11
+last_verified: 2026-08-11
+summary: A redirect map from the twenty-one open-question anchors to the decision register and the obligation register that replaced them.
+doc_type: decision_register
+sequence: 9
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: [claude-fable-5, claude-opus-5]
+  activity: draft+revise
+  accepted_by: j.baxter
+  evidence_basis: unevidenced
+relations:
+  superseded_by:
+    - REG-HW-decisions
+    - REG-HW-open-obligations
+---
+
 # 9 — Open questions (moved)
 
 This file is a tombstone rather than a chapter of the specification. All twenty-one questions closed. The decisions and the reasoning that settled them are now in [9 — The decision register](09-decisions.md). What each decision left open is now in [13 — Open obligations](13-open-obligations.md).

@@ -1,3 +1,26 @@
+---
+id: REV-HW-core-concepts-independent
+status: current
+status_since: 2026-08-05
+last_verified: 2026-08-08
+summary: An independent run of the core-concepts instrument, made without reading the existing findings first.
+doc_type: review_record
+provenance:
+  warrant: accepted
+  agency: agent
+  activity: review+draft
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  applies: REV-HW-core-concepts-prompt
+  assesses:
+    - SPEC-HW-conceptual-model
+    - SPEC-HW-taxonomy-model
+    - SPEC-HW-vision-and-scope
+    - SPEC-HW-assurance-model
+    - SPEC-HW-check-layer
+---
+
 # Core-concepts independent review
 
 Instrument: [core-concepts-review-prompt.md](core-concepts-review-prompt.md), run 2026-08-05 against revision `b7ca526`. The existing findings were not read until after the independent pass was complete. Claims marked *(inferred)* rest on absent definitions or predicted adoption behaviour rather than an implemented corpus.

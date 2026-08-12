@@ -1,3 +1,25 @@
+---
+id: SPEC-HW-vision-and-scope
+status: current
+status_since: 2026-08-01
+last_verified: 2026-08-11
+summary: What Headwater is for, the three qualities it aims at, the eleven design principles, and what it refuses to build.
+doc_type: design_spec
+sequence: 0
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: [claude-fable-5, claude-opus-5]
+  activity: draft+revise
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cites_evidence:
+    - EVAL-HW-default-taxonomy-first-run
+    - EVAL-HW-first-contact
+    - EVAL-HW-the-serving-boundary
+---
+
 # 0 — Vision and scope
 
 ## The thesis

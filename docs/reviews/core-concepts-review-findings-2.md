@@ -1,3 +1,27 @@
+---
+id: REV-HW-core-concepts-findings-2
+status: current
+status_since: 2026-08-06
+last_verified: 2026-08-08
+summary: Run two of the core-concepts instrument, made adversarially against the integration of run one by the reviewer who wrote it.
+doc_type: review_record
+provenance:
+  warrant: accepted
+  agency: agent
+  drafted_by: claude-fable-5
+  activity: review+draft
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  applies: REV-HW-core-concepts-prompt
+  assesses:
+    - SPEC-HW-conceptual-model
+    - SPEC-HW-taxonomy-model
+    - SPEC-HW-vision-and-scope
+    - SPEC-HW-assurance-model
+    - SPEC-HW-check-layer
+---
+
 # Core-concepts review: findings, second run
 
 Instrument: [core-concepts-review-prompt.md](core-concepts-review-prompt.md), run 2026-08-06 against revision `58dc640` — the specification after the integration of [run 1](core-concepts-review-findings.md), the [independent review](core-concepts-independent-review.md), and the [assessment](core-concepts-findings-assessment.md). Single sequential reviewer (Claude Fable 5); no fan-out.

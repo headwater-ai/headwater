@@ -1,3 +1,21 @@
+---
+id: EVAL-HW-language-choice
+status: current
+status_since: 2026-08-10
+last_verified: 2026-08-10
+summary: The Q1 evidence, which decides the implementation language on embedding, scope enforcement and sum types rather than on speed.
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: claude-opus-5
+  activity: evaluate+draft
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cited_by:
+    - REG-HW-decisions
+---
+
 # The implementation language — the evidence for Q1
 
 The evidence for [Q1](../spec/09-open-questions.md#q1--implementation-language). The question listed four candidates. Two of them fall to a constraint that [spec 6](../spec/06-engine-architecture.md#implementation-constraints) already states, so this document argues the remaining two.

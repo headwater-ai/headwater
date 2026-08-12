@@ -1,3 +1,27 @@
+---
+id: REV-HW-core-concepts-findings-1
+status: current
+status_since: 2026-08-05
+last_verified: 2026-08-10
+summary: Run one of the core-concepts instrument, with a verdict on each concept of spec 1 and seven arguments behind the cuts.
+doc_type: review_record
+provenance:
+  warrant: accepted
+  agency: agent
+  drafted_by: claude-fable-5
+  activity: review+draft
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  applies: REV-HW-core-concepts-prompt
+  assesses:
+    - SPEC-HW-conceptual-model
+    - SPEC-HW-taxonomy-model
+    - SPEC-HW-vision-and-scope
+    - SPEC-HW-assurance-model
+    - SPEC-HW-check-layer
+---
+
 # Core-concepts review: findings
 
 Instrument: [core-concepts-review-prompt.md](core-concepts-review-prompt.md), run 2026-08-04 against the specification at commit `6057872`. Single sequential reviewer (Claude Fable 5); no fan-out. Everything below is anchored to a file and, where it matters, a section. Claims marked *(inferred)* rest on absence of text or on reasoning about behaviour no corpus yet exists to measure; everything else is read directly from the specs.

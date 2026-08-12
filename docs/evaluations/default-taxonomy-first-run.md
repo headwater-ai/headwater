@@ -1,3 +1,27 @@
+---
+id: EVAL-HW-default-taxonomy-first-run
+status: current
+status_since: 2026-08-10
+last_verified: 2026-08-10
+summary: The Q3 evidence, which wrote the base package out as real YAML and ran five adopters through their first day against it.
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: claude-opus-5
+  activity: evaluate+draft
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cited_by:
+    - REG-HW-decisions
+    - REG-HW-open-obligations
+    - SPEC-HW-vision-and-scope
+    - SPEC-HW-taxonomy-model
+    - SPEC-HW-distribution-and-federation
+    - SPEC-HW-adjacent-work
+    - SPEC-HW-glossary
+---
+
 # What ships in the box — a first-run walkthrough
 
 Evidence for [Q3](../spec/09-open-questions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box). Q3 named three options and a leaning, and it argued them on adoption feel: too opinionated repels, too thin leaves a blank schema. Feel is not a method. This walkthrough replaces it with one. Author the candidate base package as real YAML, run five adopters through their first day against it, and count what each one types and what each one deletes.

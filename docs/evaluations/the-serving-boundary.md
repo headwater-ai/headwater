@@ -1,3 +1,31 @@
+---
+id: EVAL-HW-the-serving-boundary
+status: current
+status_since: 2026-08-10
+last_verified: 2026-08-10
+summary: The Q14, Q17 and Q7 evidence, which is what a corpus advertises, what it withholds, and what a tool may write back.
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: claude-opus-5
+  activity: evaluate+draft
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cited_by:
+    - REG-HW-decisions
+    - SPEC-HW-vision-and-scope
+    - SPEC-HW-conceptual-model
+    - SPEC-HW-taxonomy-model
+    - SPEC-HW-assurance-model
+    - SPEC-HW-ai-integration
+    - SPEC-HW-engine-architecture
+    - SPEC-HW-distribution-and-federation
+    - SPEC-HW-adjacent-work
+    - SPEC-HW-check-layer
+    - SPEC-HW-glossary
+---
+
 # The serving boundary — what is advertised, what is withheld, what is written back
 
 This evaluation closes three entries at once: [Q14](../spec/09-open-questions.md#q14--discovery-surface) (discovery surface), [Q17](../spec/09-open-questions.md#q17--governed-access-and-the-solution-layer) (governed access and the solution layer), and [Q7](../spec/09-open-questions.md#q7--scope-of-the-mcp-surface) (scope of the MCP surface).

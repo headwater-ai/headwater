@@ -1,3 +1,26 @@
+---
+id: EVAL-HW-first-contact
+status: current
+status_since: 2026-08-11
+last_verified: 2026-08-11
+summary: The Q11, Q12 and Q16 evidence, which is the license, the migration path, and the public presence that a first reader meets.
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: claude-opus-5
+  activity: evaluate+draft
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cited_by:
+    - REG-HW-decisions
+    - SPEC-HW-vision-and-scope
+    - SPEC-HW-assurance-model
+    - SPEC-HW-engine-architecture
+    - SPEC-HW-distribution-and-federation
+    - SPEC-HW-adjacent-work
+---
+
 # First contact — the Q11, Q12 and Q16 evaluation
 
 This settles [Q11](../spec/09-open-questions.md#q11--license-and-distribution-posture), [Q12](../spec/09-open-questions.md#q12--migration-path-for-an-existing-corpus) and [Q16](../spec/09-open-questions.md#q16--public-presence) together. It is the sixth and last of the grouped evaluations that closed the register, and after it every entry is closed or explicitly pending.

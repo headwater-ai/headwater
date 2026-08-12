@@ -1,3 +1,20 @@
+---
+id: SPEC-HW-design-departures
+status: current
+status_since: 2026-08-01
+last_verified: 2026-08-11
+summary: The ideas that this design adopts, and the eight recurrent failure modes of documentation tooling that it designs against.
+doc_type: design_spec
+sequence: 8
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: [claude-fable-5, claude-opus-5]
+  activity: draft+revise
+  accepted_by: j.baxter
+  evidence_basis: unevidenced
+---
+
 # 8 — Design departures
 
 Documentation governance tooling has a set of recurrent failure modes. Each one is easy to reach, because each one is the cheapest thing to build at the moment that the need appears. This document records the ideas that we adopt. It then records the eight patterns that we design against. Each departure names the pattern, the cost, and the choice that we make instead.

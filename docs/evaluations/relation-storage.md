@@ -1,3 +1,25 @@
+---
+id: EVAL-HW-relation-storage
+status: current
+status_since: 2026-08-10
+last_verified: 2026-08-10
+summary: The Q4 evidence, which makes a relation instance an object in front matter and refuses the annotated prose link as a second edge syntax.
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: claude-opus-5
+  activity: evaluate+draft
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cited_by:
+    - REG-HW-decisions
+    - SPEC-HW-conceptual-model
+    - SPEC-HW-taxonomy-model
+    - SPEC-HW-assurance-model
+    - SPEC-HW-check-layer
+---
+
 # Relation storage — the Q4 evaluation
 
 This evaluation closes [Q4](../spec/09-open-questions.md#q4--relation-storage). The question asked where a relation instance lives. The three candidates were front matter, prose with an extractable syntax, and a sidecar edge file per document.

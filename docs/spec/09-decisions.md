@@ -1,3 +1,37 @@
+---
+id: REG-HW-decisions
+status: current
+status_since: 2026-08-11
+last_verified: 2026-08-11
+summary: All twenty-one design decisions, the argument that settled each one, and the evaluation that closed it.
+doc_type: decision_register
+sequence: 9
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: claude-opus-5
+  activity: draft+revise
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  supersedes:
+    - REG-HW-open-questions
+  cites_evidence:
+    - EVAL-HW-default-taxonomy-first-run
+    - EVAL-HW-first-contact
+    - EVAL-HW-graph-export-and-federation
+    - EVAL-HW-language-choice
+    - EVAL-HW-language-spike-results
+    - EVAL-HW-linkml-worked-example
+    - EVAL-HW-relation-storage
+    - EVAL-HW-schema-format-walkthrough
+    - EVAL-HW-shacl-worked-example
+    - EVAL-HW-the-measurement-layer
+    - EVAL-HW-the-serving-boundary
+    - EVAL-HW-warrant-and-adjudication
+    - EVAL-HW-what-a-check-can-know
+---
+
 # 9 — The decision register
 
 This file began as a list of decisions that the design phase deferred, with the options and a leaning for each one. Every entry is now argued, and all twenty-one are closed. The last one to close was [Q11](#q11--license-and-distribution-posture). No argument from the design could close it, because a license states what the owner intends for the project. The owner ratified it on 2026-08-11.

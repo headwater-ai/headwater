@@ -1,3 +1,25 @@
+---
+id: SPEC-HW-theoretical-foundations
+status: current
+status_since: 2026-08-01
+last_verified: 2026-08-11
+summary: Where the research literature confirms, sharpens, or contradicts the design, and what changed in the specification as a result.
+doc_type: design_spec
+sequence: 10
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: [claude-fable-5, claude-opus-5]
+  activity: draft+revise
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cites_evidence:
+    - EVAL-HW-schema-format-walkthrough
+    - EVAL-HW-the-measurement-layer
+    - EVAL-HW-what-a-check-can-know
+---
+
 # 10 — Theoretical foundations
 
 The design so far was derived from practice. This document tests it against the research literature — mainly discourse linguistics, knowledge organization, and architecture-knowledge management. It records where the theory **confirms**, **sharpens**, or **contradicts** what specs 0–9 say.

@@ -501,8 +501,12 @@ def emit_abox(repo: Path, resolved: dict, loss: Loss) -> tuple[Graph, dict]:
                 kind = shelf["kind"]
             else:
                 # A heterogeneous shelf resolves its kind through the
-                # discriminator facet, which lives in front matter this corpus
-                # does not have. The kind is therefore unresolved.
+                # discriminator facet, which lives in front matter the corpus
+                # did not have when this ran. The kind is therefore unresolved.
+                # Issue #4 has since typed every document, so a reader who
+                # wants the current corpus needs an emitter that parses front
+                # matter. This one stays as it was, because the numbers in the
+                # evaluation are only reproducible against the run it made.
                 kind = None
                 census["untyped"].append(str(rel))
             docs[path] = kind

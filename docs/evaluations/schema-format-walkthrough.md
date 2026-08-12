@@ -1,3 +1,24 @@
+---
+id: EVAL-HW-schema-format-walkthrough
+status: current
+status_since: 2026-08-10
+last_verified: 2026-08-10
+summary: The Q2 evidence, a cognitive-dimensions walkthrough over five authoring scenarios, which chose YAML and found five defects in spec 2.
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: claude-opus-5
+  activity: evaluate+draft
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cited_by:
+    - REG-HW-decisions
+    - SPEC-HW-taxonomy-model
+    - SPEC-HW-theoretical-foundations
+    - SPEC-HW-adjacent-work
+---
+
 # Choosing the schema format — a cognitive-dimensions walkthrough
 
 Evidence for [Q2](../spec/09-open-questions.md#q2--schema-format). Q2 specified the method and left the work undone: walk each candidate notation through five authoring scenarios, and score it on the cognitive dimensions. This is that walkthrough.

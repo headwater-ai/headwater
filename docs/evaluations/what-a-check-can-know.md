@@ -1,3 +1,30 @@
+---
+id: EVAL-HW-what-a-check-can-know
+status: current
+status_since: 2026-08-11
+last_verified: 2026-08-11
+summary: The Q5 and Q21 evidence, which measures what a lexical checker gets wrong on the checker that this repository already runs.
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: claude-opus-5
+  activity: measure+draft
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cited_by:
+    - REG-HW-decisions
+    - SPEC-HW-taxonomy-model
+    - SPEC-HW-authoring-and-lifecycle
+    - SPEC-HW-assurance-model
+    - SPEC-HW-engine-architecture
+    - SPEC-HW-theoretical-foundations
+    - SPEC-HW-adjacent-work
+    - SPEC-HW-check-layer
+  traces_to:
+    - tools/ste-lint.py
+---
+
 # What a check can know — the Q5 and Q21 evaluation
 
 This evaluation closes [Q5](../spec/09-open-questions.md#q5--voice-checking-depth) and [Q21](../spec/09-open-questions.md#q21--terminological-succession-and-validity-under-merge). The two entries share one subject, and neither states it. A checker that matches strings does not know what a text means. A checker scoped to a change does not know what the rest of the corpus became. Both entries ask where the resulting error goes.

@@ -1,3 +1,24 @@
+---
+id: REV-HW-core-concepts-prompt
+status: current
+status_since: 2026-08-04
+last_verified: 2026-08-08
+summary: The instrument for the core-concepts review, with the deletion test, the two lenses, and the bar a finding must clear.
+doc_type: review_prompt
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: [claude-fable-5, claude-opus-5]
+  activity: draft+revise
+  accepted_by: j.baxter
+  evidence_basis: unevidenced
+relations:
+  applied_in:
+    - REV-HW-core-concepts-findings-1
+    - REV-HW-core-concepts-independent
+    - REV-HW-core-concepts-findings-2
+---
+
 # Review the core concepts of headwater: simplification and robustness
 
 You are reviewing the conceptual design of `headwater`, a documentation governance system. It is a **specification, pre-implementation** — roughly 5,000 lines of spec and nothing built. That is precisely why this review is worth doing now: concepts are free to delete today and expensive to delete once they have a schema, a CLI verb, and adopters.

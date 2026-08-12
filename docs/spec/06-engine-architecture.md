@@ -1,3 +1,30 @@
+---
+id: SPEC-HW-engine-architecture
+status: current
+status_since: 2026-08-01
+last_verified: 2026-08-11
+summary: One parse, one typed graph, and many consumers, with the pipeline, the library boundary, and the performance targets.
+doc_type: design_spec
+sequence: 6
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: [claude-fable-5, claude-opus-5]
+  activity: draft+revise
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cites_evidence:
+    - EVAL-HW-first-contact
+    - EVAL-HW-graph-export-and-federation
+    - EVAL-HW-language-spike-results
+    - EVAL-HW-shacl-worked-example
+    - EVAL-HW-the-measurement-layer
+    - EVAL-HW-the-serving-boundary
+    - EVAL-HW-warrant-and-adjudication
+    - EVAL-HW-what-a-check-can-know
+---
+
 # 6 — Engine architecture
 
 One parse, one graph, many consumers.

@@ -1,3 +1,29 @@
+---
+id: SPEC-HW-taxonomy-model
+status: current
+status_since: 2026-08-01
+last_verified: 2026-08-12
+summary: The central design, which declares kinds, facets, relations, regimes, the immutable core, and customization by overlay.
+doc_type: design_spec
+sequence: 2
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: [claude-fable-5, claude-opus-5]
+  activity: draft+revise
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cites_evidence:
+    - EVAL-HW-default-taxonomy-first-run
+    - EVAL-HW-graph-export-and-federation
+    - EVAL-HW-relation-storage
+    - EVAL-HW-schema-format-walkthrough
+    - EVAL-HW-the-serving-boundary
+    - EVAL-HW-warrant-and-adjudication
+    - EVAL-HW-what-a-check-can-know
+---
+
 # 2 — The taxonomy model
 
 **This is the central design of the system.** Everything else is downstream of it.

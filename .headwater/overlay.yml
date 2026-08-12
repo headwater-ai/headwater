@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# This repository's overlay over headwater/standard 1.0.0 plus the design-spec
+# bundle. An adopter overlay may add, override and remove. This one only adds.
+#
+# It exists because of one ordering constraint. Q4 rules that a relation target
+# is an identifier and never a path, and no document in this corpus had an
+# identifier. Neither the base nor the design-spec bundle gives one to a
+# document, so the corpus mints its own here before it can declare an edge.
+#
+# `.headwater/README.md` records every place where this file guesses.
+
+add:
+
+  # --- identifier schemes ---------------------------------------------------
+  # One scheme per kind group, each with a distinct literal prefix, so that no
+  # two schemes in the namespace admit the same string (spec 2, identifier
+  # integrity). The namespace is `HW` and it is part of every identifier, which
+  # is the one lexical requirement that the invariant core makes.
+  #
+  # The local part is a minted slug and not the file name. A slug that a path
+  # derives dies at the first rename, which is the defect that the OWL and SKOS
+  # emitter already reports against its invented document IRI.
+
+  identifier_schemes.spec_id:
+    pattern: "SPEC-{namespace}-{slug}"
+    namespace: HW
+    allocation: minted-once
+
+  identifier_schemes.register_id:
+    pattern: "REG-{namespace}-{slug}"
+    namespace: HW
+    allocation: minted-once
+
+  identifier_schemes.evaluation_id:
+    pattern: "EVAL-{namespace}-{slug}"
+    namespace: HW
+    allocation: minted-once
+
+  identifier_schemes.review_id:
+    pattern: "REV-{namespace}-{slug}"
+    namespace: HW
+    allocation: minted-once
+
+  # --- the kinds that carry them --------------------------------------------
+  # The base gives `decision` an identifier and gives `specification` none. The
+  # design-spec bundle adds six kinds and no identifier. Every one of the six is
+  # a relation endpoint in this corpus, so every one needs a scheme.
+
+  kinds.design_spec.identifier:         {scheme: spec_id}
+  kinds.decision_register.identifier:   {scheme: register_id}
+  kinds.obligation_register.identifier: {scheme: register_id}
+  kinds.evaluation.identifier:          {scheme: evaluation_id}
+  kinds.review_prompt.identifier:       {scheme: review_id}
+  kinds.review_record.identifier:       {scheme: review_id}
+
+  # --- the controlled language of this repository ---------------------------
+  # The base declares `controlled: none`, and the design-spec entry declines to
+  # bind a language regime because RFCs are not written in Simplified Technical
+  # English. This repository does hold its specification prose to a profile, and
+  # `tools/ste-lint.py` enforces it. The rule is in CLAUDE.md today, which is a
+  # place no check can read.
+
+  regimes.language.ste_house:
+    tag: en-US
+    controlled: ASD-STE100
+    profile: house
+
+  kinds.design_spec.language:         ste_house
+  kinds.decision_register.language:   ste_house
+  kinds.obligation_register.language: ste_house

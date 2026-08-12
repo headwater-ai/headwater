@@ -1,3 +1,33 @@
+---
+id: REV-HW-ste-editorial-pass
+status: current
+status_since: 2026-08-10
+last_verified: 2026-08-10
+summary: What the ASD-STE100 editorial pass found in the source content, and the terminology rulings that the glossary pass raised.
+doc_type: review_record
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: [claude-fable-5, claude-opus-5]
+  activity: edit+report
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  assesses:
+    - SPEC-HW-vision-and-scope
+    - SPEC-HW-conceptual-model
+    - SPEC-HW-taxonomy-model
+    - SPEC-HW-authoring-and-lifecycle
+    - SPEC-HW-assurance-model
+    - SPEC-HW-ai-integration
+    - SPEC-HW-engine-architecture
+    - SPEC-HW-distribution-and-federation
+    - REG-HW-open-questions
+    - SPEC-HW-theoretical-foundations
+    - SPEC-HW-adjacent-work
+    - SPEC-HW-glossary
+---
+
 # STE editorial pass — source findings to address
 
 Point-in-time record, 2026-08-10. During the ASD-STE100 house-profile pass over specs 0–12 (commits `786c5e2`, `d03d613`, `651a302`), the editors flagged the items below as possible defects or open decisions in the *source content*. Editorial policy was to report, not fix, anything that needs author judgment. Two objective typos found in the same pass were fixed directly and are not listed here.

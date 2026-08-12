@@ -1,3 +1,31 @@
+---
+id: EVAL-HW-warrant-and-adjudication
+status: current
+status_since: 2026-08-10
+last_verified: 2026-08-10
+summary: The Q15, Q19 and Q18 evidence, which is what stands behind a document, who vouched for it, and how a disagreement is settled.
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: claude-opus-5
+  activity: evaluate+draft
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cited_by:
+    - REG-HW-decisions
+    - SPEC-HW-conceptual-model
+    - SPEC-HW-taxonomy-model
+    - SPEC-HW-authoring-and-lifecycle
+    - SPEC-HW-assurance-model
+    - SPEC-HW-ai-integration
+    - SPEC-HW-engine-architecture
+    - SPEC-HW-distribution-and-federation
+    - SPEC-HW-adjacent-work
+    - SPEC-HW-check-layer
+    - SPEC-HW-glossary
+---
+
 # Warrant — what stands behind a document, and who vouched for it
 
 This evaluation closes three entries at once: [Q15](../spec/09-open-questions.md#q15--a-synthesized-content-tier) (a synthesized content tier), [Q19](../spec/09-open-questions.md#q19--inbound-integration-an-external-system-of-record) (inbound integration with an external system of record), and [Q18](../spec/09-open-questions.md#q18--recording-adjudicated-disagreements) (recording adjudicated disagreements).

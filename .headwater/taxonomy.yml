@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# What this repository takes, and how it differs. The shape is the consumer
+# declaration of spec 7 (Consuming). Nothing resolves it, because no engine
+# exists. It is here so that the identifiers and the relations in the front
+# matter of `docs/` have a declaration to be wrong against.
+#
+# Two fields are assumptions, and `.headwater/README.md` records both.
+
+taxonomy:
+  package: headwater/standard
+  version: 1.0.0
+  bundles: [design-spec]
+  overlay: .headwater/overlay.yml

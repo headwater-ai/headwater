@@ -1,3 +1,26 @@
+---
+id: SPEC-HW-conceptual-model
+status: current
+status_since: 2026-08-01
+last_verified: 2026-08-11
+summary: The vocabulary that the rest of the specification uses, from corpus and shelf to warrant, projection, and the TBox and ABox split.
+doc_type: design_spec
+sequence: 1
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: [claude-fable-5, claude-opus-5]
+  activity: draft+revise
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cites_evidence:
+    - EVAL-HW-graph-export-and-federation
+    - EVAL-HW-relation-storage
+    - EVAL-HW-the-serving-boundary
+    - EVAL-HW-warrant-and-adjudication
+---
+
 # 1 — Conceptual model
 
 This document gives the vocabulary that the rest of the specification uses. Each term is a named concept in the schema and in the engine. Where they differ, this document says so.

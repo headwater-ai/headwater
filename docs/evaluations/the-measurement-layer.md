@@ -1,3 +1,29 @@
+---
+id: EVAL-HW-the-measurement-layer
+status: current
+status_since: 2026-08-11
+last_verified: 2026-08-11
+summary: The Q8 and Q20 evidence, which is what a probe costs, when it runs, and whether the promised instruments can produce their measurements.
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: claude-opus-5
+  activity: evaluate+draft
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cited_by:
+    - REG-HW-decisions
+    - SPEC-HW-authoring-and-lifecycle
+    - SPEC-HW-assurance-model
+    - SPEC-HW-ai-integration
+    - SPEC-HW-engine-architecture
+    - SPEC-HW-theoretical-foundations
+    - SPEC-HW-adjacent-work
+    - SPEC-HW-check-layer
+    - SPEC-HW-glossary
+---
+
 # The measurement layer — the Q8 and Q20 evaluation
 
 This evaluation closes [Q8](../spec/09-open-questions.md#q8--probe-cost-and-cadence) and [Q20](../spec/09-open-questions.md#q20--where-scent-lives). The two entries are one question at two radii. Q20's open half asks how anything grades a cue, and the grader is a probe. Q8 decides what probes cost and when they run. A cue that nothing grades is decoration, and a probe budget that does not know what it must grade is a number with no derivation.

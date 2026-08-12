@@ -1,3 +1,25 @@
+---
+id: SPEC-HW-ai-integration
+status: current
+status_since: 2026-08-01
+last_verified: 2026-08-11
+summary: How the corpus serves an agent at four moments, and how a probe measures whether any of it works.
+doc_type: design_spec
+sequence: 5
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: [claude-fable-5, claude-opus-5]
+  activity: draft+revise
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cites_evidence:
+    - EVAL-HW-the-measurement-layer
+    - EVAL-HW-the-serving-boundary
+    - EVAL-HW-warrant-and-adjudication
+---
+
 # 5 — AI integration
 
 Agents now read documentation more often than people do. The failure mode of an agent is not that it skims. When context is missing, an agent invents, and it invents with confidence. The corpus is designed for that reader.

@@ -1,3 +1,32 @@
+---
+id: SPEC-HW-adjacent-work
+status: current
+status_since: 2026-08-02
+last_verified: 2026-08-11
+summary: Practitioner tools and standards that solve adjacent problems, and what this design specifies that somebody already built.
+doc_type: design_spec
+sequence: 11
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: [claude-fable-5, claude-opus-5]
+  activity: draft+revise
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cites_evidence:
+    - EVAL-HW-default-taxonomy-first-run
+    - EVAL-HW-first-contact
+    - EVAL-HW-graph-export-and-federation
+    - EVAL-HW-linkml-worked-example
+    - EVAL-HW-schema-format-walkthrough
+    - EVAL-HW-shacl-worked-example
+    - EVAL-HW-the-measurement-layer
+    - EVAL-HW-the-serving-boundary
+    - EVAL-HW-warrant-and-adjudication
+    - EVAL-HW-what-a-check-can-know
+---
+
 # 11 — Adjacent work and tooling
 
 [Spec 10](10-theoretical-foundations.md) tested the design against the research literature. This document does the same against **practitioner work and existing tooling**. These are projects that solve adjacent problems, and standards that may already implement parts of what spec 2 describes.

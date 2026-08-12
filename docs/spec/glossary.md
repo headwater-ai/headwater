@@ -1,3 +1,27 @@
+---
+id: SPEC-HW-glossary
+status: current
+status_since: 2026-08-10
+last_verified: 2026-08-11
+summary: One line for every named concept in the specification, with a link to the section that defines it.
+doc_type: design_spec
+sequence: 14
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: claude-opus-5
+  activity: draft+revise
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cites_evidence:
+    - EVAL-HW-default-taxonomy-first-run
+    - EVAL-HW-graph-export-and-federation
+    - EVAL-HW-the-measurement-layer
+    - EVAL-HW-the-serving-boundary
+    - EVAL-HW-warrant-and-adjudication
+---
+
 # Glossary
 
 Every named concept in this specification, with one line about what it is and a link to the section that defines it.

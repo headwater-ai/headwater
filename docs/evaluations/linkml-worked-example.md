@@ -1,3 +1,22 @@
+---
+id: EVAL-HW-linkml-worked-example
+status: current
+status_since: 2026-08-02
+last_verified: 2026-08-11
+summary: The Headwater taxonomy written out in LinkML, and the boundary where the standard stops covering what spec 2 declares.
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: [claude-fable-5, claude-opus-5]
+  activity: evaluate+draft
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cited_by:
+    - REG-HW-decisions
+    - SPEC-HW-adjacent-work
+---
+
 # The Headwater taxonomy in LinkML — a worked example
 
 Evidence for [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate). [Spec 11](../spec/11-adjacent-work.md#c-linkml--the-uncomfortable-one) claimed LinkML covers the "structural half" of [spec 2](../spec/02-taxonomy-model.md) and none of the "governance half". Writing it out shows that framing was wrong — and the real boundary is more useful than the one I guessed.
