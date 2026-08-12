@@ -125,10 +125,17 @@ relations:
     from: [design_spec]
     to:   [governed_document]
 
-# Six rules reach an obligation here and one does not, because both states are
-# worth recording. A finding names the obligation that the control binds it to,
-# and a rule that no control names says so in the report rather than carrying a
-# quiet `None`. The base package binds all seven.
+# All three states of the binding are here, because each one is worth recording.
+# A finding names the obligation that the control binds it to. A rule that no
+# control names says so in the report rather than carrying a quiet `None`. And a
+# rule that two controls name reaches two obligations, which a finding cannot
+# carry, so the register names both and the finding names neither. The base
+# package binds every rule to exactly one.
+#
+# The obligations below run past the ten that the rules need, because the
+# register has states of its own. There is one obligation per branch of
+# `Disposition` and one control per branch of `Mechanism`, so the recorded
+# report is the record of each.
 
 obligations:
   OB-FIX-1:
@@ -193,54 +200,208 @@ obligations:
     prevents: content.inconsistent
     severity: medium
 
+  # The register's own two rules, and then one obligation per state the
+  # register can put an obligation in. Every branch of `Disposition` and of
+  # `Mechanism` has an entry here, so `check.report` is the record of each.
+
+  OB-FIX-11:
+    statement: Every obligation this taxonomy declares carries exactly one disposition
+    rationale: An obligation that no control discharges and that states nothing reads from outside like one that is met
+    class: cohesion
+    prevents: process.traceability
+    severity: high
+  OB-FIX-12:
+    statement: Every control names a mechanism this engine implements
+    rationale: A register that claims coverage it does not have is worse than no register
+    class: cohesion
+    prevents: process.traceability
+    severity: high
+
+  # Verified, by a phase rather than by a rule.
+  OB-FIX-13:
+    statement: Every file under the corpus root is classified, or reported as unclassifiable
+    rationale: A run that never saw a file reports nothing about it
+    class: cohesion
+    prevents: process.maintenance
+    severity: high
+
+  # Gap: no control, and the obligation says so with an owner and a target.
+  OB-FIX-14:
+    statement: A document reaches the reader who asked the question it answers
+    rationale: A control whose signal reaches nobody who can act is not a control
+    class: coherence
+    prevents: process.contribution_friction
+    severity: medium
+    disposition:
+      gap:
+        owner: the fixture tree
+        target: a reader feedback loop, which spec 4 lists as usually absent
+
+  # Unverifiable: no mechanism can exist, and the reasoning is recorded.
+  OB-FIX-15:
+    statement: A specification still describes the system it specifies
+    rationale: Form-correct prose can still be false, and nothing structural detects it
+    class: coherence
+    prevents: content.incorrect
+    severity: high
+    disposition:
+      unverifiable:
+        reasoning: The question is semantic, so spec 4 sends it to the accuracy audit and no check reaches it
+
+  # The state spec 4 forbids: no control, and no statement either. This is the
+  # failing fixture of `obligation.disposition.not_one`.
+  OB-FIX-16:
+    statement: A heading says what the section under it is about
+    rationale: A reader who cannot skim a document reads all of it or none of it
+    class: coherence
+    prevents: presentation.organization
+    severity: low
+
+  # Two dispositions rather than one: a control discharges it, and it states a
+  # gap as well. The second failing case of the same rule.
+  OB-FIX-17:
+    statement: Both ends of a relation instance are kinds the relation permits
+    rationale: An edge between kinds a relation forbids is an assertion the taxonomy never sanctioned
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+    disposition:
+      gap:
+        owner: the fixture tree
+
+  # Discharged on paper by a control whose mechanism this engine does not
+  # implement. The failing fixture of `control.mechanism.unimplemented`.
+  OB-FIX-18:
+    statement: A deprecated document names what replaced it
+    rationale: A reader who lands on a dead end has to search for the live one
+    class: cohesion
+    prevents: content.outdated
+    severity: medium
+
+  # Discharged by a mechanism outside this engine, which spec 4 declares and
+  # which is not an error. The passing fixture of the same rule.
+  OB-FIX-19:
+    statement: A document that nothing has verified for six months is swept
+    rationale: Staleness is invisible until somebody looks for it
+    class: cohesion
+    prevents: content.outdated
+    severity: low
+
 controls:
   CT-FIX-1:
     mechanism: check:relation.reciprocity.missing
     discharges: [OB-FIX-1]
     trigger: pull_request
     posture: advisory
+    acts: detective
   CT-FIX-2:
     mechanism: check:shelf.placement_is_primary
     discharges: [OB-FIX-2]
     trigger: pull_request
     posture: advisory
+    acts: detective
   CT-FIX-3:
     mechanism: check:facet.required.missing
     discharges: [OB-FIX-3]
     trigger: pull_request
     posture: advisory
+    acts: detective
   CT-FIX-4:
     mechanism: check:facet.value.not_permitted
     discharges: [OB-FIX-4]
     trigger: pull_request
     posture: advisory
+    acts: detective
   CT-FIX-5:
     mechanism: check:relation.endpoint.not_permitted
     discharges: [OB-FIX-5]
     trigger: pull_request
     posture: advisory
+    acts: detective
   CT-FIX-6:
     mechanism: check:relation.participation.overdue
     discharges: [OB-FIX-6]
     trigger: pull_request
     posture: advisory
+    acts: detective
   CT-FIX-7:
     mechanism: check:voice.forbidden_construction
     discharges: [OB-FIX-7]
     trigger: pull_request
     posture: advisory
+    acts: detective
   CT-FIX-8:
     mechanism: check:language.controlled.not_met
     discharges: [OB-FIX-8]
     trigger: pull_request
     posture: advisory
+    acts: detective
   CT-FIX-9:
     mechanism: check:section.required.missing
     discharges: [OB-FIX-9]
     trigger: pull_request
     posture: advisory
+    acts: detective
   CT-FIX-10:
     mechanism: check:link.fragment.unresolved
     discharges: [OB-FIX-10]
     trigger: pull_request
     posture: advisory
+    acts: detective
+
+  CT-FIX-11:
+    mechanism: check:obligation.disposition.not_one
+    discharges: [OB-FIX-11]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+  CT-FIX-12:
+    mechanism: check:control.mechanism.unimplemented
+    discharges: [OB-FIX-12]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+
+  # A phase of the engine. It discharges by running rather than by reporting.
+  CT-FIX-13:
+    mechanism: phase:census.classification
+    discharges: [OB-FIX-13]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      produces_facts:
+        reasoning: A component that produces facts has no false-positive rate, and its instrument is this tree
+
+  # A control over an obligation that states a gap as well, which is two
+  # dispositions.
+  CT-FIX-14:
+    mechanism: check:relation.endpoint.not_permitted
+    discharges: [OB-FIX-17]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+
+  # A mechanism under a prefix this engine reads, naming something it does not
+  # implement.
+  CT-FIX-15:
+    mechanism: check:no.such.rule
+    discharges: [OB-FIX-18]
+    trigger: pull_request
+    posture: blocking
+    acts: preventive
+
+  # A mechanism outside this engine. Spec 4 declares these, and the register
+  # says only that this run did not observe it.
+  CT-FIX-16:
+    mechanism: scheduled:staleness-sweep
+    discharges: [OB-FIX-19]
+    trigger: weekly
+    posture: advisory
+    acts: detective
+    handoff: task-per-finding
+    promotion:
+      criteria:
+        window: two release cycles
+        threshold: one finding in twenty is wrong
+        sample: sixty findings, adjudicated at the periodic triage

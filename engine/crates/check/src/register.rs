@@ -634,24 +634,39 @@ impl Projection {
         for obligation in self.obligations.iter().filter(|o| {
             o.disposition() != Disposition::Verified || o.contradicted() || o.escaped > 0
         }) {
-            let _ = write!(out, "  {} {}", obligation.id, obligation.disposition().name());
-            let _ = match &obligation.stated {
-                Some(Stated::Gap { owner, target }) => match target {
-                    Some(target) => write!(out, ", owner {owner}, target {target}"),
-                    None => write!(out, ", owner {owner}, and no target"),
-                },
-                Some(Stated::Unverifiable { reasoning }) => write!(out, ", {reasoning}"),
-                None => Ok(()),
+            let _ = write!(
+                out,
+                "  {} {}",
+                obligation.id,
+                obligation.disposition().name()
+            );
+            match (obligation.contradicted(), &obligation.stated) {
+                // A control discharges it and it states a disposition too, so
+                // it carries two. The statement is reported as the second one
+                // rather than spelled out, because the control above is what
+                // the register went with.
+                (true, Some(Stated::Gap { .. })) => {
+                    out.push_str(", and it states a gap as well, which is two dispositions")
+                }
+                (true, _) => {
+                    out.push_str(", and it states an acceptance as well, which is two dispositions")
+                }
+                (false, Some(Stated::Gap { owner, target })) => {
+                    let _ = match target {
+                        Some(target) => write!(out, ", owner {owner}, target {target}"),
+                        None => write!(out, ", owner {owner}, and no target"),
+                    };
+                }
+                (false, Some(Stated::Unverifiable { reasoning })) => {
+                    let _ = write!(out, ", {reasoning}");
+                }
+                (false, None) => {}
+            }
+            let _ = match obligation.escaped {
+                0 => Ok(()),
+                1 => write!(out, ", 1 finding escaped under it"),
+                escaped => write!(out, ", {escaped} findings escaped under it"),
             };
-            if obligation.contradicted() {
-                let _ = write!(
-                    out,
-                    ", and it states one for itself as well, which is two dispositions"
-                );
-            }
-            if obligation.escaped > 0 {
-                let _ = write!(out, ", {} findings escaped under it", obligation.escaped);
-            }
             out.push('\n');
         }
 
@@ -839,7 +854,10 @@ fn read_disposition(id: &str, map: &Mapping) -> Result<Option<Stated>, Declarati
             target: scalar(gap, "target"),
         }));
     }
-    if let Some(accepted) = stated.get("unverifiable").and_then(|node| node.value.as_map()) {
+    if let Some(accepted) = stated
+        .get("unverifiable")
+        .and_then(|node| node.value.as_map())
+    {
         let reasoning = scalar(accepted, "reasoning").ok_or_else(|| DeclarationError {
             message: format!(
                 "obligation `{id}` is accepted as unverifiable and records no reasoning, which \
@@ -976,6 +994,19 @@ mod tests {
         Register::read(root.value.as_map().expect("a mapping")).expect("the register reads")
     }
 
+    /// What this reader refuses, as one string. Every refusal here is about a
+    /// declaration it cannot use rather than about a shape, which the
+    /// meta-schema owns.
+    fn refusal(source: &str) -> String {
+        let root = headwater_yaml::load(source).expect("the source loads");
+        Register::read(root.value.as_map().expect("a mapping"))
+            .expect_err("the register is refused")
+            .iter()
+            .map(|error| error.message.clone())
+            .collect::<Vec<String>>()
+            .join("\n")
+    }
+
     const ONE: &str = "\
 obligations:
   OB-REL-1:
@@ -1032,6 +1063,172 @@ controls:
         assert_eq!(
             register.bound("r"),
             Bound::Several(vec!["OB-1".to_string(), "OB-2".to_string()])
+        );
+    }
+
+    /// The disposition an obligation states, and the one value it may never
+    /// state. `verified` follows from a control, so a source that writes it is
+    /// asking for a second place to keep the binding.
+    #[test]
+    fn an_obligation_states_a_gap_or_an_acceptance_and_never_verified() {
+        let register = register(
+            "obligations:\n  \
+             OB-1:\n    statement: s\n    disposition: {gap: {owner: o, target: t}}\n  \
+             OB-2:\n    statement: s\n    disposition: {unverifiable: {reasoning: r}}\n",
+        );
+        assert_eq!(
+            register
+                .obligation("OB-1")
+                .and_then(|o| o.disposition.clone()),
+            Some(Stated::Gap {
+                owner: "o".to_string(),
+                target: Some("t".to_string()),
+            })
+        );
+        assert_eq!(
+            register
+                .obligation("OB-2")
+                .and_then(|o| o.disposition.clone()),
+            Some(Stated::Unverifiable {
+                reasoning: "r".to_string(),
+            })
+        );
+
+        let refused =
+            refusal("obligations:\n  OB-1:\n    statement: s\n    disposition: {verified: {}}\n");
+        assert!(refused.contains("declares itself verified"), "{refused}");
+    }
+
+    /// A gap with no owner is not the gap spec 4 describes, and an acceptance
+    /// with no reasoning is not the acceptance it describes either.
+    #[test]
+    fn each_disposition_carries_the_half_spec_4_asks_for() {
+        assert!(
+            refusal("obligations:\n  OB-1:\n    statement: s\n    disposition: {gap: {}}\n")
+                .contains("names no owner")
+        );
+        assert!(refusal(
+            "obligations:\n  OB-1:\n    statement: s\n    disposition: {unverifiable: {}}\n"
+        )
+        .contains("records no reasoning"));
+    }
+
+    /// A phase discharges an obligation by running, and it binds no finding.
+    /// Both halves matter: the register calls the obligation verified, and
+    /// `bound` still reports that no rule reaches it.
+    #[test]
+    fn a_phase_discharges_an_obligation_and_binds_no_finding() {
+        let register = register(
+            "obligations:\n  OB-1:\n    statement: s\n\
+             controls:\n  CT-1:\n    mechanism: phase:census.classification\n    \
+             discharges: [OB-1]\n",
+        );
+        assert_eq!(
+            register.mechanism(&register.controls[0]),
+            Mechanism::Phase("census.classification".to_string())
+        );
+        assert_eq!(register.bound("census.classification"), Bound::Unnamed);
+        let projection = Projection::of(&register);
+        assert_eq!(
+            projection.obligations[0].disposition(),
+            Disposition::Verified
+        );
+        assert!(projection.findings("t.yml").is_empty());
+    }
+
+    /// The two ways a taxonomy gives an obligation something other than one
+    /// disposition, and the one way a control names a mechanism that nothing
+    /// implements. Spec 4 calls all three findings.
+    #[test]
+    fn the_register_reports_what_spec_4_calls_a_finding_about_itself() {
+        let register = register(
+            "obligations:\n  \
+             OB-1:\n    statement: s\n  \
+             OB-2:\n    statement: s\n    disposition: {gap: {owner: o}}\n  \
+             OB-3:\n    statement: s\n\
+             controls:\n  \
+             CT-1:\n    mechanism: check:coverage.document_unchecked\n    discharges: [OB-2]\n  \
+             CT-2:\n    mechanism: check:no.such.rule\n    discharges: [OB-3]\n",
+        );
+        let projection = Projection::of(&register);
+        let findings = projection.findings("t.yml");
+        let messages: Vec<&str> = findings.iter().map(|f| f.message.as_str()).collect();
+        assert_eq!(findings.len(), 3, "{messages:?}");
+        assert!(messages[0].contains("OB-1 carries no disposition"));
+        assert!(messages[1].contains("OB-2 carries two dispositions"));
+        assert!(messages[2].contains("does not implement"));
+        assert!(findings.iter().all(|f| f.path == "t.yml"));
+        assert_eq!(
+            projection.obligations[2].disposition(),
+            Disposition::Verified,
+            "a control discharges it on paper, whatever the engine can run"
+        );
+    }
+
+    /// A mechanism under a prefix this engine does not read is not a defect.
+    /// Spec 4 declares scheduled and hook mechanisms, and the register says
+    /// only that this run did not observe one.
+    #[test]
+    fn a_mechanism_outside_this_engine_is_not_a_finding() {
+        let register = register(
+            "obligations:\n  OB-1:\n    statement: s\n\
+             controls:\n  CT-1:\n    mechanism: scheduled:staleness-sweep\n    \
+             discharges: [OB-1]\n",
+        );
+        assert!(Projection::of(&register).findings("t.yml").is_empty());
+    }
+
+    /// A promotion record holds exactly one of spec 4's four cases, and an
+    /// exemption with no reasoning is the assertion of taste it refuses.
+    #[test]
+    fn a_promotion_record_holds_one_case_and_states_its_reason() {
+        let register = register(
+            "controls:\n  \
+             CT-1:\n    mechanism: check:r\n    promotion: {criteria: \
+             {window: w, threshold: t, sample: s}}\n  \
+             CT-2:\n    mechanism: check:r\n    promotion: {permanently_advisory: \
+             {reasoning: r}}\n",
+        );
+        assert_eq!(
+            register.controls[0].promotion,
+            Some(Promotion::Criteria {
+                window: "w".to_string(),
+                threshold: "t".to_string(),
+                sample: "s".to_string(),
+            })
+        );
+        assert_eq!(
+            register.controls[1].promotion,
+            Some(Promotion::PermanentlyAdvisory {
+                reasoning: "r".to_string(),
+            })
+        );
+        assert!(refusal(
+            "controls:\n  CT-1:\n    mechanism: check:r\n    promotion: {final_posture: {}}\n"
+        )
+        .contains("records no reasoning"));
+        assert!(refusal(
+            "controls:\n  CT-1:\n    mechanism: check:r\n    promotion: {criteria: {window: w}}\n"
+        )
+        .contains("state no threshold"));
+    }
+
+    /// A suppression does not undo a control, so it does not move a
+    /// disposition. What it moves is the count a reader of that obligation is
+    /// owed.
+    #[test]
+    fn what_escaped_is_counted_against_the_obligation_and_moves_no_disposition() {
+        let register = register(
+            "obligations:\n  OB-1:\n    statement: s\n\
+             controls:\n  CT-1:\n    mechanism: check:coverage.document_unchecked\n    \
+             discharges: [OB-1]\n",
+        );
+        let mut projection = Projection::of(&register);
+        projection.escaped_from(&register, &Inventory::default());
+        assert_eq!(projection.obligations[0].escaped, 0);
+        assert_eq!(
+            projection.obligations[0].disposition(),
+            Disposition::Verified
         );
     }
 }

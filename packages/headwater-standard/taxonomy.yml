@@ -267,6 +267,13 @@ obligations:
     prevents: process.traceability
     severity: high
 
+  OB-REG-2:
+    statement: Every control names a mechanism that the engine implements
+    rationale: A register that claims coverage it does not have is worse than no register, and a mistyped rule id claims exactly that
+    class: cohesion
+    prevents: process.traceability
+    severity: high
+
 # A control names the mechanism that discharges an obligation. The engine reads
 # two mechanism prefixes. `check:` names the id of a rule, and that is the
 # binding a finding travels along: a rule reaches its obligation through the
@@ -316,8 +323,15 @@ controls:
         reasoning: The coverage account is the denominator every other number in the report is read against, and a denominator has no false-positive rate. It is right or it is wrong, and the fixture tree is what says which
 
   CT-REG-1:
-    mechanism: check:obligation.disposition.missing
+    mechanism: check:obligation.disposition.not_one
     discharges: [OB-REG-1]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+
+  CT-REG-2:
+    mechanism: check:control.mechanism.unimplemented
+    discharges: [OB-REG-2]
     trigger: pull_request
     posture: advisory
     acts: detective

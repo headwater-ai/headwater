@@ -72,11 +72,25 @@ fn compare(recorded: &Path, actual: &str) {
 }
 
 /// One run over one corpus: the whole pipeline, in the order spec 6 draws it.
-fn run_over(corpus: &Corpus, root: &Mapping, lock: &str, cache: &mut Cache) -> Run {
-    run_at(corpus, root, lock, &pinned(), cache)
+fn run_over(corpus: &Corpus, root: &Mapping, lock: &str, source: &str, cache: &mut Cache) -> Run {
+    run_at(corpus, root, lock, source, &pinned(), cache)
 }
 
-fn run_at(corpus: &Corpus, root: &Mapping, lock: &str, ctx: &Context, cache: &mut Cache) -> Run {
+/// Where the fixture tree's taxonomy lives, as a reader would open it.
+///
+/// A run of the verb passes `.headwater/taxonomy.lock`, which spec 6 fixes.
+/// This tree has no lock, and the source stands in for one exactly as its
+/// digest stands in for a lock digest.
+const FIXTURE_SOURCE: &str = "engine/crates/check/fixtures/check.taxonomy.yml";
+
+fn run_at(
+    corpus: &Corpus,
+    root: &Mapping,
+    lock: &str,
+    source: &str,
+    ctx: &Context,
+    cache: &mut Cache,
+) -> Run {
     let taxonomy = Taxonomy::read(root).expect("the taxonomy reads");
     let declarations = Declarations::read(root).expect("the declarations read");
     let register = Register::read(root).expect("the register reads");
@@ -98,6 +112,7 @@ fn run_at(corpus: &Corpus, root: &Mapping, lock: &str, ctx: &Context, cache: &mu
             shape: &shape,
             relations: &declarations,
             register: &register,
+            source,
         },
         ctx,
         cache,
@@ -107,7 +122,13 @@ fn run_at(corpus: &Corpus, root: &Mapping, lock: &str, ctx: &Context, cache: &mu
 fn fixture_run() -> Run {
     let corpus = Corpus::new(fixtures_dir(), "check");
     let root = load_map(&fixtures_dir().join("check.taxonomy.yml"));
-    run_over(&corpus, &root, &fixture_lock(), &mut Cache::disabled())
+    run_over(
+        &corpus,
+        &root,
+        &fixture_lock(),
+        FIXTURE_SOURCE,
+        &mut Cache::disabled(),
+    )
 }
 
 /// The fixture tree has no lock, so the digest of its taxonomy source stands
@@ -140,6 +161,7 @@ fn cached_corpus_run(cache: &mut Cache) -> Run {
         &corpus_of(&root, &resolved),
         &resolved.resolution.taxonomy,
         &lock.digest,
+        headwater_lock::LOCK,
         cache,
     )
 }
@@ -489,6 +511,7 @@ fn the_injected_clock_changes_a_verdict_and_nothing_else_does() {
         &corpus,
         &root,
         &fixture_lock(),
+        FIXTURE_SOURCE,
         &Context::at(Date::parse("2026-09-30").expect("a date")),
         &mut Cache::disabled(),
     );
@@ -691,6 +714,9 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             Grain::Document,
             Grain::Document,
             Grain::Corpus,
+            // The two register rules, which read the taxonomy and no document.
+            Grain::Taxonomy,
+            Grain::Taxonomy,
         ]
     );
     let bodies: Vec<&str> = run

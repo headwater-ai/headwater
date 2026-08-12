@@ -108,6 +108,7 @@ fn run_at(root: &Path, ctx: &Context, cache: &mut Cache) -> Run {
             shape: &shape,
             relations: &declarations,
             register: &register,
+            source: "engine/crates/check/tests/cache.rs",
         },
         ctx,
         cache,
