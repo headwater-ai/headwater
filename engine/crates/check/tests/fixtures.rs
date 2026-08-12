@@ -4,7 +4,7 @@
 //! [Spec 12](../../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor: "every check ships with at least one fixture that it fails
 //! and one that it passes." The tree under `fixtures/check/` carries both for
-//! each of the seven rules, and `check.report` records every instance and every
+//! each of the eleven rules, and `check.report` records every instance and every
 //! finding it produces.
 //!
 //!     HEADWATER_BLESS=1 cargo test -p headwater-check --test fixtures
