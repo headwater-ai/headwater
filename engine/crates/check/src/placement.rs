@@ -92,7 +92,7 @@ impl DocumentCheck for Placement {
         // census recorded. Reading it back costs nothing and it cannot
         // disagree with the resolution that produced the kind.
         let Some(shelf) = view.placed_on() else {
-            return Outcome::Skipped(HETEROGENEOUS);
+            return Outcome::Skipped(HETEROGENEOUS.to_string());
         };
 
         let restated = self

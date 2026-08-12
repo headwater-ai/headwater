@@ -17,9 +17,9 @@ use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::scope::{over_documents, over_edges, Digests};
 use headwater_check::{
-    coverage, endpoint, facet_required, facet_value, participation, placement, reciprocity, Cache,
-    Context, Date, Declared, Detail, DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain,
-    Outcome, Register, Run, Shape,
+    coverage, endpoint, facet_required, facet_value, fragment, language, participation, placement,
+    reciprocity, sections, voice, Cache, Context, Date, Declared, Detail, DocumentCheck,
+    DocumentView, EdgeCheck, EdgeView, Grain, Outcome, Register, Run, Shape,
 };
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -176,10 +176,17 @@ fn the_fixture_tree_runs_to_the_recorded_report() {
 /// This repository, checked by the taxonomy that types it.
 ///
 /// The recorded file holds the coverage totals, the instance count per rule,
-/// and every finding. It leaves out the per-document accounting for the reason
-/// the census and the graph leave out their own rows: a corpus adds a document
-/// most weeks, and a file that changes on every commit is a file nobody reads.
-/// What stays is the number a regression moves.
+/// and what each rule serves. It leaves out the per-document accounting for the
+/// reason the census and the graph leave out their own rows: a corpus adds a
+/// document most weeks, and a file that changes on every commit is a file
+/// nobody reads. What stays is the number a regression moves.
+///
+/// It now leaves out the findings for the same reason, one step further in.
+/// Four of the eleven rules read prose, and a prose finding is a function of a
+/// sentence: recording them here would re-bless this file on every commit that
+/// touched a paragraph of `docs/spec/`. So the properties that a prose edit
+/// must not change are asserted instead, and the count that a prose edit
+/// legitimately moves is left to the run itself. CI publishes it.
 #[test]
 fn this_repository_runs_to_the_recorded_report() {
     let run = corpus_run();
@@ -188,9 +195,33 @@ fn this_repository_runs_to_the_recorded_report() {
         "only {} classified documents, which is fewer than this repository has",
         run.coverage.classified()
     );
+
+    // This repository holds no blocking defect, which is the property the
+    // recorded finding list used to carry. It survives a prose edit, and the
+    // finding list did not.
+    let errors: Vec<&str> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.severity == headwater_check::Severity::Error)
+        .map(|finding| finding.rule)
+        .collect();
+    assert!(errors.is_empty(), "{errors:?}");
+
+    // A check that never fires on any input is indistinguishable from one that
+    // does not work, and the fixture tree proves that per rule against a
+    // constructed document. These two run against real prose, which is what
+    // Q5's instrument is: the count is not recorded, and that it is not zero
+    // is.
+    for rule in [voice::RULE, language::RULE] {
+        assert!(
+            run.findings.iter().any(|finding| finding.rule == rule),
+            "{rule} found nothing over this repository's own prose"
+        );
+    }
+
     compare(
         &fixtures_dir().join("corpus.checks"),
-        &run.render(Detail::Findings),
+        &run.render(Detail::Totals),
     );
 }
 
@@ -539,8 +570,8 @@ fn a_classified_document_with_no_instance_is_a_finding_and_an_untyped_one_is_not
         .map(|finding| finding.path.as_str())
         .collect();
     assert_eq!(paths, ["check/spec/03-no-instance.md"]);
-    assert_eq!(run.coverage.seen(), 14);
-    assert_eq!(run.coverage.classified(), 13);
+    assert_eq!(run.coverage.seen(), 17);
+    assert_eq!(run.coverage.classified(), 16);
 }
 
 /// The coverage numbers are computed against the census and never against the
@@ -594,8 +625,25 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             Grain::Edge,
             Grain::Edge,
             Grain::Neighbourhood { depth: 1 },
+            // The four Document-origin rules, which read the body rather than
+            // the front matter. The grain is the same and the view is not:
+            // each one declares `NEEDS_BODY`.
+            Grain::Document,
+            Grain::Document,
+            Grain::Document,
+            Grain::Document,
             Grain::Corpus,
         ]
+    );
+    let bodies: Vec<&str> = run
+        .served
+        .iter()
+        .filter(|served| served.scope.needs_body())
+        .map(|served| served.rule)
+        .collect();
+    assert_eq!(
+        bodies,
+        [voice::RULE, language::RULE, sections::RULE, fragment::RULE]
     );
 
     // The required-facet check reads front matter and never a body, and the
@@ -639,7 +687,7 @@ fn a_document_check_receives_the_body_only_when_it_declares_it() {
 
         fn evaluate(&self, view: &DocumentView<'_>) -> Outcome {
             match view.body() {
-                Some(_) => Outcome::Skipped("the body arrived"),
+                Some(_) => Outcome::Skipped("the body arrived".to_string()),
                 None => Outcome::Passed,
             }
         }
@@ -649,7 +697,7 @@ fn a_document_check_receives_the_body_only_when_it_declares_it() {
     let declared = over_documents(&Reader::<true>, &census, &pinned(), &mut Cache::disabled());
     let did_not = over_documents(&Reader::<false>, &census, &pinned(), &mut Cache::disabled());
 
-    assert_eq!(declared.len(), 13, "one instance per typed document");
+    assert_eq!(declared.len(), 16, "one instance per typed document");
     assert_eq!(declared.len(), did_not.len());
     assert!(declared
         .iter()

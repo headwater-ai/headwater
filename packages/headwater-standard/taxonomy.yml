@@ -225,6 +225,34 @@ obligations:
     prevents: content.inconsistent
     severity: medium
 
+  OB-VOICE-1:
+    statement: Prose of a kind under a voice regime does not use the constructions that regime forbids
+    rationale: A specification that narrates change cannot be read for what holds now, and a reader who cannot tell today from last quarter reads every sentence twice
+    class: cohesion
+    prevents: content.inconsistent
+    severity: low
+
+  OB-LANG-1:
+    statement: Prose of a kind under a language regime obeys the controlled language and the variant it names
+    rationale: A rule that lives in a contributing guide is a rule that no check reads and that every new author learns by being corrected
+    class: cohesion
+    prevents: content.unclear
+    severity: low
+
+  OB-SECT-1:
+    statement: Every section a kind requires is a heading of every document of that kind
+    rationale: A document that omits a section leaves unanswered the question its kind promised to answer, and a reader cannot tell that from an answer of none
+    class: cohesion
+    prevents: content.incomplete
+    severity: high
+
+  OB-LINK-1:
+    statement: A fragment that a document writes into itself names a heading of that document
+    rationale: A link that lands nowhere costs the reader the paragraph it was written to reach, and an anchor rots silently when the heading beside it is edited
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+
   OB-REL-3:
     statement: A participation expectation is met inside the window the taxonomy declares
     rationale: A document that nothing links to inside its window is work that reached nobody, and the corpus cannot tell that from work nobody needed
@@ -284,5 +312,29 @@ controls:
   CT-REL-3:
     mechanism: check:relation.participation.overdue
     discharges: [OB-REL-3]
+    trigger: pull_request
+    posture: advisory
+
+  CT-VOICE-1:
+    mechanism: check:voice.forbidden_construction
+    discharges: [OB-VOICE-1]
+    trigger: pull_request
+    posture: advisory
+
+  CT-LANG-1:
+    mechanism: check:language.controlled.not_met
+    discharges: [OB-LANG-1]
+    trigger: pull_request
+    posture: advisory
+
+  CT-SECT-1:
+    mechanism: check:section.required.missing
+    discharges: [OB-SECT-1]
+    trigger: pull_request
+    posture: advisory
+
+  CT-LINK-1:
+    mechanism: check:link.fragment.unresolved
+    discharges: [OB-LINK-1]
     trigger: pull_request
     posture: advisory

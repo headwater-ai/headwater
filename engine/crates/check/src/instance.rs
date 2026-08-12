@@ -80,7 +80,13 @@ pub enum Outcome {
     Failed(Vec<Finding>),
     /// It did not run, and the reason is visible rather than silent
     /// ([spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)).
-    Skipped(&'static str),
+    ///
+    /// The reason is owned rather than borrowed, because a generated check
+    /// skips over a declaration it cannot read and the name of that declaration
+    /// is what makes the skip actionable. "this engine has no pattern set for
+    /// it" sends an author nowhere; the same sentence with the category in it
+    /// sends them to the taxonomy entry that wrote the name.
+    Skipped(String),
 }
 
 impl Outcome {
@@ -116,11 +122,11 @@ impl Instance {
         }
     }
 
-    pub fn skipped(rule: &'static str, reads: Vec<Input>, reason: &'static str) -> Self {
+    pub fn skipped(rule: &'static str, reads: Vec<Input>, reason: impl Into<String>) -> Self {
         Instance {
             rule,
             reads,
-            outcome: Outcome::Skipped(reason),
+            outcome: Outcome::Skipped(reason.into()),
         }
     }
 

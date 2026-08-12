@@ -1,4 +1,5 @@
-61 seen, 36 classified, 36 checked, 323 check instances
+61 seen, 36 classified, 36 checked, 392 check instances
+     26 skipped: this document writes no fragment into itself
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
      36 instances of facet.required.missing
      36 instances of facet.value.not_permitted
@@ -6,6 +7,9 @@
      86 instances of relation.reciprocity.missing
     114 instances of relation.endpoint.not_permitted
      15 instances of relation.participation.overdue
+     17 instances of voice.forbidden_construction
+     16 instances of language.controlled.not_met
+     36 instances of link.fragment.unresolved
 rules, and for each the scope that binds it and what it serves
   facet.required.missing
     document scope, one document and its front matter
@@ -25,7 +29,18 @@ rules, and for each the scope that binds it and what it serves
   relation.participation.overdue
     neighbourhood scope, one document and the documents one relation away from it, and the injected clock
     OB-REL-3
+  voice.forbidden_construction
+    document scope, one document, its front matter and its body
+    OB-VOICE-1
+  language.controlled.not_met
+    document scope, one document, its front matter and its body
+    OB-LANG-1
+  section.required.missing
+    document scope, one document, its front matter and its body
+    OB-SECT-1
+  link.fragment.unresolved
+    document scope, one document, its front matter and its body
+    OB-LINK-1
   coverage.document_unchecked
     corpus scope, every row of the census, and it is a barrier
     OB-COV-2
-0 findings

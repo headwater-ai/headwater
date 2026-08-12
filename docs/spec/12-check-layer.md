@@ -57,6 +57,8 @@ This table settles three things.
 
 **Document checks are the ones that no graph standard can reach**, because the body is not in the graph. That is the finding from the [SHACL instance-data evaluation](../evaluations/shacl-worked-example.md#does-this-help-with-the-actual-documents). Not by coincidence, they are also the checks that need source positions.
 
+One example in that row asks for more than the row supplies. Prose-link resolution reads the destination of a link, and a fragment on that destination names a heading of another document. No scope below carries a second document's body. So the half that a document decides alone is a Document check. The other half waits for a grain that this list does not hold ([13 — Open obligations](13-open-obligations.md#design-work-that-nothing-blocks)).
+
 **`exportable_as` is machine-checkable.** The emitted shapes are generated from exactly the checks that declare a target, and the next section states the rules that keep the claim honest.
 
 ### `exportable_as` is a set with a partition rule

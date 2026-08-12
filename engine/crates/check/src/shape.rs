@@ -40,6 +40,45 @@ pub struct Shape {
     /// In declaration order, because a report is read by a person.
     pub facets: Vec<Facet>,
     pub kinds: Vec<Kind>,
+    /// `regimes.voice`, which a Document check reads through the kind that
+    /// binds it.
+    pub voice: Vec<VoiceRegime>,
+    /// `regimes.language`, on the same terms.
+    pub language: Vec<LanguageRegime>,
+}
+
+/// A voice regime: the constructions its prose does not use.
+///
+/// The member is a list of category names and never patterns.
+/// [Spec 13](../../../../docs/spec/13-open-obligations.md) records the meta-schema
+/// gap that no value set states the names, so the engine knows a closed set of
+/// them and an instance that meets a name outside it skips with a reason. A
+/// regime that forbids nothing is the narrative regime, and it generates no
+/// instance at all.
+#[derive(Clone, Debug)]
+pub struct VoiceRegime {
+    pub name: String,
+    pub forbid: Vec<String>,
+    pub span: Span,
+}
+
+/// A language regime: the tag, and the controlled language the prose is held to.
+///
+/// `controlled` and `profile` are two strings and the meta-schema marks both as
+/// a gap, for a reason it states: spec 2 names `none`, `ste-house` and
+/// `ste-strict`, and this repository's own overlay writes `ASD-STE100` with a
+/// separate `profile`. So the engine matches what it knows and skips the rest,
+/// which is the same posture as an unreadable participation window.
+#[derive(Clone, Debug)]
+pub struct LanguageRegime {
+    pub name: String,
+    /// BCP 47, as declared. `en-US` is the only spelling variant this engine
+    /// has a rule for, and a tag it does not know decides nothing.
+    pub tag: String,
+    /// The controlled language, and nothing for a regime that declares none.
+    pub controlled: Option<String>,
+    pub profile: Option<String>,
+    pub span: Span,
 }
 
 /// A facet, read down to what a generated check needs.
@@ -68,6 +107,14 @@ pub struct Kind {
     /// [`Shape::required_facets`] is the inherited set.
     pub require: Vec<String>,
     pub forbid: Vec<String>,
+    /// The name of the voice regime this kind binds, inherited through
+    /// [`Shape::voice_of`].
+    pub voice: Option<String>,
+    /// The name of the language regime, on the same terms.
+    pub language: Option<String>,
+    /// `sections.require`, as this kind declares it. [`Shape::required_sections`]
+    /// is the inherited set.
+    pub sections: Vec<String>,
     /// `relations.expect`, which is where a windowed participation expectation
     /// is declared ([spec 2](../../../../docs/spec/02-taxonomy-model.md#participation-expectations)).
     pub expectations: Vec<Expectation>,
@@ -146,11 +193,82 @@ impl Shape {
             }
         }
 
+        if let Some(regimes) = root.get("regimes").and_then(|node| node.value.as_map()) {
+            if let Some(voice) = regimes.get("voice").and_then(|node| node.value.as_map()) {
+                for entry in voice {
+                    let Some(map) = entry.value.value.as_map() else {
+                        continue;
+                    };
+                    shape.voice.push(VoiceRegime {
+                        name: entry.key.value.clone(),
+                        forbid: sequence(map, "forbid"),
+                        span: entry.key.span,
+                    });
+                }
+            }
+            if let Some(language) = regimes.get("language").and_then(|node| node.value.as_map()) {
+                for entry in language {
+                    let Some(map) = entry.value.value.as_map() else {
+                        continue;
+                    };
+                    shape.language.push(LanguageRegime {
+                        name: entry.key.value.clone(),
+                        tag: scalar(map, "tag").unwrap_or_default(),
+                        controlled: scalar(map, "controlled"),
+                        profile: scalar(map, "profile"),
+                        span: entry.key.span,
+                    });
+                }
+            }
+        }
+
         if errors.is_empty() {
             Ok(shape)
         } else {
             Err(errors)
         }
+    }
+
+    /// The voice regime a kind is held to, through the chain that binds it.
+    ///
+    /// A kind that binds none, and whose ancestors bind none, answers to no
+    /// voice rule. That is the narrative case of
+    /// [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#voice), and
+    /// it is an absence rather than a regime that permits everything.
+    pub fn voice_of(&self, kind: &str) -> Option<&VoiceRegime> {
+        let name = self
+            .ancestry(kind)
+            .iter()
+            .find_map(|step| step.voice.clone())?;
+        self.voice.iter().find(|regime| regime.name == name)
+    }
+
+    /// The language regime a kind is held to, on the same terms.
+    pub fn language_of(&self, kind: &str) -> Option<&LanguageRegime> {
+        let name = self
+            .ancestry(kind)
+            .iter()
+            .find_map(|step| step.language.clone())?;
+        self.language.iter().find(|regime| regime.name == name)
+    }
+
+    /// Every section a document of this kind owes, in one order.
+    ///
+    /// Inherited the way [`Shape::required_facets`] is inherited, and from the
+    /// root of the chain down, so the order a report prints does not move when
+    /// a kind gains a parent. A section has no `forbid`, because the
+    /// meta-schema declares none: a contract states `require` and `optional`,
+    /// and what is neither is a heading the contract says nothing about.
+    pub fn required_sections(&self, kind: &str) -> Vec<String> {
+        let mut required: Vec<String> = Vec::new();
+        for step in self.ancestry(kind).iter().rev() {
+            for name in &step.sections {
+                if !required.iter().any(|known| known == name) {
+                    required.push(name.clone());
+                }
+            }
+        }
+        required
     }
 
     pub fn facet(&self, name: &str) -> Option<&Facet> {
@@ -297,6 +415,13 @@ fn read_kind(name: &str, value: &Value, span: Span) -> Result<Kind, DeclarationE
             .unwrap_or_default(),
         forbid: facets
             .map(|map| sequence(map, "forbid"))
+            .unwrap_or_default(),
+        voice: scalar(map, "voice"),
+        language: scalar(map, "language"),
+        sections: map
+            .get("sections")
+            .and_then(|node| node.value.as_map())
+            .map(|sections| sequence(sections, "require"))
             .unwrap_or_default(),
         expectations: read_expectations(map),
         span,

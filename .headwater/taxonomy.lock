@@ -10,12 +10,12 @@
 
 lock:
   format: 1
-  digest: sha256:4543e1d2be1b132528ca0bd9cc454198bb8397489a4cb961ffc097f35925c43b
+  digest: sha256:8e671ce4cbc651351ad1cde0f3cd16d4fdcef15d6fb15046287a3f9898fac019
   package: headwater/standard
   version: 1.0.0
   sources:
     - path: packages/headwater-standard/taxonomy.yml
-      digest: sha256:9828aa09d2a7701298dc4d4fc3477c0a62a3b5cbdfa199f8c7ab87c02ff2ac5f
+      digest: sha256:88c512d5a9137bc7f401a28fd8c6792dde1984267737526788d20e0efa0886a3
     - path: docs/taxonomies/design-spec/bundle.yml
       digest: sha256:0dd73708d7200b7b02389a7dc8811ddc80ab61ece7892efd7391cdf504d6bda0
     - path: .headwater/overlay.yml
@@ -454,6 +454,30 @@ resolved:
       class: cohesion
       prevents: content.inconsistent
       severity: medium
+    OB-VOICE-1:
+      statement: "Prose of a kind under a voice regime does not use the constructions that regime forbids"
+      rationale: "A specification that narrates change cannot be read for what holds now, and a reader who cannot tell today from last quarter reads every sentence twice"
+      class: cohesion
+      prevents: content.inconsistent
+      severity: low
+    OB-LANG-1:
+      statement: "Prose of a kind under a language regime obeys the controlled language and the variant it names"
+      rationale: "A rule that lives in a contributing guide is a rule that no check reads and that every new author learns by being corrected"
+      class: cohesion
+      prevents: content.unclear
+      severity: low
+    OB-SECT-1:
+      statement: "Every section a kind requires is a heading of every document of that kind"
+      rationale: "A document that omits a section leaves unanswered the question its kind promised to answer, and a reader cannot tell that from an answer of none"
+      class: cohesion
+      prevents: content.incomplete
+      severity: high
+    OB-LINK-1:
+      statement: "A fragment that a document writes into itself names a heading of that document"
+      rationale: "A link that lands nowhere costs the reader the paragraph it was written to reach, and an anchor rots silently when the heading beside it is edited"
+      class: cohesion
+      prevents: content.inconsistent
+      severity: medium
     OB-REL-3:
       statement: "A participation expectation is met inside the window the taxonomy declares"
       rationale: "A document that nothing links to inside its window is work that reached nobody, and the corpus cannot tell that from work nobody needed"
@@ -501,5 +525,29 @@ resolved:
       mechanism: "check:relation.participation.overdue"
       discharges:
         - OB-REL-3
+      trigger: pull_request
+      posture: advisory
+    CT-VOICE-1:
+      mechanism: "check:voice.forbidden_construction"
+      discharges:
+        - OB-VOICE-1
+      trigger: pull_request
+      posture: advisory
+    CT-LANG-1:
+      mechanism: "check:language.controlled.not_met"
+      discharges:
+        - OB-LANG-1
+      trigger: pull_request
+      posture: advisory
+    CT-SECT-1:
+      mechanism: "check:section.required.missing"
+      discharges:
+        - OB-SECT-1
+      trigger: pull_request
+      posture: advisory
+    CT-LINK-1:
+      mechanism: "check:link.fragment.unresolved"
+      discharges:
+        - OB-LINK-1
       trigger: pull_request
       posture: advisory

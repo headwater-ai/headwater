@@ -98,7 +98,7 @@ impl EdgeCheck for Reciprocity<'_> {
             (Some(_), Some(_)) => return Outcome::Passed,
             (Some(edge), None) => (edge, Missing::TheInverseHalf),
             (None, Some(edge)) => (edge, Missing::TheDeclaredHalf),
-            (None, None) => return Outcome::Skipped(NO_HALF),
+            (None, None) => return Outcome::Skipped(NO_HALF.to_string()),
         };
 
         let Some(relation) = self
@@ -106,7 +106,7 @@ impl EdgeCheck for Reciprocity<'_> {
             .iter()
             .find(|known| known.name == written.declared)
         else {
-            return Outcome::Skipped(NO_RELATION);
+            return Outcome::Skipped(NO_RELATION.to_string());
         };
 
         // The far end of the half that exists is the document that owes the

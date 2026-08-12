@@ -32,11 +32,13 @@
 pub mod body;
 pub mod error;
 pub mod lines;
+pub mod sentences;
 pub mod split;
 
 pub use body::{Block, BlockKind, Body, Link, LinkForm, Ownership, Run};
 pub use error::{ParseError, Reason};
 pub use headwater_yaml::{Mapping, Position, Span, Spanned, Value};
+pub use sentences::Sentence;
 
 /// A parsed document.
 #[derive(Clone, Debug)]

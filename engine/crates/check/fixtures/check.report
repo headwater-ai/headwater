@@ -1,11 +1,18 @@
-14 seen, 13 classified, 12 checked, 54 check instances
-      6 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
-     12 instances of facet.required.missing
-     12 instances of facet.value.not_permitted
-     13 instances of shelf.placement_is_primary
+17 seen, 16 classified, 15 checked, 97 check instances
+     14 skipped: this document writes no fragment into itself
+      9 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+      2 skipped: `guarded` forbids hedging, and this engine has no pattern set for it
+      2 skipped: `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
+     15 instances of facet.required.missing
+     15 instances of facet.value.not_permitted
+     16 instances of shelf.placement_is_primary
       4 instances of relation.reciprocity.missing
       6 instances of relation.endpoint.not_permitted
       7 instances of relation.participation.overdue
+      8 instances of voice.forbidden_construction
+      8 instances of language.controlled.not_met
+      2 instances of section.required.missing
+     16 instances of link.fragment.unresolved
 rules, and for each the scope that binds it and what it serves
   facet.required.missing
     document scope, one document and its front matter
@@ -25,12 +32,24 @@ rules, and for each the scope that binds it and what it serves
   relation.participation.overdue
     neighbourhood scope, one document and the documents one relation away from it, and the injected clock
     OB-FIX-6
+  voice.forbidden_construction
+    document scope, one document, its front matter and its body
+    OB-FIX-7
+  language.controlled.not_met
+    document scope, one document, its front matter and its body
+    OB-FIX-8
+  section.required.missing
+    document scope, one document, its front matter and its body
+    OB-FIX-9
+  link.fragment.unresolved
+    document scope, one document, its front matter and its body
+    OB-FIX-10
   coverage.document_unchecked
     corpus scope, every row of the census, and it is a barrier
     no control names this rule, so its findings name no obligation
-9 findings
-      7 error
-      2 warn
+20 findings
+     11 error
+      9 warn
 
 instances
   facet.required.missing check/evaluations/alpha.md
@@ -57,6 +76,12 @@ instances
     failed
   facet.required.missing check/spec/06-retired.md
     passed
+  facet.required.missing check/spec/07-prose-defects.md
+    passed
+  facet.required.missing check/spec/08-contract-met.md
+    passed
+  facet.required.missing check/spec/09-contract-missing.md
+    passed
   facet.value.not_permitted check/evaluations/alpha.md
     passed
   facet.value.not_permitted check/evaluations/beta.md
@@ -81,6 +106,12 @@ instances
     passed
   facet.value.not_permitted check/spec/06-retired.md
     failed
+  facet.value.not_permitted check/spec/07-prose-defects.md
+    passed
+  facet.value.not_permitted check/spec/08-contract-met.md
+    passed
+  facet.value.not_permitted check/spec/09-contract-missing.md
+    passed
   shelf.placement_is_primary check/evaluations/alpha.md
     passed
   shelf.placement_is_primary check/evaluations/beta.md
@@ -106,6 +137,12 @@ instances
   shelf.placement_is_primary check/spec/05-no-summary.md
     skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
   shelf.placement_is_primary check/spec/06-retired.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  shelf.placement_is_primary check/spec/07-prose-defects.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  shelf.placement_is_primary check/spec/08-contract-met.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  shelf.placement_is_primary check/spec/09-contract-missing.md
     skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
   relation.reciprocity.missing check/spec/00-both-halves.md + check/evaluations/alpha.md
     passed
@@ -141,6 +178,74 @@ instances
     passed
   relation.participation.overdue check/evaluations/zeta.md
     passed
+  voice.forbidden_construction check/spec/00-both-halves.md
+    passed
+  voice.forbidden_construction check/spec/01-one-half.md
+    passed
+  voice.forbidden_construction check/spec/02-cited-only.md
+    passed
+  voice.forbidden_construction check/spec/05-no-summary.md
+    passed
+  voice.forbidden_construction check/spec/06-retired.md
+    passed
+  voice.forbidden_construction check/spec/07-prose-defects.md
+    failed
+  voice.forbidden_construction check/spec/08-contract-met.md
+    skipped: `guarded` forbids hedging, and this engine has no pattern set for it
+  voice.forbidden_construction check/spec/09-contract-missing.md
+    skipped: `guarded` forbids hedging, and this engine has no pattern set for it
+  language.controlled.not_met check/spec/00-both-halves.md
+    passed
+  language.controlled.not_met check/spec/01-one-half.md
+    failed
+  language.controlled.not_met check/spec/02-cited-only.md
+    passed
+  language.controlled.not_met check/spec/05-no-summary.md
+    failed
+  language.controlled.not_met check/spec/06-retired.md
+    failed
+  language.controlled.not_met check/spec/07-prose-defects.md
+    failed
+  language.controlled.not_met check/spec/08-contract-met.md
+    skipped: `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
+  language.controlled.not_met check/spec/09-contract-missing.md
+    skipped: `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
+  section.required.missing check/spec/08-contract-met.md
+    passed
+  section.required.missing check/spec/09-contract-missing.md
+    failed
+  link.fragment.unresolved check/evaluations/alpha.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved check/evaluations/beta.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved check/evaluations/delta.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved check/evaluations/epsilon.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved check/evaluations/eta.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved check/evaluations/gamma.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved check/evaluations/zeta.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved check/spec/00-both-halves.md
+    passed
+  link.fragment.unresolved check/spec/01-one-half.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved check/spec/02-cited-only.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved check/spec/03-no-instance.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved check/spec/05-no-summary.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved check/spec/06-retired.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved check/spec/07-prose-defects.md
+    failed
+  link.fragment.unresolved check/spec/08-contract-met.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved check/spec/09-contract-missing.md
+    skipped: this document writes no fragment into itself
 
 check/evaluations/delta.md:8:7 error
   relation.reciprocity.missing (OB-FIX-1): `EVAL-FIX-delta` declares `cited_by: SPEC-FIX-cited-only`, and `cites_evidence` requires both ends, so check/spec/02-cited-only.md owes `cites_evidence`
@@ -160,12 +265,45 @@ check/evaluations/gamma.md:9:7 error
 check/spec/01-one-half.md:9:7 error
   relation.reciprocity.missing (OB-FIX-1): `SPEC-FIX-one-half` declares `cites_evidence: EVAL-FIX-beta`, and `cites_evidence` requires both ends, so check/evaluations/beta.md owes `cited_by`
   fix (mechanical): add `cited_by: SPEC-FIX-one-half` under `relations:` in check/evaluations/beta.md
+check/spec/01-one-half.md:21:75 warn
+  language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words a sentence, and this one has 34
+  fix: split the sentence, or move a clause into its own sentence
 check/spec/03-no-instance.md warn
-  coverage.document_unchecked: this document is classified and all 1 of its check instances were skipped
+  coverage.document_unchecked: this document is classified and all 2 of its check instances were skipped
   fix: check that the shelf pattern claims the right files, and that the kind declares something a check reads
 check/spec/05-no-summary.md error
   facet.required.missing (OB-FIX-3): `design_spec` requires the facet `summary`, and it is not declared
   fix: add `summary:` to the front matter of check/spec/05-no-summary.md, with the value this document has
+check/spec/05-no-summary.md:14:1 warn
+  language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words a sentence, and this one has 31
+  fix: split the sentence, or move a clause into its own sentence
 check/spec/06-retired.md:4:9 error
   facet.value.not_permitted (OB-FIX-4): `status` admits draft, current, superseded, and this document declares `retired`
   fix: change `status` in check/spec/06-retired.md to one of: draft, current, superseded
+check/spec/06-retired.md:12:53 warn
+  language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words a sentence, and this one has 34
+  fix: split the sentence, or move a clause into its own sentence
+check/spec/07-prose-defects.md:17:1 warn
+  voice.forbidden_construction (OB-FIX-7): `declarative` forbids future_intent, and this sentence writes `will be`
+  fix: state what the system does now, or move the sentence to a document whose kind narrates
+check/spec/07-prose-defects.md:19:1 warn
+  voice.forbidden_construction (OB-FIX-7): `declarative` forbids change_narration, and this sentence writes `we renamed`
+  fix: state the position that holds, and leave the change to the decision that made it
+check/spec/07-prose-defects.md:21:1 warn
+  voice.forbidden_construction (OB-FIX-7): `declarative` forbids phased_rollout, and this sentence writes `for now`
+  fix: state what holds, and record the sequence in the plan that owns it
+check/spec/07-prose-defects.md:25:1 warn
+  language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words a sentence, and this one has 43
+  fix: split the sentence, or move a clause into its own sentence
+check/spec/07-prose-defects.md:29:1 error
+  language.controlled.not_met (OB-FIX-8): `ste_house` admits no contraction, and this sentence writes `doesn't`
+  fix: write `doesn't` out in full
+check/spec/07-prose-defects.md:31:1 error
+  language.controlled.not_met (OB-FIX-8): `ste_house` declares the tag `en-US`, and this sentence writes `behaviour`
+  fix: write `behavior`
+check/spec/07-prose-defects.md:35:32 error
+  link.fragment.unresolved (OB-FIX-10): `#no-such-section` names no heading of this document
+  fix: point it at a heading of check/spec/07-prose-defects.md, or write the heading it names
+check/spec/09-contract-missing.md error
+  section.required.missing (OB-FIX-9): `decision_record` requires the section `Decision`, and no heading of this document says so
+  fix: add a `Decision` heading to check/spec/09-contract-missing.md, with the content the kind is for
