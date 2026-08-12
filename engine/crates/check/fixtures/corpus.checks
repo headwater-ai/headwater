@@ -1,6 +1,7 @@
 61 seen, 36 classified, 36 checked, 392 check instances
      26 skipped: this document writes no fragment into itself
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+36 documents in the read set
      36 instances of facet.required.missing
      36 instances of facet.value.not_permitted
      36 instances of shelf.placement_is_primary

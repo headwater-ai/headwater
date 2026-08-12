@@ -71,13 +71,19 @@ fn compare(recorded: &Path, actual: &str) {
 }
 
 /// One run over one corpus: the whole pipeline, in the order spec 6 draws it.
-fn run_over(corpus: &Corpus, root: &headwater_yaml::Mapping, cache: &mut Cache) -> Run {
-    run_at(corpus, root, &pinned(), cache)
+fn run_over(
+    corpus: &Corpus,
+    root: &headwater_yaml::Mapping,
+    lock: &str,
+    cache: &mut Cache,
+) -> Run {
+    run_at(corpus, root, lock, &pinned(), cache)
 }
 
 fn run_at(
     corpus: &Corpus,
     root: &headwater_yaml::Mapping,
+    lock: &str,
     ctx: &Context,
     cache: &mut Cache,
 ) -> Run {
@@ -97,6 +103,7 @@ fn run_at(
         &taken,
         &graph,
         &Declared {
+            lock,
             taxonomy: &taxonomy,
             shape: &shape,
             relations: &declarations,
@@ -110,7 +117,16 @@ fn run_at(
 fn fixture_run() -> Run {
     let corpus = Corpus::new(fixtures_dir(), "check");
     let root = load_map(&fixtures_dir().join("check.taxonomy.yml"));
-    run_over(&corpus, &root, &mut Cache::disabled())
+    run_over(&corpus, &root, &fixture_lock(), &mut Cache::disabled())
+}
+
+/// The fixture tree has no lock, so the digest of its taxonomy source stands
+/// in for one. It is the same fact a lock digest is: the bytes every result in
+/// this tree rests on.
+fn fixture_lock() -> String {
+    let source = std::fs::read_to_string(fixtures_dir().join("check.taxonomy.yml"))
+        .expect("the fixture taxonomy");
+    headwater_hash::hex(source.as_bytes())
 }
 
 /// The fixture tree as Phase A leaves it, which is what a scoped view is built
@@ -129,9 +145,11 @@ fn corpus_run() -> Run {
 fn cached_corpus_run(cache: &mut Cache) -> Run {
     let root = repository_root();
     let resolved = repository(&root);
+    let lock = headwater_lock::at(&root).expect("the committed lock");
     run_over(
         &corpus_of(&root, &resolved),
         &resolved.resolution.taxonomy,
+        &lock.digest,
         cache,
     )
 }
@@ -480,6 +498,7 @@ fn the_injected_clock_changes_a_verdict_and_nothing_else_does() {
     let later = run_at(
         &corpus,
         &root,
+        &fixture_lock(),
         &Context::at(Date::parse("2026-09-30").expect("a date")),
         &mut Cache::disabled(),
     );

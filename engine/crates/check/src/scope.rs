@@ -285,6 +285,26 @@ pub fn neighbourhood_scope<C: NeighbourhoodCheck>() -> Scope {
     Scope::neighbourhood(C::NEEDS_CLOCK)
 }
 
+/// The edition of a document-scoped check, derived from its trait.
+///
+/// A report reads this the way it reads the scope, and for the same reason:
+/// [`crate::ReadSet`] publishes the version of every rule that ran, and a
+/// version written beside a rule rather than read off it is a second fact that
+/// nothing holds to the first.
+pub fn document_version<C: DocumentCheck>() -> u32 {
+    C::VERSION
+}
+
+/// The edition of an edge-scoped check, derived from its trait.
+pub fn edge_version<C: EdgeCheck>() -> u32 {
+    C::VERSION
+}
+
+/// The edition of a neighbourhood-scoped check, derived from its trait.
+pub fn neighbourhood_version<C: NeighbourhoodCheck>() -> u32 {
+    C::VERSION
+}
+
 /// The clock a check of this scope receives, and nothing for one that did not
 /// declare it.
 ///

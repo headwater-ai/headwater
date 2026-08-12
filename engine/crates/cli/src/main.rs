@@ -63,7 +63,8 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 const USAGE: &str = "\
-headwater check              [--strict] [--no-cache] [--now <date>] [--root <path>]
+headwater check              [--strict] [--no-cache] [--now <date>] [--read-set <path>]
+                             [--root <path>]
 headwater taxonomy validate  [--root <path>]
 headwater taxonomy resolve   [--check] [--root <path>]
 
@@ -85,6 +86,11 @@ headwater taxonomy resolve   [--check] [--root <path>]
                  Defaults to today. Spec 12 makes the clock an injected value
                  rather than a syscall inside a check, and this flag is where it
                  is injected: same corpus, same lock, same date, same bytes.
+  --read-set <path>
+                 `check` only: write the read set of this run to a file as well
+                 as to the report. It is what a gate compares against a later
+                 tree to decide whether this verdict survives a merge, without
+                 running the checks again.
   --check        `taxonomy resolve` only: write nothing and exit non-zero when
                  the committed lock is not what the sources resolve to.
   --root <path>  the repository to read. Defaults to the working directory.
@@ -96,6 +102,7 @@ fn main() -> ExitCode {
     let mut check_only = false;
     let mut cached = true;
     let mut now: Option<Date> = None;
+    let mut read_set: Option<PathBuf> = None;
     let mut root: Option<PathBuf> = None;
     let mut words: Vec<String> = Vec::new();
 
@@ -108,6 +115,10 @@ fn main() -> ExitCode {
                 Some(Some(date)) => now = Some(date),
                 Some(None) => return fail("--now takes a date written `YYYY-MM-DD`"),
                 None => return fail("--now names a date and none followed it"),
+            },
+            "--read-set" => match arguments.next() {
+                Some(path) => read_set = Some(PathBuf::from(path)),
+                None => return fail("--read-set names a path and none followed it"),
             },
             "--root" => match arguments.next() {
                 Some(path) => root = Some(PathBuf::from(path)),
@@ -134,7 +145,7 @@ fn main() -> ExitCode {
 
     let verb: Vec<&str> = words.iter().map(String::as_str).collect();
     match verb.as_slice() {
-        ["check"] => check(&root, strict, cached, now),
+        ["check"] => check(&root, strict, cached, now, read_set),
         ["taxonomy", "validate"] => validate(&root),
         ["taxonomy", "resolve"] => resolve(&root, check_only),
         ["taxonomy"] => fail("`taxonomy` takes a second word: `validate` or `resolve`"),
@@ -255,7 +266,13 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
     ExitCode::SUCCESS
 }
 
-fn check(root: &Path, strict: bool, cached: bool, now: Option<Date>) -> ExitCode {
+fn check(
+    root: &Path,
+    strict: bool,
+    cached: bool,
+    now: Option<Date>,
+    read_set: Option<PathBuf>,
+) -> ExitCode {
     // The one clock read of the whole engine, and it is here rather than in a
     // check. Spec 12: "`ctx.now` is a bound value, never a syscall." A run
     // whose host cannot say what day it is refuses rather than guesses, because
@@ -329,6 +346,7 @@ fn check(root: &Path, strict: bool, cached: bool, now: Option<Date>) -> ExitCode
         &taken,
         &graph,
         &Declared {
+            lock: &lock.digest,
             taxonomy: &taxonomy,
             shape: &shape,
             relations: &declarations,
@@ -355,6 +373,18 @@ fn check(root: &Path, strict: bool, cached: bool, now: Option<Date>) -> ExitCode
     print!("{}", indent(&graph.render(GraphDetail::Exceptions)));
     println!("\nchecks");
     print!("{}", indent(&run.render(headwater_check::Detail::Findings)));
+
+    // The read set, which spec 12 asks a run to report beside its coverage
+    // numbers. It is the same bytes `--read-set` writes, so a gate reading the
+    // file and a reader of the report are looking at one artifact.
+    println!("\nread set");
+    print!("{}", indent(&run.read_set.render()));
+    if let Some(path) = read_set {
+        if let Err(error) = std::fs::write(&path, run.read_set.render()) {
+            eprintln!("headwater: cannot write {}: {error}", path.display());
+            return ExitCode::FAILURE;
+        }
+    }
 
     // The cache accounting goes to standard error, because it is a fact about
     // this machine's disk and the report above is a fact about the corpus.

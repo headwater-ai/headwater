@@ -3,6 +3,7 @@
       9 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: `guarded` forbids hedging, and this engine has no pattern set for it
       2 skipped: `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
+16 documents in the read set
      15 instances of facet.required.missing
      15 instances of facet.value.not_permitted
      16 instances of shelf.placement_is_primary

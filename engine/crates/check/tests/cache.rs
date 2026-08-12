@@ -80,6 +80,12 @@ fn run_at(root: &Path, ctx: &Context, cache: &mut Cache) -> Run {
     let loaded = headwater_yaml::load(&source).expect("it loads");
     let declared = loaded.value.as_map().expect("a mapping");
 
+    // The fixture tree has no lock, so the digest of the taxonomy source is the
+    // stand-in for one. It is the same fact — the bytes every result rests on —
+    // and a read set that carried nothing there would be missing a component
+    // that spec 12 names.
+    let lock = headwater_hash::hex(source.as_bytes());
+
     let corpus = Corpus::new(root, "check");
     let taxonomy = Taxonomy::read(declared).expect("the taxonomy reads");
     let declarations = Declarations::read(declared).expect("the declarations read");
@@ -97,6 +103,7 @@ fn run_at(root: &Path, ctx: &Context, cache: &mut Cache) -> Run {
         &taken,
         &graph,
         &Declared {
+            lock: &lock,
             taxonomy: &taxonomy,
             shape: &shape,
             relations: &declarations,

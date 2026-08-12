@@ -96,6 +96,7 @@ pub mod instance;
 pub mod language;
 pub mod participation;
 pub mod placement;
+pub mod readset;
 pub mod reciprocity;
 pub mod register;
 pub mod scope;
@@ -108,6 +109,7 @@ pub use context::{Context, Date};
 pub use coverage::Coverage;
 pub use finding::{Finding, Severity};
 pub use instance::{Input, Instance, Outcome};
+pub use readset::ReadSet;
 pub use register::{Bound, Register};
 pub use scope::{
     DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain, NeighbourhoodCheck, NeighbourhoodView,
@@ -148,6 +150,14 @@ pub const RULES: [&str; 11] = [
 /// where they arrive together. See [`shape`] for why widening one reader was
 /// the alternative and what it would have cost.
 pub struct Declared<'a> {
+    /// The digest of the lock these four came out of.
+    ///
+    /// It is here rather than on [`Context`] because it is a fact about the
+    /// taxonomy and not an injected value, and it is here rather than nowhere
+    /// because [`ReadSet`] has to carry it: a lock that moved voids every
+    /// result at once, and a gate reading a read set with no lock in it would
+    /// decide that a verdict survived a taxonomy change.
+    pub lock: &'a str,
     /// Shelves and abstract kinds, which is what kind resolution read.
     pub taxonomy: &'a Taxonomy,
     /// Facets, the kind hierarchy, and the participation expectations.
@@ -172,6 +182,9 @@ pub struct Run {
     /// reaches no obligation is in this list too, because a rule that cannot
     /// say which invariant it protects is what spec 4 asks a reader to notice.
     pub served: Vec<Serves>,
+    /// The union of what this run read, with the lock, the clock and the check
+    /// versions beside it. See [`readset`].
+    pub read_set: ReadSet,
     /// What this run did with its cache. Deliberately outside [`Run::render`]:
     /// see [`cache`] for why a hit count is not part of a verdict.
     pub cache: cache::Report,
@@ -184,6 +197,10 @@ pub struct Serves {
     /// Derived from the trait the check implements, and never stated beside
     /// it. See [`scope`] for why that distinction is the whole feature.
     pub scope: Scope,
+    /// Which edition of the rule ran. Read off the same trait as the scope,
+    /// and for the same reason: it is a component of every key this run wrote,
+    /// so a read set that stated a different one would describe another run.
+    pub version: u32,
     pub obligation: Bound,
 }
 
@@ -249,46 +266,60 @@ pub fn run(
         (
             facet_required::RULE,
             scope::document_scope::<facet_required::Required>(),
+            scope::document_version::<facet_required::Required>(),
         ),
         (
             facet_value::RULE,
             scope::document_scope::<facet_value::Values>(),
+            scope::document_version::<facet_value::Values>(),
         ),
         (
             placement::RULE,
             scope::document_scope::<placement::Placement>(),
+            scope::document_version::<placement::Placement>(),
         ),
         (
             reciprocity::RULE,
             scope::edge_scope::<reciprocity::Reciprocity>(),
+            scope::edge_version::<reciprocity::Reciprocity>(),
         ),
         (
             endpoint::RULE,
             scope::edge_scope::<endpoint::Endpoints<'_>>(),
+            scope::edge_version::<endpoint::Endpoints<'_>>(),
         ),
         (
             participation::RULE,
             scope::neighbourhood_scope::<participation::Participation<'_>>(),
+            scope::neighbourhood_version::<participation::Participation<'_>>(),
         ),
-        (voice::RULE, scope::document_scope::<voice::Voice>()),
+        (
+            voice::RULE,
+            scope::document_scope::<voice::Voice>(),
+            scope::document_version::<voice::Voice>(),
+        ),
         (
             language::RULE,
             scope::document_scope::<language::Language>(),
+            scope::document_version::<language::Language>(),
         ),
         (
             sections::RULE,
             scope::document_scope::<sections::Sections>(),
+            scope::document_version::<sections::Sections>(),
         ),
         (
             fragment::RULE,
             scope::document_scope::<fragment::Fragments>(),
+            scope::document_version::<fragment::Fragments>(),
         ),
-        (coverage::RULE, coverage::SCOPE),
+        (coverage::RULE, coverage::SCOPE, coverage::VERSION),
     ]
     .into_iter()
-    .map(|(rule, scope)| Serves {
+    .map(|(rule, scope, version)| Serves {
         rule,
         scope,
+        version,
         obligation: declared.register.bound(rule),
     })
     .collect();
@@ -302,11 +333,22 @@ pub fn run(
         };
     }
 
+    let read_set = ReadSet::of(
+        declared.lock,
+        ctx.now(),
+        served
+            .iter()
+            .map(|served| (served.rule, served.version))
+            .collect(),
+        &instances,
+    );
+
     Run {
         instances,
         coverage,
         findings: finding::sorted(findings),
         served,
+        read_set,
         cache: cache.report(),
     }
 }
@@ -383,6 +425,11 @@ impl Run {
         use std::fmt::Write;
         let mut out = String::new();
         out.push_str(&self.coverage.render());
+        // Spec 12 puts the read set here, "beside its coverage numbers". The
+        // size is beside them and the union is an artifact of its own, because
+        // a hash of every document is a thing a gate reads and a thing a
+        // recorded report would re-bless on every edit to a paragraph.
+        let _ = writeln!(out, "{}", self.read_set.summary());
         for (rule, count) in self.per_rule() {
             if count > 0 {
                 let _ = writeln!(out, "  {count:5} instances of {rule}");
