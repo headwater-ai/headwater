@@ -31,16 +31,16 @@ rules, and for each the scope that binds it and what it serves
     OB-REL-3
   voice.forbidden_construction
     document scope, one document, its front matter and its body
-    no control names this rule, so its findings name no obligation
+    OB-VOICE-1
   language.controlled.not_met
     document scope, one document, its front matter and its body
-    no control names this rule, so its findings name no obligation
+    OB-LANG-1
   section.required.missing
     document scope, one document, its front matter and its body
-    no control names this rule, so its findings name no obligation
+    OB-SECT-1
   link.fragment.unresolved
     document scope, one document, its front matter and its body
-    no control names this rule, so its findings name no obligation
+    OB-LINK-1
   coverage.document_unchecked
     corpus scope, every row of the census, and it is a barrier
     OB-COV-2
