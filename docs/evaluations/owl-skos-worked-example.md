@@ -23,9 +23,9 @@ Three checks then run: OWL-RL closure over the combined graph, SHACL validation 
 | Measure | Result |
 |---|---|
 | TBox | 293 triples |
-| ABox | 430 triples, over 36 documents and 329 edges |
+| ABox | 433 triples, over 36 documents and 332 edges |
 | Documents typed by placement | 14 of 36 |
-| OWL-RL entailment | 1346 triples added |
+| OWL-RL entailment | 1349 triples added |
 | OWL-RL inconsistency | none |
 | SHACL, no inference | 56 violations |
 | SHACL, with RDFS inference | 140 violations |
@@ -75,7 +75,7 @@ That is a genuine impedance mismatch rather than an emitter defect, and no spell
 
 `cites_evidence` declares `inverse: cited_by` and `reciprocal: required`. Reciprocity in Headwater means the missing half is a finding: [spec 2](../spec/02-taxonomy-model.md#behavior-at-the-limits) says that inverses which disagree are reported as a pair and the corpus stays incoherent until an author resolves it.
 
-The run entails **329 `hw:cited_by` triples**, exactly one per asserted `cites_evidence` edge. Not one of them was declared by any author. `owl:inverseOf` closes the gap that `reciprocal: required` exists to open.
+The run entails **332 `hw:cited_by` triples**, exactly one per asserted `cites_evidence` edge. Not one of them was declared by any author. `owl:inverseOf` closes the gap that `reciprocal: required` exists to open.
 
 Both halves of the model are reasonable and they are not compatible. RDF treats an inverse as a fact about the world that is true whether or not anybody wrote it down. Headwater treats a declared edge as an authoring act with a creator and a maintenance intent, which is why `created_by` is on the relation type and why `taxonomy audit` measures it. Emit `owl:inverseOf` and the audit's denominator is destroyed: every edge acquires a reciprocal that nobody maintains.
 
@@ -170,7 +170,7 @@ Four items, and [the register](../spec/13-open-obligations.md) now carries all o
 
 **`exportable_as` should be read as forbidding entailment-shaped constraints.** Spec 12's equivalence bar already excludes `owl:minCardinality` and `rdfs:range`, and nothing states the general case. One sentence would close it.
 
-**`owl:inverseOf` conflicts with `created_by` measurement.** Emitting the inverse fabricates 329 unauthored edges in this corpus alone. Whether the RDF emitter omits inverses is a decision that emitter 4 will have to take, and finding 3 is the argument for omitting them.
+**`owl:inverseOf` conflicts with `created_by` measurement.** Emitting the inverse fabricates 332 unauthored edges in this corpus alone. Whether the RDF emitter omits inverses is a decision that emitter 4 will have to take, and finding 3 is the argument for omitting them.
 
 **A heterogeneous shelf is untypeable without front matter.** Twenty-two of this repository's 36 documents cannot be typed by placement alone. That is not new — it is what `doc_type` is for — but it means the dogfooding in issue #4 is a precondition for any ABox export of this corpus, rather than a parallel activity.
 
