@@ -735,11 +735,45 @@ Delta-oriented software product lines worked this ground thoroughly, and the req
 
 The resolver writes the resolved taxonomy to a lock file with a content hash. The engine checks the corpus against the lock, so a resolution result is reproducible and reviewable in a diff.
 
+## The `$`-reference sublanguage
+
+The [shape above](#shape) writes `values: $vocabularies.lifecycle_state`. The overlay above writes `shelves.decisions.path`. [To enable a relation](#the-decision-relation-vocabulary) writes `add: {relations.forbids: $package.optional.forbids}`. [Q2](09-decisions.md#q2--schema-format) counted those as three uses of one sublanguage, and it gave the sublanguage no grammar. Here is the grammar. The three uses are one path production, read from two places.
+
+```abnf
+address   = segment *( "." segment )
+reference = "$" root "." address
+root      = "vocabularies" / "package"
+segment   = 1*( ALPHA / DIGIT / "_" )
+```
+
+**An address names a place, and a reference names a value.** An address is what an overlay operation takes: the key under `add`, `override`, `add_to` and `remove_from`, and each entry of the `remove` list. A reference stands in a value position, and it reads a value that another declaration holds. The enabling line above holds one of each.
+
+**The sigil marks a reference in every position where a literal is also legal, and in no other position.** A facet's `values` takes a list of values or a reference to one, so the two must be distinguishable. The key under `add` takes an address and nothing else, so no sigil has anything to separate it from. That is a rule rather than a convention, and it settles the next surface that needs one.
+
+**The root set is closed, and `package` is a reserved word.** `vocabularies` is a declaration of the taxonomy under resolution. `package` is not a declaration, and it names the publisher's library of defined but unenabled content. No taxonomy may declare a block called `package`. To add a root is a meta-schema change, exactly as [to add a facet role](#the-meta-schema) is.
+
+**Quoting is not an escape, so the sublanguage carries one.** Q2 rules that a scalar takes its type from the meta-schema and never from the YAML resolver. So `"$vocabularies.audience"` and `$vocabularies.audience` are one value, and quotation marks cannot hide a sigil. A corpus whose value starts with a dollar sign writes `$$`, which stands for one literal `$`. Outside a position that admits a reference, `$` is an ordinary character. An identifier scheme `pattern` is typed as a string, so `"^DR-[A-Z]{2,6}-[0-9]{4}$"` is a pattern and not a malformed reference.
+
+**A segment holds letters, digits and `_`.** The refusal of `.` is permanent, because `.` is the separator. A declared key that holds a dot makes an address ambiguous, and the meta-schema refuses to declare one. Every other refusal is provisional, the hyphen among them. Q2 settles the direction to guess in. To relax a rule later costs nothing. To add one later is a finding against every source that already used the form.
+
+**An address is a sequence of segments and never a string.** Every question the resolver asks of two addresses is a question about their segments. `kinds.playbook` is a textual prefix of `kinds.playbook_step`, and neither address contains the other. A confluence check over text therefore refuses two `add` operations that commute. Disjointness is decidable on segments, and that is what makes the confluence check of [spec 7](07-distribution-and-federation.md#bundles-are-publisher-overlays-in-the-other-direction) a proof rather than a convention.
+
+**A reference resolves last, over the merged tree.** The [overlay above](#customization-by-composition) overrides `vocabularies.lifecycle_state`, and the facet that reads that vocabulary is expected to follow it. An early resolution freezes the base list before any overlay is read, and the override then changes nothing that a check can see. The order is thus: apply every overlay, resolve every reference, validate the result.
+
+**A reference points at a value and never at a second reference.** A chain admits a cycle, and no use needs one. This is the second provisional rule in this section, and it relaxes under the argument that settled the first.
+
+**An address never travels through a reference.** The node that an address names must be in the merged tree before any reference resolves. To address through a reference makes the result depend on an order that the rule above fixes for a different purpose.
+
+**An address into a list is an error, and the grammar cannot catch it.** `0` is a legal key name, so no lexical rule tells an index from a key. The refusal belongs to the resolver, which reads the node that the address lands on. A list position does not survive an upstream release, and `add_to` and `remove_from` are what a list takes instead.
+
+What `optional` means under the `package` root is not fixed here. [Spec 7](07-distribution-and-federation.md#publishing) declares no such block in the package manifest, and [13 — Open obligations](13-open-obligations.md) carries the gap. The grammar admits `$package.optional.forbids` under either reading, because the open question is the shape of a package file rather than the shape of a reference.
+
 ## The meta-schema
 
 The taxonomy language has a formal schema, published with the engine and versioned with it. `headwater taxonomy validate` checks:
 
 - structural conformance to the meta-schema.
+- **reference well-formedness** — every address and every `$`-reference parses under [the sublanguage](#the--reference-sublanguage). A reference names a root from the closed set, and the node it reads is not a second reference. An address names a node that exists, and it reaches no position in a list.
 - referential integrity — every referenced vocabulary, regime, kind, facet, and purpose exists. Every relation endpoint is a declared kind or a declared anchor kind.
 - **anchor integrity** — every anchor kind names exactly one resolver, and no two anchor kinds claim the same resolver namespace.
 - **identifier integrity** — every identifier scheme carries the namespace that `core` requires, and no two schemes in one namespace admit the same string. A scheme whose strings another scheme's pattern also matches is a validation error, for the reason that two shelf patterns over one path are.

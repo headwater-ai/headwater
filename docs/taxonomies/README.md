@@ -88,7 +88,7 @@ These are settled elsewhere. An entry works under them and reopens none of them.
 
 **No second projection is required.** [Q13](../spec/09-decisions.md#q13--linkml-and-shacl-as-substrate) put LinkML last of six emitters, shipping only when a named external consumer asks, and it ruled that emitters never chain. Its evidence is already collected in the [LinkML worked example](../evaluations/linkml-worked-example.md). A hand-written LinkML or SHACL projection of an entry buys nothing that those two documents do not already hold.
 
-**A draft that uses `$`-references presses on an open obligation.** The sublanguage has three uses and no grammar, and [13 — Open obligations](../spec/13-open-obligations.md#design-work-that-nothing-blocks) lists the grammar as design work that nothing blocks. A draft is the first thing to press on it. So the draft records the reading that it assumed at each use, in `doctrine.md`, and the finding goes to 13.
+**A draft that uses `$`-references works under a settled grammar.** [Spec 2](../spec/02-taxonomy-model.md#the--reference-sublanguage) defines the sublanguage, and `engine/crates/ref` parses it. An entry writes an address as a dotted path of segments, and it writes a reference with a `$` and a root from the closed set. One question stays open, and 13 carries it: what `optional` holds under the `package` root. An entry that reads optional package content therefore still records the reading that it assumed, in `doctrine.md`.
 
 ## Where a finding goes
 
