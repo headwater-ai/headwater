@@ -26,7 +26,6 @@
 
 use crate::{Neighbour, Surface};
 use headwater_census::census::Outcome;
-use headwater_graph::declarations::Governs;
 
 /// One document, explained.
 #[derive(Clone, Debug)]
@@ -189,31 +188,7 @@ impl Explanation {
             };
         }
         for neighbour in &self.related {
-            let _ = write!(
-                out,
-                "  {} {} {}",
-                match neighbour.inbound {
-                    true => "from",
-                    false => "to",
-                },
-                neighbour.target,
-                neighbour.relation
-            );
-            if let Some(cue) = &neighbour.cue {
-                let _ = write!(
-                    out,
-                    " — {cue}{}",
-                    match neighbour.cue_is_declared {
-                        true => "",
-                        false => " (the target's own summary)",
-                    }
-                );
-            }
-            let _ = match neighbour.governs {
-                Governs::Source => writeln!(out, " [this document governs the reading]"),
-                Governs::Target => writeln!(out, " [that document governs the reading]"),
-                Governs::Neither => writeln!(out),
-            };
+            let _ = writeln!(out, "  {}", neighbour.render());
         }
         out
     }

@@ -47,6 +47,8 @@
 //! open the document, and no body ever crosses this boundary.
 
 pub mod explain;
+pub mod json;
+pub mod mcp;
 pub mod route;
 
 pub use explain::Explanation;
@@ -420,6 +422,43 @@ pub enum Resolved {
     /// No node carries the identifier, and one carries something close to it.
     NearMiss(String),
     Nothing,
+}
+
+impl Neighbour {
+    /// One traversal as one line: where it goes, under what relation, with the
+    /// cue that stands there and the end that governs the reading.
+    ///
+    /// One rendering, used by `explain` and by the MCP `related` tool. A client
+    /// and a terminal that read different text about one edge is the drift this
+    /// crate is written to avoid.
+    pub fn render(&self) -> String {
+        use std::fmt::Write;
+        let mut line = format!(
+            "{} {} {}",
+            match self.inbound {
+                true => "from",
+                false => "to",
+            },
+            self.target,
+            self.relation
+        );
+        if let Some(cue) = &self.cue {
+            let _ = write!(
+                line,
+                " — {cue}{}",
+                match self.cue_is_declared {
+                    true => "",
+                    false => " (the target's own summary)",
+                }
+            );
+        }
+        line.push_str(match self.governs {
+            Governs::Source => " [this document governs the reading]",
+            Governs::Target => " [that document governs the reading]",
+            Governs::Neither => "",
+        });
+        line
+    }
 }
 
 impl Pointer {
