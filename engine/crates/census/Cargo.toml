@@ -16,6 +16,11 @@ headwater-doc = { path = "../doc" }
 # reports at the line that declared it.
 headwater-yaml = { path = "../yaml" }
 
+# The glob language a shelf path is written in, and the specificity order that
+# decides which of two shelves claims a path. It belongs to the meta-schema
+# because `taxonomy validate` reads it with no corpus in hand.
+headwater-meta = { path = "../meta" }
+
 [dev-dependencies]
 # The census of this repository needs this repository's taxonomy resolved. The
 # library takes an already-resolved taxonomy and knows nothing about where one

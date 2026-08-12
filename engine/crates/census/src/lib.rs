@@ -9,8 +9,14 @@
 //! defect raises an error anywhere, so neither is caught by the ordinary
 //! mechanism of noticing that something broke.
 //!
-//! That is why the rules in [`walk`] and [`pattern`] are written out rather than
-//! delegated, and why the fixture tree exists.
+//! That is why the rules in [`walk`] are written out rather than delegated, and
+//! why the fixture tree exists.
+//!
+//! The glob language that a shelf path and an exclusion are written in used to
+//! be here for the same reason, and it is now `headwater_meta::pattern`. It
+//! moved because `taxonomy validate` asks whether two shelf patterns can claim
+//! one path, and it asks with no corpus in hand. One language and two readers
+//! beats two languages that agree until one of them learns a construct.
 //!
 //! # The order of a run
 //!
@@ -45,13 +51,12 @@
 //! anywhere. See [`resolve`].
 
 pub mod census;
-pub mod pattern;
 pub mod resolve;
 pub mod shelves;
 pub mod walk;
 
 pub use census::{Census, Detail, Row};
-pub use pattern::Pattern;
+pub use headwater_meta::pattern::{self, Pattern};
 pub use resolve::{Resolution, Step};
 pub use shelves::{DeclarationError, Shelf, ShelfBody, Taxonomy};
 pub use walk::{Corpus, Exclusion};
