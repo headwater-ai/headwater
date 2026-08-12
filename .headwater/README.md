@@ -1,8 +1,8 @@
 # The taxonomy binding of this repository
 
-Two files, and neither one runs. `taxonomy.yml` says what this repository takes, and `overlay.yml` says how it differs. They exist because [issue #4](https://github.com/headwater-ai/headwater/issues/4) typed `docs/` against the [design-spec entry](../docs/taxonomies/design-spec/doctrine.md), and a typed corpus needs a declaration to be wrong against.
+Two files. `taxonomy.yml` says what this repository takes, and `overlay.yml` says how it differs. They exist because [issue #4](https://github.com/headwater-ai/headwater/issues/4) typed `docs/` against the [design-spec entry](../docs/taxonomies/design-spec/doctrine.md), and a typed corpus needs a declaration to be wrong against.
 
-`tools/abox-check.py` reads both files, resolves them over the base package and the design-spec bundle, and checks the corpus. The engine has since acquired a second reader: `headwater-census` takes the census of this repository, and it reads the `corpus:` block here for the root it walks and the paths it excludes. Neither reader resolves an overlay properly, because [the resolver](https://github.com/headwater-ai/headwater/issues/50) does not exist yet; each applies `add` operations at dotted addresses and stops there.
+They run now. `headwater check` reads `taxonomy.yml` for the package it takes, the bundles it selects and the corpus it walks, and `headwater-resolve` merges the base package at [`packages/headwater-standard/`](../packages/headwater-standard/) with the design-spec bundle and this overlay. Every source is validated against the meta-schema before anything merges, and a source the meta-schema refuses stops the run. Two throwaway readers used to do this and each applied `add` operations at dotted addresses and stopped there. [The resolver](https://github.com/headwater-ai/headwater/issues/50) retired both.
 
 ## Why an overlay exists at all
 
@@ -18,8 +18,8 @@ Nothing below is settled anywhere in the specification. Each item is a guess tha
 |---|---|
 | The consumer declaration lives at `.headwater/taxonomy.yml` | [Spec 7](../docs/spec/07-distribution-and-federation.md#consuming) shows the block and fixes no path for it. It fixes `.headwater/corpus.json` and shows `.headwater/overlay.yml`, so this file follows both |
 | `bundles:` names a bundle selection in that block | Spec 7 shows `profile:` and `overlay:` only. A selection has to be recorded, and the interview emits an overlay rather than this field |
-| `{slug}` is a legal placeholder in a `pattern` | The meta-schema does not exist. The base uses `{namespace}` and `{seq:04d}`, and neither one names a value set for placeholders |
-| `allocation: minted-once` is a legal policy | The base names `reconcile-first`, which counts. A slug is not allocated by counting, and no value set states the alternatives |
+| `{slug}` is a legal placeholder in a `pattern` | The meta-schema types `pattern` as a string and marks the position `gap:`. The base uses `{namespace}` and `{seq:04d}`, and neither one names a value set for placeholders |
+| `allocation: minted-once` is a legal policy | The base names `reconcile-first`, which counts. A slug is not allocated by counting, no value set states the alternatives, and the meta-schema marks the position `gap:` for that reason |
 | A front-matter key named `id` carries the identifier | A kind declares `identifier: {scheme: …}`, and nothing states which key holds the minted value |
 | `language:` on a kind binds a language regime | The base binds `voice:` and `lifecycle:` on a kind and declares `regimes.language` beside them. No kind in the base names a language regime |
 | Two kinds may share one identifier scheme | Identifier integrity requires that no two schemes admit the same string. It says nothing about two kinds that point at one scheme |
@@ -28,4 +28,4 @@ Nothing below is settled anywhere in the specification. Each item is a guess tha
 
 ## What this is not
 
-It is not a proposal, and none of it belongs in the base package. Every guess above is a hole in the specification that this repository stepped around to finish one pass. When the meta-schema ships, the ones it settles should leave this file rather than stay as local custom.
+It is not a proposal, and none of it belongs in the base package. Every guess above is a hole in the specification that this repository stepped around to finish one pass. The meta-schema has shipped and both files validate against it, which is a narrower claim than it sounds: it says that the shapes are legal, and a position the meta-schema marks `gap:` is one where the specification still states no form. A guess that a later ruling settles should leave this file rather than stay as local custom.

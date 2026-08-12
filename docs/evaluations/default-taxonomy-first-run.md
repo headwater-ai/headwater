@@ -54,6 +54,8 @@ That leaves two real questions: how big is the base, and how does an adopter mov
 
 The core states what every conformant taxonomy must have. So the base is derivable: it is the smallest taxonomy that satisfies the core and keeps every part of itself reachable. Nothing here was chosen for taste.
 
+**The block below is the derivation, and the source is now a file.** For as long as this was the only committed copy, every tool that resolved a taxonomy parsed Markdown to reach it. The overlay resolver ended that, and [`packages/headwater-standard/`](../../packages/headwater-standard/) holds the package: `taxonomy.yml` is the source, and `package.yml` is the manifest. One key differs between the two. The block opens `package:`, which is spec 7's manifest key, and a taxonomy source may not declare a `package` block because `package` is a reserved reference root. The split of the two files is what settled that collision.
+
 ```yaml
 package: headwater/standard
 version: 1.0.0
