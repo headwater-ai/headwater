@@ -8,9 +8,9 @@
 //! compares it against that value, with no history walk.
 //!
 //! The clock is here. The prior version is not, because it "is available
-//! **only** in change-scoped evaluation", which is
-//! [#58](https://github.com/headwater-ai/headwater/issues/58), and a field that
-//! nothing enforces is the comment [`crate::scope`] exists to delete.
+//! **only** in change-scoped evaluation", and no check declares it. A field
+//! that nothing enforces is the comment [`crate::scope`] exists to delete, and
+//! that module states what the first check to need one has to copy.
 //!
 //! # A check never reaches a [`Context`]
 //!

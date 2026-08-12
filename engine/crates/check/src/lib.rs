@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The runner: ten checks, coverage against the census, and text findings in
-//! one order.
+//! The runner: eleven checks, coverage against the census, a published read
+//! set, a suppression inventory, and text findings in one order.
 //!
 //! [Spec 12](../../../../docs/spec/12-check-layer.md#two-phases-and-why-the-order-matters)
 //! splits a run in two. Phase A classifies and builds, and it is
@@ -32,20 +32,20 @@
 //!
 //! # What is deliberately absent, and where each piece goes
 //!
-//! Three parts of the designed check layer are not here, and none of them is an
-//! oversight.
+//! Two parts of the designed check layer are not here, and neither is an
+//! oversight. Suppression used to be the third. It is now [`suppression`]: the
+//! runner filters findings, records what it filtered, and feeds the inventory
+//! into the coverage report, which is where spec 12 puts it.
 //!
-//! **Change-scoped evaluation.** Every instance is created on every run, and
-//! `--changed-only` does not exist. What does exist is the cache the same
-//! sentence of spec 12 needs first: an instance is keyed on the content hashes
-//! of what it read, and [`cache`] serves the ones nothing touched. That does
-//! not make a run partial — every instance still has an outcome and coverage
-//! counts what it counted — and a run that evaluates less of the corpus is
-//! [#58](https://github.com/headwater-ai/headwater/issues/58).
-//!
-//! **Suppression.** A finding here cannot be suppressed, so nothing is filtered
-//! and there is no inventory to report. That is
-//! [#58](https://github.com/headwater-ai/headwater/issues/58).
+//! **Change-scoped evaluation, under the name `--changed-only`.** Every
+//! instance is created on every run, and the flag does not exist.
+//! [#58](https://github.com/headwater-ai/headwater/issues/58) declined to build
+//! it and measured why: an instance is keyed on the content hashes of what it
+//! read, and [`cache`] serves the ones nothing touched, so a warm run over this
+//! repository takes 30 ms against 300 ms with no cache. The cache derives what
+//! moved from the bytes rather than from a list a caller supplies, and spec 6
+//! forbids a flag that puts an input into a verdict which no reviewer sees.
+//! What is left unscoped is Phase A, which no flag reaches.
 //!
 //! **The generated obligation register.** Every rule below now names the
 //! obligation it serves, because the base package declares `obligations` and
@@ -60,7 +60,7 @@
 //! rules that a check receives a scoped view and cannot ask for a wider one,
 //! and that the enforcement is the feature. Each rule below implements one
 //! scope trait, and that trait is the only way to receive the matching view.
-//! [`run`] names the six checks it runs, which is the whole of registration.
+//! [`run`] names the ten checks it runs, which is the whole of registration.
 //! The scope a trait fixes is now read twice: once for the report, and once as
 //! a component of the cache key that spec 12 derives from the same fact. The
 //! injected clock rides the same declaration, so a rule that reads a date
@@ -125,7 +125,7 @@ use headwater_graph::{Declarations, Graph};
 
 /// The rules this runner carries, in the order a report lists them.
 ///
-/// Six are generated from the taxonomy and one is the coverage guarantee
+/// Ten are generated from the taxonomy and one is the coverage guarantee
 /// itself. A rule that is generated has no entry of its own anywhere: the list
 /// is the *templates*, and the instance count is what a taxonomy decides.
 ///

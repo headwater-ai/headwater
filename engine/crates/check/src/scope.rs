@@ -62,10 +62,13 @@
 //! verdict today, and the `--no-cache` differential cannot see it, because both
 //! sides of that comparison hold one value of the clock.
 //!
-//! `needs_prior` is still absent. The prior version arrives only in
-//! change-scoped evaluation, which is
-//! [#58](https://github.com/headwater-ai/headwater/issues/58), and a field that
-//! nothing enforces is the comment this module exists to delete.
+//! `needs_prior` is still absent, and it stays absent for the reason this
+//! module exists. Spec 12 makes the prior version available only in
+//! change-scoped evaluation, and no check declares it, so the field would be a
+//! declaration that nothing enforces and nothing reads. The first transition
+//! legality check is what brings it, and it copies the shape of the clock: one
+//! binding, read by the view and by the key, so that no second statement of one
+//! property can drift from the first.
 //!
 //! # Where the instance set comes from
 //!

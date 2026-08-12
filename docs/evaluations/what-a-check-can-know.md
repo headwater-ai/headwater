@@ -200,7 +200,7 @@ The rate is not evidence that the failure is common. It is evidence that the win
 
 **Whether a corpus ever needs a retired-term lexicon at all.** This repository needed one, at a scale of one entry. An adopter with no vocabulary judgment to record declares none, and the check has no instances.
 
-**Whether the read set is small enough to be worth publishing.** A run over a thousand documents has a read set of about a thousand entries plus the lock, which is cheap. A corpus-scoped check makes it the whole corpus, and at that point the report says so and the invalidation test is trivially true. Nobody has measured the size of the report on a real corpus, and no such corpus exists.
+**Whether the read set is small enough to be worth publishing.** A run over a thousand documents has a read set of about a thousand entries plus the lock, which is cheap. A corpus-scoped check makes it the whole corpus, and at that point the report says so and the invalidation test is trivially true. The measurement has since run over this repository, and [13 — Open obligations](../spec/13-open-obligations.md#unmeasured-claims) carries it. Publishing costs 0.37 per cent of the bytes it describes, and no corpus-scoped check was needed to make the union the whole corpus: two Shape rules that generate over every kind did it.
 
 **One claim is unmeasured**, as [principle 11](../spec/00-vision-and-scope.md#design-principles) requires. Publishing the read set should let a gate skip a full re-run on most merges. The instrument is the fraction of merges whose read set the other side never touched. The 55% and the 38% above are the closest thing to a prior that we have.
 
