@@ -1,0 +1,6 @@
+kinds.design_spec.identifier vs kinds.design_spec.language => disjoint
+kinds.playbook vs kinds.playbook_step => disjoint
+kinds.playbook vs kinds.playbook => overlapping
+kinds.design_spec vs kinds.design_spec.identifier => overlapping
+kinds vs kinds.playbook => overlapping
+kinds.playbook vs shelves.playbooks => disjoint

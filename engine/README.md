@@ -27,6 +27,7 @@ The mount is read only and the target directory sits inside the container, so a 
 | `headwater-graph` | [M1](https://github.com/headwater-ai/headwater/milestone/1) | Resolves `relations:` into edges, indexes identifiers, binds external anchors, and reports what did not resolve |
 | `headwater-check` | [M1](https://github.com/headwater-ai/headwater/milestone/1) | Runs two checks generated from the taxonomy, and computes coverage against the census |
 | `headwater-cli` | [M1](https://github.com/headwater-ai/headwater/milestone/1) | The `headwater` binary. One verb, `check`, and it is what CI runs |
+| `headwater-ref` | [M2](https://github.com/headwater-ai/headwater/milestone/2) | The `$`-reference sublanguage: an overlay address, and a reference into a vocabulary or a package |
 
 ## Why the loader came first
 
@@ -85,6 +86,18 @@ The runner is Phase B of [spec 12](../docs/spec/12-check-layer.md#two-phases-and
 
 Two things the runner meets are gaps rather than decisions, and [13 — Open obligations](../docs/spec/13-open-obligations.md) carries them. A finding names the obligation it serves, and an obligation is data that no package here declares, so two of the three rules name none and take the engine's own severity. Spec 12 also calls a dangling edge and an unclassifiable path *structural findings* of Phase A, and this runner leaves them in the census and the graph rather than reporting each one twice.
 
+## What the reference grammar settles, and the one thing it cannot
+
+M2 starts with the sublanguage, because the meta-schema and the resolver both read it and neither can wait for it. [Q2](../docs/spec/09-decisions.md#q2--schema-format) counted three uses — a vocabulary reference, a package reference, and an overlay address — and gave them no grammar. [Spec 2](../docs/spec/02-taxonomy-model.md#the--reference-sublanguage) is the definition and `crates/ref` is that definition as a parser.
+
+**The three uses are one path production read from two places.** An address wears no sigil and a reference does, and the difference is not a convention. An address is written where nothing else is legal, which is the key under `add`, `override`, `add_to` and `remove_from`. A reference is written in a value position, where a literal value is equally legal, so something has to separate the two. That rule decides the next surface that needs a sigil, and a convention would not.
+
+**An address is a sequence of segments, and that is what makes confluence decidable.** [#50](https://github.com/headwater-ai/headwater/issues/50) records that this repository's overlay writes `kinds.design_spec.identifier` and `kinds.design_spec.language`, and that both stand-ins skip an address of that depth. The two are disjoint, so the two `add` operations commute. `kinds.playbook` is a textual prefix of `kinds.playbook_step` and neither address contains the other. A confluence check over text answers both cases wrongly, and `disjoint.record` holds the pairs.
+
+**The grammar cannot refuse a list index, and the fixture says so rather than hiding it.** `regimes.lifecycle.standard.transitions.0` parses, because `0` is a legal key name and no lexical rule tells an index from a key. The refusal is the resolver's, and it reads the node the address lands on. That is the one rule of the section that the parser does not carry.
+
+Two rules here are guesses, and both guess in the direction that Q2 settled for the loader. A segment holds letters, digits and `_`, so a hyphen is refused today. A reference points at a value and never at a second reference. Each is cheap to relax and expensive to add later, which is the only asymmetry that decides such a question before a use exists.
+
 ## The fixtures are the deliverable
 
 `crates/yaml/fixtures/` holds the corpus. `accept/` pairs a source with the tree it loads to, span by span. `reject/` pairs a source with the text an author would read. Both expectations are recorded files rather than assertions in Rust, so that the rules survive the replacement of the code under them.
@@ -94,6 +107,7 @@ Two things the runner meets are gaps rather than decisions, and [13 — Open obl
     HEADWATER_BLESS=1 cargo test -p headwater-census --test fixtures
     HEADWATER_BLESS=1 cargo test -p headwater-graph --test fixtures
     HEADWATER_BLESS=1 cargo test -p headwater-check --test fixtures
+    HEADWATER_BLESS=1 cargo test -p headwater-ref --test fixtures
 
 That re-records every expectation. Read the diff before committing it, because a blessed fixture *is* the change.
 
@@ -107,7 +121,7 @@ That re-records every expectation. Read the diff before committing it, because a
 
 ## What is deliberately absent
 
-The loader knows the dialect and nothing about the meaning. It does not require the root to be a mapping, it does not know that `kinds` is a declaration, and it resolves no `$`-reference. All three are shape, the meta-schema owns shape, and the meta-schema is [M2](https://github.com/headwater-ai/headwater/milestone/2). A loader that guessed at any of them would be a second schema that nobody declared.
+The loader knows the dialect and nothing about the meaning. It does not require the root to be a mapping, it does not know that `kinds` is a declaration, and it resolves no `$`-reference. All three are shape, the meta-schema owns shape, and the meta-schema is [M2](https://github.com/headwater-ai/headwater/milestone/2). A loader that guessed at any of them would be a second schema that nobody declared. `headwater-ref` is the third of those in part: it says whether a reference is well formed, and nothing resolves one until the resolver of [#50](https://github.com/headwater-ai/headwater/issues/50).
 
 The runner is the thinnest thing that closes the loop, and four parts of the designed check layer are not in it. A check declares no scope and no view enforces one, which is [#54](https://github.com/headwater-ai/headwater/issues/54). Nothing is cached and nothing is change-scoped, which is [#55](https://github.com/headwater-ai/headwater/issues/55), and a cache before a sound cache key is the correctness root spec 12 warns about. No finding can be suppressed, so there is no suppression inventory, which is [#58](https://github.com/headwater-ai/headwater/issues/58). And no rule can name an obligation, because obligations are declarations that [#52](https://github.com/headwater-ai/headwater/issues/52) supplies.
 

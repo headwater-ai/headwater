@@ -35,7 +35,7 @@ The language is **Rust**, with a WebAssembly build of the same crate for editor 
 
 ## Q2 — Schema format
 
-YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema. Decision: [09-decisions.md](09-decisions.md#q2--schema-format). Open work: [the `$`-reference grammar](13-open-obligations.md#design-work-that-nothing-blocks).
+YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema. Decision: [09-decisions.md](09-decisions.md#q2--schema-format). The `$`-reference grammar that the decision left open is now [the sublanguage](02-taxonomy-model.md#the--reference-sublanguage) in spec 2.
 
 ## Q3 — How much of the default taxonomy ships in the box
 

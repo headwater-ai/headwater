@@ -113,7 +113,7 @@ Three places where the specification is silent and the draft had to pick. Each o
 - **Value guidance has no declared syntax.** The ascertainability canon requires guidance on every enum value. The draft writes a `guidance` map under the facet, keyed by value.
 - **A bundle file has no declared shape.** [Spec 7](../../spec/07-distribution-and-federation.md#publishing) declares bundles in the package manifest and fixes nothing about the file that holds one. The draft uses the header that the [library index](../README.md#what-an-entry-ships) settled: `bundle`, `extends`, `requires`, and one `add` block.
 
-**No `$`-reference appears in this draft, and that is a small datum for the open grammar.** The sublanguage has three uses: a vocabulary reference, a reference to optional package content, and an overlay address. A bundle that declares its own vocabulary inline and adds at fresh keys needs none of the three. So the first pressure on that grammar comes from an entry that reuses a base vocabulary, not from this one.
+**No `$`-reference appears in this draft, and that was a small datum for the grammar that was open when it was written.** The sublanguage has three uses: a vocabulary reference, a reference to optional package content, and an overlay address. A bundle that declares its own vocabulary inline and adds at fresh keys needs none of the three. So the first pressure on that grammar comes from an entry that reuses a base vocabulary, not from this one. [Spec 2](../../spec/02-taxonomy-model.md#the--reference-sublanguage) has since defined the sublanguage, and every `add` address in this draft parses under it.
 
 ## Findings
 

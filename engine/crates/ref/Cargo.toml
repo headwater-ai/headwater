@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "headwater-ref"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+# None, and that is the point. The sublanguage is a grammar over one string.
+# A dependency on the loader would tie it to the side that reads an address out
+# of a source, and the scaffolder and the migration payload both mint one
+# instead.
+
+[dev-dependencies]
+# The fixtures hold the grammar to the addresses this repository already wrote,
+# and reading them out of the two sources needs the loader.
+headwater-yaml = { path = "../yaml" }

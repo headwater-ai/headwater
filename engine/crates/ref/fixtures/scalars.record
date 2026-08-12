@@ -1,0 +1,8 @@
+$vocabularies.lifecycle_state => reference $vocabularies.lifecycle_state
+~ => literal ""
+draft => literal "draft"
+^DR-[A-Z]{2,6}-[0-9]{4}$ => literal "^DR-[A-Z]{2,6}-[0-9]{4}$"
+$$vocabularies.lifecycle_state => literal "$vocabularies.lifecycle_state"
+$$ => literal "$"
+$$$x => literal "$$x"
+$vocabularise.audience => error at 1: `vocabularise` is not a reference root; the roots are `vocabularies` and `package`

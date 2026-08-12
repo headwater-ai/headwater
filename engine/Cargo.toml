@@ -6,6 +6,7 @@ members = [
     "crates/cli",
     "crates/doc",
     "crates/graph",
+    "crates/ref",
     "crates/yaml",
 ]
 resolver = "2"

@@ -1,0 +1,19 @@
+# Two addresses per line, separated by a space. The predicate the confluence
+# check runs: two `add` operations at disjoint addresses commute.
+
+# The case #50 names. Both reach inside a kind that a previous operation
+# declared, and the two are disjoint. A check that compared the text of an
+# address would call them a conflict and refuse an overlay this repository has
+# already committed.
+kinds.design_spec.identifier kinds.design_spec.language
+
+# A prefix in text is not a prefix in segments.
+kinds.playbook kinds.playbook_step
+
+# The genuine overlaps: the same address twice, and one above the other.
+kinds.playbook kinds.playbook
+kinds.design_spec kinds.design_spec.identifier
+kinds kinds.playbook
+
+# Different blocks never overlap.
+kinds.playbook shelves.playbooks
