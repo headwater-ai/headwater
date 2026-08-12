@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "headwater-cli"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "headwater"
+path = "src/main.rs"
+
+# Spec 6: "The CLI is a thin shell over a library API." Everything below is a
+# library that an editor, the MCP server or a CI adapter consumes directly, and
+# none of them starts this binary and parses its text.
+[dependencies]
+headwater-census = { path = "../census" }
+headwater-check = { path = "../check" }
+headwater-graph = { path = "../graph" }
