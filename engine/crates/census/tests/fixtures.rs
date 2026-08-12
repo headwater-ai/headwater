@@ -13,7 +13,6 @@
 
 use headwater_census::census::{self, Detail, Outcome};
 use headwater_census::shelves::Taxonomy;
-use headwater_census::standin;
 use headwater_census::walk::{Corpus, Exclusion};
 use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};
@@ -177,18 +176,23 @@ fn the_census_and_the_parsers_exception_list_agree() {
     }
 }
 
-// --- the M1 stand-in for overlay resolution ----------------------------------
+// --- this repository, resolved -----------------------------------------------
 //
-// It lives in `headwater_census::standin`, and its module comment says what it
-// is and what it is not. Two readers now need the base package, the bundle and
-// the overlay put together — this test and the graph build's — and two copies
-// of a stand-in can disagree about the taxonomy while each one passes its own
-// fixtures.
+// `headwater-resolve` reads the consumer declaration, resolves the package plus
+// the bundle plus the overlay, and hands back both halves: what to walk, and
+// the taxonomy to walk it with. It replaced the stand-in that this crate used
+// to carry, and `corpus.census` did not move when it did.
+
+fn repository(root: &Path) -> headwater_resolve::Repository {
+    headwater_resolve::repository(root)
+        .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)))
+}
 
 fn resolved_taxonomy(root: &Path) -> Taxonomy {
-    Taxonomy::read(&standin::resolved(root)).expect("the resolved taxonomy reads")
+    Taxonomy::read(&repository(root).resolution.taxonomy).expect("the resolved taxonomy reads")
 }
 
 fn corpus_of(root: &Path) -> Corpus {
-    standin::corpus(root)
+    let consumer = repository(root).consumer;
+    Corpus::declared(root, &consumer.corpus_root, &consumer.exclusions)
 }

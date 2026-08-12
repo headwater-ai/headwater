@@ -13,7 +13,6 @@
 
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
-use headwater_census::standin;
 use headwater_census::walk::{Corpus, Exclusion};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -22,6 +21,28 @@ use std::path::{Path, PathBuf};
 
 fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
+}
+
+/// One taxonomy source, loaded. The fixture taxonomies here are written whole
+/// rather than resolved, because what the graph build reads is a resolved
+/// taxonomy and a source with no overlays over it already is one.
+fn load_map(path: &Path) -> headwater_yaml::Mapping {
+    let source =
+        std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    headwater_yaml::load(&source)
+        .unwrap_or_else(|errors| panic!("{}: {:?}", path.display(), errors))
+        .value
+        .as_map()
+        .unwrap_or_else(|| panic!("{} is not a mapping", path.display()))
+        .clone()
+}
+
+/// This repository, resolved. `headwater-resolve` replaced the stand-in that
+/// `headwater-census` used to carry, and `corpus.graph` did not move when it
+/// did.
+fn repository(root: &Path) -> headwater_resolve::Repository {
+    headwater_resolve::repository(root)
+        .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)))
 }
 
 fn repository_root() -> PathBuf {
@@ -56,7 +77,7 @@ fn fixture_graph() -> Graph {
         "graph/excluded/**",
         "a declared exclusion, so that an anchor can resolve into one",
     )]);
-    let root = standin::load_map(&fixtures_dir().join("graph.taxonomy.yml"));
+    let root = load_map(&fixtures_dir().join("graph.taxonomy.yml"));
     let taxonomy = Taxonomy::read(&root).expect("the fixture taxonomy reads");
     let declarations = Declarations::read(&root).expect("the fixture declarations read");
 
@@ -73,8 +94,13 @@ fn fixture_graph() -> Graph {
 /// This repository, wired by the taxonomy that types it.
 fn corpus_graph() -> Graph {
     let root = repository_root();
-    let corpus = standin::corpus(&root);
-    let resolved = standin::resolved(&root);
+    let resolved = repository(&root);
+    let corpus = Corpus::declared(
+        &root,
+        &resolved.consumer.corpus_root,
+        &resolved.consumer.exclusions,
+    );
+    let resolved = resolved.resolution.taxonomy;
     let taxonomy = Taxonomy::read(&resolved).expect("the resolved taxonomy reads");
     let declarations = Declarations::read(&resolved).expect("the resolved declarations read");
 
@@ -268,8 +294,13 @@ fn a_quoted_link_is_counted_and_never_bound() {
 #[test]
 fn every_node_of_the_graph_is_a_typed_row_of_the_census() {
     let root = repository_root();
-    let corpus = standin::corpus(&root);
-    let taxonomy = Taxonomy::read(&standin::resolved(&root)).expect("reads");
+    let resolved = repository(&root);
+    let corpus = Corpus::declared(
+        &root,
+        &resolved.consumer.corpus_root,
+        &resolved.consumer.exclusions,
+    );
+    let taxonomy = Taxonomy::read(&resolved.resolution.taxonomy).expect("reads");
     let taken = census::take(&corpus, &taxonomy);
     let graph = corpus_graph();
 

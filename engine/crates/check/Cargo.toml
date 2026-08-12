@@ -15,3 +15,8 @@ headwater-graph = { path = "../graph" }
 
 # A finding anchors at a line, and a span is where the line comes from.
 headwater-yaml = { path = "../yaml" }
+
+[dev-dependencies]
+# The run over this repository needs this repository's taxonomy resolved. The
+# runner takes an already-resolved one.
+headwater-resolve = { path = "../resolve" }

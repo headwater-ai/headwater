@@ -112,33 +112,29 @@ fn overlay_sources_validate_to_the_recorded_verdict() {
 /// whole of what a meta-schema has to read today, and none of the three was
 /// written against one. A constructed fixture cannot fail the way a file that
 /// somebody wrote for another purpose can.
+///
+/// The base package is a file now. When this fixture was first recorded it was
+/// a fenced YAML block inside an evaluation, read by parsing Markdown, and it
+/// was refused on its first line: it opened `package: headwater/standard`, and
+/// `package` is a reserved reference root that no taxonomy may declare.
+/// [#50](https://github.com/headwater-ai/headwater/issues/50) split the
+/// manifest from the taxonomy source, which is what the third `valid` below is.
 #[test]
 fn this_repositorys_own_sources_validate_to_the_recorded_verdict() {
     let schema = MetaSchema::shipped().expect("the shipped meta-schema");
     let root = repository_root();
     let mut out = String::new();
 
-    // The base package has no file of its own. Its one committed copy is a
-    // fenced block inside an evaluation, which is the stand-in's problem and
-    // #50's to end.
-    let base = headwater_census::standin::base_package(&root);
-    let found = headwater_meta::validate::taxonomy(
-        &schema,
-        &Spanned::new(
-            headwater_yaml::Value::Map(base),
-            headwater_yaml::Span::default(),
-        ),
-    );
-    out.push_str(&format!(
-        "{} (a fenced block, not a file)\n",
-        headwater_census::standin::BASE
-    ));
+    const BASE: &str = "packages/headwater-standard/taxonomy.yml";
+    const BUNDLE: &str = "docs/taxonomies/design-spec/bundle.yml";
+    const OVERLAY: &str = ".headwater/overlay.yml";
+
+    let loaded = load(&root.join(BASE));
+    let found = headwater_meta::validate::taxonomy(&schema, &loaded);
+    out.push_str(&format!("{BASE}\n"));
     out.push_str(&indent(&verdict(&found)));
 
-    for source in [
-        headwater_census::standin::BUNDLE,
-        headwater_census::standin::OVERLAY,
-    ] {
+    for source in [BUNDLE, OVERLAY] {
         let loaded = load(&root.join(source));
         let found = headwater_meta::validate::overlay(&schema, &loaded);
         out.push_str(&format!("\n{source}\n"));
