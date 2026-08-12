@@ -1,0 +1,17 @@
+taxonomy: headwater/standard
+version: 1.0.0
+purposes:
+  rationale:
+    intent: "explain why a choice was made and what it forecloses"
+kinds:
+  decision:
+    purpose: rationale
+    sections:
+      require:
+        - Decision
+        - Consequences
+        - Rationale
+        - Alternatives
+core:
+  requires:
+    - purpose: rationale

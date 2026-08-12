@@ -16,3 +16,4 @@ path = "src/main.rs"
 headwater-census = { path = "../census" }
 headwater-check = { path = "../check" }
 headwater-graph = { path = "../graph" }
+headwater-resolve = { path = "../resolve" }

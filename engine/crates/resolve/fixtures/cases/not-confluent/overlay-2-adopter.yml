@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: Apache-2.0
+
+taxonomy: acme
+extends: headwater/standard@1.0.0
+
+add:
+  kinds.report.purpose: rationale

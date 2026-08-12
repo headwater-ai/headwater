@@ -727,9 +727,13 @@ Merge semantics are strict and total:
 
 **Every operation asserts a precondition about the base, and a failed precondition is always an error.** `override` needs the path to exist. `add` needs the key to be absent. `remove` needs the key to be present. The symmetry is deliberate. An overlay states what it believes about the base, and an upgrade that falsifies the belief must say so rather than proceed.
 
+The precondition of an `add` is about the addressed key and about nothing above it. A second overlay that already created the mapping above that key does not falsify the belief. The resolver creates the mappings it needs on the way down. To refuse the operation there would put two overlays in an order that the confluence rule below denies them.
+
 So an upgrade can break an overlay in three ways, and the third is the one that surprises people. A base release that *adds* a key which the overlay already added is a collision, and the overlay stops resolving. **A collision is always a task for a human, never an automatic promotion to `override`.** The two operations differ in what the consumer inherits. `add` states the whole value. `override` keeps every upstream field that the consumer did not restate, so a silent promotion would import upstream decisions that nobody read.
 
-Confluence is what makes order-independence a guarantee rather than a hope. The resolver builds the set of paths that each overlay addresses, and it checks pairwise commutativity. Two `add`s at disjoint paths commute. An `override` and a `remove` on the same subtree do not, and two `override`s on one path do not. At resolve time, the resolver rejects any pair that does not commute, and it names both overlays and the contested path.
+Confluence is what makes order-independence a guarantee rather than a hope. The resolver builds the set of nodes that each overlay writes, and it checks pairwise commutativity. Two `add` operations commute when no node that one writes lies inside a node that the other writes. An `override` and a `remove` own the whole subtree at their address. So a pair that holds either one, and that reaches one subtree, does not commute. Two `override` operations on one path do not commute either. At resolve time, the resolver rejects any pair that does not commute, and it names both overlays and the contested path.
+
+**The set is the leaves, and the addressed path is the special case of it.** A bundle that declares `kinds.report` and an overlay that writes `kinds.report.identifier` name two paths, and one is a prefix of the other. The two operations meet at no leaf. They write disjoint parts of one mapping, and either order gives one result. A check over the addressed paths alone therefore refuses a pair that commutes. An `add` states a whole value, and the value is where its leaves are.
 
 Delta-oriented software product lines worked this ground thoroughly, and the requirement is theirs. Without it, a three-tier federation ([spec 7](07-distribution-and-federation.md#federation)) has a resolution order that someone must remember. That is a bug that waits for the day when two tiers are upgraded in the wrong sequence.
 
@@ -752,6 +756,8 @@ segment   = 1*( ALPHA / DIGIT / "_" )
 
 **The root set is closed, and `package` is a reserved word.** `vocabularies` is a declaration of the taxonomy under resolution. `package` is not a declaration, and it names the publisher's library of defined but unenabled content. No taxonomy may declare a block called `package`. To add a root is a meta-schema change, exactly as [to add a facet role](#the-meta-schema) is.
 
+The rule binds a taxonomy source and binds nothing else. [Spec 7](07-distribution-and-federation.md#publishing) gives a package manifest a `package:` key at its root, and a manifest is a different file with a different root set. So the two are two files, and a file that plays both parts is refused on its first line.
+
 **Quoting is not an escape, so the sublanguage carries one.** Q2 rules that a scalar takes its type from the meta-schema and never from the YAML resolver. So `"$vocabularies.audience"` and `$vocabularies.audience` are one value, and quotation marks cannot hide a sigil. A corpus whose value starts with a dollar sign writes `$$`, which stands for one literal `$`. Outside a position that admits a reference, `$` is an ordinary character. An identifier scheme `pattern` is typed as a string, so `"^DR-[A-Z]{2,6}-[0-9]{4}$"` is a pattern and not a malformed reference.
 
 **A segment holds letters, digits and `_`.** The refusal of `.` is permanent, because `.` is the separator. A declared key that holds a dot makes an address ambiguous, and the meta-schema refuses to declare one. Every other refusal is provisional, the hyphen among them. Q2 settles the direction to guess in. To relax a rule later costs nothing. To add one later is a finding against every source that already used the form.
@@ -764,7 +770,7 @@ segment   = 1*( ALPHA / DIGIT / "_" )
 
 **An address never travels through a reference.** The node that an address names must be in the merged tree before any reference resolves. To address through a reference makes the result depend on an order that the rule above fixes for a different purpose.
 
-**An address into a list is an error, and the grammar cannot catch it.** `0` is a legal key name, so no lexical rule tells an index from a key. The refusal belongs to the resolver, which reads the node that the address lands on. A list position does not survive an upstream release, and `add_to` and `remove_from` are what a list takes instead.
+**An address into a list is an error, and the grammar cannot catch it.** `0` is a legal key name, so no lexical rule tells an index from a key. The refusal belongs to the meta-schema, which declares the positions that hold a list and needs no merged tree to answer. A list position does not survive an upstream release, and `add_to` and `remove_from` are what a list takes instead.
 
 What `optional` means under the `package` root is not fixed here. [Spec 7](07-distribution-and-federation.md#publishing) declares no such block in the package manifest, and [13 — Open obligations](13-open-obligations.md) carries the gap. The grammar admits `$package.optional.forbids` under either reading, because the open question is the shape of a package file rather than the shape of a reference.
 

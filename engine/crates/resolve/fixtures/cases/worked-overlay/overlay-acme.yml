@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Spec 2's own worked overlay (Customization by composition), as a file. It uses
+# every operation an adopter has, and it is here because spec 2 states what its
+# result has to be: "the names change completely, the roles survive, and the
+# core is satisfied".
+#
+# The lifecycle override is the case that fixes the resolution order. The facet
+# reads `$vocabularies.lifecycle_state`, and the record beside this file shows
+# the facet carrying `active` and `retired`. A resolver that read references
+# before it applied overlays would show the base list there, and no check could
+# see the difference.
+
+taxonomy: acme-engineering
+extends: headwater/standard@1.0.0
+
+override:
+  shelves.decisions.path: "docs/adr/**"
+  identifier_schemes.decision_id.pattern: "ADR-{namespace}-{seq:03d}"
+  vocabularies.lifecycle_state:
+    - {value: draft,   role: initial}
+    - {value: active,  role: live}
+    - {value: retired, role: terminal-retained}
+
+add:
+  purposes.procedure: {intent: "state how a thing is done, step by step"}
+  kinds.playbook: {purpose: procedure}
+  shelves.playbooks: {path: "docs/playbooks/**", homogeneous: true, kind: playbook}
+
+remove:
+  - shelves.proposals
+  - relations.refines

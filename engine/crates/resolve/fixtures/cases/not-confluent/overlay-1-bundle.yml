@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# One of the two sources that state a purpose for the same kind. Neither is
+# wrong on its own, and the pair has no answer, which is why the refusal names
+# both files and the contested node rather than picking the later one.
+
+bundle: reports
+extends: headwater/standard@1.0.0
+
+add:
+  kinds.report: {purpose: behavior}

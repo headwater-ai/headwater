@@ -15,3 +15,9 @@ headwater-doc = { path = "../doc" }
 # Shelves are declared in a taxonomy source, and a declaration that is wrong
 # reports at the line that declared it.
 headwater-yaml = { path = "../yaml" }
+
+[dev-dependencies]
+# The census of this repository needs this repository's taxonomy resolved. The
+# library takes an already-resolved taxonomy and knows nothing about where one
+# comes from, so the dependency is the fixture's rather than the crate's.
+headwater-resolve = { path = "../resolve" }

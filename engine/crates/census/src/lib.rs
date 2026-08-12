@@ -36,8 +36,10 @@
 //! neither. It is the denominator that a later phase computes coverage against.
 //!
 //! **The overlay resolver.** [`shelves::Taxonomy`] reads an already-resolved
-//! taxonomy. Resolving a base package, its bundles and an adopter overlay is
-//! [#50](https://github.com/headwater-ai/headwater/issues/50).
+//! taxonomy, and `headwater-resolve` is what resolves one. This crate carried
+//! the stand-in for that until
+//! [#50](https://github.com/headwater-ai/headwater/issues/50), and the two went
+//! away together.
 //!
 //! **Step 4 of kind resolution.** Path-pattern refinement has no declared form
 //! anywhere. See [`resolve`].
@@ -46,7 +48,6 @@ pub mod census;
 pub mod pattern;
 pub mod resolve;
 pub mod shelves;
-pub mod standin;
 pub mod walk;
 
 pub use census::{Census, Detail, Row};

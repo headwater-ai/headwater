@@ -1,0 +1,130 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The base package of headwater/standard, as a file.
+#
+# It was derived rather than chosen: the first-run walkthrough
+# (docs/evaluations/default-taxonomy-first-run.md) reads the immutable core and
+# writes out the smallest taxonomy that satisfies it, then measures what five
+# adopters add and delete over it. That walkthrough held the only committed copy
+# of this content, as a fenced block inside its prose, and every tool that
+# wanted the base parsed Markdown to reach it. This file ends that.
+#
+# The block in the walkthrough stays where it is, because it is the record of a
+# derivation and not a source. This file is the source.
+#
+# One key differs from the block. It opened `package: headwater/standard`, which
+# is the manifest key of spec 7 standing in front of eleven taxonomy
+# declarations. `package` is a reserved reference root, so a taxonomy source may
+# not declare it. The manifest is `package.yml` beside this file, and a taxonomy
+# source names itself with `taxonomy:`.
+
+taxonomy: headwater/standard
+version: 1.0.0
+
+purposes:
+  rationale:
+    intent: explain why a choice was made and what it forecloses
+    answers: ["why is it this way", "what was rejected", "what does this constrain"]
+  behavior:
+    intent: state what the system does, as it is now
+    answers: ["what does this component do", "what may I rely on"]
+
+vocabularies:
+  lifecycle_state:
+    - {value: draft,      role: initial}
+    - {value: current,    role: live}
+    - {value: superseded, role: terminal-retained}
+    - {value: deprecated, role: terminal-retained}
+
+facets:
+  status:        {role: state,         values: $vocabularies.lifecycle_state, required: true}
+  status_since:  {role: state_entered, type: date,   required: true}
+  last_verified: {role: freshness,     type: date,   stale_after_days: 180}
+  summary:       {role: scent,         type: string, required: true}
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current, deprecated], current: [superseded, deprecated]}
+      retain_terminal: true
+  voice:
+    declarative: {forbid: [future_intent, change_narration, phased_rollout]}
+  language:
+    default: {tag: en-US, controlled: none}
+
+anchors:
+  code_path: {resolver: source-tree}
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status, status_since, last_verified, summary]}
+  decision:
+    is_a: governed_document
+    purpose: rationale
+    identifier: {scheme: decision_id}
+    voice: declarative
+    lifecycle: standard
+    sections: {require: [Context, Decision, Consequences]}
+  specification:
+    is_a: governed_document
+    purpose: behavior
+    voice: declarative
+    lifecycle: standard
+    sections: {require: [Scope, Behavior]}
+
+relations:
+  supersedes:
+    family: succession
+    from: [governed_document]
+    to:   [governed_document]
+    inverse: superseded_by
+    reciprocal: required
+    nuclearity: multinuclear
+    on_target: {set_state: superseded}
+    created_by: scaffold
+  governs:
+    family: governance
+    from: [governed_document]
+    to:   [code_path]
+    cardinality: many
+    created_by: hook
+  constrains:
+    family: governance
+    from: [decision]
+    to:   [decision]
+    created_by: agent
+  conflicts_with:
+    family: association
+    from: [decision]
+    to:   [decision]
+    reciprocal: symmetric
+    nuclearity: multinuclear
+    invalid_when: {both: {status: current}}
+    created_by: agent
+  traces_to:
+    family: evidence
+    from: [governed_document]
+    to:   [governed_document, code_path]
+    created_by: hook
+
+shelves:
+  decisions:      {path: docs/decisions/**,      homogeneous: true, kind: decision}
+  specifications: {path: docs/specifications/**, homogeneous: true, kind: specification}
+
+identifier_schemes:
+  decision_id: {pattern: "DR-{namespace}-{seq:04d}", namespace: repo, allocation: reconcile-first}
+
+core:
+  requires:
+    - facet_role: state
+    - facet_role: freshness
+    - facet_role: scent
+    - purpose: rationale
+    - purpose: behavior
+    - relation_family: succession
+      lifecycle_sensitive: true
+
+projections:
+  - {kind: shelf_index, for: [decisions, specifications], output: "{shelf}/README.md"}

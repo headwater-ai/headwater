@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The publisher's half of the pair that this repository has had committed since
+# its first typing pass: a bundle declares a kind, and an adopter overlay
+# reaches inside the kind the bundle declared.
+#
+# Read over the addressed paths, `kinds.design_spec` is a prefix of
+# `kinds.design_spec.identifier`, so the two are not disjoint and spec 2's
+# confluence rule refuses them as written. Read over the leaves each operation
+# writes, they meet nowhere and either order gives one tree. That is what this
+# case exists to hold in place.
+
+bundle: design-spec
+extends: headwater/standard@1.0.0
+requires: []
+
+add:
+  kinds.design_spec:
+    is_a: governed_document
+    purpose: behavior
+    voice: declarative

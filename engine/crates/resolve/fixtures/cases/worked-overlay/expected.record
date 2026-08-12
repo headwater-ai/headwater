@@ -1,0 +1,63 @@
+taxonomy: headwater/standard
+version: 1.0.0
+vocabularies:
+  lifecycle_state:
+    - value: draft
+      role: initial
+    - value: active
+      role: live
+    - value: retired
+      role: terminal-retained
+purposes:
+  rationale:
+    intent: "explain why a choice was made and what it forecloses"
+  procedure:
+    intent: "state how a thing is done, step by step"
+facets:
+  status:
+    role: state
+    values:
+      - value: draft
+        role: initial
+      - value: active
+        role: live
+      - value: retired
+        role: terminal-retained
+    required: true
+kinds:
+  decision:
+    purpose: rationale
+    identifier:
+      scheme: decision_id
+  playbook:
+    purpose: procedure
+shelves:
+  decisions:
+    path: "docs/adr/**"
+    homogeneous: true
+    kind: decision
+  playbooks:
+    homogeneous: true
+    kind: playbook
+    path: "docs/playbooks/**"
+identifier_schemes:
+  decision_id:
+    pattern: "ADR-{namespace}-{seq:03d}"
+    namespace: repo
+    allocation: reconcile-first
+relations:
+  supersedes:
+    family: succession
+    from:
+      - decision
+    to:
+      - decision
+    on_target:
+      set_state: superseded
+    created_by: scaffold
+core:
+  requires:
+    - facet_role: state
+    - purpose: rationale
+    - relation_family: succession
+      lifecycle_sensitive: true

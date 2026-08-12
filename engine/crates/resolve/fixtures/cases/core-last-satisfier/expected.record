@@ -1,0 +1,3 @@
+refused
+
+`core.requires`: the core requires facet_role: scent, and `remove.facets.summary` in overlay-adopter.yml removed its last satisfier

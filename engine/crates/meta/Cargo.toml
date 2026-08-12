@@ -11,9 +11,3 @@ publish.workspace = true
 # core satisfiability read a resolved tree, which is the resolver's.
 headwater-yaml = { path = "../yaml" }
 headwater-ref = { path = "../ref" }
-
-[dev-dependencies]
-# The corpus fixture validates this repository's own base package, and the one
-# committed copy of the base is a fenced block inside an evaluation. The
-# stand-in is what reads it, and both die with #50.
-headwater-census = { path = "../census" }

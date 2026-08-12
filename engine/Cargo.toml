@@ -8,6 +8,7 @@ members = [
     "crates/graph",
     "crates/meta",
     "crates/ref",
+    "crates/resolve",
     "crates/yaml",
 ]
 resolver = "2"

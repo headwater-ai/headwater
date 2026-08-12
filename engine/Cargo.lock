@@ -19,6 +19,7 @@ name = "headwater-census"
 version = "0.0.0"
 dependencies = [
  "headwater-doc",
+ "headwater-resolve",
  "headwater-yaml",
 ]
 
@@ -28,6 +29,7 @@ version = "0.0.0"
 dependencies = [
  "headwater-census",
  "headwater-graph",
+ "headwater-resolve",
  "headwater-yaml",
 ]
 
@@ -38,6 +40,7 @@ dependencies = [
  "headwater-census",
  "headwater-check",
  "headwater-graph",
+ "headwater-resolve",
 ]
 
 [[package]]
@@ -54,6 +57,7 @@ version = "0.0.0"
 dependencies = [
  "headwater-census",
  "headwater-doc",
+ "headwater-resolve",
  "headwater-yaml",
 ]
 
@@ -61,7 +65,6 @@ dependencies = [
 name = "headwater-meta"
 version = "0.0.0"
 dependencies = [
- "headwater-census",
  "headwater-ref",
  "headwater-yaml",
 ]
@@ -70,6 +73,15 @@ dependencies = [
 name = "headwater-ref"
 version = "0.0.0"
 dependencies = [
+ "headwater-yaml",
+]
+
+[[package]]
+name = "headwater-resolve"
+version = "0.0.0"
+dependencies = [
+ "headwater-meta",
+ "headwater-ref",
  "headwater-yaml",
 ]
 

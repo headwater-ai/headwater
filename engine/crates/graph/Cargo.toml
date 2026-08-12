@@ -16,3 +16,8 @@ headwater-doc = { path = "../doc" }
 # A relation declaration is a taxonomy source, and a declaration that is wrong
 # reports at the line that declared it.
 headwater-yaml = { path = "../yaml" }
+
+[dev-dependencies]
+# The graph of this repository needs this repository's taxonomy resolved. The
+# build itself takes an already-resolved one.
+headwater-resolve = { path = "../resolve" }

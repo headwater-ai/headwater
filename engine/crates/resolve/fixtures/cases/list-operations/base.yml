@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+
+taxonomy: headwater/standard
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+kinds:
+  decision:
+    purpose: rationale
+    sections: {require: [Context, Decision, Consequences]}
+
+core:
+  requires:
+    - purpose: rationale

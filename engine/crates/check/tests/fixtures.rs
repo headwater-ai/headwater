@@ -13,7 +13,6 @@
 
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
-use headwater_census::standin;
 use headwater_census::walk::Corpus;
 use headwater_check::{coverage, placement, reciprocity, Detail, Run};
 use headwater_graph::anchors::Resolvers;
@@ -68,13 +67,43 @@ fn run_over(corpus: &Corpus, root: &headwater_yaml::Mapping) -> Run {
 
 fn fixture_run() -> Run {
     let corpus = Corpus::new(fixtures_dir(), "check");
-    let root = standin::load_map(&fixtures_dir().join("check.taxonomy.yml"));
+    let root = load_map(&fixtures_dir().join("check.taxonomy.yml"));
     run_over(&corpus, &root)
 }
 
 fn corpus_run() -> Run {
     let root = repository_root();
-    run_over(&standin::corpus(&root), &standin::resolved(&root))
+    let resolved = repository(&root);
+    run_over(&corpus_of(&root, &resolved), &resolved.resolution.taxonomy)
+}
+
+/// One taxonomy source, loaded. The fixture taxonomy is written whole, and a
+/// source with no overlays over it is a resolved taxonomy already.
+fn load_map(path: &Path) -> headwater_yaml::Mapping {
+    let source =
+        std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    headwater_yaml::load(&source)
+        .unwrap_or_else(|errors| panic!("{}: {:?}", path.display(), errors))
+        .value
+        .as_map()
+        .unwrap_or_else(|| panic!("{} is not a mapping", path.display()))
+        .clone()
+}
+
+/// This repository, resolved. `headwater-resolve` replaced the stand-in that
+/// `headwater-census` used to carry, and `corpus.checks` did not move when it
+/// did.
+fn repository(root: &Path) -> headwater_resolve::Repository {
+    headwater_resolve::repository(root)
+        .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)))
+}
+
+fn corpus_of(root: &Path, resolved: &headwater_resolve::Repository) -> Corpus {
+    Corpus::declared(
+        root,
+        &resolved.consumer.corpus_root,
+        &resolved.consumer.exclusions,
+    )
 }
 
 #[test]
@@ -243,8 +272,9 @@ fn a_classified_document_with_no_instance_is_a_finding_and_an_untyped_one_is_not
 #[test]
 fn the_denominator_is_the_census_and_not_the_classified_set() {
     let root = repository_root();
-    let corpus = standin::corpus(&root);
-    let taxonomy = Taxonomy::read(&standin::resolved(&root)).expect("reads");
+    let resolved = repository(&root);
+    let corpus = corpus_of(&root, &resolved);
+    let taxonomy = Taxonomy::read(&resolved.resolution.taxonomy).expect("reads");
     let taken = census::take(&corpus, &taxonomy);
 
     let run = corpus_run();

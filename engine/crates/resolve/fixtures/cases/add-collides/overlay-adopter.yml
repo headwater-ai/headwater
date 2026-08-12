@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The third way an upgrade breaks an overlay, and the one spec 2 says surprises
+# people: the base now declares a key that the overlay already added. The
+# resolver refuses it, and it does not promote the `add` to an `override`,
+# because the two differ in what the consumer inherits.
+
+taxonomy: acme
+extends: headwater/standard@1.0.0
+
+add:
+  kinds.report.purpose: rationale

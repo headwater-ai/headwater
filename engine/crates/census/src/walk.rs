@@ -80,6 +80,23 @@ impl Corpus {
         self
     }
 
+    /// The corpus a consumer declaration describes: a root, and each exclusion
+    /// with the reason it states.
+    ///
+    /// The pairs come from [`headwater_resolve::Consumer`], and they arrive as
+    /// pairs rather than as a type so that the walker keeps no dependency on
+    /// the resolver. What the census needs from a consumer declaration is two
+    /// strings per exclusion, and the reason is not optional: an exclusion with
+    /// none is a silent pass with a configuration file in front of it.
+    pub fn declared(base: impl Into<PathBuf>, root: &str, exclusions: &[(String, String)]) -> Self {
+        Self::new(base, root).excluding(
+            exclusions
+                .iter()
+                .map(|(path, reason)| Exclusion::new(path, reason))
+                .collect(),
+        )
+    }
+
     fn exclusion_for(&self, path: &str) -> Option<&Exclusion> {
         self.exclusions
             .iter()

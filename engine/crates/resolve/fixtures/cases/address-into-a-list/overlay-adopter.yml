@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# `…transitions.draft.0` parses, because `0` is a legal key name and no lexical
+# rule tells an index from a key. #48 could not refuse it in the grammar and
+# #50's earlier revisions expected the resolver to refuse it by reading the node
+# the address lands on. It does not: the meta-schema declares which positions
+# hold a list, so the refusal is decided over the address alone, before anything
+# merges. The resolver validates each source and reports what the meta-schema
+# says.
+
+taxonomy: acme
+extends: headwater/standard@1.0.0
+
+override:
+  regimes.lifecycle.standard.transitions.draft.0: superseded

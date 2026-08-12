@@ -1,0 +1,3 @@
+refused
+
+overlay-adopter.yml `override.regimes.lifecycle.standard.transitions.draft.0` (15:3): `regimes.lifecycle.standard.transitions.draft.0` addresses a position inside the list at `regimes.lifecycle.standard.transitions.draft`; a list position does not survive an upstream release, and `add_to` and `remove_from` are what a list takes instead

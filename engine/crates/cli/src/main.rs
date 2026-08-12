@@ -25,19 +25,23 @@
 //! the posture is a property of the engine, visible in one place, and a
 //! promotion to blocking is one word in a workflow file with an audit trail.
 //!
-//! # Where the taxonomy comes from, and why that is temporary
+//! # Where the taxonomy comes from
 //!
-//! From [`headwater_census::standin`], which puts the base package, the bundle
-//! and the overlay together by applying `add` operations at dotted addresses.
-//! It is not a resolver, it validates nothing, and it dies with
-//! [#50](https://github.com/headwater-ai/headwater/issues/50). Until then this
-//! binary runs in this repository and would need a real resolver to run
-//! anywhere else, which is the honest state of M1 rather than a defect in the
-//! CLI.
+//! From `headwater-resolve`, which reads the consumer declaration, finds the
+//! package it names, applies the bundles it selects and the overlay it
+//! declares, resolves every reference, and checks the core on the result. A
+//! source that the meta-schema refuses stops the run: [spec 2](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema)
+//! rules that the engine never applies a taxonomy that does not validate, and
+//! there is no partial-load mode.
+//!
+//! This is what [#50](https://github.com/headwater-ai/headwater/issues/50)
+//! replaced. Until it landed the binary read a stand-in that applied `add`
+//! operations at dotted addresses and validated nothing, so it ran in this
+//! repository and nowhere else.
 
 use headwater_census::census::{self, Detail as CensusDetail};
 use headwater_census::shelves::Taxonomy;
-use headwater_census::standin;
+use headwater_census::walk::Corpus;
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Detail as GraphDetail, Graph};
@@ -101,8 +105,20 @@ fn main() -> ExitCode {
 fn check(root: &Path, strict: bool) -> ExitCode {
     // Phase A. The census fixes the denominator before any check runs, and the
     // graph is built from the census rather than from a second walk.
-    let corpus = standin::corpus(root);
-    let resolved = standin::resolved(root);
+    let repository = match headwater_resolve::repository(root) {
+        Ok(repository) => repository,
+        Err(errors) => {
+            eprintln!("headwater: the taxonomy did not resolve, so no run is possible");
+            eprint!("{}", indent(&headwater_resolve::render_errors(&errors)));
+            return ExitCode::FAILURE;
+        }
+    };
+    let corpus = Corpus::declared(
+        root,
+        &repository.consumer.corpus_root,
+        &repository.consumer.exclusions,
+    );
+    let resolved = repository.resolution.taxonomy;
     let taxonomy = match Taxonomy::read(&resolved) {
         Ok(taxonomy) => taxonomy,
         Err(errors) => return refused("the taxonomy", &errors),
