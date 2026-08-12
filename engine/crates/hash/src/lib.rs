@@ -8,11 +8,11 @@
 //! function of about eighty lines with published test vectors, and the vetted
 //! Rust implementation of it arrives with six transitive crates behind it.
 //!
-//! The other half of the argument is what the digest is for. This one is an
-//! integrity mark on a file that a reviewer reads in a diff, in a repository
-//! that already holds the sources it was computed from. It is not a signature
-//! and it authenticates nothing that arrived over a network. The digest that
-//! *does* — the package digest that
+//! The other half of the argument is what the digest is for. Every digest this
+//! engine writes is an integrity mark inside a repository that already holds
+//! the bytes it was computed from. None of them is a signature, and none
+//! authenticates anything that arrived over a network. The digest that *does* —
+//! the package digest that
 //! [spec 7](../../../../docs/spec/07-distribution-and-federation.md#publishing)
 //! puts on a release, which is
 //! [#77](https://github.com/headwater-ai/headwater/issues/77) — is a
@@ -21,6 +21,16 @@
 //!
 //! The test vectors below are the published ones, so a defect here fails a test
 //! rather than producing a lock that nobody can reproduce.
+//!
+//! # Why it is a crate of its own
+//!
+//! Three components hash, and they must agree. The lock hashes the canonical
+//! text of a resolved taxonomy. The census hashes the bytes of each document it
+//! reads. The check cache hashes a key built over both
+//! ([spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)).
+//! A cache key that disagreed with a lock digest about what the digest of one
+//! byte string is would be the correctness bug that spec 12 names, so there is
+//! one implementation of the function and no crate carries a second.
 
 const K: [u32; 64] = [
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -32,6 +42,16 @@ const K: [u32; 64] = [
     0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
 ];
+
+/// The digest of a byte string, named by the function that produced it.
+///
+/// This is the form every artifact of this engine writes: a lock's own digest
+/// and the digest of each of its sources, the digest a census row carries, and
+/// the digest that keys a cache entry. The prefix is what lets a later engine
+/// change the function and say which one a recorded digest came from.
+pub fn digest(bytes: &[u8]) -> String {
+    format!("sha256:{}", hex(bytes))
+}
 
 /// The digest of a byte string, as sixty-four lower-case hexadecimal digits.
 pub fn hex(bytes: &[u8]) -> String {
@@ -106,7 +126,13 @@ pub fn hex(bytes: &[u8]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::hex;
+    use super::{digest, hex};
+
+    /// The named form is the hexadecimal one with the function in front of it.
+    #[test]
+    fn a_digest_names_the_function_that_produced_it() {
+        assert_eq!(digest(b"abc"), format!("sha256:{}", hex(b"abc")));
+    }
 
     /// The published vectors. A defect here would produce a lock that nobody
     /// else can reproduce, and nothing else in this crate would notice.

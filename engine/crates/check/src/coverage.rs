@@ -101,13 +101,13 @@ impl Coverage {
         let mut unaccounted = Vec::new();
 
         for instance in instances {
-            for path in &instance.reads {
-                let Some(document) = documents.iter_mut().find(|d| &d.path == path) else {
+            for path in instance.paths() {
+                let Some(document) = documents.iter_mut().find(|d| d.path == path) else {
                     // A check that read a file the census never walked. It
                     // cannot happen today, because every instance is created
                     // from a census row, and it is recorded rather than
                     // dropped because dropping it is what hides the defect.
-                    unaccounted.push(path.clone());
+                    unaccounted.push(path.to_string());
                     continue;
                 };
                 document.created += 1;

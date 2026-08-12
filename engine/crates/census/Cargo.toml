@@ -6,6 +6,11 @@ edition.workspace = true
 publish.workspace = true
 
 [dependencies]
+# A row carries the digest of the bytes it read, which is the content hash a
+# cache key and a read set are built from. One implementation of the function,
+# so a census row and a lock cannot disagree about one byte string.
+headwater-hash = { path = "../hash" }
+
 # A census row about a document needs the document. The parser also draws the
 # line this crate turns into two outcomes: a file with no front matter is an
 # untyped document, and a file whose block will not load is one the engine

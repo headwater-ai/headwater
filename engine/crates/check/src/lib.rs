@@ -15,12 +15,13 @@
 //! exists to do. Three parts of the designed check layer are not here, and
 //! none of them is an oversight.
 //!
-//! **The cache, and change-scoped evaluation.** Every instance runs on every
-//! run. Nothing is keyed, nothing is reused, and `--changed-only` does not
-//! exist. That is [#55](https://github.com/headwater-ai/headwater/issues/55),
-//! and a cache before a sound cache key would be the correctness root
-//! [spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
-//! warns about.
+//! **Change-scoped evaluation.** Every instance is created on every run, and
+//! `--changed-only` does not exist. What does exist is the cache the same
+//! sentence of spec 12 needs first: an instance is keyed on the content hashes
+//! of what it read, and [`cache`] serves the ones nothing touched. That does
+//! not make a run partial — every instance still has an outcome and coverage
+//! counts what it counted — and a run that evaluates less of the corpus is
+//! [#58](https://github.com/headwater-ai/headwater/issues/58).
 //!
 //! **Suppression.** A finding here cannot be suppressed, so nothing is filtered
 //! and there is no inventory to report. That is
@@ -39,9 +40,9 @@
 //! rules that a check receives a scoped view and cannot ask for a wider one,
 //! and that the enforcement is the feature. Each rule below implements one
 //! scope trait, and that trait is the only way to receive the matching view.
-//! This function names the two checks it runs, which is the whole of
-//! registration until [#55](https://github.com/headwater-ai/headwater/issues/55)
-//! keys a cache on what a scope fixes.
+//! [`run`] names the two checks it runs, which is the whole of registration.
+//! The scope a trait fixes is now read twice: once for the report, and once as
+//! a component of the cache key that spec 12 derives from the same fact.
 //!
 //! `Neighbourhood`, `Shelf` and a corpus-scoped *trait* are absent, and the
 //! reason is the one this module already applies to a cache: no rule needs
@@ -58,6 +59,7 @@
 //! places. Turning them into findings needs an obligation for each class, which
 //! the base package does not declare, and #59 is where that lands.
 
+pub mod cache;
 pub mod coverage;
 pub mod finding;
 pub mod instance;
@@ -66,9 +68,10 @@ pub mod reciprocity;
 pub mod register;
 pub mod scope;
 
+pub use cache::Cache;
 pub use coverage::Coverage;
 pub use finding::{Finding, Severity};
-pub use instance::{Instance, Outcome};
+pub use instance::{Input, Instance, Outcome};
 pub use register::{Bound, Register};
 pub use scope::{DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain, Scope};
 
@@ -97,6 +100,9 @@ pub struct Run {
     /// reaches no obligation is in this list too, because a rule that cannot
     /// say which invariant it protects is what spec 4 asks a reader to notice.
     pub served: Vec<Serves>,
+    /// What this run did with its cache. Deliberately outside [`Run::render`]:
+    /// see [`cache`] for why a hit count is not part of a verdict.
+    pub cache: cache::Report,
 }
 
 /// One rule, the scope that binds it, and the obligation it serves.
@@ -121,14 +127,16 @@ pub fn run(
     taxonomy: &Taxonomy,
     declarations: &Declarations,
     register: &Register,
+    cache: &mut Cache,
 ) -> Run {
     // Registration, in full: two checks, each named once. The scope trait each
     // one implements decides what it is handed, so this function cannot widen
     // a view by calling the wrong instantiation.
     let placement = placement::Placement::over(taxonomy);
     let reciprocity = reciprocity::Reciprocity::over(declarations);
-    let mut instances = scope::over_documents(&placement, census);
-    instances.extend(scope::over_edges(&reciprocity, graph));
+    let digests = scope::Digests::of(census);
+    let mut instances = scope::over_documents(&placement, census, cache);
+    instances.extend(scope::over_edges(&reciprocity, graph, &digests, cache));
 
     let coverage = Coverage::of(census, &instances);
 
@@ -175,6 +183,7 @@ pub fn run(
         coverage,
         findings: finding::sorted(findings),
         served,
+        cache: cache.report(),
     }
 }
 
@@ -283,7 +292,7 @@ impl Run {
                     out,
                     "  {} {}\n    {}",
                     instance.rule,
-                    instance.reads.join(" + "),
+                    instance.paths().join(" + "),
                     match &instance.outcome {
                         Outcome::Passed => "passed".to_string(),
                         Outcome::Failed(_) => "failed".to_string(),

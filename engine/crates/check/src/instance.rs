@@ -7,10 +7,22 @@
 //! document, which instances were created, which ran, which were served from
 //! cache, and which were skipped with a reason."
 //!
-//! Three of those four are here. Nothing is served from a cache, because this
-//! runner has none ([#55](https://github.com/headwater-ai/headwater/issues/55)
-//! owns the cache), and a class that no instance can be in is left out rather
-//! than printed as a standing zero.
+//! Three of those four are here, and the fourth is deliberately not. Whether
+//! an instance was served from a cache is a fact about a disk rather than
+//! about a corpus, and [`crate::cache`] states why no report carries it.
+//!
+//! # A read is a path and a content hash
+//!
+//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
+//! fixes what the read set of a run is: "the content hash of every document
+//! and edge that an instance read". Coverage needs the path, because it counts
+//! per document. A cache key needs the hash, because a key that omits an input
+//! is a correctness bug rather than a performance bug. Both are one field, so
+//! no second pass can produce a read set that disagrees with the first.
+//!
+//! The hash is the census's, of the bytes it read. An [`Input`] whose digest
+//! is absent is a document that the walk never read, and [`crate::cache`]
+//! refuses to key on it rather than substitute a value.
 //!
 //! # An instance is accounted to every document it read
 //!
@@ -35,10 +47,21 @@ use crate::finding::Finding;
 #[derive(Clone, Debug)]
 pub struct Instance {
     pub rule: &'static str,
-    /// Every document this instance read, relative to the repository root, in
-    /// a fixed order and without repeats.
-    pub reads: Vec<String>,
+    /// Every document this instance read, in a fixed order and without
+    /// repeats. It comes from the view rather than from the check, so a check
+    /// cannot record that it read less than it was handed.
+    pub reads: Vec<Input>,
     pub outcome: Outcome,
+}
+
+/// One in-scope input: a document, and the hash of the bytes it holds.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Input {
+    /// Relative to the repository root, with `/` separators.
+    pub path: String,
+    /// The census's digest of the bytes of that file, and `None` where the
+    /// walk read none. See the module comment.
+    pub digest: Option<String>,
 }
 
 /// What became of one instance. Closed, and matched exhaustively.
@@ -59,36 +82,25 @@ impl Instance {
     /// [`crate::scope`] is the only caller, and that is the point: the read
     /// set comes from the view rather than from the check, so a check cannot
     /// record that it read less than it was handed.
-    pub fn of(rule: &'static str, reads: impl Reads, outcome: Outcome) -> Self {
+    pub fn of(rule: &'static str, reads: Vec<Input>, outcome: Outcome) -> Self {
         Instance {
             rule,
-            reads: reads.paths(),
+            reads,
             outcome,
         }
     }
 
-    pub fn passed(rule: &'static str, reads: impl Reads) -> Self {
+    pub fn skipped(rule: &'static str, reads: Vec<Input>, reason: &'static str) -> Self {
         Instance {
             rule,
-            reads: reads.paths(),
-            outcome: Outcome::Passed,
-        }
-    }
-
-    pub fn skipped(rule: &'static str, reads: impl Reads, reason: &'static str) -> Self {
-        Instance {
-            rule,
-            reads: reads.paths(),
+            reads,
             outcome: Outcome::Skipped(reason),
         }
     }
 
-    pub fn failed(rule: &'static str, reads: impl Reads, finding: Finding) -> Self {
-        Instance {
-            rule,
-            reads: reads.paths(),
-            outcome: Outcome::Failed(Box::new(finding)),
-        }
+    /// Every document this instance read, and nothing about their contents.
+    pub fn paths(&self) -> Vec<&str> {
+        self.reads.iter().map(|input| input.path.as_str()).collect()
     }
 
     pub fn ran(&self) -> bool {
@@ -105,44 +117,19 @@ impl Instance {
     /// The first document this instance read, which is the one a report sorts
     /// and groups by.
     pub fn at(&self) -> &str {
-        self.reads.first().map(String::as_str).unwrap_or_default()
+        self.reads
+            .first()
+            .map(|input| input.path.as_str())
+            .unwrap_or_default()
     }
 }
 
-/// What a check hands over as the set of documents an instance read.
-///
-/// One path, or several. The trait exists so that a Document-scoped check
-/// writes one string and an Edge-scoped one writes two, and neither writes a
-/// `vec![]` at every call site.
-pub trait Reads {
-    fn paths(self) -> Vec<String>;
-}
-
-impl Reads for String {
-    fn paths(self) -> Vec<String> {
-        vec![self]
-    }
-}
-
-impl Reads for &str {
-    fn paths(self) -> Vec<String> {
-        vec![self.to_string()]
-    }
-}
-
-impl Reads for Vec<String> {
-    /// Repeats are removed, because one instance counts once against one
-    /// document however many times it names it. A self-edge is the case: both
-    /// endpoints are one file.
-    fn paths(mut self) -> Vec<String> {
-        let mut seen: Vec<String> = Vec::with_capacity(self.len());
-        self.retain(|path| match seen.contains(path) {
-            true => false,
-            false => {
-                seen.push(path.clone());
-                true
-            }
-        });
-        self
+impl Input {
+    /// One input, from a census row's path and its digest.
+    pub fn new(path: impl Into<String>, digest: Option<&str>) -> Self {
+        Input {
+            path: path.into(),
+            digest: digest.map(str::to_string),
+        }
     }
 }

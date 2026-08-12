@@ -77,6 +77,22 @@ pub struct Row {
     /// It is `None` where nothing parsed: an excluded file, a file that is not
     /// Markdown, an unwalkable entry, and a file the engine could not read.
     pub document: Option<Box<headwater_doc::Document>>,
+    /// The digest of the bytes this row read, and `None` where it read none.
+    ///
+    /// This is the content hash that
+    /// [spec 12](../../../../docs/spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
+    /// puts in a cache key and in the read set of a run: "the content hash of
+    /// every document and edge that an instance read". It is taken here, of
+    /// the bytes this walk read, for the reason the row carries the document
+    /// it parsed. A phase that opened the file again to hash it could hash a
+    /// different file from the one that was checked, and the cache key would
+    /// then name a state that no run evaluated.
+    ///
+    /// It is over the bytes rather than over the parsed document, because the
+    /// bytes are the input. A digest over a parse would need a canonical form
+    /// of the parse, and two documents that differ only where the parser
+    /// discards would then share a key.
+    pub digest: Option<String>,
 }
 
 /// What became of one file. Closed, and matched exhaustively everywhere.
@@ -150,10 +166,11 @@ pub fn take(corpus: &Corpus, taxonomy: &Taxonomy) -> Census {
     let rows = walk::walk(corpus)
         .into_iter()
         .map(|entry| {
-            let (outcome, document) = outcome_of(&entry, taxonomy);
+            let read = outcome_of(&entry, taxonomy);
             Row {
-                outcome,
-                document,
+                outcome: read.outcome,
+                document: read.document,
+                digest: read.digest,
                 path: entry.path,
             }
         })
@@ -161,7 +178,13 @@ pub fn take(corpus: &Corpus, taxonomy: &Taxonomy) -> Census {
     Census { rows }
 }
 
-type Read = (Outcome, Option<Box<headwater_doc::Document>>);
+/// What one file gave this walk: an outcome, the document if it parsed, and
+/// the digest of the bytes if any were read.
+struct Read {
+    outcome: Outcome,
+    document: Option<Box<headwater_doc::Document>>,
+    digest: Option<String>,
+}
 
 fn outcome_of(entry: &walk::Entry, taxonomy: &Taxonomy) -> Read {
     match &entry.kind {
@@ -197,12 +220,16 @@ fn outcome_of(entry: &walk::Entry, taxonomy: &Taxonomy) -> Read {
         return unread(Outcome::NotADocument);
     }
 
-    let source = match std::fs::read(&entry.on_disk) {
-        Ok(bytes) => match String::from_utf8(bytes) {
-            Ok(text) => text,
-            Err(_) => return unread(Outcome::Unreadable(Unreadable::NotText)),
-        },
+    let bytes = match std::fs::read(&entry.on_disk) {
+        Ok(bytes) => bytes,
         Err(error) => return unread(Outcome::Unreadable(Unreadable::Io(error.to_string()))),
+    };
+    // One read of the file, and the digest of exactly those bytes. Everything
+    // after this line works on what is already in hand.
+    let digest = headwater_hash::digest(&bytes);
+    let source = match String::from_utf8(bytes) {
+        Ok(text) => text,
+        Err(_) => return hashed(Outcome::Unreadable(Unreadable::NotText), digest),
     };
 
     // The one distinction this module exists to keep: a file with no block is
@@ -210,19 +237,24 @@ fn outcome_of(entry: &walk::Entry, taxonomy: &Taxonomy) -> Read {
     // engine could not read.
     let parsed = match headwater_doc::parse(&source) {
         Ok(document) => Some(document),
-        Err(errors) if errors.iter().any(|e| e.reason == Reason::NoFrontMatter) => None,
-        Err(errors) => return unread(Outcome::Unreadable(Unreadable::FrontMatter(errors))),
+        Err(errors) => match errors.iter().any(|e| e.reason == Reason::NoFrontMatter) {
+            true => None,
+            false => return hashed(Outcome::Unreadable(Unreadable::FrontMatter(errors)), digest),
+        },
     };
 
     let Some(document) = parsed else {
         // Step 1 needs a path and nothing else, so it still runs.
-        return unread(match resolve::shelf_for(&entry.path, taxonomy) {
-            resolve::ShelfMatch::Matched { .. } => Outcome::Untyped(Untyped::NoFrontMatter),
-            resolve::ShelfMatch::Stopped(stop) => Outcome::Untyped(Untyped::Unresolved {
-                reason: stop.reason.clone(),
-                derivation: Box::new(stop.into_resolution()),
-            }),
-        });
+        return hashed(
+            match resolve::shelf_for(&entry.path, taxonomy) {
+                resolve::ShelfMatch::Matched { .. } => Outcome::Untyped(Untyped::NoFrontMatter),
+                resolve::ShelfMatch::Stopped(stop) => Outcome::Untyped(Untyped::Unresolved {
+                    reason: stop.reason.clone(),
+                    derivation: Box::new(stop.into_resolution()),
+                }),
+            },
+            digest,
+        );
     };
 
     let resolution = resolve::resolve(&entry.path, &document.facets, taxonomy);
@@ -236,12 +268,29 @@ fn outcome_of(entry: &walk::Entry, taxonomy: &Taxonomy) -> Read {
             derivation: Box::new(resolution.clone()),
         }),
     };
-    (outcome, Some(Box::new(document)))
+    Read {
+        outcome,
+        document: Some(Box::new(document)),
+        digest: Some(digest),
+    }
 }
 
-/// An outcome that no document backs, because nothing parsed.
+/// An outcome the walk reached without reading a byte of the file.
 fn unread(outcome: Outcome) -> Read {
-    (outcome, None)
+    Read {
+        outcome,
+        document: None,
+        digest: None,
+    }
+}
+
+/// An outcome over bytes that were read and did not become a document.
+fn hashed(outcome: Outcome, digest: String) -> Read {
+    Read {
+        outcome,
+        document: None,
+        digest: Some(digest),
+    }
 }
 
 impl Outcome {
@@ -498,6 +547,44 @@ mod tests {
                 Outcome::Untyped(Untyped::Unresolved { .. }) => {}
             }
         }
+    }
+
+    /// A row carries a digest exactly when the walk read the file.
+    ///
+    /// The check layer keys a cache on this number, and a row that carried one
+    /// without reading bytes would key a result on a hash of nothing. A row
+    /// that read bytes and dropped the digest costs the other way: every
+    /// instance over it is a permanent cache miss.
+    #[test]
+    fn a_row_carries_a_digest_exactly_when_it_read_the_file() {
+        let census = take(&corpus(), &taxonomy());
+        for row in &census.rows {
+            let read = !matches!(
+                &row.outcome,
+                Outcome::Excluded { .. }
+                    | Outcome::NotADocument
+                    | Outcome::Unwalkable(_)
+                    | Outcome::Unreadable(Unreadable::Io(_))
+            );
+            assert_eq!(
+                row.digest.is_some(),
+                read,
+                "{} is {} and its digest is {:?}",
+                row.path,
+                row.outcome.class(),
+                row.digest
+            );
+        }
+
+        // And it is the digest of the file, rather than of anything the census
+        // derived from it.
+        let row = census
+            .rows
+            .iter()
+            .find(|row| row.path == "walk/spec/typed-by-discriminator.md")
+            .expect("the fixture");
+        let bytes = std::fs::read(fixtures().join(&row.path)).expect("the fixture reads");
+        assert_eq!(row.digest, Some(headwater_hash::digest(&bytes)));
     }
 
     #[test]

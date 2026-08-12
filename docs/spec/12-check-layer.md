@@ -194,6 +194,14 @@ A check that handled its own suppressions could hide them. A suppression that no
 
 Same corpus, same lock, same injected clock, byte-identical output. That is what makes `generate --check` and projection freshness meaningful at all.
 
+### A cache hit is a fact about a disk
+
+Two rules above disagree, and this section states which one wins. Coverage records which instances a cache served. Determinism fixes the output at "same corpus, same lock, same injected clock, byte-identical output". A hit count in the report satisfies the first rule and breaks the second. The count follows from what one machine holds on disk, so two people with one tree would read two reports.
+
+The run therefore reports the cache accounting on a second channel. The verdict goes to standard output, and the corpus, the lock and the injected values decide every byte of it. The hit count goes to standard error, which a differential over the verdict does not read.
+
+A cache also never makes a run partial. The run creates every instance, every instance carries an outcome, and coverage counts what it counts without a cache. A run that evaluates part of a corpus is change-scoped evaluation, and that one owes an answer about coverage over a partial pass.
+
 ## The plugin interface
 
 The interface is deliberately narrow:

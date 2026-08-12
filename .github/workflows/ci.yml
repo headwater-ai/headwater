@@ -77,11 +77,11 @@ jobs:
         # No `--strict`. Advisory, on purpose: a tool that blocks on first
         # contact is removed, and a removed tool catches nothing.
         #
-        # One run, read twice. A second invocation would be a second pass over
-        # one corpus, which is the thing the census and the graph are built to
-        # avoid one layer down.
+        # This is the run that is read. It reads no cache, so the report in the
+        # summary is what the checks decided over this tree and never what a
+        # disk remembered.
         run: |
-          ./engine/target/release/headwater check | tee headwater-check.txt
+          ./engine/target/release/headwater check --no-cache | tee headwater-check.txt
           {
             echo '## `headwater check`'
             echo
@@ -89,3 +89,21 @@ jobs:
             cat headwater-check.txt
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: The cache cannot change a verdict
+        # Spec 12 makes the cache a correctness root, and the standing test is
+        # that `headwater check --no-cache` and `headwater check` write the
+        # same bytes. `cargo test` runs that comparison over the library in the
+        # job above. This runs it over the verb, because the verb is what an
+        # author runs, and the flag is the half a library test cannot reach.
+        #
+        # Twice, because a cold cache and a warm one are different paths: the
+        # first invocation stores every verdict and the second serves them.
+        #
+        # It blocks, and it is not a second posture on the corpus. A difference
+        # here is a defect in the engine, and the report above is what the
+        # advisory step reports whatever this one finds.
+        run: |
+          ./engine/target/release/headwater check > cold.txt
+          ./engine/target/release/headwater check > warm.txt
+          diff headwater-check.txt cold.txt
+          diff headwater-check.txt warm.txt

@@ -19,6 +19,7 @@ name = "headwater-census"
 version = "0.0.0"
 dependencies = [
  "headwater-doc",
+ "headwater-hash",
  "headwater-meta",
  "headwater-resolve",
  "headwater-yaml",
@@ -31,6 +32,8 @@ dependencies = [
  "headwater-census",
  "headwater-doc",
  "headwater-graph",
+ "headwater-hash",
+ "headwater-lock",
  "headwater-resolve",
  "headwater-yaml",
 ]
@@ -65,9 +68,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "headwater-hash"
+version = "0.0.0"
+
+[[package]]
 name = "headwater-lock"
 version = "0.0.0"
 dependencies = [
+ "headwater-hash",
  "headwater-resolve",
  "headwater-yaml",
 ]

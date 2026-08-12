@@ -15,10 +15,10 @@ use headwater_census::census;
 use headwater_census::census::Census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
-use headwater_check::scope::{over_documents, over_edges};
+use headwater_check::scope::{over_documents, over_edges, Digests};
 use headwater_check::{
-    coverage, placement, reciprocity, Detail, DocumentCheck, DocumentView, EdgeCheck, EdgeView,
-    Grain, Outcome, Register, Run,
+    coverage, placement, reciprocity, Cache, Detail, DocumentCheck, DocumentView, EdgeCheck,
+    EdgeView, Grain, Outcome, Register, Run,
 };
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -56,7 +56,7 @@ fn compare(recorded: &Path, actual: &str) {
 }
 
 /// One run over one corpus: the whole pipeline, in the order spec 6 draws it.
-fn run_over(corpus: &Corpus, root: &headwater_yaml::Mapping) -> Run {
+fn run_over(corpus: &Corpus, root: &headwater_yaml::Mapping, cache: &mut Cache) -> Run {
     let taxonomy = Taxonomy::read(root).expect("the taxonomy reads");
     let declarations = Declarations::read(root).expect("the declarations read");
     let register = Register::read(root).expect("the register reads");
@@ -68,13 +68,13 @@ fn run_over(corpus: &Corpus, root: &headwater_yaml::Mapping) -> Run {
         corpus,
         &Config::default(),
     );
-    headwater_check::run(&taken, &graph, &taxonomy, &declarations, &register)
+    headwater_check::run(&taken, &graph, &taxonomy, &declarations, &register, cache)
 }
 
 fn fixture_run() -> Run {
     let corpus = Corpus::new(fixtures_dir(), "check");
     let root = load_map(&fixtures_dir().join("check.taxonomy.yml"));
-    run_over(&corpus, &root)
+    run_over(&corpus, &root, &mut Cache::disabled())
 }
 
 /// The fixture tree as Phase A leaves it, which is what a scoped view is built
@@ -87,9 +87,17 @@ fn fixture_census() -> Census {
 }
 
 fn corpus_run() -> Run {
+    cached_corpus_run(&mut Cache::disabled())
+}
+
+fn cached_corpus_run(cache: &mut Cache) -> Run {
     let root = repository_root();
     let resolved = repository(&root);
-    run_over(&corpus_of(&root, &resolved), &resolved.resolution.taxonomy)
+    run_over(
+        &corpus_of(&root, &resolved),
+        &resolved.resolution.taxonomy,
+        cache,
+    )
 }
 
 /// One taxonomy source, loaded. The fixture taxonomy is written whole, and a
@@ -150,6 +158,38 @@ fn this_repository_runs_to_the_recorded_report() {
     );
 }
 
+/// The differential of the correctness root, over the real corpus.
+///
+/// `tests/cache.rs` holds the same property over the fixture tree, where a
+/// test may edit a document and re-run. This one runs it over the corpus the
+/// recorded report above is of, so the report and the property are about one
+/// set of numbers. The cache is written to this crate's target directory,
+/// because a test that wrote into `.headwater/` would leave a repository
+/// dirtier than it found it.
+#[test]
+fn this_repository_reports_the_same_run_from_a_cache_as_from_none() {
+    let store = Path::new(env!("CARGO_TARGET_TMPDIR")).join("corpus-cache");
+    let _ = std::fs::remove_dir_all(&store);
+    let lock = headwater_lock::at(&repository_root()).expect("the committed lock");
+
+    let without = corpus_run();
+
+    let mut cold = Cache::at(&store, &lock.digest);
+    let first = cached_corpus_run(&mut cold);
+    cold.write(&store);
+
+    let mut warm = Cache::at(&store, &lock.digest);
+    let second = cached_corpus_run(&mut warm);
+
+    let expected = without.render(Detail::Findings);
+    assert_eq!(expected, first.render(Detail::Findings));
+    assert_eq!(expected, second.render(Detail::Findings));
+
+    assert!(first.cache.misses > 0, "{:?}", first.cache);
+    assert_eq!(second.cache.hits, first.cache.misses, "{:?}", second.cache);
+    assert_eq!(second.cache.misses, 0, "{:?}", second.cache);
+}
+
 /// The reciprocity check is generated, and the generation is what is asserted.
 ///
 /// A relation that declares no `reciprocal` produces no instance. This is the
@@ -169,12 +209,11 @@ fn a_relation_that_requires_nothing_generates_no_instance() {
     // `01-one-half.md` also declares.
     assert_eq!(instances.len(), 4, "{instances:#?}");
     assert!(
-        !instances.iter().any(|instance| instance
-            .reads
-            .contains(&"check/spec/01-one-half.md".to_string())
-            && instance
-                .reads
-                .contains(&"check/evaluations/alpha.md".to_string())),
+        !instances.iter().any(|instance| {
+            let paths = instance.paths();
+            paths.contains(&"check/spec/01-one-half.md")
+                && paths.contains(&"check/evaluations/alpha.md")
+        }),
         "an `assesses` edge produced a reciprocity instance"
     );
 }
@@ -343,6 +382,7 @@ fn a_document_check_receives_the_body_only_when_it_declares_it() {
 
     impl<const BODY: bool> DocumentCheck for Reader<BODY> {
         const RULE: &'static str = "test.body_arrives";
+        const VERSION: u32 = 1;
         const NEEDS_BODY: bool = BODY;
 
         fn evaluate(&self, view: &DocumentView<'_>) -> Outcome {
@@ -354,8 +394,8 @@ fn a_document_check_receives_the_body_only_when_it_declares_it() {
     }
 
     let census = fixture_census();
-    let declared = over_documents(&Reader::<true>, &census);
-    let did_not = over_documents(&Reader::<false>, &census);
+    let declared = over_documents(&Reader::<true>, &census, &mut Cache::disabled());
+    let did_not = over_documents(&Reader::<false>, &census, &mut Cache::disabled());
 
     assert_eq!(declared.len(), 8, "one instance per typed document");
     assert_eq!(declared.len(), did_not.len());
@@ -379,6 +419,7 @@ fn the_read_set_of_an_instance_comes_from_the_view_and_not_from_the_check() {
 
     impl EdgeCheck for Quiet {
         const RULE: &'static str = "test.every_pair";
+        const VERSION: u32 = 1;
 
         fn evaluate(&self, _view: &EdgeView<'_>) -> Outcome {
             Outcome::Passed
@@ -389,6 +430,7 @@ fn the_read_set_of_an_instance_comes_from_the_view_and_not_from_the_check() {
 
     impl DocumentCheck for Silent {
         const RULE: &'static str = "test.every_document";
+        const VERSION: u32 = 1;
 
         fn evaluate(&self, _view: &DocumentView<'_>) -> Outcome {
             Outcome::Passed
@@ -407,18 +449,30 @@ fn the_read_set_of_an_instance_comes_from_the_view_and_not_from_the_check() {
         &Config::default(),
     );
 
-    for instance in over_documents(&Silent, &census) {
+    for instance in over_documents(&Silent, &census, &mut Cache::disabled()) {
         assert_eq!(instance.reads.len(), 1, "{instance:#?}");
+        // And each read carries the hash of what it read, which is the half
+        // that #54 left for the cache key to need.
+        assert!(instance.reads[0].digest.is_some(), "{instance:#?}");
     }
 
     // A check with no generation step of its own gets every declared pair,
     // where the reciprocity rule declares `required` and gets four of them.
-    let every = over_edges(&Quiet, &graph);
+    let every = over_edges(
+        &Quiet,
+        &graph,
+        &Digests::of(&census),
+        &mut Cache::disabled(),
+    );
     assert!(
         every.len() > 4,
         "the fixture tree declares a pair that requires no reciprocity"
     );
     for instance in &every {
         assert_eq!(instance.reads.len(), 2, "{instance:#?}");
+        assert!(
+            instance.reads.iter().all(|input| input.digest.is_some()),
+            "{instance:#?}"
+        );
     }
 }

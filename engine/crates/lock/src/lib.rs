@@ -62,8 +62,6 @@
 //! field written now would be a claim that no run produces and no test can fail.
 //! The lock version below is what lets #78 add them.
 
-pub mod sha256;
-
 use headwater_resolve::{Resolution, ResolveError, ResolveErrorKind, Source};
 use headwater_yaml::{Mapping, Span};
 use std::path::{Path, PathBuf};
@@ -152,7 +150,7 @@ impl std::fmt::Display for LockError {
 /// lock file, an indented copy, or a source. One function, so that the number in
 /// a lock and the number a verifier computes cannot come from two readings.
 pub fn digest(canonical: &str) -> String {
-    format!("sha256:{}", sha256::hex(canonical.as_bytes()))
+    headwater_hash::digest(canonical.as_bytes())
 }
 
 /// Validate a resolution and render the lock file it produces.
@@ -178,7 +176,7 @@ pub fn write(
             .iter()
             .map(|source| SourceDigest {
                 path: source.name.clone(),
-                digest: digest_of_bytes(source.text.as_bytes()),
+                digest: headwater_hash::digest(source.text.as_bytes()),
             })
             .collect(),
         digest: digest(&canonical),
@@ -317,12 +315,6 @@ lock:
     out
 }
 
-/// The digest of a source file's bytes, which is a different question from the
-/// digest of the canonical taxonomy and is written the same way.
-fn digest_of_bytes(bytes: &[u8]) -> String {
-    format!("sha256:{}", sha256::hex(bytes))
-}
-
 fn text_of<'a>(map: &'a Mapping, key: &str) -> Option<&'a str> {
     map.get(key)
         .and_then(|node| node.value.as_scalar())
@@ -369,7 +361,7 @@ impl Lock {
         self.sources
             .iter()
             .filter(|source| match std::fs::read(root.join(&source.path)) {
-                Ok(bytes) => digest_of_bytes(&bytes) != source.digest,
+                Ok(bytes) => headwater_hash::digest(&bytes) != source.digest,
                 Err(_) => true,
             })
             .map(|source| source.path.clone())
