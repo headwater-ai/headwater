@@ -318,7 +318,10 @@ impl Inventory {
     /// Counts by whatever key `by` reads, largest first and then by name, so
     /// that the rule or the shelf that collects exemptions is the first line a
     /// reader meets.
-    fn grouped<'a>(&'a self, by: impl Fn(&'a Suppression) -> Option<&'a str>) -> Vec<(&'a str, usize)> {
+    fn grouped<'a>(
+        &'a self,
+        by: impl Fn(&'a Suppression) -> Option<&'a str>,
+    ) -> Vec<(&'a str, usize)> {
         let mut groups: Vec<(&str, usize)> = Vec::new();
         for suppression in self.of(State::Applied) {
             let Some(key) = by(suppression) else {
@@ -561,7 +564,10 @@ mod tests {
     use super::*;
     use crate::finding::Severity;
 
-    const RULES: [&str; 2] = ["language.controlled.not_met", "voice.forbidden_construction"];
+    /// The rules a directive may name, which is the engine's own list rather
+    /// than a copy of two of it. A test that carried its own names would pass
+    /// after a rule was renamed and the refusal message went stale.
+    const RULES: [&str; 11] = crate::RULES;
 
     fn day(text: &str) -> Date {
         Date::parse(text).expect("a date")

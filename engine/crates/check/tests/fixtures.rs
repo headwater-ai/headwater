@@ -24,6 +24,7 @@ use headwater_check::{
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
+use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};
 
 /// The date every recorded report is evaluated at.
@@ -71,22 +72,11 @@ fn compare(recorded: &Path, actual: &str) {
 }
 
 /// One run over one corpus: the whole pipeline, in the order spec 6 draws it.
-fn run_over(
-    corpus: &Corpus,
-    root: &headwater_yaml::Mapping,
-    lock: &str,
-    cache: &mut Cache,
-) -> Run {
+fn run_over(corpus: &Corpus, root: &Mapping, lock: &str, cache: &mut Cache) -> Run {
     run_at(corpus, root, lock, &pinned(), cache)
 }
 
-fn run_at(
-    corpus: &Corpus,
-    root: &headwater_yaml::Mapping,
-    lock: &str,
-    ctx: &Context,
-    cache: &mut Cache,
-) -> Run {
+fn run_at(corpus: &Corpus, root: &Mapping, lock: &str, ctx: &Context, cache: &mut Cache) -> Run {
     let taxonomy = Taxonomy::read(root).expect("the taxonomy reads");
     let declarations = Declarations::read(root).expect("the declarations read");
     let register = Register::read(root).expect("the register reads");
@@ -156,7 +146,7 @@ fn cached_corpus_run(cache: &mut Cache) -> Run {
 
 /// One taxonomy source, loaded. The fixture taxonomy is written whole, and a
 /// source with no overlays over it is a resolved taxonomy already.
-fn load_map(path: &Path) -> headwater_yaml::Mapping {
+fn load_map(path: &Path) -> Mapping {
     let source =
         std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     headwater_yaml::load(&source)
