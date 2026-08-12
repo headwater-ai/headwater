@@ -164,7 +164,7 @@ That suggests a rule the specification does not yet have: **where a target langu
 
 ## Findings for 13 — Open obligations
 
-Four items, stated here and not filed, because [the register](../spec/13-open-obligations.md) is edited as its own change.
+Four items, and [the register](../spec/13-open-obligations.md) now carries all of them. The first two became entries under design work that nothing blocks. The last two joined one Q13 entry under what each decision left open, because both wait on emitter 4 rather than on a design choice that anybody can take today.
 
 **The base package has no machine-readable home.** Its only committed copy is a fenced YAML block in an evaluation. Any tool that wants to resolve the taxonomy — this emitter, the confluence check that admission criterion 6 requires, the engine when it exists — has to parse Markdown to find it. The design-spec bundle has a real file at `docs/taxonomies/design-spec/bundle.yml` and extends a base that does not.
 
