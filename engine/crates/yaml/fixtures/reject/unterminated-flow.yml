@@ -1,0 +1,4 @@
+bundles: [design-spec, adr
+kinds:
+  decision:
+    abstract: false

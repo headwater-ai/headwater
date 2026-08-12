@@ -1,0 +1,4 @@
+bundles: [design-spec, adr]
+limits: {max_depth: 3, strict: true}
+empty_seq: []
+empty_map: {}

@@ -1,0 +1,11 @@
+# Every style YAML has, because the style is what the meta-schema reads to
+# decide whether the core schema may look at the text at all.
+plain: decision
+single: 'decision'
+double: "decision"
+literal: |
+  a line
+  and another
+folded: >
+  a line
+  and another

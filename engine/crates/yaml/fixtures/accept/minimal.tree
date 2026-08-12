@@ -1,0 +1,7 @@
+map 1:1(0)-4:1(57)
+  key "taxonomy" 1:1(0)-1:9(8)
+    map 2:3(12)-4:1(57)
+      key "package" 2:3(12)-2:10(19)
+        scalar plain "headwater/standard" 2:12(21)-2:30(39)
+      key "version" 3:3(42)-3:10(49)
+        scalar plain "1.0.0" 3:12(51)-3:17(56)

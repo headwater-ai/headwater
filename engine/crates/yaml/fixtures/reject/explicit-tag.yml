@@ -1,0 +1,5 @@
+# A tag is a second way to declare a type, and it competes with the meta-schema
+# that Q2 made authoritative. The engine derived the rule, and Q2 then accepted
+# it rather than defer it.
+version: !!str 1.0.0
+count: !!int "3"

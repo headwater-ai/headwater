@@ -1,0 +1,5 @@
+taxonomy:
+  package: headwater/standard
+---
+taxonomy:
+  package: acme/headwater-taxonomy

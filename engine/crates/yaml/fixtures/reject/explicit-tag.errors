@@ -1,0 +1,2 @@
+4:16: the tag `tag:yaml.org,2002:str` is not allowed in a taxonomy source; a scalar takes its type from the meta-schema
+5:14: the tag `tag:yaml.org,2002:int` is not allowed in a taxonomy source; a scalar takes its type from the meta-schema

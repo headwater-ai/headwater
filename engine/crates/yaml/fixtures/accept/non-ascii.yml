@@ -1,0 +1,6 @@
+# The byte offset and the character index diverge from the em dash onward.
+# Every specification file in this repository has one, so a loader that reports
+# character indices as byte offsets corrupts the first real finding it emits.
+title: Naming — the decision register
+citation: Star and Griesemer · 1989
+kind: decision

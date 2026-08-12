@@ -1,0 +1,3 @@
+# A file of comments and nothing else. A loader that returned an empty mapping
+# here would report a taxonomy with no kinds rather than a source with no
+# content, and the two need different repairs.

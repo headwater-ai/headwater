@@ -1,0 +1,4 @@
+defaults: &defaults
+  abstract: false
+kinds:
+  decision: *defaults

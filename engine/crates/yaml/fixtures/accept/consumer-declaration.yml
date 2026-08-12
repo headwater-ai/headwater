@@ -1,0 +1,7 @@
+# The shape this repository's own `.headwater/taxonomy.yml` uses, so that the
+# first fixture the loader answers to is one that already exists.
+taxonomy:
+  package: headwater/standard
+  version: 1.0.0
+  bundles: [design-spec]
+  overlay: .headwater/overlay.yml

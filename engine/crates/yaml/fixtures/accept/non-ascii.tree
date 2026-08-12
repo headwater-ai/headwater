@@ -1,0 +1,7 @@
+map 4:1(233)-7:1(325)
+  key "title" 4:1(233)-4:6(238)
+    scalar plain "Naming — the decision register" 4:8(240)-4:38(272)
+  key "citation" 5:1(273)-5:9(281)
+    scalar plain "Star and Griesemer · 1989" 5:11(283)-5:36(309)
+  key "kind" 6:1(310)-6:5(314)
+    scalar plain "decision" 6:7(316)-6:15(324)

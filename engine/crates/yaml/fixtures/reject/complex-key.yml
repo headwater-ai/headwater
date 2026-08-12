@@ -1,0 +1,5 @@
+# Legal YAML. Nothing in an overlay address can name a key that is not a
+# scalar, so the loader refuses it rather than leaving an unaddressable node in
+# the tree.
+? [decision, guide]
+: shared
