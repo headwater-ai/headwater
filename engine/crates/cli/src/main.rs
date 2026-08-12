@@ -64,7 +64,7 @@ use std::process::ExitCode;
 
 const USAGE: &str = "\
 headwater check              [--strict] [--no-cache] [--now <date>] [--read-set <path>]
-                             [--root <path>]
+                             [--register <path>] [--root <path>]
 headwater taxonomy validate  [--root <path>]
 headwater taxonomy resolve   [--check] [--root <path>]
 
@@ -91,6 +91,12 @@ headwater taxonomy resolve   [--check] [--root <path>]
                  as to the report. It is what a gate compares against a later
                  tree to decide whether this verdict survives a merge, without
                  running the checks again.
+  --register <path>
+                 `check` only: write the register of this run to a file as well
+                 as to the report. Spec 4 makes it a projection of the
+                 `obligations` and `controls` declarations, generated and never
+                 authored: every obligation with its disposition, every control
+                 with its health, and what escaped under each.
   --check        `taxonomy resolve` only: write nothing and exit non-zero when
                  the committed lock is not what the sources resolve to.
   --root <path>  the repository to read. Defaults to the working directory.
@@ -103,6 +109,7 @@ fn main() -> ExitCode {
     let mut cached = true;
     let mut now: Option<Date> = None;
     let mut read_set: Option<PathBuf> = None;
+    let mut register_out: Option<PathBuf> = None;
     let mut root: Option<PathBuf> = None;
     let mut words: Vec<String> = Vec::new();
 
@@ -115,6 +122,10 @@ fn main() -> ExitCode {
                 Some(Some(date)) => now = Some(date),
                 Some(None) => return fail("--now takes a date written `YYYY-MM-DD`"),
                 None => return fail("--now names a date and none followed it"),
+            },
+            "--register" => match arguments.next() {
+                Some(path) => register_out = Some(PathBuf::from(path)),
+                None => return fail("--register names a file and none followed it"),
             },
             "--read-set" => match arguments.next() {
                 Some(path) => read_set = Some(PathBuf::from(path)),
@@ -145,7 +156,7 @@ fn main() -> ExitCode {
 
     let verb: Vec<&str> = words.iter().map(String::as_str).collect();
     match verb.as_slice() {
-        ["check"] => check(&root, strict, cached, now, read_set),
+        ["check"] => check(&root, strict, cached, now, read_set, register_out),
         ["taxonomy", "validate"] => validate(&root),
         ["taxonomy", "resolve"] => resolve(&root, check_only),
         ["taxonomy"] => fail("`taxonomy` takes a second word: `validate` or `resolve`"),
@@ -272,6 +283,7 @@ fn check(
     cached: bool,
     now: Option<Date>,
     read_set: Option<PathBuf>,
+    register_out: Option<PathBuf>,
 ) -> ExitCode {
     // The one clock read of the whole engine, and it is here rather than in a
     // check. Spec 12: "`ctx.now` is a bound value, never a syscall." A run
@@ -351,6 +363,7 @@ fn check(
             shape: &shape,
             relations: &declarations,
             register: &register,
+            source: headwater_lock::LOCK,
         },
         &ctx,
         &mut cache,
@@ -381,6 +394,18 @@ fn check(
     print!("{}", indent(&run.read_set.render()));
     if let Some(path) = read_set {
         if let Err(error) = std::fs::write(&path, run.read_set.render()) {
+            eprintln!("headwater: cannot write {}: {error}", path.display());
+            return ExitCode::FAILURE;
+        }
+    }
+
+    // The register. It is already in the report above, because spec 4 makes it
+    // mandatory and inspectable rather than a flag. What the flag adds is a
+    // file, and the bytes are the same bytes for the reason the read set's are:
+    // a projection a consumer regenerates and one a reader reads are one
+    // artifact or they are two truths.
+    if let Some(path) = register_out {
+        if let Err(error) = std::fs::write(&path, run.register.render()) {
             eprintln!("headwater: cannot write {}: {error}", path.display());
             return ExitCode::FAILURE;
         }

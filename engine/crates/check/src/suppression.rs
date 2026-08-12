@@ -567,7 +567,7 @@ mod tests {
     /// The rules a directive may name, which is the engine's own list rather
     /// than a copy of two of it. A test that carried its own names would pass
     /// after a rule was renamed and the refusal message went stale.
-    const RULES: [&str; 11] = crate::RULES;
+    const RULES: [&str; crate::RULES.len()] = crate::RULES;
 
     fn day(text: &str) -> Date {
         Date::parse(text).expect("a date")

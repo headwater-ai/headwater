@@ -24,43 +24,62 @@ suppressions
       1 expired, and the findings they named are reported
       1 matched no finding
   check/spec/10-suppressed.md:36 suppresses nothing: no rule of this engine is named `language.controled.not_met`
-rules, and for each the scope that binds it and what it serves
+rules, and for each the scope that binds it
   facet.required.missing
     document scope, one document and its front matter
-    OB-FIX-3
   facet.value.not_permitted
     document scope, one document and its front matter
-    OB-FIX-4
   shelf.placement_is_primary
     document scope, one document and its front matter
-    OB-FIX-2
   relation.reciprocity.missing
     edge scope, one relation instance and both endpoints
-    OB-FIX-1
   relation.endpoint.not_permitted
     edge scope, one relation instance and both endpoints
-    OB-FIX-5
   relation.participation.overdue
     neighbourhood scope, one document and the documents one relation away from it, and the injected clock
-    OB-FIX-6
   voice.forbidden_construction
     document scope, one document, its front matter and its body
-    OB-FIX-7
   language.controlled.not_met
     document scope, one document, its front matter and its body
-    OB-FIX-8
   section.required.missing
     document scope, one document, its front matter and its body
-    OB-FIX-9
   link.fragment.unresolved
     document scope, one document, its front matter and its body
-    OB-FIX-10
   coverage.document_unchecked
     corpus scope, every row of the census, and it is a barrier
-    no control names this rule, so its findings name no obligation
-21 findings
+  obligation.disposition.not_one
+    taxonomy scope, the resolved taxonomy, and no document
+  control.mechanism.unimplemented
+    taxonomy scope, the resolved taxonomy, and no document
+register
+  19 obligations: 16 verified, 1 gap, 1 unverifiable, 1 with no disposition
+      6 high, 5 verified
+      8 medium, 7 verified
+      5 low, 4 verified
+  OB-FIX-7 verified, 1 finding escaped under it
+  OB-FIX-8 verified, 1 finding escaped under it
+  OB-FIX-14 gap, owner the fixture tree, target a reader feedback loop, which spec 4 lists as usually absent
+  OB-FIX-15 unverifiable, The question is semantic, so spec 4 sends it to the accuracy audit and no check reaches it
+  OB-FIX-16 with no disposition
+  OB-FIX-17 verified, and it states a gap as well, which is two dispositions
+  16 controls
+     15 posture advisory
+      1 posture blocking
+     15 acts detective
+      1 acts preventive
+     13 name a rule this engine carries
+      1 name a phase this engine runs
+      1 name a mechanism this engine does not implement
+      1 name a mechanism outside this engine
+     14 with no promotion record, so nothing states what would promote them
+      1 with criteria
+      1 producing facts rather than findings
+  escaped findings, in the precedence spec 4 fixes: no waiver mechanism exists, no migration-pending mechanism exists, 2 suppressed
+  relation.endpoint.not_permitted reaches OB-FIX-5, OB-FIX-17, and a finding names one obligation, so it names none
+  coverage.document_unchecked reaches no obligation, so it names none
+24 findings
      11 error
-     10 warn
+     13 warn
 
 instances
   facet.required.missing check/evaluations/alpha.md
@@ -277,7 +296,7 @@ check/evaluations/epsilon.md:4:1 warn
   relation.participation.overdue (OB-FIX-6): `evidence-cited`: 219 days since `status_since`, and this `evaluation` reaches no `cites_evidence` to a `design_spec` inside the 30 days the taxonomy allows
   fix: declare `cites_evidence` to a `design_spec` under `relations:` in check/evaluations/epsilon.md, or record why it is not owed: an evaluation that no specification cites closed nothing
 check/evaluations/eta.md:8:7 error
-  relation.endpoint.not_permitted (OB-FIX-5): `assesses` declares `from: [design_spec]`, and `EVAL-FIX-eta` at that end has the kind `evaluation`
+  relation.endpoint.not_permitted: `assesses` declares `from: [design_spec]`, and `EVAL-FIX-eta` at that end has the kind `evaluation`
   fix: declare this relation between kinds `assesses` permits, or widen its `from` in the taxonomy; the document at that end is check/evaluations/eta.md
 check/evaluations/gamma.md:3:1 error
   shelf.placement_is_primary (OB-FIX-2): `evaluations` is homogeneous and carries the kind `evaluation`, and this document restates it as `doc_type: evaluation`
@@ -333,3 +352,12 @@ check/spec/09-contract-missing.md error
 check/spec/10-suppressed.md:30:1 warn
   language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words a sentence, and this one has 31
   fix: split the sentence, or move a clause into its own sentence
+engine/crates/check/fixtures/check.taxonomy.yml warn
+  control.mechanism.unimplemented (OB-FIX-12): control CT-FIX-15 names the mechanism check:no.such.rule, which this engine does not implement, so nothing discharges OB-FIX-18
+  fix: name a rule this engine carries, or a phase of it, or a mechanism outside it under a prefix this engine does not read
+engine/crates/check/fixtures/check.taxonomy.yml warn
+  obligation.disposition.not_one (OB-FIX-11): obligation OB-FIX-16 carries no disposition: no control discharges it, and it states neither a gap nor an acceptance
+  fix: give the obligation a control that discharges it, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three
+engine/crates/check/fixtures/check.taxonomy.yml warn
+  obligation.disposition.not_one (OB-FIX-11): obligation OB-FIX-17 carries two dispositions: CT-FIX-14 discharges it, and it also states one for itself
+  fix: give the obligation a control that discharges it, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three

@@ -260,81 +260,154 @@ obligations:
     prevents: process.maintenance
     severity: low
 
+  OB-REG-1:
+    statement: Every obligation this taxonomy declares carries exactly one disposition
+    rationale: An obligation that no control discharges and that states neither a gap nor an acceptance reads from outside like one that is met, and that silence is how an assurance model decays into a list of good intentions
+    class: cohesion
+    prevents: process.traceability
+    severity: high
+
+  OB-REG-2:
+    statement: Every control names a mechanism that the engine implements
+    rationale: A register that claims coverage it does not have is worse than no register, and a mistyped rule id claims exactly that
+    class: cohesion
+    prevents: process.traceability
+    severity: high
+
 # A control names the mechanism that discharges an obligation. The engine reads
-# one mechanism prefix, `check:`, and what follows it is the id of a rule. That
-# is the binding a finding travels along: a rule reaches its obligation through
-# the control that names it.
+# two mechanism prefixes. `check:` names the id of a rule, and that is the
+# binding a finding travels along: a rule reaches its obligation through the
+# control that names it. `phase:` names a phase of the engine itself, from the
+# closed set that `headwater_check::register` publishes.
 #
-# OB-COV-1 and OB-COV-3 carry no control here, and that is visible rather than
-# hidden. Neither is discharged by a rule. The census classifies every file and
-# the runner reports coverage, so both mechanisms are phases of the engine that
-# no `check:` prefix names. Spec 4 gives such an obligation the disposition
-# `gap`, and the language has no member that says so. Spec 13 carries it.
+# The second prefix is what OB-COV-1 and OB-COV-3 needed, and an earlier reading
+# of this file had both of them down as gaps. Neither is a gap. The census
+# classifies every file under the corpus root and writes an exception line for
+# each one it cannot, and every run prints what it saw, classified, checked and
+# skipped before it prints a finding. Both mechanisms run on every invocation.
+# What was missing was a way to name a mechanism that discharges an obligation
+# by doing the thing rather than by reporting a finding about it, and the gap
+# was in the mechanism vocabulary rather than in the disposition vocabulary.
+#
+# A phase carries no severity and produces no finding, so nothing binds to it in
+# the way a rule binds. What the register can state, and does, is that the
+# obligation is discharged and that this engine ran the phase.
 
 controls:
+
+  CT-COV-1:
+    mechanism: phase:census.classification
+    discharges: [OB-COV-1]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      produces_facts:
+        reasoning: The census produces the classification that every check rests on, and a wrong row makes every check over it return a correct verdict about a wrong corpus. Spec 12 holds it as a correctness root and its instrument is a fixture set
 
   CT-COV-2:
     mechanism: check:coverage.document_unchecked
     discharges: [OB-COV-2]
     trigger: pull_request
     posture: advisory
+    acts: detective
+
+  CT-COV-3:
+    mechanism: phase:runner.coverage_report
+    discharges: [OB-COV-3]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      produces_facts:
+        reasoning: The coverage account is the denominator every other number in the report is read against, and a denominator has no false-positive rate. It is right or it is wrong, and the fixture tree is what says which
+
+  CT-REG-1:
+    mechanism: check:obligation.disposition.not_one
+    discharges: [OB-REG-1]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+
+  CT-REG-2:
+    mechanism: check:control.mechanism.unimplemented
+    discharges: [OB-REG-2]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
 
   CT-REL-1:
     mechanism: check:relation.reciprocity.missing
     discharges: [OB-REL-1]
     trigger: pull_request
     posture: advisory
+    acts: detective
 
   CT-PLACE-1:
     mechanism: check:shelf.placement_is_primary
     discharges: [OB-PLACE-1]
     trigger: pull_request
     posture: advisory
+    acts: detective
 
   CT-FACET-1:
     mechanism: check:facet.required.missing
     discharges: [OB-FACET-1]
     trigger: pull_request
     posture: advisory
+    acts: detective
 
   CT-FACET-2:
     mechanism: check:facet.value.not_permitted
     discharges: [OB-FACET-2]
     trigger: pull_request
     posture: advisory
+    acts: detective
 
   CT-REL-2:
     mechanism: check:relation.endpoint.not_permitted
     discharges: [OB-REL-2]
     trigger: pull_request
     posture: advisory
+    acts: detective
 
   CT-REL-3:
     mechanism: check:relation.participation.overdue
     discharges: [OB-REL-3]
     trigger: pull_request
     posture: advisory
+    acts: detective
 
   CT-VOICE-1:
     mechanism: check:voice.forbidden_construction
     discharges: [OB-VOICE-1]
     trigger: pull_request
     posture: advisory
+    acts: detective
+    promotion:
+      permanently_advisory:
+        reasoning: Spec 3 rules that posture per voice category comes from fixability and never from precision, and that a category whose remediation is a rewrite stays advisory whatever its false-positive rate. To block on it makes a judgment about meaning into a gate, and the author who meets it at a red build reaches for the escape hatch
 
   CT-LANG-1:
     mechanism: check:language.controlled.not_met
     discharges: [OB-LANG-1]
     trigger: pull_request
     posture: advisory
+    acts: detective
+    promotion:
+      permanently_advisory:
+        reasoning: The same rule spec 4 states in general. A sentence past the word limit is shortened by deciding which clause carries the meaning, and no mechanical rewrite makes that decision
 
   CT-SECT-1:
     mechanism: check:section.required.missing
     discharges: [OB-SECT-1]
     trigger: pull_request
     posture: advisory
+    acts: detective
 
   CT-LINK-1:
     mechanism: check:link.fragment.unresolved
     discharges: [OB-LINK-1]
     trigger: pull_request
     posture: advisory
+    acts: detective

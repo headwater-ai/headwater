@@ -62,6 +62,7 @@ controls:
     discharges: [OB-ACME-1, OB-ACME-9]   # `OB-ACME-9` is declared nowhere
     trigger: pull_request
     posture: advisory
+    acts: detective
 
 mappings:
   - to: other/taxonomy

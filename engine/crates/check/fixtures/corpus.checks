@@ -16,37 +16,46 @@ suppressions
       2 false_positive
       2 of language.controlled.not_met
       2 on the shelf spec_series
-rules, and for each the scope that binds it and what it serves
+rules, and for each the scope that binds it
   facet.required.missing
     document scope, one document and its front matter
-    OB-FACET-1
   facet.value.not_permitted
     document scope, one document and its front matter
-    OB-FACET-2
   shelf.placement_is_primary
     document scope, one document and its front matter
-    OB-PLACE-1
   relation.reciprocity.missing
     edge scope, one relation instance and both endpoints
-    OB-REL-1
   relation.endpoint.not_permitted
     edge scope, one relation instance and both endpoints
-    OB-REL-2
   relation.participation.overdue
     neighbourhood scope, one document and the documents one relation away from it, and the injected clock
-    OB-REL-3
   voice.forbidden_construction
     document scope, one document, its front matter and its body
-    OB-VOICE-1
   language.controlled.not_met
     document scope, one document, its front matter and its body
-    OB-LANG-1
   section.required.missing
     document scope, one document, its front matter and its body
-    OB-SECT-1
   link.fragment.unresolved
     document scope, one document, its front matter and its body
-    OB-LINK-1
   coverage.document_unchecked
     corpus scope, every row of the census, and it is a barrier
-    OB-COV-2
+  obligation.disposition.not_one
+    taxonomy scope, the resolved taxonomy, and no document
+  control.mechanism.unimplemented
+    taxonomy scope, the resolved taxonomy, and no document
+register
+  15 obligations: 15 verified, 0 gap, 0 unverifiable, 0 with no disposition
+      6 high, 6 verified
+      6 medium, 6 verified
+      3 low, 3 verified
+  OB-LANG-1 verified, 2 findings escaped under it
+  15 controls
+     15 posture advisory
+     15 acts detective
+     13 name a rule this engine carries
+      2 name a phase this engine runs
+     11 with no promotion record, so nothing states what would promote them
+      2 permanently advisory
+      2 producing facts rather than findings
+  escaped findings, in the precedence spec 4 fixes: no waiver mechanism exists, no migration-pending mechanism exists, 2 suppressed
+  every rule this engine carries reaches one obligation

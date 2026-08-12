@@ -129,12 +129,30 @@ declarations
       class (required) enum[cohesion coherence]
       prevents (required) scalar:string
       severity (required) enum[high medium low]
+      disposition one of [members
+          gap (required) members
+            owner (required) scalar:string
+            target scalar:string | members
+          unverifiable (required) members
+            reasoning (required) scalar:string]
   controls map of members
       mechanism (required) scalar:string
       discharges (required) seq of scalar:string
       trigger (required) scalar:string
-      posture (required) scalar:string
+      posture (required) enum[advisory blocking]
+      acts (required) enum[preventive detective corrective adaptive]
       handoff scalar:string
+      promotion one of [members
+          criteria (required) members
+            window (required) scalar:string
+            threshold (required) scalar:string
+            sample (required) scalar:string | members
+          final_posture (required) members
+            reasoning (required) scalar:string | members
+          permanently_advisory (required) members
+            reasoning (required) scalar:string | members
+          produces_facts (required) members
+            reasoning (required) scalar:string]
 
 operations
   taxonomy scalar:string

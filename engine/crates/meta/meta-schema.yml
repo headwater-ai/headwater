@@ -396,24 +396,113 @@ definitions:
       # severity is the check's, and the finding of spec 4's own example carries
       # `error` against an obligation that carries `medium`.
       severity: {enum: [high, medium, low], required: true}
+      # Spec 4 gives every obligation exactly one disposition and admits no
+      # silence. `verified` follows from a control and is never written here,
+      # because the binding lives on the control and a second place to write it
+      # is the drift spec 4 kills. The other two follow from nothing a control
+      # carries, so this member is where they are stated. It is optional, and an
+      # obligation that no control discharges and that omits it is the silence
+      # spec 4 forbids: `obligation.disposition.missing` reports it.
+      #
+      # `one_of` over two closed mappings is what makes "exactly one" the shape
+      # rather than a rule. Both keys together accept neither alternative, and
+      # neither key accepts neither alternative.
+      disposition:
+        one_of:
+          - {members: {gap: {block: disposition_gap, required: true}}}
+          - {members: {unverifiable: {block: disposition_unverifiable, required: true}}}
+
+  disposition_gap:
+    members:
+      # Spec 4: "No control yet. Wanted, and tracked with an owner and, ideally,
+      # a target." The owner is required and the target is the "ideally".
+      owner: {scalar: string, required: true}
+      target: {scalar: string}
+
+  disposition_unverifiable:
+    members:
+      # Spec 4: "No mechanism can exist. Accepted, with the reasoning recorded."
+      reasoning: {scalar: string, required: true}
 
   control:
     members:
-      # gap: spec 4 writes `check:relation-reciprocity` and
+      # Spec 4 writes `check:relation-reciprocity` and
       # `scheduled:staleness-sweep`, and states no grammar for the prefix or for
-      # what follows it. The engine reads one prefix: `check:` names a rule id,
-      # and that is what binds a finding to the obligation it serves. A
-      # mechanism with any other prefix binds nothing yet.
+      # what follows it. The engine reads two prefixes. `check:` names a rule id,
+      # and that is what binds a finding to the obligation it serves. `phase:`
+      # names a phase of the engine itself, from the closed set that
+      # `headwater_check::register` publishes: a phase discharges an obligation
+      # by doing the thing rather than by reporting a finding about it. A
+      # mechanism with any other prefix names something outside this engine, and
+      # the register says that this run did not observe it.
       mechanism: {scalar: string, required: true}
       discharges: {seq: {scalar: string}, required: true}
       # gap: spec 4 writes `pull_request` and `weekly`, which are an event and a
       # cadence. Nothing states either set or how the two live in one member.
       trigger: {scalar: string, required: true}
-      # gap: spec 4 writes `blocking` on one control and `detective` on the
-      # other. The first is the promotion path (advisory to blocking) and the
-      # second is one of the four control classes. One member holds values from
-      # two vocabularies, and spec 13 carries it.
-      posture: {scalar: string, required: true}
+      # Spec 4 wrote `blocking` on one control and `detective` on the other, so
+      # one member held values from two vocabularies and control health could
+      # not be reported off it. They are two members here.
+      #
+      # `posture` is the promotion path, and it is spec 12's sense: "severity is
+      # the check's, posture is the control's", where the question is whether a
+      # finding blocks a gate. A new control starts advisory and evidence
+      # promotes it.
+      posture: {enum: [advisory, blocking], required: true}
+      # `acts` is spec 4's other vocabulary: the four control classes of its
+      # opening table, which say *when* a control acts rather than how loudly.
+      # It is required because spec 4 gives every control one of the four, and
+      # because the register reporting the distribution is what stops a system
+      # building the first two classes and claiming the set.
+      acts: {enum: [preventive, detective, corrective, adaptive], required: true}
       # Spec 4 writes one value, `task-per-finding`, and the member is optional
       # because a control that reports in place hands off to nobody.
       handoff: {scalar: string}
+      # Spec 4 (Promotion) says the promotion criteria "are recorded with the
+      # control", and it names three of them. Its next three subsections each
+      # take a class of control off that path. So the record holds one of four
+      # things, one per subsection, and `one_of` again makes "exactly one" the
+      # shape:
+      #
+      #   criteria             the control is on the path
+      #   final_posture        "Where promotion does not apply": one error class
+      #                        is unrecoverable, so the evidence the machinery
+      #                        collects is evidence about the wrong error
+      #   permanently_advisory "Where promotion cannot finish": the remediation
+      #                        needs judgment, whatever the false-positive rate
+      #   produces_facts       "Promotion measures a rule, and not a producer of
+      #                        facts": there is no false-positive rate to
+      #                        measure, and the instrument is a fixture set
+      #
+      # The member is optional, and an advisory control that omits it has
+      # nothing stating what would promote it. The register reports that rather
+      # than inventing a window and a threshold, because a threshold is a
+      # judgment that no section of the specification states.
+      promotion:
+        one_of:
+          - {members: {criteria: {block: promotion_criteria, required: true}}}
+          - {members: {final_posture: {block: promotion_exemption, required: true}}}
+          - {members: {permanently_advisory: {block: promotion_exemption, required: true}}}
+          - {members: {produces_facts: {block: promotion_exemption, required: true}}}
+
+  promotion_criteria:
+    members:
+      # The three spec 4 names: "a stated observation window", "a false-positive
+      # rate under a declared threshold", and the adjudicated sample without
+      # which "a check whose sample was never adjudicated did not finish its
+      # observation window".
+      #
+      # gap: each is prose here. Spec 4 states no unit for the window, no scale
+      # for the threshold, and no shape for the sample. A duration, a ratio and
+      # a reference to an evidence record are the three shapes those want, and
+      # the specification names none of them. Spec 13 carries it.
+      window: {scalar: string, required: true}
+      threshold: {scalar: string, required: true}
+      sample: {scalar: string, required: true}
+
+  promotion_exemption:
+    members:
+      # Spec 4 asks for the reasoning in both cases: a control off the promotion
+      # path with no stated reason is the assertion of taste that the whole
+      # section exists to refuse.
+      reasoning: {scalar: string, required: true}
