@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The package that spec 2's worked overlay is written against, cut down to the
+# declarations that overlay touches.
+
+taxonomy: headwater/standard
+version: 1.0.0
+
+vocabularies:
+  lifecycle_state:
+    - {value: draft,      role: initial}
+    - {value: current,    role: live}
+    - {value: superseded, role: terminal-retained}
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+facets:
+  status: {role: state, values: $vocabularies.lifecycle_state, required: true}
+
+kinds:
+  decision: {purpose: rationale, identifier: {scheme: decision_id}}
+
+shelves:
+  decisions: {path: "docs/decisions/**", homogeneous: true, kind: decision}
+  proposals: {path: "docs/proposals/**", homogeneous: true, kind: decision}
+
+identifier_schemes:
+  decision_id: {pattern: "DR-{namespace}-{seq:04d}", namespace: repo, allocation: reconcile-first}
+
+relations:
+  supersedes:
+    family: succession
+    from: [decision]
+    to: [decision]
+    on_target: {set_state: superseded}
+    created_by: scaffold
+  refines:
+    family: derivation
+    from: [decision]
+    to: [decision]
+    created_by: agent
+
+core:
+  requires:
+    - facet_role: state
+    - purpose: rationale
+    - relation_family: succession
+      lifecycle_sensitive: true

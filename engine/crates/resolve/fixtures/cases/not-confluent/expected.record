@@ -1,0 +1,3 @@
+refused
+
+overlay-2-adopter.yml `add.kinds.report.purpose` (7:3): does not commute with `add.kinds.report` in overlay-1-bundle.yml: both reach `kinds.report.purpose`, and two `add` operations that write one leaf state two values for it

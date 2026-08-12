@@ -1,0 +1,3 @@
+refused
+
+overlay-adopter.yml `remove.vocabularies.lifecycle_state` (13:5): removing `vocabularies.lifecycle_state` leaves `$vocabularies.lifecycle_state` with nothing to read

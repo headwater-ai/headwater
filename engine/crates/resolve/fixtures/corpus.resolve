@@ -1,0 +1,63 @@
+headwater/standard 1.0.0
+
+sources, in application order
+  packages/headwater-standard/taxonomy.yml
+  docs/taxonomies/design-spec/bundle.yml
+  .headwater/overlay.yml
+
+operations
+  add.purposes.evidence (docs/taxonomies/design-spec/bundle.yml)
+  add.purposes.obligation (docs/taxonomies/design-spec/bundle.yml)
+  add.regimes.voice.narrative (docs/taxonomies/design-spec/bundle.yml)
+  add.facets.doc_type (docs/taxonomies/design-spec/bundle.yml)
+  add.facets.sequence (docs/taxonomies/design-spec/bundle.yml)
+  add.kinds.design_spec (docs/taxonomies/design-spec/bundle.yml)
+  add.kinds.decision_register (docs/taxonomies/design-spec/bundle.yml)
+  add.kinds.obligation_register (docs/taxonomies/design-spec/bundle.yml)
+  add.kinds.evaluation (docs/taxonomies/design-spec/bundle.yml)
+  add.kinds.review_prompt (docs/taxonomies/design-spec/bundle.yml)
+  add.kinds.review_record (docs/taxonomies/design-spec/bundle.yml)
+  add.relations.cites_evidence (docs/taxonomies/design-spec/bundle.yml)
+  add.relations.applied_in (docs/taxonomies/design-spec/bundle.yml)
+  add.relations.assesses (docs/taxonomies/design-spec/bundle.yml)
+  add.shelves.spec_series (docs/taxonomies/design-spec/bundle.yml)
+  add.shelves.evaluations (docs/taxonomies/design-spec/bundle.yml)
+  add.shelves.reviews (docs/taxonomies/design-spec/bundle.yml)
+  add.identifier_schemes.spec_id (.headwater/overlay.yml)
+  add.identifier_schemes.register_id (.headwater/overlay.yml)
+  add.identifier_schemes.evaluation_id (.headwater/overlay.yml)
+  add.identifier_schemes.review_id (.headwater/overlay.yml)
+  add.kinds.design_spec.identifier (.headwater/overlay.yml)
+  add.kinds.decision_register.identifier (.headwater/overlay.yml)
+  add.kinds.obligation_register.identifier (.headwater/overlay.yml)
+  add.kinds.evaluation.identifier (.headwater/overlay.yml)
+  add.kinds.review_prompt.identifier (.headwater/overlay.yml)
+  add.kinds.review_record.identifier (.headwater/overlay.yml)
+  add.regimes.language.ste_house (.headwater/overlay.yml)
+  add.kinds.design_spec.language (.headwater/overlay.yml)
+  add.kinds.decision_register.language (.headwater/overlay.yml)
+  add.kinds.obligation_register.language (.headwater/overlay.yml)
+
+declarations, by member count
+  taxonomy: headwater/standard
+  version: 1.0.0
+  purposes: 4 members
+  vocabularies: 1 member
+  facets: 6 members
+  regimes: 3 members
+  anchors: 1 member
+  kinds: 9 members
+  relations: 8 members
+  shelves: 5 members
+  identifier_schemes: 5 members
+  core: 1 member
+  projections: 1 item
+
+run here
+  overlay confluence: pairwise over the leaves each operation writes, before anything merges
+  core satisfiability: on the resolved taxonomy, naming the operation that removed the last satisfier
+  referential integrity: for `$`-references only. Every reference resolves over the merged tree, and a `remove` that leaves one reading nothing is refused
+
+still waiting
+  the fourteen remaining rules of `taxonomy validate`: anchor and identifier integrity, coverage, kind inheritance, purpose completeness, determinism, role uniqueness, lifecycle soundness, relation coherence, expectation well-formedness, the facet canons, kind rigidity, edge provenance and mapping integrity. Each one reads the resolved taxonomy and reports on it. #51 owns them
+  the dependent-key half of `remove`: spec 2 fails a `remove` when a surviving declaration still references the removed key. A `$`-reference names what it reads and is checked here. A declaration that names another by a bare string is not: the meta-schema types `shelves.decisions.kind` as a string and says nothing about it naming a kind, so nothing can compute the dependent set. Spec 13 carries the finding

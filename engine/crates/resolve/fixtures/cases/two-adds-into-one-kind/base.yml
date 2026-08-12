@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+
+taxonomy: headwater/standard
+version: 1.0.0
+
+purposes:
+  behavior: {intent: "state what the system does, as it is now"}
+
+kinds:
+  governed_document: {abstract: true}
+  specification: {is_a: governed_document, purpose: behavior}
+
+core:
+  requires:
+    - purpose: behavior

@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: Apache-2.0
+
+taxonomy: headwater/standard
+version: 1.0.0
+
+vocabularies:
+  lifecycle_state:
+    - {value: draft,   role: initial}
+    - {value: current, role: live}
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+facets:
+  status:  {role: state, values: $vocabularies.lifecycle_state, required: true}
+  summary: {role: scent, type: string, required: true}
+
+kinds:
+  decision: {purpose: rationale}
+
+core:
+  requires:
+    - facet_role: state
+    - facet_role: scent
+    - purpose: rationale

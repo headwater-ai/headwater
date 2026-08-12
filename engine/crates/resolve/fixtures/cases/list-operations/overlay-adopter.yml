@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Spec 2: "Lists never silently merge. An overlay either replaces a list or uses
+# explicit `add_to` / `remove_from` operations." Both are here over one list,
+# and the result does not depend on the order they were written in: additions
+# run before deletions, whichever way round the file states them.
+
+taxonomy: acme
+extends: headwater/standard@1.0.0
+
+remove_from:
+  kinds.decision.sections.require: [Context]
+
+add_to:
+  kinds.decision.sections.require: [Rationale, Alternatives]

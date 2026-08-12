@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "headwater-resolve"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+# The dialect. A base package, a bundle and an overlay are all YAML sources on
+# the Q2 rulings, and the resolved taxonomy is a tree of the same values.
+headwater-yaml = { path = "../yaml" }
+
+# Addresses and references. An address is a sequence of segments, which is what
+# makes the confluence check decidable, and a reference is what resolves last.
+headwater-ref = { path = "../ref" }
+
+# Shape. Every source is validated before it is merged, and the meta-schema is
+# also what says which positions admit a reference and where an address may not
+# reach.
+headwater-meta = { path = "../meta" }

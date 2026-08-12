@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# An overlay that takes the last facet carrying the `scent` role. Spec 2 asks
+# for two things from the message this produces: the requirement, and the
+# operation that removed its last satisfier. Neither one alone tells an author
+# what to reconsider.
+#
+# The state facet is renamed rather than removed in the same file, which is the
+# other half of the same rule: the core is semantic, so a rename that keeps the
+# role passes and nothing here reports it.
+
+taxonomy: acme
+extends: headwater/standard@1.0.0
+
+add:
+  facets.phase: {role: state, values: $vocabularies.lifecycle_state, required: true}
+
+remove:
+  - facets.summary
+  - facets.status

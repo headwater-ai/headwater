@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The adopter's half. It reaches into a kind that the bundle declares, and it
+# creates the mapping it needs on the way down when it runs first.
+
+taxonomy: acme
+extends: headwater/standard@1.0.0
+
+add:
+  kinds.design_spec.identifier: {scheme: spec_id}
+  kinds.report: {is_a: governed_document, purpose: behavior}
