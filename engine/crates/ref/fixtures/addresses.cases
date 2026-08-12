@@ -13,6 +13,13 @@ relations.forbids
 shelves.playbooks
 kinds.playbook
 
+# A hyphen is a segment character. The identifier of an obligation and of a
+# control holds one, and both blocks are keyed by the identifier, so an overlay
+# that adds either one writes a hyphen in an address.
+obligations.OB-COV-2
+controls.CT-REL-1
+kinds.play-book
+
 # --- the shapes the grammar admits and nothing has written yet --------------
 # One segment is an address. It names a whole declaration, and `remove:` is
 # where that is useful.
@@ -32,10 +39,6 @@ regimes.lifecycle.standard.transitions.0
 .kinds
 kinds.
 kinds..playbook
-# A hyphen is refused today. Nothing in the language needs one, and Q2 settles
-# the direction to guess in: relaxing a rule later is free, and adding one later
-# is a finding against every source that already used the form.
-kinds.play-book
 kinds.play book
 # A reference is not an address.
 $vocabularies.lifecycle_state

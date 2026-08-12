@@ -359,9 +359,9 @@ mod tests {
     fn the_shipped_meta_schema_loads() {
         let schema = MetaSchema::shipped().expect("the shipped meta-schema");
         assert_eq!(schema.name(), "headwater/taxonomy");
-        // Eleven declarations, `vocabularies`, and the three that name the
+        // Thirteen declarations, `vocabularies`, and the three that name the
         // taxonomy and what it extends.
-        assert_eq!(schema.declarations().len(), 15);
+        assert_eq!(schema.declarations().len(), 17);
     }
 
     #[test]

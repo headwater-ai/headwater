@@ -141,7 +141,12 @@ impl Coverage {
         reasons
     }
 
-    /// OB-COV-2, as findings.
+    /// The coverage rule, as findings.
+    ///
+    /// The obligation is left unset here, and [`crate::run`] stamps it from the
+    /// control that names this rule. This module used to write `OB-COV-2` into
+    /// the field, which put the binding in two places: in a package that an
+    /// adopter can revise, and in code they cannot.
     pub fn findings(&self) -> Vec<Finding> {
         self.documents
             .iter()
@@ -149,7 +154,7 @@ impl Coverage {
             .map(|document| Finding {
                 rule: RULE,
                 severity: Severity::Warn,
-                obligation: Some("OB-COV-2".to_string()),
+                obligation: None,
                 path: document.path.clone(),
                 line: 0,
                 column: 0,

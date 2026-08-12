@@ -62,7 +62,7 @@ impl std::fmt::Display for RefErrorKind {
             RefErrorKind::BadCharacter(found) => write!(
                 f,
                 "the character `{found}` is not allowed in a segment; \
-                 a segment holds letters, digits and `_`"
+                 a segment holds letters, digits, `_` and `-`"
             ),
             RefErrorKind::MissingSigil => write!(
                 f,

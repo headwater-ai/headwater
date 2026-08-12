@@ -69,9 +69,9 @@ pub const RULES: [(&str, Ran); 23] = [
     (
         "referential integrity",
         Ran::Resolved(
-            "every name a declaration reads is declared, and every relation endpoint is a kind \
-             or an anchor kind. The `$`-reference half runs at merge time, because a reference \
-             that reads nothing stops the merge",
+            "every name a declaration reads is declared, every relation endpoint is a kind or an \
+             anchor kind, and every control discharges a declared obligation. The `$`-reference \
+             half runs at merge time, because a reference that reads nothing stops the merge",
         ),
     ),
     (
@@ -603,6 +603,19 @@ fn referential_integrity(view: &View, out: &mut Vec<ResolveError>) {
                 scheme,
                 &schemes,
             );
+        }
+    }
+
+    // A control names the obligations it discharges, as bare strings that only
+    // a rule over the result can check. This is where a `remove` that orphans an
+    // obligation lands, and it is the whole of what the taxonomy can decide
+    // about the binding: which *rule* a mechanism names is the engine's rule set
+    // rather than a declaration, so no rule here reads it.
+    let obligations = view.names("obligations");
+    for (control, body) in view.members("controls") {
+        let at = format!("controls.{control}.discharges");
+        for obligation in strings(body, "discharges") {
+            reads(at.clone(), "obligation", &obligation, &obligations);
         }
     }
 

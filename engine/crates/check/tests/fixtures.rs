@@ -14,7 +14,7 @@
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
-use headwater_check::{coverage, placement, reciprocity, Detail, Run};
+use headwater_check::{coverage, placement, reciprocity, Detail, Register, Run};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
@@ -54,6 +54,7 @@ fn compare(recorded: &Path, actual: &str) {
 fn run_over(corpus: &Corpus, root: &headwater_yaml::Mapping) -> Run {
     let taxonomy = Taxonomy::read(root).expect("the taxonomy reads");
     let declarations = Declarations::read(root).expect("the declarations read");
+    let register = Register::read(root).expect("the register reads");
     let taken = census::take(corpus, &taxonomy);
     let graph = Graph::build(
         &taken,
@@ -62,7 +63,7 @@ fn run_over(corpus: &Corpus, root: &headwater_yaml::Mapping) -> Run {
         corpus,
         &Config::default(),
     );
-    headwater_check::run(&taken, &graph, &taxonomy, &declarations)
+    headwater_check::run(&taken, &graph, &taxonomy, &declarations, &register)
 }
 
 fn fixture_run() -> Run {

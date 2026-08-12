@@ -6,24 +6,33 @@
 //! remediation, and whether a fix is mechanical. Every field below is that
 //! field, and one of them is an `Option` for a reason the next paragraph gives.
 //!
-//! # The obligation is optional here, and that is a gap rather than a design
+//! # The obligation is optional here, and it says what a taxonomy declared
 //!
 //! Spec 4 says every finding names the obligation it serves, and
 //! [spec 12](../../../../docs/spec/12-check-layer.md#the-plugin-interface)
 //! makes `obligation()` required so that the check surface does not become the
 //! place where a rule escapes the "every rule earns its place" discipline. An
 //! obligation is **data**: a taxonomy declares `obligations` and `controls`,
-//! and the register is generated from the two. No package this repository
-//! resolves declares either block, and the declarations are
-//! [#52](https://github.com/headwater-ai/headwater/issues/52) in M2. So a check
-//! here has no obligation to name, and it says `None` rather than inventing an
-//! identifier that no register would recognize.
+//! and a rule reaches its obligation through the control that names the rule.
+//! [`crate::register`] is that path, and the runner stamps the field.
 //!
-//! The severity has the same root. Spec 4 puts `severity` on the obligation, so
-//! a check with no obligation has no declared severity either, and the value
-//! below is the engine's own. Both are one gap and
-//! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
-//! carries it.
+//! It stays an `Option` because a taxonomy may declare no control for a rule.
+//! The value is then `None` rather than an invented identifier that no register
+//! would recognize, and the run reports which rules those are.
+//!
+//! # The severity below is the check's, and the obligation carries another one
+//!
+//! Two scales share one word, and reading them as one is the mistake this
+//! paragraph exists to prevent.
+//! [Spec 12](../../../../docs/spec/12-check-layer.md#severity-is-the-checks-posture-is-the-controls)
+//! rules that a check reports severity and that whether it blocks is the
+//! control's business. That is the field below, and its values are `error`,
+//! `warn` and `info`. An obligation also declares a severity, on the scale
+//! `high`, `medium`, `low`, and that one says how much the invariant matters.
+//! The coverage report reads it, because spec 4 asks what fraction of
+//! obligations are verified *by severity*. Spec 4's own worked finding carries
+//! `error` against `OB-014`, which carries `medium`, so the two were never one
+//! field.
 
 /// What a check says about a finding. Whether it blocks is the control's
 /// business ([spec 12](../../../../docs/spec/12-check-layer.md#severity-is-the-checks-posture-is-the-controls)).
@@ -50,8 +59,8 @@ pub struct Finding {
     /// The rule that produced it, in the dotted form spec 4 writes.
     pub rule: &'static str,
     pub severity: Severity,
-    /// The obligation this rule serves, and `None` while none is declared. See
-    /// the module comment.
+    /// The obligation this rule serves, and `None` when no control names the
+    /// rule. See the module comment.
     pub obligation: Option<String>,
     /// Relative to the repository root, with `/` separators.
     pub path: String,
@@ -82,7 +91,13 @@ impl Finding {
         use std::fmt::Write;
         let mut out = String::new();
         let _ = writeln!(out, "{} {}", self.location(), self.severity);
-        let _ = writeln!(out, "  {}: {}", self.rule, self.message);
+        // The obligation rides beside the rule, because "why am I being made to
+        // do this?" is the question spec 4 gives every rule an answer to, and a
+        // reader who has to look the rule up in a register does not ask it.
+        let _ = match &self.obligation {
+            Some(obligation) => writeln!(out, "  {} ({obligation}): {}", self.rule, self.message),
+            None => writeln!(out, "  {}: {}", self.rule, self.message),
+        };
         let _ = writeln!(
             out,
             "  fix{}: {}",

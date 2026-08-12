@@ -123,6 +123,18 @@ declarations
       tombstone enum[counted sealed]
       from members
         anchor (required) scalar:string
+  obligations map of members
+      statement (required) scalar:string
+      rationale (required) scalar:string
+      class (required) enum[cohesion coherence]
+      prevents (required) scalar:string
+      severity (required) enum[high medium low]
+  controls map of members
+      mechanism (required) scalar:string
+      discharges (required) seq of scalar:string
+      trigger (required) scalar:string
+      posture (required) scalar:string
+      handoff scalar:string
 
 operations
   taxonomy scalar:string

@@ -105,7 +105,7 @@ M2 starts with the sublanguage, because the meta-schema and the resolver both re
 
 **The grammar cannot refuse a list index, and the fixture says so rather than hiding it.** `regimes.lifecycle.standard.transitions.0` parses, because `0` is a legal key name and no lexical rule tells an index from a key. The refusal is the meta-schema's, which knows which positions hold a list and needs no tree to answer. That is the one rule of the section that the parser does not carry.
 
-Two rules here are guesses, and both guess in the direction that Q2 settled for the loader. A segment holds letters, digits and `_`, so a hyphen is refused today. A reference points at a value and never at a second reference. Each is cheap to relax and expensive to add later, which is the only asymmetry that decides such a question before a use exists.
+One rule here is a guess, and it guesses in the direction that Q2 settled for the loader: a reference points at a value and never at a second reference. It is cheap to relax and expensive to add later, which is the only asymmetry that decides such a question before a use exists. A second guess of that shape has since been relaxed. A segment refused a hyphen until `obligations` and `controls` arrived keyed by an identifier, and every identifier spec 4 writes holds one.
 
 ## What the meta-schema settles, and the two collisions it found
 

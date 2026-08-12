@@ -12,7 +12,7 @@ replace:
 add:
   kinds.decision.tone: brisk
   identifier_schemes.decision_id.pattern.prefix: DR
-  shelves.play-books: {path: docs/playbooks/**, homogeneous: true}
+  shelves.play books: {path: docs/playbooks/**, homogeneous: true}
   facets.status.values: draft
   package.optional.forbids: {family: governance}
 

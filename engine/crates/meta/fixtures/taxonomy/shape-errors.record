@@ -4,7 +4,7 @@
 18:13: facets.status.values: a sequence belongs here, and this is a mapping
 19:3: facets: `status.since` cannot be addressed: it holds a `.`, which separates two segments, so an overlay that named it would be naming two nodes. Every declared key is a segment of an address, because an overlay has to be able to name it
 23:38: anchors.code_path: `cache` is not declared here; a declaration takes the members the meta-schema gives it and no others
-24:3: anchors: `work-item` cannot be addressed: the character `-` is not allowed in a segment; a segment holds letters, digits and `_`. Every declared key is a segment of an address, because an overlay has to be able to name it
-28:25: kinds.decision.sections.require: a sequence belongs here, and this is a scalar
-32:5: core.requires: a sequence belongs here, and this is a mapping
+27:3: anchors: `work item` cannot be addressed: the character ` ` is not allowed in a segment; a segment holds letters, digits, `_` and `-`. Every declared key is a segment of an address, because an overlay has to be able to name it
+31:25: kinds.decision.sections.require: a sequence belongs here, and this is a scalar
+35:5: core.requires: a sequence belongs here, and this is a mapping
 0:0: : `taxonomy` is required here and it is absent

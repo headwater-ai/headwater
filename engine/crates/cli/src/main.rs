@@ -41,6 +41,7 @@ use headwater_census::census::{self, Detail as CensusDetail};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_graph::anchors::Resolvers;
+use headwater_check::Register;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Detail as GraphDetail, Graph};
 use headwater_resolve::render_errors;
@@ -258,6 +259,10 @@ fn check(root: &Path, strict: bool) -> ExitCode {
         Ok(declarations) => declarations,
         Err(errors) => return refused("the relation declarations", &errors),
     };
+    let register = match Register::read(&resolved) {
+        Ok(register) => register,
+        Err(errors) => return refused("the obligations and controls", &errors),
+    };
 
     let taken = census::take(&corpus, &taxonomy);
     let graph = Graph::build(
@@ -269,7 +274,7 @@ fn check(root: &Path, strict: bool) -> ExitCode {
     );
 
     // Phase B.
-    let run = headwater_check::run(&taken, &graph, &taxonomy, &declarations);
+    let run = headwater_check::run(&taken, &graph, &taxonomy, &declarations, &register);
 
     // A run reports the state it evaluated, and the report is not optional
     // (spec 4). The lock hash is half of that statement, and the corpus tree is
