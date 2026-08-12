@@ -109,7 +109,7 @@ One rule here is a guess, and it guesses in the direction that Q2 settled for th
 
 ## What the meta-schema settles, and the two collisions it found
 
-`crates/meta/meta-schema.yml` is [spec 2](../docs/spec/02-taxonomy-model.md#the-meta-schema)'s meta-schema section as a file, and `crates/meta` is the reader of that file. The eleven declarations, `vocabularies`, and the three fields that name a taxonomy are the closed root set. Every declaration has a shape, every scalar has a type, and every closed value set is written out.
+`crates/meta/meta-schema.yml` is [spec 2](../docs/spec/02-taxonomy-model.md#the-meta-schema)'s meta-schema section as a file, and `crates/meta` is the reader of that file. The thirteen declarations, `vocabularies`, and the three fields that name a taxonomy are the closed root set. Every declaration has a shape, every scalar has a type, and every closed value set is written out.
 
 **The file is in the dialect it describes, and that is the whole of "its own dialect".** It goes through `headwater-yaml` on the Q2 rulings, exactly as a taxonomy source does. [Q2](../docs/spec/09-decisions.md#q2--schema-format) rules that JSON Schema is an emitted export and never the validator, and spec 2 shows the reason in its own text: the language carries `$`-references and no JSON Schema keyword resolves one. A second language for the schema would be a second dialect to keep in step with the first, and the two would drift at the first ruling that only one of them heard.
 

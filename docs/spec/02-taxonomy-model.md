@@ -244,7 +244,7 @@ projections:
     output: docs/requirements/
 ```
 
-## The eleven declarations
+## The thirteen declarations
 
 | Declaration | Answers |
 |---|---|
@@ -259,14 +259,20 @@ projections:
 | `core` | What an overlay may never remove or redefine |
 | `mappings` | How this taxonomy's concepts correspond to another's |
 | `projections` | What derived artifacts are generated, and where they land |
+| `obligations` | What invariants the corpus commits to, and how much each one matters |
+| `controls` | What discharges each obligation, when it runs, and at what posture |
 
 An earlier draft counted twelve and then added two more in the next sentence. Four of those fourteen are gone deliberately, and what each protected survives without its name.
 
 `sequences` was folded into windowed relation participation on kinds (below). `profiles` are publisher-shipped overlays ([spec 7](07-distribution-and-federation.md#profiles-are-publisher-overlays)). `compatibility` named the engine's fixed measurement dimensions, which no taxonomy could legally vary. A declaration with one legal value is an engine constant. `vocabularies` remains as authoring syntax — a named value set that facets reference. It is validated as part of `facets`, and it is not a concept that anyone must learn first.
 
-The count stays at eleven when an adopter serves a filtered audience. An **export profile** is an entry under `projections`, with a named audience, a filter over facet values, and a tombstone grain. It is not a twelfth declaration. The reason is the one that removed `profiles` and `compatibility`: a use of an existing mechanism earns no name of its own ([spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter), [Q17](09-decisions.md#q17--governed-access-and-the-solution-layer)).
+The count does not move when an adopter serves a filtered audience. An **export profile** is an entry under `projections`, with a named audience, a filter over facet values, and a tombstone grain. It is not a declaration of its own. The reason is the one that removed `profiles` and `compatibility`: a use of an existing mechanism earns no name of its own ([spec 6](06-engine-architecture.md#an-export-profile-carries-a-filter), [Q17](09-decisions.md#q17--governed-access-and-the-solution-layer)).
 
-The count also stays at eleven when a corpus imports content from a system that it does not govern. The pin is an anchor kind with one resolver, and the imported text is a `transcription` projection over that pin. Neither half is new, and [Q19](09-decisions.md#q19--inbound-integration-an-external-system-of-record) closed on that reading.
+The count also does not move when a corpus imports content from a system that it does not govern. The pin is an anchor kind with one resolver, and the imported text is a `transcription` projection over that pin. Neither half is new, and [Q19](09-decisions.md#q19--inbound-integration-an-external-system-of-record) closed on that reading.
+
+Two declarations arrived from the assurance model, and the count went from eleven to thirteen. [Spec 4](04-assurance-model.md#obligations-are-data) writes `obligations` and `controls` as blocks of a taxonomy, and the language had no room for either one. The test that removed `profiles` also applies to these two, and both pass it. An obligation is not a species of document, and it is not a property of one. It is a claim about the corpus, and every other declaration describes documents or the links between them. A facet that carried the claim would attach it to one document at a time. A projection that carried it would make the generated register the source of the binding rather than the view of it, which spec 4 refuses.
+
+The price is the one this section states for any root. To add a root is a meta-schema change, and this change also cost the sublanguage a rule. Both blocks are keyed by the identifier, and every identifier that spec 4 writes holds a hyphen, so [a segment](#the--reference-sublanguage) now admits one. The key is the identifier because an address never reaches inside a list. A bundle that adds a kind also adds the obligations that its rules serve, and each such entry needs an address of its own.
 
 One declaration is here that no earlier draft had: `anchors`. Relation endpoints referenced anchor kinds (`code_path`) that nothing ever declared. Identity, resolver ownership, and referential integrity for anchors all hung on a name that was used but never defined. The count went up because a real corner of the model was missing, which is the one honest reason that it may.
 
@@ -303,7 +309,7 @@ A judgment that a corpus no longer uses a term is a promise about the text, on t
 
 **The replacement decides fixability.** With one, the fix is a substitution, which meets the mechanical-and-total bar of [spec 12](12-check-layer.md#fixability), and the check offers a patch. Without one, the finding carries remediation prose and no patch. A retired term is the usual case for the first shape. A retired *framing* is the usual case for the second, and no lexicon repairs it for the author.
 
-**The lexicon belongs to the language regime and never to a voice regime.** A voice regime binds per kind, and the `narrative` value exempts a kind from voice rules entirely. A term that this corpus retired is retired in a proposal as much as in a specification. The declaration count stays at eleven, for the reason that it stayed at eleven for an export profile. A use of an existing mechanism earns no name of its own.
+**The lexicon belongs to the language regime and never to a voice regime.** A voice regime binds per kind, and the `narrative` value exempts a kind from voice rules entirely. A term that this corpus retired is retired in a proposal as much as in a specification. The declaration count does not move, for the reason that it did not move for an export profile. A use of an existing mechanism earns no name of its own.
 
 **A new entry forces a major version, and the migration state absorbs the existing text.** A retired term makes checks that passed fail, which breaks the `consequence` dimension below. So the release ships a migration payload, and the payload already knows which rules it broke for which documents. Those findings are `migration-pending` at `(document, rule)` grain, with an owner and an expiry ([spec 7](07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)). No separate grandfathering mechanism is needed, and a mechanism with no owner and no expiry would be worse than this one.
 
@@ -675,7 +681,7 @@ The rules are deliberately few.
 
 **`is_a` is not `subsumes`.** One is a statement about kinds and the other is a statement about documents, and [spec 1](01-conceptual-model.md#two-layers-terminology-and-assertions) holds those layers apart. `is_a` says that every playbook is a governed document, which is a fact about the schema. `subsumes` says that one decision is wider than another, which is a claim that an author makes about two documents. To confuse them lets the TBox leak into the ABox through a naming accident.
 
-The declaration count stays at eleven. `abstract` and `is_a` are attributes on `kinds`, not a new declaration, and an adopter who needs neither meets neither.
+The declaration count does not move. `abstract` and `is_a` are attributes on `kinds`, not a new declaration, and an adopter who needs neither meets neither.
 
 ## Kinds are rigid; states are not
 
@@ -751,7 +757,7 @@ The [shape above](#shape) writes `values: $vocabularies.lifecycle_state`. The ov
 address   = segment *( "." segment )
 reference = "$" root "." address
 root      = "vocabularies" / "package"
-segment   = 1*( ALPHA / DIGIT / "_" )
+segment   = 1*( ALPHA / DIGIT / "_" / "-" )
 ```
 
 **An address names a place, and a reference names a value.** An address is what an overlay operation takes: the key under `add`, `override`, `add_to` and `remove_from`, and each entry of the `remove` list. A reference stands in a value position, and it reads a value that another declaration holds. The enabling line above holds one of each.
@@ -764,7 +770,7 @@ The rule binds a taxonomy source and binds nothing else. [Spec 7](07-distributio
 
 **Quoting is not an escape, so the sublanguage carries one.** Q2 rules that a scalar takes its type from the meta-schema and never from the YAML resolver. So `"$vocabularies.audience"` and `$vocabularies.audience` are one value, and quotation marks cannot hide a sigil. A corpus whose value starts with a dollar sign writes `$$`, which stands for one literal `$`. Outside a position that admits a reference, `$` is an ordinary character. An identifier scheme `pattern` is typed as a string, so `"^DR-[A-Z]{2,6}-[0-9]{4}$"` is a pattern and not a malformed reference.
 
-**A segment holds letters, digits and `_`.** The refusal of `.` is permanent, because `.` is the separator. A declared key that holds a dot makes an address ambiguous, and the meta-schema refuses to declare one. Every other refusal is provisional, the hyphen among them. Q2 settles the direction to guess in. To relax a rule later costs nothing. To add one later is a finding against every source that already used the form.
+**A segment holds letters, digits, `_` and `-`.** The refusal of `.` is permanent, because `.` is the separator. A declared key that holds a dot makes an address ambiguous, and the meta-schema refuses to declare one. Every other refusal is provisional, and the hyphen was one of them until [obligations and controls](#the-thirteen-declarations) arrived keyed by an identifier. Q2 settles the direction to guess in. To relax a rule later costs nothing, and this is the first rule to be relaxed. To add one later is a finding against every source that already used the form.
 
 **An address is a sequence of segments and never a string.** Every question the resolver asks of two addresses is a question about their segments. `kinds.playbook` is a textual prefix of `kinds.playbook_step`, and neither address contains the other. A confluence check over text therefore refuses two `add` operations that commute. Disjointness is decidable on segments, and that is what makes the confluence check of [spec 7](07-distribution-and-federation.md#bundles-are-publisher-overlays-in-the-other-direction) a proof rather than a convention.
 

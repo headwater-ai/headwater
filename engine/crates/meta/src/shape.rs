@@ -6,8 +6,8 @@
 //! the reader: it turns a loaded YAML node into a [`Shape`], and it refuses a
 //! shape that names no form or more than one.
 //!
-//! The form set is small on purpose. Every form here is one the eleven
-//! declarations of [spec 2](../../../../docs/spec/02-taxonomy-model.md#the-eleven-declarations)
+//! The form set is small on purpose. Every form here is one the thirteen
+//! declarations of [spec 2](../../../../docs/spec/02-taxonomy-model.md#the-thirteen-declarations)
 //! actually use, and a form nothing uses would be a shape language feature that
 //! no taxonomy could exercise.
 
