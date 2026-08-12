@@ -130,7 +130,7 @@ A validator check enforces this: an obligation with no cited defect class is a f
 
 ## Controls are data
 
-A control declares what discharges an obligation, when it runs, and what posture it has.
+A control declares what discharges an obligation, when it runs, what posture it has, and which of the four classes above it acts in.
 
 ```yaml
 controls:
@@ -139,13 +139,22 @@ controls:
     discharges: [OB-014]
     trigger: pull_request
     posture: blocking
+    acts: detective
   CT-021:
     mechanism: scheduled:staleness-sweep
     discharges: [OB-003]
     trigger: weekly
-    posture: detective
+    posture: advisory
+    acts: detective
     handoff: task-per-finding
+    promotion:
+      permanently_advisory:
+        reasoning: a stale document needs a human to decide what still holds
 ```
+
+**`posture` and `acts` are two members, because two vocabularies live here.** An earlier draft wrote `blocking` on the first control and `detective` on the second, under one member. `posture` is the end of the [promotion path](#promotion-advisory-to-blocking) below. It carries the sense that [spec 12](12-check-layer.md#severity-is-the-checks-posture-is-the-controls) gives the word: whether a finding blocks a gate. `acts` is one of the four classes above, which says when a control acts. Control health cannot be read off a member that holds both. The second member is also the number that this section exists to expose, because most systems build the first two classes and claim the set.
+
+**A mechanism names a rule, a phase of the engine, or something outside it, and the prefix decides which.** `check:` names a rule, and that is the binding a finding travels along. An obligation that a phase of the engine discharges needs the second prefix. A classification pass that accounts for every file discharges the first coverage obligation [below](#no-silent-passes-every-document-is-accounted-for) by running, and it produces no finding to bind. So the engine publishes the closed set of phases that `phase:` reaches, and a name outside that set is the finding of the next paragraph. Any other prefix names a mechanism outside the engine. That is legitimate, and the register reports only that this run did not observe it.
 
 Controls are validated like anything else. A control that names a mechanism that the engine does not implement, or a pipeline that does not exist, is a finding. A register that claims coverage that it does not have is worse than no register. `taxonomy validate` runs the half of that which one taxonomy can decide: every identifier under `discharges` names an obligation that the resolved taxonomy declares.
 
@@ -162,6 +171,24 @@ This is the rule that keeps the register honest:
 | **Unverifiable** | No mechanism can exist. Accepted, with the reasoning recorded |
 
 There is no fourth state and no silence. An obligation with no disposition is itself a finding. This is the check that stops the decay of an assurance model into a list of good intentions. The register is complete by construction, or the build fails.
+
+**Verified is derived, and the other two are written on the obligation.** One member carries them, and it admits exactly one of `gap` and `unverifiable`:
+
+```yaml
+obligations:
+  OB-031:
+    statement: A reader who cannot answer a question can tell the maintainer
+    disposition:
+      gap:
+        owner: docs-platform
+        target: 2027-Q1
+  OB-022:
+    disposition:
+      unverifiable:
+        reasoning: usability by a declared audience is semantic, so the accuracy audit is the only instrument
+```
+
+A gap carries the owner that tracks it. An acceptance carries the reasoning that accepts it. **`verified` is not a value that this member admits.** It follows from a control, and a second place to write that binding is the drift named below. So an obligation with a control and a written disposition carries two of the three, which is the same finding as carrying none.
 
 **The register is generated, never authored.** The binding lives on the control (`discharges:`), and the disposition lives on the obligation. The register — coverage, control health, suppressions, waivers — is a projection of the two. The engine regenerates and checks it like any other projection. An earlier draft treated it as a third authored artifact. Two sources of truth for one binding is exactly the drift that this system exists to kill.
 
@@ -193,7 +220,7 @@ A new check starts as **advisory**. It becomes blocking only against evidence:
 - an unambiguous, mechanical remediation path
 - no unresolved concentration of escape hatches on one shelf
 
-The criteria are recorded with the control. So promotion is a decision with a paper trail, not an argument about someone's tolerance for red builds. The inverse is also specified. A blocking check whose false-positive rate rises past the threshold is demoted. It is not endured.
+The criteria are recorded with the control, under a `promotion:` member. So promotion is a decision with a paper trail, not an argument about someone's tolerance for red builds. That member holds exactly one of four things. One is the criteria themselves. The three subsections below are the other three: a final posture, a permanently advisory posture, and a component that produces facts rather than findings. Each of the three carries the reasoning that took the control off the path. A control that records nothing has nothing that states what would promote it, and the register reports that count. The inverse is also specified. A blocking check whose false-positive rate rises past the threshold is demoted. It is not endured.
 
 A false-positive rate needs a collection mechanism, or every criterion above is unfalsifiable in practice. The mechanism is the suppression reason ([below](#suppression)). `false_positive` means that the finding is wrong, and `accepted_deviation` means that it is right but tolerated. Only `false_positive` counts toward the promotion and demotion statistics. Nobody is asked to label findings as a separate task. The label attaches to the escape hatch that authors already use, and that is the only place where the judgment occurs.
 
