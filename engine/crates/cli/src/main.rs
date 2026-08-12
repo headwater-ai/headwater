@@ -36,11 +36,25 @@
 //! changed. Until it landed, `check` resolved the sources on every run, so a
 //! verdict rested on files that nothing had hashed and a reviewer read three
 //! sources to see what one run used.
+//!
+//! # The cache is beside the lock, and it changes nothing a reader sees
+//!
+//! `check` keeps a cache at `.headwater/cache/checks`, keyed on the lock
+//! digest among the components
+//! [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+//! names. It is not committed and it holds no corpus content: every entry is
+//! recomputable from the tree it was written over.
+//!
+//! `--no-cache` is the differential that spec 12 asks for rather than a way
+//! out of a bad cache. The two runs write the same bytes to standard output,
+//! and the standing test in `crates/check/tests/cache.rs` is that comparison
+//! under `cargo test`. What the cached run writes to standard error is the hit
+//! count, which belongs there because it is a fact about a disk.
 
 use headwater_census::census::{self, Detail as CensusDetail};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
-use headwater_check::Register;
+use headwater_check::{Cache, Register};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Detail as GraphDetail, Graph};
@@ -49,7 +63,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 const USAGE: &str = "\
-headwater check              [--strict] [--root <path>]
+headwater check              [--strict] [--no-cache] [--root <path>]
 headwater taxonomy validate  [--root <path>]
 headwater taxonomy resolve   [--check] [--root <path>]
 
@@ -63,6 +77,10 @@ headwater taxonomy resolve   [--check] [--root <path>]
   --strict       `check` only: exit non-zero when a finding is an error. Without
                  it the run is advisory and always exits 0, which is the default
                  spec 6 fixes.
+  --no-cache     `check` only: read and write no cache, and evaluate every
+                 instance. This run and a cached one write the same bytes to
+                 standard output, and a difference between them is a defect in
+                 the cache rather than a result.
   --check        `taxonomy resolve` only: write nothing and exit non-zero when
                  the committed lock is not what the sources resolve to.
   --root <path>  the repository to read. Defaults to the working directory.
@@ -72,6 +90,7 @@ fn main() -> ExitCode {
     let mut arguments = std::env::args().skip(1);
     let mut strict = false;
     let mut check_only = false;
+    let mut cached = true;
     let mut root: Option<PathBuf> = None;
     let mut words: Vec<String> = Vec::new();
 
@@ -79,6 +98,7 @@ fn main() -> ExitCode {
         match argument.as_str() {
             "--strict" => strict = true,
             "--check" => check_only = true,
+            "--no-cache" => cached = false,
             "--root" => match arguments.next() {
                 Some(path) => root = Some(PathBuf::from(path)),
                 None => return fail("--root names a path and none followed it"),
@@ -104,7 +124,7 @@ fn main() -> ExitCode {
 
     let verb: Vec<&str> = words.iter().map(String::as_str).collect();
     match verb.as_slice() {
-        ["check"] => check(&root, strict),
+        ["check"] => check(&root, strict, cached),
         ["taxonomy", "validate"] => validate(&root),
         ["taxonomy", "resolve"] => resolve(&root, check_only),
         ["taxonomy"] => fail("`taxonomy` takes a second word: `validate` or `resolve`"),
@@ -225,7 +245,7 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
     ExitCode::SUCCESS
 }
 
-fn check(root: &Path, strict: bool) -> ExitCode {
+fn check(root: &Path, strict: bool, cached: bool) -> ExitCode {
     // The taxonomy comes from the lock, and the corpus block comes from the
     // consumer declaration. The two are different questions: the lock says what
     // the schema is, and `corpus:` says what to walk. Spec 6 keeps them apart
@@ -273,8 +293,22 @@ fn check(root: &Path, strict: bool) -> ExitCode {
         &Config::default(),
     );
 
-    // Phase B.
-    let run = headwater_check::run(&taken, &graph, &taxonomy, &declarations, &register);
+    // Phase B. The cache is keyed on the lock digest among other things, so a
+    // taxonomy that moved invalidates every entry without anyone clearing a
+    // directory.
+    let mut cache = match cached {
+        true => Cache::at(root, &lock.digest),
+        false => Cache::disabled(),
+    };
+    let run = headwater_check::run(
+        &taken,
+        &graph,
+        &taxonomy,
+        &declarations,
+        &register,
+        &mut cache,
+    );
+    cache.write(root);
 
     // A run reports the state it evaluated, and the report is not optional
     // (spec 4). The lock hash is half of that statement, and the corpus tree is
@@ -288,6 +322,12 @@ fn check(root: &Path, strict: bool) -> ExitCode {
     print!("{}", indent(&graph.render(GraphDetail::Exceptions)));
     println!("\nchecks");
     print!("{}", indent(&run.render(headwater_check::Detail::Findings)));
+
+    // The cache accounting goes to standard error, because it is a fact about
+    // this machine's disk and the report above is a fact about the corpus.
+    // `--no-cache` and a cached run write the same bytes to standard output,
+    // and a line here would be the one thing that made them differ.
+    eprint!("{}", run.cache.render());
 
     if strict && run.has_errors() {
         return ExitCode::FAILURE;

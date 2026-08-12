@@ -28,7 +28,9 @@
 //! 3. **The read set is the view's and never the check's.** An instance
 //!    records what the view carried, so a check cannot under-report what it
 //!    read. Spec 12 needs that set twice over: as the cache key, and as the
-//!    read set that makes a verdict honest under merge.
+//!    read set that makes a verdict honest under merge. Each read carries the
+//!    census digest of the file, because a key over a path alone would survive
+//!    every edit to the document it names.
 //!
 //! # What a check still declares, and what it cannot
 //!
@@ -37,13 +39,23 @@
 //! is enforced the same way: [`DocumentView::body`] returns nothing to a check
 //! that did not declare it.
 //!
+//! `VERSION` is the other declaration, and it is the one component of a cache
+//! key that no input supplies. It says which edition of a rule reached a
+//! verdict, so that a change to what a rule decides invalidates the entries
+//! the earlier edition wrote. Nothing can derive it: two editions of a rule
+//! read the same documents and the same lock, and they differ only in code.
+//! So it is raised by hand, and
+//! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
+//! carries the gap that no instrument catches an author who forgets.
+//!
 //! `needs_clock` and `needs_prior` are absent. No check declares either one
 //! today, and no view has anything to put behind them: the clock is an
 //! injected value and the prior version arrives only in change-scoped
 //! evaluation, which is
-//! [#55](https://github.com/headwater-ai/headwater/issues/55). A field that
+//! [#58](https://github.com/headwater-ai/headwater/issues/58). A field that
 //! nothing enforces is the comment this module exists to delete, so each one
-//! lands with the first check that needs it.
+//! lands with the first check that needs it — and it joins the cache key in
+//! the same change, because a key that omits an input is a correctness bug.
 //!
 //! # Where the instance set comes from
 //!
@@ -57,7 +69,8 @@
 //! an edge check. Both are path order, so a run reports its instances in one
 //! order and `fixtures/check.report` records it.
 
-use crate::instance::{Instance, Outcome};
+use crate::cache::Cache;
+use crate::instance::{Input, Instance, Outcome};
 use headwater_census::census::{Census, Outcome as Classification};
 use headwater_census::resolve::Step;
 use headwater_doc::Body;
@@ -148,6 +161,10 @@ impl Scope {
 /// A check over one document.
 pub trait DocumentCheck {
     const RULE: &'static str;
+    /// Which edition of this rule reached a verdict. See the module comment:
+    /// it keys the cache, and raising it is what invalidates every entry an
+    /// earlier edition wrote.
+    const VERSION: u32;
     /// Whether the view carries the body. A check that does not declare it
     /// receives nothing from [`DocumentView::body`], so the declaration is the
     /// access rather than a note beside it.
@@ -166,6 +183,8 @@ pub trait DocumentCheck {
 /// A check over one relation instance and both of its endpoints.
 pub trait EdgeCheck {
     const RULE: &'static str;
+    /// As [`DocumentCheck::VERSION`].
+    const VERSION: u32;
 
     /// The generation step, as [`DocumentCheck::instantiates`], over the name
     /// of the relation an edge declares.
@@ -197,6 +216,7 @@ pub fn edge_scope<C: EdgeCheck>() -> Scope {
 /// implement a wider trait, and the runner then keys its cache accordingly.
 pub struct DocumentView<'a> {
     path: &'a str,
+    digest: Option<&'a str>,
     kind: &'a str,
     placed_on: Option<&'a str>,
     facets: &'a Mapping,
@@ -231,9 +251,9 @@ impl<'a> DocumentView<'a> {
         self.body
     }
 
-    /// What this view lets a check read: one document.
-    pub fn reads(&self) -> Vec<String> {
-        vec![self.path.to_string()]
+    /// What this view lets a check read: one document, and the hash of it.
+    pub fn reads(&self) -> Vec<Input> {
+        vec![Input::new(self.path, self.digest)]
     }
 }
 
@@ -247,7 +267,7 @@ pub struct EdgeView<'a> {
     relation: &'a str,
     declared: Option<&'a Edge>,
     inverse: Option<&'a Edge>,
-    reads: Vec<String>,
+    reads: Vec<Input>,
 }
 
 impl<'a> EdgeView<'a> {
@@ -255,7 +275,13 @@ impl<'a> EdgeView<'a> {
     /// carries a direction. Nothing is what an empty group would produce, and
     /// this returns rather than panics for the reason a check never panics:
     /// one bad group must not silence the rest of the corpus.
-    fn over(halves: &[&'a Edge]) -> Option<Self> {
+    ///
+    /// The digests come from the census, because the digest of a document is
+    /// what the walk that read it recorded. An edge carries no bytes of its
+    /// own: it is declared inside the front matter of one of its endpoints, so
+    /// hashing both endpoints covers the relation name, the target and every
+    /// instance attribute on it.
+    fn over(halves: &[&'a Edge], digests: &Digests) -> Option<Self> {
         let declared = halves
             .iter()
             .copied()
@@ -269,12 +295,12 @@ impl<'a> EdgeView<'a> {
         // direction wins when both ends wrote their half. So one pair reads
         // the same two documents in the same order whatever the verdict is.
         let anchor = declared.or(inverse)?;
-        let mut reads = vec![anchor.source.path.clone()];
+        let mut reads = vec![digests.input(&anchor.source.path)];
         if let Target::Document { path, .. } = &anchor.target {
             // A self-edge is one file at both ends, and one instance counts
             // once against one document however many times it names it.
-            if !reads.contains(path) {
-                reads.push(path.clone());
+            if !reads.iter().any(|input| &input.path == path) {
+                reads.push(digests.input(path));
             }
         }
 
@@ -304,8 +330,42 @@ impl<'a> EdgeView<'a> {
     /// Both endpoints: spec 12 fixes an edge-scoped read set at "one relation
     /// instance **and both endpoints**", and coverage counts the instance
     /// against each of them.
-    pub fn reads(&self) -> &[String] {
+    pub fn reads(&self) -> &[Input] {
         &self.reads
+    }
+}
+
+/// The digest of each document the census read, by path.
+///
+/// An edge-scoped view is built from the graph, and a digest is a fact the
+/// census holds. This is the one lookup between them, so that no phase invents
+/// a hash for a file the walk never read.
+pub struct Digests {
+    /// In the census's own order, which is path order, so a lookup is a binary
+    /// search and never a scan of the corpus per edge.
+    by_path: Vec<(String, Option<String>)>,
+}
+
+impl Digests {
+    pub fn of(census: &Census) -> Self {
+        Digests {
+            by_path: census
+                .rows
+                .iter()
+                .map(|row| (row.path.clone(), row.digest.clone()))
+                .collect(),
+        }
+    }
+
+    /// One input. A path the census never walked carries no digest, so nothing
+    /// over it is keyed, which is the same answer as a file that was not read.
+    pub fn input(&self, path: &str) -> Input {
+        let digest = self
+            .by_path
+            .binary_search_by(|(known, _)| known.as_str().cmp(path))
+            .ok()
+            .and_then(|index| self.by_path[index].1.as_deref());
+        Input::new(path, digest)
     }
 }
 
@@ -314,7 +374,11 @@ impl<'a> EdgeView<'a> {
 /// One instance per typed document the check generates over. An untyped row
 /// has no kind and so no document instance, and the census already reports it
 /// with its own outcome.
-pub fn over_documents<C: DocumentCheck>(check: &C, census: &Census) -> Vec<Instance> {
+pub fn over_documents<C: DocumentCheck>(
+    check: &C,
+    census: &Census,
+    cache: &mut Cache,
+) -> Vec<Instance> {
     let mut instances = Vec::new();
     for row in &census.rows {
         let Classification::Typed { kind, derivation } = &row.outcome else {
@@ -324,12 +388,17 @@ pub fn over_documents<C: DocumentCheck>(check: &C, census: &Census) -> Vec<Insta
             continue;
         }
         let Some(document) = &row.document else {
-            instances.push(Instance::skipped(C::RULE, row.path.clone(), NO_DOCUMENT));
+            instances.push(Instance::skipped(
+                C::RULE,
+                vec![Input::new(&row.path, row.digest.as_deref())],
+                NO_DOCUMENT,
+            ));
             continue;
         };
 
         let view = DocumentView {
             path: &row.path,
+            digest: row.digest.as_deref(),
             kind,
             placed_on: derivation.steps.iter().find_map(|step| match step {
                 Step::PlacementCarriesTheKind { shelf, .. } => Some(shelf.as_str()),
@@ -341,7 +410,18 @@ pub fn over_documents<C: DocumentCheck>(check: &C, census: &Census) -> Vec<Insta
                 false => None,
             },
         };
-        instances.push(Instance::of(C::RULE, view.reads(), check.evaluate(&view)));
+        // The target of a document-scoped instance is the document, so the
+        // path is its identity as well as its one input.
+        let reads = view.reads();
+        let outcome = cache.outcome(
+            C::RULE,
+            C::VERSION,
+            document_scope::<C>(),
+            &row.path,
+            &reads,
+            || check.evaluate(&view),
+        );
+        instances.push(Instance::of(C::RULE, reads, outcome));
     }
     instances
 }
@@ -351,7 +431,12 @@ pub fn over_documents<C: DocumentCheck>(check: &C, census: &Census) -> Vec<Insta
 /// One instance per declared pair the check generates over, and a pair is the
 /// unit whichever end wrote it. An anchor and an unbound target are not
 /// document pairs, and `declared_triple` says so by returning nothing.
-pub fn over_edges<C: EdgeCheck>(check: &C, graph: &Graph) -> Vec<Instance> {
+pub fn over_edges<C: EdgeCheck>(
+    check: &C,
+    graph: &Graph,
+    digests: &Digests,
+    cache: &mut Cache,
+) -> Vec<Instance> {
     // The edges arrive in path order, so the groups come out in a stable order
     // with no sort here.
     let mut pairs: Vec<(String, Vec<&Edge>)> = Vec::new();
@@ -369,9 +454,24 @@ pub fn over_edges<C: EdgeCheck>(check: &C, graph: &Graph) -> Vec<Instance> {
         }
     }
 
-    pairs
-        .iter()
-        .filter_map(|(_, halves)| EdgeView::over(halves))
-        .map(|view| Instance::of(C::RULE, view.reads().to_vec(), check.evaluate(&view)))
-        .collect()
+    let mut instances = Vec::with_capacity(pairs.len());
+    for (triple, halves) in &pairs {
+        let Some(view) = EdgeView::over(halves, digests) else {
+            continue;
+        };
+        // The triple is the identity Q4 gives an edge, and it is what tells
+        // two instances apart that read the same two documents. One pair of
+        // documents can carry two relations, and their read sets are equal.
+        let reads = view.reads().to_vec();
+        let outcome = cache.outcome(
+            C::RULE,
+            C::VERSION,
+            edge_scope::<C>(),
+            triple,
+            &reads,
+            || check.evaluate(&view),
+        );
+        instances.push(Instance::of(C::RULE, reads, outcome));
+    }
+    instances
 }

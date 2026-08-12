@@ -82,6 +82,10 @@ impl Placement {
 
 impl DocumentCheck for Placement {
     const RULE: &'static str = self::RULE;
+    /// The first edition of this rule. Raise it when what the rule decides
+    /// changes, because that is what invalidates the cached verdicts of the
+    /// edition before it ([`crate::cache`]).
+    const VERSION: u32 = 1;
 
     fn evaluate(&self, view: &DocumentView<'_>) -> Outcome {
         // Which of the two bodies the shelf has, from the derivation the

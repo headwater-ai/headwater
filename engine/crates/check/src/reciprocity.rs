@@ -83,6 +83,8 @@ impl<'a> Reciprocity<'a> {
 
 impl EdgeCheck for Reciprocity<'_> {
     const RULE: &'static str = self::RULE;
+    /// See [`crate::placement::Placement::VERSION`].
+    const VERSION: u32 = 1;
 
     fn instantiates(&self, relation: &str) -> bool {
         self.required.iter().any(|known| known.name == relation)
