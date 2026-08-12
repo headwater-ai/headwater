@@ -1,0 +1,7 @@
+# A merge key needs no alias to reach the rule, so forbidding aliases alone
+# would leave this form open.
+kinds:
+  decision:
+    <<:
+      abstract: false
+    facets: []

@@ -1,0 +1,7 @@
+# `blank` is an author who left the value out, and `empty` is an author who
+# wrote an empty string. Only the style separates them, and a required-value
+# check has to tell them apart.
+blank:
+tilde: ~
+empty: ""
+spaces: "  "

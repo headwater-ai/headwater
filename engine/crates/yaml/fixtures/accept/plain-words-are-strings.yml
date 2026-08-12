@@ -1,0 +1,9 @@
+# The Q2 ruling, as data. YAML 1.1 reads the first four as booleans, and a
+# facet whose value is the word `no` would arrive as `false`.
+a: no
+b: yes
+c: on
+d: off
+e: true
+f: 013
+g: 0x1f

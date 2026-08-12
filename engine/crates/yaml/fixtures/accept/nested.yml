@@ -1,0 +1,17 @@
+kinds:
+  decision:
+    abstract: false
+    facets: [lifecycle_state, warrant]
+    relations:
+      - name: supersedes
+        to: decision
+      - name: governs
+        to: behavior
+  guide:
+    abstract: false
+    facets: []
+shelves:
+  - id: spec
+    path: docs/spec
+  - id: reviews
+    path: docs/reviews

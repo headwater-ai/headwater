@@ -1,0 +1,4 @@
+# A tab where indentation belongs. YAML forbids it, and an author whose editor
+# inserted one needs the position rather than a parse failure with no place.
+kinds:
+	decision: {}

@@ -1,0 +1,5 @@
+# A tag is a second typing mechanism, competing with the meta-schema that Q2
+# made authoritative. This rule is derived rather than quoted; see the crate
+# documentation.
+version: !!str 1.0.0
+count: !!int "3"

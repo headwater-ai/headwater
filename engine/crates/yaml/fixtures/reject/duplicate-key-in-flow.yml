@@ -1,0 +1,3 @@
+# The same rule inside a flow mapping, where the two spellings sit on one line
+# and a reader is least likely to see the repeat.
+limits: {max_depth: 3, strict: true, max_depth: 4}

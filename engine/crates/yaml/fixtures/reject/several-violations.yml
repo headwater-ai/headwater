@@ -1,0 +1,9 @@
+# Three rules broken in one file. An author who has to run the loader once per
+# violation reads the corpus three times to fix one file.
+defaults: &defaults
+  abstract: false
+kinds:
+  decision: *defaults
+  guide:
+    abstract: false
+  decision: {}
