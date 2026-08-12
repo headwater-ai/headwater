@@ -102,6 +102,7 @@ pub mod register;
 pub mod scope;
 pub mod sections;
 pub mod shape;
+pub mod suppression;
 pub mod voice;
 
 pub use cache::Cache;
@@ -116,6 +117,7 @@ pub use scope::{
     Scope,
 };
 pub use shape::Shape;
+pub use suppression::Inventory;
 
 use headwater_census::census::Census;
 use headwater_census::shelves::Taxonomy;
@@ -174,10 +176,15 @@ pub struct Run {
     /// Every instance of every check, in the order the checks are listed.
     pub instances: Vec<Instance>,
     pub coverage: Coverage,
-    /// Every finding, in the one order
+    /// Every finding a reader sees, in the one order
     /// [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
-    /// fixes.
+    /// fixes. A finding an author suppressed is not here, and it is in
+    /// [`Run::suppressions`] instead.
     pub findings: Vec<Finding>,
+    /// What this run's authors suppressed, and what became of each directive.
+    /// See [`suppression`]: the filter is the runner's, and a check never sees
+    /// it.
+    pub suppressions: Inventory,
     /// What each rule sees and what it serves, in [`RULES`] order. A rule that
     /// reaches no obligation is in this list too, because a rule that cannot
     /// say which invariant it protects is what spec 4 asks a reader to notice.
@@ -333,6 +340,18 @@ pub fn run(
         };
     }
 
+    // The filter is here, after every instance has an outcome and after the
+    // obligation is stamped. So a cache holds what a check decided, an
+    // inventory holds what a reader did not see, and the two cannot drift
+    // ([`suppression`]).
+    let (declared_suppressions, refused) = suppression::declared(census, &RULES);
+    let (findings, suppressions) = suppression::apply(
+        finding::sorted(findings),
+        declared_suppressions,
+        refused,
+        ctx.now(),
+    );
+
     let read_set = ReadSet::of(
         declared.lock,
         ctx.now(),
@@ -346,7 +365,8 @@ pub fn run(
     Run {
         instances,
         coverage,
-        findings: finding::sorted(findings),
+        findings,
+        suppressions,
         served,
         read_set,
         cache: cache.report(),
@@ -435,6 +455,12 @@ impl Run {
                 let _ = writeln!(out, "  {count:5} instances of {rule}");
             }
         }
+
+        // Spec 4 puts the suppression inventory in the coverage report, and
+        // this is it. It is above the rule list rather than below the findings
+        // for the reason coverage is above everything: a reader who stops here
+        // has read what this run did not report as well as what it did.
+        out.push_str(&self.suppressions.render());
 
         // What each rule sees and what it serves. Spec 4 asks every finding to
         // name its obligation, so a rule that names none is a fact about the

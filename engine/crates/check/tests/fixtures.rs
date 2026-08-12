@@ -574,6 +574,55 @@ fn an_edge_instance_is_counted_against_both_of_its_endpoints() {
     assert!(run.coverage.unaccounted.is_empty());
 }
 
+/// A suppressed finding leaves the report and never leaves the instance.
+///
+/// That is the property that keeps a cache honest. `crates/check/src/cache.rs`
+/// stores the outcome of an instance, so a filter applied inside a check would
+/// write a `Passed` record for a verdict that failed, and the inventory would
+/// then lose the entry it exists to count for as long as that record lived.
+/// The filter is the runner's and it runs after every outcome is fixed.
+///
+/// The fixture carries all four states of a directive, and each one is a
+/// different piece of news: applied, expired, unused, refused.
+#[test]
+fn a_suppressed_finding_leaves_the_report_and_stays_in_the_instance() {
+    let run = fixture_run();
+    let suppressed = "check/spec/10-suppressed.md";
+
+    // Nothing of the two suppressed rules reaches the report for that file.
+    assert!(
+        !run.findings
+            .iter()
+            .any(|finding| finding.path == suppressed && finding.rule == voice::RULE),
+        "a suppressed voice finding reached the report"
+    );
+
+    // And the instance that produced one still holds it, which is what the
+    // cache stores.
+    let instance = run
+        .instances
+        .iter()
+        .find(|instance| instance.rule == voice::RULE && instance.at() == suppressed)
+        .expect("the voice instance over the suppressed fixture");
+    assert!(
+        matches!(instance.outcome, Outcome::Failed(_)),
+        "{:?}",
+        instance.outcome
+    );
+
+    // The expired directive is the other half: its finding is reported.
+    assert!(
+        run.findings
+            .iter()
+            .any(|finding| finding.path == suppressed && finding.rule == language::RULE),
+        "the expired directive suppressed a finding anyway"
+    );
+
+    assert_eq!(run.suppressions.hidden(), 2);
+    assert_eq!(run.suppressions.by_shelf(), vec![("spec_series", 2)]);
+    assert_eq!(run.suppressions.refused.len(), 1);
+}
+
 /// OB-COV-2 is about classified documents, and only those.
 ///
 /// A classified document that no rule read is a finding. An unclassified one is
@@ -589,8 +638,8 @@ fn a_classified_document_with_no_instance_is_a_finding_and_an_untyped_one_is_not
         .map(|finding| finding.path.as_str())
         .collect();
     assert_eq!(paths, ["check/spec/03-no-instance.md"]);
-    assert_eq!(run.coverage.seen(), 17);
-    assert_eq!(run.coverage.classified(), 16);
+    assert_eq!(run.coverage.seen(), 18);
+    assert_eq!(run.coverage.classified(), 17);
 }
 
 /// The coverage numbers are computed against the census and never against the
@@ -716,7 +765,7 @@ fn a_document_check_receives_the_body_only_when_it_declares_it() {
     let declared = over_documents(&Reader::<true>, &census, &pinned(), &mut Cache::disabled());
     let did_not = over_documents(&Reader::<false>, &census, &pinned(), &mut Cache::disabled());
 
-    assert_eq!(declared.len(), 16, "one instance per typed document");
+    assert_eq!(declared.len(), 17, "one instance per typed document");
     assert_eq!(declared.len(), did_not.len());
     assert!(declared
         .iter()

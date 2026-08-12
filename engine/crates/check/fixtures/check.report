@@ -1,19 +1,29 @@
-17 seen, 16 classified, 15 checked, 97 check instances
-     14 skipped: this document writes no fragment into itself
-      9 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+18 seen, 17 classified, 16 checked, 103 check instances
+     15 skipped: this document writes no fragment into itself
+     10 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: `guarded` forbids hedging, and this engine has no pattern set for it
       2 skipped: `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
-16 documents in the read set
-     15 instances of facet.required.missing
-     15 instances of facet.value.not_permitted
-     16 instances of shelf.placement_is_primary
+17 documents in the read set
+     16 instances of facet.required.missing
+     16 instances of facet.value.not_permitted
+     17 instances of shelf.placement_is_primary
       4 instances of relation.reciprocity.missing
       6 instances of relation.endpoint.not_permitted
       7 instances of relation.participation.overdue
-      8 instances of voice.forbidden_construction
-      8 instances of language.controlled.not_met
+      9 instances of voice.forbidden_construction
+      9 instances of language.controlled.not_met
       2 instances of section.required.missing
-     16 instances of link.fragment.unresolved
+     17 instances of link.fragment.unresolved
+suppressions
+  2 findings hidden by 2 directives
+      1 false_positive
+      1 accepted_deviation
+      1 of language.controlled.not_met
+      1 of voice.forbidden_construction
+      2 on the shelf spec_series
+      1 expired, and the findings they named are reported
+      1 matched no finding
+  check/spec/10-suppressed.md:36 suppresses nothing: no rule of this engine is named `language.controled.not_met`
 rules, and for each the scope that binds it and what it serves
   facet.required.missing
     document scope, one document and its front matter
@@ -48,9 +58,9 @@ rules, and for each the scope that binds it and what it serves
   coverage.document_unchecked
     corpus scope, every row of the census, and it is a barrier
     no control names this rule, so its findings name no obligation
-20 findings
+21 findings
      11 error
-      9 warn
+     10 warn
 
 instances
   facet.required.missing check/evaluations/alpha.md
@@ -83,6 +93,8 @@ instances
     passed
   facet.required.missing check/spec/09-contract-missing.md
     passed
+  facet.required.missing check/spec/10-suppressed.md
+    passed
   facet.value.not_permitted check/evaluations/alpha.md
     passed
   facet.value.not_permitted check/evaluations/beta.md
@@ -112,6 +124,8 @@ instances
   facet.value.not_permitted check/spec/08-contract-met.md
     passed
   facet.value.not_permitted check/spec/09-contract-missing.md
+    passed
+  facet.value.not_permitted check/spec/10-suppressed.md
     passed
   shelf.placement_is_primary check/evaluations/alpha.md
     passed
@@ -144,6 +158,8 @@ instances
   shelf.placement_is_primary check/spec/08-contract-met.md
     skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
   shelf.placement_is_primary check/spec/09-contract-missing.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  shelf.placement_is_primary check/spec/10-suppressed.md
     skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
   relation.reciprocity.missing check/spec/00-both-halves.md + check/evaluations/alpha.md
     passed
@@ -195,6 +211,8 @@ instances
     skipped: `guarded` forbids hedging, and this engine has no pattern set for it
   voice.forbidden_construction check/spec/09-contract-missing.md
     skipped: `guarded` forbids hedging, and this engine has no pattern set for it
+  voice.forbidden_construction check/spec/10-suppressed.md
+    failed
   language.controlled.not_met check/spec/00-both-halves.md
     passed
   language.controlled.not_met check/spec/01-one-half.md
@@ -211,6 +229,8 @@ instances
     skipped: `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
   language.controlled.not_met check/spec/09-contract-missing.md
     skipped: `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
+  language.controlled.not_met check/spec/10-suppressed.md
+    failed
   section.required.missing check/spec/08-contract-met.md
     passed
   section.required.missing check/spec/09-contract-missing.md
@@ -246,6 +266,8 @@ instances
   link.fragment.unresolved check/spec/08-contract-met.md
     skipped: this document writes no fragment into itself
   link.fragment.unresolved check/spec/09-contract-missing.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved check/spec/10-suppressed.md
     skipped: this document writes no fragment into itself
 
 check/evaluations/delta.md:8:7 error
@@ -308,3 +330,6 @@ check/spec/07-prose-defects.md:35:32 error
 check/spec/09-contract-missing.md error
   section.required.missing (OB-FIX-9): `decision_record` requires the section `Decision`, and no heading of this document says so
   fix: add a `Decision` heading to check/spec/09-contract-missing.md, with the content the kind is for
+check/spec/10-suppressed.md:30:1 warn
+  language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words a sentence, and this one has 31
+  fix: split the sentence, or move a clause into its own sentence
