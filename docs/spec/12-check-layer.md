@@ -1,3 +1,30 @@
+---
+id: SPEC-HW-check-layer
+status: current
+status_since: 2026-08-02
+last_verified: 2026-08-11
+summary: What a check is, how a scope constrains it, where it comes from, and what the check layer owes the engine.
+doc_type: design_spec
+sequence: 12
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: [claude-fable-5, claude-opus-5]
+  activity: draft+revise
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cites_evidence:
+    - EVAL-HW-graph-export-and-federation
+    - EVAL-HW-language-spike-results
+    - EVAL-HW-relation-storage
+    - EVAL-HW-shacl-worked-example
+    - EVAL-HW-the-measurement-layer
+    - EVAL-HW-the-serving-boundary
+    - EVAL-HW-warrant-and-adjudication
+    - EVAL-HW-what-a-check-can-know
+---
+
 # 12 — The check layer
 
 [Spec 6](06-engine-architecture.md) says that checks are pure functions over the corpus graph. That was sufficient at that level of detail. The LinkML and SHACL evaluations then found where the standards stop. Everything past that line lands here. Thus the check layer needs a design, not only a description.

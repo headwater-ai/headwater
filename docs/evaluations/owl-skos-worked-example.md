@@ -1,3 +1,23 @@
+---
+id: EVAL-HW-owl-skos-worked-example
+status: current
+status_since: 2026-08-12
+last_verified: 2026-08-12
+summary: The taxonomy emitted as OWL and SKOS, the corpus as instance triples, and what a reasoner makes of the result.
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: claude-opus-5
+  activity: measure+draft
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cited_by:
+    - REG-HW-open-obligations
+  traces_to:
+    - tools/rdf-probe/emit.py
+---
+
 # The taxonomy in OWL and SKOS — a worked example
 
 The third of the substrate worked examples, after [LinkML](linkml-worked-example.md) and [SHACL](shacl-worked-example.md). Those two asked whether an external language could hold the Headwater schema and the Headwater checks. This one asks the question that [Q13](../spec/09-decisions.md#q13--linkml-and-shacl-as-substrate) staged fourth: what happens when the taxonomy is emitted as an ontology, and the corpus as instance triples, and a reasoner is pointed at the result.

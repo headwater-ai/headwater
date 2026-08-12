@@ -1,3 +1,28 @@
+---
+id: EVAL-HW-graph-export-and-federation
+status: current
+status_since: 2026-08-10
+last_verified: 2026-08-10
+summary: The Q6, Q13 and Q9 evidence, which is where the corpus graph lives, what it exports, and how a second repository consumes it.
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: claude-opus-5
+  activity: evaluate+draft
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cited_by:
+    - REG-HW-decisions
+    - SPEC-HW-conceptual-model
+    - SPEC-HW-taxonomy-model
+    - SPEC-HW-engine-architecture
+    - SPEC-HW-distribution-and-federation
+    - SPEC-HW-adjacent-work
+    - SPEC-HW-check-layer
+    - SPEC-HW-glossary
+---
+
 # The graph, its export, and the tier above it
 
 This evaluation closes three entries at once: [Q6](../spec/09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest) (where the corpus graph lives at rest), [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate) (LinkML and SHACL as substrate), and [Q9](../spec/09-open-questions.md#q9--multi-repository-corpora) (multi-repository corpora).

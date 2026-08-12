@@ -1,3 +1,26 @@
+---
+id: REG-HW-open-obligations
+status: current
+status_since: 2026-08-11
+last_verified: 2026-08-12
+summary: The work that the closed decisions left behind, which is unmeasured claims, items that wait on an adopter, and unblocked design work.
+doc_type: obligation_register
+sequence: 13
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: claude-opus-5
+  activity: draft+revise
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  supersedes:
+    - REG-HW-open-questions
+  cites_evidence:
+    - EVAL-HW-default-taxonomy-first-run
+    - EVAL-HW-owl-skos-worked-example
+---
+
 # 13 — Open obligations
 
 Every decision in [9 — The decision register](09-decisions.md) is closed, and each one left work behind. This file gathers that work in one place. Nothing here blocks a decision. Each item waits on an engine that nobody has built, on a corpus that nobody has adopted, or on a measurement that nobody has run.
@@ -10,10 +33,10 @@ Four classes cover all of it. The first three are the classes that the register'
 
 Seventeen decisions carry a claim that no run supports. Each one names its instrument, and no instrument has run, because the engine does not exist. Each entry below keeps the claim and its instrument together, because a claim published without its instrument is not what principle 11 asks for.
 
-- **[Q4 — Relation storage](09-decisions.md#q4--relation-storage).** The promotion fix should raise author-attributable edges without a rise in hand entry, and the assisted fraction plus the audit report are the instruments.
+- **[Q4 — Relation storage](09-decisions.md#q4--relation-storage).** The promotion fix should raise author-attributable edges without a rise in hand entry, and the assisted fraction plus the audit report are the instruments. The first typing of this corpus supplies the other end of that scale. It hand-entered 36 documents and 203 edge halves with no scaffolder and no engine, so its assisted fraction is zero. [What the first typing found](#what-the-first-typing-of-this-corpus-found) records where the cost fell.
 - **[Q5 — Voice checking depth](09-decisions.md#q5--voice-checking-depth).** [Spec 8](08-design-departures.md) calls declarative voice "mechanically detectable at useful precision". The instrument is a run of the three categories over this corpus, with an adjudicated sample of at least 50 findings each. The measurement that closed Q5 covered three ASD-STE100 structural rules, used as proxies. Nobody has measured `future_intent`, `change_narration` or `phased_rollout`, which are the categories that the declarative regime forbids, because no implementation of them exists.
 - **[Q6 — Where the corpus graph lives at rest](09-decisions.md#q6--where-the-corpus-graph-lives-at-rest).** The rebuild-and-cache design is measured at spike scale, on generated documents. A real corpus and a real harvesting tier are the instruments, and neither exists yet.
-- **[Q7 — Scope of the MCP surface](09-decisions.md#q7--scope-of-the-mcp-surface).** Working-tree write tools should raise the assisted fraction ([spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric)), and that metric is the instrument.
+- **[Q7 — Scope of the MCP surface](09-decisions.md#q7--scope-of-the-mcp-surface).** Working-tree write tools should raise the assisted fraction ([spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric)), and that metric is the instrument. The unassisted baseline that such a comparison needs is the typing pass in the Q4 entry above.
 - **[Q8 — Probe cost and cadence](09-decisions.md#q8--probe-cost-and-cadence).** A closed-set expectation should make a probe verdict reproducible under grading, and `generate --check` over a result document is the instrument.
 - **[Q9 — Multi-repository corpora](09-decisions.md#q9--multi-repository-corpora).** Harvest should keep a solution-tier route query inside the same 100 ms budget, and route latency at that tier is the instrument.
 - **[Q11 — License and distribution posture](09-decisions.md#q11--license-and-distribution-posture).** Permissive terms should remove a step before a trial. The instrument is a count of adopters who report the terms as the reason that they stopped. That count needs a public channel, which does not exist yet.
@@ -44,7 +67,7 @@ Nine items, and each one is data or a deferred component. So the first real adop
 
 ## Design work that nothing blocks
 
-Ten items. The first comes from the register. Five arrived from the [design-spec taxonomy](../taxonomies/design-spec/doctrine.md#findings), which is the first library entry to write a bundle out as YAML. Two arrived from a review of the identifier schemes. The last two arrived from the [OWL and SKOS worked example](../evaluations/owl-skos-worked-example.md), which is the first exercise to point a reasoner at an emitted taxonomy. No adopter and no measurement gates any of them.
+Seventeen items. The first comes from the register. Five arrived from the [design-spec taxonomy](../taxonomies/design-spec/doctrine.md#findings), which is the first library entry to write a bundle out as YAML. Two arrived from a review of the identifier schemes. Two arrived from the [OWL and SKOS worked example](../evaluations/owl-skos-worked-example.md), which is the first exercise to point a reasoner at an emitted taxonomy. The last seven arrived from [the first typing of this corpus](#what-the-first-typing-of-this-corpus-found), which is the first exercise to file real documents against a library entry. No adopter and no measurement gates any of them.
 
 **The `$`-reference sublanguage** ([Q2](09-decisions.md#q2--schema-format)). It has three uses and no grammar, and it needs one definition before the meta-schema ships. No adopter and no measurement gates this one.
 
@@ -66,6 +89,20 @@ Ten items. The first comes from the register. Five arrived from the [design-spec
 
 **An export carries no constraint that a consumer reads as an entailment** ([Q13](09-decisions.md#q13--linkml-and-shacl-as-substrate)). [Spec 12](12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule) admits an emitter target only when the emitted constraint catches exactly what the native check catches. `owl:minCardinality` and `rdfs:range` both fail that bar, so no conformant emitter carries them. The specification never states the general case. A loss set records what an export drops, and it says nothing about a construct that arrives with an inverted meaning. The [worked example](../evaluations/owl-skos-worked-example.md) found two such constructs in one emitter, and one sentence in spec 12 closes the gap.
 
+**A document has no identifier, and every relation target must be one** ([Q4](09-decisions.md#q4--relation-storage), [spec 3](03-authoring-and-lifecycle.md#identifiers)). Spec 3 reserves identifiers for decisions, requirements, acceptance criteria, controls and obligations. A document is none of those, so neither the base package nor the design-spec entry gives one to a document. Q4 rules that a relation target is an identifier and never a path. The typing pass minted four schemes in [this repository's overlay](../../.headwater/overlay.yml) before it could declare one edge, and every adopter meets that wall. Either a document carries an identifier by default, or a target may be a path and the corpus pays for a rename.
+
+**The front-matter key that carries an identifier is undeclared.** A kind declares `identifier: {scheme: …}`, and nothing states which key in front matter holds the minted value. The typing pass wrote `id`. This is the fourth surface that has a required declaration and no stated form, beside the three above.
+
+**The templates and the fixtures of the first library entry disagree with Q4.** Q4 and the [glossary](glossary.md#relation) both put a relation under a `relations:` block in front matter. Every template and every fixture in the [design-spec entry](../taxonomies/design-spec/templates/) writes the relation name at the top level, with a path as the target. So the one surface that an author copies teaches the shape that the decision refused. The entry predates neither ruling, which makes this a review gap in the admission criteria.
+
+**The tradition has no relation for the link that this corpus makes most.** Of 332 linked document pairs, 144 run from one specification to another and 106 run from an evaluation to a specification. No relation in the base or in the entry admits either pair. Under Q4 every one of those prose links is an advisory finding with no fix, because the author has nothing to declare. The count today is 1135 links of 1664. A rule that reports a fifth of a corpus and offers no remedy trains its readers to ignore it.
+
+**A lookup document has no kind, and the shelf layout cannot hold one.** [The glossary](glossary.md) sits on the specification shelf, whose layout is `{sequence:02d}-{slug}.md`, and its path carries no number. The typing gave it `sequence: 14`, which no reader cites and no document uses. Three answers are available. The layout is advisory, or the file is renamed, or a lookup surface is a kind that the tradition lacks.
+
+**A retrofit cannot recover the two dates or the acceptance.** The typing derived `status_since` from the first commit on each path and `last_verified` from the last commit that a human merged. Neither is the fact that the facet asks for, and no earlier record of either survives. It also wrote one `accepted_by` across 36 documents in one change. That is the bulk promotion that [spec 3](03-authoring-and-lifecycle.md#promotion-is-one-human-one-document-one-diff) says no check can separate from 36 real acceptances. Spec 3 predicts the response, which is a finding about the review rather than about the documents. [Q12](09-decisions.md#q12--migration-path-for-an-existing-corpus) covers the findings that an adoption payload holds, and says nothing about these three fields.
+
+**Three of the four warrant values have no instance in this corpus.** Every document here is `accepted`, because a human merged each one. Nothing is `regenerated`, because the corpus has no generator and the [glossary](glossary.md) is the hand-written projection that says so itself. Nothing is `transcribed`, because no external system of record feeds this repository. Nothing is `asserted`, because the corpus holds no content that a human declined to accept. Four engine rules turn on the value, and the only corpus that exists exercises one branch of them.
+
 ## What else each decision left open
 
 The three classes above do not exhaust the eighteen decisions that carry open work. The rest sits here, under the decision that produced each item.
@@ -74,13 +111,36 @@ The three classes above do not exhaust the eighteen decisions that carry open wo
 - **[Q8 — Probe cost and cadence](09-decisions.md#q8--probe-cost-and-cadence).** How a probe reaches a harvesting tier, which has no tier to try it on. The retention policy for transcripts, whose size nobody has measured. Whether any adopter ever pays for a campaign is a business-model question, and [Q11](09-decisions.md#q11--license-and-distribution-posture) places it rather than answers it.
 - **[Q9 — Multi-repository corpora](09-decisions.md#q9--multi-repository-corpora).** Whether a harvesting tier owes conformance rules of its own, because `headwater conformance` evaluates one repository.
 - **[Q11 — License and distribution posture](09-decisions.md#q11--license-and-distribution-posture).** Where a commercial tier could sit, which that entry holds rather than answers. The trademark position is also deliberately thin, and a registration or a transfer would change it.
-- **[Q13 — LinkML and SHACL as substrate](09-decisions.md#q13--linkml-and-shacl-as-substrate).** Whether the RDF emitter carries `owl:inverseOf`, which infers the reciprocal half of every edge that `reciprocal: required` exists to report as missing. Over this corpus the inverse manufactures 332 edges that no author declared, which leaves `taxonomy audit` with no baseline for `created_by`. The [worked example](../evaluations/owl-skos-worked-example.md) argues to omit the inverse, and emitter 4 owns the choice. That emitter meets a second obstacle here, because 22 of this repository's 36 documents carry no discriminator on a heterogeneous shelf. An instance export of this corpus therefore waits on the dogfood work rather than runs beside it.
+- **[Q13 — LinkML and SHACL as substrate](09-decisions.md#q13--linkml-and-shacl-as-substrate).** Whether the RDF emitter carries `owl:inverseOf`, which infers the reciprocal half of every edge that `reciprocal: required` exists to report as missing. Over this corpus the inverse manufactures 332 edges that no author declared, which leaves `taxonomy audit` with no baseline for `created_by`. The [worked example](../evaluations/owl-skos-worked-example.md) argues to omit the inverse, and emitter 4 owns the choice. That emitter met a second obstacle here, because 22 of this repository's 36 documents carried no discriminator on a heterogeneous shelf. The [typing pass](#what-the-first-typing-of-this-corpus-found) removed it, so an instance export now reads each kind, identifier and edge rather than derives it.
 - **[Q15 — A synthesized content tier](09-decisions.md#q15--a-synthesized-content-tier).** Whether anything is ever promoted.
 - **[Q16 — Public presence](09-decisions.md#q16--public-presence).** Whether the four documentation modes of Diátaxis are the right kind set for a documentation-site bundle. That is a [Q3](09-decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) clustering question, and it is data in a package.
 - **[Q17 — Governed access and the solution layer](09-decisions.md#q17--governed-access-and-the-solution-layer).** Whether a withheld anchor needs a class beside its count.
 - **[Q18 — Recording adjudicated disagreements](09-decisions.md#q18--recording-adjudicated-disagreements).** Whether an adjudication is ever partial, with one document governing one axis and another governing a second. Today that is two edges, or one document whose prose carries the split. No corpus shows the need.
 - **[Q19 — Inbound integration](09-decisions.md#q19--inbound-integration-an-external-system-of-record).** The size of a committed snapshot with full requirement text, which is the same question that [Q9](09-decisions.md#q9--multi-repository-corpora) holds about a vendored source export.
 - **[Q21 — Terminological succession](09-decisions.md#q21--terminological-succession-and-validity-under-merge).** Whether the read set of a real corpus is small enough that publishing it is free.
+
+## What the first typing of this corpus found
+
+The [design-spec entry](../taxonomies/design-spec/doctrine.md) types this repository, and the typing ran on 2026-08-12. Every document under `docs/spec/`, `docs/evaluations/` and `docs/reviews/` now carries front matter. The block holds a state, two dates, a summary, a kind, an identifier, a warrant, and the edges that the document declares. `tools/abox-check.py` is the throwaway validator that the work needed. It reports no error against 36 documents and 203 edge halves. The seven items above are what the pass could not express, and this section holds what it measured.
+
+**The shape of the result.** 36 documents sit on 3 of the 5 shelves that the resolved taxonomy declares.
+
+- 13 specifications, 2 decision registers, 1 obligation register, 14 evaluations, 1 review prompt, and 5 review records.
+- 81 evidence edges from a specification or a register to an evaluation, each one with its reciprocal half.
+- 28 assessment edges from a review record to what it read, and 3 edges from a review prompt to a record.
+- 2 succession edges to the tombstone, and 3 edges to code, which are the first edges here that leave the document graph.
+
+Every evaluation is cited, so the 30-day expectation on `evaluation` reports nothing. The one review prompt has three records, so the 90-day expectation reports nothing either.
+
+**Where the cost fell.** The work took about two hours, and three things took most of it. The kind, the two dates and the warrant of each document had to be true, which is a judgment and not a form. The edge set had to come from what the corpus already states, and the consequence table of each evaluation was the honest source. Reciprocity is required on 81 of the 84 edges that carry it. So a hand-typed corpus writes each of those twice, and it cannot know that it agreed with itself. The validator exists for that reason.
+
+**What a scaffolder would have supplied.** The kind and the sequence follow from placement. The identifier follows from the kind and a slug. `status_since` follows from the first commit on the path. The reciprocal half of every edge follows from the half that an author writes. That is most of the block, and what stays is the summary, the warrant and the acceptance. [Spec 3](03-authoring-and-lifecycle.md#promotion-is-one-human-one-document-one-diff) gives those three to a human, so the assisted fraction of a scaffolded run would be high.
+
+**The census, and what sits outside it.** One file under `docs/` is on no shelf, which is `docs/w3id/README.md`. Nineteen more sit under `docs/taxonomies/`, which is the library entry rather than corpus content. A taxonomy package that lives inside the corpus it types has no home in the shelf model. [Spec 4](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for) forbids a silent pass over either group. Neither the base nor the entry states whether package content is corpus content. This repository is the first place where that question has an instance.
+
+**The documents that claim no evidence.** [Spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two) requires the gap register to account for every `unevidenced` document, and three of the 36 carry that value. [8 — Design departures](08-design-departures.md) states positions that the register argues and no evaluation measures. [9 — Open questions](09-open-questions.md) is a redirect map, and its successors hold the evidence. [The core-concepts review prompt](../reviews/core-concepts-review-prompt.md) is an instrument, and an instrument makes no claim. The third case is a defect in the value set rather than a gap in the corpus. `evidence_basis` is required on every kind, and it has no meaning on a document that asserts nothing.
+
+**One register, or two.** Spec 3 leaves open whether the gap register of a document is the same artifact as the obligation gap register. In this corpus it is one file. The paragraph above and the three classes above it are the two halves of it. That is one instance rather than a ruling, and the question stays open for a corpus that keeps the two apart.
 
 ## A human maintains this list by hand
 

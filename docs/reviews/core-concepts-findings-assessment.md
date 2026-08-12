@@ -1,3 +1,21 @@
+---
+id: REV-HW-core-concepts-assessment
+status: current
+status_since: 2026-08-05
+last_verified: 2026-08-08
+summary: An assessment of the first findings report, made against a later revision, with the places where it would revise them.
+doc_type: review_record
+provenance:
+  warrant: accepted
+  agency: agent
+  activity: review+draft
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  assesses:
+    - REV-HW-core-concepts-findings-1
+---
+
 # Assessment of the existing core-concepts findings
 
 Reviewed 2026-08-05 after completing [core-concepts-independent-review.md](core-concepts-independent-review.md). The existing report was produced against commit `6057872`; this assessment used revision `b7ca526`.

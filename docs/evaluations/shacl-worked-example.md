@@ -1,3 +1,25 @@
+---
+id: EVAL-HW-shacl-worked-example
+status: current
+status_since: 2026-08-02
+last_verified: 2026-08-11
+summary: The Headwater checks written out in SHACL, and the whole-graph line where the constraint language stops.
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: [claude-fable-5, claude-opus-5]
+  activity: evaluate+draft
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cited_by:
+    - REG-HW-decisions
+    - SPEC-HW-assurance-model
+    - SPEC-HW-engine-architecture
+    - SPEC-HW-adjacent-work
+    - SPEC-HW-check-layer
+---
+
 # The Headwater checks in SHACL — a worked example
 
 The companion to the [LinkML worked example](linkml-worked-example.md), and the second half of the evidence for [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate).

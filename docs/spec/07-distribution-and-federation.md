@@ -1,3 +1,27 @@
+---
+id: SPEC-HW-distribution-and-federation
+status: current
+status_since: 2026-08-01
+last_verified: 2026-08-12
+summary: How a publisher ships a taxonomy, how a consumer overlays it, and what the invariant core requires of the result.
+doc_type: design_spec
+sequence: 7
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: [claude-fable-5, claude-opus-5]
+  activity: draft+revise
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cites_evidence:
+    - EVAL-HW-default-taxonomy-first-run
+    - EVAL-HW-first-contact
+    - EVAL-HW-graph-export-and-federation
+    - EVAL-HW-the-serving-boundary
+    - EVAL-HW-warrant-and-adjudication
+---
+
 # 7 — Distribution and federation
 
 One organization defines a documentation method. Many repositories adopt it. It evolves. Everyone must be able to take the evolution without loss of what they customized. Also, the publisher must be able to tell who actually did.

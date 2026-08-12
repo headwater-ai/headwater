@@ -1,3 +1,29 @@
+---
+id: SPEC-HW-assurance-model
+status: current
+status_since: 2026-08-01
+last_verified: 2026-08-11
+summary: The assurance model, which holds the control postures, obligations, coverage without silent passes, and the places where efficacy is unmeasured.
+doc_type: design_spec
+sequence: 4
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: [claude-fable-5, claude-opus-5]
+  activity: draft+revise
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cites_evidence:
+    - EVAL-HW-first-contact
+    - EVAL-HW-relation-storage
+    - EVAL-HW-shacl-worked-example
+    - EVAL-HW-the-measurement-layer
+    - EVAL-HW-the-serving-boundary
+    - EVAL-HW-warrant-and-adjudication
+    - EVAL-HW-what-a-check-can-know
+---
+
 # 4 — Assurance model
 
 How the system knows that it works, and admits where it does not.

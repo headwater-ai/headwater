@@ -1,3 +1,25 @@
+---
+id: EVAL-HW-language-spike-results
+status: current
+status_since: 2026-08-10
+last_verified: 2026-08-10
+summary: The results of the Q1 risk-retirement spike, which are four items, all passing, and three findings that the argument did not predict.
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: claude-opus-5
+  activity: measure+draft
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  cited_by:
+    - REG-HW-decisions
+    - SPEC-HW-engine-architecture
+    - SPEC-HW-check-layer
+  traces_to:
+    - spike/
+---
+
 # The Q1 spike — results
 
 The risk-retirement spike that [Q1](../spec/09-open-questions.md#q1--implementation-language) requires, run. The argument under test is in the [language evaluation](language-choice.md), and the code is in [`spike/`](../../spike/). Reproduce with `spike/build.sh`.
