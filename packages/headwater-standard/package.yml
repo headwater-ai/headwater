@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The manifest of the base package, in the shape spec 7 (Publishing) gives one.
+# It names the package and points at its content. It is not a taxonomy source,
+# and that separation is the point of the file.
+#
+# Spec 2 makes `package` a reserved reference root, and it rules that no
+# taxonomy may declare a block with that name. Spec 7 gives a package manifest a
+# `package:` key at its root. The two rules only met because the one committed
+# copy of this package played both parts: a fenced YAML block that opened
+# `package: headwater/standard` and then declared eleven taxonomy blocks under
+# it. #49 refused that block on its first line, and #50 is where it was decided.
+# The manifest keeps `package:`. The taxonomy source beside it opens `taxonomy:`
+# and never carries a `package` block. See 13 — Open obligations.
+#
+# `requires_engine` is absent on purpose. Spec 7 puts it in the manifest, and
+# nothing reads it until package publish and consume (#77). A version range
+# committed now would be a claim that no test can fail.
+
+package: headwater/standard
+version: 1.0.0
+
+contents:
+  taxonomy: taxonomy.yml
+  # The bundles this package ships. They live in the library entry directory
+  # for as long as the package and the library are one repository, and the
+  # resolver reads `<bundles>/<name>/bundle.yml`. #77 replaces this path with a
+  # fetch, and the directory moves inside the package then.
+  bundles: ../../docs/taxonomies
