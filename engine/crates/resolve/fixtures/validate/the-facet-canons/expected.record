@@ -1,0 +1,6 @@
+the resolved taxonomy `facets.status.guidance`: facet canons: ascertainability: `draft` carries no guidance, so nothing states when an author picks it
+the resolved taxonomy `facets.status.guidance`: facet canons: ascertainability: `current` carries no guidance, so nothing states when an author picks it
+the resolved taxonomy `facets.audience`: facet canons: relevance: nothing reads it. No kind requires it, no shelf discriminates on it, no expectation reads it, no projection filters on it, and it carries no engine role
+the resolved taxonomy `facets.owner`: facet canons: permanence: declares no `volatility`, so nothing says whether a value of it may be used where a rename is expensive
+the resolved taxonomy `identifier_schemes.decision_id.pattern`: facet canons: permanence: reads `slug`, which is `mutable`. A value that changes may not appear in an identifier, a path or a shelf pattern, because every reference to it dies at the change
+the resolved taxonomy `shelves.decisions.layout`: facet canons: permanence: reads `slug`, which is `mutable`. A value that changes may not appear in an identifier, a path or a shelf pattern, because every reference to it dies at the change

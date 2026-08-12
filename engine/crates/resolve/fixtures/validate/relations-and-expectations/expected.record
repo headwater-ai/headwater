@@ -1,0 +1,12 @@
+the resolved taxonomy `kinds.proposal`: coverage: is concrete and no shelf reaches it, so no document can ever be one
+the resolved taxonomy `relations.supersedes.nucleus`: relation coherence: names `from`, and a multinuclear relation has no nucleus. Both ends stand alone
+the resolved taxonomy `relations.supersedes.inherits`: relation coherence: names `owner`, and `kinds.decision` at the `from` end does not carry it. A satellite inherits a facet that both ends have
+the resolved taxonomy `relations.supersedes.inherits`: relation coherence: names `owner`, and `kinds.decision` at the `to` end does not carry it. A satellite inherits a facet that both ends have
+the resolved taxonomy `relations.refines.nucleus`: relation coherence: is absent, and this relation is nucleus–satellite by the default of the `derivation` family. The family cannot supply which end is the nucleus, because that is the direction its author chose
+the resolved taxonomy `kinds.decision.relations.expect.decision-realized.to_kind`: expectation well-formedness: names `proposal`, which no shelf reaches. An expectation over a kind that no document can be is a finding that can never clear
+the resolved taxonomy `kinds.decision.relations.expect.decision-realized.since`: expectation well-formedness: is `state_entered`, whose facet is `status_since`, and `kinds.decision` does not require it. A window measured from a facet that a document may omit never starts
+the resolved taxonomy `kinds.decision.relations.expect.decision-realized.when`: expectation well-formedness: expects `status` to be `retired`, which is not one of its values
+the resolved taxonomy `kinds.note.relations.expect.note-supersedes.relation`: expectation well-formedness: names `supersedes`, and `kinds.note` is not at its source end. An expectation is declared on the kind that writes the edge
+the resolved taxonomy `kinds.note.relations.expect.note-supersedes.since`: expectation well-formedness: is `created`, and no facet carries that role
+the resolved taxonomy `relations.supersedes.attributes.to`: attribute well-formedness: is called `to`, which is the key that names the other end of the edge
+the resolved taxonomy `relations.refines.attributes.depth`: attribute well-formedness: names no value space. An attribute takes a type or a value set, and it takes it from the facet set rather than inventing one

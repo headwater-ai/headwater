@@ -3,6 +3,7 @@ address-into-a-list: 1 permutation, all refused
 core-last-satisfier: 1 permutation, all refused
 list-operations: 1 permutation, all resolve to one taxonomy
 not-confluent: 2 permutations, all refused
+remove-a-required-member: 1 permutation, all refused
 remove-breaks-a-reference: 1 permutation, all refused
 two-adds-into-one-kind: 2 permutations, all resolve to one taxonomy
 worked-overlay: 1 permutation, all resolve to one taxonomy

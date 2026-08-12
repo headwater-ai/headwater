@@ -1,0 +1,53 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The three facet acceptance tests that spec 2 says are decidable from the
+# schema alone. The other two need a corpus and belong to `taxonomy audit`.
+#
+#   relevance        `audience` is declared and nothing reads it
+#   ascertainability `status` has values and no guidance says when to pick one
+#   permanence       `owner` declares no volatility, and `slug` is mutable and
+#                    written into a shelf layout and an identifier pattern
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+facets:
+  status:
+    role: state
+    values: [draft, current]
+    required: true
+    volatility: mutable
+  audience:
+    values: [internal, public]
+    required: false
+    volatility: stable
+    guidance: {internal: for this organization, public: for anyone}
+  owner:
+    type: string
+    required: false
+  slug:
+    type: string
+    required: true
+    volatility: mutable
+
+kinds:
+  decision:
+    purpose: rationale
+    facets: {require: [status, owner, slug]}
+
+identifier_schemes:
+  decision_id: {pattern: "DR-{namespace}-{slug}", namespace: repo, allocation: minted-once}
+
+shelves:
+  decisions:
+    path: docs/decisions/**
+    homogeneous: true
+    kind: decision
+    layout: "{slug}.md"
+
+core:
+  requires:
+    - facet_role: state

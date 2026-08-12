@@ -34,6 +34,22 @@
 //!    rejected when the result fails a requirement, and the message names the
 //!    operation that removed the last satisfier.
 //!
+//! # Resolving and validating are two operations, and the lock is what joins them
+//!
+//! [`resolve`] is the five steps above, which is what
+//! [spec 6](../../../docs/spec/06-engine-architecture.md#pipeline) gives the
+//! verb: "merges the base taxonomy and overlays, validates against the
+//! meta-schema, and writes a content-hashed lock". [`Resolution::validate`] is
+//! the rest of spec 2's list — the rules that read the result and report on it
+//! rather than decide a merge. [`rules::RULES`] is the accounting of both.
+//!
+//! Spec 2 also rules that "the engine never applies a taxonomy that does not
+//! validate" and that there is no partial-load mode. That rule is enforced by
+//! the artifact rather than by the call graph: `headwater taxonomy resolve`
+//! writes a lock only when every rule passes, and everything downstream reads
+//! the lock and never the sources. A caller cannot forget to validate, because
+//! a caller has nothing else to read.
+//!
 //! # What this replaced
 //!
 //! Two stand-ins, in two languages, both add-only and both labeled temporary in
@@ -61,6 +77,7 @@ pub mod operation;
 pub mod package;
 pub mod references;
 pub mod render;
+pub mod rules;
 pub mod source;
 
 pub use error::{render as render_errors, ResolveError, ResolveErrorKind};
@@ -72,52 +89,9 @@ use headwater_meta::MetaSchema;
 use headwater_yaml::{Mapping, Span, Value};
 use std::path::Path;
 
-/// The rules of `taxonomy validate` that this crate now runs, out of the
-/// seventeen that [`headwater_meta::validate::SKIPPED`] said needed a resolved
-/// tree.
-///
-/// The list is data for the same reason that list is: a caller reports what it
-/// ran, and a rule that quietly stopped running would be a pass nobody earned.
-pub const RUNS: [(&str, &str); 3] = [
-    (
-        "overlay confluence",
-        "pairwise over the leaves each operation writes, before anything merges",
-    ),
-    (
-        "core satisfiability",
-        "on the resolved taxonomy, naming the operation that removed the last satisfier",
-    ),
-    (
-        "referential integrity",
-        "for `$`-references only. Every reference resolves over the merged tree, and a `remove` \
-         that leaves one reading nothing is refused",
-    ),
-];
-
-/// What still waits, and for whom.
-///
-/// Fourteen of the seventeen are `headwater taxonomy validate`
-/// ([#51](https://github.com/headwater-ai/headwater/issues/51)): they read the
-/// resolved taxonomy, which now exists, and they report on a taxonomy rather
-/// than decide a merge. One item is not #51's and is recorded here because
-/// nothing else names it.
-pub const WAITING: [(&str, &str); 2] = [
-    (
-        "the fourteen remaining rules of `taxonomy validate`",
-        "anchor and identifier integrity, coverage, kind inheritance, purpose completeness, \
-         determinism, role uniqueness, lifecycle soundness, relation coherence, expectation \
-         well-formedness, the facet canons, kind rigidity, edge provenance and mapping integrity. \
-         Each one reads the resolved taxonomy and reports on it. #51 owns them",
-    ),
-    (
-        "the dependent-key half of `remove`",
-        "spec 2 fails a `remove` when a surviving declaration still references the removed key. A \
-         `$`-reference names what it reads and is checked here. A declaration that names another \
-         by a bare string is not: the meta-schema types `shelves.decisions.kind` as a string and \
-         says nothing about it naming a kind, so nothing can compute the dependent set. Spec 13 \
-         carries the finding",
-    ),
-];
+/// Where every rule of `taxonomy validate` runs. See [`rules::RULES`], which is
+/// the table, and [`rules::WAITING`], which is what no phase decides yet.
+pub use rules::{Ran, RULES, WAITING};
 
 /// One resolution.
 #[derive(Clone, Debug)]
@@ -132,8 +106,24 @@ pub struct Resolution {
 
 impl Resolution {
     /// The resolved taxonomy as a source that loads to the same tree.
+    ///
+    /// This is also the text that the lock hashes, and the two are the same text
+    /// on purpose. See [`crate::render`].
     pub fn render(&self) -> String {
         render::render(&self.taxonomy)
+    }
+
+    /// Every rule of `taxonomy validate` that reads the result.
+    ///
+    /// It is separate from [`resolve`] because the five steps of a resolution
+    /// decide a merge and these rules report on a taxonomy. A merge fixture
+    /// resolves a base cut down to the declarations one case needs, and holding
+    /// that to purpose completeness would bury each case in the declarations it
+    /// is not about. What holds the guarantee instead is the lock: nothing
+    /// downstream reads a source, and a lock is written only when this returns
+    /// nothing.
+    pub fn validate(&self) -> Vec<ResolveError> {
+        rules::check(&self.taxonomy)
     }
 }
 
@@ -261,10 +251,16 @@ pub fn resolve(sources: &[Source]) -> Result<Resolution, Vec<ResolveError>> {
     // sources were. A merge that produced something the meta-schema refuses is
     // this crate's defect and not an author's, and it is caught here rather
     // than by the first check that reads a declaration.
+    //
+    // It is also the one place a required member can go missing: every source
+    // declares one and a `remove` takes it out of the result. So this is what
+    // decides `edge provenance`, and `rules::RULES` records that rather than
+    // carrying a rule that could never fire.
     let after = Source {
         name: "the resolved taxonomy".to_string(),
         role: Role::Taxonomy,
         root: headwater_yaml::Spanned::new(Value::Map(taxonomy.clone()), Span::default()),
+        text: String::new(),
     };
     let errors = after.validate(&schema);
     if !errors.is_empty() {

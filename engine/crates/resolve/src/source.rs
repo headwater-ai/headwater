@@ -30,21 +30,20 @@ pub struct Source {
     pub name: String,
     pub role: Role,
     pub root: Spanned<Value>,
+    /// The text this loaded from. The lock records a digest of it, so that a
+    /// stale lock can name the file that moved without resolving anything.
+    pub text: String,
 }
 
 impl Source {
     pub fn read(path: &Path, name: &str, role: Role) -> Result<Self, Vec<ResolveError>> {
-        let root = load(path).map_err(|mut errors| {
+        let text = read_text(path).map_err(|mut errors| {
             for error in &mut errors {
                 error.source = name.to_string();
             }
             errors
         })?;
-        Ok(Self {
-            name: name.to_string(),
-            role,
-            root,
-        })
+        Self::from_text(name, role, &text)
     }
 
     /// A source read from text, for a caller that holds one already.
@@ -61,6 +60,7 @@ impl Source {
             name: name.to_string(),
             role,
             root,
+            text: source.to_string(),
         })
     }
 
@@ -87,17 +87,23 @@ impl Source {
     }
 }
 
-/// Load one YAML file on the taxonomy dialect.
-pub fn load(path: &Path) -> Result<Spanned<Value>, Vec<ResolveError>> {
+/// The text of one file, with a refusal that names it.
+fn read_text(path: &Path) -> Result<String, Vec<ResolveError>> {
     let name = path.display().to_string();
-    let source = std::fs::read_to_string(path).map_err(|error| {
+    std::fs::read_to_string(path).map_err(|error| {
         vec![ResolveError::new(
             ResolveErrorKind::SourceRefused(format!("cannot read {name}: {error}")),
             &name,
             "",
             Span::default(),
         )]
-    })?;
+    })
+}
+
+/// Load one YAML file on the taxonomy dialect.
+pub fn load(path: &Path) -> Result<Spanned<Value>, Vec<ResolveError>> {
+    let name = path.display().to_string();
+    let source = read_text(path)?;
     headwater_yaml::load(&source).map_err(|errors| {
         vec![ResolveError::new(
             ResolveErrorKind::SourceRefused(headwater_yaml::error::render(&errors)),

@@ -1,0 +1,10 @@
+the resolved taxonomy `kinds.decision.purpose`: referential integrity: reads `adjudication`, and no purpose of that name is declared
+the resolved taxonomy `kinds.decision.voice`: referential integrity: reads `declarative`, and no voice regime of that name is declared
+the resolved taxonomy `kinds.decision.identifier.scheme`: referential integrity: reads `decision_id`, and no identifier scheme of that name is declared
+the resolved taxonomy `kinds.decision.facets.require`: referential integrity: reads `owner`, and no facet of that name is declared
+the resolved taxonomy `shelves.decisions.kinds`: referential integrity: reads `proposal`, and no kind of that name is declared
+the resolved taxonomy `shelves.decisions.discriminator`: referential integrity: reads `doc_type`, and no facet of that name is declared
+the resolved taxonomy `relations.supersedes.to`: referential integrity: reads `proposal`, and no kind or anchor kind of that name is declared
+the resolved taxonomy `purposes.rationale`: purpose completeness: is declared and no concrete kind serves it, so no document can answer it
+the resolved taxonomy `mappings.0.kinds`: mapping integrity: maps `proposal`, and no kind of that name is declared here
+the resolved taxonomy `mappings.0.facet_values`: mapping integrity: maps `status.retired`, and `status` holds no such value

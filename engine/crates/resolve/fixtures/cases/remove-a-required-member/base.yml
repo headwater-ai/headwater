@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The base of the one case here that takes an overlay. It is valid on its own,
+# and `overlay-adopter.yml` is what breaks it.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+facets:
+  status:
+    role: state
+    values: [draft, current]
+    required: true
+    volatility: mutable
+    guidance: {draft: it is being argued over, current: it states what holds now}
+
+kinds:
+  decision:
+    purpose: rationale
+    facets: {require: [status]}
+
+relations:
+  supersedes:
+    family: succession
+    from: [decision]
+    to: [decision]
+    created_by: scaffold
+
+shelves:
+  decisions: {path: "docs/decisions/**", homogeneous: true, kind: decision}
+
+core:
+  requires:
+    - facet_role: state

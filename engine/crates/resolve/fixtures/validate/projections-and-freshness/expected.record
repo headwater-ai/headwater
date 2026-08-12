@@ -1,0 +1,4 @@
+the resolved taxonomy `projections.2`: warrant integrity: is a transcription and pins nothing. A transcribed document carries the identity of the snapshot it copies
+the resolved taxonomy `facets.last_verified`: context safety: carries the freshness role and declares no staleness policy, so nothing decides when a verification has expired
+the resolved taxonomy `projections.0.output`: projection targets: is `/var/tmp/index.md`, which is absolute. A projection writes inside the corpus
+the resolved taxonomy `projections.1.output`: projection targets: is `../outside/index.md`, which climbs above the corpus root

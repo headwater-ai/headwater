@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# A `remove` that takes out a member the meta-schema requires.
+#
+# Every source of this resolution validates: the base declares `created_by` and
+# the overlay declares one address. The result does not, and the resolver
+# refuses it because it validates the merged result against the meta-schema as
+# well as each source. Without that second validation the removal would produce
+# a taxonomy that no phase ever reads against the shape it claims to have, and
+# `taxonomy audit` would lose the field it tells a hand-written edge from a
+# generated one by.
+#
+# This case exists because a rule for `edge provenance` was written over the
+# resolved taxonomy and then deleted: it could never fire.
+
+extends: acme/fixture@1.0.0
+
+remove:
+  - relations.supersedes.created_by

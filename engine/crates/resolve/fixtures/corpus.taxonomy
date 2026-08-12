@@ -47,18 +47,27 @@ facets:
       - value: deprecated
         role: terminal-retained
     required: true
+    volatility: mutable
+    guidance:
+      draft: "the document is being written or argued over, and nothing may rely on it"
+      current: "the document states what holds now, and a reader may rely on it"
+      superseded: "a later document replaced this one, and the succession edge names it"
+      deprecated: "the document is no longer to be relied on, and nothing replaced it"
   status_since:
     role: state_entered
     type: date
     required: true
+    volatility: mutable
   last_verified:
     role: freshness
     type: date
     stale_after_days: 180
+    volatility: mutable
   summary:
     role: scent
     type: string
     required: true
+    volatility: mutable
   doc_type:
     guidance:
       decision_register: "the one document that records settled decisions and the argument that settled each"

@@ -1,0 +1,11 @@
+the resolved taxonomy `shelves.drafts`: coverage: resolves to no kind, so every document under it is unclassifiable
+the resolved taxonomy `kinds.governed_document`: coverage: is abstract and `shelves.documents` reaches it. No document resolves to an abstract kind
+the resolved taxonomy `kinds.runbook`: coverage: is concrete and no shelf reaches it, so no document can ever be one
+the resolved taxonomy `kinds.draft`: coverage: is concrete and no shelf reaches it, so no document can ever be one
+the resolved taxonomy `kinds.note`: coverage: is concrete and no shelf reaches it, so no document can ever be one
+the resolved taxonomy `kinds.decision.facets.forbid`: kind inheritance: forbids `owner`, and a kind above it requires the same facet. A child may not void a contract that a reader of the parent trusts
+the resolved taxonomy `kinds.runbook.is_a`: kind inheritance: names `decision`, which is concrete. A parent is an abstract kind
+the resolved taxonomy `kinds.note`: purpose completeness: declares no purpose and inherits none. Every concrete kind serves a reader intent
+the resolved taxonomy `purposes.procedure`: purpose completeness: is declared and no concrete kind serves it, so no document can answer it
+the resolved taxonomy `kinds.draft`: kind rigidity: collides with a value of the state vocabulary. A kind is rigid and a state is not, so a document would change identity as it matured
+the resolved taxonomy `kinds.draft`: kind rigidity: is a bare phase adjective, which names a state rather than a species of document

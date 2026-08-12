@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Four rules with one shape: two declarations claim one thing, and the engine
+# would have to pick. Spec 2 refuses each of them for the same reason it gives
+# for shelf patterns — a coin flip at run time is not a resolution.
+#
+#   anchor integrity     two anchor kinds, one resolver namespace
+#   identifier integrity two schemes in one namespace, and neither prefix rules
+#                        the other out
+#   role uniqueness      two facets claim the state role
+#   determinism          two shelf patterns match one path, equally specifically
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+facets:
+  status:
+    role: state
+    values: [draft, current]
+    required: true
+    volatility: mutable
+    guidance: {draft: it is being argued over, current: it states what holds now}
+  stage:
+    role: state
+    values: [early, late]
+    required: false
+    volatility: mutable
+    guidance: {early: near the start, late: near the end}
+
+anchors:
+  code_path: {resolver: source-tree}
+  build_file: {resolver: source-tree}
+
+identifier_schemes:
+  decision_id: {pattern: "DR-{namespace}-{seq:04d}", namespace: repo, allocation: minted-once}
+  draft_id: {pattern: "DR-{namespace}-{slug}", namespace: repo, allocation: minted-once}
+
+kinds:
+  decision:
+    purpose: rationale
+    facets: {require: [status, stage]}
+
+shelves:
+  decisions: {path: "docs/*/**", homogeneous: true, kind: decision}
+  records: {path: "docs/**/*", homogeneous: true, kind: decision}
+
+core:
+  requires:
+    - facet_role: state

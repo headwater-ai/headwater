@@ -36,11 +36,38 @@ vocabularies:
     - {value: superseded, role: terminal-retained}
     - {value: deprecated, role: terminal-retained}
 
+# Every facet declares `volatility`, and every enum value carries guidance. Both
+# are facet acceptance tests of spec 2 (Facet acceptance tests), and `taxonomy
+# validate` fails a facet that omits either. The four facets here are all
+# `mutable`, which is what keeps a value of any of them out of an identifier, a
+# path and a shelf pattern.
+
 facets:
-  status:        {role: state,         values: $vocabularies.lifecycle_state, required: true}
-  status_since:  {role: state_entered, type: date,   required: true}
-  last_verified: {role: freshness,     type: date,   stale_after_days: 180}
-  summary:       {role: scent,         type: string, required: true}
+  status:
+    role: state
+    values: $vocabularies.lifecycle_state
+    required: true
+    volatility: mutable
+    guidance:
+      draft: the document is being written or argued over, and nothing may rely on it
+      current: the document states what holds now, and a reader may rely on it
+      superseded: a later document replaced this one, and the succession edge names it
+      deprecated: the document is no longer to be relied on, and nothing replaced it
+  status_since:
+    role: state_entered
+    type: date
+    required: true
+    volatility: mutable
+  last_verified:
+    role: freshness
+    type: date
+    stale_after_days: 180
+    volatility: mutable
+  summary:
+    role: scent
+    type: string
+    required: true
+    volatility: mutable
 
 regimes:
   lifecycle:
