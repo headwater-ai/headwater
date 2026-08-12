@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the fixture tree is walked against. It is not this repository's
+# taxonomy and it does not try to be: it declares the smallest pair of shelves
+# that exercises both bodies of kind resolution, one homogeneous and one
+# heterogeneous, plus an abstract kind that no document may resolve to.
+
+kinds:
+  governed_document: {abstract: true}
+  design_spec: {is_a: governed_document}
+  decision_register: {is_a: governed_document}
+  evaluation: {is_a: governed_document}
+
+shelves:
+  spec_series:
+    path: walk/spec/**
+    homogeneous: false
+    discriminator: doc_type
+    kinds: [design_spec, decision_register]
+  evaluations:
+    path: walk/evaluations/**
+    homogeneous: true
+    kind: evaluation
+
+  # Two taxonomy defects, declared on purpose, because the census is where each
+  # one first meets a document. The meta-schema (M2) should refuse both before a
+  # run starts, and until it does the census is the only thing that reports
+  # them. Neither may resolve to a kind.
+  abstract_shelf:
+    path: walk/abstract/**
+    homogeneous: true
+    kind: governed_document
+  tied_first:
+    path: walk/tied/**
+    homogeneous: true
+    kind: evaluation
+  tied_second:
+    path: walk/tied/**
+    homogeneous: false
+    discriminator: doc_type
+    kinds: [design_spec]

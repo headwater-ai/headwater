@@ -1,0 +1,64 @@
+25 files under the corpus root
+      2 typed
+     11 untyped
+      3 unreadable
+      2 excluded
+      3 not a document
+      4 unwalkable
+      1 typed design_spec
+      1 typed evaluation
+
+exclusions
+      2 `walk/excluded/**`
+        a declared exclusion, so that the fixture tree has one
+
+walk/.hidden/inside.md
+  untyped: no shelf pattern claims this path
+walk/UPPERCASE.MD
+  not a document: not a Markdown file
+walk/abstract/document.md
+  untyped: `governed_document` is abstract, and no document is an abstract kind
+walk/broken-link.md
+  unwalkable: a symlink to `nowhere.md`, which the walk does not follow
+walk/directory.md/inside.md
+  untyped: no shelf pattern claims this path
+walk/empty.md
+  untyped: no shelf pattern claims this path
+walk/evaluations/typed-by-placement.md
+  typed: evaluation
+walk/excluded/unterminated.md
+  excluded: walk/excluded/**
+walk/excluded/well-formed.md
+  excluded: walk/excluded/**
+walk/invalid-utf8.md
+  unreadable: the bytes are not UTF-8
+walk/link-outside.md
+  unwalkable: a symlink to `../../../../../README.md`, which the walk does not follow
+walk/link-to-directory
+  unwalkable: a symlink to `nested`, which the walk does not follow
+walk/link-to-file.md
+  unwalkable: a symlink to `spec/typed-by-discriminator.md`, which the walk does not follow
+walk/nested/deeper/deep.md
+  untyped: no shelf pattern claims this path
+walk/no-extension
+  not a document: not a Markdown file
+walk/not-markdown.txt
+  not a document: not a Markdown file
+walk/spaces and ünicode.md
+  untyped: no shelf pattern claims this path
+walk/spec/no-discriminator.md
+  untyped: the shelf is heterogeneous and the document declares no `doc_type`
+walk/spec/no-front-matter.md
+  untyped: no front matter, so nobody has typed this file
+walk/spec/not-a-mapping.md
+  unreadable: 2:1: front matter is a sequence, and a facet has a name, so the block is a mapping
+walk/spec/typed-by-discriminator.md
+  typed: design_spec
+walk/spec/unknown-discriminator.md
+  untyped: `doc_type: reference` is not a kind this shelf admits (design_spec, decision_register)
+walk/spec/unterminated.md
+  unreadable: 1:1: the front-matter block is never closed by `---`
+walk/tied/document.md
+  untyped: tied_first and tied_second claim this path with equal specificity, and a tie is not a coin flip
+walk/unshelved.md
+  untyped: no shelf pattern claims this path

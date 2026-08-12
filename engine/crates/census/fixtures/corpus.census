@@ -1,0 +1,66 @@
+61 files under the corpus root
+     36 typed
+      2 untyped
+     21 excluded
+      2 not a document
+      2 typed decision_register
+     13 typed design_spec
+     14 typed evaluation
+      1 typed obligation_register
+      1 typed review_prompt
+      5 typed review_record
+
+exclusions
+     21 `docs/taxonomies/**`
+        package content. This directory is the design-spec library entry, and a taxonomy package that lives inside the corpus it types has no home in the shelf model. Nothing in the base package or in the entry says whether package content is corpus content, and spec 13 records the gap; this repository answers it locally, here, with a reason.
+
+docs/LICENSE
+  not a document: not a Markdown file
+docs/doctrine/maturity-model.md
+  untyped: no shelf pattern claims this path
+docs/taxonomies/README.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/bundle.yml
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/doctrine.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/README.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/corpus/docs/evaluations/naming-survey.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/corpus/docs/evaluations/queue-durability.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/corpus/docs/reviews/first-pass-findings.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/corpus/docs/reviews/first-pass-prompt.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/corpus/docs/reviews/second-pass-prompt.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/corpus/docs/spec/00-motivation.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/corpus/docs/spec/01-model.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/corpus/docs/spec/02-transport.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/corpus/docs/spec/04-transport.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/corpus/docs/spec/09-decisions.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/corpus/docs/spec/13-obligations.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/templates/decision_register.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/templates/design_spec.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/templates/evaluation.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/templates/obligation_register.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/templates/review_prompt.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/templates/review_record.md
+  excluded: docs/taxonomies/**
+docs/w3id/.htaccess
+  not a document: not a Markdown file
+docs/w3id/README.md
+  untyped: no shelf pattern claims this path

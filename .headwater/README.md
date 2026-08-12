@@ -2,7 +2,7 @@
 
 Two files, and neither one runs. `taxonomy.yml` says what this repository takes, and `overlay.yml` says how it differs. They exist because [issue #4](https://github.com/headwater-ai/headwater/issues/4) typed `docs/` against the [design-spec entry](../docs/taxonomies/design-spec/doctrine.md), and a typed corpus needs a declaration to be wrong against.
 
-`tools/abox-check.py` reads both files, resolves them over the base package and the design-spec bundle, and checks the corpus. That script is the only reader either file has today.
+`tools/abox-check.py` reads both files, resolves them over the base package and the design-spec bundle, and checks the corpus. The engine has since acquired a second reader: `headwater-census` takes the census of this repository, and it reads the `corpus:` block here for the root it walks and the paths it excludes. Neither reader resolves an overlay properly, because [the resolver](https://github.com/headwater-ai/headwater/issues/50) does not exist yet; each applies `add` operations at dotted addresses and stops there.
 
 ## Why an overlay exists at all
 
@@ -23,6 +23,8 @@ Nothing below is settled anywhere in the specification. Each item is a guess tha
 | A front-matter key named `id` carries the identifier | A kind declares `identifier: {scheme: …}`, and nothing states which key holds the minted value |
 | `language:` on a kind binds a language regime | The base binds `voice:` and `lifecycle:` on a kind and declares `regimes.language` beside them. No kind in the base names a language regime |
 | Two kinds may share one identifier scheme | Identifier integrity requires that no two schemes admit the same string. It says nothing about two kinds that point at one scheme |
+| A `corpus:` block names the root the census walks, and the paths it excludes | [Spec 6](../docs/spec/06-engine-architecture.md) says the census covers "every file under the corpus root" and never says where a repository declares that root. [Spec 7](../docs/spec/07-distribution-and-federation.md) has the descriptor carry one root per corpus, and the descriptor is generated from this declaration rather than the source of it |
+| Package content is not corpus content | [13 — Open obligations](../docs/spec/13-open-obligations.md) states the gap: neither the base package nor the design-spec entry says whether a taxonomy package that lives inside the corpus it types is part of that corpus. The exclusion answers it for this repository only, with the reason in the file |
 
 ## What this is not
 
