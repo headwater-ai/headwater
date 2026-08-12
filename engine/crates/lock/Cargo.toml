@@ -6,6 +6,11 @@ edition.workspace = true
 publish.workspace = true
 
 [dependencies]
+# SHA-256. It used to be a module here, and it moved out when the census began
+# to hash the bytes of each document: a cache key and a lock digest that
+# disagreed about one byte string would be the correctness bug spec 12 names.
+headwater-hash = { path = "../hash" }
+
 # The lock is a YAML source on the same dialect every taxonomy source is on, so
 # a reader of one can read the other.
 headwater-yaml = { path = "../yaml" }

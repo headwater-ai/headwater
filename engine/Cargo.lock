@@ -65,9 +65,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "headwater-hash"
+version = "0.0.0"
+
+[[package]]
 name = "headwater-lock"
 version = "0.0.0"
 dependencies = [
+ "headwater-hash",
  "headwater-resolve",
  "headwater-yaml",
 ]

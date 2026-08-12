@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "headwater-hash"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+# No dependencies, and none of the crates that use this one may add any through
+# it. Three components hash: the lock hashes a canonical taxonomy, the census
+# hashes the bytes of a document, and the check cache hashes a key over both.
+# One implementation, so that two of them cannot disagree about what a digest
+# of the same bytes is.
+[dependencies]
