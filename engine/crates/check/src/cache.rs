@@ -36,21 +36,28 @@
 //! is [#58](https://github.com/headwater-ai/headwater/issues/58), and that one
 //! does have to decide what coverage means over a partial pass.
 //!
-//! # What the key covers, and the one component that has no instance
+//! # What the key covers, and how the fourth component arrived
 //!
-//! Four components, and three of them are here. The in-scope inputs arrive as
+//! Four components, and all four are here now. The in-scope inputs arrive as
 //! [`Input`]s carrying the census digest of each file. The lock digest is
 //! [`headwater_lock::digest`], through the caller. The check version is a
 //! constant on the scope trait.
 //!
-//! **The injected values have no instance.** No check receives one: the clock
-//! and the prior version are the two spec 12 names, and
-//! [`crate::scope`] carries neither, because #54 removed the fields that
-//! nothing enforced. There is no empty slot in the key standing in for them
-//! either, for the same reason. What that leaves is a trap for whoever adds
-//! the first injected value, and
+//! **The injected values used to have no instance**, and
 //! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
-//! carries it rather than a comment here.
+//! carried the trap that left for whoever added the first one. The clock is
+//! that first one. A windowed participation expectation reads `ctx.now`, and a
+//! key without it serves yesterday's verdict today — invisibly, because the
+//! `--no-cache` differential holds one value of the clock on both sides of the
+//! comparison.
+//!
+//! The key carries the clock **exactly when the scope declares it**, and the
+//! declaration is the one [`crate::scope`] already enforces on the view. So the
+//! date joins the key of an instance that could read it and stays out of the
+//! key of every instance that could not, which is what keeps a warm run warm
+//! for the rules that no calendar can move. A scope that declares the clock and
+//! reaches this function without one is not keyed at all, on the rule the rest
+//! of this module follows: fail toward re-running.
 //!
 //! Two further components are in the key that spec 12's sentence does not
 //! name, and both are identity rather than input. The **rule** and the
@@ -73,6 +80,7 @@
 //! cannot read is a miss. A cache file that will not parse is an empty cache.
 //! None of them is an error, and none of them can change a verdict.
 
+use crate::context::Date;
 use crate::finding::{Finding, Severity};
 use crate::instance::{Input, Outcome};
 use crate::scope::Scope;
@@ -201,6 +209,7 @@ impl Cache {
     /// produce one value of one type, and a difference between them is a
     /// difference this function makes rather than one two call sites drifted
     /// into.
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn outcome<F>(
         &mut self,
         rule: &'static str,
@@ -208,12 +217,13 @@ impl Cache {
         scope: Scope,
         target: &str,
         reads: &[Input],
+        clock: Option<Date>,
         evaluate: F,
     ) -> Outcome
     where
         F: FnOnce() -> Outcome,
     {
-        let Some(key) = self.key(rule, version, scope, target, reads) else {
+        let Some(key) = self.key(rule, version, scope, target, reads, clock) else {
             self.report.unkeyed += 1;
             return evaluate();
         };
@@ -251,6 +261,7 @@ impl Cache {
         scope: Scope,
         target: &str,
         reads: &[Input],
+        clock: Option<Date>,
     ) -> Option<String> {
         let lock = self.lock.as_ref()?;
         let mut text = String::from("headwater check key 1\n");
@@ -258,10 +269,18 @@ impl Cache {
         text.push_str(&format!("rule {rule}\n"));
         text.push_str(&format!("version {version}\n"));
         text.push_str(&format!(
-            "scope {} body={}\n",
+            "scope {} body={} clock={}\n",
             scope.grain().name(),
-            scope.needs_body()
+            scope.needs_body(),
+            scope.needs_clock()
         ));
+        // The one injected value, and it is written exactly when the scope
+        // admits it to the view. A scope that declares the clock and was handed
+        // none cannot be keyed: the alternative is a key over an input that the
+        // instance did read and that nothing in the key names.
+        if scope.needs_clock() {
+            text.push_str(&format!("clock {}\n", clock?.render()));
+        }
         // Escaped for the reason a record is: a target or a path is corpus
         // content, and a newline inside one would otherwise let a document
         // write a line of this text and claim another instance's key.
@@ -284,20 +303,30 @@ impl Cache {
 /// written for a stronger reason: `crate::run` stamps it from the control that
 /// names the rule, so a record that carried one would be a second place the
 /// binding lives, which is the drift [`crate::register`] exists to prevent.
+/// A verdict may hold several findings, so the record states how many and then
+/// writes seven fields for each. The count is what lets a reader tell a
+/// truncated record from a complete one without a second separator character
+/// that every field would then have to escape.
 fn encode(outcome: &Outcome) -> Option<String> {
     match outcome {
         Outcome::Passed => Some("passed".to_string()),
         Outcome::Skipped(_) => None,
-        Outcome::Failed(finding) => Some(format!(
-            "failed\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
-            finding.severity,
-            finding.line,
-            finding.column,
-            finding.fixable,
-            escape(&finding.path),
-            escape(&finding.message),
-            escape(&finding.remediation),
-        )),
+        Outcome::Failed(findings) => {
+            let mut record = format!("failed\t{}", findings.len());
+            for finding in findings {
+                record.push_str(&format!(
+                    "\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+                    finding.severity,
+                    finding.line,
+                    finding.column,
+                    finding.fixable,
+                    escape(&finding.path),
+                    escape(&finding.message),
+                    escape(&finding.remediation),
+                ));
+            }
+            Some(record)
+        }
     }
 }
 
@@ -310,29 +339,38 @@ fn decode(rule: &'static str, record: &str) -> Option<Outcome> {
             Some(_) => None,
         },
         "failed" => {
-            let severity = match fields.next()? {
-                "error" => Severity::Error,
-                "warn" => Severity::Warn,
-                "info" => Severity::Info,
-                _ => return None,
-            };
-            let finding = Finding {
-                rule,
-                severity,
-                obligation: None,
-                line: fields.next()?.parse().ok()?,
-                column: fields.next()?.parse().ok()?,
-                fixable: match fields.next()? {
-                    "true" => true,
-                    "false" => false,
+            let count: usize = fields.next()?.parse().ok()?;
+            // A verdict with no findings is a pass, and this format never
+            // writes one. A record that claims zero came from somewhere else.
+            if count == 0 {
+                return None;
+            }
+            let mut findings = Vec::with_capacity(count);
+            for _ in 0..count {
+                let severity = match fields.next()? {
+                    "error" => Severity::Error,
+                    "warn" => Severity::Warn,
+                    "info" => Severity::Info,
                     _ => return None,
-                },
-                path: unescape(fields.next()?),
-                message: unescape(fields.next()?),
-                remediation: unescape(fields.next()?),
-            };
+                };
+                findings.push(Finding {
+                    rule,
+                    severity,
+                    obligation: None,
+                    line: fields.next()?.parse().ok()?,
+                    column: fields.next()?.parse().ok()?,
+                    fixable: match fields.next()? {
+                        "true" => true,
+                        "false" => false,
+                        _ => return None,
+                    },
+                    path: unescape(fields.next()?),
+                    message: unescape(fields.next()?),
+                    remediation: unescape(fields.next()?),
+                });
+            }
             match fields.next() {
-                None => Some(Outcome::Failed(Box::new(finding))),
+                None => Some(Outcome::Failed(findings)),
                 Some(_) => None,
             }
         }
@@ -390,6 +428,7 @@ fn unescape(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::context::Date;
     use crate::scope::Scope;
 
     fn finding() -> Finding {
@@ -410,12 +449,29 @@ mod tests {
     /// come back the way the runner sets them.
     #[test]
     fn a_failed_outcome_round_trips_through_a_record() {
-        let record = encode(&Outcome::Failed(Box::new(finding()))).expect("a verdict is stored");
+        let record = encode(&Outcome::Failed(vec![finding()])).expect("a verdict is stored");
         assert!(!record.contains('\n'), "a record is one line: {record}");
         let Some(Outcome::Failed(back)) = decode("test.rule", &record) else {
             panic!("the record did not read back");
         };
-        assert_eq!(*back, finding());
+        assert_eq!(back, vec![finding()]);
+    }
+
+    /// A verdict with several findings comes back whole and in order.
+    ///
+    /// A record that held one of them would make a warm run report less than a
+    /// cold one, which is the cache changing a verdict.
+    #[test]
+    fn every_finding_of_one_verdict_survives_the_record() {
+        let mut second = finding();
+        second.line = 40;
+        second.message = "another\tone".to_string();
+        let outcome = Outcome::Failed(vec![finding(), second.clone()]);
+        let record = encode(&outcome).expect("a verdict is stored");
+        let Some(Outcome::Failed(back)) = decode("test.rule", &record) else {
+            panic!("the record did not read back");
+        };
+        assert_eq!(back, vec![finding(), second]);
     }
 
     #[test]
@@ -432,11 +488,15 @@ mod tests {
     #[test]
     fn a_record_this_engine_cannot_read_is_a_miss() {
         for record in [
-            "failed\tcritical\t1\t1\ttrue\tp\tm\tr",
-            "failed\terror\tnot-a-line\t1\ttrue\tp\tm\tr",
-            "failed\terror\t1\t1\tmaybe\tp\tm\tr",
-            "failed\terror\t1\t1\ttrue\tp\tm",
-            "failed\terror\t1\t1\ttrue\tp\tm\tr\tone-more",
+            "failed\t1\tcritical\t1\t1\ttrue\tp\tm\tr",
+            "failed\t1\terror\tnot-a-line\t1\ttrue\tp\tm\tr",
+            "failed\t1\terror\t1\t1\tmaybe\tp\tm\tr",
+            "failed\t1\terror\t1\t1\ttrue\tp\tm",
+            "failed\t1\terror\t1\t1\ttrue\tp\tm\tr\tone-more",
+            "failed\t2\terror\t1\t1\ttrue\tp\tm\tr",
+            "failed\t0",
+            "failed\tmany\terror\t1\t1\ttrue\tp\tm\tr",
+            "failed\terror\t1\t1\ttrue\tp\tm\tr",
             "passed\tand-something-else",
             "reused",
             "",
@@ -464,34 +524,63 @@ mod tests {
         Cache::at(Path::new("/nonexistent"), "sha256:lock")
     }
 
+    fn day(text: &str) -> Option<Date> {
+        Some(Date::parse(text).expect("a date"))
+    }
+
     /// Each component of the key changes it, which is the property that makes
     /// the cache incapable of changing a verdict.
     #[test]
     fn every_component_of_the_key_moves_it() {
-        let scope = Scope::document(false);
+        let scope = Scope::document(false, false);
         let base = cache()
-            .key("r", 1, scope, "a.md", &inputs(Some("sha256:one")))
+            .key("r", 1, scope, "a.md", &inputs(Some("sha256:one")), None)
             .expect("a key");
 
         let others = [
-            cache().key("other", 1, scope, "a.md", &inputs(Some("sha256:one"))),
-            cache().key("r", 2, scope, "a.md", &inputs(Some("sha256:one"))),
+            cache().key("other", 1, scope, "a.md", &inputs(Some("sha256:one")), None),
+            cache().key("r", 2, scope, "a.md", &inputs(Some("sha256:one")), None),
             cache().key(
                 "r",
                 1,
-                Scope::document(true),
+                Scope::document(true, false),
                 "a.md",
                 &inputs(Some("sha256:one")),
+                None,
             ),
-            cache().key("r", 1, Scope::edge(), "a.md", &inputs(Some("sha256:one"))),
-            cache().key("r", 1, scope, "b.md", &inputs(Some("sha256:one"))),
-            cache().key("r", 1, scope, "a.md", &inputs(Some("sha256:two"))),
+            cache().key(
+                "r",
+                1,
+                Scope::edge(false),
+                "a.md",
+                &inputs(Some("sha256:one")),
+                None,
+            ),
+            cache().key(
+                "r",
+                1,
+                Scope::neighbourhood(false),
+                "a.md",
+                &inputs(Some("sha256:one")),
+                None,
+            ),
+            cache().key("r", 1, scope, "b.md", &inputs(Some("sha256:one")), None),
+            cache().key("r", 1, scope, "a.md", &inputs(Some("sha256:two")), None),
             cache().key(
                 "r",
                 1,
                 scope,
                 "a.md",
                 &[Input::new("b.md", Some("sha256:one"))],
+                None,
+            ),
+            cache().key(
+                "r",
+                1,
+                Scope::document(false, true),
+                "a.md",
+                &inputs(Some("sha256:one")),
+                day("2026-08-12"),
             ),
             Cache::at(Path::new("/nonexistent"), "sha256:other").key(
                 "r",
@@ -499,6 +588,7 @@ mod tests {
                 scope,
                 "a.md",
                 &inputs(Some("sha256:one")),
+                None,
             ),
         ];
         for (index, other) in others.iter().enumerate() {
@@ -510,13 +600,100 @@ mod tests {
         }
     }
 
+    /// The injected clock is a component of the key of a check that reads it.
+    ///
+    /// This is the hole spec 13 recorded. A windowed participation expectation
+    /// compares a declared date against `ctx.now`, so two days are two verdicts,
+    /// and a key that held one of them would serve yesterday's answer today.
+    /// The `--no-cache` differential cannot catch that: it holds one value of
+    /// the clock on both sides.
+    #[test]
+    fn two_days_are_two_keys_for_a_check_that_reads_the_clock() {
+        let scope = Scope::document(false, true);
+        let monday = cache()
+            .key(
+                "r",
+                1,
+                scope,
+                "a.md",
+                &inputs(Some("sha256:one")),
+                day("2026-08-12"),
+            )
+            .expect("a key");
+        let tuesday = cache()
+            .key(
+                "r",
+                1,
+                scope,
+                "a.md",
+                &inputs(Some("sha256:one")),
+                day("2026-08-13"),
+            )
+            .expect("a key");
+        assert_ne!(monday, tuesday, "the clock is not in the key");
+    }
+
+    /// And a check that does not read the clock keys the same on every day.
+    ///
+    /// The other half of the same property, and the reason the clock is keyed
+    /// off the scope rather than added to every key: a rule that no calendar
+    /// can move stays served from a cache when the date turns over.
+    #[test]
+    fn a_check_that_does_not_read_the_clock_keys_the_same_on_every_day() {
+        let scope = Scope::document(false, false);
+        let monday = cache().key(
+            "r",
+            1,
+            scope,
+            "a.md",
+            &inputs(Some("sha256:one")),
+            day("2026-08-12"),
+        );
+        let tuesday = cache().key(
+            "r",
+            1,
+            scope,
+            "a.md",
+            &inputs(Some("sha256:one")),
+            day("2026-08-13"),
+        );
+        assert_eq!(monday, tuesday);
+        assert!(monday.is_some());
+    }
+
+    /// A scope that declares the clock and was handed none is not keyed.
+    ///
+    /// The same answer as an input with no digest, for the same reason: the
+    /// alternative is a key that omits an input the instance read.
+    #[test]
+    fn a_clock_reading_scope_with_no_clock_is_not_keyed() {
+        assert_eq!(
+            cache().key(
+                "r",
+                1,
+                Scope::document(false, true),
+                "a.md",
+                &inputs(Some("sha256:one")),
+                None
+            ),
+            None
+        );
+    }
+
     /// An input with no content hash produces no key, so its instance is
     /// evaluated on every run. The alternative is a key over a hash that does
     /// not exist, which is the correctness bug spec 12 names.
     #[test]
     fn an_input_with_no_digest_is_not_keyed() {
         assert_eq!(
-            cache().key("r", 1, Scope::document(false), "a.md", &inputs(None)),
+            cache().key(
+                "r",
+                1,
+                Scope::document(false, false),
+                "a.md",
+                &inputs(None),
+                None
+            ),
             None
         );
     }
@@ -526,7 +703,14 @@ mod tests {
     #[test]
     fn a_disabled_cache_keys_nothing() {
         assert_eq!(
-            Cache::disabled().key("r", 1, Scope::document(false), "a.md", &inputs(Some("d"))),
+            Cache::disabled().key(
+                "r",
+                1,
+                Scope::document(false, false),
+                "a.md",
+                &inputs(Some("d")),
+                None
+            ),
             None
         );
     }

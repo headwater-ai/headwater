@@ -4,7 +4,7 @@
 //! [Spec 12](../../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor: "every check ships with at least one fixture that it fails
 //! and one that it passes." The tree under `fixtures/check/` carries both for
-//! each of the three rules, and `check.report` records every instance and every
+//! each of the seven rules, and `check.report` records every instance and every
 //! finding it produces.
 //!
 //!     HEADWATER_BLESS=1 cargo test -p headwater-check --test fixtures
@@ -17,13 +17,28 @@ use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::scope::{over_documents, over_edges, Digests};
 use headwater_check::{
-    coverage, placement, reciprocity, Cache, Detail, DocumentCheck, DocumentView, EdgeCheck,
-    EdgeView, Grain, Outcome, Register, Run,
+    coverage, endpoint, facet_required, facet_value, participation, placement, reciprocity, Cache,
+    Context, Date, Declared, Detail, DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain,
+    Outcome, Register, Run, Shape,
 };
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
 use std::path::{Path, PathBuf};
+
+/// The date every recorded report is evaluated at.
+///
+/// A recorded report is a function of its inputs, and
+/// [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+/// makes the clock one of them: "same corpus, same lock, same injected clock,
+/// byte-identical output". A test that read today's date would record a file
+/// that a windowed rule rewrites as the calendar moves, which is a fixture
+/// nobody reads.
+const PINNED: &str = "2026-08-12";
+
+fn pinned() -> Context {
+    Context::at(Date::parse(PINNED).expect("the pinned date"))
+}
 
 fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
@@ -57,9 +72,19 @@ fn compare(recorded: &Path, actual: &str) {
 
 /// One run over one corpus: the whole pipeline, in the order spec 6 draws it.
 fn run_over(corpus: &Corpus, root: &headwater_yaml::Mapping, cache: &mut Cache) -> Run {
+    run_at(corpus, root, &pinned(), cache)
+}
+
+fn run_at(
+    corpus: &Corpus,
+    root: &headwater_yaml::Mapping,
+    ctx: &Context,
+    cache: &mut Cache,
+) -> Run {
     let taxonomy = Taxonomy::read(root).expect("the taxonomy reads");
     let declarations = Declarations::read(root).expect("the declarations read");
     let register = Register::read(root).expect("the register reads");
+    let shape = Shape::read(root).expect("the shape reads");
     let taken = census::take(corpus, &taxonomy);
     let graph = Graph::build(
         &taken,
@@ -68,7 +93,18 @@ fn run_over(corpus: &Corpus, root: &headwater_yaml::Mapping, cache: &mut Cache) 
         corpus,
         &Config::default(),
     );
-    headwater_check::run(&taken, &graph, &taxonomy, &declarations, &register, cache)
+    headwater_check::run(
+        &taken,
+        &graph,
+        &Declared {
+            taxonomy: &taxonomy,
+            shape: &shape,
+            relations: &declarations,
+            register: &register,
+        },
+        ctx,
+        cache,
+    )
 }
 
 fn fixture_run() -> Run {
@@ -256,6 +292,185 @@ fn either_missing_half_is_found_and_the_remediation_names_the_other_document() {
     assert!(findings.iter().all(|finding| finding.fixable));
 }
 
+/// Every finding of one verdict is reported, and not the first of them.
+///
+/// A document can omit several facets its kind requires, and each omission is a
+/// separate line for its author to write. Spec 12 gives a check the signature
+/// `-> [Finding]` for this, and a verdict that named the first omission would
+/// make the rest cost one run each to find.
+#[test]
+fn a_required_facet_that_is_absent_is_a_finding_with_no_line_and_no_fix() {
+    let run = fixture_run();
+    let findings: Vec<&headwater_check::Finding> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.rule == facet_required::RULE)
+        .collect();
+    assert_eq!(findings.len(), 1, "{findings:#?}");
+    assert_eq!(findings[0].path, "check/spec/05-no-summary.md");
+    assert!(findings[0].message.contains("`summary`"), "{findings:#?}");
+    // The finding is that a key is absent, so it anchors at no line, and its
+    // value is a sentence somebody has to write rather than one to derive.
+    assert_eq!(findings[0].line, 0);
+    assert!(!findings[0].fixable);
+
+    // The requirement is inherited: `governed_document` declares it and
+    // `design_spec` is one. A check that read only the kind's own declaration
+    // would report nothing here at all.
+    let instance = run
+        .instances
+        .iter()
+        .find(|instance| {
+            instance.rule == facet_required::RULE && instance.at() == "check/spec/05-no-summary.md"
+        })
+        .expect("the fixture");
+    assert_eq!(instance.findings().len(), 1);
+}
+
+/// A kind that forbids every enumerated facet generates no instance of the enum
+/// rule, which is what keeps the coverage finding reachable.
+#[test]
+fn the_enum_rule_generates_per_kind_and_reports_at_the_value() {
+    let run = fixture_run();
+    let findings: Vec<&headwater_check::Finding> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.rule == facet_value::RULE)
+        .collect();
+    assert_eq!(findings.len(), 1, "{findings:#?}");
+    assert_eq!(findings[0].path, "check/spec/06-retired.md");
+    // At the value, because that is the text to change.
+    assert_eq!(findings[0].line, 4);
+    assert!(findings[0].message.contains("retired"), "{findings:#?}");
+
+    // `03-no-instance.md` is a `note`, which forbids every enumerated facet.
+    // No instance of either Shape rule is generated over it, and that is what
+    // leaves it as the coverage rule's failing fixture.
+    for rule in [facet_value::RULE, facet_required::RULE] {
+        assert!(
+            !run.instances
+                .iter()
+                .any(|instance| instance.rule == rule
+                    && instance.at() == "check/spec/03-no-instance.md"),
+            "{rule} generated an instance over a kind that forbids what it reads"
+        );
+    }
+}
+
+/// An endpoint is permitted when the kind at that end descends from one the
+/// relation names, and the two ends do not swap when an author writes the
+/// inverse.
+#[test]
+fn an_endpoint_is_read_through_the_is_a_chain() {
+    let run = fixture_run();
+    let findings: Vec<&headwater_check::Finding> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.rule == endpoint::RULE)
+        .collect();
+    assert_eq!(findings.len(), 1, "{findings:#?}");
+    assert_eq!(findings[0].path, "check/evaluations/eta.md");
+    assert!(findings[0].message.contains("from"), "{findings:#?}");
+
+    // The passing half of the same relation: `01-one-half.md` writes
+    // `assesses: EVAL-FIX-alpha`, whose target is an `evaluation` against a
+    // declared `to: [governed_document]`. A check that compared the two names
+    // directly would report every inherited endpoint in a corpus.
+    let inherited = run
+        .instances
+        .iter()
+        .find(|instance| {
+            instance.rule == endpoint::RULE
+                && instance.paths() == ["check/spec/01-one-half.md", "check/evaluations/alpha.md"]
+        })
+        .expect("the fixture");
+    assert!(inherited.findings().is_empty(), "{inherited:#?}");
+}
+
+/// The clock decides this rule, and the fixture holds one document on each side
+/// of the window.
+#[test]
+fn a_participation_expectation_is_met_by_either_half_or_by_an_open_window() {
+    let run = fixture_run();
+    let findings: Vec<&headwater_check::Finding> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.rule == participation::RULE)
+        .collect();
+
+    // `epsilon.md` is outside the window and nothing reaches it.
+    assert_eq!(findings.len(), 1, "{findings:#?}");
+    assert_eq!(findings[0].path, "check/evaluations/epsilon.md");
+    // The severity is the taxonomy's, because the check is generated from the
+    // declaration that carries it.
+    assert_eq!(findings[0].severity, headwater_check::Severity::Warn);
+    // At the origin facet, which is the line that started the window.
+    assert_eq!(findings[0].line, 4);
+
+    // `zeta.md` is in the same state with the same absent edge, and it passes
+    // because its window is still open. Move the injected date and this is the
+    // verdict that changes.
+    let inside = run
+        .instances
+        .iter()
+        .find(|instance| {
+            instance.rule == participation::RULE && instance.at() == "check/evaluations/zeta.md"
+        })
+        .expect("the fixture");
+    assert!(inside.findings().is_empty(), "{inside:#?}");
+
+    // `beta.md` wrote no half of its own. The half `01-one-half.md` wrote
+    // reaches it at the target end of the same relation, and the expectation is
+    // satisfied by it: matching runs on the relation type and the end, never on
+    // the name an author reached for.
+    let other_end = run
+        .instances
+        .iter()
+        .find(|instance| {
+            instance.rule == participation::RULE && instance.at() == "check/evaluations/beta.md"
+        })
+        .expect("the fixture");
+    assert!(other_end.findings().is_empty(), "{other_end:#?}");
+    assert_eq!(
+        other_end.paths(),
+        ["check/evaluations/beta.md", "check/spec/01-one-half.md"],
+        "the neighbourhood read set is the centre and its neighbours"
+    );
+}
+
+/// The same corpus on a later date reaches a different verdict.
+///
+/// The clock is an input, and this is the test that says so from outside the
+/// cache: nothing in the tree moves, and the report does.
+#[test]
+fn the_injected_clock_changes_a_verdict_and_nothing_else_does() {
+    let corpus = Corpus::new(fixtures_dir(), "check");
+    let root = load_map(&fixtures_dir().join("check.taxonomy.yml"));
+    let later = run_at(
+        &corpus,
+        &root,
+        &Context::at(Date::parse("2026-09-30").expect("a date")),
+        &mut Cache::disabled(),
+    );
+    let overdue: Vec<&str> = later
+        .findings
+        .iter()
+        .filter(|finding| finding.rule == participation::RULE)
+        .map(|finding| finding.path.as_str())
+        .collect();
+    // `zeta.md` and `eta.md` were both inside their windows at the pinned
+    // date and are outside them here. Nothing in the tree moved.
+    assert_eq!(
+        overdue,
+        [
+            "check/evaluations/epsilon.md",
+            "check/evaluations/eta.md",
+            "check/evaluations/zeta.md"
+        ],
+        "the windows did not close"
+    );
+}
+
 /// A homogeneous shelf forbids the discriminator, and the finding is at the key.
 #[test]
 fn a_restated_discriminator_is_a_finding_at_the_line_that_restates_it() {
@@ -281,20 +496,31 @@ fn a_restated_discriminator_is_a_finding_at_the_line_that_restates_it() {
 
 /// An instance of an edge-scoped check is counted against both endpoints.
 ///
-/// `02-cited-only.md` declares no edge at all. It is checked because the
-/// instance over the pair that names it reads it, and a coverage report that
-/// counted the instance against one end would call the file unchecked and send
-/// its author to look at a shelf pattern that is already right.
+/// `02-cited-only.md` declares no edge at all, and the reciprocity instance
+/// over the pair that names it still reads it. A coverage report that counted
+/// that instance against one end would call the file unchecked by the rule that
+/// did look at it, and send its author to a shelf pattern that is already
+/// right.
 #[test]
 fn an_edge_instance_is_counted_against_both_of_its_endpoints() {
     let run = fixture_run();
+    let counted = run
+        .instances
+        .iter()
+        .filter(|instance| {
+            instance.rule == reciprocity::RULE
+                && instance.paths().contains(&"check/spec/02-cited-only.md")
+        })
+        .count();
+    assert_eq!(counted, 1, "{:#?}", run.instances);
+
     let document = run
         .coverage
         .documents
         .iter()
         .find(|document| document.path == "check/spec/02-cited-only.md")
         .expect("the fixture");
-    assert_eq!(document.ran, 1, "{document:#?}");
+    assert!(document.ran >= counted, "{document:#?}");
     assert!(run.coverage.unaccounted.is_empty());
 }
 
@@ -313,8 +539,8 @@ fn a_classified_document_with_no_instance_is_a_finding_and_an_untyped_one_is_not
         .map(|finding| finding.path.as_str())
         .collect();
     assert_eq!(paths, ["check/spec/03-no-instance.md"]);
-    assert_eq!(run.coverage.seen(), 9);
-    assert_eq!(run.coverage.classified(), 8);
+    assert_eq!(run.coverage.seen(), 14);
+    assert_eq!(run.coverage.classified(), 13);
 }
 
 /// The coverage numbers are computed against the census and never against the
@@ -359,14 +585,40 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         .iter()
         .map(|served| served.scope.grain())
         .collect();
-    assert_eq!(grains, [Grain::Document, Grain::Edge, Grain::Corpus]);
+    assert_eq!(
+        grains,
+        [
+            Grain::Document,
+            Grain::Document,
+            Grain::Document,
+            Grain::Edge,
+            Grain::Edge,
+            Grain::Neighbourhood { depth: 1 },
+            Grain::Corpus,
+        ]
+    );
 
-    // The placement check reads front matter and never a body, and the report
-    // says so rather than leaving a reader to infer it from the rule name.
+    // The required-facet check reads front matter and never a body, and the
+    // report says so rather than leaving a reader to infer it from the name.
     assert!(!run.served[0].scope.needs_body());
     assert_eq!(
         run.served[0].scope.render(),
         "document scope, one document and its front matter"
+    );
+
+    // Exactly one rule reads the clock, and the report names it. A reader who
+    // asks why a warm run re-evaluated one rule and not another reads it here.
+    let clocked: Vec<&str> = run
+        .served
+        .iter()
+        .filter(|served| served.scope.needs_clock())
+        .map(|served| served.rule)
+        .collect();
+    assert_eq!(clocked, [participation::RULE]);
+    assert_eq!(
+        run.served[5].scope.render(),
+        "neighbourhood scope, one document and the documents one relation away from it, \
+         and the injected clock"
     );
 }
 
@@ -394,10 +646,10 @@ fn a_document_check_receives_the_body_only_when_it_declares_it() {
     }
 
     let census = fixture_census();
-    let declared = over_documents(&Reader::<true>, &census, &mut Cache::disabled());
-    let did_not = over_documents(&Reader::<false>, &census, &mut Cache::disabled());
+    let declared = over_documents(&Reader::<true>, &census, &pinned(), &mut Cache::disabled());
+    let did_not = over_documents(&Reader::<false>, &census, &pinned(), &mut Cache::disabled());
 
-    assert_eq!(declared.len(), 8, "one instance per typed document");
+    assert_eq!(declared.len(), 13, "one instance per typed document");
     assert_eq!(declared.len(), did_not.len());
     assert!(declared
         .iter()
@@ -449,7 +701,7 @@ fn the_read_set_of_an_instance_comes_from_the_view_and_not_from_the_check() {
         &Config::default(),
     );
 
-    for instance in over_documents(&Silent, &census, &mut Cache::disabled()) {
+    for instance in over_documents(&Silent, &census, &pinned(), &mut Cache::disabled()) {
         assert_eq!(instance.reads.len(), 1, "{instance:#?}");
         // And each read carries the hash of what it read, which is the half
         // that #54 left for the cache key to need.
@@ -462,6 +714,7 @@ fn the_read_set_of_an_instance_comes_from_the_view_and_not_from_the_check() {
         &Quiet,
         &graph,
         &Digests::of(&census),
+        &pinned(),
         &mut Cache::disabled(),
     );
     assert!(

@@ -73,6 +73,14 @@ jobs:
         # reached against a taxonomy that nobody committed, so the advisory
         # posture has nothing to be advisory about.
         run: ./engine/target/release/headwater taxonomy resolve --check
+      - name: The date this job evaluates at
+        # A windowed participation expectation compares a declared origin date
+        # against `ctx.now`, so the clock is an input to the verdict and the
+        # three runs below have to share one value of it. Read once here rather
+        # than three times: a job that started before midnight UTC and finished
+        # after it would otherwise fail the comparison at the end for a reason
+        # that has nothing to do with the cache.
+        run: echo "HEADWATER_NOW=$(date -u +%F)" >> "$GITHUB_ENV"
       - name: Check this corpus
         # No `--strict`. Advisory, on purpose: a tool that blocks on first
         # contact is removed, and a removed tool catches nothing.
@@ -81,7 +89,7 @@ jobs:
         # summary is what the checks decided over this tree and never what a
         # disk remembered.
         run: |
-          ./engine/target/release/headwater check --no-cache | tee headwater-check.txt
+          ./engine/target/release/headwater check --no-cache --now "$HEADWATER_NOW" | tee headwater-check.txt
           {
             echo '## `headwater check`'
             echo
@@ -103,7 +111,7 @@ jobs:
         # here is a defect in the engine, and the report above is what the
         # advisory step reports whatever this one finds.
         run: |
-          ./engine/target/release/headwater check > cold.txt
-          ./engine/target/release/headwater check > warm.txt
+          ./engine/target/release/headwater check --now "$HEADWATER_NOW" > cold.txt
+          ./engine/target/release/headwater check --now "$HEADWATER_NOW" > warm.txt
           diff headwater-check.txt cold.txt
           diff headwater-check.txt warm.txt

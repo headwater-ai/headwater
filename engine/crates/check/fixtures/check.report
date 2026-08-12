@@ -1,30 +1,100 @@
-9 seen, 8 classified, 7 checked, 12 check instances
-      4 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
-      8 instances of shelf.placement_is_primary
+14 seen, 13 classified, 12 checked, 54 check instances
+      6 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+     12 instances of facet.required.missing
+     12 instances of facet.value.not_permitted
+     13 instances of shelf.placement_is_primary
       4 instances of relation.reciprocity.missing
+      6 instances of relation.endpoint.not_permitted
+      7 instances of relation.participation.overdue
 rules, and for each the scope that binds it and what it serves
+  facet.required.missing
+    document scope, one document and its front matter
+    OB-FIX-3
+  facet.value.not_permitted
+    document scope, one document and its front matter
+    OB-FIX-4
   shelf.placement_is_primary
     document scope, one document and its front matter
     OB-FIX-2
   relation.reciprocity.missing
     edge scope, one relation instance and both endpoints
     OB-FIX-1
+  relation.endpoint.not_permitted
+    edge scope, one relation instance and both endpoints
+    OB-FIX-5
+  relation.participation.overdue
+    neighbourhood scope, one document and the documents one relation away from it, and the injected clock
+    OB-FIX-6
   coverage.document_unchecked
     corpus scope, every row of the census, and it is a barrier
     no control names this rule, so its findings name no obligation
-5 findings
-      4 error
-      1 warn
+9 findings
+      7 error
+      2 warn
 
 instances
+  facet.required.missing check/evaluations/alpha.md
+    passed
+  facet.required.missing check/evaluations/beta.md
+    passed
+  facet.required.missing check/evaluations/delta.md
+    passed
+  facet.required.missing check/evaluations/epsilon.md
+    passed
+  facet.required.missing check/evaluations/eta.md
+    passed
+  facet.required.missing check/evaluations/gamma.md
+    passed
+  facet.required.missing check/evaluations/zeta.md
+    passed
+  facet.required.missing check/spec/00-both-halves.md
+    passed
+  facet.required.missing check/spec/01-one-half.md
+    passed
+  facet.required.missing check/spec/02-cited-only.md
+    passed
+  facet.required.missing check/spec/05-no-summary.md
+    failed
+  facet.required.missing check/spec/06-retired.md
+    passed
+  facet.value.not_permitted check/evaluations/alpha.md
+    passed
+  facet.value.not_permitted check/evaluations/beta.md
+    passed
+  facet.value.not_permitted check/evaluations/delta.md
+    passed
+  facet.value.not_permitted check/evaluations/epsilon.md
+    passed
+  facet.value.not_permitted check/evaluations/eta.md
+    passed
+  facet.value.not_permitted check/evaluations/gamma.md
+    passed
+  facet.value.not_permitted check/evaluations/zeta.md
+    passed
+  facet.value.not_permitted check/spec/00-both-halves.md
+    passed
+  facet.value.not_permitted check/spec/01-one-half.md
+    passed
+  facet.value.not_permitted check/spec/02-cited-only.md
+    passed
+  facet.value.not_permitted check/spec/05-no-summary.md
+    passed
+  facet.value.not_permitted check/spec/06-retired.md
+    failed
   shelf.placement_is_primary check/evaluations/alpha.md
     passed
   shelf.placement_is_primary check/evaluations/beta.md
     passed
   shelf.placement_is_primary check/evaluations/delta.md
     passed
+  shelf.placement_is_primary check/evaluations/epsilon.md
+    passed
+  shelf.placement_is_primary check/evaluations/eta.md
+    passed
   shelf.placement_is_primary check/evaluations/gamma.md
     failed
+  shelf.placement_is_primary check/evaluations/zeta.md
+    passed
   shelf.placement_is_primary check/spec/00-both-halves.md
     skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
   shelf.placement_is_primary check/spec/01-one-half.md
@@ -32,6 +102,10 @@ instances
   shelf.placement_is_primary check/spec/02-cited-only.md
     skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
   shelf.placement_is_primary check/spec/03-no-instance.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  shelf.placement_is_primary check/spec/05-no-summary.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  shelf.placement_is_primary check/spec/06-retired.md
     skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
   relation.reciprocity.missing check/spec/00-both-halves.md + check/evaluations/alpha.md
     passed
@@ -41,19 +115,57 @@ instances
     failed
   relation.reciprocity.missing check/spec/01-one-half.md + check/evaluations/beta.md
     failed
+  relation.endpoint.not_permitted check/spec/00-both-halves.md + check/evaluations/alpha.md
+    passed
+  relation.endpoint.not_permitted check/evaluations/delta.md + check/spec/02-cited-only.md
+    passed
+  relation.endpoint.not_permitted check/evaluations/eta.md + check/evaluations/alpha.md
+    failed
+  relation.endpoint.not_permitted check/evaluations/gamma.md + check/spec/00-both-halves.md
+    passed
+  relation.endpoint.not_permitted check/spec/01-one-half.md + check/evaluations/beta.md
+    passed
+  relation.endpoint.not_permitted check/spec/01-one-half.md + check/evaluations/alpha.md
+    passed
+  relation.participation.overdue check/evaluations/alpha.md + check/spec/00-both-halves.md + check/evaluations/eta.md + check/spec/01-one-half.md
+    passed
+  relation.participation.overdue check/evaluations/beta.md + check/spec/01-one-half.md
+    passed
+  relation.participation.overdue check/evaluations/delta.md + check/spec/02-cited-only.md
+    passed
+  relation.participation.overdue check/evaluations/epsilon.md
+    failed
+  relation.participation.overdue check/evaluations/eta.md + check/evaluations/alpha.md
+    passed
+  relation.participation.overdue check/evaluations/gamma.md + check/spec/00-both-halves.md
+    passed
+  relation.participation.overdue check/evaluations/zeta.md
+    passed
 
-check/evaluations/delta.md:5:7 error
+check/evaluations/delta.md:8:7 error
   relation.reciprocity.missing (OB-FIX-1): `EVAL-FIX-delta` declares `cited_by: SPEC-FIX-cited-only`, and `cites_evidence` requires both ends, so check/spec/02-cited-only.md owes `cites_evidence`
   fix (mechanical): add `cites_evidence: EVAL-FIX-delta` under `relations:` in check/spec/02-cited-only.md
+check/evaluations/epsilon.md:4:1 warn
+  relation.participation.overdue (OB-FIX-6): `evidence-cited`: 219 days since `status_since`, and this `evaluation` reaches no `cites_evidence` to a `design_spec` inside the 30 days the taxonomy allows
+  fix: declare `cites_evidence` to a `design_spec` under `relations:` in check/evaluations/epsilon.md, or record why it is not owed: an evaluation that no specification cites closed nothing
+check/evaluations/eta.md:8:7 error
+  relation.endpoint.not_permitted (OB-FIX-5): `assesses` declares `from: [design_spec]`, and `EVAL-FIX-eta` at that end has the kind `evaluation`
+  fix: declare this relation between kinds `assesses` permits, or widen its `from` in the taxonomy; the document at that end is check/evaluations/eta.md
 check/evaluations/gamma.md:3:1 error
   shelf.placement_is_primary (OB-FIX-2): `evaluations` is homogeneous and carries the kind `evaluation`, and this document restates it as `doc_type: evaluation`
   fix (mechanical): remove `doc_type` from the front matter of check/evaluations/gamma.md
-check/evaluations/gamma.md:6:7 error
+check/evaluations/gamma.md:9:7 error
   relation.reciprocity.missing (OB-FIX-1): `EVAL-FIX-gamma` declares `cited_by: SPEC-FIX-both-halves`, and `cites_evidence` requires both ends, so check/spec/00-both-halves.md owes `cites_evidence`
   fix (mechanical): add `cites_evidence: EVAL-FIX-gamma` under `relations:` in check/spec/00-both-halves.md
-check/spec/01-one-half.md:6:7 error
+check/spec/01-one-half.md:9:7 error
   relation.reciprocity.missing (OB-FIX-1): `SPEC-FIX-one-half` declares `cites_evidence: EVAL-FIX-beta`, and `cites_evidence` requires both ends, so check/evaluations/beta.md owes `cited_by`
   fix (mechanical): add `cited_by: SPEC-FIX-one-half` under `relations:` in check/evaluations/beta.md
 check/spec/03-no-instance.md warn
   coverage.document_unchecked: this document is classified and all 1 of its check instances were skipped
   fix: check that the shelf pattern claims the right files, and that the kind declares something a check reads
+check/spec/05-no-summary.md error
+  facet.required.missing (OB-FIX-3): `design_spec` requires the facet `summary`, and it is not declared
+  fix: add `summary:` to the front matter of check/spec/05-no-summary.md, with the value this document has
+check/spec/06-retired.md:4:9 error
+  facet.value.not_permitted (OB-FIX-4): `status` admits draft, current, superseded, and this document declares `retired`
+  fix: change `status` in check/spec/06-retired.md to one of: draft, current, superseded

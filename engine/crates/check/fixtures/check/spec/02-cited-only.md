@@ -1,6 +1,9 @@
 ---
 id: SPEC-FIX-cited-only
 doc_type: design_spec
+status: current
+status_since: 2026-01-05
+summary: A document named by an edge it never declared.
 ---
 
 # Cited only

@@ -1,6 +1,9 @@
 ---
 id: SPEC-FIX-both-halves
 doc_type: design_spec
+status: current
+status_since: 2026-01-05
+summary: The complete pair, which is the passing fixture the reciprocity rule needs.
 relations:
   cites_evidence:
     - EVAL-FIX-alpha

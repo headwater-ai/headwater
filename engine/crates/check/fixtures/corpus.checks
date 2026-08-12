@@ -1,26 +1,31 @@
-61 seen, 36 classified, 33 checked, 122 check instances
+61 seen, 36 classified, 36 checked, 323 check instances
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+     36 instances of facet.required.missing
+     36 instances of facet.value.not_permitted
      36 instances of shelf.placement_is_primary
      86 instances of relation.reciprocity.missing
+    114 instances of relation.endpoint.not_permitted
+     15 instances of relation.participation.overdue
 rules, and for each the scope that binds it and what it serves
+  facet.required.missing
+    document scope, one document and its front matter
+    OB-FACET-1
+  facet.value.not_permitted
+    document scope, one document and its front matter
+    OB-FACET-2
   shelf.placement_is_primary
     document scope, one document and its front matter
     OB-PLACE-1
   relation.reciprocity.missing
     edge scope, one relation instance and both endpoints
     OB-REL-1
+  relation.endpoint.not_permitted
+    edge scope, one relation instance and both endpoints
+    OB-REL-2
+  relation.participation.overdue
+    neighbourhood scope, one document and the documents one relation away from it, and the injected clock
+    OB-REL-3
   coverage.document_unchecked
     corpus scope, every row of the census, and it is a barrier
     OB-COV-2
-3 findings
-      3 warn
-
-docs/reviews/core-concepts-findings-assessment.md warn
-  coverage.document_unchecked (OB-COV-2): this document is classified and all 1 of its check instances were skipped
-  fix: check that the shelf pattern claims the right files, and that the kind declares something a check reads
-docs/reviews/ste-editorial-pass-findings.md warn
-  coverage.document_unchecked (OB-COV-2): this document is classified and all 1 of its check instances were skipped
-  fix: check that the shelf pattern claims the right files, and that the kind declares something a check reads
-docs/spec/08-design-departures.md warn
-  coverage.document_unchecked (OB-COV-2): this document is classified and all 1 of its check instances were skipped
-  fix: check that the shelf pattern claims the right files, and that the kind declares something a check reads
+0 findings

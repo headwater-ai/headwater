@@ -54,7 +54,7 @@
 use headwater_census::census::{self, Detail as CensusDetail};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
-use headwater_check::{Cache, Register};
+use headwater_check::{Cache, Context, Date, Declared, Register, Shape};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Detail as GraphDetail, Graph};
@@ -63,7 +63,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 const USAGE: &str = "\
-headwater check              [--strict] [--no-cache] [--root <path>]
+headwater check              [--strict] [--no-cache] [--now <date>] [--root <path>]
 headwater taxonomy validate  [--root <path>]
 headwater taxonomy resolve   [--check] [--root <path>]
 
@@ -81,6 +81,10 @@ headwater taxonomy resolve   [--check] [--root <path>]
                  instance. This run and a cached one write the same bytes to
                  standard output, and a difference between them is a defect in
                  the cache rather than a result.
+  --now <date>   `check` only: the date to evaluate against, as `YYYY-MM-DD`.
+                 Defaults to today. Spec 12 makes the clock an injected value
+                 rather than a syscall inside a check, and this flag is where it
+                 is injected: same corpus, same lock, same date, same bytes.
   --check        `taxonomy resolve` only: write nothing and exit non-zero when
                  the committed lock is not what the sources resolve to.
   --root <path>  the repository to read. Defaults to the working directory.
@@ -91,6 +95,7 @@ fn main() -> ExitCode {
     let mut strict = false;
     let mut check_only = false;
     let mut cached = true;
+    let mut now: Option<Date> = None;
     let mut root: Option<PathBuf> = None;
     let mut words: Vec<String> = Vec::new();
 
@@ -99,6 +104,11 @@ fn main() -> ExitCode {
             "--strict" => strict = true,
             "--check" => check_only = true,
             "--no-cache" => cached = false,
+            "--now" => match arguments.next().as_deref().map(Date::parse) {
+                Some(Some(date)) => now = Some(date),
+                Some(None) => return fail("--now takes a date written `YYYY-MM-DD`"),
+                None => return fail("--now names a date and none followed it"),
+            },
             "--root" => match arguments.next() {
                 Some(path) => root = Some(PathBuf::from(path)),
                 None => return fail("--root names a path and none followed it"),
@@ -124,7 +134,7 @@ fn main() -> ExitCode {
 
     let verb: Vec<&str> = words.iter().map(String::as_str).collect();
     match verb.as_slice() {
-        ["check"] => check(&root, strict, cached),
+        ["check"] => check(&root, strict, cached, now),
         ["taxonomy", "validate"] => validate(&root),
         ["taxonomy", "resolve"] => resolve(&root, check_only),
         ["taxonomy"] => fail("`taxonomy` takes a second word: `validate` or `resolve`"),
@@ -245,7 +255,18 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
     ExitCode::SUCCESS
 }
 
-fn check(root: &Path, strict: bool, cached: bool) -> ExitCode {
+fn check(root: &Path, strict: bool, cached: bool, now: Option<Date>) -> ExitCode {
+    // The one clock read of the whole engine, and it is here rather than in a
+    // check. Spec 12: "`ctx.now` is a bound value, never a syscall." A run
+    // whose host cannot say what day it is refuses rather than guesses, because
+    // a windowed expectation evaluated against a guess is a wrong verdict.
+    let ctx = match now.map(Context::at).or_else(Context::from_system_clock) {
+        Some(ctx) => ctx,
+        None => {
+            eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
+            return ExitCode::FAILURE;
+        }
+    };
     // The taxonomy comes from the lock, and the corpus block comes from the
     // consumer declaration. The two are different questions: the lock says what
     // the schema is, and `corpus:` says what to walk. Spec 6 keeps them apart
@@ -283,6 +304,10 @@ fn check(root: &Path, strict: bool, cached: bool) -> ExitCode {
         Ok(register) => register,
         Err(errors) => return refused("the obligations and controls", &errors),
     };
+    let shape = match Shape::read(&resolved) {
+        Ok(shape) => shape,
+        Err(errors) => return refused("the facet and kind declarations", &errors),
+    };
 
     let taken = census::take(&corpus, &taxonomy);
     let graph = Graph::build(
@@ -303,9 +328,13 @@ fn check(root: &Path, strict: bool, cached: bool) -> ExitCode {
     let run = headwater_check::run(
         &taken,
         &graph,
-        &taxonomy,
-        &declarations,
-        &register,
+        &Declared {
+            taxonomy: &taxonomy,
+            shape: &shape,
+            relations: &declarations,
+            register: &register,
+        },
+        &ctx,
         &mut cache,
     );
     cache.write(root);
@@ -316,6 +345,10 @@ fn check(root: &Path, strict: bool, cached: bool) -> ExitCode {
     println!("taxonomy");
     println!("  {} {}", lock.package, lock.version);
     println!("  {}", lock.digest);
+    // The injected values are part of the state a verdict is about, so a run
+    // that does not report them cannot be reproduced from its own output.
+    println!("\nclock");
+    println!("  {}", ctx.now());
     println!("\ncensus");
     print!("{}", indent(&taken.render(CensusDetail::Exceptions)));
     println!("\ngraph");

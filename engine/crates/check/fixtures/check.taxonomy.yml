@@ -1,25 +1,80 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # The taxonomy the fixture tree is checked against. It is the smallest shape in
-# which both generated checks have something to generate from: one homogeneous
-# shelf and one heterogeneous one, one relation that requires reciprocity and
-# one that says nothing about it.
+# which every generated check has something to generate from: one homogeneous
+# shelf and one heterogeneous one, one facet with a value set and one without,
+# one kind that inherits a facet requirement and one that forbids every facet,
+# one relation that requires reciprocity and one that says nothing about it, and
+# one windowed participation expectation.
 #
 # It is not a resolved package. `standin` puts the real one together, and this
 # file is written out because a fixture that depended on the base package would
 # change whenever the base does.
 
+facets:
+
+  # Enumerated, so `facet.value.not_permitted` has a set to test against, and
+  # required, so `facet.required.missing` has something to miss.
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft, role: initial}
+      - {value: current, role: live}
+      - {value: superseded, role: terminal-retained}
+
+  # The origin a participation window is measured from. A declaration says
+  # `since: state_entered` and never `since: status_since`, so the role is what
+  # joins the two.
+  status_since:
+    role: state_entered
+    required: true
+
+  summary:
+    role: scent
+    required: true
+
+  # The discriminator of the heterogeneous shelf. It declares no value set, so
+  # the shelf's own `kinds` list is the only thing that says what it may hold,
+  # and no instance of the enum rule is generated over it.
+  doc_type:
+    volatility: stable
+
 kinds:
-  governed_document: {abstract: true}
-  design_spec: {is_a: governed_document}
-  evaluation:  {is_a: governed_document}
+  governed_document:
+    abstract: true
+    facets: {require: [status, status_since, summary]}
+
+  design_spec:
+    is_a: governed_document
+
+  evaluation:
+    is_a: governed_document
+    relations:
+      expect:
+        - id: evidence-cited
+          relation: cited_by
+          to_kind: design_spec
+          when: {status: current}
+          within: 30d
+          since: state_entered
+          severity: warn
+          rationale: an evaluation that no specification cites closed nothing
+
+  # A kind that forbids every facet the two Shape rules read, so neither of them
+  # generates an instance over it. That is what leaves a classified document
+  # with no instance at all, which is the failing fixture the coverage rule
+  # needs. See `crates/check/src/facet_value.rs` for why a rule that
+  # instantiated over every typed document would make that finding unreachable.
+  note:
+    facets: {forbid: [status, status_since, summary]}
 
 shelves:
   spec_series:
     path: check/spec/**
     homogeneous: false
     discriminator: doc_type
-    kinds: [design_spec]
+    kinds: [design_spec, note]
   evaluations:
     path: check/evaluations/**
     homogeneous: true
@@ -35,16 +90,18 @@ relations:
 
   # No `reciprocal`, so no instance of the reciprocity check is generated over
   # it. That is the half of "generated from the taxonomy" that a corpus with one
-  # relation cannot show.
+  # relation cannot show. Its endpoint sets are the ones the endpoint rule
+  # tests: a design spec at the source end, and any governed document at the
+  # target end, which an evaluation is by inheritance.
   assesses:
     family: evidence
     from: [design_spec]
     to:   [governed_document]
 
-# Two rules reach an obligation here and one does not, because both states are
+# Six rules reach an obligation here and one does not, because both states are
 # worth recording. A finding names the obligation that the control binds it to,
 # and a rule that no control names says so in the report rather than carrying a
-# quiet `None`. The base package binds all three.
+# quiet `None`. The base package binds all seven.
 
 obligations:
   OB-FIX-1:
@@ -59,6 +116,30 @@ obligations:
     class: cohesion
     prevents: content.inconsistent
     severity: medium
+  OB-FIX-3:
+    statement: Every facet a kind requires is declared by every document of that kind
+    rationale: A facet nobody declared is a question the corpus cannot answer about itself
+    class: cohesion
+    prevents: content.incomplete
+    severity: high
+  OB-FIX-4:
+    statement: A facet with a declared value set carries one of those values
+    rationale: A value outside the set is a state no reader and no query can act on
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+  OB-FIX-5:
+    statement: Both ends of a relation instance are kinds the relation permits
+    rationale: An edge between kinds a relation forbids is an assertion the taxonomy never sanctioned
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+  OB-FIX-6:
+    statement: A participation expectation is met inside the window the taxonomy declares
+    rationale: A document that nothing ever links to is work that reached nobody
+    class: cohesion
+    prevents: process.maintenance
+    severity: low
 
 controls:
   CT-FIX-1:
@@ -69,5 +150,25 @@ controls:
   CT-FIX-2:
     mechanism: check:shelf.placement_is_primary
     discharges: [OB-FIX-2]
+    trigger: pull_request
+    posture: advisory
+  CT-FIX-3:
+    mechanism: check:facet.required.missing
+    discharges: [OB-FIX-3]
+    trigger: pull_request
+    posture: advisory
+  CT-FIX-4:
+    mechanism: check:facet.value.not_permitted
+    discharges: [OB-FIX-4]
+    trigger: pull_request
+    posture: advisory
+  CT-FIX-5:
+    mechanism: check:relation.endpoint.not_permitted
+    discharges: [OB-FIX-5]
+    trigger: pull_request
+    posture: advisory
+  CT-FIX-6:
+    mechanism: check:relation.participation.overdue
+    discharges: [OB-FIX-6]
     trigger: pull_request
     posture: advisory

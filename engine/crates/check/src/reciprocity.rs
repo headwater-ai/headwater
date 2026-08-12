@@ -129,7 +129,7 @@ impl EdgeCheck for Reciprocity<'_> {
         };
 
         let (line, column) = at(Some(written.span));
-        Outcome::Failed(Box::new(Finding {
+        Outcome::failed_with(Finding {
             rule: self::RULE,
             severity: Severity::Error,
             obligation: None,
@@ -142,7 +142,7 @@ impl EdgeCheck for Reciprocity<'_> {
             ),
             remediation: format!("add `{name}: {target}` under `relations:` in {owed_by}"),
             fixable: true,
-        }))
+        })
     }
 }
 
