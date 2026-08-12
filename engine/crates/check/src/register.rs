@@ -17,10 +17,47 @@
 //! its obligation runs through the control that names the rule, and this module
 //! is that path.
 //!
-//! The engine reads one mechanism prefix. `check:` names a rule id, and a
-//! mechanism with any other prefix names something that is not a rule — a
-//! schedule, a hook, a pipeline. Such a control binds nothing here, and it is
-//! not an error: spec 4 declares controls that no check layer runs.
+//! The engine reads two mechanism prefixes. `check:` names a rule id, and that
+//! is the binding a finding travels along. `phase:` names a phase of the engine
+//! itself, out of the closed set [`PHASES`] holds: a phase discharges an
+//! obligation by doing the thing rather than by reporting a finding about it,
+//! so it binds no finding and it still verifies its obligation. A mechanism
+//! with any other prefix names something outside this engine — a schedule, a
+//! hook, a pipeline. Such a control binds nothing here, and it is not an error:
+//! spec 4 declares controls that no check layer runs.
+//!
+//! # The second prefix is what the two coverage obligations needed
+//!
+//! `OB-COV-1` and `OB-COV-3` of the base package carried no control, and the
+//! file said so in a comment that read them as gaps. Neither is a gap. The
+//! census classifies every file under the corpus root and writes an exception
+//! line for each one it cannot, and every run prints what it saw, classified,
+//! checked and skipped before it prints a finding. Both run on every
+//! invocation. What was missing was a way to name a mechanism that discharges
+//! an obligation without producing a finding, so the gap was in the mechanism
+//! vocabulary rather than in the disposition vocabulary.
+//!
+//! # The projection, and the one rule it enforces about itself
+//!
+//! [Spec 4](../../../../docs/spec/04-assurance-model.md#every-obligation-has-exactly-one-disposition)
+//! makes the register "generated, never authored": coverage by obligation, the
+//! disposition of each, control health and the escaped findings are a
+//! projection of the two declarations and of one run over them. [`Projection`]
+//! is that view, and [`Projection::render`] is the artifact.
+//!
+//! Spec 4 admits no silence: "an obligation with no disposition is itself a
+//! finding". `verified` follows from a control, and the other two follow from a
+//! member of the obligation. So an obligation that no control discharges and
+//! that declares neither is the fourth state spec 4 forbids, and so is one that
+//! declares a disposition *and* has a control. [`DISPOSITION`] reports both,
+//! and [`MECHANISM`] reports spec 4's other sentence about the register: "a
+//! control that names a mechanism that the engine does not implement, or a
+//! pipeline that does not exist, is a finding".
+//!
+//! Neither rule creates an instance, and [`crate::coverage`] is the precedent:
+//! a rule whose subject is not a document accounts nothing against the census.
+//! Their grain is [`Grain::Taxonomy`](crate::Grain::Taxonomy), which is a fifth
+//! grain that spec 12's list does not hold.
 //!
 //! # Where this differs from spec 12, and it is worth stating
 //!
@@ -36,11 +73,42 @@
 //! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
 //! carries the disagreement.
 
+use crate::finding::{Finding, Severity};
+use crate::scope::Scope;
+use crate::suppression::Inventory;
 use headwater_census::shelves::DeclarationError;
 use headwater_yaml::{Mapping, Span, Value};
 
 /// The prefix of a mechanism that names a rule of this engine.
 const CHECK: &str = "check:";
+
+/// The prefix of a mechanism that names a phase of this engine.
+const PHASE: &str = "phase:";
+
+/// The phases a control may name, which is the whole of what `phase:` reaches.
+///
+/// A phase discharges an obligation by running rather than by reporting. It is
+/// a closed set for the reason `check:` is: a control that names a mechanism
+/// this engine does not implement is a finding, and a set the engine cannot
+/// enumerate cannot produce one.
+pub const PHASES: [&str; 2] = ["census.classification", "runner.coverage_report"];
+
+/// Spec 4: an obligation carries exactly one disposition, and this reports the
+/// two ways a taxonomy fails that.
+pub const DISPOSITION: &str = "obligation.disposition.not_one";
+
+/// Spec 4: "A control that names a mechanism that the engine does not
+/// implement, or a pipeline that does not exist, is a finding."
+pub const MECHANISM: &str = "control.mechanism.unimplemented";
+
+/// The grain of both rules above. See the module comment: neither reads a
+/// document, so neither creates an instance and neither accounts against the
+/// census.
+pub const SCOPE: Scope = Scope::taxonomy();
+
+/// Which edition of the two rules reached a verdict. Stated here for the
+/// reason [`crate::coverage::VERSION`] is: no trait carries it.
+pub const VERSION: u32 = 1;
 
 /// The obligations and controls of a resolved taxonomy.
 #[derive(Clone, Debug, Default)]
@@ -62,16 +130,94 @@ pub struct Obligation {
     pub id: String,
     pub statement: String,
     pub severity: Option<String>,
+    /// The disposition this obligation states for itself, and `None` where it
+    /// states none. `verified` is not a value here and never will be: it
+    /// follows from a control, and a second place to write it is the drift
+    /// spec 4 exists to kill.
+    pub disposition: Option<Stated>,
     pub span: Span,
 }
 
-/// A control, read down to the binding.
+/// A disposition an obligation states, which is one of the two that no control
+/// can supply.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Stated {
+    /// Spec 4: "No control yet. Wanted, and tracked with an owner and, ideally,
+    /// a target."
+    Gap {
+        owner: String,
+        target: Option<String>,
+    },
+    /// Spec 4: "No mechanism can exist. Accepted, with the reasoning recorded."
+    Unverifiable { reasoning: String },
+}
+
+/// A control, read down to the binding and to what a report needs of it.
 #[derive(Clone, Debug)]
 pub struct Control {
     pub id: String,
     pub mechanism: String,
     pub discharges: Vec<String>,
+    /// Whether a finding of this control blocks a gate, which is spec 12's
+    /// sense of the word. Spec 4 wrote one member holding this and the class
+    /// below, and control health cannot be read off a member holding two
+    /// vocabularies.
+    pub posture: Option<String>,
+    /// When this control acts: one of spec 4's four control classes.
+    pub acts: Option<String>,
+    /// What spec 4 asks to be "recorded with the control", and `None` where a
+    /// control records nothing.
+    pub promotion: Option<Promotion>,
     pub span: Span,
+}
+
+/// The promotion record: one key per subsection of spec 4's promotion section.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Promotion {
+    /// The control is on the promotion path, and these are the criteria that
+    /// would finish it.
+    Criteria {
+        window: String,
+        threshold: String,
+        sample: String,
+    },
+    /// "Where promotion does not apply": one error class is unrecoverable, so
+    /// the control ships at its final posture.
+    FinalPosture { reasoning: String },
+    /// "Where promotion cannot finish": the remediation needs judgment,
+    /// whatever the measured false-positive rate.
+    PermanentlyAdvisory { reasoning: String },
+    /// "Promotion measures a rule, and not a producer of facts": there is no
+    /// false-positive rate to measure, and the instrument is a fixture set.
+    ProducesFacts { reasoning: String },
+}
+
+impl Promotion {
+    /// The phrase a report prints, in the order a summary counts them.
+    pub fn name(&self) -> &'static str {
+        match self {
+            Promotion::Criteria { .. } => "with criteria",
+            Promotion::FinalPosture { .. } => "at a final posture",
+            Promotion::PermanentlyAdvisory { .. } => "permanently advisory",
+            Promotion::ProducesFacts { .. } => "producing facts rather than findings",
+        }
+    }
+}
+
+/// What a control's mechanism names, as far as this engine can tell.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Mechanism {
+    /// A rule this run carries.
+    Rule(String),
+    /// A phase of this engine, from [`PHASES`].
+    Phase(String),
+    /// A `check:` or `phase:` name this engine does not implement. Spec 4 calls
+    /// this a finding, and [`MECHANISM`] is that finding.
+    Unimplemented(String),
+    /// A prefix this engine does not read. Not an error: spec 4 declares
+    /// controls that no check layer runs, and the register says only that this
+    /// run did not observe it.
+    External(String),
 }
 
 /// What a rule reaches through the controls that name it.
@@ -169,6 +315,472 @@ impl Register {
     pub fn obligation(&self, id: &str) -> Option<&Obligation> {
         self.obligations.iter().find(|entry| entry.id == id)
     }
+
+    /// What a control's mechanism names, as far as this engine can tell.
+    pub fn mechanism(&self, control: &Control) -> Mechanism {
+        if let Some(rule) = control.mechanism.strip_prefix(CHECK) {
+            return match crate::RULES.contains(&rule) {
+                true => Mechanism::Rule(rule.to_string()),
+                false => Mechanism::Unimplemented(control.mechanism.clone()),
+            };
+        }
+        if let Some(phase) = control.mechanism.strip_prefix(PHASE) {
+            return match PHASES.contains(&phase) {
+                true => Mechanism::Phase(phase.to_string()),
+                false => Mechanism::Unimplemented(control.mechanism.clone()),
+            };
+        }
+        Mechanism::External(control.mechanism.clone())
+    }
+}
+
+/// The disposition of one obligation, which is derived and never declared
+/// whole. See [`Disposed`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Disposition {
+    /// One or more controls discharge it.
+    Verified,
+    /// No control, and the obligation states a gap.
+    Gap,
+    /// No control, and the obligation is accepted as unverifiable.
+    Unverifiable,
+    /// No control and no statement. The state spec 4 forbids.
+    Undeclared,
+}
+
+impl Disposition {
+    pub fn name(self) -> &'static str {
+        match self {
+            Disposition::Verified => "verified",
+            Disposition::Gap => "gap",
+            Disposition::Unverifiable => "unverifiable",
+            Disposition::Undeclared => "with no disposition",
+        }
+    }
+}
+
+/// One obligation and what became of it.
+///
+/// The disposition is not a field, because storing it beside the two things it
+/// is derived from is the second source of truth all over again. It is a
+/// function of the controls that discharge this obligation and of what the
+/// obligation states for itself, and both are here.
+#[derive(Clone, Debug)]
+pub struct Disposed {
+    pub id: String,
+    pub severity: Option<String>,
+    /// The controls that discharge it, in declaration order.
+    pub controls: Vec<String>,
+    pub stated: Option<Stated>,
+    /// Findings against this obligation that an author suppressed. A
+    /// suppression does not undo a control, so it does not move the
+    /// disposition. It is here because a reader of a verified obligation is
+    /// owed the count of what escaped under it.
+    pub escaped: usize,
+}
+
+impl Disposed {
+    pub fn disposition(&self) -> Disposition {
+        match (self.controls.is_empty(), &self.stated) {
+            (false, _) => Disposition::Verified,
+            (true, Some(Stated::Gap { .. })) => Disposition::Gap,
+            (true, Some(Stated::Unverifiable { .. })) => Disposition::Unverifiable,
+            (true, None) => Disposition::Undeclared,
+        }
+    }
+
+    /// Whether this obligation carries two dispositions rather than one: a
+    /// control discharges it and it also states a gap or an acceptance. Spec 4
+    /// gives it exactly one, so this is the second thing [`DISPOSITION`]
+    /// reports.
+    pub fn contradicted(&self) -> bool {
+        !self.controls.is_empty() && self.stated.is_some()
+    }
+}
+
+/// One control and what this run can say about it.
+#[derive(Clone, Debug)]
+pub struct Health {
+    pub id: String,
+    pub mechanism: Mechanism,
+    pub posture: Option<String>,
+    pub acts: Option<String>,
+    pub discharges: Vec<String>,
+    pub promotion: Option<Promotion>,
+}
+
+/// The register as spec 4 asks for it: coverage by obligation, the disposition
+/// of each, control health, and the findings that escaped under each.
+#[derive(Clone, Debug, Default)]
+pub struct Projection {
+    /// In declaration order, because a report is read by a person.
+    pub obligations: Vec<Disposed>,
+    pub controls: Vec<Health>,
+    /// Rules that reach no obligation, or more than one. Spec 4: "a check that
+    /// cannot say which invariant it protects did not earn its place."
+    pub unbound: Vec<(&'static str, Bound)>,
+}
+
+impl Projection {
+    /// The projection of one register over the rules this engine carries.
+    ///
+    /// It takes no run, because none of this is about a run: the same two
+    /// declarations produce the same register whatever the corpus holds. What
+    /// a run adds is the escaped count, and [`Projection::escaped_from`] adds
+    /// it afterwards for a reason its comment gives.
+    pub fn of(register: &Register) -> Self {
+        let obligations = register
+            .obligations
+            .iter()
+            .map(|obligation| Disposed {
+                id: obligation.id.clone(),
+                severity: obligation.severity.clone(),
+                controls: register
+                    .controls
+                    .iter()
+                    .filter(|control| control.discharges.contains(&obligation.id))
+                    .map(|control| control.id.clone())
+                    .collect(),
+                stated: obligation.disposition.clone(),
+                escaped: 0,
+            })
+            .collect();
+        let controls = register
+            .controls
+            .iter()
+            .map(|control| Health {
+                id: control.id.clone(),
+                mechanism: register.mechanism(control),
+                posture: control.posture.clone(),
+                acts: control.acts.clone(),
+                discharges: control.discharges.clone(),
+                promotion: control.promotion.clone(),
+            })
+            .collect();
+        let unbound = crate::RULES
+            .iter()
+            .filter_map(|rule| match register.bound(rule) {
+                Bound::To(_) => None,
+                other => Some((*rule, other)),
+            })
+            .collect();
+        Projection {
+            obligations,
+            controls,
+            unbound,
+        }
+    }
+
+    /// Account this run's suppressed findings to the obligations they name.
+    ///
+    /// Separate from [`Projection::of`] because of where in a run each half is
+    /// available. The dispositions are known before any check runs, and the
+    /// findings of [`Projection::findings`] are among the findings the filter
+    /// then reads. The inventory exists only after that filter, so a
+    /// constructor that took it would run after the findings it produces.
+    pub fn escaped_from(&mut self, register: &Register, inventory: &Inventory) {
+        for (rule, count) in inventory.by_rule() {
+            let Bound::To(obligation) = register.bound(rule) else {
+                continue;
+            };
+            if let Some(disposed) = self.obligations.iter_mut().find(|d| d.id == obligation) {
+                disposed.escaped += count;
+            }
+        }
+    }
+
+    /// The two findings spec 4 asks the register to make about itself.
+    ///
+    /// The path is the taxonomy this run read rather than a document, because
+    /// neither defect is in the corpus. See [`crate::coverage`] for the
+    /// precedent: a rule whose subject is not a document creates no instance
+    /// and accounts nothing against the census.
+    pub fn findings(&self, source: &str) -> Vec<Finding> {
+        let mut findings = Vec::new();
+        for obligation in &self.obligations {
+            let id = &obligation.id;
+            let message = match obligation.disposition() {
+                Disposition::Undeclared => Some(format!(
+                    "obligation {id} carries no disposition: no control discharges it, and it \
+                     states neither a gap nor an acceptance"
+                )),
+                _ if obligation.contradicted() => Some(format!(
+                    "obligation {id} carries two dispositions: {} discharges it, and it also \
+                     states one for itself",
+                    obligation.controls.join(", ")
+                )),
+                _ => None,
+            };
+            let Some(message) = message else { continue };
+            findings.push(Finding {
+                rule: DISPOSITION,
+                // Advisory, like every other rule this engine ships. Spec 4
+                // writes "the register is complete by construction, or the
+                // build fails", and principle 4 rules that a new check ships
+                // advisory whatever it will end at. The control is what
+                // promotes it, and CT-REG-1 records that it is advisory today.
+                severity: Severity::Warn,
+                obligation: None,
+                path: source.to_string(),
+                line: 0,
+                column: 0,
+                message,
+                remediation: "give the obligation a control that discharges it, or state \
+                              `disposition: {gap: {owner: …}}` or `disposition: \
+                              {unverifiable: {reasoning: …}}` on it, and exactly one of the three"
+                    .to_string(),
+                fixable: false,
+            });
+        }
+        for control in &self.controls {
+            let Mechanism::Unimplemented(mechanism) = &control.mechanism else {
+                continue;
+            };
+            findings.push(Finding {
+                rule: MECHANISM,
+                severity: Severity::Warn,
+                obligation: None,
+                path: source.to_string(),
+                line: 0,
+                column: 0,
+                message: format!(
+                    "control {} names the mechanism {mechanism}, which this engine does not \
+                     implement, so nothing discharges {}",
+                    control.id,
+                    control.discharges.join(", ")
+                ),
+                remediation: "name a rule this engine carries, or a phase of it, or a mechanism \
+                              outside it under a prefix this engine does not read"
+                    .to_string(),
+                fixable: false,
+            });
+        }
+        findings
+    }
+
+    /// Obligations at one disposition.
+    pub fn at(&self, disposition: Disposition) -> impl Iterator<Item = &Disposed> {
+        self.obligations
+            .iter()
+            .filter(move |o| o.disposition() == disposition)
+    }
+
+    /// The severities an obligation of this register carries, in spec 4's own
+    /// order, with the count at each and the number of those verified.
+    ///
+    /// An obligation that declares no severity is counted under `-`, so the
+    /// rows sum to the total whatever a source omitted.
+    pub fn by_severity(&self) -> Vec<(&str, usize, usize)> {
+        let mut rows: Vec<(&str, usize, usize)> = ["high", "medium", "low", "-"]
+            .into_iter()
+            .map(|severity| (severity, 0, 0))
+            .collect();
+        for obligation in &self.obligations {
+            let severity = obligation.severity.as_deref().unwrap_or("-");
+            let row = match rows.iter_mut().find(|(known, _, _)| *known == severity) {
+                Some(row) => row,
+                // A severity outside spec 4's set. The meta-schema refuses one,
+                // and this reader refuses nothing, so it is counted where a
+                // reader will see it rather than dropped.
+                None => {
+                    rows.push((severity, 0, 0));
+                    rows.last_mut().expect("just pushed")
+                }
+            };
+            row.1 += 1;
+            if obligation.disposition() == Disposition::Verified {
+                row.2 += 1;
+            }
+        }
+        rows.retain(|(_, count, _)| *count > 0);
+        rows
+    }
+
+    /// The register as text: the artifact, and the section of the report.
+    ///
+    /// One rendering rather than two. A summary that a reader sees and an
+    /// artifact that a gate reads would be two views of one projection, and
+    /// two views of one fact is the drift this whole module is about.
+    pub fn render(&self) -> String {
+        use std::fmt::Write;
+        let mut out = String::new();
+        if self.obligations.is_empty() && self.controls.is_empty() {
+            return out;
+        }
+        out.push_str("register\n");
+        let counts: Vec<String> = [
+            Disposition::Verified,
+            Disposition::Gap,
+            Disposition::Unverifiable,
+            Disposition::Undeclared,
+        ]
+        .into_iter()
+        .map(|disposition| format!("{} {}", self.at(disposition).count(), disposition.name()))
+        .collect();
+        let _ = writeln!(
+            out,
+            "  {} obligations: {}",
+            self.obligations.len(),
+            counts.join(", ")
+        );
+        for (severity, count, verified) in self.by_severity() {
+            let _ = writeln!(out, "  {count:5} {severity}, {verified} verified");
+        }
+
+        // The gap list spec 4 asks the coverage report to carry, and the two
+        // states beside it. A verified obligation is not listed: the control
+        // block below names what discharges each one, and a list of every
+        // obligation is a list nobody finishes.
+        for obligation in self.obligations.iter().filter(|o| {
+            o.disposition() != Disposition::Verified || o.contradicted() || o.escaped > 0
+        }) {
+            let _ = write!(out, "  {} {}", obligation.id, obligation.disposition().name());
+            let _ = match &obligation.stated {
+                Some(Stated::Gap { owner, target }) => match target {
+                    Some(target) => write!(out, ", owner {owner}, target {target}"),
+                    None => write!(out, ", owner {owner}, and no target"),
+                },
+                Some(Stated::Unverifiable { reasoning }) => write!(out, ", {reasoning}"),
+                None => Ok(()),
+            };
+            if obligation.contradicted() {
+                let _ = write!(
+                    out,
+                    ", and it states one for itself as well, which is two dispositions"
+                );
+            }
+            if obligation.escaped > 0 {
+                let _ = write!(out, ", {} findings escaped under it", obligation.escaped);
+            }
+            out.push('\n');
+        }
+
+        // Control health. The posture and the class are counted apart because
+        // they are two vocabularies, which is the whole reason they are two
+        // members.
+        let _ = writeln!(out, "  {} controls", self.controls.len());
+        for (label, mut values) in [
+            (
+                "posture",
+                self.tally(self.controls.iter().map(|c| c.posture.as_deref())),
+            ),
+            (
+                "acts",
+                self.tally(self.controls.iter().map(|c| c.acts.as_deref())),
+            ),
+        ] {
+            values.sort();
+            for (value, count) in values {
+                let _ = writeln!(out, "  {count:5} {label} {value}");
+            }
+        }
+        for (mechanism, count) in self.mechanisms() {
+            let _ = writeln!(out, "  {count:5} {mechanism}");
+        }
+
+        // The promotion record. Spec 4 asks that the criteria be recorded with
+        // the control, so a control with no record is the row that matters and
+        // it is printed first.
+        let bare = self
+            .controls
+            .iter()
+            .filter(|control| control.promotion.is_none())
+            .count();
+        if bare > 0 {
+            let _ = writeln!(
+                out,
+                "  {bare:5} with no promotion record, so nothing states what would promote them"
+            );
+        }
+        for name in [
+            "with criteria",
+            "at a final posture",
+            "permanently advisory",
+            "producing facts rather than findings",
+        ] {
+            let count = self
+                .controls
+                .iter()
+                .filter(|control| control.promotion.as_ref().is_some_and(|p| p.name() == name))
+                .count();
+            if count > 0 {
+                let _ = writeln!(out, "  {count:5} {name}");
+            }
+        }
+
+        // Spec 4 fixes a precedence over three inventories "so the three
+        // inventories partition the escaped findings, and no finding is counted
+        // three times". One of the three exists. The two that do not are
+        // printed as absent rather than left out, because a partition with a
+        // silent member is one a reader cannot check.
+        let escaped: usize = self.obligations.iter().map(|o| o.escaped).sum();
+        let _ = writeln!(
+            out,
+            "  escaped findings, in the precedence spec 4 fixes: no waiver mechanism exists, no \
+             migration-pending mechanism exists, {escaped} suppressed"
+        );
+
+        // A rule that reaches no obligation. The line is printed when there are
+        // none for the reason the suppression inventory prints its one shelf: a
+        // reader who has to ask whether the report ran cannot read a silence as
+        // an answer.
+        match self.unbound.is_empty() {
+            true => out.push_str("  every rule this engine carries reaches one obligation\n"),
+            false => {
+                for (rule, bound) in &self.unbound {
+                    let _ = match bound {
+                        Bound::Unnamed => {
+                            writeln!(out, "  {rule} reaches no obligation, so it names none")
+                        }
+                        Bound::Several(obligations) => writeln!(
+                            out,
+                            "  {rule} reaches {}, and a finding names one obligation, so it \
+                             names none",
+                            obligations.join(", ")
+                        ),
+                        Bound::To(_) => Ok(()),
+                    };
+                }
+            }
+        }
+        out
+    }
+
+    /// Each mechanism state and the number of controls in it, in a fixed order
+    /// so that two reports line up.
+    fn mechanisms(&self) -> Vec<(&'static str, usize)> {
+        let mut rows = [
+            ("name a rule this engine carries", 0),
+            ("name a phase this engine runs", 0),
+            ("name a mechanism this engine does not implement", 0),
+            ("name a mechanism outside this engine", 0),
+        ];
+        for control in &self.controls {
+            rows[match control.mechanism {
+                Mechanism::Rule(_) => 0,
+                Mechanism::Phase(_) => 1,
+                Mechanism::Unimplemented(_) => 2,
+                Mechanism::External(_) => 3,
+            }]
+            .1 += 1;
+        }
+        rows.into_iter().filter(|(_, count)| *count > 0).collect()
+    }
+
+    /// One member of a control, counted by value. A control that declares none
+    /// is counted under `-`, for the reason [`Projection::by_severity`] counts
+    /// one there.
+    fn tally<'a>(&self, values: impl Iterator<Item = Option<&'a str>>) -> Vec<(&'a str, usize)> {
+        let mut counts: Vec<(&str, usize)> = Vec::new();
+        for value in values {
+            let value = value.unwrap_or("-");
+            match counts.iter_mut().find(|(known, _)| *known == value) {
+                Some((_, count)) => *count += 1,
+                None => counts.push((value, 1)),
+            }
+        }
+        counts
+    }
 }
 
 fn read_obligation(id: &str, value: &Value, span: Span) -> Result<Obligation, DeclarationError> {
@@ -187,7 +799,129 @@ fn read_obligation(id: &str, value: &Value, span: Span) -> Result<Obligation, De
         id: id.to_string(),
         statement,
         severity: scalar(map, "severity"),
+        disposition: read_disposition(id, map)?,
         span,
+    })
+}
+
+/// The disposition an obligation states, or `None` where it states none.
+///
+/// The meta-schema owns the shape and this reads what a report needs, which is
+/// the posture of every reader in this crate. One thing is refused here and not
+/// there, because it is not a shape: `verified` is a value no obligation may
+/// declare. The meta-schema expresses that by omitting the key, and a source
+/// that writes it reaches this function as an unknown key rather than as a
+/// disposition. Saying so by name is worth one branch, because the author who
+/// wrote it is asking a reasonable question and the answer is a rule.
+fn read_disposition(id: &str, map: &Mapping) -> Result<Option<Stated>, DeclarationError> {
+    let Some(node) = map.get("disposition") else {
+        return Ok(None);
+    };
+    let Some(stated) = node.value.as_map() else {
+        return Err(DeclarationError {
+            message: format!(
+                "the disposition of obligation `{id}` is {}, and it names one of `gap` and \
+                 `unverifiable`",
+                node.value.kind_name()
+            ),
+            span: node.span,
+        });
+    };
+    if let Some(gap) = stated.get("gap").and_then(|node| node.value.as_map()) {
+        let owner = scalar(gap, "owner").ok_or_else(|| DeclarationError {
+            message: format!(
+                "the gap of obligation `{id}` names no owner, and spec 4 tracks a gap with one"
+            ),
+            span: node.span,
+        })?;
+        return Ok(Some(Stated::Gap {
+            owner,
+            target: scalar(gap, "target"),
+        }));
+    }
+    if let Some(accepted) = stated.get("unverifiable").and_then(|node| node.value.as_map()) {
+        let reasoning = scalar(accepted, "reasoning").ok_or_else(|| DeclarationError {
+            message: format!(
+                "obligation `{id}` is accepted as unverifiable and records no reasoning, which \
+                 is the half of that disposition spec 4 asks for"
+            ),
+            span: node.span,
+        })?;
+        return Ok(Some(Stated::Unverifiable { reasoning }));
+    }
+    Err(DeclarationError {
+        message: match stated.get("verified").is_some() {
+            true => format!(
+                "obligation `{id}` declares itself verified, and no obligation may. Verified \
+                 follows from a control that discharges it, and a second place to write the \
+                 binding is what the register exists to prevent"
+            ),
+            false => format!(
+                "the disposition of obligation `{id}` names neither `gap` nor `unverifiable`"
+            ),
+        },
+        span: node.span,
+    })
+}
+
+/// The promotion record of a control, or `None` where it records nothing.
+fn read_promotion(id: &str, map: &Mapping) -> Result<Option<Promotion>, DeclarationError> {
+    let Some(node) = map.get("promotion") else {
+        return Ok(None);
+    };
+    let Some(record) = node.value.as_map() else {
+        return Err(DeclarationError {
+            message: format!(
+                "the promotion record of control `{id}` is {}, and it names one of `criteria`, \
+                 `final_posture`, `permanently_advisory` and `produces_facts`",
+                node.value.kind_name()
+            ),
+            span: node.span,
+        });
+    };
+    if let Some(criteria) = record.get("criteria").and_then(|node| node.value.as_map()) {
+        let missing = |member: &str| DeclarationError {
+            message: format!(
+                "the promotion criteria of control `{id}` state no {member}, and spec 4 names it"
+            ),
+            span: node.span,
+        };
+        return Ok(Some(Promotion::Criteria {
+            window: scalar(criteria, "window").ok_or_else(|| missing("observation window"))?,
+            threshold: scalar(criteria, "threshold").ok_or_else(|| missing("threshold"))?,
+            sample: scalar(criteria, "sample").ok_or_else(|| missing("adjudicated sample"))?,
+        }));
+    }
+    for (key, build) in [
+        (
+            "final_posture",
+            (|reasoning| Promotion::FinalPosture { reasoning }) as fn(String) -> Promotion,
+        ),
+        ("permanently_advisory", |reasoning| {
+            Promotion::PermanentlyAdvisory { reasoning }
+        }),
+        ("produces_facts", |reasoning| Promotion::ProducesFacts {
+            reasoning,
+        }),
+    ] {
+        let Some(exemption) = record.get(key).and_then(|node| node.value.as_map()) else {
+            continue;
+        };
+        let reasoning = scalar(exemption, "reasoning").ok_or_else(|| DeclarationError {
+            message: format!(
+                "control `{id}` is off the promotion path under `{key}` and records no \
+                 reasoning, which leaves the assertion of taste that spec 4 refuses"
+            ),
+            span: node.span,
+        })?;
+        return Ok(Some(build(reasoning)));
+    }
+    Err(DeclarationError {
+        message: format!(
+            "the promotion record of control `{id}` names none of `criteria`, `final_posture`, \
+             `permanently_advisory` and `produces_facts`"
+        ),
+        span: node.span,
     })
 }
 
@@ -220,6 +954,9 @@ fn read_control(id: &str, value: &Value, span: Span) -> Result<Control, Declarat
         id: id.to_string(),
         mechanism,
         discharges,
+        posture: scalar(map, "posture"),
+        acts: scalar(map, "acts"),
+        promotion: read_promotion(id, map)?,
         span,
     })
 }

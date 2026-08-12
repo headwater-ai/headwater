@@ -132,7 +132,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 11] = [
+pub const RULES: [&str; 13] = [
     facet_required::RULE,
     facet_value::RULE,
     placement::RULE,
@@ -144,6 +144,8 @@ pub const RULES: [&str; 11] = [
     sections::RULE,
     fragment::RULE,
     coverage::RULE,
+    register::DISPOSITION,
+    register::MECHANISM,
 ];
 
 /// The declarations one run reads, from a taxonomy that is already resolved.
@@ -168,6 +170,13 @@ pub struct Declared<'a> {
     pub relations: &'a Declarations,
     /// Obligations and controls: the path from a rule to what it serves.
     pub register: &'a Register,
+    /// Where the four above came from, as a path a reader can open.
+    ///
+    /// It is here because two rules of [`register`] are about the taxonomy
+    /// rather than about the corpus, and a finding carries a path. For a run of
+    /// the verb that is `.headwater/taxonomy.lock`, which spec 6 fixes as the
+    /// one thing downstream reads.
+    pub source: &'a str,
 }
 
 /// One run of the check layer over one corpus.
@@ -192,6 +201,10 @@ pub struct Run {
     /// The union of what this run read, with the lock, the clock and the check
     /// versions beside it. See [`readset`].
     pub read_set: ReadSet,
+    /// The register: every obligation with its disposition, every control with
+    /// its health, and what escaped under each obligation. Spec 4 makes it a
+    /// projection of the two declarations, generated and never authored.
+    pub register: register::Projection,
     /// What this run did with its cache. Deliberately outside [`Run::render`]:
     /// see [`cache`] for why a hit count is not part of a verdict.
     pub cache: cache::Report,
@@ -259,11 +272,17 @@ pub fn run(
 
     let coverage = Coverage::of(census, &instances);
 
+    let mut register = register::Projection::of(declared.register);
+
     let mut findings: Vec<Finding> = instances
         .iter()
         .flat_map(|instance| instance.findings().iter().cloned())
         .collect();
     findings.extend(coverage.findings());
+    // The register's two findings are about the taxonomy rather than about the
+    // corpus, and they enter here for the reason coverage's do: neither rule
+    // creates an instance, so neither accounts anything against the census.
+    findings.extend(register.findings(declared.source));
 
     // The obligation is stamped here rather than written into each rule,
     // because the binding is data. A rule states its id, a control names that
@@ -321,6 +340,8 @@ pub fn run(
             scope::document_version::<fragment::Fragments>(),
         ),
         (coverage::RULE, coverage::SCOPE, coverage::VERSION),
+        (register::DISPOSITION, register::SCOPE, register::VERSION),
+        (register::MECHANISM, register::SCOPE, register::VERSION),
     ]
     .into_iter()
     .map(|(rule, scope, version)| Serves {
@@ -352,6 +373,10 @@ pub fn run(
         ctx.now(),
     );
 
+    // After the filter, because what escaped is what an author hid from this
+    // report and the inventory is where that is recorded.
+    register.escaped_from(declared.register, &suppressions);
+
     let read_set = ReadSet::of(
         declared.lock,
         ctx.now(),
@@ -369,6 +394,7 @@ pub fn run(
         suppressions,
         served,
         read_set,
+        register,
         cache: cache.report(),
     }
 }
@@ -462,29 +488,24 @@ impl Run {
         // has read what this run did not report as well as what it did.
         out.push_str(&self.suppressions.render());
 
-        // What each rule sees and what it serves. Spec 4 asks every finding to
-        // name its obligation, so a rule that names none is a fact about the
-        // taxonomy and it belongs beside the counts rather than in a reader's
-        // inference. The scope is here for the same reason and one more: spec
-        // 12 asks that the count of the barriers be a number a reader can
-        // read, rather than a property discovered under load.
-        out.push_str("rules, and for each the scope that binds it and what it serves\n");
+        // What each rule sees. Spec 12 asks that the count of the barriers be a
+        // number a reader can read, rather than a property discovered under
+        // load, and this is that number written out per rule.
+        //
+        // What each rule *serves* used to be here too, one line under the
+        // scope. It is in the register below now, from the obligation's side,
+        // with the disposition and the control beside it. Two printings of one
+        // binding is what spec 4 rules against in the declarations, and a
+        // report is no different.
+        out.push_str("rules, and for each the scope that binds it\n");
         for served in &self.served {
-            let rule = served.rule;
-            let _ = writeln!(out, "  {rule}\n    {}", served.scope.render());
-            let _ = match &served.obligation {
-                Bound::To(obligation) => writeln!(out, "    {obligation}"),
-                Bound::Unnamed => writeln!(
-                    out,
-                    "    no control names this rule, so its findings name no obligation"
-                ),
-                Bound::Several(obligations) => writeln!(
-                    out,
-                    "    reaches {}, and a finding names one obligation, so it names none",
-                    obligations.join(", ")
-                ),
-            };
+            let _ = writeln!(out, "  {}\n    {}", served.rule, served.scope.render());
         }
+
+        // Spec 4 makes the register a projection of the two declarations, and
+        // the coverage report — "what fraction of obligations are verified, by
+        // severity, with the gap list" — generated from it. This is that.
+        out.push_str(&self.register.render());
 
         if detail != Detail::Totals {
             let _ = writeln!(out, "{} findings", self.findings.len());

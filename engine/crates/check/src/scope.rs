@@ -116,6 +116,24 @@ pub enum Grain {
     Neighbourhood { depth: u8 },
     /// Everything. Spec 12 calls these the barriers.
     Corpus,
+    /// The resolved taxonomy, and no document at all.
+    ///
+    /// [Spec 12](../../../../docs/spec/12-check-layer.md#the-four-scopes) draws
+    /// every scope over the corpus, and it names five. A rule that reads the
+    /// taxonomy rather than the corpus fits none of them, and
+    /// [`crate::register`] holds two: an obligation that carries no disposition
+    /// and a control whose mechanism this engine does not implement are both
+    /// defects of the taxonomy, and neither has a document to point at.
+    ///
+    /// The grain is here rather than folded into [`Grain::Corpus`] because the
+    /// two read different things. A corpus-grained rule reads every row of the
+    /// census, and its verdict moves when a document moves. A taxonomy-grained
+    /// one reads the lock, and its verdict moves when the lock moves. To call
+    /// the second one corpus-grained would put a document in a read set that no
+    /// document was ever read for.
+    /// [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
+    /// carries what that costs spec 12's list.
+    Taxonomy,
 }
 
 impl Grain {
@@ -126,6 +144,7 @@ impl Grain {
             Grain::Edge => "edge",
             Grain::Neighbourhood { .. } => "neighbourhood",
             Grain::Corpus => "corpus",
+            Grain::Taxonomy => "taxonomy",
         }
     }
 }
@@ -175,6 +194,14 @@ impl Scope {
         }
     }
 
+    pub(crate) const fn taxonomy() -> Self {
+        Scope {
+            grain: Grain::Taxonomy,
+            needs_body: false,
+            needs_clock: false,
+        }
+    }
+
     pub fn grain(&self) -> Grain {
         self.grain
     }
@@ -200,6 +227,7 @@ impl Scope {
                 "one document and the documents one relation away from it"
             }
             (Grain::Corpus, _) => "every row of the census, and it is a barrier",
+            (Grain::Taxonomy, _) => "the resolved taxonomy, and no document",
         };
         // The clock is named because it is an input like any other, and because
         // spec 12 puts it in the cache key. A reader who asks why a warm run
