@@ -230,7 +230,7 @@ pub fn declared(census: &Census, rules: &[&'static str]) -> (Vec<Suppression>, V
         };
         for (at, block) in document.body.blocks.iter().enumerate() {
             for text in comments(block) {
-                let Some(directive) = directive(&text) else {
+                let Some(directive) = directive(text) else {
                     continue;
                 };
                 let line = block.span.start.line;
@@ -429,13 +429,15 @@ impl Inventory {
 /// [`headwater_doc::body::Ownership::Code`] inside the block it interrupts, and
 /// a directive is legitimate in both places. See
 /// [`headwater_doc::body`] for why the parser keeps it at all.
-fn comments(block: &Block) -> Vec<String> {
+fn comments(block: &Block) -> impl Iterator<Item = &str> {
     block
         .runs
         .iter()
-        .map(|run| run.text.trim().to_string())
+        .map(|run| run.text.trim())
+        // Filtered before anything is owned. This runs over every run of text
+        // in the corpus, and a `String` per run is the whole cost of a scan
+        // that ends up reading two comments.
         .filter(|text| text.starts_with("<!--") && text.ends_with("-->"))
-        .collect()
 }
 
 /// The inside of a comment, when it is one of ours.
