@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "headwater-graph"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+# The census is the input set. Only a typed row can be an edge endpoint, and a
+# row carries the document it read, so the graph never opens a file twice.
+headwater-census = { path = "../census" }
+
+# Front matter and prose links both arrive from the parser.
+headwater-doc = { path = "../doc" }
+
+# A relation declaration is a taxonomy source, and a declaration that is wrong
+# reports at the line that declared it.
+headwater-yaml = { path = "../yaml" }

@@ -1,0 +1,93 @@
+6 nodes, 11 declared edge halves
+      4 to a document
+      3 to an anchor
+      4 unbound
+5 prose links
+      2 to a corpus file
+      1 to this document
+      1 outside the repository
+      1 broken
+      1 skipped, quoted from another author
+
+anchors
+      1 code_path `graph.taxonomy.yml` via source-tree
+      1 code_path `graph/excluded/note.md` via source-tree
+        inside `graph/excluded/**`, which this corpus declares is not corpus content
+      1 code_path `graph/spec/01-second.md` via source-tree
+
+nodes
+  evaluation EVAL-FIX-alpha
+    graph/evaluations/alpha.md
+  evaluation EVAL-FIX-beta
+    graph/evaluations/beta.md
+  design_spec SPEC-FIX-first
+    graph/spec/00-first.md
+  design_spec SPEC-FIX-second
+    graph/spec/01-second.md
+  design_spec SPEC-FIX-listed
+    graph/spec/02-listed-relations.md
+  design_spec SPEC-FIX-first
+    graph/spec/04-twin.md
+
+edges
+  EVAL-FIX-alpha --cited_by--> SPEC-FIX-first
+    design_spec at graph/spec/00-first.md
+  SPEC-FIX-first --cites_evidence--> EVAL-FIX-alpha
+    evaluation at graph/evaluations/alpha.md
+  SPEC-FIX-first --cites_evidence--> EVAL-FIX-beta
+    evaluation at graph/evaluations/beta.md
+  SPEC-FIX-first --governs--> graph/spec/01-second.md
+    code_path via source-tree
+  SPEC-FIX-first --governs--> graph/excluded/note.md
+    code_path via source-tree
+  SPEC-FIX-first --governs--> graph/no-such-file.rs
+    unbound: `code_path`: no `graph/no-such-file.rs` in the source tree
+  SPEC-FIX-second --traces_to--> EVAL-FIX-nowhere
+    unbound: resolves to nothing at all, and `code_path`: no `EVAL-FIX-nowhere` in the source tree
+  SPEC-FIX-second --traces_to--> SPEC-FIX-unshelved
+    unbound: names graph/notes/loose.md, which is untyped: the census gave it no kind, and an endpoint is a kind
+  SPEC-FIX-second --traces_to--> graph.taxonomy.yml
+    code_path via source-tree
+  SPEC-FIX-second --audited_by--> 12345
+    unbound: `ado_work_item` names the resolver `ado-snapshot`, which this run does not have
+  SPEC-FIX-second --cites_evidence--> EVAL-FIX-alpha
+    evaluation at graph/evaluations/alpha.md
+
+links
+  graph/spec/00-first.md -> 01-second.md#a-heading
+    graph/spec/01-second.md (typed)
+  graph/spec/00-first.md -> ../excluded/note.md
+    graph/excluded/note.md (excluded)
+  graph/spec/00-first.md -> ../no-such-file.md
+    no `graph/no-such-file.md` in the repository
+  graph/spec/00-first.md -> https://w3id.org/headwater/
+    an address outside the repository
+  graph/spec/00-first.md -> #the-well-formed-document
+    this document
+
+graph/spec/00-first.md:11:7
+  relations: `governs` names graph/spec/01-second.md twice, and the second declares no second edge
+graph/spec/00-first.md:13:7
+  edge: `governs` -> graph/no-such-file.rs `code_path`: no `graph/no-such-file.rs` in the source tree
+graph/spec/00-first.md:22:258
+  link: `../no-such-file.md` no `graph/no-such-file.md` in the repository
+graph/spec/01-second.md:5:3
+  relations: `invented_relation` is neither a declared relation nor a declared inverse
+graph/spec/01-second.md:7:7
+  edge: `traces_to` -> EVAL-FIX-nowhere resolves to nothing at all, and `code_path`: no `EVAL-FIX-nowhere` in the source tree
+graph/spec/01-second.md:8:7
+  edge: `traces_to` -> SPEC-FIX-unshelved names graph/notes/loose.md, which is untyped: the census gave it no kind, and an endpoint is a kind
+graph/spec/01-second.md:10:15
+  edge: `audited_by` -> 12345 `ado_work_item` names the resolver `ado-snapshot`, which this run does not have
+graph/spec/01-second.md:14:7
+  relations: an entry of `cites_evidence` declares no `to`, so it names no target
+graph/spec/02-listed-relations.md:5:3
+  relations: `relations` is a sequence, and it names relation types
+graph/spec/03-anonymous.md:1:1
+  identifier: a typed `design_spec` that declares no identifier, so no edge can name it
+graph/spec/03-anonymous.md:1:1
+  relations: this document declares edges and no identifier, so none of them has a source
+graph/spec/04-twin.md:2:1
+  identifier: `SPEC-FIX-first` is also declared on graph/spec/00-first.md, and an identifier is never reused
+graph/spec/05-sequence-identifier.md:2:1
+  identifier: the identifier is not a scalar, and an identifier is a word
