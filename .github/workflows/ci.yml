@@ -6,8 +6,14 @@
 #   engine    does the code hold to its own fixtures?
 #   headwater does this corpus hold to its own taxonomy?
 #
-# The second is advisory and it stays that way until a rule earns a promotion.
-# The posture is not set here: `headwater check` exits 0 with findings on stdout
+# The second job runs two steps, and only one of them is advisory. A stale lock
+# blocks, because `headwater check` reads the lock and never the sources: a lock
+# that the sources no longer produce means the verdict came from a taxonomy that
+# nobody committed, and an advisory finding about the corpus then answers a
+# question nobody asked.
+#
+# The check itself is advisory and it stays that way until a rule earns a
+# promotion. The posture is not set here: `headwater check` exits 0 with findings on stdout
 # unless it is given `--strict`, which is the default spec 6 fixes. So a
 # promotion is one flag on one line, with the diff that added it as its audit
 # trail, rather than a `continue-on-error` that hides which rules block.
@@ -61,6 +67,12 @@ jobs:
       - name: Build the engine
         run: cargo build --release -p headwater-cli
         working-directory: engine
+      - name: The committed lock is what the sources resolve to
+        # This one blocks, and it is the only step here that does. It is not a
+        # finding about the corpus: a stale lock means the verdict below was
+        # reached against a taxonomy that nobody committed, so the advisory
+        # posture has nothing to be advisory about.
+        run: ./engine/target/release/headwater taxonomy resolve --check
       - name: Check this corpus
         # No `--strict`. Advisory, on purpose: a tool that blocks on first
         # contact is removed, and a removed tool catches nothing.

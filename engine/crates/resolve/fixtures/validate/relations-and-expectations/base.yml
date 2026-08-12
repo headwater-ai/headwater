@@ -1,0 +1,94 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Relation coherence, expectation well-formedness and attribute
+# well-formedness.
+#
+#   `refines` is a derivation, so its family's default nuclearity is
+#   nucleus–satellite, and it names no nucleus. `conflicts_with` is declared
+#   multinuclear and names one anyway. `supersedes` inherits a facet that the
+#   kind at one end does not carry.
+#
+#   The expectation on `decision` measures a window from a facet that the kind
+#   does not require, names a state that its facet does not hold, and points at
+#   a kind that no shelf reaches. The one on `note` names a relation that does
+#   not admit `note` at its source end.
+#
+#   The attribute on `supersedes` is called `to`, and the one on `refines` names
+#   no value space.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+facets:
+  status:
+    role: state
+    values: [draft, current]
+    required: true
+    volatility: mutable
+    guidance: {draft: it is being argued over, current: it states what holds now}
+  status_since:
+    role: state_entered
+    type: date
+    required: false
+    volatility: mutable
+  owner:
+    type: string
+    required: false
+    volatility: mutable
+
+kinds:
+  decision:
+    purpose: rationale
+    facets: {require: [status], optional: [status_since]}
+    relations:
+      expect:
+        - id: decision-realized
+          relation: refines
+          to_kind: proposal
+          when: {status: retired}
+          within: 90d
+          since: state_entered
+          rationale: a decision that nothing refines is not yet a decision
+  note:
+    purpose: rationale
+    facets: {require: [status, owner]}
+    relations:
+      expect:
+        - id: note-supersedes
+          relation: supersedes
+          to_kind: decision
+          within: 30d
+          since: created
+          rationale: a note that supersedes nothing is not a note
+  proposal:
+    purpose: rationale
+    facets: {require: [status]}
+
+relations:
+  supersedes:
+    family: succession
+    from: [decision]
+    to: [decision]
+    nuclearity: multinuclear
+    nucleus: from
+    inherits: [owner]
+    created_by: scaffold
+    attributes:
+      to: {type: string, owner: edge}
+  refines:
+    family: derivation
+    from: [decision]
+    to: [proposal]
+    created_by: agent
+    attributes:
+      depth: {owner: edge}
+
+shelves:
+  decisions: {path: "docs/decisions/**", homogeneous: false, discriminator: status, kinds: [decision, note]}
+
+core:
+  requires:
+    - facet_role: state

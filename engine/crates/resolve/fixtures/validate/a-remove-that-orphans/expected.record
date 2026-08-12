@@ -1,0 +1,4 @@
+the resolved taxonomy `shelves.decisions.kind`: referential integrity: reads `decision`, and no kind of that name is declared
+the resolved taxonomy `relations.supersedes.from`: referential integrity: reads `decision`, and no kind or anchor kind of that name is declared
+the resolved taxonomy `relations.supersedes.to`: referential integrity: reads `decision`, and no kind or anchor kind of that name is declared
+the resolved taxonomy `purposes.rationale`: purpose completeness: is declared and no concrete kind serves it, so no document can answer it

@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Coverage, kind inheritance, purpose completeness and kind rigidity. All four
+# are questions about the kind set, and every one of them is a promise that the
+# taxonomy makes and cannot keep.
+#
+#   coverage            a concrete kind no shelf reaches, an abstract kind a
+#                       shelf does reach, and a shelf that reaches nothing
+#   kind inheritance    a parent that is concrete, and a child that forbids what
+#                       its parent requires
+#   purpose completeness a kind with no purpose, and a purpose nothing serves
+#   kind rigidity       a kind named for a lifecycle state
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+  procedure: {intent: state the steps that carry out a task}
+
+facets:
+  status:
+    role: state
+    values: [draft, current]
+    required: true
+    volatility: mutable
+    guidance: {draft: it is being argued over, current: it states what holds now}
+  owner:
+    type: string
+    required: false
+    volatility: mutable
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [owner]}
+  decision:
+    is_a: governed_document
+    purpose: rationale
+    facets: {forbid: [owner]}
+  runbook:
+    is_a: decision
+  draft:
+    purpose: rationale
+  note: {}
+
+shelves:
+  decisions: {path: "docs/decisions/**", homogeneous: true, kind: decision}
+  documents: {path: "docs/all/**", homogeneous: true, kind: governed_document}
+  drafts: {path: "docs/drafts/**", homogeneous: true}
+
+core:
+  requires:
+    - facet_role: state

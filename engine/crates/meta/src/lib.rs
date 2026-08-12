@@ -34,16 +34,26 @@
 //!   `…transitions.0`, because `0` is a legal key name. The meta-schema can,
 //!   because it knows which positions hold lists.
 //!
-//! [`validate::skipped`] names the seventeen that wait, each with the reason it
-//! needs a resolved tree. A validator that reported a pass over rules it never
-//! ran would be the silent pass that
-//! [spec 4](../../../docs/spec/04-assurance-model.md) exists to remove, so the
-//! list is data rather than a paragraph in a comment.
+//! [`validate::skipped`] names the rest, each with the reason it needs a
+//! resolved tree. A validator that reported a pass over rules it never ran would
+//! be the silent pass that [spec 4](../../../docs/spec/04-assurance-model.md)
+//! exists to remove, so the list is data rather than a paragraph in a comment.
+//! `headwater_resolve::rules` runs those rules and holds the other half of the
+//! same accounting.
 //!
 //! The resolver is [#50](https://github.com/headwater-ai/headwater/issues/50)
 //! and the `taxonomy validate` verb is
 //! [#51](https://github.com/headwater-ai/headwater/issues/51). This crate is
 //! what both of them call.
+//!
+//! # The shelf-path language lives here
+//!
+//! [`pattern`] is the glob language that a shelf path and a corpus exclusion are
+//! written in, with the specificity order that decides which of two shelves
+//! claims a path. It came from `headwater-census`, which was the first code to
+//! read a shelf declaration, and it moved here when `taxonomy validate` needed
+//! to ask whether two shelf patterns can collide with no corpus in hand. Spec 13
+//! already said that the decision belongs to the meta-schema.
 //!
 //! # Example
 //!
@@ -57,10 +67,12 @@
 //! ```
 
 pub mod error;
+pub mod pattern;
 pub mod schema;
 pub mod shape;
 pub mod validate;
 
 pub use error::{render, MetaError, MetaErrorKind, SchemaError, SchemaErrorKind};
+pub use pattern::Pattern;
 pub use schema::{MetaSchema, Position, SOURCE};
 pub use shape::{Form, Member, ScalarType, Shape};

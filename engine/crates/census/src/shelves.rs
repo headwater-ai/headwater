@@ -22,7 +22,7 @@
 //! an already-resolved taxonomy: one mapping of shelves, one mapping of kinds.
 //! Where those two mappings come from is the caller's business.
 
-use crate::pattern::Pattern;
+use headwater_meta::pattern::Pattern;
 use headwater_yaml::{core_schema, Mapping, Span, Value};
 
 /// The resolved shelves, in declaration order.

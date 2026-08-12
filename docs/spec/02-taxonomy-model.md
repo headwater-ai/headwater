@@ -739,6 +739,10 @@ Delta-oriented software product lines worked this ground thoroughly, and the req
 
 The resolver writes the resolved taxonomy to a lock file with a content hash. The engine checks the corpus against the lock, so a resolution result is reproducible and reviewable in a diff.
 
+**Two resolutions are the same result when their canonical text is the same text.** The confluence rule above says that any legal order gives "the same resolved taxonomy", and the lock puts a hash over a file. A mapping records the order that its entries arrived in, so two orders can agree on every declaration and disagree on the text. The resolver removes that difference before the hash sees it. A key that the base declares keeps the position of the base, and a key that an overlay contributes follows it, in sorted order. A scalar is written plain where every character permits it, and double-quoted if not, whatever style its author used.
+
+The identity is the text and not the tree, for a reason that the lock supplies. A reviewer reads the lock in a diff, and review is the moment that a lock exists for. So an identity that a reader cannot compute from the artifact in front of them fails there. An identity over the tree also needs a canonical serialization to hash. There is no third thing to hash, so an identity over the tree is this identity with the artifact concealed.
+
 ## The `$`-reference sublanguage
 
 The [shape above](#shape) writes `values: $vocabularies.lifecycle_state`. The overlay above writes `shelves.decisions.path`. [To enable a relation](#the-decision-relation-vocabulary) writes `add: {relations.forbids: $package.optional.forbids}`. [Q2](09-decisions.md#q2--schema-format) counted those as three uses of one sublanguage, and it gave the sublanguage no grammar. Here is the grammar. The three uses are one path production, read from two places.
@@ -790,7 +794,7 @@ The taxonomy language has a formal schema, published with the engine and version
 - role uniqueness — at most one facet claims each engine-significant role, and the role registry is closed and lives here: `state`, `state_entered`, `created`, `freshness`, `scent`. Every `role:` in a taxonomy and every list of "special" facets elsewhere in this specification draws from this line. A role outside it is a validation error. To add a role is a meta-schema change, not a taxonomy change.
 - lifecycle soundness — the state machine is connected, has an initial state, and its terminal states are declared.
 - **relation coherence** — every relation names a valid family. Nucleus–satellite relations name their nucleus. `inherits` names facets that exist on both ends. A family's default is not contradicted without explicit override.
-- **expectation well-formedness** — every participation expectation names a declared relation and reachable kinds. Each expectation carries a window, a rationale, and an origin role that is required on the kind that declares it.
+- **expectation well-formedness** — every participation expectation names a declared relation, or the declared inverse of one, and reachable kinds. The kind that declares the expectation is at the source end of the relation that it names. Each expectation carries a window, a rationale, and an origin role that is required on the kind that declares it.
 - **core satisfiability** — the resolved taxonomy satisfies every core requirement.
 - **facet canons** — relevance, ascertainability, and permanence hold for every facet (the corpus-measured canons run under `taxonomy audit`).
 - **kind rigidity** — no kind collides with a lifecycle-state value or is named with a bare phase adjective.

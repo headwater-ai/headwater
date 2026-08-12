@@ -32,7 +32,7 @@
 //! - **A directory the walk cannot read yields an entry for the directory.** The
 //!   files under it are lost, and an entry is the only place that can say so.
 
-use crate::pattern::Pattern;
+use headwater_meta::pattern::Pattern;
 use std::path::{Path, PathBuf};
 
 /// The corpus root, and what it declares outside itself.

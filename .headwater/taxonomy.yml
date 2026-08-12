@@ -1,9 +1,16 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # What this repository takes, and how it differs. The shape is the consumer
-# declaration of spec 7 (Consuming). Nothing resolves it, because no engine
-# exists. It is here so that the identifiers and the relations in the front
-# matter of `docs/` have a declaration to be wrong against.
+# declaration of spec 7 (Consuming).
+#
+# `headwater taxonomy resolve` reads the `taxonomy:` block below, resolves the
+# package it names with the bundles it selects and the overlay it declares, and
+# writes `taxonomy.lock` beside this file. Everything downstream reads that lock
+# and never these sources.
+#
+# `headwater check` reads the `corpus:` block here and nothing else in this
+# file, because the lock says what the schema is and `corpus:` says what to
+# walk.
 #
 # Two fields are assumptions, and `.headwater/README.md` records both.
 

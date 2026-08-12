@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Projection targets, warrant integrity, and the half of context safety that a
+# declaration exists for.
+#
+#   one projection writes an absolute path and one climbs above the corpus root
+#   a transcription pins nothing, so a reader cannot ask the authority whether
+#   the copy is current
+#   the facet that carries the freshness role declares no staleness policy, so
+#   nothing decides when a verification has expired
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+facets:
+  status:
+    role: state
+    values: [draft, current]
+    required: true
+    volatility: mutable
+    guidance: {draft: it is being argued over, current: it states what holds now}
+  last_verified:
+    role: freshness
+    type: date
+    required: false
+    volatility: mutable
+
+anchors:
+  requirement: {resolver: tracker}
+
+kinds:
+  decision:
+    purpose: rationale
+    facets: {require: [status, last_verified]}
+
+shelves:
+  decisions: {path: "docs/decisions/**", homogeneous: true, kind: decision}
+
+projections:
+  - {kind: shelf_index, for: [decisions], output: "/var/tmp/index.md"}
+  - {kind: shelf_index, for: [decisions], output: "../outside/index.md"}
+  - {kind: transcription, output: "docs/imported/requirements.md"}
+
+core:
+  requires:
+    - facet_role: state

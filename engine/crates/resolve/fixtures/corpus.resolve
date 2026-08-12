@@ -53,11 +53,63 @@ declarations, by member count
   core: 1 member
   projections: 1 item
 
-run here
-  overlay confluence: pairwise over the leaves each operation writes, before anything merges
-  core satisfiability: on the resolved taxonomy, naming the operation that removed the last satisfier
-  referential integrity: for `$`-references only. Every reference resolves over the merged tree, and a `remove` that leaves one reading nothing is refused
+`taxonomy validate`: valid
 
-still waiting
-  the fourteen remaining rules of `taxonomy validate`: anchor and identifier integrity, coverage, kind inheritance, purpose completeness, determinism, role uniqueness, lifecycle soundness, relation coherence, expectation well-formedness, the facet canons, kind rigidity, edge provenance and mapping integrity. Each one reads the resolved taxonomy and reports on it. #51 owns them
-  the dependent-key half of `remove`: spec 2 fails a `remove` when a surviving declaration still references the removed key. A `$`-reference names what it reads and is checked here. A declaration that names another by a bare string is not: the meta-schema types `shelves.decisions.kind` as a string and says nothing about it naming a kind, so nothing can compute the dependent set. Spec 13 carries the finding
+rule by rule
+  structural conformance
+    over one source: the declarations, their members, every scalar type and every closed set
+  reference well-formedness
+    over one source: every address and every `$`-reference parses, and stands where one may
+  referential integrity
+    on the result: every name a declaration reads is declared, and every relation endpoint is a kind or an anchor kind. The `$`-reference half runs at merge time, because a reference that reads nothing stops the merge
+  anchor integrity
+    on the result: one resolver per anchor kind, and no two anchor kinds share a namespace
+  identifier integrity (in part)
+    on the result: every scheme carries a namespace, and no two schemes in one namespace share a literal prefix
+    not decided: the prefix is a literal inside the `pattern` string, so the engine compares the text before the first placeholder and cannot decide two patterns whose placeholders overlap. Spec 13 carries the grammar
+  coverage
+    on the result: every shelf reaches a kind, every concrete kind is reached by a shelf, and an abstract kind is reached by none
+  kind inheritance
+    on the result: `is_a` names a declared abstract kind, the chain terminates and holds no cycle, and no child un-requires or forbids what a parent requires
+  purpose completeness
+    on the result: every concrete kind has a purpose by declaration or inheritance, and every declared purpose is served
+  determinism
+    on the result: no two shelf patterns can match one path at equal specificity. The overlap is decided over the two patterns, so no corpus has to exist for the rule to fire
+  role uniqueness
+    on the result: at most one facet claims each role of the closed registry
+  lifecycle soundness
+    on the result: every state is a value of the state vocabulary, every state is reachable from the initial one, and every state with no exit is declared terminal
+  relation coherence (in part)
+    on the result: a nucleus–satellite relation names its nucleus and a multinuclear one names none, and `inherits` names facets that both ends carry
+    not decided: "a family's default is not contradicted without explicit override" states no rule that a validator can fail. A declared nuclearity is the explicit override, and spec 2 gives the count to `taxonomy audit`
+  expectation well-formedness
+    on the result: every expectation names a declared relation or a declared inverse, endpoints that the relation admits, a reachable target kind, and an origin facet that the declaring kind requires
+  core satisfiability
+    at merge time: checked on the result, naming the operation that removed the last satisfier
+  facet canons (in part)
+    on the result: relevance, ascertainability and permanence, which spec 2 states are decidable from the schema alone
+    not decided: differentiation and orthogonality need a corpus, and spec 2 gives both to `taxonomy audit`
+  kind rigidity
+    on the result: no kind name is a value of the state vocabulary, and none is a bare phase adjective
+  edge provenance
+    at merge time: the meta-schema requires `created_by` on every relation, and the resolver validates the merged result against the meta-schema as well as each source. So a `remove` that takes the member out is refused before these rules run, and a rule here would be unreachable
+  attribute well-formedness
+    on the result: every instance attribute names a value space and an owning end, and no attribute is called `to`
+  warrant integrity (in part)
+    on the result: every transcription projection pins a declared anchor kind, and that anchor kind names one resolver
+    not decided: whether a transcription writes over an authored path is a question about a corpus, and it belongs to the same rule as every other projection target
+  context safety (in part)
+    on the result: every facet that carries the freshness role declares a staleness policy
+    not decided: the size budget half. Spec 5 requires one on every agent-facing kind and projection, and no declaration in the language carries a budget or marks a kind agent-facing
+  overlay confluence
+    at merge time: pairwise over the leaves each operation writes, before anything merges
+  mapping integrity (in part)
+    on the result: every kind and every facet value that a mapping names on this side is declared here
+    not decided: the far side. A mapping names kinds in another taxonomy, and nothing fetches or resolves one
+  projection targets (in part)
+    on the result: every projection writes a relative path that stays inside the corpus root
+    not decided: the collision with an authored path, which needs the census. `generate --check` is where that lands
+
+not decided anywhere: 1
+  the blame half of a dependent-key `remove`
+    spec 2 fails a `remove` when a surviving declaration still references the removed key. Referential integrity over the result now catches every such orphan, including the bare strings that no reference names, so the rule holds. What is missing is the message: the finding names the declaration that reads a name nobody declares, and not the operation that removed it. Spec 13 carries it

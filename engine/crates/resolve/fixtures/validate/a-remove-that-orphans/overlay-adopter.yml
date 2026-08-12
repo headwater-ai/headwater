@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The two removals that no single source can catch, which is why this case takes
+# an overlay and the others do not.
+#
+# `kinds.decision` is named by `shelves.decisions.kind` and by both ends of
+# `relations.supersedes`, and every one of those names is a bare string that the
+# meta-schema types as a string. Spec 2 fails a `remove` when a declaration that
+# survives still references the removed key, and the resolver could decide only
+# the half that a `$`-reference names. This is the other half, and it is decided
+# over the result rather than over the operation.
+#
+# The removal that this case first tried is in `cases/remove-a-required-member/`
+# instead. Taking `relations.supersedes.created_by` out looked like the one route
+# to a taxonomy that structural conformance cannot refuse, and it is not: the
+# resolver validates the merged result against the meta-schema as well as each
+# source, so the removal is refused before any rule here runs.
+
+extends: acme/fixture@1.0.0
+
+remove:
+  - kinds.decision

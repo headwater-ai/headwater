@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Referential integrity, over the half that no `$`-reference reaches.
+#
+# Every name below is a bare string in a position the meta-schema types as a
+# string. That is why a single source validates and the resolved taxonomy does
+# not: nothing in the shape language says that `shelves.decisions.kind` names a
+# kind, so only a rule over the result can find it.
+#
+# Mapping integrity is here too, because it is the same failure one taxonomy
+# further out.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+facets:
+  status:
+    role: state
+    values: [draft, current]
+    required: true
+    volatility: mutable
+    guidance:
+      draft: it is being argued over
+      current: it states what holds now
+
+kinds:
+  decision:
+    purpose: adjudication              # no such purpose
+    voice: declarative                 # no voice regime is declared at all
+    identifier: {scheme: decision_id}  # no such scheme
+    facets: {require: [status, owner]} # `owner` is not a facet
+
+relations:
+  supersedes:
+    family: succession
+    from: [decision]
+    to: [proposal]                     # no such kind, and no such anchor kind
+    inherits: [status]
+    created_by: scaffold
+
+shelves:
+  decisions:
+    path: docs/decisions/**
+    homogeneous: false
+    discriminator: doc_type            # no such facet
+    kinds: [decision, proposal]        # `proposal` again
+
+mappings:
+  - to: other/taxonomy
+    kinds:
+      proposal: {relation: exactMatch, target: their_proposal}
+    facet_values:
+      status.retired: {relation: closeMatch, target: their_retired}
+
+core:
+  requires:
+    - facet_role: state

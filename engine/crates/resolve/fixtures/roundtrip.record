@@ -3,6 +3,7 @@ address-into-a-list: refused, so nothing to write out
 core-last-satisfier: refused, so nothing to write out
 list-operations: 17 lines, identical after a round trip
 not-confluent: refused, so nothing to write out
+remove-a-required-member: refused, so nothing to write out
 remove-breaks-a-reference: refused, so nothing to write out
 two-adds-into-one-kind: 23 lines, identical after a round trip
 worked-overlay: 63 lines, identical after a round trip

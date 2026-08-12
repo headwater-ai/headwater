@@ -73,6 +73,9 @@ pub enum ResolveErrorKind {
     ReferenceRootUnavailable { reference: String, why: String },
     /// A `remove` left a reference with nothing to read.
     RemoveBreaksReference { removed: String, reference: String },
+    /// A rule of `taxonomy validate` that reads the resolved taxonomy refused
+    /// it. See [`crate::rules`].
+    Invalid { rule: &'static str, message: String },
     /// The result fails a core requirement.
     CoreUnsatisfied {
         requirement: String,
@@ -135,6 +138,7 @@ impl std::fmt::Display for ResolveError {
                 f,
                 "removing `{removed}` leaves `{reference}` with nothing to read"
             ),
+            Invalid { rule, message } => write!(f, "{rule}: {message}"),
             CoreUnsatisfied { requirement, blame } => match blame {
                 Some(operation) => write!(
                     f,

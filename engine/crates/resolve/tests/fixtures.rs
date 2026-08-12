@@ -59,7 +59,11 @@ fn compare(path: &Path, actual: &str) {
 }
 
 fn cases() -> Vec<PathBuf> {
-    let mut found: Vec<PathBuf> = std::fs::read_dir(fixtures_dir().join("cases"))
+    under("cases")
+}
+
+fn under(directory: &str) -> Vec<PathBuf> {
+    let mut found: Vec<PathBuf> = std::fs::read_dir(fixtures_dir().join(directory))
         .expect("the case directory")
         .map(|entry| entry.expect("a directory entry").path())
         .filter(|path| path.is_dir())
@@ -194,6 +198,70 @@ fn a_resolved_taxonomy_resolves_to_itself() {
     compare(&fixtures_dir().join("roundtrip.record"), &out);
 }
 
+/// The rules of `taxonomy validate` that read a resolved taxonomy.
+///
+/// [Spec 12](../../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship):
+/// "every check ships with at least one fixture that it fails and one that it
+/// passes." `validate/valid/` is the passing side for every rule at once, and
+/// each other directory is a mutation of it that trips a named group.
+///
+/// A case here resolves and then validates, which is the order the lock writer
+/// uses. Every case resolves, because a taxonomy that fails to resolve never
+/// reaches these rules and the merge cases already cover that.
+#[test]
+fn every_validation_case_reports_the_recorded_findings() {
+    for case in under("validate") {
+        let resolution = resolve(&sources(&case))
+            .unwrap_or_else(|errors| panic!("{}: {}", name(&case), render_errors(&errors)));
+        let findings = resolution.validate();
+        let recorded = if findings.is_empty() {
+            String::from("valid\n")
+        } else {
+            render_errors(&findings)
+        };
+        compare(&case.join("expected.record"), &recorded);
+    }
+}
+
+/// Every rule that runs on the result is failed by at least one case.
+///
+/// The record above is what a reader reads, and this is what stops a rule from
+/// quietly dropping out of the set. A rule that no fixture fails is a rule that
+/// could return an empty vector for any reason and nothing would notice.
+#[test]
+fn every_rule_that_runs_here_has_a_case_that_fails_it() {
+    use headwater_resolve::Ran;
+
+    let mut fired: Vec<&str> = Vec::new();
+    for case in under("validate") {
+        let Ok(resolution) = resolve(&sources(&case)) else {
+            continue;
+        };
+        for finding in resolution.validate() {
+            if let headwater_resolve::ResolveErrorKind::Invalid { rule, .. } = finding.kind {
+                if !fired.contains(&rule) {
+                    fired.push(rule);
+                }
+            }
+        }
+    }
+
+    let expected: Vec<&str> = headwater_resolve::RULES
+        .iter()
+        .filter(|(_, ran)| matches!(ran, Ran::Resolved(_) | Ran::Partly { .. }))
+        .map(|(rule, _)| *rule)
+        .collect();
+    let missing: Vec<&&str> = expected
+        .iter()
+        .filter(|rule| !fired.contains(rule))
+        .collect();
+    assert!(
+        missing.is_empty(),
+        "no fixture fails {missing:?}, so nothing holds {} to its own report",
+        if missing.len() == 1 { "it" } else { "them" }
+    );
+}
+
 /// This repository's own resolution, which is the one `headwater check` runs.
 ///
 /// Two records at two grains, for the reason the census and the graph keep two.
@@ -240,14 +308,18 @@ fn this_repository_resolves_to_the_recorded_taxonomy() {
         out.push_str(&format!("  {}: {members}\n", entry.key.value));
     }
 
-    out.push_str("\nrun here\n");
-    for (rule, how) in headwater_resolve::RUNS {
-        out.push_str(&format!("  {rule}: {how}\n"));
-    }
-    out.push_str("\nstill waiting\n");
-    for (rule, why) in headwater_resolve::WAITING {
-        out.push_str(&format!("  {rule}: {why}\n"));
-    }
+    let findings = repository.resolution.validate();
+    out.push_str(&format!(
+        "\n`taxonomy validate`: {}\n",
+        if findings.is_empty() {
+            "valid".to_string()
+        } else {
+            format!("\n{}", render_errors(&findings))
+        }
+    ));
+
+    out.push_str("\nrule by rule\n");
+    out.push_str(&headwater_resolve::rules::render());
 
     compare(&fixtures_dir().join("corpus.resolve"), &out);
     compare(

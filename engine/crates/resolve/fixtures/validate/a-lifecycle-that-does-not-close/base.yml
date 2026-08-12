@@ -1,0 +1,53 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Lifecycle soundness. A state machine that a document cannot traverse is a
+# promise the taxonomy cannot keep, and every failure here is silent at run time:
+# a document simply never reaches the state, and no check has anything to report.
+#
+#   an initial state that the vocabulary does not hold
+#   a transition target that the vocabulary does not hold
+#   a state that nothing reaches from the initial one
+#   a state with no exit that nothing declares terminal
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+facets:
+  status:
+    role: state
+    values:
+      - {value: proposed, role: initial}
+      - {value: current,  role: live}
+      - {value: archived}
+      - {value: sealed}
+    required: true
+    volatility: mutable
+    guidance:
+      proposed: it is being argued over
+      current: it states what holds now
+      archived: it is kept and no longer current
+      sealed: nothing further happens to it
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions:
+        draft: [current]
+        current: [retired]
+
+kinds:
+  decision:
+    purpose: rationale
+    lifecycle: standard
+    facets: {require: [status]}
+
+shelves:
+  decisions: {path: "docs/decisions/**", homogeneous: true, kind: decision}
+
+core:
+  requires:
+    - facet_role: state
