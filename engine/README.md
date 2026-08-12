@@ -17,6 +17,8 @@ A machine that installed Rust from its distribution usually has neither rustfmt 
 
 The mount is read only and the target directory sits inside the container, so a run leaves nothing behind and writes nothing into the checkout. The slim image carries neither component, which is why the command adds them.
 
+The container pins the floor and CI runs the current stable, so a clean run here is not a clean run there. Every clippy release adds lints, and `-D warnings` promotes each new one to an error. When CI reports a lint that this command does not, the lint is newer than 1.85 and the fix is the one the message names.
+
 ## What is here
 
 | Crate | Milestone | What it does |

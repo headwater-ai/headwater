@@ -191,7 +191,7 @@ fn culprit(operations: &[Operation], sources: &[String], lost: &[String]) -> Opt
         .iter()
         .filter(covers)
         .find(|operation| operation.kind == OpKind::Remove)
-        .or_else(|| operations.iter().filter(covers).next_back())
+        .or_else(|| operations.iter().rfind(covers))
         .map(name)
 }
 
