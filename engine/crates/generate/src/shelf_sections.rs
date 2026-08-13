@@ -287,7 +287,10 @@ mod tests {
         let out = render("decisions", "d/README.md", &sections);
         assert!(out.contains("\n## Q1 — Implementation language\n"), "{out}");
         assert!(out.contains("\n## Q2 — Schema format\n"), "{out}");
-        assert!(out.starts_with("<!-- headwater:generated shelf_sections."), "{out}");
+        assert!(
+            out.starts_with("<!-- headwater:generated shelf_sections."),
+            "{out}"
+        );
         assert_eq!(out.matches("\n## ").count(), 2, "{out}");
     }
 

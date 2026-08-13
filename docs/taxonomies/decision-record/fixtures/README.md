@@ -37,7 +37,7 @@ The run is not automatic, and nothing in CI performs it. `headwater check` reads
 
 **3. The evaluation is cited by no register.** `relation.participation.overdue`, warning, under `OB-REL-3`. This one is not planted, and it is the more interesting result. The design-spec entry declares `evidence-cited` on `kinds.evaluation`, with `to_kind: decision_register`. This corpus keeps its decisions as documents rather than in a register, so it holds no `decision_register` at all, and no document in it can ever satisfy the expectation. The finding is unfixable here.
 
-That third finding is the [first doctrine finding](../doctrine.md#findings) arriving as a measurement. An expectation names one target kind, and an endpoint list names concrete kinds, so a second entry that composes with a first inherits its expectations and cannot amend them. It is also the case that design-spec's own [finding 4](../design-spec/doctrine.md#findings) predicted from the inside.
+That third finding is the [first doctrine finding](../doctrine.md#findings) arriving as a measurement. An expectation names one target kind, and an endpoint list names concrete kinds, so a second entry that composes with a first inherits its expectations and cannot amend them. It is also the case that design-spec's own [finding 4](../../design-spec/doctrine.md#findings) predicted from the inside.
 
 ## What a run does not report, and should
 

@@ -224,7 +224,10 @@ mod tests {
     /// The case a shelf index does reach, unchanged.
     #[test]
     fn a_document_under_the_output_directory_keeps_its_bare_name() {
-        assert_eq!(relative("docs/decisions", "docs/decisions/0001-a.md"), "0001-a.md");
+        assert_eq!(
+            relative("docs/decisions", "docs/decisions/0001-a.md"),
+            "0001-a.md"
+        );
         assert_eq!(
             relative("docs", "docs/decisions/0001-a.md"),
             "decisions/0001-a.md"

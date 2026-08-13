@@ -11,7 +11,7 @@
 //!
 //! Spec 6 names the kinds the engine implements, and
 //! [Q19](../../../../docs/spec/09-decisions.md) adds `transcription`. Collecting
-//! them for the meta-schema showed that they do not form one set. Seven are
+//! them for the meta-schema showed that they do not form one set. Eight are
 //! declarable: a taxonomy names the kind and the output path, and
 //! [principle 1](../../../../docs/spec/00-vision-and-scope.md#design-principles)
 //! makes the path a schema decision. Two are engine-defined. Spec 4 makes the
@@ -447,9 +447,7 @@ pub fn plan(
     for declaration in &projections.declared {
         match declaration.kind {
             Kind::ShelfIndex => shelf_index::emit(surface, census, declaration, &mut plan),
-            Kind::ShelfSections => {
-                shelf_sections::emit(surface, census, declaration, &mut plan)
-            }
+            Kind::ShelfSections => shelf_sections::emit(surface, census, declaration, &mut plan),
             Kind::GraphExport => graph_export(surface, projections, declaration, &mut plan),
             other => plan.unwritten.push(Unwritten {
                 at: declaration.output.clone(),
