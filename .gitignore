@@ -1,4 +1,6 @@
-# Per-session state for the ste-gate hook, and worktrees created by agents.
+# Per-session state left by the session gate this repository retired, and
+# worktrees created by agents. The harness hooks in `.claude/hooks/` keep no
+# state at all: each one reads the tree in front of it and writes nothing.
 .claude/state/
 .claude/worktrees/
 

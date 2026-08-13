@@ -18,6 +18,11 @@ relations:
     - EVAL-HW-the-measurement-layer
     - EVAL-HW-the-serving-boundary
     - EVAL-HW-warrant-and-adjudication
+  governs:
+    - .claude/hooks/lib.sh
+    - .claude/hooks/intent.sh
+    - .claude/hooks/write.sh
+    - .claude/hooks/review.sh
 ---
 
 # 5 — AI integration
@@ -106,12 +111,47 @@ When a budget binds, the engine **drops satellites before nuclei**. A generated 
 
 ### Write-time hooks
 
-- **Backfill** — at creation time, when it is cheap, the engine completes the front matter, identifier, and required sections of a new document against its kind.
-- **Impact detection** — a document can declare that it governs code. An edit to that code raises an advisory prompt that names the specific documents at risk. The prompt is advisory on purpose: a blocking gate here trains people to write "no doc impact" reflexively, and that destroys the signal.
+- **Backfill** — at creation time, when it is cheap, the engine completes the front matter, identifier, and required sections of a new document against its kind. `headwater new` is that completion. It derives the shelf, the facets, the identifier and the sections from the committed lock, and it refuses rather than guessing. So the hook at this moment refuses a raw write of a document that does not exist yet, and names the verb. It refuses creation alone, because an edit to a document that already carries front matter is what [`check --fix`](12-check-layer.md#fixability) and the commit gate hold.
+- **Impact detection** — a document can declare that it governs code. An edit to that code raises an advisory prompt that names the specific documents at risk. The prompt is advisory on purpose: a blocking gate here trains people to write "no doc impact" reflexively, and that destroys the signal. `governing_docs_for_path` answers by equality against the string each edge reached, so a document reaches the paths it names and no path under one of them. [OBL-repo-0104](../obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md) holds what an author pays for that.
 
 ### Review-time checks
 
-The same engine runs, scoped to the change. It limits findings to the touched paths, and to the documents that relate to them through the graph. It renders the findings as review comments that carry their remediation.
+The same engine runs, and it reads the whole corpus. [Spec 6](06-engine-architecture.md#performance-targets) refuses a flag that takes a caller's list of changed documents. Such a flag puts a second input into a verdict that no reviewer sees. The content-addressed cache pays for the position instead, and [OBL-repo-0080](../obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md) is the record that measures it.
+
+The measurement over this repository, at 159 checked documents and a warm cache, is 57 ms for `headwater check --strict`. Spec 6 allows 200 ms at this position. A cold run costs 229 ms, and `headwater route` costs 38 ms. So the budget holds at this corpus size, and the cache does the work that no flag has to.
+
+Findings reach a reviewer in the vocabulary the reviewer reads. `--format sarif` is what a forge ingests as a check run, and `--format markdown` is a job summary or a review comment. Each finding carries its remediation, and the [fixability](12-check-layer.md#fixability) bar decides which ones carry a patch as well.
+
+### The hook contract, and what a hook cannot bind
+
+A hook is a position where a harness hands control to this engine and takes it back. Four terms fix it. The fourth decides what the other three are worth.
+
+**What the harness passes.** The smallest fact that the moment holds. At intent, the task description as text. At write, one path and the tool that is about to touch it. At review, nothing at all. A hook never passes content and never passes a list of what changed, because the engine reads the checkout itself.
+
+**What the engine returns.** An exit status and two streams, which is the contract every verb already has. Standard output carries the one artifact the harness feeds back to the agent. Standard error carries the account of what the engine did. The status carries the verdict.
+
+**No hook introduces a verb.** A `headwater hook <moment>` verb is a second entry point to `route` and to `check`. Two entry points to one answer are two answers as soon as one drifts. Each position therefore calls the verb that ships. The review position goes further and calls the commit gate itself. What stops a turn and what stops a commit are then one file rather than two that agree today.
+
+**What the harness does with a refusal.** It stops the action and gives the agent the reason. A refusal names the offending file and the verb that repairs it. A hook that cannot decide returns nothing and lets the action proceed, because the positions below a hook already hold the result.
+
+**What happens when the harness ignores the hook.** Nothing happens, and this is the term that governs the design.
+
+- A harness hook is configuration in the reader's own tree. One setting turns every hook off, and no record of that setting reaches the repository.
+- A harness that is not this one never had the hooks at all.
+- A write-time refusal matches a tool by name. The same bytes written through a shell command reach no hook, and the session gate that this repository retired recorded the same bypass about itself.
+- The commit gate is skipped with `git commit --no-verify`, which leaves no mark on the commit.
+
+**So a hook binds nothing, and the position under it does.** The CI job runs on the pull request, and the author of a change cannot turn it off. Every position above CI buys earliness rather than enforcement, and the two are worth different things. A refusal at write time costs one retry. The same refusal at review time costs a rewrite of finished work. That is the capture cost that [spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) names as the thing that kills a corpus.
+
+**A session in which no hook spoke is therefore no evidence.** No harness hook is a control in the [assurance model](04-assurance-model.md), and the reason is the position rather than a judgment about severity. Spec 4 counts the commit gate and the CI job, and a change cannot leave either one.
+
+**One asymmetry runs the other way, and it is the argument for a harness hook.** Git installs no repository hook by itself, so a commit gate needs one command in every clone. A harness hook loads when the repository opens. The weaker position therefore installs itself and the stronger one does not, and a first change in a fresh clone meets the harness hooks alone.
+
+**A hook is invisible or it is bypassed.** That is spec 6's performance argument read at this position, and the measurements above are what hold it.
+
+**A hook calls a verb and never a skill.** Each moment has a deterministic half and a judgment half, and a hook reaches the first one. The judgment half is an [authoring skill](#agent-surfaces), and how a skill reaches an agent is a separate question. This repository once ran a hook that refused an edit until a named skill had loaded, and that hook retired with the linter it served.
+
+The hooks of this repository are `.claude/hooks/`, which sits outside the corpus root. No census counts them and no check reads them. `.claude/hooks/fixtures.sh` is what holds them, and it provokes every refusal on purpose. A hook that has refused nothing is a hook that nobody has seen work.
 
 ## Agent surfaces
 

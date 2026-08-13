@@ -39,3 +39,5 @@ Do not report a vulnerability through an issue or a pull request. [`SECURITY.md`
 Enable the repository hooks before your first commit:
 
     git config core.hooksPath .githooks
+
+If you work through Claude Code, `.claude/settings.json` registers three more hooks that load on their own. They route your task before you open a file, refuse a raw write of a new document, name the documents that govern code you just edited, and run the commit gate at the end of a turn. [`CLAUDE.md`](CLAUDE.md) says what each one does and how to turn them off. None of them blocks a commit, and none is a substitute for the two lines above.
