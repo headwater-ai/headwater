@@ -183,8 +183,15 @@ pub struct Suppression {
     pub reason: Reason,
     /// Free prose, and the one field nothing counts.
     pub note: String,
-    /// Findings this directive hid. Zero for one that is unused or expired.
-    pub hid: usize,
+    /// The findings this directive hid, in the order the runner met them.
+    ///
+    /// The findings themselves rather than a count of them. Spec 12 asks the
+    /// runner to record "exactly what it filtered", and a count is not that:
+    /// a reader of the report gets a number either way, and a
+    /// [CI adapter](../../adapter/src/lib.rs) that has to show a suppressed
+    /// finding as suppressed rather than as absent needs the finding. Empty for
+    /// a directive that is unused or expired.
+    pub hid: Vec<Finding>,
     pub state: State,
 }
 
@@ -284,7 +291,7 @@ pub fn apply(
         });
         match hit {
             Some(suppression) => {
-                suppression.hid += 1;
+                suppression.hid.push(finding);
                 suppression.state = State::Applied;
             }
             None => kept.push(finding),
@@ -311,8 +318,27 @@ impl Inventory {
     pub fn hidden(&self) -> usize {
         self.suppressions
             .iter()
-            .map(|suppression| suppression.hid)
+            .map(|suppression| suppression.hid.len())
             .sum()
+    }
+
+    /// Every finding this run filtered, with the directive that filtered it.
+    ///
+    /// In the order the directives were read, which is census order, and within
+    /// one directive in the order the runner met the findings. That is the one
+    /// order [`crate::finding::sorted`] already put them in, so a consumer that
+    /// interleaves these with [`crate::Run::findings`] sorts the union rather
+    /// than trusting either sequence.
+    pub fn hidden_findings(&self) -> Vec<(&Finding, &Suppression)> {
+        self.suppressions
+            .iter()
+            .flat_map(|suppression| {
+                suppression
+                    .hid
+                    .iter()
+                    .map(move |finding| (finding, suppression))
+            })
+            .collect()
     }
 
     /// Counts by whatever key `by` reads, largest first and then by name, so
@@ -328,8 +354,8 @@ impl Inventory {
                 continue;
             };
             match groups.iter_mut().find(|(known, _)| *known == key) {
-                Some((_, count)) => *count += suppression.hid,
-                None => groups.push((key, suppression.hid)),
+                Some((_, count)) => *count += suppression.hid.len(),
+                None => groups.push((key, suppression.hid.len())),
             }
         }
         groups.sort_by(|(left, one), (right, two)| two.cmp(one).then(left.cmp(right)));
@@ -359,7 +385,7 @@ impl Inventory {
                     reason,
                     self.of(State::Applied)
                         .filter(|suppression| suppression.reason == reason)
-                        .map(|suppression| suppression.hid)
+                        .map(|suppression| suppression.hid.len())
                         .sum(),
                 )
             })
@@ -554,7 +580,7 @@ fn read(
         until,
         reason,
         note,
-        hid: 0,
+        hid: Vec::new(),
         state: State::Unused,
     })
 }

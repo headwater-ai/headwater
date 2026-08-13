@@ -222,7 +222,7 @@ fn a_payload_takes_precedence_over_a_directive_and_the_two_inventories_partition
         .suppressions
         .suppressions
         .iter()
-        .find(|suppression| suppression.hid > 0)
+        .find(|suppression| !suppression.hid.is_empty())
         .expect("an applied directive");
     let (path, rule) = (applied.path.clone(), applied.rule.clone());
 
