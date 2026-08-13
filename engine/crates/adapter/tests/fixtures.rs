@@ -43,7 +43,7 @@
 //! Read the diff before committing it. A blessed record is the change.
 
 use headwater_adapter::{reported, Escape, Format, Subject};
-use headwater_census::census;
+use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::{Cache, Context, Date, Declared, Register, Run, Severity, Shape};
@@ -96,13 +96,24 @@ fn lock_digest() -> String {
     headwater_hash::hex(source.as_bytes())
 }
 
+/// One run of the fixture tree, with the two structures it was held against.
+///
+/// The census and the graph are here because the text format writes both, and
+/// `headwater_adapter::render` therefore takes both. A test that rebuilt them
+/// beside the run would be holding one artifact against a second walk.
+struct Ran {
+    run: Run,
+    census: Census,
+    graph: Graph,
+}
+
 /// One run over the fixture tree, with a payload that holds one pair.
 ///
 /// The pair is read off a run of the same tree rather than written here, so
 /// this follows the fixture tree when its content changes instead of pinning a
 /// path and a rule that a later edit moves.
-fn fixture_run() -> Run {
-    let bare = run_at(None);
+fn fixture_run() -> Ran {
+    let bare = run_at(None).run;
     let applied = bare
         .suppressions
         .suppressions
@@ -134,7 +145,7 @@ tasks:
     run_at(Some(&payload))
 }
 
-fn run_at(adoption: Option<&Mapping>) -> Run {
+fn run_at(adoption: Option<&Mapping>) -> Ran {
     let corpus = Corpus::new(check_fixtures(), "check");
     let root = load_map(&check_fixtures().join("check.taxonomy.yml"));
     let taxonomy = Taxonomy::read(&root).expect("the taxonomy reads");
@@ -151,7 +162,7 @@ fn run_at(adoption: Option<&Mapping>) -> Run {
         &config,
     );
     let lock = lock_digest();
-    headwater_check::run(
+    let run = headwater_check::run(
         &taken,
         &graph,
         &Declared {
@@ -166,7 +177,12 @@ fn run_at(adoption: Option<&Mapping>) -> Run {
         },
         &Context::at(Date::parse(PINNED).expect("the pinned date")),
         &mut Cache::disabled(),
-    )
+    );
+    Ran {
+        run,
+        census: taken,
+        graph,
+    }
 }
 
 fn subject(lock: &str) -> Subject<'_> {
@@ -179,9 +195,9 @@ fn subject(lock: &str) -> Subject<'_> {
 }
 
 fn rendered(format: Format) -> String {
-    let run = fixture_run();
+    let ran = fixture_run();
     let lock = lock_digest();
-    headwater_adapter::render(&run, &subject(&lock), format).expect("a format this crate writes")
+    headwater_adapter::render(&ran.run, &ran.census, &ran.graph, &subject(&lock), format)
 }
 
 fn compare(recorded: &Path, actual: &str) {
@@ -210,7 +226,7 @@ fn compare(recorded: &Path, actual: &str) {
 /// suite of the export emitters has its own guard against.
 #[test]
 fn the_run_carries_all_three_classes() {
-    let run = fixture_run();
+    let run = fixture_run().run;
     let all = reported(&run);
     let count = |escape: Option<Escape>| all.iter().filter(|entry| entry.escape == escape).count();
     assert!(count(None) > 0, "the tree reports live findings");
@@ -237,16 +253,17 @@ fn the_run_carries_all_three_classes() {
 /// Every finding of the run reaches every format, or the format said why not.
 ///
 /// The audit of the loss-set claim, in the shape spec 6 fixes for the graph
-/// emitters. It reads the rendered bytes rather than the emitter.
+/// emitters. It reads the rendered bytes rather than the emitter. All four
+/// formats are held to it, `text` among them: that format declares an empty
+/// loss set, and an empty loss set is the strongest claim any of them makes.
 #[test]
 fn every_finding_reaches_every_format() {
-    let run = fixture_run();
+    let ran = fixture_run();
     let lock = lock_digest();
     for format in Format::ALL {
-        let Some(artifact) = headwater_adapter::render(&run, &subject(&lock), format) else {
-            continue;
-        };
-        let audited = headwater_adapter::census(&run, &artifact);
+        let artifact =
+            headwater_adapter::render(&ran.run, &ran.census, &ran.graph, &subject(&lock), format);
+        let audited = headwater_adapter::census(&ran.run, &artifact);
         assert!(
             !audited.is_defective(),
             "the {} adapter dropped {:?}",
@@ -283,7 +300,7 @@ fn a_suppressed_finding_is_marked_and_a_live_one_is_not() {
     assert!(live > 0, "some results are live");
     assert!(escaped > 0, "some results are suppressed");
 
-    let run = fixture_run();
+    let run = fixture_run().run;
     let all = reported(&run);
     assert_eq!(
         live,
@@ -342,15 +359,21 @@ fn the_two_escape_classes_reach_the_two_sarif_kinds() {
 /// carry a level derived from `medium`, and there is no such level.
 #[test]
 fn the_level_is_the_checks_severity_and_never_the_obligations() {
-    let run = fixture_run();
+    let ran = fixture_run();
+    let run = &ran.run;
     let lock = lock_digest();
-    let artifact =
-        headwater_adapter::render(&run, &subject(&lock), Format::Sarif).expect("sarif renders");
+    let artifact = headwater_adapter::render(
+        &ran.run,
+        &ran.census,
+        &ran.graph,
+        &subject(&lock),
+        Format::Sarif,
+    );
     let document = parse(&artifact);
 
     let mut seen = 0;
     let mut differed = 0;
-    for (entry, result) in reported(&run).iter().zip(results(&document)) {
+    for (entry, result) in reported(run).iter().zip(results(&document)) {
         let expected = match entry.finding.severity {
             Severity::Error => "error",
             Severity::Warn => "warning",
@@ -408,10 +431,16 @@ fn no_rule_declares_a_default_configuration() {
 /// declaration's side.
 #[test]
 fn the_rule_list_is_the_registry_that_ran() {
-    let run = fixture_run();
+    let ran = fixture_run();
+    let run = &ran.run;
     let lock = lock_digest();
-    let artifact =
-        headwater_adapter::render(&run, &subject(&lock), Format::Sarif).expect("sarif renders");
+    let artifact = headwater_adapter::render(
+        &ran.run,
+        &ran.census,
+        &ran.graph,
+        &subject(&lock),
+        Format::Sarif,
+    );
     let document = parse(&artifact);
     let rules = member(&runs(&document)[0], "tool")
         .and_then(|tool| member(&tool, "driver"))
@@ -465,10 +494,16 @@ fn the_fixture_tree_renders_the_recorded_markdown() {
 /// neither, and this is the comparison that does.
 #[test]
 fn the_stock_reader_finds_the_same_findings_the_run_did() {
-    let run = fixture_run();
+    let ran = fixture_run();
+    let run = &ran.run;
     let lock = lock_digest();
-    let artifact =
-        headwater_adapter::render(&run, &subject(&lock), Format::Sarif).expect("sarif renders");
+    let artifact = headwater_adapter::render(
+        &ran.run,
+        &ran.census,
+        &ran.graph,
+        &subject(&lock),
+        Format::Sarif,
+    );
     let Some(lines) = oracle(&artifact) else {
         return;
     };
@@ -491,7 +526,7 @@ fn the_stock_reader_finds_the_same_findings_the_run_did() {
     }
 
     let mut reported_by_engine: BTreeSet<String> = BTreeSet::new();
-    for entry in reported(&run) {
+    for entry in reported(run) {
         let finding = entry.finding;
         reported_by_engine.insert(format!(
             "{}\t{}\t{}\t{}\t{}",

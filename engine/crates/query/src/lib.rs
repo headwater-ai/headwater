@@ -13,8 +13,11 @@
 //!
 //! [Spec 5](../../../../docs/spec/05-ai-integration.md#agent-surfaces) names
 //! the tools of the query class: `route`, `governing_docs_for_path`,
-//! `resolve_identifier`, `related`, `explain`, `check`. Those are the reads
-//! here, and `check` is the runner rather than this crate.
+//! `resolve_identifier`, `related`, `explain`, `check`. The first five are the
+//! reads here. `check` is the runner, and this crate calls it rather than
+//! reimplementing it: [`mcp`] registers the tool and hands the runner the
+//! clock, the declarations and the two structures the walk produced, all of
+//! them decided by whoever started the server.
 //!
 //! Spec 6's CLI list also holds `headwater query <expression>`, and no document
 //! of the specification states what an expression is. This crate therefore has

@@ -17,10 +17,14 @@ headwater-check = { path = "../check" }
 # a dependency the other two take on a crate they need for nothing else.
 headwater-yaml = { path = "../yaml" }
 
+# The census and the graph, which the text format writes and the other three do
+# not. A coverage number with no denominator beside it is what the text report
+# exists to prevent, and these two are that denominator.
+headwater-census = { path = "../census" }
+headwater-graph = { path = "../graph" }
+
 [dev-dependencies]
 # The suite runs the whole pipeline over the check crate's fixture tree, so it
 # needs what a run needs. It reads that tree rather than growing a second one:
 # see the suite's own comment for why.
-headwater-census = { path = "../census" }
-headwater-graph = { path = "../graph" }
 headwater-hash = { path = "../hash" }

@@ -18,6 +18,11 @@ headwater-graph = { path = "../graph" }
 # depends on the one that exists rather than writing another.
 headwater-check = { path = "../check" }
 
+# The four output formats of a run. The MCP `check` tool renders through the
+# same dispatcher `headwater check` renders through, which is what makes an
+# agent and a terminal read one report rather than two.
+headwater-adapter = { path = "../adapter" }
+
 # A facet value is a spanned YAML value, and this reads several of them.
 headwater-yaml = { path = "../yaml" }
 
