@@ -2,7 +2,7 @@
 
 # spec_series
 
-15 documents on this shelf, in the reading order this corpus derives.
+16 documents on this shelf, in the reading order this corpus derives.
 
 - [SPEC-HW-vision-and-scope](00-vision-and-scope.md) — What Headwater is for, the three qualities it aims at, the eleven design principles, and what it refuses to build.
 - [SPEC-HW-conceptual-model](01-conceptual-model.md) — The vocabulary that the rest of the specification uses, from corpus and shelf to warrant, projection, and the TBox and ABox split.
@@ -14,8 +14,9 @@
 - [SPEC-HW-distribution-and-federation](07-distribution-and-federation.md) — How a publisher ships a taxonomy, how a consumer overlays it, and what the invariant core requires of the result.
 - [SPEC-HW-design-departures](08-design-departures.md) — The ideas that this design adopts, and the eight recurrent failure modes of documentation tooling that it designs against.
 - [REG-HW-decisions](09-decisions.md) — An index of all twenty-one design decisions, where the record of each one lives, and the evaluation that closed it.
+- [REG-HW-open-obligations](13-open-obligations.md) — The work that the closed decisions left behind, which is unmeasured claims, items that wait on an adopter, and unblocked design work.
+- [REG-HW-open-questions](09-open-questions.md)
 - [SPEC-HW-theoretical-foundations](10-theoretical-foundations.md) — Where the research literature confirms, sharpens, or contradicts the design, and what changed in the specification as a result.
 - [SPEC-HW-adjacent-work](11-adjacent-work.md) — Practitioner tools and standards that solve adjacent problems, and what this design specifies that somebody already built.
 - [SPEC-HW-check-layer](12-check-layer.md) — What a check is, how a scope constrains it, where it comes from, and what the check layer owes the engine.
-- [REG-HW-open-obligations](13-open-obligations.md) — The work that the closed decisions left behind, which is unmeasured claims, items that wait on an adopter, and unblocked design work.
 - [SPEC-HW-glossary](glossary.md) — One line for every named concept in the specification, with a link to the section that defines it.
