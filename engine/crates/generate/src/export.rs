@@ -633,13 +633,26 @@ fn schema(surface: &Surface<'_>, all: &[Node<'_>]) -> Body {
         {
             continue;
         }
+        // An anchor is not a document and has no front matter, so it takes a
+        // reason of its own. One reason for both classes would say something
+        // false about half the nodes it covers, and a loss set that a reader
+        // cannot trust is worse than no loss set.
+        let reason = match node.document.is_some() {
+            true => {
+                "a JSON Schema states the shape that front matter of this class must satisfy, \
+                 and carries no instance of it. What travels is the constraint, and the \
+                 documents stay in the corpus"
+            }
+            false => {
+                "an anchor is an external node with no front matter of its own. A schema over \
+                 front matter has nothing to say about one, and the resolver that normalizes \
+                 it stays inside this engine"
+            }
+        };
         losses.push(Loss {
             class: Class::Node,
             name: node.class.clone(),
-            reason: "a JSON Schema states the shape that front matter of this class must \
-                     satisfy, and carries no instance of it. What travels is the constraint, \
-                     and the documents stay in the corpus"
-                .to_string(),
+            reason: reason.to_string(),
         });
     }
     for edge in &surface.graph().edges {
