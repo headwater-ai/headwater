@@ -143,7 +143,7 @@ A hook is a position where a harness hands control to this engine and takes it b
 
 **So a hook binds nothing, and the position under it does.** The CI job runs on the pull request, and the author of a change cannot turn it off. Every position above CI buys earliness rather than enforcement, and the two are worth different things. A refusal at write time costs one retry. The same refusal at review time costs a rewrite of finished work. That is the capture cost that [spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) names as the thing that kills a corpus.
 
-**A session in which no hook spoke is therefore no evidence.** No hook is a control in the [assurance model](04-assurance-model.md), and the reason is the position rather than a judgment about severity. Spec 4 counts the commit gate and the CI job, which a change cannot leave.
+**A session in which no hook spoke is therefore no evidence.** No harness hook is a control in the [assurance model](04-assurance-model.md), and the reason is the position rather than a judgment about severity. Spec 4 counts the commit gate and the CI job, and a change cannot leave either one.
 
 **One asymmetry runs the other way, and it is the argument for a harness hook.** Git installs no repository hook by itself, so a commit gate needs one command in every clone. A harness hook loads when the repository opens. The weaker position therefore installs itself and the stronger one does not, and a first change in a fresh clone meets the harness hooks alone.
 
