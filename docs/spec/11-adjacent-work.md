@@ -984,11 +984,11 @@ Three grandfathering mechanisms were read, and they differ in the property that 
 |---|---|---|
 | RuboCop `.rubocop_todo.yml` | A raised `Max` for a metric cop, a list of excluded files, or the cop disabled entirely | The documentation states no report. A person re-runs the generator |
 | ESLint `eslint-suppressions.json` | A count of suppressed violations per rule per file | The run **fails**: "There are suppressions left that do not occur anymore." A prune flag removes them |
-| This repository's `.ste-lint-baseline.json` | A hash of the file, the rule, and the offending text | The hash stops matching, so the entry becomes dead weight. Nothing reports it |
+| This repository's former `.ste-lint-baseline.json` | A hash of the file, the rule, and the offending text | The hash stopped matching, so the entry became dead weight. Nothing reported it |
 
 **The first row carries a number, and the number is the finding.** The generator excludes offending files one at a time until an exclusion limit, and the default limit is 15 files. Past that limit it disables the cop entirely rather than carrying a longer list. That is a reasonable default for a mature codebase that adds one rule. It is precisely wrong for first contact, which is the one moment at which every rule exceeds any such threshold. A mechanism that degrades from per-instance accounting to whole-rule silence produces the failure that [spec 4](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for) exists to forbid. It produces that failure when the corpus is least trustworthy.
 
-**The second row carries the property that this repository's own baseline lacks.** A suppression that no longer matches is an error rather than dead weight. Headwater's `migration-pending` findings already hold the stronger version of that. A payload declares a pair set, and a pair that passes is a task that closes. What the source adds is the argument for a report of the remaining count on every run.
+**The second row carries the property that this repository's own baseline lacked.** A suppression that no longer matches is an error rather than dead weight. Headwater's `migration-pending` findings already hold the stronger version of that. A payload declares a pair set, and a pair that passes is a task that closes. What the source adds is the argument for a report of the remaining count on every run. This repository ran the third row until the linter that carried it retired, and it declares a payload in the first row's place.
 
 > **Applied:** the no-threshold rule and the reported count in [spec 7](07-distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy) and [spec 4](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for).
 
@@ -1008,7 +1008,7 @@ This reaches [Q16](09-decisions.md#q16--public-presence) through [principle 8](0
 
 ### S.8 What this section confirms, sharpens and contradicts
 
-**Confirms.** A permissive license and an on-ramp are the two halves of trialability, and both are cheap to supply and expensive to retrofit. A grandfathering mechanism needs an owner and an expiry, which [Q21](09-decisions.md#q21--terminological-succession-and-validity-under-merge) already said about this repository's own baseline.
+**Confirms.** A permissive license and an on-ramp are the two halves of trialability, and both are cheap to supply and expensive to retrofit. A grandfathering mechanism needs an owner and an expiry, which [Q21](09-decisions.md#q21--terminological-succession-and-validity-under-merge) already said about this repository's own baseline. That baseline is now a payload with both.
 
 **Sharpens.** The reason to prefer a permissive license here is not ideology and not popularity. It is [spec 6](06-engine-architecture.md#library)'s embedding requirement, [Q13](09-decisions.md#q13--linkml-and-shacl-as-substrate)'s external consumers, and the resolution of an overlay, which puts base content inside an adopter's own artifact.
 

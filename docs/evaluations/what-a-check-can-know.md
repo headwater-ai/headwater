@@ -22,7 +22,7 @@ relations:
     - SPEC-HW-adjacent-work
     - SPEC-HW-check-layer
   traces_to:
-    - tools/ste-lint.py
+    - engine/crates/check/src/language.rs
 ---
 
 # What a check can know — the Q5 and Q21 evaluation
@@ -35,7 +35,7 @@ Q21 half-states the connection. Its retired-term lexicon is a lexical rule, and 
 
 This repository is the observed case for both entries, which is what [principle 8](../spec/00-vision-and-scope.md#design-principles) asks for.
 
-`tools/ste-lint.py` is a working lexical checker over `docs/spec/`. It carries a retired-phrase list, a per-line escape hatch with a reason, and a baseline of what predates each rule. It is interim scaffolding rather than a design, and this evaluation does not change one line of it. What it supplies is data. No prior evaluation has used it, and [principle 11](../spec/00-vision-and-scope.md#design-principles) makes an unmeasured claim about efficacy a claim that we may not publish.
+`tools/ste-lint.py` was a working lexical checker over `docs/spec/`. It carried a retired-phrase list, a per-line escape hatch with a reason, and a baseline of what predates each rule. It was interim scaffolding rather than a design, and this evaluation changed no line of it. What it supplied is data. The script retired into the check layer after this evaluation ran, and `engine/crates/check/src/language.rs` is where its rules read a declaration instead. The measurement below stands as the reading of the script that produced it, and the three detectors whose false-positive rates it reports no longer run anywhere. No prior evaluation has used it, and [principle 11](../spec/00-vision-and-scope.md#design-principles) makes an unmeasured claim about efficacy a claim that we may not publish.
 
 Q21's semantic conflict is also this repository's own. Commit `684a153` removed a framing from the specification. Commit `a1aecc1` records the repair. A concurrent branch reintroduced the retired phrase in new prose, and git merged both without a conflict. The linter passed, because no rule knew that the phrase was retired. A human found it while reading a diff.
 

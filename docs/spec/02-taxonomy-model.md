@@ -303,7 +303,7 @@ Language is the third regime family. The corpus declares one default, and a kind
 
 ### The language regime carries the terms that the corpus retired
 
-A judgment that a corpus no longer uses a term is a promise about the text, on the same terms as a spelling lexicon. Today that judgment exists only as prose and a diff, so no mechanism inherits it. `retired_terms` is where it becomes data ([evaluation](../evaluations/what-a-check-can-know.md)). Each entry carries the term, a required reason, and an optional replacement.
+A judgment that a corpus no longer uses a term is a promise about the text, on the same terms as a spelling lexicon. A judgment that lives in prose and a diff is inherited by nobody, and `retired_terms` is where it becomes data ([evaluation](../evaluations/what-a-check-can-know.md)). Each entry carries the term, a required reason, and an optional replacement. `language.retired_term.used` reads them, and this repository declares eighteen entries: the stock phrasing that its own contributing guide used to state in prose.
 
 **The reason is required, because a retirement with no recorded reason is an authority rank with extra steps.** [Q18](09-decisions.md#q18--recording-adjudicated-disagreements) refused that shape for adjudication, and it does not improve here.
 

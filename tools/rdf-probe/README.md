@@ -19,7 +19,7 @@ It reads the base package out of the fenced YAML in [the first-run walkthrough](
     .venv/bin/pip install rdflib pyshacl owlrl pyyaml
     .venv/bin/python tools/rdf-probe/emit.py --repo . --out out
 
-Four third-party dependencies is why this is not in the commit hook and not in `tools/` proper. `tools/ste-lint.py` runs on a bare interpreter by design; this does not, and it should not grow until an emitter has a consumer to be written for.
+Four third-party dependencies is why this is not in the commit hook and not in `tools/` proper. The commit hook runs the engine, which is one built binary and no interpreter at all. This probe should not grow until an emitter has a consumer to be written for.
 
 ## What it does not do
 

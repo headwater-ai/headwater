@@ -8,7 +8,7 @@ They run now. `headwater check` reads `taxonomy.yml` for the package it takes, t
 
 One ordering constraint forced it. [Q4](../docs/spec/09-decisions.md#q4--relation-storage) rules that a relation target is an identifier and never a path. [Spec 3](../docs/spec/03-authoring-and-lifecycle.md#identifiers) gives identifiers to decisions, requirements, acceptance criteria, controls and obligations, and a document is none of those. So no document in this corpus had an identifier, and no edge could name one. The four schemes in `overlay.yml` are what the first declared edge needed.
 
-The language regime is the second reason, and it is smaller. This repository holds its specification prose to an ASD-STE100 house profile, and `tools/ste-lint.py` enforces it. That rule lives in `CLAUDE.md`, where no check can read it. The [design-spec entry](../docs/taxonomies/design-spec/doctrine.md#what-this-entry-deliberately-does-not-declare) declines to bind a profile, and it names the adopter overlay as the place for one. This is that overlay.
+The language regime is the second reason, and it is smaller. This repository holds its specification prose to an ASD-STE100 house profile. That rule lived in `CLAUDE.md` and in a Python script, where no check could read it, and `regimes.language.ste_house` is where a check reads it now. The [design-spec entry](../docs/taxonomies/design-spec/doctrine.md#what-this-entry-deliberately-does-not-declare) declines to bind a profile, and it names the adopter overlay as the place for one. This is that overlay.
 
 ## What these two files guess
 
