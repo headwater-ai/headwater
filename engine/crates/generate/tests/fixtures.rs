@@ -389,21 +389,28 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its descriptor, and it says why for everything
+/// This repository generates its two artifacts, and it says why for everything
 /// else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
-/// is what a prose edit must not change. One file is written, the descriptor at
-/// the path Q14 fixes. The package declares indexes for two shelves this tree
-/// holds no document on, so those two produce a reason rather than a file, and
-/// the register produces a third.
+/// is what a prose edit must not change. Two files are written. The descriptor
+/// sits at the path Q14 fixes, and the index of the specification shelf sits at
+/// the path this repository's overlay declares. That second one is the list the
+/// root README used to carry by hand. The package declares indexes for two
+/// shelves this tree holds no document on, so those two produce a reason rather
+/// than a file, and the register produces a third.
 ///
-/// The gate at the end is the dogfood. It reads the committed
-/// `.headwater/corpus.json` and compares bytes, so a contributor who moves a
-/// shelf and does not regenerate fails this test before CI runs.
+/// **The order is the plan's order, and it is asserted.** A declared projection
+/// is planned before the engine-defined descriptor, so a taxonomy that declares
+/// a second index changes this list. That is the point: an emitter added or a
+/// declaration removed fails here rather than in a reader's diff.
+///
+/// The gate at the end is the dogfood. It reads both committed files and
+/// compares bytes, so a contributor who edits a `summary` and does not
+/// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_descriptor_and_accounts_for_the_rest() {
+fn this_repository_generates_its_two_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -429,8 +436,8 @@ fn this_repository_generates_its_descriptor_and_accounts_for_the_rest() {
     let paths: Vec<&str> = plan.outputs.iter().map(|o| o.path.as_str()).collect();
     assert_eq!(
         paths,
-        vec![descriptor::PATH],
-        "this repository writes the descriptor and nothing else"
+        vec!["docs/spec/README.md", descriptor::PATH],
+        "this repository writes the specification index and the descriptor, in that order"
     );
     // Two declared shelves that hold no document, and the register. Nothing is
     // passed over: a projection that produced no file states a reason.
@@ -450,7 +457,7 @@ fn this_repository_generates_its_descriptor_and_accounts_for_the_rest() {
     let held = check(&root, &plan);
     assert!(
         !held.has_errors(),
-        "the committed descriptor is not what this corpus and this lock produce. \
+        "a committed artifact is not what this corpus and this lock produce. \
          Run `headwater generate` and commit the result"
     );
     assert!(

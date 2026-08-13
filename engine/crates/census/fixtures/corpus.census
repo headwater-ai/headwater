@@ -1,5 +1,6 @@
-61 files under the corpus root
+62 files under the corpus root
      36 typed
+      1 generated
       2 untyped
      21 excluded
       2 not a document
@@ -18,6 +19,8 @@ docs/LICENSE
   not a document: not a Markdown file
 docs/doctrine/maturity-model.md
   untyped: no shelf pattern claims this path
+docs/spec/README.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/taxonomies/README.md
   excluded: docs/taxonomies/**
 docs/taxonomies/design-spec/bundle.yml
