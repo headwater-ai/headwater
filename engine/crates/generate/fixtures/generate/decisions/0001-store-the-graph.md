@@ -1,5 +1,6 @@
 ---
 id: DR-FIX-0001
+title: Store the graph on disk
 status: superseded
 status_since: 2026-02-01
 summary: the first ruling on where the corpus graph lives, replaced by DR-FIX-0002

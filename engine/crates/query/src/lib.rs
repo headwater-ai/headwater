@@ -65,6 +65,11 @@ use headwater_yaml::Mapping;
 /// The facet role that carries the routing cue, from spec 2's closed registry.
 const SCENT: &str = "scent";
 
+/// The facet role that carries what a document is called, from the same
+/// registry. A projection that writes a heading reads this and never a facet
+/// name: `title` means something in one taxonomy and nothing in the next.
+const NAME: &str = "name";
+
 /// The provenance member that states what stands behind a document.
 ///
 /// [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed):
@@ -93,6 +98,10 @@ pub struct Surface<'a> {
     /// taxonomy that declares none has no cue to serve, and every pointer then
     /// carries a path and no summary.
     scent: Option<String>,
+    /// The facet in the `name` role, which is where a heading lives. A taxonomy
+    /// that declares none names no document, and a projection that needs a
+    /// heading declines rather than inventing one.
+    name: Option<String>,
 }
 
 /// One classified document, as a read sees it.
@@ -165,6 +174,7 @@ impl<'a> Surface<'a> {
             taxonomy,
             relations,
             scent: shape.facet_in_role(SCENT).map(|facet| facet.name.clone()),
+            name: shape.facet_in_role(NAME).map(|facet| facet.name.clone()),
         }
     }
 
@@ -417,6 +427,28 @@ impl<'a> Surface<'a> {
             .get(name)
             .and_then(|node| node.value.as_scalar())
             .map(|scalar| scalar.text.clone())
+    }
+
+    /// What the document is called: the value of the facet in the `name` role.
+    ///
+    /// `None` covers two states that a caller has to tell apart, and
+    /// [`Surface::name_facet`] is how. Either this taxonomy declares no facet
+    /// in the role at all, or it declares one and this document leaves it
+    /// empty. The repair is a declaration in the first case and an edit to the
+    /// document in the second.
+    pub fn name(&self, document: &Document<'a>) -> Option<String> {
+        let facet = self.name.as_deref()?;
+        document
+            .facets
+            .get(facet)
+            .and_then(|node| node.value.as_scalar())
+            .map(|scalar| scalar.text.clone())
+            .filter(|text| !text.trim().is_empty())
+    }
+
+    /// The facet this taxonomy puts in the `name` role, when it declares one.
+    pub fn name_facet(&self) -> Option<&str> {
+        self.name.as_deref()
     }
 
     /// What stands behind the document, from the provenance block.

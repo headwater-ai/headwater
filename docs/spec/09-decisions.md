@@ -44,7 +44,7 @@ A decision was a heading in a register. Nothing could carry its state, its dates
 
 What the decisions leave open is in [13 — Open obligations](13-open-obligations.md). That file gathers the unmeasured claims, the work that waits on a first adopter, and one piece of design work.
 
-A human maintains the list below by hand, and no projection writes it. [Spec 13](13-open-obligations.md#a-human-maintains-this-list-by-hand) records why, which is that the only projection kind that emits Markdown writes one bullet for each document and no heading at all.
+A human maintains the list below by hand, and no projection writes it. [Spec 13](13-open-obligations.md#a-human-maintains-this-list-by-hand) records why. A projection kind that writes a heading for each document exists now. This file is a node of the graph, and fourteen other documents name its identifier. A generated file carries no front matter, so a projection at this path would strand all fourteen edges.
 
 ## Q1 — Implementation language
 

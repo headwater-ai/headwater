@@ -11,7 +11,7 @@ declarations
       intent (required) scalar:string
       answers seq of scalar:string
   facets map of members
-      role enum[state state_entered created freshness scent]
+      role enum[state state_entered created freshness scent name]
       values seq reference:allowed of one of [scalar:string | members
             value (required) scalar:string
             role enum[initial live terminal-retained]]
@@ -99,7 +99,7 @@ declarations
       allocation (required) scalar:string
   core members
     requires (required) seq of one of [members
-          facet_role (required) enum[state state_entered created freshness scent] | members
+          facet_role (required) enum[state state_entered created freshness scent name] | members
           purpose (required) scalar:string | members
           relation_family (required) enum[succession derivation governance evidence composition association]
           lifecycle_sensitive scalar:boolean | members
@@ -113,7 +113,7 @@ declarations
           relation (required) enum[exactMatch closeMatch broadMatch narrowMatch relatedMatch]
           target (required) scalar:string
   projections seq of members
-      kind (required) enum[shelf_index relation_view agent_rules site_nav graph_export template transcription]
+      kind (required) enum[shelf_index shelf_sections relation_view agent_rules site_nav graph_export template transcription]
       for seq of scalar:string
       output (required) scalar:string
       profile scalar:string

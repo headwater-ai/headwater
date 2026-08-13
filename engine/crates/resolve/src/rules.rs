@@ -281,7 +281,14 @@ const PHASE_ADJECTIVES: [&str; 7] = [
 
 /// The engine-significant facet roles. The registry is closed and spec 2 states
 /// it in the role-uniqueness rule itself.
-const ROLES: [&str; 5] = ["state", "state_entered", "created", "freshness", "scent"];
+const ROLES: [&str; 6] = [
+    "state",
+    "state_entered",
+    "created",
+    "freshness",
+    "scent",
+    "name",
+];
 
 /// Run every rule that reads a resolved taxonomy.
 pub fn check(taxonomy: &Mapping) -> Vec<ResolveError> {

@@ -1,4 +1,4 @@
-10:18: facets.status.role: `state_of_the_art` is outside the value set; the values are `state`, `state_entered`, `created`, `freshness`, `scent`
+10:18: facets.status.role: `state_of_the_art` is outside the value set; the values are `state`, `state_entered`, `created`, `freshness`, `scent`, `name`
 11:32: facets.summary.type: `prose` is outside the value set; the values are `string`, `integer`, `boolean`, `date`, `duration`
 12:24: facets.audience.severity: `fatal` is outside the value set; the values are `error`, `warn`, `info`
 12:43: facets.audience.volatility: `sometimes` is outside the value set; the values are `stable`, `mutable`

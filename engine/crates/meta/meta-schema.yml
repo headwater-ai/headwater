@@ -133,7 +133,15 @@ definitions:
       # The role registry is closed and spec 2 states it here rather than
       # anywhere else. A role outside this line is a validation error, and to
       # add one is a meta-schema change.
-      role: {enum: [state, state_entered, created, freshness, scent]}
+      #
+      # `name` is the sixth, and one projection asked for it. An emitter that
+      # writes a heading needs the text of that heading, and it may not reach a
+      # facet by the facet's name. `title` means something in the
+      # decision-record entry and nothing outside it, so an emitter that read
+      # the name would work in one corpus. A role is the taxonomy's own
+      # statement of what a value is for, and it is the only thing an emitter
+      # may read. `scent` is that same rule, already applied to a summary.
+      role: {enum: [state, state_entered, created, freshness, scent, name]}
       # The one position in a taxonomy source where a reference is written.
       values: {seq: {one_of: [{scalar: string}, {block: vocabulary_value}]}, reference: allowed}
       # guess: the types the base package and the first bundle write.
@@ -323,7 +331,7 @@ definitions:
 
   core_requirement:
     one_of:
-      - {members: {facet_role: {enum: [state, state_entered, created, freshness, scent], required: true}}}
+      - {members: {facet_role: {enum: [state, state_entered, created, freshness, scent, name], required: true}}}
       - {members: {purpose: {scalar: string, required: true}}}
       - {members: {relation_family: {enum: [succession, derivation, governance, evidence, composition, association], required: true}, lifecycle_sensitive: {scalar: boolean}}}
       - {members: {identifier_scheme: {scalar: string, required: true}}}
@@ -362,11 +370,12 @@ definitions:
       # descriptor of Q14. Neither takes its output path from a declaration, and
       # a taxonomy that named either here would put a second copy of one
       # artifact at a path the engine did not fix. So the enum below is the
-      # declarable seven, and `headwater generate` writes the other two whether
+      # declarable eight, and `headwater generate` writes the other two whether
       # or not any taxonomy mentions a projection at all.
       kind:
         enum:
           - shelf_index
+          - shelf_sections
           - relation_view
           - agent_rules
           - site_nav

@@ -109,7 +109,7 @@ pub(crate) fn emit(
 
 /// The directory a shelf's glob claims: everything before the first glob
 /// construct, with no trailing separator.
-fn directory_of(pattern: &str) -> String {
+pub(crate) fn directory_of(pattern: &str) -> String {
     let stop = pattern.find(['*', '?', '[', '{']).unwrap_or(pattern.len());
     pattern[..stop].trim_end_matches('/').to_string()
 }
@@ -156,32 +156,82 @@ fn render(shelf: &str, output: &str, ordered: &[Pointer]) -> String {
     out
 }
 
-fn parent_of(path: &str) -> String {
+pub(crate) fn parent_of(path: &str) -> String {
     match path.rfind('/') {
         Some(at) => path[..at].to_string(),
         None => String::new(),
     }
 }
 
-fn file_name(path: &str) -> String {
+pub(crate) fn file_name(path: &str) -> String {
     match path.rfind('/') {
         Some(at) => path[at + 1..].to_string(),
         None => path.to_string(),
     }
 }
 
-/// A link from the index to a document, relative to the index's own directory.
+/// A link from the output to a document, relative to the output's own
+/// directory.
 ///
-/// A document that is not under that directory keeps its repository-relative
-/// path. A shelf glob can claim a path outside the directory its literal prefix
-/// names, and a link built by counting `../` from a guess is worse than a link
-/// that is plainly rooted.
-fn relative(base: &str, path: &str) -> String {
+/// Both arguments are repository-relative and both are known, so the `../` hops
+/// are counted rather than guessed. That matters to
+/// [`crate::shelf_sections`] and not to this module: a shelf index lands on the
+/// shelf it indexes, so every document is under the base and the walk up never
+/// runs. A projection whose output path a declaration chooses is under no such
+/// rule, and this repository would declare one that sits two directories from
+/// the shelf.
+///
+/// A leading `/` was the earlier answer and it is not one. Markdown has no
+/// repository root, so a renderer reads `/docs/x.md` as a path on the host and
+/// leaves the corpus entirely.
+pub(crate) fn relative(base: &str, path: &str) -> String {
     if base.is_empty() {
         return path.to_string();
     }
-    match path.strip_prefix(&format!("{base}/")) {
-        Some(rest) => rest.to_string(),
-        None => format!("/{path}"),
+    let from: Vec<&str> = base.split('/').collect();
+    let to: Vec<&str> = path.split('/').collect();
+    // The file name is never part of the common directory prefix, so the walk
+    // stops one short of the end of `to`.
+    let shared = from
+        .iter()
+        .zip(&to[..to.len() - 1])
+        .take_while(|(a, b)| a == b)
+        .count();
+    let mut out = String::new();
+    for _ in shared..from.len() {
+        out.push_str("../");
+    }
+    out.push_str(&to[shared..].join("/"));
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::relative;
+
+    /// The case a shelf index never reaches and a declared output path does.
+    /// A leading `/` was the earlier answer, and a renderer reads it as a path
+    /// on the host rather than as a path in the repository.
+    #[test]
+    fn a_document_outside_the_output_directory_is_reached_by_walking_up() {
+        assert_eq!(
+            relative("docs/spec", "docs/decisions/0001-a.md"),
+            "../decisions/0001-a.md"
+        );
+        assert_eq!(relative("a/b/c", "d/e.md"), "../../../d/e.md");
+    }
+
+    /// The case a shelf index does reach, unchanged.
+    #[test]
+    fn a_document_under_the_output_directory_keeps_its_bare_name() {
+        assert_eq!(
+            relative("docs/decisions", "docs/decisions/0001-a.md"),
+            "0001-a.md"
+        );
+        assert_eq!(
+            relative("docs", "docs/decisions/0001-a.md"),
+            "decisions/0001-a.md"
+        );
+        assert_eq!(relative("", "docs/a.md"), "docs/a.md");
     }
 }
