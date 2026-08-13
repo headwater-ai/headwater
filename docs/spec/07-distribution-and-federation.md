@@ -180,7 +180,7 @@ The adopter thus gets a green build on the first run. Every document that does n
 
 **Every run reports the count that remains.** The expiry is a date, and a date arrives too late to tell anybody that a payload is not shrinking. So the run reports the number of open pairs beside coverage. A payload that does not move is then visible from the second run rather than from the expiry.
 
-**Adoption never runs on a flag.** No invocation of the engine decides which findings count. `headwater check --changed-only` is a performance scope over a verdict that a full run reaches identically ([spec 6](06-engine-architecture.md#cli)). A mode that gated on newly touched documents would make two runs over one tree disagree.
+**Adoption never runs on a flag.** No invocation of the engine decides which findings count, and [spec 6](06-engine-architecture.md#cli) declares no flag that scopes a run. A mode that gated on newly touched documents would make two runs over one tree disagree. What scopes the work instead is the cache, which derives what moved from content hashes and reaches the same verdict either way.
 
 ## Conformance
 
