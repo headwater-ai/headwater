@@ -38,6 +38,7 @@
 
 pub mod core_schema;
 pub mod error;
+pub mod json;
 pub mod loader;
 pub mod span;
 pub mod value;

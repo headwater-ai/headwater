@@ -92,8 +92,8 @@
 
 use crate::profile::Grain;
 use crate::{Identity, Kind, Output, Plan, Projections};
-use headwater_query::json::Json;
 use headwater_query::Surface;
+use headwater_yaml::json::Json;
 
 /// The path Q14 fixes, relative to the repository root.
 pub const PATH: &str = ".headwater/corpus.json";

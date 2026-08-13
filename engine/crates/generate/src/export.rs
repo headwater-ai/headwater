@@ -50,8 +50,8 @@
 use crate::profile::{Admission, Emitter, Grain, Profile};
 use crate::Kind;
 use headwater_graph::{Edge, Graph, Target};
-use headwater_query::json::Json;
 use headwater_query::{Document, Surface};
+use headwater_yaml::json::Json;
 use headwater_yaml::value::Value;
 
 /// The export format's own version, as `Major.Minor`.

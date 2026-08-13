@@ -22,7 +22,6 @@ dependencies = [
  "headwater-check",
  "headwater-graph",
  "headwater-hash",
- "headwater-query",
  "headwater-yaml",
 ]
 

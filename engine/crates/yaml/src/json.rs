@@ -4,8 +4,13 @@
 //! The engine carries two third-party crates, and both are parsers for formats
 //! it did not invent. A serializer for a format this narrow is a smaller thing
 //! than the dependency would be: the writer below emits strings, numbers,
-//! arrays and objects, and the reader is [`headwater_yaml`], because JSON is a
+//! arrays and objects, and the reader is [`crate::load`], because JSON is a
 //! subset of the YAML 1.2 core schema that the loader already implements.
+//!
+//! The writer sits beside that reader for one reason. Three crates emit JSON —
+//! a protocol message, a generated descriptor and a capture-cost reading — and
+//! a writer that lived in any one of them would be a dependency the other two
+//! take on a crate they need for nothing else.
 //!
 //! # What that reader does and does not accept
 //!
@@ -13,8 +18,8 @@
 //! sequences, double-quoted strings, and plain scalars for numbers. It refuses
 //! a duplicate key, which JSON permits and no protocol message needs, and it
 //! carries no `null` or boolean type of its own
-//! ([Q2](../../../../docs/spec/09-decisions.md#q2--schema-format)), so a caller
-//! reads those through [`headwater_yaml::core_schema`]. Both limits are stated
+//! ([Q2](../../../docs/spec/09-decisions.md#q2--schema-format)), so a caller
+//! reads those through [`crate::core_schema`]. Both limits are stated
 //! here because they are the whole of the difference from a JSON library.
 
 /// A JSON value this crate writes.
@@ -212,7 +217,7 @@ mod tests {
             ),
         ])
         .render();
-        let read = headwater_yaml::load(&message).expect("it reads");
+        let read = crate::load(&message).expect("it reads");
         let map = read.value.as_map().expect("a mapping");
         assert_eq!(
             map.get("id")
