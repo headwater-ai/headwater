@@ -16,12 +16,12 @@
 
 lock:
   format: 2
-  digest: sha256:3441db98b5e0b5f36d4e701d1ae86a3b3fe3ce8491373341f9579ed7249607e2
+  digest: sha256:ebdf8737afc73be4824e58a524ce48c6a8c521309d723d47088049f2449bd436
   package: headwater/standard
   version: 1.0.0
   sources:
     - path: packages/headwater-standard/taxonomy.yml
-      digest: sha256:31e40174266222110a0356c17c917a57dc26b452463167db7c783d89953c9713
+      digest: sha256:5a96e32213dd92bdb57b5d1b931c9a66a7e141e80476e46b37f2be372e8c8c03
     - path: docs/taxonomies/design-spec/bundle.yml
       digest: sha256:0dd73708d7200b7b02389a7dc8811ddc80ab61ece7892efd7391cdf504d6bda0
     - path: docs/taxonomies/decision-record/bundle.yml
@@ -563,6 +563,12 @@ resolved:
       class: cohesion
       prevents: content.inconsistent
       severity: high
+    OB-REL-4:
+      statement: "Every target a relation instance names resolves to a document or to an external anchor"
+      rationale: "An edge that resolves to nothing is a claim about a thing the corpus does not hold, and every query, projection and export over that relation inherits the claim while the report of it stops at the graph build"
+      class: cohesion
+      prevents: content.inconsistent
+      severity: high
     OB-REL-2:
       statement: "Both ends of a relation instance are kinds that the relation permits"
       rationale: "An edge between kinds a relation forbids is an assertion that the taxonomy never sanctioned, and every query over that relation inherits it"
@@ -729,6 +735,18 @@ resolved:
       trigger: pull_request
       posture: advisory
       acts: detective
+    CT-REL-4:
+      mechanism: "check:relation.target.unresolved"
+      discharges:
+        - OB-REL-4
+      trigger: pull_request
+      posture: advisory
+      acts: detective
+      promotion:
+        criteria:
+          window: "one release of the taxonomy over an adopting corpus"
+          threshold: "no false positive, because the rule reports what the graph build already resolved rather than deriving a second answer of its own"
+          sample: "every finding of one run over the adopting corpus, adjudicated once"
     CT-REL-2:
       mechanism: "check:relation.endpoint.not_permitted"
       discharges:

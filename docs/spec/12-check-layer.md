@@ -167,6 +167,10 @@ Phase A emits a **census**: every file under the corpus root and what became of 
 
 That order is the direct answer to the silent-pass failure mode. The denominator is fixed before any checks start. Thus a document that fails to parse is counted, reported, and visibly unchecked. It does not drop out of the run and leave a clean result behind it.
 
+**A structural finding needs a rule before a gate can act on it.** Three of the four above are a census row. The coverage rule reads the census, so a document with no instance is a finding already. A dangling edge has no row, because a row is a file and an edge is not one. `relation.target.unresolved` is the rule that carries it. Its unit is one entry of one `relations:` block, because a target that binds to nothing has no second endpoint to pair with.
+
+Five other defects of a `relations:` block reach no rule. Two of them are a block that is not a mapping, and a relation name that no declaration holds. The other three are an entry with no target, a repeated triple, and a source document with no identifier. Each one stops an edge from existing, so no edge-scoped rule has an instance over it. The graph reports all five, and `--strict` passes over them.
+
 ## Findings
 
 The shape of a finding comes from [spec 4](04-assurance-model.md#findings). The check layer carries two obligations to satisfy it:

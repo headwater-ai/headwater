@@ -77,6 +77,22 @@
               }
             },
             {
+              "id": "relation.target.unresolved",
+              "shortDescription": {
+                "text": "edge scope, one relation instance and both endpoints"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "edge",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-24"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
               "id": "relation.reciprocity.missing",
               "shortDescription": {
                 "text": "edge scope, one relation instance and both endpoints"
@@ -474,12 +490,23 @@
           "hashes": {
             "sha-256": "68f87dae942b5f7ef8b0a2aa47c3635a774c4ea65d0895e1d6895e5617d86a5b"
           }
+        },
+        {
+          "location": {
+            "uri": "check/spec/13-dangling.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "4b5fdd89f22e4d82ee47b8b77652168b082ec821800ad890cf12569980412336"
+          }
         }
       ],
       "results": [
         {
           "ruleId": "relation.reciprocity.missing",
-          "ruleIndex": 4,
+          "ruleIndex": 5,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -524,7 +551,7 @@
         },
         {
           "ruleId": "relation.participation.overdue",
-          "ruleIndex": 6,
+          "ruleIndex": 7,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -557,7 +584,7 @@
         },
         {
           "ruleId": "relation.endpoint.not_permitted",
-          "ruleIndex": 5,
+          "ruleIndex": 6,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -621,7 +648,7 @@
         },
         {
           "ruleId": "relation.reciprocity.missing",
-          "ruleIndex": 4,
+          "ruleIndex": 5,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -654,7 +681,7 @@
         },
         {
           "ruleId": "relation.reciprocity.missing",
-          "ruleIndex": 4,
+          "ruleIndex": 5,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -687,7 +714,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 8,
+          "ruleIndex": 9,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -720,7 +747,7 @@
         },
         {
           "ruleId": "coverage.document_unchecked",
-          "ruleIndex": 13,
+          "ruleIndex": 14,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -776,7 +803,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 8,
+          "ruleIndex": 9,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -842,7 +869,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 8,
+          "ruleIndex": 9,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -875,7 +902,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 7,
+          "ruleIndex": 8,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -908,7 +935,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 7,
+          "ruleIndex": 8,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -941,7 +968,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 7,
+          "ruleIndex": 8,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -974,7 +1001,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 8,
+          "ruleIndex": 9,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1007,7 +1034,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 8,
+          "ruleIndex": 9,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1040,7 +1067,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 8,
+          "ruleIndex": 9,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1073,7 +1100,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 8,
+          "ruleIndex": 9,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1106,7 +1133,7 @@
         },
         {
           "ruleId": "language.retired_term.used",
-          "ruleIndex": 9,
+          "ruleIndex": 10,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1139,7 +1166,7 @@
         },
         {
           "ruleId": "language.retired_term.used",
-          "ruleIndex": 9,
+          "ruleIndex": 10,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1172,7 +1199,7 @@
         },
         {
           "ruleId": "language.source_form.not_met",
-          "ruleIndex": 10,
+          "ruleIndex": 11,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1205,7 +1232,7 @@
         },
         {
           "ruleId": "language.source_form.not_met",
-          "ruleIndex": 10,
+          "ruleIndex": 11,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1238,7 +1265,7 @@
         },
         {
           "ruleId": "link.fragment.unresolved",
-          "ruleIndex": 12,
+          "ruleIndex": 13,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1271,7 +1298,7 @@
         },
         {
           "ruleId": "section.required.missing",
-          "ruleIndex": 11,
+          "ruleIndex": 12,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1300,7 +1327,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 7,
+          "ruleIndex": 8,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1345,7 +1372,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 8,
+          "ruleIndex": 9,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1390,7 +1417,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 8,
+          "ruleIndex": 9,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1455,8 +1482,74 @@
           }
         },
         {
+          "ruleId": "relation.target.unresolved",
+          "ruleIndex": 4,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`SPEC-FIX-dangling` declares `assesses: SPEC-FIX-no-such-document`, and that target resolves to nothing at all",
+            "markdown": "`SPEC-FIX-dangling` declares `assesses: SPEC-FIX-no-such-document`, and that target resolves to nothing at all\n\n**Fix:** write the identifier of a document that exists under `assesses`, or mint `SPEC-FIX-no-such-document` on the document this entry means"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/13-dangling.md"
+                },
+                "region": {
+                  "startLine": 9,
+                  "startColumn": 7
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "write the identifier of a document that exists under `assesses`, or mint `SPEC-FIX-no-such-document` on the document this entry means",
+              "escape": "none",
+              "obligation": "OB-FIX-24",
+              "obligation_severity": "high"
+            }
+          }
+        },
+        {
+          "ruleId": "relation.target.unresolved",
+          "ruleIndex": 4,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`SPEC-FIX-dangling` declares `assesses: SPEC-FIX-untyped`, and that target names check/spec/04-untyped.md, which is untyped: the census gave it no kind, and an endpoint is a kind",
+            "markdown": "`SPEC-FIX-dangling` declares `assesses: SPEC-FIX-untyped`, and that target names check/spec/04-untyped.md, which is untyped: the census gave it no kind, and an endpoint is a kind\n\n**Fix:** give check/spec/04-untyped.md a kind, because both ends of a declared relation are kinds and only a typed document is a node"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/13-dangling.md"
+                },
+                "region": {
+                  "startLine": 10,
+                  "startColumn": 7
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "give check/spec/04-untyped.md a kind, because both ends of a declared relation are kinds and only a typed document is a node",
+              "escape": "none",
+              "obligation": "OB-FIX-24",
+              "obligation_severity": "high"
+            }
+          }
+        },
+        {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 15,
+          "ruleIndex": 16,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1485,7 +1578,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 15,
+          "ruleIndex": 16,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1514,7 +1607,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 14,
+          "ruleIndex": 15,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1543,7 +1636,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 14,
+          "ruleIndex": 15,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1572,7 +1665,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 14,
+          "ruleIndex": 15,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1601,7 +1694,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 14,
+          "ruleIndex": 15,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1634,14 +1727,14 @@
           "taxonomy": {
             "package": "headwater/fixture",
             "version": "1.0.0",
-            "lock": "918fa7a6d4592f6eb7dacb9031abcaef82fac0377c40fbb95a697f87a3df3d02"
+            "lock": "74633eb89de77b0e4c90e110f481d2f4a41fa4901b1ace760b37d66351822015"
           },
           "clock": "2026-08-12",
           "coverage": {
-            "seen": 20,
-            "classified": 18,
-            "checked": 17,
-            "instances": 142
+            "seen": 21,
+            "classified": 19,
+            "checked": 18,
+            "instances": 160
           },
           "escaped": {
             "waived": "no waiver mechanism exists",
@@ -1649,7 +1742,7 @@
             "suppressed": 2
           },
           "read_set": {
-            "inputs": 18,
+            "inputs": 19,
             "unhashed": 0
           },
           "loss_set": [

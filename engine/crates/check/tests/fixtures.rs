@@ -18,8 +18,8 @@ use headwater_census::walk::Corpus;
 use headwater_check::scope::{over_documents, over_edges, Digests};
 use headwater_check::{
     coverage, endpoint, facet_required, facet_value, fragment, language, participation, placement,
-    reciprocity, retired, sections, source_form, voice, Cache, Context, Date, Declared, Detail,
-    DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain, Outcome, Register, Run, Shape,
+    reciprocity, retired, sections, source_form, target, voice, Cache, Context, Date, Declared,
+    Detail, DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain, Outcome, Register, Run, Shape,
 };
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -151,6 +151,20 @@ fn fixture_census() -> Census {
     let root = load_map(&fixtures_dir().join("check.taxonomy.yml"));
     let taxonomy = Taxonomy::read(&root).expect("the taxonomy reads");
     census::take(&corpus, &taxonomy)
+}
+
+/// The fixture tree's graph, built from that census exactly as a run builds it.
+fn fixture_graph() -> Graph {
+    let corpus = Corpus::new(fixtures_dir(), "check");
+    let root = load_map(&fixtures_dir().join("check.taxonomy.yml"));
+    let declarations = Declarations::read(&root).expect("the declarations read");
+    Graph::build(
+        &fixture_census(),
+        &declarations,
+        &Resolvers::over(&corpus),
+        &corpus,
+        &Config::default(),
+    )
 }
 
 fn corpus_run() -> Run {
@@ -457,6 +471,135 @@ fn this_repository_reports_the_same_run_from_a_cache_as_from_none() {
     assert!(first.cache.misses > 0, "{:?}", first.cache);
     assert_eq!(second.cache.hits, first.cache.misses, "{:?}", second.cache);
     assert_eq!(second.cache.misses, 0, "{:?}", second.cache);
+}
+
+/// A target that binds to nothing is a finding, and the two ways it can differ.
+///
+/// This is the rule's failing fixture, and the gap it closes is that there used
+/// to be none: the graph resolved these two edges to nothing, printed both, and
+/// `--strict` exited 0 over them.
+///
+/// The two entries send an author to two different files, which is the whole
+/// reason `Unbound` is a closed set with five members rather than one message.
+/// One entry names an identifier that nothing carries, so the link is the
+/// defect. The other names a document that exists and has no kind, so that
+/// document is the defect and the link is already right.
+#[test]
+fn a_target_that_binds_to_nothing_is_a_finding_that_names_which_defect_it_is() {
+    let run = fixture_run();
+    let findings: Vec<&headwater_check::Finding> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.rule == target::RULE)
+        .collect();
+    assert_eq!(findings.len(), 2, "{findings:#?}");
+
+    // Every one of them blocks a strict run, which is the property that was
+    // missing: a structural finding nobody could gate on.
+    assert!(
+        findings
+            .iter()
+            .all(|finding| finding.severity == headwater_check::Severity::Error),
+        "{findings:#?}"
+    );
+    // And none of them offers a fix. A target that names nothing has no one
+    // derivable outcome, which is spec 12's bar for offering one.
+    assert!(
+        !findings.iter().any(|finding| finding.fixable),
+        "{findings:#?}"
+    );
+
+    let nothing = findings
+        .iter()
+        .find(|finding| finding.message.contains("SPEC-FIX-no-such-document"))
+        .expect("the target that nothing carries");
+    assert!(
+        nothing.message.contains("resolves to nothing at all"),
+        "{nothing:#?}"
+    );
+    assert!(
+        nothing
+            .remediation
+            .contains("mint `SPEC-FIX-no-such-document`"),
+        "{nothing:#?}"
+    );
+
+    let untyped = findings
+        .iter()
+        .find(|finding| finding.message.contains("SPEC-FIX-untyped"))
+        .expect("the target that carries no kind");
+    assert!(
+        untyped
+            .remediation
+            .contains("give check/spec/04-untyped.md a kind"),
+        "{untyped:#?}"
+    );
+
+    // Both report at the entry that declared them, in the document that wrote
+    // it, and the two entries sit on two lines of one block.
+    assert!(
+        findings
+            .iter()
+            .all(|finding| finding.path == "check/spec/13-dangling.md"),
+        "{findings:#?}"
+    );
+    assert_ne!(nothing.line, untyped.line, "{findings:#?}");
+}
+
+/// The unit is the authored entry, and the fixture tree shows both consequences.
+///
+/// A Q4 pair cannot carry a target that resolved to nothing, so a rule about
+/// the target string has to count entries. One instance per declared edge is
+/// what that means, and it is what makes the passing case visible: a rule whose
+/// instances are only its findings has no denominator.
+#[test]
+fn one_instance_covers_one_entry_where_the_reciprocity_rule_covers_one_pair() {
+    let run = fixture_run();
+    let graph = fixture_graph();
+
+    let instances = run
+        .instances
+        .iter()
+        .filter(|instance| instance.rule == target::RULE)
+        .count();
+    assert_eq!(instances, graph.edges.len(), "{instances}");
+
+    // The two rules disagree about one pair on purpose. `cites_evidence` from
+    // `00-both-halves.md` is written at both ends, so reciprocity has one
+    // instance over it and this rule has two.
+    let both = |instance: &&headwater_check::Instance| {
+        let paths = instance.paths();
+        paths.contains(&"check/spec/00-both-halves.md")
+            && paths.contains(&"check/evaluations/alpha.md")
+    };
+    assert_eq!(
+        run.instances
+            .iter()
+            .filter(|instance| instance.rule == reciprocity::RULE)
+            .filter(both)
+            .count(),
+        1
+    );
+    assert_eq!(
+        run.instances
+            .iter()
+            .filter(|instance| instance.rule == target::RULE)
+            .filter(both)
+            .count(),
+        2
+    );
+
+    // An unbound target reads one document and not two. There is no document at
+    // the far end to hash, and a read set that named one would name a file that
+    // this run never opened.
+    for instance in run
+        .instances
+        .iter()
+        .filter(|instance| instance.rule == target::RULE)
+        .filter(|instance| instance.paths() == vec!["check/spec/13-dangling.md"])
+    {
+        assert_eq!(instance.reads.len(), 1, "{instance:#?}");
+    }
 }
 
 /// The reciprocity check is generated, and the generation is what is asserted.
@@ -824,8 +967,8 @@ fn a_classified_document_with_no_instance_is_a_finding_and_an_untyped_one_is_not
         .map(|finding| finding.path.as_str())
         .collect();
     assert_eq!(paths, ["check/spec/03-no-instance.md"]);
-    assert_eq!(run.coverage.seen(), 20);
-    assert_eq!(run.coverage.classified(), 18);
+    assert_eq!(run.coverage.seen(), 21);
+    assert_eq!(run.coverage.classified(), 19);
 
     // A file this engine wrote is the third state, and it is accounted for
     // without being judged. `check/spec/12-generated.md` sits on a heterogeneous
@@ -909,6 +1052,7 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             Grain::Document,
             Grain::Edge,
             Grain::Edge,
+            Grain::Edge,
             Grain::Neighbourhood { depth: 1 },
             // The six Document-origin rules, which read the body rather than
             // the front matter. The grain is the same and the view is not:
@@ -957,6 +1101,14 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
     assert!(!run.served[2].scope.needs_body());
     assert_eq!(run.served[2].rule, headwater_check::identifier::RULE);
 
+    // The three Graph-origin rules are consecutive, and the target rule is the
+    // first of them. Whether a target resolved is prior to every other question
+    // an edge rule asks about it.
+    assert_eq!(
+        [run.served[4].rule, run.served[5].rule, run.served[6].rule],
+        [target::RULE, reciprocity::RULE, endpoint::RULE]
+    );
+
     // Exactly one rule reads the clock, and the report names it. A reader who
     // asks why a warm run re-evaluated one rule and not another reads it here.
     let clocked: Vec<&str> = run
@@ -966,8 +1118,9 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         .map(|served| served.rule)
         .collect();
     assert_eq!(clocked, [participation::RULE]);
+    assert_eq!(run.served[7].rule, participation::RULE);
     assert_eq!(
-        run.served[6].scope.render(),
+        run.served[7].scope.render(),
         "neighbourhood scope, one document and the documents one relation away from it, \
          and the injected clock"
     );
@@ -1000,7 +1153,7 @@ fn a_document_check_receives_the_body_only_when_it_declares_it() {
     let declared = over_documents(&Reader::<true>, &census, &pinned(), &mut Cache::disabled());
     let did_not = over_documents(&Reader::<false>, &census, &pinned(), &mut Cache::disabled());
 
-    assert_eq!(declared.len(), 18, "one instance per typed document");
+    assert_eq!(declared.len(), 19, "one instance per typed document");
     assert_eq!(declared.len(), did_not.len());
     assert!(declared
         .iter()

@@ -1,5 +1,5 @@
-6 nodes, 11 declared edge halves
-      4 to a document
+7 nodes, 13 declared edge halves
+      6 to a document
       3 to an anchor
       4 unbound
 5 prose links
@@ -28,6 +28,8 @@ nodes
     graph/spec/02-listed-relations.md
   design_spec SPEC-FIX-first
     graph/spec/04-twin.md
+  design_spec SPEC-FIX-generated
+    graph/spec/06-generated-register.md
 
 edges
   EVAL-FIX-alpha --cited_by--> SPEC-FIX-first
@@ -46,12 +48,16 @@ edges
     unbound: resolves to nothing at all, and `code_path`: no `EVAL-FIX-nowhere` in the source tree
   SPEC-FIX-second --traces_to--> SPEC-FIX-unshelved
     unbound: names graph/notes/loose.md, which is untyped: the census gave it no kind, and an endpoint is a kind
+  SPEC-FIX-second --traces_to--> SPEC-FIX-generated
+    design_spec at graph/spec/06-generated-register.md
   SPEC-FIX-second --traces_to--> graph.taxonomy.yml
     code_path via source-tree
   SPEC-FIX-second --audited_by--> 12345
     unbound: `ado_work_item` names the resolver `ado-snapshot`, which this run does not have
   SPEC-FIX-second --cites_evidence--> EVAL-FIX-alpha
     evaluation at graph/evaluations/alpha.md
+  SPEC-FIX-generated --traces_to--> SPEC-FIX-first
+    design_spec at graph/spec/00-first.md
 
 links
   graph/spec/00-first.md -> 01-second.md#a-heading
@@ -77,9 +83,9 @@ graph/spec/01-second.md:7:7
   edge: `traces_to` -> EVAL-FIX-nowhere resolves to nothing at all, and `code_path`: no `EVAL-FIX-nowhere` in the source tree
 graph/spec/01-second.md:8:7
   edge: `traces_to` -> SPEC-FIX-unshelved names graph/notes/loose.md, which is untyped: the census gave it no kind, and an endpoint is a kind
-graph/spec/01-second.md:10:15
+graph/spec/01-second.md:11:15
   edge: `audited_by` -> 12345 `ado_work_item` names the resolver `ado-snapshot`, which this run does not have
-graph/spec/01-second.md:14:7
+graph/spec/01-second.md:15:7
   relations: an entry of `cites_evidence` declares no `to`, so it names no target
 graph/spec/02-listed-relations.md:5:3
   relations: `relations` is a sequence, and it names relation types

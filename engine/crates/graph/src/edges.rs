@@ -45,7 +45,7 @@ use crate::anchors::{Binding, Resolvers};
 use crate::declarations::{Declarations, Direction};
 use crate::index::Index;
 use crate::Config;
-use headwater_census::census::{Census, Outcome};
+use headwater_census::census::Census;
 use headwater_yaml::{Entry, Mapping, Span, Value};
 
 /// A declared edge, resolved.
@@ -269,9 +269,16 @@ impl Edge {
 
 /// Resolve every `relations:` block of the census into edges.
 ///
-/// The input set is the typed rows and nothing else. A document the census gave
-/// no kind is not an endpoint, so its `relations:` block declares no edge, and
-/// walking the tree again to find one would be a second denominator.
+/// The input set is the rows that resolved a kind, which is
+/// [`headwater_census::census::Outcome::node`]'s answer rather than a second
+/// reading here. A document the census gave no kind is not an endpoint, so its
+/// `relations:` block declares no edge, and walking the tree again to find one
+/// would be a second denominator.
+///
+/// A generated document that declared an identity is on that list, so it can be
+/// either end of an edge. Spec 6 excuses it from checks and not from identity,
+/// and an edge it declares is a fact its emitter wrote from the corpus rather
+/// than a claim its author made.
 pub fn build(
     census: &Census,
     index: &Index,
@@ -283,7 +290,7 @@ pub fn build(
     let mut problems = Vec::new();
 
     for row in &census.rows {
-        let Outcome::Typed { kind, derivation } = &row.outcome else {
+        let Some((kind, derivation)) = row.outcome.node() else {
             continue;
         };
         let Some(document) = &row.document else {
@@ -317,8 +324,8 @@ pub fn build(
         let source = Source {
             id: node.clone(),
             path: row.path.clone(),
-            kind: kind.clone(),
-            kind_span: derivation.span,
+            kind: kind.to_string(),
+            kind_span: derivation.and_then(|derivation| derivation.span),
         };
 
         let mut declared_here: Vec<(String, String)> = Vec::new();

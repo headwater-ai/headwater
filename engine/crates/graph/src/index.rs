@@ -19,11 +19,26 @@
 //! link*. Told apart, each one reaches an author who can act. Reported as one
 //! class, the first sends its author to repair a link that is already correct.
 //!
-//! So the index has two shelves. [`Index::typed`] is the graph's node set: only
-//! a typed document can be an edge endpoint, because both ends of a declared
+//! So the index has two shelves. [`Index::typed`] is the graph's node set: a
+//! document is on it when it resolved a kind, because both ends of a declared
 //! relation are kinds. [`Index::untyped`] is every other document that still
 //! declares an identifier, and it exists to answer the second question and
 //! nothing else. Nothing in it is a node.
+//!
+//! # A generated document that declared an identity is on the node shelf
+//!
+//! Which rows resolved a kind is
+//! [`headwater_census::census::Outcome::node`]'s answer and not this module's,
+//! and a generated file that carries front matter is one of them. [Spec
+//! 6](../../../../docs/spec/06-engine-architecture.md#projections) excuses such
+//! a file from every *check*, on the ground that an author cannot repair its
+//! content in the file. Its identity is a different fact: it comes from the
+//! declaration that writes the file, and `generate --check` is what holds it.
+//!
+//! Reading the exemption as a statement about identity is what made a
+//! projection unable to write a file that other documents cite. The property
+//! that makes an artifact worth generating is that many documents depend on it,
+//! and that was the property that made it ungeneratable.
 //!
 //! # The identifier facet is a parameter
 //!
@@ -35,7 +50,7 @@
 //! settling the question changes a declaration and not this file.
 
 use crate::Config;
-use headwater_census::census::{Census, Outcome, Row};
+use headwater_census::census::{Census, Row};
 use headwater_yaml::Span;
 
 /// A document, as a node of the graph or as a near miss beside it.
@@ -126,10 +141,7 @@ impl Index {
         let mut index = Index::default();
 
         for row in &census.rows {
-            let kind = match &row.outcome {
-                Outcome::Typed { kind, .. } => Some(kind.clone()),
-                _ => None,
-            };
+            let kind = row.outcome.node().map(|(kind, _)| kind.to_string());
             let id = identifier(row, config, &mut index.defects, kind.as_deref());
 
             index.paths.push(PathEntry {

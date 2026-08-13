@@ -9,8 +9,11 @@
 //!
 //! # The input set is the census, and the census is the whole input
 //!
-//! Only a [`headwater_census::census::Outcome::Typed`] row can be an edge
-//! endpoint, because both ends of a declared relation are kinds. A row carries
+//! Only a row that resolved a kind can be an edge endpoint, because both ends
+//! of a declared relation are kinds. Which rows those are is
+//! [`headwater_census::census::Outcome::node`]'s answer rather than a second
+//! reading here, and it holds a typed document and a generated document that
+//! declared an identity. A row carries
 //! the document it read, so nothing here opens a file. Two passes over one
 //! corpus can disagree — an edit between them, or one rule drifting from the
 //! other — and the disagreement would be between the denominator and the

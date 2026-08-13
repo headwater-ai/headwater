@@ -1,6 +1,6 @@
 ## `headwater check`
 
-32 findings, 14 of them errors across 17 of 20 documents, against `headwater/fixture` 1.0.0 at `918fa7a6d4592f6eb7dacb9031abcaef82fac0377c40fbb95a697f87a3df3d02`, evaluated at 2026-08-12.
+34 findings, 16 of them errors across 18 of 21 documents, against `headwater/fixture` 1.0.0 at `74633eb89de77b0e4c90e110f481d2f4a41fa4901b1ace760b37d66351822015`, evaluated at 2026-08-12.
 
 | Severity | Where | Rule | Finding |
 |---|---|---|---|
@@ -30,6 +30,8 @@
 | error | `check/spec/09-contract-missing.md` | `section.required.missing` | `decision_record` requires the section `Decision`, and no heading of this document says so |
 | warn | `check/spec/10-suppressed.md:27` | `language.controlled.not_met` | `ste_house` holds prose to 25 words a sentence, and this one has 31 |
 | error | `check/spec/11-identifier-mismatch.md:2` | `identifier.pattern.not_met` | `SPEC-HW-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `HW-mismatch` is where the namespace `FIX` was expected |
+| error | `check/spec/13-dangling.md:9` | `relation.target.unresolved` | `SPEC-FIX-dangling` declares `assesses: SPEC-FIX-no-such-document`, and that target resolves to nothing at all |
+| error | `check/spec/13-dangling.md:10` | `relation.target.unresolved` | `SPEC-FIX-dangling` declares `assesses: SPEC-FIX-untyped`, and that target names check/spec/04-untyped.md, which is untyped: the census gave it no kind, and an endpoint is a kind |
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `control.mechanism.unimplemented` | control CT-FIX-15 names the mechanism check:no.such.rule, which this engine does not implement, so nothing discharges OB-FIX-18 |
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `control.mechanism.unimplemented` | control CT-FIX-17 names the mechanism phase:no.such.phase, which this engine does not implement, so nothing discharges OB-FIX-20 |
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `obligation.disposition.not_one` | obligation OB-FIX-16 carries no disposition: no control discharges it, and it states neither a gap nor an acceptance |
@@ -47,4 +49,4 @@
 
 </details>
 
-18 documents in the read set. 23 obligations, 18 verified.
+19 documents in the read set. 24 obligations, 19 verified.

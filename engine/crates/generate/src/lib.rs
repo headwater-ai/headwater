@@ -474,12 +474,12 @@ fn orphaned(census: &Census, outputs: &[Output]) -> Vec<Orphaned> {
         .rows
         .iter()
         .filter_map(|row| match &row.outcome {
-            headwater_census::census::Outcome::Generated { kind }
+            headwater_census::census::Outcome::Generated { projection, .. }
                 if !outputs.iter().any(|output| output.path == row.path) =>
             {
                 Some(Orphaned {
                     path: row.path.clone(),
-                    kind: kind.clone(),
+                    kind: projection.clone(),
                 })
             }
             _ => None,
