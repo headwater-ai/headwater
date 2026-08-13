@@ -659,9 +659,7 @@ fn export(
         };
         print!("{}", report.render());
         if report.has_errors() {
-            eprintln!(
-                "headwater: a declared export is not what this corpus and this lock produce"
-            );
+            eprintln!("headwater: a declared export is not what this corpus and this lock produce");
             return ExitCode::FAILURE;
         }
         return ExitCode::SUCCESS;

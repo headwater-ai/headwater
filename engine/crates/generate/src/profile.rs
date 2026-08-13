@@ -295,7 +295,10 @@ impl Membership {
             None => None,
         };
 
-        let tombstone = match body.get("tombstone").and_then(|node| node.value.as_scalar()) {
+        let tombstone = match body
+            .get("tombstone")
+            .and_then(|node| node.value.as_scalar())
+        {
             Some(scalar) => match Grain::parse(&scalar.text) {
                 Some(grain) => Some(grain),
                 None => {

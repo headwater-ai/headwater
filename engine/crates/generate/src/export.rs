@@ -546,7 +546,12 @@ fn schema(surface: &Surface<'_>, all: &[Node<'_>]) -> Body {
         if !required.is_empty() {
             members.push((
                 "required".to_string(),
-                Json::Array(required.iter().map(|name| Json::string(name.as_str())).collect()),
+                Json::Array(
+                    required
+                        .iter()
+                        .map(|name| Json::string(name.as_str()))
+                        .collect(),
+                ),
             ));
         }
         // A forbidden facet is the same statement read the other way, and the
@@ -682,10 +687,7 @@ fn schema(surface: &Surface<'_>, all: &[Node<'_>]) -> Body {
         value.push(("allOf".to_string(), Json::Array(conditionals)));
     }
     value.push(("$defs".to_string(), Json::Object(defs)));
-    value.push((
-        "headwater:bindings".to_string(),
-        Json::Array(bindings),
-    ));
+    value.push(("headwater:bindings".to_string(), Json::Array(bindings)));
 
     Body {
         value,
@@ -768,7 +770,12 @@ pub fn audit(
         }
         if let Some(rule) = rule_for(withheld, &node.key) {
             census.nodes.accounted += 1;
-            note(&mut census.accounted, Class::Node, &node.class, &withholding(&rule));
+            note(
+                &mut census.accounted,
+                Class::Node,
+                &node.class,
+                &withholding(&rule),
+            );
             continue;
         }
         match losses
@@ -777,7 +784,12 @@ pub fn audit(
         {
             Some(loss) => {
                 census.nodes.accounted += 1;
-                note(&mut census.accounted, Class::Node, &node.class, &loss.reason);
+                note(
+                    &mut census.accounted,
+                    Class::Node,
+                    &node.class,
+                    &loss.reason,
+                );
             }
             None => {
                 census.nodes.unaccounted += 1;
@@ -812,7 +824,12 @@ pub fn audit(
         {
             Some(loss) => {
                 census.edges.accounted += 1;
-                note(&mut census.accounted, Class::Edge, &edge.declared, &loss.reason);
+                note(
+                    &mut census.accounted,
+                    Class::Edge,
+                    &edge.declared,
+                    &loss.reason,
+                );
             }
             None => {
                 census.edges.unaccounted += 1;
@@ -897,7 +914,10 @@ fn envelope(
     }
 
     let mut members = vec![
-        (MARKER.to_string(), Json::string(marker_text(Kind::GraphExport))),
+        (
+            MARKER.to_string(),
+            Json::string(marker_text(Kind::GraphExport)),
+        ),
         ("export_version".to_string(), Json::string(VERSION)),
         ("profile".to_string(), Json::Object(declaration)),
         (

@@ -484,7 +484,10 @@ fn the_native_export_round_trips_the_graph() {
         .collect();
     seen.sort();
     expected.sort();
-    assert_eq!(seen, expected, "the export and the corpus hold different documents");
+    assert_eq!(
+        seen, expected,
+        "the export and the corpus hold different documents"
+    );
 
     // Every facet the document wrote is on the far side, as the text it wrote.
     // This is the part a lossy emitter gets wrong and a count would not catch.
@@ -710,7 +713,10 @@ fn the_schema_export_carries_constraints_and_accounts_for_every_instance() {
         .get("status")
         .and_then(|node| node.value.as_map())
         .expect("the status property");
-    assert!(status.get("enum").is_some(), "an enum facet lost its values");
+    assert!(
+        status.get("enum").is_some(),
+        "an enum facet lost its values"
+    );
     let since = properties
         .get("status_since")
         .and_then(|node| node.value.as_map())
@@ -737,9 +743,13 @@ fn an_unbuilt_emitter_refuses_and_says_what_it_waits_on() {
     for emitter in Emitter::ALL {
         let outcome = headwater_generate::export::emit(&surface, profile, emitter, None);
         match emitter.is_built() {
-            true => assert!(outcome.is_ok(), "{} is built and did not emit", emitter.name()),
+            true => assert!(
+                outcome.is_ok(),
+                "{} is built and did not emit",
+                emitter.name()
+            ),
             false => {
-                let reason = outcome.err().expect("an unbuilt emitter refuses").reason();
+                let reason = outcome.expect_err("an unbuilt emitter refuses").reason();
                 assert!(
                     reason.contains(emitter.name()) && reason.contains("consumer"),
                     "{} refused without naming what it waits on",
@@ -771,8 +781,7 @@ fn a_filter_over_a_facet_that_does_not_exist_emits_nothing() {
     }];
     let outcome = headwater_generate::export::emit(&surface, &profile, Emitter::Json, None);
     let reason = outcome
-        .err()
-        .expect("an unevaluable filter emits nothing")
+        .expect_err("an unevaluable filter emits nothing")
         .reason();
     assert!(
         reason.contains("confidentiality"),
@@ -806,7 +815,9 @@ projections:
         .clone();
     let errors = Projections::read(&root).expect_err("two filters for one audience are refused");
     assert!(
-        errors.iter().any(|error| error.message.contains("one filter")),
+        errors
+            .iter()
+            .any(|error| error.message.contains("one filter")),
         "the refusal does not say why: {errors:?}"
     );
 }
