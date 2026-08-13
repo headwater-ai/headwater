@@ -20,6 +20,534 @@ the plan
 - [GD-FIX-first-run](first-run.md) — what to do on a first run, and what to read when it refuses
 - [GD-FIX-recovery](recovery.md) — how to recover a corpus whose lock and sources disagree (asserted, and no human has accepted it)
 
+=== exports/native.json (graph_export) ===
+{
+  "headwater:generated": "graph_export. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
+  "export_version": "1.0",
+  "profile": {
+    "name": "default",
+    "target": "json",
+    "filtered": false
+  },
+  "loss_set": [],
+  "census": {
+    "nodes": {
+      "in the graph": 4,
+      "carried": 4,
+      "accounted for": 0,
+      "unaccounted for": 0
+    },
+    "edges": {
+      "in the graph": 4,
+      "carried": 4,
+      "accounted for": 0,
+      "unaccounted for": 0
+    },
+    "accounted for": [],
+    "unaccounted for": []
+  },
+  "graph": {
+    "documents": [
+      {
+        "path": "generate/decisions/0001-store-the-graph.md",
+        "kind": "decision",
+        "id": "DR-FIX-0001",
+        "warrant": "accepted",
+        "facets": {
+          "id": "DR-FIX-0001",
+          "status": "superseded",
+          "status_since": "2026-02-01",
+          "summary": "the first ruling on where the corpus graph lives, replaced by DR-FIX-0002",
+          "provenance": {
+            "warrant": "accepted",
+            "accepted_by": "the fixture tree"
+          },
+          "relations": {
+            "superseded_by": [
+              "DR-FIX-0002"
+            ]
+          }
+        }
+      },
+      {
+        "path": "generate/decisions/0002-rebuild-the-graph.md",
+        "kind": "decision",
+        "id": "DR-FIX-0002",
+        "warrant": "accepted",
+        "facets": {
+          "id": "DR-FIX-0002",
+          "status": "current",
+          "status_since": "2026-02-01",
+          "summary": "the graph is rebuilt on every run and never stored, which supersedes DR-FIX-0001",
+          "provenance": {
+            "warrant": "accepted",
+            "accepted_by": "the fixture tree"
+          },
+          "relations": {
+            "supersedes": [
+              "DR-FIX-0001"
+            ],
+            "governs_guide": [
+              "GD-FIX-first-run"
+            ]
+          }
+        }
+      },
+      {
+        "path": "generate/guides/first-run.md",
+        "kind": "guide",
+        "id": "GD-FIX-first-run",
+        "warrant": "accepted",
+        "facets": {
+          "id": "GD-FIX-first-run",
+          "status": "current",
+          "status_since": "2026-02-02",
+          "summary": "what to do on a first run, and what to read when it refuses",
+          "provenance": {
+            "warrant": "accepted",
+            "accepted_by": "the fixture tree"
+          },
+          "relations": {
+            "governed_by": [
+              "DR-FIX-0002"
+            ]
+          }
+        }
+      },
+      {
+        "path": "generate/guides/recovery.md",
+        "kind": "guide",
+        "id": "GD-FIX-recovery",
+        "warrant": "asserted",
+        "facets": {
+          "id": "GD-FIX-recovery",
+          "status": "draft",
+          "status_since": "2026-02-03",
+          "summary": "how to recover a corpus whose lock and sources disagree",
+          "provenance": {
+            "warrant": "asserted"
+          }
+        }
+      }
+    ],
+    "anchors": [],
+    "edges": [
+      {
+        "source": "generate/decisions/0001-store-the-graph.md",
+        "relation": "supersedes",
+        "written_as": "superseded_by",
+        "target": {
+          "bound": "document",
+          "id": "DR-FIX-0002",
+          "path": "generate/decisions/0002-rebuild-the-graph.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "generate/decisions/0002-rebuild-the-graph.md",
+        "relation": "supersedes",
+        "written_as": "supersedes",
+        "target": {
+          "bound": "document",
+          "id": "DR-FIX-0001",
+          "path": "generate/decisions/0001-store-the-graph.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "generate/decisions/0002-rebuild-the-graph.md",
+        "relation": "governs_guide",
+        "written_as": "governs_guide",
+        "target": {
+          "bound": "document",
+          "id": "GD-FIX-first-run",
+          "path": "generate/guides/first-run.md",
+          "kind": "guide"
+        }
+      },
+      {
+        "source": "generate/guides/first-run.md",
+        "relation": "governs_guide",
+        "written_as": "governed_by",
+        "target": {
+          "bound": "document",
+          "id": "DR-FIX-0002",
+          "path": "generate/decisions/0002-rebuild-the-graph.md",
+          "kind": "decision"
+        }
+      }
+    ]
+  }
+}
+
+=== exports/front-matter.schema.json (graph_export) ===
+{
+  "headwater:generated": "graph_export. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
+  "export_version": "1.0",
+  "profile": {
+    "name": "default",
+    "target": "jsonschema",
+    "filtered": false
+  },
+  "loss_set": [
+    {
+      "class": "node",
+      "name": "decision",
+      "reason": "a JSON Schema states the shape that front matter of this class must satisfy, and carries no instance of it. What travels is the constraint, and the documents stay in the corpus"
+    },
+    {
+      "class": "node",
+      "name": "guide",
+      "reason": "a JSON Schema states the shape that front matter of this class must satisfy, and carries no instance of it. What travels is the constraint, and the documents stay in the corpus"
+    },
+    {
+      "class": "edge",
+      "name": "supersedes",
+      "reason": "an edge is a resolved relation between two documents. A validator holds one instance and has no second document to reach, so endpoint legality, reciprocity and cardinality stay native. The schema constrains the shape of the `relations` block and never what it resolves to"
+    },
+    {
+      "class": "edge",
+      "name": "governs_guide",
+      "reason": "an edge is a resolved relation between two documents. A validator holds one instance and has no second document to reach, so endpoint legality, reciprocity and cardinality stay native. The schema constrains the shape of the `relations` block and never what it resolves to"
+    },
+    {
+      "class": "attribute",
+      "name": "*",
+      "reason": "an instance attribute is a member of a `relations` entry, and it travels only as far as the edge it hangs on, which is to say not at all"
+    },
+    {
+      "class": "attribute",
+      "name": "the binding",
+      "reason": "a homogeneous shelf carries its kind in the directory and no front-matter member states it, so this schema cannot select the kind for one. The bindings below say which glob takes which definition, and an editor that applies them is configuration rather than a constraint this artifact enforces"
+    }
+  ],
+  "census": {
+    "nodes": {
+      "in the graph": 4,
+      "carried": 0,
+      "accounted for": 4,
+      "unaccounted for": 0
+    },
+    "edges": {
+      "in the graph": 4,
+      "carried": 0,
+      "accounted for": 4,
+      "unaccounted for": 0
+    },
+    "accounted for": [
+      {
+        "class": "node",
+        "name": "decision",
+        "count": 2,
+        "reason": "a JSON Schema states the shape that front matter of this class must satisfy, and carries no instance of it. What travels is the constraint, and the documents stay in the corpus"
+      },
+      {
+        "class": "node",
+        "name": "guide",
+        "count": 2,
+        "reason": "a JSON Schema states the shape that front matter of this class must satisfy, and carries no instance of it. What travels is the constraint, and the documents stay in the corpus"
+      },
+      {
+        "class": "edge",
+        "name": "supersedes",
+        "count": 2,
+        "reason": "an edge is a resolved relation between two documents. A validator holds one instance and has no second document to reach, so endpoint legality, reciprocity and cardinality stay native. The schema constrains the shape of the `relations` block and never what it resolves to"
+      },
+      {
+        "class": "edge",
+        "name": "governs_guide",
+        "count": 2,
+        "reason": "an edge is a resolved relation between two documents. A validator holds one instance and has no second document to reach, so endpoint legality, reciprocity and cardinality stay native. The schema constrains the shape of the `relations` block and never what it resolves to"
+      }
+    ],
+    "unaccounted for": []
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "doc_type": {
+            "const": "decision"
+          }
+        },
+        "required": [
+          "doc_type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/decision"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "doc_type": {
+            "const": "guide"
+          }
+        },
+        "required": [
+          "doc_type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/guide"
+      }
+    }
+  ],
+  "$defs": {
+    "governed_document": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "draft",
+            "current",
+            "superseded"
+          ]
+        },
+        "status_since": {},
+        "summary": {},
+        "doc_type": {
+          "enum": [
+            "decision",
+            "guide"
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "status_since",
+        "summary"
+      ]
+    },
+    "decision": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "draft",
+            "current",
+            "superseded"
+          ]
+        },
+        "status_since": {},
+        "summary": {},
+        "doc_type": {
+          "enum": [
+            "decision",
+            "guide"
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "status_since",
+        "summary"
+      ]
+    },
+    "guide": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "draft",
+            "current",
+            "superseded"
+          ]
+        },
+        "status_since": {},
+        "summary": {},
+        "doc_type": {
+          "enum": [
+            "decision",
+            "guide"
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "status_since",
+        "summary"
+      ]
+    }
+  },
+  "headwater:bindings": [
+    {
+      "path": "generate/decisions/**",
+      "schema": "#/$defs/decision"
+    },
+    {
+      "path": "generate/guides/**",
+      "schema": "#/$defs/guide"
+    },
+    {
+      "path": "generate/archive/**",
+      "schema": "#"
+    }
+  ]
+}
+
+=== exports/partner.json (graph_export) ===
+{
+  "headwater:generated": "graph_export. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
+  "export_version": "1.0",
+  "profile": {
+    "name": "partner",
+    "target": "json",
+    "filtered": true,
+    "tombstone": "counted"
+  },
+  "loss_set": [],
+  "census": {
+    "nodes": {
+      "in the graph": 4,
+      "carried": 3,
+      "accounted for": 1,
+      "unaccounted for": 0
+    },
+    "edges": {
+      "in the graph": 4,
+      "carried": 4,
+      "accounted for": 0,
+      "unaccounted for": 0
+    },
+    "accounted for": [
+      {
+        "class": "node",
+        "name": "guide",
+        "count": 1,
+        "reason": "withheld by the rule `partner.exclude.status`"
+      }
+    ],
+    "unaccounted for": []
+  },
+  "tombstones": [
+    {
+      "rule": "partner.exclude.status",
+      "documents": 1
+    }
+  ],
+  "graph": {
+    "documents": [
+      {
+        "path": "generate/decisions/0001-store-the-graph.md",
+        "kind": "decision",
+        "id": "DR-FIX-0001",
+        "warrant": "accepted",
+        "facets": {
+          "id": "DR-FIX-0001",
+          "status": "superseded",
+          "status_since": "2026-02-01",
+          "summary": "the first ruling on where the corpus graph lives, replaced by DR-FIX-0002",
+          "provenance": {
+            "warrant": "accepted",
+            "accepted_by": "the fixture tree"
+          },
+          "relations": {
+            "superseded_by": [
+              "DR-FIX-0002"
+            ]
+          }
+        }
+      },
+      {
+        "path": "generate/decisions/0002-rebuild-the-graph.md",
+        "kind": "decision",
+        "id": "DR-FIX-0002",
+        "warrant": "accepted",
+        "facets": {
+          "id": "DR-FIX-0002",
+          "status": "current",
+          "status_since": "2026-02-01",
+          "summary": "the graph is rebuilt on every run and never stored, which supersedes DR-FIX-0001",
+          "provenance": {
+            "warrant": "accepted",
+            "accepted_by": "the fixture tree"
+          },
+          "relations": {
+            "supersedes": [
+              "DR-FIX-0001"
+            ],
+            "governs_guide": [
+              "GD-FIX-first-run"
+            ]
+          }
+        }
+      },
+      {
+        "path": "generate/guides/first-run.md",
+        "kind": "guide",
+        "id": "GD-FIX-first-run",
+        "warrant": "accepted",
+        "facets": {
+          "id": "GD-FIX-first-run",
+          "status": "current",
+          "status_since": "2026-02-02",
+          "summary": "what to do on a first run, and what to read when it refuses",
+          "provenance": {
+            "warrant": "accepted",
+            "accepted_by": "the fixture tree"
+          },
+          "relations": {
+            "governed_by": [
+              "DR-FIX-0002"
+            ]
+          }
+        }
+      }
+    ],
+    "anchors": [],
+    "edges": [
+      {
+        "source": "generate/decisions/0001-store-the-graph.md",
+        "relation": "supersedes",
+        "written_as": "superseded_by",
+        "target": {
+          "bound": "document",
+          "id": "DR-FIX-0002",
+          "path": "generate/decisions/0002-rebuild-the-graph.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "generate/decisions/0002-rebuild-the-graph.md",
+        "relation": "supersedes",
+        "written_as": "supersedes",
+        "target": {
+          "bound": "document",
+          "id": "DR-FIX-0001",
+          "path": "generate/decisions/0001-store-the-graph.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "generate/decisions/0002-rebuild-the-graph.md",
+        "relation": "governs_guide",
+        "written_as": "governs_guide",
+        "target": {
+          "bound": "document",
+          "id": "GD-FIX-first-run",
+          "path": "generate/guides/first-run.md",
+          "kind": "guide"
+        }
+      },
+      {
+        "source": "generate/guides/first-run.md",
+        "relation": "governs_guide",
+        "written_as": "governed_by",
+        "target": {
+          "bound": "document",
+          "id": "DR-FIX-0002",
+          "path": "generate/decisions/0002-rebuild-the-graph.md",
+          "kind": "decision"
+        }
+      }
+    ]
+  }
+}
+
 === .headwater/corpus.json (corpus_descriptor) ===
 {
   "headwater:generated": "corpus_descriptor. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
@@ -49,13 +577,28 @@ the plan
           "path": "generate/guides/first-run.md",
           "id": "GD-FIX-first-run"
         }
+      ],
+      "exports": [
+        {
+          "profile": "default",
+          "target": "json",
+          "output": "exports/native.json",
+          "filtered": false
+        },
+        {
+          "profile": "default",
+          "target": "jsonschema",
+          "output": "exports/front-matter.schema.json",
+          "filtered": false
+        },
+        {
+          "profile": "partner",
+          "target": "json",
+          "output": "exports/partner.json",
+          "filtered": true,
+          "tombstone": "counted"
+        }
       ]
-    }
-  ],
-  "unstated": [
-    {
-      "field": "exports",
-      "reason": "no taxonomy can declare an export profile yet. An export profile names an audience, an emitter target, a filter and a tombstone grain, and a `projections` entry carries a kind and an output path. An empty list here would say that this corpus exports nothing, and what is true is that nothing can declare an export."
     }
   ]
 }
@@ -66,14 +609,18 @@ projections
     written
   shelf_index generate/guides/README.md
     written
+  graph_export exports/native.json
+    written
+  graph_export exports/front-matter.schema.json
+    written
+  graph_export exports/partner.json
+    written
   corpus_descriptor .headwater/corpus.json
     written
 
 what this verb does not write, and why
   shelf_index generate/archive/README.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
-  graph_export generate/export.json
-    the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
 fails the run: false
@@ -84,14 +631,18 @@ projections
     unchanged
   shelf_index generate/guides/README.md
     unchanged
+  graph_export exports/native.json
+    unchanged
+  graph_export exports/front-matter.schema.json
+    unchanged
+  graph_export exports/partner.json
+    unchanged
   corpus_descriptor .headwater/corpus.json
     unchanged
 
 what this verb does not write, and why
   shelf_index generate/archive/README.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
-  graph_export generate/export.json
-    the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
 fails the run: false
@@ -102,14 +653,18 @@ projections, held to regeneration
     committed, and it is not what this corpus and this lock produce
   shelf_index generate/guides/README.md
     unchanged
+  graph_export exports/native.json
+    unchanged
+  graph_export exports/front-matter.schema.json
+    unchanged
+  graph_export exports/partner.json
+    unchanged
   corpus_descriptor .headwater/corpus.json
     unchanged
 
 what this verb does not write, and why
   shelf_index generate/archive/README.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
-  graph_export generate/export.json
-    the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
 fails the run: true
@@ -120,14 +675,18 @@ projections
     rewritten
   shelf_index generate/guides/README.md
     unchanged
+  graph_export exports/native.json
+    unchanged
+  graph_export exports/front-matter.schema.json
+    unchanged
+  graph_export exports/partner.json
+    unchanged
   corpus_descriptor .headwater/corpus.json
     unchanged
 
 what this verb does not write, and why
   shelf_index generate/archive/README.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
-  graph_export generate/export.json
-    the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
 fails the run: false
@@ -138,14 +697,18 @@ projections, held to regeneration
     unchanged
   shelf_index generate/guides/README.md
     unchanged
+  graph_export exports/native.json
+    unchanged
+  graph_export exports/front-matter.schema.json
+    unchanged
+  graph_export exports/partner.json
+    unchanged
   corpus_descriptor .headwater/corpus.json
     unchanged
 
 what this verb does not write, and why
   shelf_index generate/archive/README.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
-  graph_export generate/export.json
-    the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
 fails the run: false
@@ -156,14 +719,18 @@ projections, held to regeneration
     not committed, and this run would write it
   shelf_index generate/guides/README.md
     not committed, and this run would write it
+  graph_export exports/native.json
+    not committed, and this run would write it
+  graph_export exports/front-matter.schema.json
+    not committed, and this run would write it
+  graph_export exports/partner.json
+    not committed, and this run would write it
   corpus_descriptor .headwater/corpus.json
     not committed, and this run would write it
 
 what this verb does not write, and why
   shelf_index generate/archive/README.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
-  graph_export generate/export.json
-    the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
 fails the run: true
@@ -174,14 +741,18 @@ projections
     a file is there and it carries no generated-file marker, so this engine will not overwrite it
   shelf_index generate/guides/README.md
     written
+  graph_export exports/native.json
+    written
+  graph_export exports/front-matter.schema.json
+    written
+  graph_export exports/partner.json
+    written
   corpus_descriptor .headwater/corpus.json
     written
 
 what this verb does not write, and why
   shelf_index generate/archive/README.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
-  graph_export generate/export.json
-    the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
 fails the run: true

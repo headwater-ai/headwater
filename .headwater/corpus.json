@@ -31,13 +31,8 @@
           "path": "docs/spec/00-vision-and-scope.md",
           "id": "SPEC-HW-vision-and-scope"
         }
-      ]
-    }
-  ],
-  "unstated": [
-    {
-      "field": "exports",
-      "reason": "no taxonomy can declare an export profile yet. An export profile names an audience, an emitter target, a filter and a tombstone grain, and a `projections` entry carries a kind and an output path. An empty list here would say that this corpus exports nothing, and what is true is that nothing can declare an export."
+      ],
+      "exports": []
     }
   ]
 }

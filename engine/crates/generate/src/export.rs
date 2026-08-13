@@ -250,7 +250,13 @@ pub fn emit(
         _ => native(surface, graph, &all, &withheld),
     };
 
-    let census = take(surface, graph, &all, &withheld, &body);
+    let census = audit(
+        surface,
+        &withheld,
+        &body.carried_nodes,
+        &body.carried_edges,
+        &body.losses,
+    );
     let value = envelope(profile, emitter, generated_at, &withheld, &census, body);
     Ok(Emission {
         bytes: value.render_pretty(),
@@ -726,25 +732,37 @@ fn forbidden_facets(shape: &headwater_check::Shape, kind: &str) -> Vec<String> {
     out
 }
 
-/// Hold the output against the graph.
+/// Hold an output against the graph: the projection census.
 ///
 /// Neither the emitter's word nor the loss set is trusted here. The census walks
 /// the graph, asks of each node and each edge whether the output carries it, and
 /// where it does not, looks for a reason that covers its class. The order of the
 /// two lookups matters: a withholding is checked first, because a document the
 /// filter removed is accounted for by the profile and not by the emitter.
-fn take(
+///
+/// It is public and it takes three lists rather than an emitter, which is what
+/// makes it testable against a projector that dropped something. An emitter that
+/// audited itself would be the untrusted projector all over again, one layer up.
+///
+/// `carried_nodes` holds the key of each node the output carries: the path of a
+/// document, or `anchor_kind:id` for an anchor. `carried_edges` holds the index
+/// in the graph's own edge list. `withheld` is what the profile's filter
+/// removed, as `(path, rule)`.
+pub fn audit(
     surface: &Surface<'_>,
-    graph: &Graph,
-    all: &[Node<'_>],
     withheld: &[(String, String)],
-    body: &Body,
+    carried_nodes: &[String],
+    carried_edges: &[usize],
+    losses: &[Loss],
 ) -> Census {
+    let graph = surface.graph();
+    let all = nodes(surface, graph);
+    let all = &all;
     let mut census = Census::default();
 
     for node in all {
         census.nodes.in_graph += 1;
-        if body.carried_nodes.contains(&node.key) {
+        if carried_nodes.contains(&node.key) {
             census.nodes.carried += 1;
             continue;
         }
@@ -753,8 +771,7 @@ fn take(
             note(&mut census.accounted, Class::Node, &node.class, &withholding(&rule));
             continue;
         }
-        match body
-            .losses
+        match losses
             .iter()
             .find(|loss| loss.class == Class::Node && loss.name == node.class)
         {
@@ -775,7 +792,7 @@ fn take(
 
     for (at, edge) in graph.edges.iter().enumerate() {
         census.edges.in_graph += 1;
-        if body.carried_edges.contains(&at) {
+        if carried_edges.contains(&at) {
             census.edges.carried += 1;
             continue;
         }
@@ -789,8 +806,7 @@ fn take(
             );
             continue;
         }
-        match body
-            .losses
+        match losses
             .iter()
             .find(|loss| loss.class == Class::Edge && loss.name == edge.declared)
         {
@@ -809,7 +825,6 @@ fn take(
         }
     }
 
-    let _ = surface;
     census
 }
 
