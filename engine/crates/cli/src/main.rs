@@ -255,11 +255,17 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
+    // The payload is the one authored part of the lock, so a resolve reads it
+    // off the committed file and writes it back. A resolve that dropped it
+    // would delete an adopter's accounting as a side effect of a taxonomy edit,
+    // and the run after it would report every pair the payload was holding.
+    let adoption = headwater_lock::adoption_at(root);
     let text = match headwater_lock::write(
         &repository.consumer.package,
         &repository.consumer.version,
         &sources,
         &repository.resolution,
+        adoption.as_ref(),
     ) {
         Ok(text) => text,
         Err(findings) => {

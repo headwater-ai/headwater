@@ -145,6 +145,7 @@ fn the_digest_is_over_the_canonical_text_and_not_the_file() {
         &repository.consumer.version,
         &sources,
         &repository.resolution,
+        headwater_lock::adoption_at(&root).as_ref(),
     )
     .expect("it validates");
 
@@ -171,7 +172,12 @@ fn the_committed_lock_is_what_the_sources_resolve_to() {
         &repository.consumer.package,
         &repository.consumer.version,
         &sources,
+        // `taxonomy resolve` carries the adoption payload through, so a test
+        // of what the sources resolve to has to carry it through as well.
+        // Without this the assertion below would read as "the sources moved"
+        // every time an adopter edited a task.
         &repository.resolution,
+        headwater_lock::adoption_at(&root).as_ref(),
     )
     .expect("it validates");
 
