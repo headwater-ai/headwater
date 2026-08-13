@@ -91,7 +91,7 @@
 //! ([principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)).
 
 use crate::profile::Grain;
-use crate::{marker_text, Identity, Kind, Output, Plan, Projections};
+use crate::{Identity, Kind, Output, Plan, Projections};
 use headwater_query::json::Json;
 use headwater_query::Surface;
 
@@ -142,8 +142,8 @@ pub(crate) fn emit(
 
     let value = Json::object([
         (
-            crate::MARKER,
-            Json::string(marker_text(Kind::CorpusDescriptor)),
+            headwater_mark::MARKER,
+            Json::string(headwater_mark::marker_text(Kind::CorpusDescriptor.name())),
         ),
         ("descriptor_version", Json::string(VERSION)),
         ("corpora", Json::Array(vec![corpus])),

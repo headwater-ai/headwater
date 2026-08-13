@@ -10,6 +10,7 @@ members = [
     "crates/graph",
     "crates/hash",
     "crates/lock",
+    "crates/mark",
     "crates/meta",
     "crates/query",
     "crates/ref",

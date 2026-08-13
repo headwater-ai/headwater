@@ -1,6 +1,6 @@
 ## `headwater check`
 
-32 findings, 14 of them errors across 17 of 19 documents, against `headwater/fixture` 1.0.0 at `918fa7a6d4592f6eb7dacb9031abcaef82fac0377c40fbb95a697f87a3df3d02`, evaluated at 2026-08-12.
+32 findings, 14 of them errors across 17 of 20 documents, against `headwater/fixture` 1.0.0 at `918fa7a6d4592f6eb7dacb9031abcaef82fac0377c40fbb95a697f87a3df3d02`, evaluated at 2026-08-12.
 
 | Severity | Where | Rule | Finding |
 |---|---|---|---|

@@ -17,6 +17,12 @@ headwater-hash = { path = "../hash" }
 # could not read.
 headwater-doc = { path = "../doc" }
 
+# The generated-file marker. A projection lands inside the corpus root, so this
+# walk reaches files this engine wrote, and the marker is what says so. The
+# predicate lives below both this crate and the generator that writes it,
+# because the generator depends on this one and the rule must not be copied.
+headwater-mark = { path = "../mark" }
+
 # Shelves are declared in a taxonomy source, and a declaration that is wrong
 # reports at the line that declared it.
 headwater-yaml = { path = "../yaml" }

@@ -177,6 +177,8 @@ This makes real questions answerable. Which parts of the corpus are agent-drafte
 
 **Agency is not the warrant.** An agent that drafts a document which a human then accepts produces an `accepted` document, and that is the ordinary case in this design. `asserted` marks content that nobody accepted, whoever or whatever wrote it.
 
+**The engine derives `regenerated` from the marker, and a generated file declares no front matter at all.** The marker is the first line of the file, so the file has no block in which to state a warrant. A declared warrant would also be a fact that a hand edit can falsify. The census would then have to choose between the declaration and the marker. It reads the marker instead, and reports the file under an outcome of its own ([spec 6](06-engine-architecture.md#projections)). So nobody accepts a generated document, and no run reports one as untyped.
+
 **A measurement is `regenerated`, and its transcript is what makes that true.** An efficacy [probe](05-ai-integration.md#a-run-produces-a-snapshot-and-a-document) run emits a transcript, which the corpus commits as a snapshot. The probe result is generated from that snapshot, the declared expectations and the grader version, so `generate --check` proves it. Without the committed transcript the result would be `asserted`, and the [evidence rules above](#evidence-has-three-honest-states-not-two) would then refuse it. A measurement that no decision may cite is not worth running.
 
 ### Promotion is one human, one document, one diff

@@ -46,9 +46,24 @@
 //! **Where the marker sits is the format's business, and it is found either
 //! way.** A commented format carries it on the first line. JSON has no comment,
 //! so the descriptor carries the same sentence in a top-level member, and
-//! [`carries_marker`] reads whichever of the two a path admits. The alternative
-//! was to rule that a path the engine fixes needs no marker, and that rule ends
-//! with this engine overwriting a file an adopter wrote by hand.
+//! [`headwater_mark::carries_marker`] reads whichever of the two a path admits.
+//! The alternative was to rule that a path the engine fixes needs no marker, and
+//! that rule ends with this engine overwriting a file an adopter wrote by hand.
+//!
+//! The wording and the two rules live in `headwater-mark` rather than here,
+//! because the census reads a marker too and it cannot depend on this crate.
+//! That crate's header says why.
+//!
+//! # A marked file that no declaration writes
+//!
+//! The marker is a claim, and this verb is what tests it. A file inside the
+//! corpus root that carries the marker is a file the census excuses from every
+//! document check, so the line would otherwise be a self-service exemption: add
+//! it to an authored document and nothing reports that document again. So a run
+//! reads the census beside the plan, and a marked file that no output claims is
+//! [`Orphaned`] — a stale artifact of a declaration that was removed or
+//! repointed, or a marker somebody wrote by hand. Both are errors, and the
+//! remedy for both is to delete the file or to restore the declaration.
 //!
 //! # No output states when it was generated, and the export verb is where the
 //! # exception lives
@@ -82,9 +97,6 @@ pub mod profile;
 mod shelf_index;
 
 pub use profile::{Admission, Clause, Emitter, Filter, Grain, Profile};
-
-/// The word that marks a file as this engine's output.
-pub const MARKER: &str = "headwater:generated";
 
 /// What the descriptor states that neither the graph nor the census holds.
 ///
@@ -346,11 +358,51 @@ pub struct Unwritten {
     pub reason: String,
 }
 
+/// A file inside the corpus root that carries the marker and that no
+/// declaration writes.
+///
+/// The marker is a claim that this engine wrote the file, and the census
+/// believes it: a marked file is excused from every document check, because the
+/// content of a generated file is a function of its emitter rather than of its
+/// author. So the claim has to be tested somewhere, and this is the only place
+/// that can test it, because testing it needs the plan.
+///
+/// Two things reach here and the remedy differs. A **stale artifact** is the
+/// common one: a declaration was removed or its output path was repointed, and
+/// the file it used to write stayed behind. Nothing regenerates it, so it says
+/// whatever the corpus said on the day it was last written. A **hand-written
+/// marker** is the other, and it is the one that matters more: the line is one
+/// an author could otherwise add to any document to exempt it from every check,
+/// silently and permanently. Reported, it exempts nothing.
+#[derive(Clone, Debug)]
+pub struct Orphaned {
+    pub path: String,
+    /// The kind the marker claims, when it claims one.
+    pub kind: Option<String>,
+}
+
+impl Orphaned {
+    fn line(&self) -> String {
+        let claim = match &self.kind {
+            Some(kind) => format!("carries a `{kind}` generated-file marker"),
+            None => "carries a generated-file marker that names no kind".to_string(),
+        };
+        format!(
+            "{claim}, and no declaration writes this path. Nothing regenerates this file and no              check reads it. Delete it, or restore the declaration that wrote it"
+        )
+    }
+}
+
 /// Everything one run would write, and everything it would not.
 #[derive(Clone, Debug, Default)]
 pub struct Plan {
     pub outputs: Vec<Output>,
     pub unwritten: Vec<Unwritten>,
+    /// Marked files inside the corpus root that no output claims. Empty for a
+    /// plan that covers a subset of the declarations, because a subset cannot
+    /// tell a file it does not write from a file nobody writes: see
+    /// [`export_plan`].
+    pub orphaned: Vec<Orphaned>,
 }
 
 /// What the engine writes with no declaration at all.
@@ -399,7 +451,33 @@ pub fn plan(
     }
     descriptor::emit(surface, identity, projections, &mut plan);
     plan.unwritten.extend(engine_defined());
+    // Every declaration has had its turn, so the output set is complete and a
+    // marked file outside it is a marked file nothing writes.
+    plan.orphaned = orphaned(census, &plan.outputs);
     plan
+}
+
+/// Marked files the census found that no output in this plan claims.
+///
+/// The census is the input rather than a second walk, for the reason every
+/// phase after it reads it: two walks of one tree can disagree, and this one
+/// would disagree by reporting a file as unwritten that the other never saw.
+fn orphaned(census: &Census, outputs: &[Output]) -> Vec<Orphaned> {
+    census
+        .rows
+        .iter()
+        .filter_map(|row| match &row.outcome {
+            headwater_census::census::Outcome::Generated { kind }
+                if !outputs.iter().any(|output| output.path == row.path) =>
+            {
+                Some(Orphaned {
+                    path: row.path.clone(),
+                    kind: kind.clone(),
+                })
+            }
+            _ => None,
+        })
+        .collect()
 }
 
 /// The plan for `headwater export`: the declared exports, and nothing else.
@@ -598,13 +676,17 @@ pub struct Wrote {
 pub struct Report {
     pub wrote: Vec<Wrote>,
     pub unwritten: Vec<Unwritten>,
+    /// Marked files no declaration writes. An error in both directions of the
+    /// verb: `generate` does not delete files, so writing the plan does not
+    /// clear one.
+    pub orphaned: Vec<Orphaned>,
     /// Whether this run wrote anything, or only compared.
     pub checked: bool,
 }
 
 impl Report {
     pub fn has_errors(&self) -> bool {
-        self.wrote.iter().any(|wrote| wrote.verdict.is_error())
+        self.wrote.iter().any(|wrote| wrote.verdict.is_error()) || !self.orphaned.is_empty()
     }
 
     /// The report, which states what it did not do as well as what it did.
@@ -623,6 +705,13 @@ impl Report {
                 }
             }
         }
+        if !self.orphaned.is_empty() {
+            out.push_str("\nmarked, and written by no declaration\n");
+            for orphaned in &self.orphaned {
+                out.push_str(&format!("  {}\n", orphaned.path));
+                out.push_str(&format!("    {}\n", orphaned.line()));
+            }
+        }
         if !self.unwritten.is_empty() {
             out.push_str("\nwhat this verb does not write, and why\n");
             for unwritten in &self.unwritten {
@@ -631,88 +720,6 @@ impl Report {
             }
         }
         out
-    }
-}
-
-/// The comment syntax a path's format admits, which is where its marker goes.
-enum Comment {
-    /// Markdown, so an HTML comment.
-    Html,
-    /// YAML and anything else line-oriented.
-    Hash,
-    /// A format with no comment syntax. JSON is the one that reaches here.
-    None,
-}
-
-fn comment_for(path: &str) -> Comment {
-    match path.rsplit('.').next() {
-        Some("md") | Some("markdown") => Comment::Html,
-        Some("yml") | Some("yaml") | Some("toml") => Comment::Hash,
-        Some("json") => Comment::None,
-        _ => Comment::Hash,
-    }
-}
-
-/// What the marker says, without the word that names it and without the syntax
-/// that carries it.
-///
-/// Held apart from [`marker`] because a format with no comment carries the same
-/// sentence in a different place, and the two places name the marker
-/// differently. A comment has one line, so [`MARKER`] has to be a word inside
-/// it. A member has a key, so [`MARKER`] is the key and a value that repeated
-/// it would say the word twice. One wording, two frames, and neither of them
-/// holds a second copy of the other's part.
-pub fn marker_text(kind: Kind) -> String {
-    format!(
-        "{}. `headwater generate` writes this file, and `headwater generate --check` holds it. \
-         Edit the corpus, not this file.",
-        kind.name()
-    )
-}
-
-/// The marker line for a kind at a path, or `None` when the format carries no
-/// comment.
-///
-/// `None` is not a refusal. It says that the marker cannot be a line here, and
-/// the emitter for that format carries [`marker_text`] structurally instead:
-/// JSON reaches this arm, and [`descriptor`] writes the sentence into a
-/// top-level member. What matters to [`carries_marker`] is that the marker is
-/// findable, and not which syntax holds it.
-pub fn marker(kind: Kind, path: &str) -> Option<String> {
-    let body = format!("{MARKER} {}", marker_text(kind));
-    match comment_for(path) {
-        Comment::Html => Some(format!("<!-- {body} -->")),
-        Comment::Hash => Some(format!("# {body}")),
-        Comment::None => None,
-    }
-}
-
-/// Whether a file at a path marks itself as this engine's output.
-///
-/// Two rules, because the false positive the first one guards against exists in
-/// only one of the two formats.
-///
-/// **A commented format: the first line, and nowhere else.** A document that
-/// quotes the marker while discussing it is an authored document, and this
-/// repository's own specification is exactly such a document. Reading the first
-/// line alone is what keeps a run from overwriting it.
-///
-/// **JSON: a top-level member, wherever it sits.** A JSON file is not prose, so
-/// nothing in one discusses a marker, and the line rule would answer for the
-/// brace that opens the object rather than for the file. The member is the
-/// marker, and it is matched as a quoted key at the start of a line so that a
-/// string somewhere in the document which happens to hold the word does not
-/// count as one.
-pub fn carries_marker(path: &str, text: &str) -> bool {
-    let quoted = format!("\"{MARKER}\"");
-    match comment_for(path) {
-        Comment::None => text
-            .lines()
-            .any(|line| line.trim_start().starts_with(&quoted)),
-        _ => text
-            .lines()
-            .next()
-            .is_some_and(|line| line.contains(MARKER)),
     }
 }
 
@@ -738,6 +745,7 @@ fn run(root: &Path, plan: &Plan, checking: bool) -> Report {
     let mut report = Report {
         checked: checking,
         unwritten: plan.unwritten.clone(),
+        orphaned: plan.orphaned.clone(),
         ..Report::default()
     };
     for output in &plan.outputs {
@@ -748,7 +756,9 @@ fn run(root: &Path, plan: &Plan, checking: bool) -> Report {
             // The marker decides before the difference does. A file that is
             // there and unmarked is authored, and reporting it as drift would
             // tell a reader to run the verb that destroys it.
-            (Some(text), _) if !carries_marker(&output.path, text) => Verdict::Occupied,
+            (Some(text), _) if !headwater_mark::carries_marker(&output.path, text) => {
+                Verdict::Occupied
+            }
             (Some(_), true) => Verdict::Differs,
             (None, true) => Verdict::Missing,
             (Some(_), false) => put(&path, &output.bytes, Verdict::Rewritten),

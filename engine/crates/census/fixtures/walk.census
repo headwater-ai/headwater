@@ -1,11 +1,12 @@
-25 files under the corpus root
-      2 typed
+27 files under the corpus root
+      3 typed
+      1 generated
      11 untyped
       3 unreadable
       2 excluded
       3 not a document
       4 unwalkable
-      1 typed design_spec
+      2 typed design_spec
       1 typed evaluation
 
 exclusions
@@ -46,12 +47,16 @@ walk/not-markdown.txt
   not a document: not a Markdown file
 walk/spaces and ünicode.md
   untyped: no shelf pattern claims this path
+walk/spec/generated-index.md
+  generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 walk/spec/no-discriminator.md
   untyped: the shelf is heterogeneous and the document declares no `doc_type`
 walk/spec/no-front-matter.md
   untyped: no front matter, so nobody has typed this file
 walk/spec/not-a-mapping.md
   unreadable: 2:1: front matter is a sequence, and a facet has a name, so the block is a mapping
+walk/spec/quotes-the-marker.md
+  typed: design_spec
 walk/spec/typed-by-discriminator.md
   typed: design_spec
 walk/spec/unknown-discriminator.md

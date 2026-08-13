@@ -824,8 +824,38 @@ fn a_classified_document_with_no_instance_is_a_finding_and_an_untyped_one_is_not
         .map(|finding| finding.path.as_str())
         .collect();
     assert_eq!(paths, ["check/spec/03-no-instance.md"]);
-    assert_eq!(run.coverage.seen(), 19);
+    assert_eq!(run.coverage.seen(), 20);
     assert_eq!(run.coverage.classified(), 18);
+
+    // A file this engine wrote is the third state, and it is accounted for
+    // without being judged. `check/spec/12-generated.md` sits on a heterogeneous
+    // shelf and satisfies none of the contracts its kinds declare, which is what
+    // `04-untyped.md` is reported for. It is seen, it is counted under its own
+    // class, and no rule names it.
+    assert_eq!(run.coverage.generated(), 1);
+    let generated = "check/spec/12-generated.md";
+    assert!(
+        run.coverage.documents.iter().any(|document| {
+            document.path == generated && document.created == 0 && document.ran == 0
+        }),
+        "a generated file was routed to a check instance"
+    );
+    assert!(
+        !run.findings.iter().any(|finding| finding.path == generated),
+        "{generated} is reported by {:?}",
+        run.findings
+            .iter()
+            .filter(|finding| finding.path == generated)
+            .map(|finding| finding.rule)
+            .collect::<Vec<_>>()
+    );
+    // Seen, and not classified, and not silently absent from either count.
+    assert_eq!(
+        run.coverage.seen(),
+        run.coverage.classified() + run.coverage.generated() + 1,
+        "the one remaining file is `04-untyped.md`, and every other row is \
+         classified or generated"
+    );
 }
 
 /// The coverage numbers are computed against the census and never against the

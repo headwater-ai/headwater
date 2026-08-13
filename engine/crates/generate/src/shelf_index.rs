@@ -25,7 +25,7 @@
 //! shelf path admits, and [spec 13](../../../../docs/spec/13-open-obligations.md)
 //! carries both.
 
-use crate::{marker, pointers, shelf_of, Declaration, Kind, Output, Plan, Unwritten};
+use crate::{pointers, shelf_of, Declaration, Kind, Output, Plan, Unwritten};
 use headwater_census::census::Census;
 use headwater_query::{Pointer, Surface};
 
@@ -120,8 +120,8 @@ fn render(shelf: &str, output: &str, ordered: &[Pointer]) -> String {
     // shelf index is Markdown. The fallback is a plain line rather than an
     // unmarked file, because an unmarked generated file is the one thing this
     // module must never produce.
-    let mark =
-        marker(Kind::ShelfIndex, output).unwrap_or_else(|| format!("<!-- {} -->", crate::MARKER));
+    let mark = headwater_mark::marker(Kind::ShelfIndex.name(), output)
+        .unwrap_or_else(|| format!("<!-- {} -->", headwater_mark::MARKER));
     out.push_str(&mark);
     out.push_str("\n\n# ");
     out.push_str(shelf);

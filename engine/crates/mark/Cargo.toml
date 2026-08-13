@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "headwater-mark"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+# No dependencies, for the reason `headwater-hash` has none. Two components read
+# a generated-file marker and they sit on opposite sides of the engine: the
+# generator writes one, and the census reads one to keep the file out of the
+# authored population. The generator depends on the census, so the census cannot
+# depend on the generator, and a second copy of the rule in the census is exactly
+# the drift that lets the writer and the reader disagree about which files this
+# engine wrote.
+[dependencies]
