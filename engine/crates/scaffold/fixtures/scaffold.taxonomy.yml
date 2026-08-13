@@ -1,0 +1,336 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the scaffolder's fixture corpus is written against.
+#
+# [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots) names
+# the scaffolder a correctness root, and it says what a correctness root owes:
+# "Each component therefore owes its own conformance fixtures, in the same
+# spirit as 'a check without a failing fixture does not ship'." This file is
+# half of that instrument. Every branch of `Refusal` has a declaration here that
+# reaches it, and every derived value has a declaration it comes from.
+#
+# It is written out rather than resolved from the base package, for the reason
+# the check crate's fixture taxonomy states: a fixture that depended on the base
+# would change whenever the base does.
+
+facets:
+
+  status:
+    role: state
+    required: true
+    volatility: mutable
+    values:
+      - {value: draft, role: initial}
+      - {value: current, role: live}
+      - {value: superseded, role: terminal-retained}
+
+  status_since:
+    role: state_entered
+    type: date
+    required: true
+    volatility: mutable
+
+  last_verified:
+    role: freshness
+    type: date
+    volatility: mutable
+
+  summary:
+    role: scent
+    type: string
+    required: true
+    volatility: mutable
+
+  title:
+    role: name
+    type: string
+    required: false
+    volatility: stable
+
+  # The discriminator of the heterogeneous shelf.
+  doc_type:
+    values: [design_spec, note]
+    required: false
+    volatility: stable
+
+  # An integer that the `spec_series` layout writes into a file name, so the
+  # scaffolder reads the shelf to decide it.
+  sequence:
+    type: integer
+    required: false
+    volatility: stable
+
+  # An integer that no layout names. Nothing derives it, and a prompt is not an
+  # integer, so `chapter` is the declaration that reaches
+  # `Refusal::FacetUndeterminable` down the type branch.
+  chapter:
+    type: integer
+    required: false
+    volatility: stable
+
+  # A closed value set with no role. Nothing derives it either, and a prompt is
+  # a value the enum rule refuses, so `audience` reaches the same refusal down
+  # the value-set branch.
+  audience:
+    values: [internal, public]
+    required: false
+    volatility: stable
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current], current: [superseded]}
+      retain_terminal: true
+    # A regime that declares no initial state. The kind bound to it reaches
+    # `Refusal::FacetUndeterminable` down the lifecycle branch.
+    unopened: {}
+  voice:
+    declarative: {forbid: [future_intent, change_narration, phased_rollout]}
+
+identifier_schemes:
+  # A free token in terminal position, which the minter fills from the slug.
+  spec_id: {pattern: "SPEC-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+  # A fixed-width sequence, which the minter fills by reconciling over the
+  # corpus.
+  decision_id: {pattern: "DR-{namespace}-{seq:04d}", namespace: FIX, allocation: reconcile-first}
+  # A free token before another segment. Spec 2 states no end for it, so the
+  # template reader refuses the pattern and the minter issues nothing under it.
+  broken_id: {pattern: "BAD-{slug}-{namespace}", namespace: FIX, allocation: minted-once}
+  # Two digits, and the corpus already spends 99. The next value does not fit
+  # the field, and the minter refuses rather than writing an identifier short.
+  exhausted_id: {pattern: "EX-{namespace}-{seq:02d}", namespace: FIX, allocation: reconcile-first}
+
+kinds:
+
+  governed_document:
+    abstract: true
+    facets: {require: [status, status_since, summary]}
+
+  design_spec:
+    is_a: governed_document
+    identifier: {scheme: spec_id}
+    voice: declarative
+    lifecycle: standard
+    facets: {require: [doc_type, sequence]}
+    sections: {require: [Scope, Behavior]}
+
+  decision_record:
+    is_a: governed_document
+    identifier: {scheme: decision_id}
+    voice: declarative
+    lifecycle: standard
+    facets: {require: [title]}
+    sections: {require: [Context, Decision, Consequences]}
+
+  # A kind on the heterogeneous shelf that mints under no scheme, and that no
+  # relation may name. It scaffolds with no identifier, which is the true
+  # report about a document that is neither end of any edge.
+  note:
+    is_a: governed_document
+    lifecycle: standard
+
+  # A relation endpoint with no scheme. `Refusal::Unnameable`.
+  standard:
+    is_a: governed_document
+    lifecycle: standard
+
+  # No shelf claims it. `Refusal::KindUnshelved`.
+  orphan:
+    is_a: governed_document
+    lifecycle: standard
+
+  # Two shelves claim it. `Refusal::KindOnManyShelves`.
+  ambiguous:
+    is_a: governed_document
+    lifecycle: standard
+
+  # Its lifecycle regime declares no initial state.
+  unopened_record:
+    is_a: governed_document
+    identifier: {scheme: spec_id}
+    lifecycle: unopened
+
+  # Its required facet is an integer no layout names.
+  chaptered:
+    is_a: governed_document
+    identifier: {scheme: spec_id}
+    lifecycle: standard
+    facets: {require: [chapter]}
+
+  # Its required facet declares a closed value set and carries no role.
+  addressed:
+    is_a: governed_document
+    identifier: {scheme: spec_id}
+    lifecycle: standard
+    facets: {require: [audience]}
+
+  # Its scheme's pattern cannot be read.
+  unmintable:
+    is_a: governed_document
+    identifier: {scheme: broken_id}
+    lifecycle: standard
+
+  # The shelf that claims it globs before its last segment.
+  misplaced:
+    is_a: governed_document
+    identifier: {scheme: spec_id}
+    lifecycle: standard
+
+  # Its scheme's field is full.
+  exhausted:
+    is_a: governed_document
+    identifier: {scheme: exhausted_id}
+    lifecycle: standard
+
+  # Its shelf's layout writes a directory that a more specific shelf claims, so
+  # the path this crate derives classifies as something else. That is this
+  # crate's defect, and the classifier is what reports it.
+  annexed:
+    is_a: governed_document
+    identifier: {scheme: spec_id}
+    lifecycle: standard
+
+  deeper:
+    is_a: governed_document
+    identifier: {scheme: spec_id}
+    lifecycle: standard
+
+  # A kind under no abstract parent that no relation may name. It scaffolds
+  # with no identifier, which is the true report about a document that is
+  # neither end of any edge.
+  standalone:
+    facets: {require: [status, status_since, summary]}
+    lifecycle: standard
+
+shelves:
+
+  spec_series:
+    path: corpus/spec/**
+    homogeneous: false
+    discriminator: doc_type
+    kinds: [design_spec, note]
+    layout: "{sequence:02d}-{slug}.md"
+
+  # No layout, so a file name is the slug.
+  decisions:
+    path: corpus/decisions/**
+    homogeneous: true
+    kind: decision_record
+
+  standards:
+    path: corpus/standards/**
+    homogeneous: true
+    kind: standard
+
+  first_claim:
+    path: corpus/first/**
+    homogeneous: true
+    kind: ambiguous
+
+  second_claim:
+    path: corpus/second/**
+    homogeneous: true
+    kind: ambiguous
+
+  unopened:
+    path: corpus/unopened/**
+    homogeneous: true
+    kind: unopened_record
+
+  chapters:
+    path: corpus/chapters/**
+    homogeneous: true
+    kind: chaptered
+
+  addressees:
+    path: corpus/addressees/**
+    homogeneous: true
+    kind: addressed
+
+  unmintables:
+    path: corpus/unmintables/**
+    homogeneous: true
+    kind: unmintable
+
+  # A glob before the last segment. No directory follows from it.
+  misplacements:
+    path: corpus/*/misplaced/**
+    homogeneous: true
+    kind: misplaced
+
+  exhausteds:
+    path: corpus/exhausted/**
+    homogeneous: true
+    kind: exhausted
+
+  # Its layout writes into `deep/`, and the shelf below claims that directory.
+  annexes:
+    path: corpus/annexes/**
+    homogeneous: true
+    kind: annexed
+    layout: "deep/{slug}.md"
+
+  deeps:
+    path: corpus/annexes/deep/**
+    homogeneous: true
+    kind: deeper
+
+  standalones:
+    path: corpus/standalones/**
+    homogeneous: true
+    kind: standalone
+
+relations:
+
+  # The scaffold relation with reciprocity required. The far half goes into the
+  # target document.
+  supersedes:
+    family: succession
+    from: [governed_document]
+    to:   [governed_document]
+    inverse: superseded_by
+    reciprocal: required
+    nuclearity: multinuclear
+    created_by: scaffold
+
+  # A scaffold relation that asks for no far half.
+  assesses:
+    family: evidence
+    from: [decision_record]
+    to:   [governed_document]
+    cardinality: many
+    created_by: scaffold
+
+  # Not a scaffold's edge. `Refusal::RelationNotScaffolded`.
+  traces_to:
+    family: evidence
+    from: [governed_document]
+    to:   [governed_document]
+    created_by: hook
+
+  # Narrow endpoints, so both ends of `Refusal::EndpointNotPermitted` are
+  # reachable.
+  refines:
+    family: derivation
+    from: [design_spec]
+    to:   [design_spec]
+    inverse: refined_by
+    reciprocal: required
+    created_by: scaffold
+
+obligations:
+  OB-FIX-1:
+    statement: Every document a relation may name declares an identifier
+    rationale: A document with no identifier is neither end of any edge
+    class: cohesion
+    prevents: content.incomplete
+    severity: high
+
+controls:
+  CT-FIX-1:
+    mechanism: check:identifier.unusable
+    discharges: [OB-FIX-1]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
