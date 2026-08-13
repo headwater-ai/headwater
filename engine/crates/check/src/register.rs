@@ -54,6 +54,23 @@
 //! control that names a mechanism that the engine does not implement, or a
 //! pipeline that does not exist, is a finding".
 //!
+//! # A control the engine cannot run discharges nothing
+//!
+//! Spec 4 reads `verified` as "one or more controls discharge it", and a
+//! control whose mechanism this engine does not implement discharges nothing:
+//! [`MECHANISM`]'s own message says so. An earlier edition still counted such
+//! an obligation as verified, so a taxonomy could move its whole register to
+//! `15 verified` with a mechanism name that reaches no code. That is the exact
+//! claim the register exists to refuse, printed by the register.
+//!
+//! So [`Disposed::disposition`] reads what this run can run, and the obligation
+//! falls to the disposition it states for itself. Where it states none, that is
+//! [`Disposition::Undeclared`], and the engine invents neither of the other
+//! two: spec 4's `gap` carries an owner and its `unverifiable` carries
+//! reasoning, and neither is a value the engine is in a position to supply.
+//! [`Disposed::contradicted`] keeps reading the declaration, and its comment
+//! says why the two differ.
+//!
 //! Neither rule creates an instance, and [`crate::coverage`] is the precedent:
 //! a rule whose subject is not a document accounts nothing against the census.
 //! Their grain is [`Grain::Taxonomy`](crate::Grain::Taxonomy), which is a fifth
@@ -338,13 +355,16 @@ impl Register {
 /// whole. See [`Disposed`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Disposition {
-    /// One or more controls discharge it.
+    /// One or more controls discharge it, and this engine can run at least one
+    /// of them. A control that names a mechanism the engine does not implement
+    /// discharges nothing, and it is a control only on paper: see
+    /// [`Disposed::unimplemented`].
     Verified,
-    /// No control, and the obligation states a gap.
+    /// Nothing discharges it, and the obligation states a gap.
     Gap,
-    /// No control, and the obligation is accepted as unverifiable.
+    /// Nothing discharges it, and the obligation is accepted as unverifiable.
     Unverifiable,
-    /// No control and no statement. The state spec 4 forbids.
+    /// Nothing discharges it and it states nothing. The state spec 4 forbids.
     Undeclared,
 }
 
@@ -369,8 +389,18 @@ impl Disposition {
 pub struct Disposed {
     pub id: String,
     pub severity: Option<String>,
-    /// The controls that discharge it, in declaration order.
+    /// The controls that name it under `discharges`, in declaration order.
+    /// Naming it is not discharging it: see [`Disposed::unimplemented`].
     pub controls: Vec<String>,
+    /// The subset of [`Disposed::controls`] whose mechanism is
+    /// [`Mechanism::Unimplemented`], in the same order.
+    ///
+    /// Such a control discharges nothing in this run, and the disposition is
+    /// derived from the difference. An engine that later implements the
+    /// mechanism moves the obligation to `verified` with no edit to any
+    /// declaration, which is the property that makes this a run-time fact
+    /// rather than a declaration defect.
+    pub unimplemented: Vec<String>,
     pub stated: Option<Stated>,
     /// Findings against this obligation that an author suppressed. A
     /// suppression does not undo a control, so it does not move the
@@ -380,21 +410,43 @@ pub struct Disposed {
 }
 
 impl Disposed {
+    /// Whether a control this engine can run discharges it.
+    ///
+    /// The count rather than the list, because [`Disposed::unimplemented`] is
+    /// a subset of [`Disposed::controls`] by construction.
+    pub fn discharged(&self) -> bool {
+        self.controls.len() > self.unimplemented.len()
+    }
+
     pub fn disposition(&self) -> Disposition {
-        match (self.controls.is_empty(), &self.stated) {
-            (false, _) => Disposition::Verified,
-            (true, Some(Stated::Gap { .. })) => Disposition::Gap,
-            (true, Some(Stated::Unverifiable { .. })) => Disposition::Unverifiable,
-            (true, None) => Disposition::Undeclared,
+        match (self.discharged(), &self.stated) {
+            (true, _) => Disposition::Verified,
+            (false, Some(Stated::Gap { .. })) => Disposition::Gap,
+            (false, Some(Stated::Unverifiable { .. })) => Disposition::Unverifiable,
+            (false, None) => Disposition::Undeclared,
         }
     }
 
     /// Whether this obligation carries two dispositions rather than one: a
-    /// control discharges it and it also states a gap or an acceptance. Spec 4
-    /// gives it exactly one, so this is the second thing [`DISPOSITION`]
-    /// reports.
+    /// control claims to discharge it and it also states a gap or an
+    /// acceptance. Spec 4 gives it exactly one, so this is the second thing
+    /// [`DISPOSITION`] reports.
+    ///
+    /// This reads the declaration and not the run, which is the opposite of
+    /// [`Disposed::disposition`] above and is deliberate. The defect is that
+    /// the taxonomy wrote the binding in two places, and that is true of the
+    /// text whether or not this engine implements the mechanism. To read the
+    /// run here would hide one declaration defect behind another, and a
+    /// corrected mechanism name would then raise a contradiction that was
+    /// there all along.
     pub fn contradicted(&self) -> bool {
         !self.controls.is_empty() && self.stated.is_some()
+    }
+
+    /// Whether every control that names it is one this engine cannot run, so
+    /// nothing discharges it and the controls are the reason.
+    fn claimed_only(&self) -> bool {
+        !self.controls.is_empty() && !self.discharged()
     }
 }
 
@@ -432,17 +484,26 @@ impl Projection {
         let obligations = register
             .obligations
             .iter()
-            .map(|obligation| Disposed {
-                id: obligation.id.clone(),
-                severity: obligation.severity.clone(),
-                controls: register
+            .map(|obligation| {
+                let naming: Vec<&Control> = register
                     .controls
                     .iter()
                     .filter(|control| control.discharges.contains(&obligation.id))
-                    .map(|control| control.id.clone())
-                    .collect(),
-                stated: obligation.disposition.clone(),
-                escaped: 0,
+                    .collect();
+                Disposed {
+                    id: obligation.id.clone(),
+                    severity: obligation.severity.clone(),
+                    controls: naming.iter().map(|control| control.id.clone()).collect(),
+                    unimplemented: naming
+                        .iter()
+                        .filter(|control| {
+                            matches!(register.mechanism(control), Mechanism::Unimplemented(_))
+                        })
+                        .map(|control| control.id.clone())
+                        .collect(),
+                    stated: obligation.disposition.clone(),
+                    escaped: 0,
+                }
             })
             .collect();
         let controls = register
@@ -499,16 +560,34 @@ impl Projection {
         let mut findings = Vec::new();
         for obligation in &self.obligations {
             let id = &obligation.id;
+            // Why nothing discharges it, which is one of two sentences: no
+            // control names it at all, or every control that does names a
+            // mechanism this engine cannot run.
+            let nothing = match obligation.claimed_only() {
+                true => format!(
+                    "{} {} a mechanism this engine does not implement, so nothing discharges it",
+                    obligation.unimplemented.join(", "),
+                    verb(obligation.unimplemented.len(), "names", "name")
+                ),
+                false => "no control discharges it".to_string(),
+            };
             let message = match obligation.disposition() {
                 Disposition::Undeclared => Some(format!(
-                    "obligation {id} carries no disposition: no control discharges it, and it \
-                     states neither a gap nor an acceptance"
+                    "obligation {id} carries no disposition: {nothing}, and it states neither a \
+                     gap nor an acceptance"
                 )),
-                _ if obligation.contradicted() => Some(format!(
-                    "obligation {id} carries two dispositions: {} discharges it, and it also \
-                     states one for itself",
-                    obligation.controls.join(", ")
-                )),
+                _ if obligation.contradicted() => Some(match obligation.claimed_only() {
+                    true => format!(
+                        "obligation {id} carries two dispositions: {} claims to discharge it, and \
+                         it also states one for itself",
+                        obligation.controls.join(", ")
+                    ),
+                    false => format!(
+                        "obligation {id} carries two dispositions: {} discharges it, and it also \
+                         states one for itself",
+                        obligation.controls.join(", ")
+                    ),
+                }),
                 _ => None,
             };
             let Some(message) = message else { continue };
@@ -525,10 +604,20 @@ impl Projection {
                 line: 0,
                 column: 0,
                 message,
-                remediation: "give the obligation a control that discharges it, or state \
-                              `disposition: {gap: {owner: …}}` or `disposition: \
-                              {unverifiable: {reasoning: …}}` on it, and exactly one of the three"
-                    .to_string(),
+                // The first clause names the fix that is actually open. Where a
+                // control already claims the obligation, "give it a control" is
+                // advice the author has taken, and the mechanism is the edit.
+                remediation: format!(
+                    "{}, or state `disposition: {{gap: {{owner: …}}}}` or `disposition: \
+                     {{unverifiable: {{reasoning: …}}}}` on it, and exactly one of the three",
+                    match obligation.claimed_only() {
+                        true => format!(
+                            "name a mechanism this engine implements on {}",
+                            obligation.unimplemented.join(", ")
+                        ),
+                        false => "give the obligation a control that discharges it".to_string(),
+                    }
+                ),
                 fixable: false,
             });
         }
@@ -640,27 +729,46 @@ impl Projection {
                 obligation.id,
                 obligation.disposition().name()
             );
-            match (obligation.contradicted(), &obligation.stated) {
-                // A control discharges it and it states a disposition too, so
-                // it carries two. The statement is reported as the second one
-                // rather than spelled out, because the control above is what
-                // the register went with.
-                (true, Some(Stated::Gap { .. })) => {
-                    out.push_str(", and it states a gap as well, which is two dispositions")
+            // The detail of the disposition the register went with. What an
+            // obligation states is in force only where nothing discharges it,
+            // so the two arms match the disposition rather than the statement.
+            let _ = match (obligation.disposition(), &obligation.stated) {
+                (Disposition::Gap, Some(Stated::Gap { owner, target })) => match target {
+                    Some(target) => write!(out, ", owner {owner}, target {target}"),
+                    None => write!(out, ", owner {owner}, and no target"),
+                },
+                (Disposition::Unverifiable, Some(Stated::Unverifiable { reasoning })) => {
+                    write!(out, ", {reasoning}")
                 }
-                (true, _) => {
-                    out.push_str(", and it states an acceptance as well, which is two dispositions")
-                }
-                (false, Some(Stated::Gap { owner, target })) => {
-                    let _ = match target {
-                        Some(target) => write!(out, ", owner {owner}, target {target}"),
-                        None => write!(out, ", owner {owner}, and no target"),
-                    };
-                }
-                (false, Some(Stated::Unverifiable { reasoning })) => {
-                    let _ = write!(out, ", {reasoning}");
-                }
-                (false, None) => {}
+                _ => Ok(()),
+            };
+
+            // Why an obligation that a control names is not verified. Without
+            // this clause the line reads as an obligation nobody wrote a
+            // control for, which is a different defect with a different fix.
+            if obligation.claimed_only() {
+                let _ = write!(
+                    out,
+                    ", and {} {} to discharge it under a mechanism this engine does not implement",
+                    obligation.unimplemented.join(", "),
+                    verb(obligation.unimplemented.len(), "claims", "claim")
+                );
+            }
+
+            // A control claims it and it states a disposition too, so it
+            // carries two. Where the control runs, the statement is reported as
+            // the second one rather than spelled out, because the control is
+            // what the register went with.
+            if obligation.contradicted() {
+                out.push_str(match (obligation.claimed_only(), &obligation.stated) {
+                    (true, _) => ", which is two dispositions",
+                    (false, Some(Stated::Gap { .. })) => {
+                        ", and it states a gap as well, which is two dispositions"
+                    }
+                    (false, _) => {
+                        ", and it states an acceptance as well, which is two dispositions"
+                    }
+                });
             }
             let _ = match obligation.escaped {
                 0 => Ok(()),
@@ -795,6 +903,15 @@ impl Projection {
             }
         }
         counts
+    }
+}
+
+/// The verb form for a list of that length. A report that says "CT-1, CT-2
+/// claims" is a report somebody has to read twice.
+fn verb(count: usize, one: &'static str, many: &'static str) -> &'static str {
+    match count {
+        1 => one,
+        _ => many,
     }
 }
 
@@ -1153,15 +1270,100 @@ controls:
         let projection = Projection::of(&register);
         let findings = projection.findings("t.yml");
         let messages: Vec<&str> = findings.iter().map(|f| f.message.as_str()).collect();
-        assert_eq!(findings.len(), 3, "{messages:?}");
+        assert_eq!(findings.len(), 4, "{messages:?}");
         assert!(messages[0].contains("OB-1 carries no disposition"));
         assert!(messages[1].contains("OB-2 carries two dispositions"));
-        assert!(messages[2].contains("does not implement"));
+        // Two findings for OB-3, and they say different things. The control is
+        // broken, and the obligation it names is consequently undisposed.
+        assert!(messages[2].contains("OB-3 carries no disposition"));
+        assert!(messages[3].contains("does not implement"));
         assert!(findings.iter().all(|f| f.path == "t.yml"));
+    }
+
+    /// A control this engine cannot run discharges nothing, so the obligation
+    /// it names is not verified.
+    ///
+    /// An earlier edition read `verified` off the existence of a control. A
+    /// mechanism name that reaches no code then moved an obligation to
+    /// verified, while the run reported in the same breath that nothing
+    /// discharges it. Both halves are asserted here: the disposition, and the
+    /// second finding that the register owes a reader who sees it.
+    #[test]
+    fn a_control_this_engine_cannot_run_verifies_nothing() {
+        let register = register(
+            "obligations:\n  OB-1:\n    statement: s\n\
+             controls:\n  CT-1:\n    mechanism: check:no.such.rule\n    discharges: [OB-1]\n",
+        );
+        let projection = Projection::of(&register);
+        let disposed = &projection.obligations[0];
+        assert_eq!(disposed.controls, vec!["CT-1".to_string()]);
+        assert_eq!(disposed.unimplemented, vec!["CT-1".to_string()]);
+        assert!(!disposed.discharged());
+        assert_eq!(disposed.disposition(), Disposition::Undeclared);
+
+        let messages: Vec<String> = projection
+            .findings("t.yml")
+            .into_iter()
+            .map(|finding| finding.message)
+            .collect();
+        assert!(
+            messages[0].contains(
+                "OB-1 carries no disposition: CT-1 names a mechanism this engine does not \
+                 implement, so nothing discharges it"
+            ),
+            "{messages:?}"
+        );
+        assert!(
+            messages[1].contains("control CT-1 names the mechanism"),
+            "{messages:?}"
+        );
+        assert!(
+            projection.render().contains("1 obligations: 0 verified"),
+            "{}",
+            projection.render()
+        );
+    }
+
+    /// One runnable control among unrunnable ones still discharges it, and the
+    /// obligation is verified. The `MECHANISM` finding is what reports the
+    /// other control, and a disposition that read the worst of the set would
+    /// report a defect the obligation does not have.
+    #[test]
+    fn one_control_this_engine_runs_is_enough() {
+        let register = register(
+            "obligations:\n  OB-1:\n    statement: s\n\
+             controls:\n  \
+             CT-1:\n    mechanism: check:no.such.rule\n    discharges: [OB-1]\n  \
+             CT-2:\n    mechanism: check:coverage.document_unchecked\n    discharges: [OB-1]\n",
+        );
+        let projection = Projection::of(&register);
         assert_eq!(
-            projection.obligations[2].disposition(),
-            Disposition::Verified,
-            "a control discharges it on paper, whatever the engine can run"
+            projection.obligations[0].disposition(),
+            Disposition::Verified
+        );
+        assert_eq!(projection.findings("t.yml").len(), 1, "the mechanism only");
+    }
+
+    /// An obligation that states a gap, and whose only control this engine
+    /// cannot run, takes the gap. The gap is now the true reading, and the
+    /// contradiction is still reported: the taxonomy wrote the binding twice,
+    /// and that is a defect of the text rather than of this run.
+    #[test]
+    fn a_stated_gap_stands_where_the_control_that_claims_it_cannot_run() {
+        let register = register(
+            "obligations:\n  OB-1:\n    statement: s\n    disposition: {gap: {owner: o}}\n\
+             controls:\n  CT-1:\n    mechanism: check:no.such.rule\n    discharges: [OB-1]\n",
+        );
+        let projection = Projection::of(&register);
+        assert_eq!(projection.obligations[0].disposition(), Disposition::Gap);
+        assert!(projection.obligations[0].contradicted());
+        let rendered = projection.render();
+        assert!(
+            rendered.contains(
+                "OB-1 gap, owner o, and no target, and CT-1 claims to discharge it under a \
+                 mechanism this engine does not implement, which is two dispositions"
+            ),
+            "{rendered}"
         );
     }
 

@@ -52,34 +52,36 @@ rules, and for each the scope that binds it
   control.mechanism.unimplemented
     taxonomy scope, the resolved taxonomy, and no document
 register
-  19 obligations: 16 verified, 1 gap, 1 unverifiable, 1 with no disposition
+  20 obligations: 15 verified, 2 gap, 1 unverifiable, 2 with no disposition
       6 high, 5 verified
-      8 medium, 7 verified
-      5 low, 4 verified
+      8 medium, 6 verified
+      6 low, 4 verified
   OB-FIX-7 verified, 1 finding escaped under it
   OB-FIX-8 verified, 1 finding escaped under it
   OB-FIX-14 gap, owner the fixture tree, target a reader feedback loop, which spec 4 lists as usually absent
   OB-FIX-15 unverifiable, The question is semantic, so spec 4 sends it to the accuracy audit and no check reaches it
   OB-FIX-16 with no disposition
   OB-FIX-17 verified, and it states a gap as well, which is two dispositions
-  16 controls
-     15 posture advisory
+  OB-FIX-18 with no disposition, and CT-FIX-15 claims to discharge it under a mechanism this engine does not implement
+  OB-FIX-20 gap, owner the fixture tree, and no target, and CT-FIX-17 claims to discharge it under a mechanism this engine does not implement, which is two dispositions
+  17 controls
+     16 posture advisory
       1 posture blocking
-     15 acts detective
+     16 acts detective
       1 acts preventive
      13 name a rule this engine carries
       1 name a phase this engine runs
-      1 name a mechanism this engine does not implement
+      2 name a mechanism this engine does not implement
       1 name a mechanism outside this engine
-     14 with no promotion record, so nothing states what would promote them
+     15 with no promotion record, so nothing states what would promote them
       1 with criteria
       1 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver mechanism exists, no migration-pending mechanism exists, 2 suppressed
   relation.endpoint.not_permitted reaches OB-FIX-5, OB-FIX-17, and a finding names one obligation, so it names none
   coverage.document_unchecked reaches no obligation, so it names none
-24 findings
+27 findings
      11 error
-     13 warn
+     16 warn
 
 instances
   facet.required.missing check/evaluations/alpha.md
@@ -356,8 +358,17 @@ engine/crates/check/fixtures/check.taxonomy.yml warn
   control.mechanism.unimplemented (OB-FIX-12): control CT-FIX-15 names the mechanism check:no.such.rule, which this engine does not implement, so nothing discharges OB-FIX-18
   fix: name a rule this engine carries, or a phase of it, or a mechanism outside it under a prefix this engine does not read
 engine/crates/check/fixtures/check.taxonomy.yml warn
+  control.mechanism.unimplemented (OB-FIX-12): control CT-FIX-17 names the mechanism phase:no.such.phase, which this engine does not implement, so nothing discharges OB-FIX-20
+  fix: name a rule this engine carries, or a phase of it, or a mechanism outside it under a prefix this engine does not read
+engine/crates/check/fixtures/check.taxonomy.yml warn
   obligation.disposition.not_one (OB-FIX-11): obligation OB-FIX-16 carries no disposition: no control discharges it, and it states neither a gap nor an acceptance
   fix: give the obligation a control that discharges it, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three
 engine/crates/check/fixtures/check.taxonomy.yml warn
   obligation.disposition.not_one (OB-FIX-11): obligation OB-FIX-17 carries two dispositions: CT-FIX-14 discharges it, and it also states one for itself
   fix: give the obligation a control that discharges it, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three
+engine/crates/check/fixtures/check.taxonomy.yml warn
+  obligation.disposition.not_one (OB-FIX-11): obligation OB-FIX-18 carries no disposition: CT-FIX-15 names a mechanism this engine does not implement, so nothing discharges it, and it states neither a gap nor an acceptance
+  fix: name a mechanism this engine implements on CT-FIX-15, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three
+engine/crates/check/fixtures/check.taxonomy.yml warn
+  obligation.disposition.not_one (OB-FIX-11): obligation OB-FIX-20 carries two dispositions: CT-FIX-17 claims to discharge it, and it also states one for itself
+  fix: name a mechanism this engine implements on CT-FIX-17, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three

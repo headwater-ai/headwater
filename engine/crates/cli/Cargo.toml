@@ -17,4 +17,5 @@ headwater-census = { path = "../census" }
 headwater-check = { path = "../check" }
 headwater-graph = { path = "../graph" }
 headwater-lock = { path = "../lock" }
+headwater-query = { path = "../query" }
 headwater-resolve = { path = "../resolve" }

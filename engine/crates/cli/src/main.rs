@@ -58,6 +58,7 @@ use headwater_check::{Cache, Context, Date, Declared, Register, Shape};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Detail as GraphDetail, Graph};
+use headwater_query::{Budget, Surface};
 use headwater_resolve::render_errors;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -65,11 +66,21 @@ use std::process::ExitCode;
 const USAGE: &str = "\
 headwater check              [--strict] [--no-cache] [--now <date>] [--read-set <path>]
                              [--register <path>] [--root <path>]
+headwater route              <task description> [--budget <n>] [--root <path>]
+headwater explain            <path|identifier> [--root <path>]
+headwater mcp                [--root <path>]
 headwater taxonomy validate  [--root <path>]
 headwater taxonomy resolve   [--check] [--root <path>]
 
   check              run the pipeline over the corpus, against the taxonomy in
                      the committed lock.
+  route              resolve a task description to the documents that govern it,
+                     as pointers. It is silent when nothing matches.
+  explain            why a document is the kind it is, what it serves, and what
+                     is consequently required of it.
+  mcp                serve the reads above to an agent over the Model Context
+                     Protocol, on standard input and output. It registers no
+                     tool that writes.
   taxonomy validate  resolve the sources and report every rule of spec 2's
                      list, and what each one did not decide. Writes nothing.
   taxonomy resolve   write `.headwater/taxonomy.lock`. It is written only when
@@ -97,6 +108,7 @@ headwater taxonomy resolve   [--check] [--root <path>]
                  `obligations` and `controls` declarations, generated and never
                  authored: every obligation with its disposition, every control
                  with its health, and what escaped under each.
+  --budget <n>   `route` only: how many pointers it may offer. Five by default.
   --check        `taxonomy resolve` only: write nothing and exit non-zero when
                  the committed lock is not what the sources resolve to.
   --root <path>  the repository to read. Defaults to the working directory.
@@ -111,6 +123,7 @@ fn main() -> ExitCode {
     let mut read_set: Option<PathBuf> = None;
     let mut register_out: Option<PathBuf> = None;
     let mut root: Option<PathBuf> = None;
+    let mut budget: Option<usize> = None;
     let mut words: Vec<String> = Vec::new();
 
     while let Some(argument) = arguments.next() {
@@ -122,6 +135,11 @@ fn main() -> ExitCode {
                 Some(Some(date)) => now = Some(date),
                 Some(None) => return fail("--now takes a date written `YYYY-MM-DD`"),
                 None => return fail("--now names a date and none followed it"),
+            },
+            "--budget" => match arguments.next().as_deref().map(str::parse::<usize>) {
+                Some(Ok(value)) if value > 0 => budget = Some(value),
+                Some(_) => return fail("--budget takes a whole number above zero"),
+                None => return fail("--budget names a number and none followed it"),
             },
             "--register" => match arguments.next() {
                 Some(path) => register_out = Some(PathBuf::from(path)),
@@ -157,6 +175,20 @@ fn main() -> ExitCode {
     let verb: Vec<&str> = words.iter().map(String::as_str).collect();
     match verb.as_slice() {
         ["check"] => check(&root, strict, cached, now, read_set, register_out),
+        ["route"] => fail("`route` takes a task description. Try `headwater route \"add rate limiting to the ingest API\"`"),
+        ["route", task @ ..] => route(&root, &task.join(" "), budget),
+        ["explain"] => fail("`explain` takes a path or an identifier"),
+        ["explain", target] => explain(&root, target),
+        ["mcp"] => mcp(&root),
+        // Spec 6 lists this verb and no document of the specification states
+        // what an expression is. The engine names the gap rather than invent a
+        // form, which is the posture the resolver takes over a `$package`
+        // reference for the same reason.
+        ["query", ..] => fail(
+            "`query <expression>` is listed in spec 6 and no document states what an expression \
+             is, so this engine implements none. See `docs/spec/13-open-obligations.md`. \
+             `headwater route` and `headwater explain` are the reads that exist",
+        ),
         ["taxonomy", "validate"] => validate(&root),
         ["taxonomy", "resolve"] => resolve(&root, check_only),
         ["taxonomy"] => fail("`taxonomy` takes a second word: `validate` or `resolve`"),
@@ -167,7 +199,7 @@ fn main() -> ExitCode {
         [] => fail("no verb. Try `headwater check`"),
         [other, ..] => fail(&format!(
             "`{other}` is not a verb this binary carries yet. \
-             It carries `check` and `taxonomy`"
+             It carries `check`, `route`, `explain`, `mcp` and `taxonomy`"
         )),
     }
 }
@@ -277,6 +309,150 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
     ExitCode::SUCCESS
 }
 
+/// Phase A, once, for every verb that reads a corpus.
+///
+/// The taxonomy comes from the lock and the corpus block comes from the
+/// consumer declaration. The two are different questions: the lock says what
+/// the schema is, and `corpus:` says what to walk. Spec 6 keeps them apart too,
+/// because a run reports "the corpus tree, the taxonomy lock hash" as two facts.
+///
+/// One function rather than one per verb. A read that walked a different tree
+/// from the one `check` walks would answer about a corpus no run evaluated, and
+/// nothing in either report would say so.
+struct Loaded {
+    lock: headwater_lock::Lock,
+    census: headwater_census::census::Census,
+    graph: Graph,
+    shape: Shape,
+    taxonomy: Taxonomy,
+    relations: Declarations,
+    register: Register,
+}
+
+fn load(root: &Path) -> Result<Loaded, ExitCode> {
+    let lock = match headwater_lock::at(root) {
+        Ok(lock) => lock,
+        Err(error) => {
+            eprintln!("headwater: {error}");
+            return Err(ExitCode::FAILURE);
+        }
+    };
+    let consumer = match headwater_resolve::package::consumer(root) {
+        Ok(consumer) => consumer,
+        Err(errors) => {
+            eprintln!("headwater: the consumer declaration did not read");
+            eprint!("{}", indent(&render_errors(&errors)));
+            return Err(ExitCode::FAILURE);
+        }
+    };
+    let corpus = Corpus::declared(root, &consumer.corpus_root, &consumer.exclusions);
+    let resolved = &lock.taxonomy;
+    let taxonomy = match Taxonomy::read(resolved) {
+        Ok(taxonomy) => taxonomy,
+        Err(errors) => return Err(refused("the taxonomy", &errors)),
+    };
+    let relations = match Declarations::read(resolved) {
+        Ok(declarations) => declarations,
+        Err(errors) => return Err(refused("the relation declarations", &errors)),
+    };
+    let register = match Register::read(resolved) {
+        Ok(register) => register,
+        Err(errors) => return Err(refused("the obligations and controls", &errors)),
+    };
+    let shape = match Shape::read(resolved) {
+        Ok(shape) => shape,
+        Err(errors) => return Err(refused("the facet and kind declarations", &errors)),
+    };
+
+    let census = census::take(&corpus, &taxonomy);
+    let graph = Graph::build(
+        &census,
+        &relations,
+        &Resolvers::over(&corpus),
+        &corpus,
+        &Config::default(),
+    );
+    Ok(Loaded {
+        lock,
+        census,
+        graph,
+        shape,
+        taxonomy,
+        relations,
+        register,
+    })
+}
+
+impl Loaded {
+    fn surface(&self) -> Surface<'_> {
+        Surface::over(
+            &self.census,
+            &self.graph,
+            &self.shape,
+            &self.taxonomy,
+            &self.relations,
+        )
+    }
+}
+
+/// `headwater route`.
+///
+/// It exits 0 whether or not it offers a pointer. Spec 5 makes silence a
+/// result: "below the threshold it says nothing", and a non-zero exit would
+/// make an agent's shell treat a considered silence as a failure.
+fn route(root: &Path, task: &str, budget: Option<usize>) -> ExitCode {
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let budget = match budget {
+        Some(pointers) => Budget { pointers },
+        None => Budget::default(),
+    };
+    print!("{}", loaded.surface().route(task, budget).render());
+    ExitCode::SUCCESS
+}
+
+/// `headwater explain`.
+///
+/// A target that names no document exits non-zero. That is not a finding about
+/// a corpus, it is a question about a document that is not there, and a caller
+/// who mistyped a path needs to know from the exit status.
+fn explain(root: &Path, target: &str) -> ExitCode {
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    match loaded.surface().explain(target) {
+        Some(explanation) => {
+            let explanation: headwater_query::Explanation = explanation;
+            print!("{}", explanation.render());
+            ExitCode::SUCCESS
+        }
+        None => {
+            eprintln!("headwater: `{target}` is neither a path of this corpus nor an identifier it carries");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+/// `headwater mcp`: the reads above, served to an agent.
+fn mcp(root: &Path) -> ExitCode {
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    // The corpus is read once, at startup, and the surface answers from it.
+    // That is the same posture every other verb takes, and it is what makes two
+    // calls in one session answer the same bytes.
+    headwater_query::mcp::serve(
+        &loaded.surface(),
+        std::io::stdin().lock(),
+        std::io::stdout().lock(),
+    );
+    ExitCode::SUCCESS
+}
+
 fn check(
     root: &Path,
     strict: bool,
@@ -296,56 +472,19 @@ fn check(
             return ExitCode::FAILURE;
         }
     };
-    // The taxonomy comes from the lock, and the corpus block comes from the
-    // consumer declaration. The two are different questions: the lock says what
-    // the schema is, and `corpus:` says what to walk. Spec 6 keeps them apart
-    // too, because a run reports "the corpus tree, the taxonomy lock hash" as
-    // two facts.
-    let lock = match headwater_lock::at(root) {
-        Ok(lock) => lock,
-        Err(error) => {
-            eprintln!("headwater: {error}");
-            return ExitCode::FAILURE;
-        }
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
     };
-    let consumer = match headwater_resolve::package::consumer(root) {
-        Ok(consumer) => consumer,
-        Err(errors) => {
-            eprintln!("headwater: the consumer declaration did not read");
-            eprint!("{}", indent(&render_errors(&errors)));
-            return ExitCode::FAILURE;
-        }
-    };
-
-    // Phase A. The census fixes the denominator before any check runs, and the
-    // graph is built from the census rather than from a second walk.
-    let corpus = Corpus::declared(root, &consumer.corpus_root, &consumer.exclusions);
-    let resolved = lock.taxonomy;
-    let taxonomy = match Taxonomy::read(&resolved) {
-        Ok(taxonomy) => taxonomy,
-        Err(errors) => return refused("the taxonomy", &errors),
-    };
-    let declarations = match Declarations::read(&resolved) {
-        Ok(declarations) => declarations,
-        Err(errors) => return refused("the relation declarations", &errors),
-    };
-    let register = match Register::read(&resolved) {
-        Ok(register) => register,
-        Err(errors) => return refused("the obligations and controls", &errors),
-    };
-    let shape = match Shape::read(&resolved) {
-        Ok(shape) => shape,
-        Err(errors) => return refused("the facet and kind declarations", &errors),
-    };
-
-    let taken = census::take(&corpus, &taxonomy);
-    let graph = Graph::build(
-        &taken,
-        &declarations,
-        &Resolvers::over(&corpus),
-        &corpus,
-        &Config::default(),
-    );
+    let Loaded {
+        lock,
+        census: taken,
+        graph,
+        shape,
+        taxonomy,
+        relations: declarations,
+        register,
+    } = &loaded;
 
     // Phase B. The cache is keyed on the lock digest among other things, so a
     // taxonomy that moved invalidates every entry without anyone clearing a
@@ -355,14 +494,14 @@ fn check(
         false => Cache::disabled(),
     };
     let run = headwater_check::run(
-        &taken,
-        &graph,
+        taken,
+        graph,
         &Declared {
             lock: &lock.digest,
-            taxonomy: &taxonomy,
-            shape: &shape,
-            relations: &declarations,
-            register: &register,
+            taxonomy,
+            shape,
+            relations: declarations,
+            register,
             source: headwater_lock::LOCK,
         },
         &ctx,

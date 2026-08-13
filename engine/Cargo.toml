@@ -9,6 +9,7 @@ members = [
     "crates/hash",
     "crates/lock",
     "crates/meta",
+    "crates/query",
     "crates/ref",
     "crates/resolve",
     "crates/yaml",

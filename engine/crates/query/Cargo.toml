@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "headwater-query"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+# The census is what a read answers over: it carries every row and the parsed
+# document each one read, so no phase here opens a file.
+headwater-census = { path = "../census" }
+
+# The identifier index, the edges, and the anchors an edge reaches.
+headwater-graph = { path = "../graph" }
+
+# `Shape` is the reader of kind, facet and purpose declarations. A second
+# reader of the same declarations is the drift spec 4 names, so this crate
+# depends on the one that exists rather than writing another.
+headwater-check = { path = "../check" }
+
+# A facet value is a spanned YAML value, and this reads several of them.
+headwater-yaml = { path = "../yaml" }
+
+[dev-dependencies]
+# The reads run over this repository's own corpus in the fixture test, which
+# needs its taxonomy resolved and its lock read.
+headwater-resolve = { path = "../resolve" }
+headwater-lock = { path = "../lock" }

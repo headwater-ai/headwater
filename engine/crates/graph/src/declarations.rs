@@ -57,9 +57,63 @@ pub struct Relation {
     pub inverse: Option<String>,
     /// What the relation says about the half nobody wrote.
     pub reciprocal: Reciprocal,
+    /// The relation family, which is one of spec 2's six. Read as written: the
+    /// meta-schema owns the value set, and a family this engine does not know
+    /// derives no reading order rather than an invented one.
+    pub family: Option<String>,
+    /// `nuclearity`, and `nucleus` beside it: which end stands alone.
+    pub nuclearity: Option<String>,
+    pub nucleus: Option<String>,
     /// The span of the relation's name, which a finding about the
     /// *declaration* points at.
     pub span: Span,
+}
+
+/// Which end of an edge governs the reading of the pair.
+///
+/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#reading-precedence-is-derived):
+/// "When two documents are linked, no declaration states which one governs the
+/// reading. Properties already declared entail it." So this is derived here and
+/// never read off a member, and the cut `dominance` field is the thing this
+/// function replaces.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Governs {
+    /// The declaring end governs.
+    Source,
+    /// The far end governs.
+    Target,
+    /// Spec 2's fourth clause: "Everything else carries no reading order."
+    Neither,
+}
+
+impl Relation {
+    /// The end that governs the reading, from what this relation declares.
+    ///
+    /// Spec 2's four clauses, in its own order, and they are total over the six
+    /// families. A nucleus–satellite relation that names no `nucleus` derives
+    /// nothing: `taxonomy validate` refuses that declaration, and a reader that
+    /// guessed an end would order a pair by a coin toss.
+    pub fn governs(&self) -> Governs {
+        // The nucleus clause, read off `nucleus` rather than off `nuclearity`.
+        // A family carries a default nuclearity that `taxonomy validate`
+        // applies, so a relation can be nucleus–satellite with no `nuclearity`
+        // line at all. `nucleus` is the member that means nothing under any
+        // other nuclearity, and reading it here keeps that default table in the
+        // one place that owns it.
+        match self.nucleus.as_deref() {
+            Some("from") => return Governs::Source,
+            Some("to") => return Governs::Target,
+            _ => {}
+        }
+        match self.family.as_deref() {
+            // "On succession, the successor governs" — the declaring end, since
+            // `supersedes` is written from the successor.
+            Some("succession") => Governs::Source,
+            // "On governance between two documents, the source governs."
+            Some("governance") => Governs::Source,
+            _ => Governs::Neither,
+        }
+    }
 }
 
 /// What a relation declares about its other half.
@@ -212,10 +266,19 @@ fn read_relation(name: &str, value: &Value, span: Span) -> Result<Relation, Decl
         span,
     })?;
 
+    let scalar = |key: &str| {
+        map.get(key)
+            .and_then(|value| value.value.as_scalar())
+            .map(|scalar| scalar.text.clone())
+    };
+
     Ok(Relation {
         name: name.to_string(),
         from: sequence(map, "from").unwrap_or_default(),
         to,
+        family: scalar("family"),
+        nuclearity: scalar("nuclearity"),
+        nucleus: scalar("nucleus"),
         inverse: map
             .get("inverse")
             .and_then(|value| value.value.as_scalar())
@@ -370,5 +433,44 @@ anchors:
             "{}",
             errors[0]
         );
+    }
+
+    /// Spec 2's four clauses, one per relation, and the fourth is the one that
+    /// has to stay silent. A declaration that carried a reading order for
+    /// `is_alternative_to` would misstate what the relation asserts.
+    #[test]
+    fn reading_precedence_is_derived_from_the_family_and_the_nucleus() {
+        let declarations = read(
+            "relations:\n  \
+             supersedes: {family: succession, to: [d], inverse: superseded_by}\n  \
+             governs: {family: governance, to: [d]}\n  \
+             refines: {family: derivation, to: [d], nuclearity: nucleus-satellite, nucleus: to}\n  \
+             contains: {family: composition, to: [d], nucleus: from}\n  \
+             is_alternative_to: {family: association, to: [d]}\n  \
+             traces_to: {family: evidence, to: [d]}\n",
+        )
+        .expect("the declarations read");
+        let governs = |name: &str| {
+            declarations
+                .named(name)
+                .expect("declared")
+                .relation
+                .governs()
+        };
+        assert_eq!(governs("supersedes"), Governs::Source, "the successor");
+        assert_eq!(governs("governs"), Governs::Source, "the constraint");
+        assert_eq!(governs("refines"), Governs::Target, "the nucleus");
+        assert_eq!(governs("contains"), Governs::Source, "the nucleus");
+        assert_eq!(governs("is_alternative_to"), Governs::Neither);
+        assert_eq!(governs("traces_to"), Governs::Neither);
+    }
+
+    /// A family this engine does not know derives no order, rather than the
+    /// order of whichever clause the match arm happened to reach.
+    #[test]
+    fn a_family_outside_the_six_derives_no_reading_order() {
+        let declarations =
+            read("relations:\n  invented: {family: astrology, to: [d]}\n").expect("it reads");
+        assert_eq!(declarations.relations[0].governs(), Governs::Neither);
     }
 }

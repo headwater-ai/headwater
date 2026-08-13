@@ -172,6 +172,8 @@ This is the rule that keeps the register honest:
 
 There is no fourth state and no silence. An obligation with no disposition is itself a finding. This is the check that stops the decay of an assurance model into a list of good intentions. The register is complete by construction, or the build fails.
 
+**A control that the engine cannot run discharges nothing.** `verified` follows from a control, and a control names a mechanism. Where that mechanism names a rule or a phase that the engine does not implement, the control discharges nothing and the register says so. The obligation then takes the disposition that it states for itself. Where it states none, it carries no disposition, which is the state above. The engine supplies neither of the other two. A gap carries an owner, an acceptance carries reasoning, and the engine can write neither one. Without this rule, a taxonomy moves its whole register to `verified` with a mechanism name that reaches no code.
+
 **Verified is derived, and the other two are written on the obligation.** One member carries them, and it admits exactly one of `gap` and `unverifiable`:
 
 ```yaml
