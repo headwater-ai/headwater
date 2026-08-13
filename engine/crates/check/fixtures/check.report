@@ -1,4 +1,4 @@
-18 seen, 17 classified, 16 checked, 103 check instances
+18 seen, 17 classified, 16 checked, 117 check instances
      15 skipped: this document writes no fragment into itself
      10 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: `guarded` forbids hedging, and this engine has no pattern set for it
@@ -12,6 +12,8 @@
       7 instances of relation.participation.overdue
       9 instances of voice.forbidden_construction
       9 instances of language.controlled.not_met
+      7 instances of language.retired_term.used
+      7 instances of language.source_form.not_met
       2 instances of section.required.missing
      17 instances of link.fragment.unresolved
 suppressions
@@ -23,7 +25,7 @@ suppressions
       2 on the shelf spec_series
       1 expired, and the findings they named are reported
       1 matched no finding
-  check/spec/10-suppressed.md:36 suppresses nothing: no rule of this engine is named `language.controled.not_met`
+  check/spec/10-suppressed.md:31 suppresses nothing: no rule of this engine is named `language.controled.not_met`
 rules, and for each the scope that binds it
   facet.required.missing
     document scope, one document and its front matter
@@ -41,6 +43,10 @@ rules, and for each the scope that binds it
     document scope, one document, its front matter and its body
   language.controlled.not_met
     document scope, one document, its front matter and its body
+  language.retired_term.used
+    document scope, one document, its front matter and its body
+  language.source_form.not_met
+    document scope, one document, its front matter and its body
   section.required.missing
     document scope, one document, its front matter and its body
   link.fragment.unresolved
@@ -52,10 +58,10 @@ rules, and for each the scope that binds it
   control.mechanism.unimplemented
     taxonomy scope, the resolved taxonomy, and no document
 register
-  20 obligations: 15 verified, 2 gap, 1 unverifiable, 2 with no disposition
+  22 obligations: 17 verified, 2 gap, 1 unverifiable, 2 with no disposition
       6 high, 5 verified
       8 medium, 6 verified
-      6 low, 4 verified
+      8 low, 6 verified
   OB-FIX-7 verified, 1 finding escaped under it
   OB-FIX-8 verified, 1 finding escaped under it
   OB-FIX-14 gap, owner the fixture tree, target a reader feedback loop, which spec 4 lists as usually absent
@@ -64,24 +70,24 @@ register
   OB-FIX-17 verified, and it states a gap as well, which is two dispositions
   OB-FIX-18 with no disposition, and CT-FIX-15 claims to discharge it under a mechanism this engine does not implement
   OB-FIX-20 gap, owner the fixture tree, and no target, and CT-FIX-17 claims to discharge it under a mechanism this engine does not implement, which is two dispositions
-  17 controls
-     16 posture advisory
+  19 controls
+     18 posture advisory
       1 posture blocking
-     16 acts detective
+     18 acts detective
       1 acts preventive
-     13 name a rule this engine carries
+     15 name a rule this engine carries
       1 name a phase this engine runs
       2 name a mechanism this engine does not implement
       1 name a mechanism outside this engine
-     15 with no promotion record, so nothing states what would promote them
+     17 with no promotion record, so nothing states what would promote them
       1 with criteria
       1 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver mechanism exists, 0 migration-pending, 2 suppressed
   relation.endpoint.not_permitted reaches OB-FIX-5, OB-FIX-17, and a finding names one obligation, so it names none
   coverage.document_unchecked reaches no obligation, so it names none
-27 findings
-     11 error
-     16 warn
+32 findings
+     14 error
+     18 warn
 
 instances
   facet.required.missing check/evaluations/alpha.md
@@ -252,6 +258,34 @@ instances
     skipped: `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
   language.controlled.not_met check/spec/10-suppressed.md
     failed
+  language.retired_term.used check/spec/00-both-halves.md
+    passed
+  language.retired_term.used check/spec/01-one-half.md
+    passed
+  language.retired_term.used check/spec/02-cited-only.md
+    passed
+  language.retired_term.used check/spec/05-no-summary.md
+    passed
+  language.retired_term.used check/spec/06-retired.md
+    passed
+  language.retired_term.used check/spec/07-prose-defects.md
+    failed
+  language.retired_term.used check/spec/10-suppressed.md
+    passed
+  language.source_form.not_met check/spec/00-both-halves.md
+    passed
+  language.source_form.not_met check/spec/01-one-half.md
+    passed
+  language.source_form.not_met check/spec/02-cited-only.md
+    passed
+  language.source_form.not_met check/spec/05-no-summary.md
+    passed
+  language.source_form.not_met check/spec/06-retired.md
+    passed
+  language.source_form.not_met check/spec/07-prose-defects.md
+    failed
+  language.source_form.not_met check/spec/10-suppressed.md
+    passed
   section.required.missing check/spec/08-contract-met.md
     passed
   section.required.missing check/spec/09-contract-missing.md
@@ -309,7 +343,7 @@ check/evaluations/gamma.md:9:7 error
 check/spec/01-one-half.md:9:7 error
   relation.reciprocity.missing (OB-FIX-1): `SPEC-FIX-one-half` declares `cites_evidence: EVAL-FIX-beta`, and `cites_evidence` requires both ends, so check/evaluations/beta.md owes `cited_by`
   fix (mechanical): add `cited_by: SPEC-FIX-one-half` under `relations:` in check/evaluations/beta.md
-check/spec/01-one-half.md:21:75 warn
+check/spec/01-one-half.md:18:151 warn
   language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words a sentence, and this one has 34
   fix: split the sentence, or move a clause into its own sentence
 check/spec/03-no-instance.md warn
@@ -318,40 +352,55 @@ check/spec/03-no-instance.md warn
 check/spec/05-no-summary.md error
   facet.required.missing (OB-FIX-3): `design_spec` requires the facet `summary`, and it is not declared
   fix: add `summary:` to the front matter of check/spec/05-no-summary.md, with the value this document has
-check/spec/05-no-summary.md:14:1 warn
+check/spec/05-no-summary.md:12:1 warn
   language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words a sentence, and this one has 31
   fix: split the sentence, or move a clause into its own sentence
 check/spec/06-retired.md:4:9 error
   facet.value.not_permitted (OB-FIX-4): `status` admits draft, current, superseded, and this document declares `retired`
   fix: change `status` in check/spec/06-retired.md to one of: draft, current, superseded
-check/spec/06-retired.md:12:53 warn
+check/spec/06-retired.md:11:131 warn
   language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words a sentence, and this one has 34
   fix: split the sentence, or move a clause into its own sentence
-check/spec/07-prose-defects.md:17:1 warn
+check/spec/07-prose-defects.md:15:1 warn
   voice.forbidden_construction (OB-FIX-7): `declarative` forbids future_intent, and this sentence writes `will be`
   fix: state what the system does now, or move the sentence to a document whose kind narrates
-check/spec/07-prose-defects.md:19:1 warn
+check/spec/07-prose-defects.md:17:1 warn
   voice.forbidden_construction (OB-FIX-7): `declarative` forbids change_narration, and this sentence writes `we renamed`
   fix: state the position that holds, and leave the change to the decision that made it
-check/spec/07-prose-defects.md:21:1 warn
+check/spec/07-prose-defects.md:19:1 warn
   voice.forbidden_construction (OB-FIX-7): `declarative` forbids phased_rollout, and this sentence writes `for now`
   fix: state what holds, and record the sequence in the plan that owns it
-check/spec/07-prose-defects.md:25:1 warn
+check/spec/07-prose-defects.md:23:1 warn
   language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words a sentence, and this one has 43
   fix: split the sentence, or move a clause into its own sentence
-check/spec/07-prose-defects.md:29:1 error
+check/spec/07-prose-defects.md:25:1 error
   language.controlled.not_met (OB-FIX-8): `ste_house` admits no contraction, and this sentence writes `doesn't`
   fix: write `doesn't` out in full
-check/spec/07-prose-defects.md:31:1 error
+check/spec/07-prose-defects.md:27:1 error
   language.controlled.not_met (OB-FIX-8): `ste_house` declares the tag `en-US`, and this sentence writes `behaviour`
   fix: write `behavior`
-check/spec/07-prose-defects.md:35:32 error
+check/spec/07-prose-defects.md:29:1 warn
+  language.controlled.not_met (OB-FIX-8): `ste_house` admits no semicolon in running prose, and this sentence writes one
+  fix: split the sentence in two, and let each half state one thing
+check/spec/07-prose-defects.md:35:1 error
+  language.retired_term.used (OB-FIX-22): `ste_house` retires `reference system`, and this sentence writes it: the corpus renamed it
+  fix (mechanical): write `taxonomy`
+check/spec/07-prose-defects.md:37:1 warn
+  language.retired_term.used (OB-FIX-22): `ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives
+  fix: rewrite the sentence without `robust`
+check/spec/07-prose-defects.md:48:1 error
+  language.source_form.not_met (OB-FIX-21): `ste_house` writes one paragraph on one line, and this line continues the paragraph above
+  fix: join this line to the line above, or end the paragraph there
+check/spec/07-prose-defects.md:49:1 error
+  language.source_form.not_met (OB-FIX-21): `ste_house` writes one paragraph on one line, and this line continues the paragraph above
+  fix: join this line to the line above, or end the paragraph there
+check/spec/07-prose-defects.md:53:32 error
   link.fragment.unresolved (OB-FIX-10): `#no-such-section` names no heading of this document
   fix: point it at a heading of check/spec/07-prose-defects.md, or write the heading it names
 check/spec/09-contract-missing.md error
   section.required.missing (OB-FIX-9): `decision_record` requires the section `Decision`, and no heading of this document says so
   fix: add a `Decision` heading to check/spec/09-contract-missing.md, with the content the kind is for
-check/spec/10-suppressed.md:30:1 warn
+check/spec/10-suppressed.md:27:1 warn
   language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words a sentence, and this one has 31
   fix: split the sentence, or move a clause into its own sentence
 engine/crates/check/fixtures/check.taxonomy.yml warn

@@ -65,6 +65,12 @@ pub struct Sentence {
     /// and `tools/ste-lint.py` already counts this corpus that way.
     pub words: usize,
     pub span: Span,
+    /// The kind of block this sentence came from.
+    ///
+    /// A rule about running prose is not a rule about a heading or a table
+    /// cell, and nothing downstream can tell the three apart from the text.
+    /// The parser knows, so it says.
+    pub kind: BlockKind,
 }
 
 /// A parenthetical counts as one word, however long it is.
@@ -245,6 +251,7 @@ fn push(sentences: &mut Vec<Sentence>, block: &Block, chars: &[char], start: usi
         words: words_between(block, start, end),
         span: Span::new(position(block, start), position(block, end)),
         text: text.trim().to_string(),
+        kind: block.kind,
     });
 }
 

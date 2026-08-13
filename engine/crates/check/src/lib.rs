@@ -100,9 +100,11 @@ pub mod placement;
 pub mod readset;
 pub mod reciprocity;
 pub mod register;
+pub mod retired;
 pub mod scope;
 pub mod sections;
 pub mod shape;
+pub mod source_form;
 pub mod suppression;
 pub mod voice;
 
@@ -134,7 +136,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 13] = [
+pub const RULES: [&str; 15] = [
     facet_required::RULE,
     facet_value::RULE,
     placement::RULE,
@@ -143,6 +145,8 @@ pub const RULES: [&str; 13] = [
     participation::RULE,
     voice::RULE,
     language::RULE,
+    retired::RULE,
+    source_form::RULE,
     sections::RULE,
     fragment::RULE,
     coverage::RULE,
@@ -257,6 +261,8 @@ pub fn run(
     let participation = participation::Participation::over(declared.shape, declared.relations);
     let voice = voice::Voice::over(declared.shape);
     let language = language::Language::over(declared.shape);
+    let retired = retired::Retired::over(declared.shape);
+    let source_form = source_form::SourceForm::over(declared.shape);
     let sections = sections::Sections::over(declared.shape);
     let fragments = fragment::Fragments;
 
@@ -276,6 +282,8 @@ pub fn run(
     ));
     instances.extend(scope::over_documents(&voice, census, ctx, cache));
     instances.extend(scope::over_documents(&language, census, ctx, cache));
+    instances.extend(scope::over_documents(&retired, census, ctx, cache));
+    instances.extend(scope::over_documents(&source_form, census, ctx, cache));
     instances.extend(scope::over_documents(&sections, census, ctx, cache));
     instances.extend(scope::over_documents(&fragments, census, ctx, cache));
 
@@ -337,6 +345,16 @@ pub fn run(
             language::RULE,
             scope::document_scope::<language::Language>(),
             scope::document_version::<language::Language>(),
+        ),
+        (
+            retired::RULE,
+            scope::document_scope::<retired::Retired>(),
+            scope::document_version::<retired::Retired>(),
+        ),
+        (
+            source_form::RULE,
+            scope::document_scope::<source_form::SourceForm>(),
+            scope::document_version::<source_form::SourceForm>(),
         ),
         (
             sections::RULE,

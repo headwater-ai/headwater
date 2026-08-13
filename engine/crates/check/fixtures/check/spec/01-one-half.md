@@ -13,12 +13,6 @@ relations:
 
 # One half
 
-`beta.md` writes nothing back, so the inverse half of this pair is the one
-nobody wrote. The finding reports here, at the entry this document wrote, and
-its remediation names `beta.md`.
+`beta.md` writes nothing back, so the inverse half of this pair is the one nobody wrote. The finding reports here, at the entry this document wrote, and its remediation names `beta.md`.
 
-The `assesses` entry is here to prove two things. That relation declares no
-`reciprocal`, so it produces no instance of the reciprocity check at all. Its
-endpoints are both permitted, so it is the passing fixture for the endpoint
-rule: a `design_spec` at the source end, and an `evaluation` at the target end
-of a set that names `governed_document`.
+The `assesses` entry is here to prove two things. That relation declares no `reciprocal`, so it produces no instance of the reciprocity check at all. Its endpoints are both permitted, so it is the passing fixture for the endpoint rule: a `design_spec` at the source end, and an `evaluation` at the target end of a set that names `governed_document`.
