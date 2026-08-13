@@ -1,4 +1,5 @@
-19 seen, 18 classified, 17 checked, 142 check instances
+20 seen, 18 classified, 17 checked, 142 check instances
+      1 generated, held to regeneration by `headwater generate --check`
      16 skipped: this document writes no fragment into itself
      11 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: `guarded` forbids hedging, and this engine has no pattern set for it
