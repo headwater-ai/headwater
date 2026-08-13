@@ -15,6 +15,7 @@ path = "src/main.rs"
 [dependencies]
 headwater-census = { path = "../census" }
 headwater-check = { path = "../check" }
+headwater-generate = { path = "../generate" }
 headwater-graph = { path = "../graph" }
 headwater-lock = { path = "../lock" }
 headwater-query = { path = "../query" }

@@ -44,6 +44,7 @@ version = "0.0.0"
 dependencies = [
  "headwater-census",
  "headwater-check",
+ "headwater-generate",
  "headwater-graph",
  "headwater-lock",
  "headwater-query",
@@ -57,6 +58,18 @@ version = "0.0.0"
 dependencies = [
  "headwater-yaml",
  "pulldown-cmark",
+]
+
+[[package]]
+name = "headwater-generate"
+version = "0.0.0"
+dependencies = [
+ "headwater-census",
+ "headwater-check",
+ "headwater-graph",
+ "headwater-query",
+ "headwater-resolve",
+ "headwater-yaml",
 ]
 
 [[package]]
