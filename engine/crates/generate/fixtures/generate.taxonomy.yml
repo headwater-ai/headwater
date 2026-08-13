@@ -1,0 +1,81 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the generated fixtures are written against. It is the smallest
+# shape in which every branch of the verb has something to produce: a shelf that
+# holds documents, a shelf that holds none, a governance edge and a succession
+# pair so that the derived reading order is not the file order, a document whose
+# warrant is `asserted`, and a declared kind that this engine does not emit.
+#
+# It is not a resolved package, for the reason the check tree's is not: a fixture
+# that depended on the base package would change whenever the base does.
+
+purposes:
+  rationale:
+    intent: explain why a choice was made and what it forecloses
+    answers: ["why is it this way", "what was rejected"]
+  procedure:
+    intent: enable a reader to carry out a task correctly
+    answers: ["how do I do this", "what do I do when it fails"]
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft, role: initial}
+      - {value: current, role: live}
+      - {value: superseded, role: terminal-retained}
+  status_since:
+    role: state_entered
+    required: true
+  summary:
+    role: scent
+    required: true
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status, status_since, summary]}
+  decision:
+    is_a: governed_document
+    purpose: rationale
+    identifier: {scheme: decision_id}
+  guide:
+    is_a: governed_document
+    purpose: procedure
+    identifier: {scheme: guide_id}
+
+identifier_schemes:
+  decision_id: {pattern: "DR-{namespace}-{seq:04d}", namespace: FIX, allocation: minted-once}
+  guide_id: {pattern: "GD-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+relations:
+  supersedes:
+    family: succession
+    from: [decision]
+    to: [decision]
+    inverse: superseded_by
+    reciprocal: required
+  # A governance edge, so that a guide which one decision governs sorts below it
+  # even though its file name sorts above.
+  governs_guide:
+    family: governance
+    from: [decision]
+    to: [guide]
+    inverse: governed_by
+    reciprocal: required
+
+shelves:
+  decisions: {path: "generate/decisions/**", homogeneous: true, kind: decision}
+  guides:    {path: "generate/guides/**",    homogeneous: true, kind: guide}
+  # Declared, and nothing is on it. An index of nothing asserts that a shelf is
+  # there, so the verb reports it and writes no file.
+  archive:   {path: "generate/archive/**",   homogeneous: true, kind: decision}
+
+projections:
+  - {kind: shelf_index, for: [decisions, guides, archive], output: "{shelf}/README.md"}
+  # Declared, and issue #65 owns the emitter. The verb names it rather than
+  # passing over it in silence.
+  - kind: graph_export
+    format: json
+    output: generate/export.json

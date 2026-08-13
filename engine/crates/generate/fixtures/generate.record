@@ -1,0 +1,147 @@
+the plan
+
+=== generate/decisions/README.md (shelf_index) ===
+<!-- headwater:generated shelf_index. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file. -->
+
+# decisions
+
+2 documents on this shelf, in the reading order this corpus derives.
+
+- [DR-FIX-0002](0002-rebuild-the-graph.md) — the graph is rebuilt on every run and never stored, which supersedes DR-FIX-0001
+- [DR-FIX-0001](0001-store-the-graph.md) — the first ruling on where the corpus graph lives, replaced by DR-FIX-0002
+
+=== generate/guides/README.md (shelf_index) ===
+<!-- headwater:generated shelf_index. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file. -->
+
+# guides
+
+2 documents on this shelf, in the reading order this corpus derives.
+
+- [GD-FIX-first-run](first-run.md) — what to do on a first run, and what to read when it refuses
+- [GD-FIX-recovery](recovery.md) — how to recover a corpus whose lock and sources disagree (asserted, and no human has accepted it)
+
+--- write into an empty tree ---
+projections
+  shelf_index generate/decisions/README.md
+    written
+  shelf_index generate/guides/README.md
+    written
+
+what this verb does not write, and why
+  shelf_index generate/archive/README.md
+    the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  graph_export generate/export.json
+    the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
+  coverage_report the register
+    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
+  corpus_descriptor .headwater/corpus.json
+    nothing computes a descriptor yet. Issue #64 owns it, and it writes through this verb when it lands
+fails the run: false
+
+--- write again over the first ---
+projections
+  shelf_index generate/decisions/README.md
+    unchanged
+  shelf_index generate/guides/README.md
+    unchanged
+
+what this verb does not write, and why
+  shelf_index generate/archive/README.md
+    the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  graph_export generate/export.json
+    the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
+  coverage_report the register
+    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
+  corpus_descriptor .headwater/corpus.json
+    nothing computes a descriptor yet. Issue #64 owns it, and it writes through this verb when it lands
+fails the run: false
+
+--- check over a hand-edited generated file ---
+projections, held to regeneration
+  shelf_index generate/decisions/README.md
+    committed, and it is not what this corpus and this lock produce
+  shelf_index generate/guides/README.md
+    unchanged
+
+what this verb does not write, and why
+  shelf_index generate/archive/README.md
+    the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  graph_export generate/export.json
+    the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
+  coverage_report the register
+    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
+  corpus_descriptor .headwater/corpus.json
+    nothing computes a descriptor yet. Issue #64 owns it, and it writes through this verb when it lands
+fails the run: true
+
+--- write over a hand-edited generated file ---
+projections
+  shelf_index generate/decisions/README.md
+    rewritten
+  shelf_index generate/guides/README.md
+    unchanged
+
+what this verb does not write, and why
+  shelf_index generate/archive/README.md
+    the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  graph_export generate/export.json
+    the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
+  coverage_report the register
+    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
+  corpus_descriptor .headwater/corpus.json
+    nothing computes a descriptor yet. Issue #64 owns it, and it writes through this verb when it lands
+fails the run: false
+
+--- check over what was written ---
+projections, held to regeneration
+  shelf_index generate/decisions/README.md
+    unchanged
+  shelf_index generate/guides/README.md
+    unchanged
+
+what this verb does not write, and why
+  shelf_index generate/archive/README.md
+    the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  graph_export generate/export.json
+    the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
+  coverage_report the register
+    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
+  corpus_descriptor .headwater/corpus.json
+    nothing computes a descriptor yet. Issue #64 owns it, and it writes through this verb when it lands
+fails the run: false
+
+--- check over an empty tree ---
+projections, held to regeneration
+  shelf_index generate/decisions/README.md
+    not committed, and this run would write it
+  shelf_index generate/guides/README.md
+    not committed, and this run would write it
+
+what this verb does not write, and why
+  shelf_index generate/archive/README.md
+    the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  graph_export generate/export.json
+    the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
+  coverage_report the register
+    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
+  corpus_descriptor .headwater/corpus.json
+    nothing computes a descriptor yet. Issue #64 owns it, and it writes through this verb when it lands
+fails the run: true
+
+--- write where an authored file is ---
+projections
+  shelf_index generate/decisions/README.md
+    a file is there and it carries no generated-file marker, so this engine will not overwrite it
+  shelf_index generate/guides/README.md
+    written
+
+what this verb does not write, and why
+  shelf_index generate/archive/README.md
+    the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  graph_export generate/export.json
+    the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
+  coverage_report the register
+    its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
+  corpus_descriptor .headwater/corpus.json
+    nothing computes a descriptor yet. Issue #64 owns it, and it writes through this verb when it lands
+fails the run: true
