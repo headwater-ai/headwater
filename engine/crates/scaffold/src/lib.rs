@@ -74,10 +74,12 @@
 //! not a property of the corpus, and it cannot become one:
 //! [Q4](../../../../docs/decisions/0004-relation-storage.md) keeps `created_by`
 //! on the relation type rather than on the edge, so no reader of a committed
-//! corpus can tell a scaffolded edge from a hand-typed one.
+//! corpus can tell a scaffolded edge from a hand-typed one. So the run writes
+//! the reading down, and [`reading`] is where it lands and what it holds.
 
 pub mod declared;
 pub mod fix;
+pub mod reading;
 pub mod write;
 
 use headwater_census::census::Census;

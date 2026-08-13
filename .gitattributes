@@ -1,0 +1,11 @@
+# The capture-cost store is append-only: one reading per run of `headwater new`,
+# and no line is ever rewritten. Two branches that each scaffolded a document
+# both hold a reading the other does not, and git's default merge reports that
+# as a conflict on the last line of the file. `union` keeps both sides' lines,
+# which is the correct resolution every time for a file of this shape.
+#
+# It is safe here and nowhere else in this repository: `union` on a file whose
+# lines depend on each other produces a result that neither side wrote. A
+# reading depends on no other reading, and `headwater capture` reports a line it
+# cannot read rather than trusting the file.
+.headwater/capture-cost.jsonl merge=union

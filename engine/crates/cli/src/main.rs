@@ -74,6 +74,7 @@ headwater explain            <path|identifier> [--root <path>]
 headwater mcp                [--root <path>]
 headwater new                <kind> --title <text> [--relates <relation>=<identifier>]
                              [--now <date>] [--root <path>]
+headwater capture            [--format text|json] [--root <path>]
 headwater generate           [--check] [--root <path>]
 headwater export             [--profile <name>] [--format json|jsonschema] [--at <date>]
                              [--check] [--root <path>]
@@ -105,7 +106,14 @@ headwater taxonomy resolve   [--check] [--root <path>]
                      generated-file marker, because what it writes is an
                      authored document from the moment it lands and every check
                      reads it. It decides everything before it writes anything,
-                     and it never overwrites a document.
+                     and it never overwrites a document. Every run that writes a
+                     document appends one capture-cost reading to the store, and
+                     a run whose reading did not land exits non-zero.
+  capture            read the capture-cost store back: the assisted fraction
+                     over every reading it holds, the same by kind, and how far
+                     the authoring verb reaches into the corpus. It names no
+                     person and no agent, and it never averages readings taken
+                     under two taxonomies.
   generate           write every projection the taxonomy declares, and report
                      every one it does not write with the reason. It refuses to
                      overwrite a file that carries no generated-file marker.
@@ -208,6 +216,10 @@ headwater taxonomy resolve   [--check] [--root <path>]
                  matter. The other five targets of spec 6 parse and report the
                  consumer each one waits on. With this flag the artifact goes to
                  standard output and no declared output path is touched.
+
+                 `capture`: `text` is the report a person reads and the default,
+                 and `json` is the same numbers for a program. Neither carries a
+                 reading the store does not hold.
   --at <date>    `export` only: the generation time the artifact states, as
                  `YYYY-MM-DD`. Absent by default, because an artifact that
                  `--check` compares by byte cannot carry a clock reading. Spec 6
@@ -363,6 +375,7 @@ fn main() -> ExitCode {
             "`new` takes a kind. Try `headwater new decision --title \"Adopt an overlay\"`",
         ),
         ["new", kind] => new(&root, kind, title, &relates, now),
+        ["capture"] => capture(&root, format),
         ["generate"] => generate(&root, check_only),
         ["export"] => export(&root, profile, format, generated_at, check_only),
         ["init"] => init(&root, corpus_root, package),
@@ -391,8 +404,8 @@ fn main() -> ExitCode {
         // one verb short of the arms in the same reading.
         [other, ..] => fail(&format!(
             "`{other}` is not a verb this binary carries yet. \
-             It carries `check`, `gate`, `route`, `explain`, `mcp`, `new`, `generate`, \
-             `export`, `init`, `infer` and `taxonomy`"
+             It carries `check`, `gate`, `route`, `explain`, `mcp`, `new`, `capture`, \
+             `generate`, `export`, `init`, `infer` and `taxonomy`"
         )),
     }
 }
@@ -760,8 +773,27 @@ fn new(
         return refuse(&refusal.to_string());
     }
 
-    print!("{}", scaffold_report(&plan, &composed));
-    ExitCode::SUCCESS
+    let reading = headwater_scaffold::reading::Reading::of(&plan, &loaded.lock.digest, now);
+    let recorded = headwater_scaffold::reading::append(root, &reading);
+    print!("{}", scaffold_report(&plan, &composed, recorded.is_ok()));
+    match recorded {
+        Ok(()) => ExitCode::SUCCESS,
+        // The document landed and its reading did not, which is the one outcome
+        // a store of this shape cannot report later: a run with no reading and a
+        // corpus that never ran the verb are the same file. So the run says so
+        // and exits non-zero, rather than leaving a silent hole in a denominator
+        // that `headwater capture` would then report as reach.
+        Err(why) => {
+            eprintln!(
+                "headwater: the document landed and its capture-cost reading did not. {why}. \
+                 Append this line to `{}` by hand, or the run is invisible to `headwater \
+                 capture`:\n{}",
+                headwater_scaffold::reading::STORE,
+                reading.render()
+            );
+            ExitCode::FAILURE
+        }
+    }
 }
 
 /// What `headwater new` writes to standard output.
@@ -771,6 +803,7 @@ fn new(
 fn scaffold_report(
     plan: &headwater_scaffold::Plan,
     composed: &[headwater_scaffold::write::Composed],
+    recorded: bool,
 ) -> String {
     use std::fmt::Write;
     let mut out = String::new();
@@ -882,11 +915,305 @@ fn scaffold_report(
          this corpus. Q4 keeps `created_by` on the relation type, so no reader of a committed \
          corpus can tell a scaffolded edge from a hand-typed one"
     );
+    if recorded {
+        let _ = writeln!(
+            out,
+            "  recorded in `{}`, which is where it trends. It names no person and no agent, \
+             and `headwater capture` reads it back",
+            headwater_scaffold::reading::STORE
+        );
+    }
     let _ = writeln!(
         out,
         "\nRun `headwater check` over the result. Nothing this verb wrote is exempt from a rule"
     );
     out
+}
+
+/// `headwater capture`: the capture-cost store, read back.
+///
+/// # It reports a population before it reports a number
+///
+/// A capture-cost number with no population beside it is a number nobody should
+/// cite, and this verb is the reader of a store that starts empty on every
+/// corpus. So the report leads with what the store holds and from when, and the
+/// reach figure names the date of the first reading. Every document written
+/// before that date carries no reading and never could, which is a fact about
+/// the store rather than about the authoring of those documents.
+///
+/// # What it refuses to do
+///
+/// **It does not average across taxonomies.** The denominator is a count of
+/// declarations, so a required facet that the scaffolder can fill raises the
+/// fraction with no change in what an author typed. The report states how many
+/// lock digests the readings span, and a run that spans more than one says so
+/// on the same line as the aggregate.
+///
+/// **It does not silently absorb a document that arrived by another route.** A
+/// document written by any means other than `headwater new` is classified by
+/// the census and named by no reading, so it raises the reach denominator and
+/// nothing else. The number falls, which is the honest direction.
+///
+/// **It does not count a reading whose document is gone.** Such a reading is
+/// listed by name, and a reader then knows whether the store is describing a
+/// tree that still exists.
+fn capture(root: &Path, format: Option<String>) -> ExitCode {
+    let wants_json = match format.as_deref() {
+        None | Some("text") => false,
+        Some("json") => true,
+        Some(other) => {
+            return refuse(&format!(
+                "`capture --format {other}` names no target. It writes `text` and `json`"
+            ))
+        }
+    };
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let (readings, unreadable) = match headwater_scaffold::reading::load(root) {
+        Ok(held) => held,
+        Err(why) => {
+            return refuse(&format!(
+                "`{}` would not read: {why}",
+                headwater_scaffold::reading::STORE
+            ))
+        }
+    };
+
+    // What the corpus says, in the two forms the join needs. The census decides
+    // what is classified and the index decides what an identifier resolves to,
+    // so this verb re-derives neither and the join itself is one function that a
+    // test states a corpus to.
+    let index = headwater_graph::index::Index::build(&loaded.census, &loaded.config);
+    let classified = headwater_scaffold::reading::Classified {
+        paths: loaded
+            .census
+            .rows
+            .iter()
+            .filter(|row| matches!(row.outcome, headwater_census::census::Outcome::Typed { .. }))
+            .map(|row| row.path.clone())
+            .collect(),
+        identified: index
+            .typed
+            .iter()
+            .map(|node| (node.id.clone(), node.path.clone()))
+            .collect(),
+    };
+    let reach = headwater_scaffold::reading::reach(&readings, &classified);
+
+    // One reading and two readings, because a report that says "1 readings" is
+    // a report a person stops reading.
+    let readings_of = |count: usize| match count {
+        1 => "1 reading".to_string(),
+        other => format!("{other} readings"),
+    };
+    let total = headwater_scaffold::reading::total(&readings);
+    let locks = headwater_scaffold::reading::locks(&readings);
+    let first = readings.iter().map(|reading| reading.date).min();
+    let last = readings.iter().map(|reading| reading.date).max();
+
+    if wants_json {
+        use headwater_yaml::json::Json;
+        let pair = |value: (usize, usize)| {
+            Json::Array(vec![
+                Json::Raw(value.0.to_string()),
+                Json::Raw(value.1.to_string()),
+            ])
+        };
+        let count = |value: usize| Json::Raw(value.to_string());
+        let day = |value: Option<Date>| match value {
+            Some(date) => Json::string(date.render()),
+            None => Json::Array(vec![]),
+        };
+        println!(
+            "{}",
+            Json::object([
+                ("store", Json::string(headwater_scaffold::reading::STORE)),
+                ("readings", count(readings.len())),
+                (
+                    "unreadable_lines",
+                    Json::Array(
+                        unreadable
+                            .iter()
+                            .map(|line| Json::Raw(line.line.to_string()))
+                            .collect()
+                    )
+                ),
+                (
+                    "locks",
+                    Json::Array(locks.iter().map(Json::string).collect())
+                ),
+                ("first_reading", day(first)),
+                ("last_reading", day(last)),
+                ("fields", pair(total.fields)),
+                ("sections", pair(total.sections)),
+                ("identifier", pair(total.identifier)),
+                ("edge_halves", pair(total.edge_halves)),
+                ("supplied", count(total.supplied())),
+                ("denominator", count(total.total())),
+                (
+                    "by_kind",
+                    Json::Array(
+                        headwater_scaffold::reading::by_kind(&readings)
+                            .into_iter()
+                            .map(|(kind, taken, assisted)| {
+                                Json::object([
+                                    ("kind", Json::string(kind)),
+                                    ("readings", count(taken)),
+                                    ("supplied", count(assisted.supplied())),
+                                    ("denominator", count(assisted.total())),
+                                ])
+                            })
+                            .collect()
+                    )
+                ),
+                ("reached", count(reach.reached.len())),
+                ("classified", count(classified.paths.len())),
+                (
+                    "resolving_to_nothing",
+                    Json::Array(
+                        reach
+                            .lost
+                            .iter()
+                            .map(|at| Json::string(&readings[*at].document))
+                            .collect()
+                    )
+                ),
+            ])
+            .render_pretty()
+        );
+        return ExitCode::SUCCESS;
+    }
+
+    println!("capture-cost store");
+    println!(
+        "  {}, which is outside the corpus root. No census row covers it, no language regime \
+         binds it, and no rule reads it",
+        headwater_scaffold::reading::STORE
+    );
+    match first {
+        None => println!(
+            "  no reading. This corpus has not run `headwater new` since the store existed, and \
+             every number below is empty rather than zero"
+        ),
+        Some(first) => println!(
+            "  {}, {} to {}",
+            readings_of(readings.len()),
+            first,
+            last.unwrap_or(first)
+        ),
+    }
+    for line in &unreadable {
+        println!(
+            "  line {} is not a reading and is counted nowhere: {}",
+            line.line, line.why
+        );
+    }
+
+    if !readings.is_empty() {
+        println!("\nassisted fraction over every reading");
+        println!(
+            "  {} of {} — front matter {}/{}, sections {}/{}, identifier {}/{}, edge halves \
+             {}/{}",
+            total.supplied(),
+            total.total(),
+            total.fields.0,
+            total.fields.1,
+            total.sections.0,
+            total.sections.1,
+            total.identifier.0,
+            total.identifier.1,
+            total.edge_halves.0,
+            total.edge_halves.1,
+        );
+        println!(
+            "  It counts a section heading and never its prose, which is the convention spec 3 \
+             fixes and this aggregate inherits"
+        );
+        match locks.len() {
+            1 => println!(
+                "  every reading was taken under {}, so they share a denominator",
+                locks[0]
+            ),
+            many => {
+                println!(
+                    "  {many} taxonomies produced these readings, so the aggregate above is \
+                     across two denominators and is not a trend"
+                );
+                for lock in &locks {
+                    println!("    {lock}");
+                }
+            }
+        }
+
+        println!("\nby kind");
+        for (kind, taken, assisted) in headwater_scaffold::reading::by_kind(&readings) {
+            println!(
+                "  {kind} — {}, {} of {}",
+                readings_of(taken),
+                assisted.supplied(),
+                assisted.total()
+            );
+        }
+    }
+
+    println!("\nreach of the authoring verb");
+    println!(
+        "  {} of {} classified documents carry a reading",
+        reach.reached.len(),
+        classified.paths.len()
+    );
+    match first {
+        None => println!(
+            "  the store holds no reading, so the reach is zero by construction rather than by \
+             measurement"
+        ),
+        Some(first) => println!(
+            "  the first reading is dated {first}. Every document written before that day carries \
+             none and never could, so read this against the store's own age"
+        ),
+    }
+    println!(
+        "  a document written by any other route is classified here and named by no reading, so \
+         it lowers this number rather than being absorbed by it"
+    );
+    for (at, path) in &reach.moved {
+        println!(
+            "  {} was written to {} and is now at {path}, joined by its identifier",
+            readings[*at].id.as_deref().unwrap_or("a reading"),
+            readings[*at].document
+        );
+    }
+    match reach.lost.is_empty() {
+        true => println!("  no reading names a document this corpus does not classify"),
+        false => {
+            println!(
+                "  {} name a document this corpus does not classify, and none of them is counted \
+                 above",
+                readings_of(reach.lost.len())
+            );
+            for at in &reach.lost {
+                println!("    {}", readings[*at].document);
+            }
+        }
+    }
+
+    println!("\nwhat this store does not hold, and why");
+    println!(
+        "  no person and no agent. Spec 3 aims the remedy for a falling fraction at the taxonomy \
+         rather than at the author, and a per-author number is a performance measure"
+    );
+    println!("  no wall-clock time. A duration is not reproducible under `--now`");
+    println!(
+        "  no run that refused. A refusal wrote no document, so there is nothing to attribute a \
+         reading to"
+    );
+    println!(
+        "  nothing a hook or a skill did. Spec 5 says a hook binds nothing, so a disabled hook \
+         and a hook that stayed silent would be one reading"
+    );
+    ExitCode::SUCCESS
 }
 
 /// `headwater generate`, and `--check` over what is committed.
