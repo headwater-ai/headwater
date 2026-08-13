@@ -390,6 +390,42 @@ definitions:
       filter: {block: projection_filter}
       tombstone: {enum: [counted, sealed]}
       from: {block: projection_pin}
+      identity: {block: projection_identity}
+
+  # What a generated document is, for a projection whose output is a document of
+  # the corpus rather than a list beside it.
+  #
+  # A generated Markdown file that carries no front matter is no node: it holds
+  # no identifier, so no edge reaches it and no shelf resolves a kind for it.
+  # That is right for an index of a shelf, which nothing cites. It is wrong for a
+  # projection that takes over a path other documents already name, and this
+  # block is what such a declaration adds.
+  #
+  # Two scalars, and the block is closed at two on purpose. An identifier is
+  # minted once and is a declaration. A kind is a declaration. A summary, a
+  # status and a body are prose, and no member here can carry one. The earlier
+  # form of this position was a `template`, and it was refused because a taxonomy
+  # source sits outside the corpus root: prose written here would move to the one
+  # file that no census row covers and no language regime binds. A member that
+  # took an open mapping of facets would have re-admitted that prose through a
+  # different syntax, and the refusal would then have been a ruling about
+  # punctuation. This block cannot express a sentence, so the refusal stays a
+  # ruling about substance.
+  #
+  # `kind` names a kind and never a facet. The engine reads the shelf that claims
+  # the output path and writes whatever that shelf needs to resolve the kind: the
+  # discriminator on a heterogeneous shelf, and nothing at all on a homogeneous
+  # one, where spec 2 (Placement is primary) forbids restating it.
+  #
+  # Nothing here declares an edge. Q4 rules that front matter is the one place an
+  # edge is authored, and a taxonomy source is not front matter. A generated
+  # document carries the reciprocal half of every edge that another document
+  # declares into it, which the engine derives from the graph, and it carries no
+  # other edge at all.
+  projection_identity:
+    members:
+      id: {scalar: string, required: true}
+      kind: {scalar: string, required: true}
 
   projection_filter:
     members:

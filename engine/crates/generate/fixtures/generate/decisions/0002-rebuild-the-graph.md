@@ -9,7 +9,7 @@ provenance:
   accepted_by: the fixture tree
 relations:
   supersedes: [DR-FIX-0001]
-  governs_guide: [GD-FIX-first-run]
+  governs_guide: [GD-FIX-first-run, GD-FIX-archive]
 ---
 
 # Rebuild the graph on every run

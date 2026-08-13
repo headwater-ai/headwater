@@ -16,7 +16,7 @@
 
 lock:
   format: 2
-  digest: sha256:ebdf8737afc73be4824e58a524ce48c6a8c521309d723d47088049f2449bd436
+  digest: sha256:8398854f4c5670a1cf638b86d79459d93c2b8bd5f7eca7cfe7b3a4a97e0df29b
   package: headwater/standard
   version: 1.0.0
   sources:
@@ -27,7 +27,7 @@ lock:
     - path: docs/taxonomies/decision-record/bundle.yml
       digest: sha256:ab208e17527154e67d7d0eccd495f493f0f40faf8df7ce3191ac8d1ac4369c2e
     - path: .headwater/overlay.yml
-      digest: sha256:c20963890433381efd1a0449586290f180d8af18eee7ab98a2f5772b07cadcc4
+      digest: sha256:e0b0d936d826366f2842000ad479990cefb827bf9407b9e13e41e44f5483f20f
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -514,6 +514,13 @@ resolved:
       for:
         - spec_series
       output: "{shelf}/README.md"
+    - kind: shelf_sections
+      for:
+        - decisions
+      output: docs/spec/09-open-questions.md
+      identity:
+        id: REG-HW-open-questions
+        kind: decision_register
   obligations:
     OB-COV-1:
       statement: "Every file under the corpus root is classified, or reported as unclassifiable"

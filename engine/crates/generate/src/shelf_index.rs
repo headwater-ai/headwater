@@ -63,6 +63,20 @@ pub(crate) fn emit(
         return;
     }
 
+    // See [`crate::shelf_sections`]: one identity cannot name several files.
+    if wanted.len() > 1 && declaration.identity.is_some() {
+        plan.unwritten.push(Unwritten {
+            at: declaration.output.clone(),
+            kind: Kind::ShelfIndex,
+            reason: format!(
+                "covers {} shelves and states one `identity`, so every file it wrote would carry \
+                 the same identifier",
+                wanted.len()
+            ),
+        });
+        return;
+    }
+
     for name in wanted {
         let Some(shelf) = taxonomy.shelves.iter().find(|shelf| shelf.name == name) else {
             plan.unwritten.push(Unwritten {
@@ -99,8 +113,24 @@ pub(crate) fn emit(
 
         let mut ordered = pointers(surface, &on_shelf);
         surface.by_precedence(&mut ordered);
+        let front = match &declaration.identity {
+            None => None,
+            Some(identity) => {
+                match crate::identity::front_matter(surface, identity, &path, Kind::ShelfIndex) {
+                    Ok(block) => Some(block),
+                    Err(reason) => {
+                        plan.unwritten.push(Unwritten {
+                            at: path,
+                            kind: Kind::ShelfIndex,
+                            reason,
+                        });
+                        continue;
+                    }
+                }
+            }
+        };
         plan.outputs.push(Output {
-            bytes: render(&name, &path, &ordered),
+            bytes: render(&name, &path, &ordered, front.as_deref()),
             path,
             kind: Kind::ShelfIndex,
         });
@@ -114,16 +144,27 @@ pub(crate) fn directory_of(pattern: &str) -> String {
     pattern[..stop].trim_end_matches('/').to_string()
 }
 
-fn render(shelf: &str, output: &str, ordered: &[Pointer]) -> String {
+fn render(shelf: &str, output: &str, ordered: &[Pointer], front: Option<&str>) -> String {
     let mut out = String::new();
+    // One marker, in whichever of the two places the file's shape admits: a
+    // member of the front-matter block for an index that declares an identity,
+    // and the first line for one that declares none. See
+    // [`crate::shelf_sections`], which takes the same two shapes.
+    //
     // `marker` answers `None` only for a format with no comment syntax, and a
     // shelf index is Markdown. The fallback is a plain line rather than an
     // unmarked file, because an unmarked generated file is the one thing this
     // module must never produce.
-    let mark = headwater_mark::marker(Kind::ShelfIndex.name(), output)
-        .unwrap_or_else(|| format!("<!-- {} -->", headwater_mark::MARKER));
-    out.push_str(&mark);
-    out.push_str("\n\n# ");
+    match front {
+        Some(block) => out.push_str(block),
+        None => {
+            let mark = headwater_mark::marker(Kind::ShelfIndex.name(), output)
+                .unwrap_or_else(|| format!("<!-- {} -->", headwater_mark::MARKER));
+            out.push_str(&mark);
+            out.push_str("\n\n");
+        }
+    }
+    out.push_str("# ");
     out.push_str(shelf);
     out.push_str("\n\n");
     out.push_str(&format!(

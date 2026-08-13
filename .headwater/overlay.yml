@@ -135,3 +135,23 @@ add_to:
     - kind: shelf_index
       for: [spec_series]
       output: "{shelf}/README.md"
+
+    # The redirect map. `docs/spec/09-open-questions.md` is a tombstone: all
+    # twenty-one questions closed, each one is a document on the decisions shelf
+    # now, and 136 citations in this corpus name an anchor in this file. An
+    # anchor exists because a heading does, so the file has to keep writing one
+    # heading for each decision, which is what `shelf_sections` does.
+    #
+    # The `identity` block is why a projection may take this path at all. Three
+    # documents name `REG-HW-open-questions`, and a generated file with no front
+    # matter holds no identifier, so all three edges would resolve to nothing.
+    # The block declares the identifier and the kind, and the engine derives the
+    # rest: `doc_type` because the `spec_series` shelf is heterogeneous, and the
+    # `superseded_by` half of each `supersedes` that another document declares
+    # into this one.
+    - kind: shelf_sections
+      for: [decisions]
+      output: docs/spec/09-open-questions.md
+      identity:
+        id: REG-HW-open-questions
+        kind: decision_register

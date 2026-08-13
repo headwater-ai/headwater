@@ -460,6 +460,13 @@ projections:
     for:
       - spec_series
     output: "{shelf}/README.md"
+  - kind: shelf_sections
+    for:
+      - decisions
+    output: docs/spec/09-open-questions.md
+    identity:
+      id: REG-HW-open-questions
+      kind: decision_register
 obligations:
   OB-COV-1:
     statement: "Every file under the corpus root is classified, or reported as unclassifiable"

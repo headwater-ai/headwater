@@ -41,6 +41,7 @@ struct Built {
     shape: Shape,
     taxonomy: Taxonomy,
     relations: Declarations,
+    config: Config,
 }
 
 fn fixture_tree() -> Built {
@@ -70,6 +71,7 @@ fn fixture_tree() -> Built {
         shape,
         taxonomy,
         relations,
+        config: Config::default(),
     }
 }
 
@@ -81,6 +83,7 @@ impl Built {
             &self.shape,
             &self.taxonomy,
             &self.relations,
+            &self.config,
         )
     }
 }

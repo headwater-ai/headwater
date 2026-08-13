@@ -519,6 +519,7 @@ impl Loaded {
             &self.shape,
             &self.taxonomy,
             &self.relations,
+            &self.config,
         )
     }
 

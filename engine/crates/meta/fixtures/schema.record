@@ -124,6 +124,9 @@ declarations
       tombstone enum[counted sealed]
       from members
         anchor (required) scalar:string
+      identity members
+        id (required) scalar:string
+        kind (required) scalar:string
   obligations map of members
       statement (required) scalar:string
       rationale (required) scalar:string

@@ -99,6 +99,20 @@ projections:
   # declined and the plan says which document stopped it. `archive` holds no
   # document at all.
   - {kind: shelf_sections, for: [decisions, guides, archive], output: "{shelf}/SECTIONS.md"}
+  # The same emitter, writing a document rather than a list. The `identity`
+  # block is what makes the difference: the output carries a front-matter block
+  # with the marker inside it, the identifier the declaration mints, and the
+  # discriminator that the heterogeneous `archive` shelf needs to resolve
+  # `guide`. The `governed_by` half under it is derived and never declared —
+  # `DR-FIX-0002` declares `governs_guide: GD-FIX-archive`, the relation says
+  # `reciprocal: required`, and this end owes the inverse. Nothing in the block
+  # is prose, and nothing in it is an edge that another document did not write.
+  - kind: shelf_sections
+    for: [decisions]
+    output: generate/archive/RETIRED.md
+    identity:
+      id: GD-FIX-archive
+      kind: guide
   # Two exports for one audience, which is what makes `default` a profile
   # rather than a single entry. Both output paths sit outside the corpus root,
   # so neither generated file is walked by the census that produced it.
