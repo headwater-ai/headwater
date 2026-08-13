@@ -407,6 +407,15 @@ pub struct Disposed {
     /// disposition. It is here because a reader of a verified obligation is
     /// owed the count of what escaped under it.
     pub escaped: usize,
+    /// Findings against this obligation that the adoption payload holds.
+    ///
+    /// A separate counter from [`Disposed::escaped`] rather than a shared one.
+    /// Spec 4 fixes the precedence over three inventories so that they
+    /// partition the escaped findings and no finding is counted twice, and one
+    /// counter serving two buckets is that double count with the evidence
+    /// thrown away. It does not move the disposition either: declared debt is
+    /// not a missing control.
+    pub pending: usize,
 }
 
 impl Disposed {
@@ -503,6 +512,7 @@ impl Projection {
                         .collect(),
                     stated: obligation.disposition.clone(),
                     escaped: 0,
+                    pending: 0,
                 }
             })
             .collect();
@@ -539,6 +549,23 @@ impl Projection {
     /// findings of [`Projection::findings`] are among the findings the filter
     /// then reads. The inventory exists only after that filter, so a
     /// constructor that took it would run after the findings it produces.
+    /// Attribute pending findings to the obligations their rules serve.
+    ///
+    /// Counted apart from [`Projection::escaped_from`] rather than into it. The
+    /// precedence spec 4 fixes exists so that three inventories partition the
+    /// escaped findings, and one counter for two buckets is the double count it
+    /// forbids.
+    pub fn pending_from(&mut self, register: &Register, ledger: &crate::adoption::Ledger) {
+        for (rule, count) in ledger.by_rule() {
+            let Bound::To(obligation) = register.bound(rule) else {
+                continue;
+            };
+            if let Some(disposed) = self.obligations.iter_mut().find(|d| d.id == obligation) {
+                disposed.pending += count;
+            }
+        }
+    }
+
     pub fn escaped_from(&mut self, register: &Register, inventory: &Inventory) {
         for (rule, count) in inventory.by_rule() {
             let Bound::To(obligation) = register.bound(rule) else {
@@ -721,7 +748,10 @@ impl Projection {
         // block below names what discharges each one, and a list of every
         // obligation is a list nobody finishes.
         for obligation in self.obligations.iter().filter(|o| {
-            o.disposition() != Disposition::Verified || o.contradicted() || o.escaped > 0
+            o.disposition() != Disposition::Verified
+                || o.contradicted()
+                || o.escaped > 0
+                || o.pending > 0
         }) {
             let _ = write!(
                 out,
@@ -774,6 +804,15 @@ impl Projection {
                 0 => Ok(()),
                 1 => write!(out, ", 1 finding escaped under it"),
                 escaped => write!(out, ", {escaped} findings escaped under it"),
+            };
+            // Named apart from the line above, because the two are different
+            // claims about the same obligation. One says an author hid a
+            // finding. The other says the corpus declared the debt, with an
+            // owner and a date.
+            let _ = match obligation.pending {
+                0 => Ok(()),
+                1 => write!(out, ", 1 finding is migration-pending under it"),
+                pending => write!(out, ", {pending} findings are migration-pending under it"),
             };
             out.push('\n');
         }
@@ -833,14 +872,19 @@ impl Projection {
 
         // Spec 4 fixes a precedence over three inventories "so the three
         // inventories partition the escaped findings, and no finding is counted
-        // three times". One of the three exists. The two that do not are
+        // three times". Two of the three exist now. The one that does not is
         // printed as absent rather than left out, because a partition with a
         // silent member is one a reader cannot check.
+        //
+        // The two numbers come from two counters that no code adds together,
+        // which is what makes this line a partition a reader can audit rather
+        // than a sentence about one.
         let escaped: usize = self.obligations.iter().map(|o| o.escaped).sum();
+        let pending: usize = self.obligations.iter().map(|o| o.pending).sum();
         let _ = writeln!(
             out,
-            "  escaped findings, in the precedence spec 4 fixes: no waiver mechanism exists, no \
-             migration-pending mechanism exists, {escaped} suppressed"
+            "  escaped findings, in the precedence spec 4 fixes: no waiver mechanism exists, \
+             {pending} migration-pending, {escaped} suppressed"
         );
 
         // A rule that reaches no obligation. The line is printed when there are

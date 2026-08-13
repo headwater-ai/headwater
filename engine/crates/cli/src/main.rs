@@ -508,6 +508,7 @@ fn check(
             shape,
             relations: declarations,
             register,
+            adoption: lock.adoption.as_ref(),
             source: headwater_lock::LOCK,
         },
         &ctx,

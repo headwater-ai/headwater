@@ -73,7 +73,7 @@ fn compare(recorded: &Path, actual: &str) {
 
 /// One run over one corpus: the whole pipeline, in the order spec 6 draws it.
 fn run_over(corpus: &Corpus, root: &Mapping, lock: &str, source: &str, cache: &mut Cache) -> Run {
-    run_at(corpus, root, lock, source, &pinned(), cache)
+    run_at(corpus, root, lock, source, &pinned(), cache, None)
 }
 
 /// Where the fixture tree's taxonomy lives, as a reader would open it.
@@ -90,6 +90,7 @@ fn run_at(
     source: &str,
     ctx: &Context,
     cache: &mut Cache,
+    adoption: Option<&Mapping>,
 ) -> Run {
     let taxonomy = Taxonomy::read(root).expect("the taxonomy reads");
     let declarations = Declarations::read(root).expect("the declarations read");
@@ -112,6 +113,7 @@ fn run_at(
             shape: &shape,
             relations: &declarations,
             register: &register,
+            adoption,
             source,
         },
         ctx,
@@ -157,12 +159,16 @@ fn cached_corpus_run(cache: &mut Cache) -> Run {
     let root = repository_root();
     let resolved = repository(&root);
     let lock = headwater_lock::at(&root).expect("the committed lock");
-    run_over(
+    // The committed payload, because a run of the verb reads it and a recorded
+    // report of a run that ignored it would record a corpus nobody checks.
+    run_at(
         &corpus_of(&root, &resolved),
         &resolved.resolution.taxonomy,
         &lock.digest,
         headwater_lock::LOCK,
+        &pinned(),
         cache,
+        lock.adoption.as_ref(),
     )
 }
 
@@ -193,6 +199,154 @@ fn corpus_of(root: &Path, resolved: &headwater_resolve::Repository) -> Corpus {
         &resolved.consumer.corpus_root,
         &resolved.consumer.exclusions,
     )
+}
+
+
+/// The precedence spec 4 fixes, over one tree that exercises both mechanisms.
+///
+/// Spec 4 orders waiver, then migration-pending, then suppression, "so the
+/// three inventories partition the escaped findings, and no finding is counted
+/// three times". The fixture tree carries a directive that hides a real
+/// finding. This declares a task over the same `(document, rule)` pair and
+/// asserts the finding moved buckets rather than appearing in both.
+///
+/// The pair is read off the run rather than written here, so the test follows
+/// the fixture tree when its prose changes instead of pinning a line number.
+#[test]
+fn a_payload_takes_precedence_over_a_directive_and_the_two_inventories_partition() {
+    let bare = fixture_run();
+    let hidden = bare.suppressions.hidden();
+    assert!(hidden > 0, "the fixture tree suppresses something");
+    let applied = bare
+        .suppressions
+        .suppressions
+        .iter()
+        .find(|suppression| suppression.hid > 0)
+        .expect("an applied directive");
+    let (path, rule) = (applied.path.clone(), applied.rule.clone());
+
+    let payload = headwater_yaml::load(&format!(
+        "\
+tasks:
+  - id: AD-1
+    statement: the directive and the task name one pair
+    owner: the fixture tree
+    until: 2027-01-01
+    pairs:
+      - {{path: {path}, rule: {rule}}}
+"
+    ))
+    .expect("the payload loads");
+    let payload = payload.value.as_map().expect("a mapping").clone();
+
+    let corpus = Corpus::new(fixtures_dir(), "check");
+    let root = load_map(&fixtures_dir().join("check.taxonomy.yml"));
+    let laden = run_at(
+        &corpus,
+        &root,
+        &fixture_lock(),
+        FIXTURE_SOURCE,
+        &pinned(),
+        &mut Cache::disabled(),
+        Some(&payload),
+    );
+
+    // The payload holds it, so the directive never sees it.
+    assert_eq!(laden.adoption.open(), 1, "the task holds the pair");
+    assert_eq!(
+        laden.suppressions.hidden(),
+        hidden - 1,
+        "the directive hid one fewer finding, so nothing is in both inventories"
+    );
+
+    // And it is out of the findings list, which is what "never blocking" means.
+    assert!(
+        !laden
+            .findings
+            .iter()
+            .any(|finding| finding.path == path && finding.rule == rule),
+        "a pending finding is not reported as a finding"
+    );
+    assert_eq!(laden.adoption.pending.len(), 1);
+
+    // The report says both numbers, and no code adds them together.
+    let report = laden.render(headwater_check::Detail::Findings);
+    assert!(
+        report.contains("1 migration-pending"),
+        "the precedence line names the payload:\n{report}"
+    );
+}
+
+/// A pending finding does not fail a `--strict` run.
+///
+/// Spec 7: migration-pending findings are "counted, visible in coverage, never
+/// blocking". `has_errors` is what `--strict` reads, so this is the property
+/// stated in the coordinate the flag uses.
+#[test]
+fn a_pending_finding_never_blocks() {
+    let corpus = Corpus::new(fixtures_dir(), "check");
+    let root = load_map(&fixtures_dir().join("check.taxonomy.yml"));
+    let bare = fixture_run();
+    let mut errors: Vec<(String, String)> = bare
+        .findings
+        .iter()
+        .filter(|finding| finding.severity == headwater_check::Severity::Error)
+        .map(|finding| (finding.path.clone(), finding.rule.to_string()))
+        .collect();
+    errors.sort();
+    errors.dedup();
+    assert!(bare.has_errors(), "the fixture tree carries an error finding");
+
+    // A pair is a `(document, rule)` cell, so it holds every finding of that
+    // rule on that document rather than the one that prompted it. That is the
+    // grain spec 7 fixes, and the expected count follows from it rather than
+    // from the number of pairs written below.
+    let expected = bare
+        .findings
+        .iter()
+        .filter(|finding| {
+            errors
+                .iter()
+                .any(|(path, rule)| *path == finding.path && *rule == finding.rule)
+        })
+        .count();
+
+    let pairs: String = errors
+        .iter()
+        .map(|(path, rule)| format!("      - {{path: {path}, rule: {rule}}}\n"))
+        .collect();
+    let payload = headwater_yaml::load(&format!(
+        "\
+tasks:
+  - id: AD-1
+    statement: every error this tree raises, declared as debt
+    owner: the fixture tree
+    until: 2027-01-01
+    pairs:
+{pairs}"
+    ))
+    .expect("the payload loads");
+    let payload = payload.value.as_map().expect("a mapping").clone();
+
+    let laden = run_at(
+        &corpus,
+        &root,
+        &fixture_lock(),
+        FIXTURE_SOURCE,
+        &pinned(),
+        &mut Cache::disabled(),
+        Some(&payload),
+    );
+    assert!(
+        !laden.has_errors(),
+        "declared debt failed a strict run, which spec 7 says it never does"
+    );
+    assert_eq!(laden.adoption.open(), expected);
+    assert!(
+        expected > errors.len(),
+        "this tree has a document with two findings of one rule, which is what \
+         makes the line above a statement about the grain"
+    );
 }
 
 #[test]
@@ -514,6 +668,7 @@ fn the_injected_clock_changes_a_verdict_and_nothing_else_does() {
         FIXTURE_SOURCE,
         &Context::at(Date::parse("2026-09-30").expect("a date")),
         &mut Cache::disabled(),
+        None,
     );
     let overdue: Vec<&str> = later
         .findings
