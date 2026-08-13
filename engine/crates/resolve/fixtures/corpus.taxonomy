@@ -89,6 +89,7 @@ facets:
     volatility: stable
   title:
     required: false
+    role: name
     type: string
     volatility: stable
 regimes:

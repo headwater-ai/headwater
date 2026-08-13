@@ -37,6 +37,7 @@ add:
   # succession, so its name changes by rename and never by edit.
 
   facets.title:
+    role: name
     type: string
     required: false
     volatility: stable
