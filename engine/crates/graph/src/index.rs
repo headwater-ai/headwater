@@ -79,7 +79,18 @@ pub enum Defect {
     /// reachable: a target that names it resolves to two documents, and
     /// [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#identifiers)
     /// says an identifier is never reused.
-    Duplicate { id: String, other: String },
+    ///
+    /// The report carries the **other** claimant whole: its path, and the span
+    /// of the identifier key it wrote. [`Reported`] carries the claimant that
+    /// comes second in path order, and which document is second is a fact about
+    /// the corpus rather than about either file. A rule that reported one of
+    /// the two and not the other would report path order as the defect, and it
+    /// cannot anchor a finding in a file whose line nothing told it.
+    Duplicate {
+        id: String,
+        other: String,
+        other_span: Option<Span>,
+    },
 }
 
 impl std::fmt::Display for Defect {
@@ -93,7 +104,7 @@ impl std::fmt::Display for Defect {
                 f,
                 "the identifier is not a scalar, and an identifier is a word"
             ),
-            Defect::Duplicate { id, other } => {
+            Defect::Duplicate { id, other, .. } => {
                 write!(
                     f,
                     "`{id}` is also declared on {other}, and an identifier is never reused"
@@ -193,7 +204,7 @@ impl Index {
     /// reporting it only inside the node set would hide the half that a later
     /// typing pass turns into a real conflict.
     fn report_duplicates(&mut self) {
-        let mut seen: Vec<(&str, &str)> = Vec::new();
+        let mut seen: Vec<(&str, &Node)> = Vec::new();
         let mut found: Vec<Reported> = Vec::new();
         for node in self.typed.iter().chain(self.untyped.iter()) {
             match seen.iter().find(|(id, _)| *id == node.id) {
@@ -202,10 +213,15 @@ impl Index {
                     span: node.id_span,
                     defect: Defect::Duplicate {
                         id: (*id).to_string(),
-                        other: (*first).to_string(),
+                        other: first.path.clone(),
+                        // The first claimant's own key, so that a rule can
+                        // report the collision in that file too. Without it a
+                        // finding could land only where path order put the
+                        // report, and path order is not an author's doing.
+                        other_span: first.id_span,
                     },
                 }),
-                None => seen.push((&node.id, &node.path)),
+                None => seen.push((&node.id, node)),
             }
         }
         self.defects.extend(found);

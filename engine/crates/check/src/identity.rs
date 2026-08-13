@@ -33,14 +33,13 @@
 //! # What does not come with it, and why
 //!
 //! [`headwater_graph::index::Defect::Duplicate`] is the third member of that
-//! enum and it stays where it is. It is a fact about **two** documents: the
-//! graph reports it against the second one in census order, and which document
-//! is second is a function of path order over the whole corpus. A
+//! enum and it belongs to another rule. It is a fact about **two** documents:
+//! the graph reports it against the second one in census order, and which
+//! document is second is a function of path order over the whole corpus. A
 //! document-scoped instance reads one file, so its cache key names one file,
 //! and a verdict keyed that way survives every edit to the other document — the
 //! one that would settle it. That is not a rule with a missing message. It is a
-//! rule at the wrong grain, and it needs a grain that reads both claimants.
-//! [#142](https://github.com/headwater-ai/headwater/issues/142) carries it.
+//! rule at another grain, and the grain is the corpus: [`crate::duplicate`].
 //!
 //! # The generation step, and the kind that is asked for nothing
 //!
@@ -168,12 +167,13 @@ impl Identity<'_> {
     }
 }
 
-/// One reported defect as a finding, or nothing where the grain is wrong.
+/// One reported defect as a finding, or nothing for the one this rule does not
+/// own.
 fn finding(reported: &Reported, sourceless: bool, facet: &str) -> Option<Finding> {
     match &reported.defect {
         Defect::NoIdentifier { .. } | Defect::NotAScalar => {}
-        // See the module comment: a duplicate is a fact about two documents and
-        // this instance read one of them.
+        // See the module comment: a duplicate is a fact about two documents,
+        // this instance read one of them, and [`crate::duplicate`] reads both.
         Defect::Duplicate { .. } => return None,
     }
 
@@ -263,11 +263,13 @@ mod tests {
             assert_eq!(laden.remediation, bare.remediation);
         }
 
-        // The grain is wrong for a duplicate, and the module comment says why.
+        // A duplicate belongs to another grain, and the module comment says
+        // why. `crate::duplicate` is the rule that reads both claimants.
         assert!(finding(
             &reported(Defect::Duplicate {
                 id: "SPEC-FIX-first".to_string(),
                 other: "docs/spec/00-first.md".to_string(),
+                other_span: None,
             }),
             false,
             "id"
