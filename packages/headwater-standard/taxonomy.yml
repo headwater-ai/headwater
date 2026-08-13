@@ -246,6 +246,13 @@ obligations:
     prevents: content.incomplete
     severity: high
 
+  OB-ID-3:
+    statement: No two documents of a corpus claim one identifier
+    rationale: An identifier that names two documents names neither, so a target that reaches for it binds to whichever the index saw first while the other becomes unreachable, and both authors wrote a well-formed identifier that their scheme admits
+    class: cohesion
+    prevents: content.inconsistent
+    severity: high
+
   OB-REL-2:
     statement: Both ends of a relation instance are kinds that the relation permits
     rationale: An edge between kinds a relation forbids is an assertion that the taxonomy never sanctioned, and every query over that relation inherits it
@@ -447,6 +454,18 @@ controls:
       criteria:
         window: one release of the taxonomy over an adopting corpus
         threshold: no false positive, because the rule reports what the identifier index already refused rather than deriving a second answer
+        sample: every finding of one run over the adopting corpus, adjudicated once
+
+  CT-ID-3:
+    mechanism: check:identifier.claimed_twice
+    discharges: [OB-ID-3]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: one release of the taxonomy over an adopting corpus
+        threshold: no false positive, because the rule reports the collision the identifier index already found rather than comparing identifiers a second time
         sample: every finding of one run over the adopting corpus, adjudicated once
 
   CT-REL-2:

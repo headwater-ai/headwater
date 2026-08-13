@@ -40,13 +40,27 @@
 //!
 //! A finding carries its own path, which is a different question: what a check
 //! read, and where the author who can act on it is looking.
+//!
+//! # Reading is not routing, and coverage counts the second one
+//!
+//! The paragraph above is about the three grains whose target is a document or
+//! an edge between two. A corpus-grained instance reads every document and is
+//! routed to none of them, so [`crate::coverage`] counts it against none. The
+//! grain is on the instance for that one question, and
+//! [`crate::Grain::routes`] is where the answer is written down.
 
 use crate::finding::Finding;
+use crate::scope::Grain;
 
 /// One check, applied to one target.
 #[derive(Clone, Debug)]
 pub struct Instance {
     pub rule: &'static str,
+    /// The unit this instance was created over, read off the trait the check
+    /// implements. It is here so that coverage can tell an instance routed to
+    /// a document from one routed to the corpus, and it is derived rather than
+    /// supplied for the reason [`crate::Scope`] is.
+    pub grain: Grain,
     /// Every document this instance read, in a fixed order and without
     /// repeats. It comes from the view rather than from the check, so a check
     /// cannot record that it read less than it was handed.
@@ -114,17 +128,24 @@ impl Instance {
     /// [`crate::scope`] is the only caller, and that is the point: the read
     /// set comes from the view rather than from the check, so a check cannot
     /// record that it read less than it was handed.
-    pub fn of(rule: &'static str, reads: Vec<Input>, outcome: Outcome) -> Self {
+    pub fn of(rule: &'static str, grain: Grain, reads: Vec<Input>, outcome: Outcome) -> Self {
         Instance {
             rule,
+            grain,
             reads,
             outcome,
         }
     }
 
-    pub fn skipped(rule: &'static str, reads: Vec<Input>, reason: impl Into<String>) -> Self {
+    pub fn skipped(
+        rule: &'static str,
+        grain: Grain,
+        reads: Vec<Input>,
+        reason: impl Into<String>,
+    ) -> Self {
         Instance {
             rule,
+            grain,
             reads,
             outcome: Outcome::Skipped(reason.into()),
         }

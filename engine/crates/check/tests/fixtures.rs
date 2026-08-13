@@ -23,10 +23,10 @@ use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::scope::{over_documents, over_edges, Digests};
 use headwater_check::{
-    coverage, declaration, endpoint, facet_required, facet_value, fragment, identity, language,
-    participation, placement, reciprocity, retired, sections, source_form, target, voice, Cache,
-    Context, Date, Declared, Detail, DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain,
-    Outcome, Register, Run, Shape,
+    coverage, declaration, duplicate, endpoint, facet_required, facet_value, fragment, identity,
+    language, participation, placement, reciprocity, retired, sections, source_form, target, voice,
+    Cache, Context, Date, Declared, Detail, DocumentCheck, DocumentView, EdgeCheck, EdgeView,
+    Grain, Outcome, Register, Run, Shape,
 };
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -797,16 +797,134 @@ fn the_graph_fixture_corpus_routes_every_phase_a_defect_of_a_relation() {
     }
     assert!(run.has_errors());
 
-    // The one defect that stays where it is. `04-twin.md` and `00-first.md`
-    // both claim `SPEC-FIX-first`, and a document-scoped instance reads one of
-    // the two. See `crates/check/src/identity.rs` for why that is a grain
-    // rather than a message.
+    // The eighth defect, at the grain that reads both of its claimants.
+    // `04-twin.md` and `00-first.md` both claim `SPEC-FIX-first`, so this is
+    // one collision and two findings, one in each file.
+    let twins: Vec<&headwater_check::Finding> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.rule == duplicate::RULE)
+        .collect();
+    assert_eq!(twins.len(), 2, "{twins:#?}");
+    let mut paths: Vec<&str> = twins.iter().map(|finding| finding.path.as_str()).collect();
+    paths.sort();
+    assert_eq!(paths, ["graph/spec/00-first.md", "graph/spec/04-twin.md"]);
+
+    // One sentence, read the same way in both files. The index reports the
+    // claimant that comes second in path order, and path order is not a thing
+    // either author did.
+    assert_eq!(twins[0].message, twins[1].message, "{twins:#?}");
+    for finding in &twins {
+        assert_eq!(finding.severity, headwater_check::Severity::Error);
+        assert!(!finding.fixable, "{finding:#?}");
+        assert!(finding.message.contains("`SPEC-FIX-first`"), "{finding:#?}");
+        assert!(finding.message.contains("graph/spec/00-first.md"));
+        assert!(finding.message.contains("graph/spec/04-twin.md"));
+        // Each one anchors at the identifier key its own author wrote, rather
+        // than at the top of a file somebody else edited.
+        assert!(finding.line > 0, "{finding:#?}");
+    }
+
+    // One instance, whatever the size of the corpus. That is the barrier count
+    // spec 12 asks a reader to be able to read, and it is what separates this
+    // grain from a document-scoped rule with a wide read set.
+    let instances: Vec<&headwater_check::Instance> = run
+        .instances
+        .iter()
+        .filter(|instance| instance.rule == duplicate::RULE)
+        .collect();
+    assert_eq!(instances.len(), 1, "{instances:#?}");
     assert!(
-        !run.findings
-            .iter()
-            .any(|finding| finding.path == "graph/spec/04-twin.md"),
-        "a duplicate identifier was reported at a grain that cannot decide it"
+        instances[0].paths().len() > 2,
+        "the read set of the barrier holds both claimants and everything else: {:#?}",
+        instances[0]
     );
+}
+
+/// A corpus-scoped instance reads every document and is routed to none of them.
+///
+/// This is the trap `crates/check/src/coverage.rs` used to record as a reason
+/// not to build a corpus-scoped check at all: such an instance reads every
+/// document, so a coverage report that counted reading would call every
+/// document checked and `coverage.document_unchecked` could never fire again.
+///
+/// The instance count would go up and the finding count would go down, which
+/// reads in every report as an improvement. So the ruling is asserted rather
+/// than commented: coverage counts routing, `Grain::routes` is where that is
+/// written, and `03-no-instance.md` is the document that proves it. The rule
+/// below reads that file and the coverage finding against it survives.
+#[test]
+fn a_corpus_instance_reads_a_document_without_covering_it() {
+    let run = fixture_run();
+    let unchecked = "check/spec/03-no-instance.md";
+
+    let instances: Vec<&headwater_check::Instance> = run
+        .instances
+        .iter()
+        .filter(|instance| instance.rule == duplicate::RULE)
+        .collect();
+    assert_eq!(instances.len(), 1, "one barrier, one instance");
+    assert!(instances[0].ran(), "{:#?}", instances[0]);
+    assert!(
+        instances[0].paths().contains(&unchecked),
+        "the barrier did not read the coverage rule's failing fixture"
+    );
+
+    // Read, and not routed. Both halves are asserted, because the first one
+    // alone would pass over a rule that read nothing.
+    let document = run
+        .coverage
+        .documents
+        .iter()
+        .find(|document| document.path == unchecked)
+        .expect("the fixture");
+    let routed = run
+        .instances
+        .iter()
+        .filter(|instance| instance.grain.routes() && instance.paths().contains(&unchecked))
+        .count();
+    assert_eq!(
+        document.created, routed,
+        "coverage counted an instance that is not routed to this document"
+    );
+    assert_eq!(
+        document.ran, 0,
+        "a corpus-scoped instance was counted as checking a document"
+    );
+    assert!(
+        run.instances
+            .iter()
+            .any(|instance| !instance.grain.routes() && instance.paths().contains(&unchecked)),
+        "nothing unrouted read this document, so this test proves nothing"
+    );
+    assert!(
+        run.findings
+            .iter()
+            .any(|finding| finding.rule == coverage::RULE && finding.path == unchecked),
+        "the coverage rule lost its failing fixture to a rule that reads it"
+    );
+
+    // And the reach of the loss, so that the number is in the record rather
+    // than in an argument: every document this barrier reads is one that
+    // counting reading would have marked checked.
+    let would_be_covered = instances[0]
+        .paths()
+        .iter()
+        .filter(|path| {
+            run.coverage
+                .documents
+                .iter()
+                .any(|document| &document.path == *path && document.ran == 0)
+        })
+        .count();
+    assert!(
+        would_be_covered > 0,
+        "nothing would have changed, so this test proves nothing"
+    );
+
+    // It read nothing outside the census either, which is the denominator
+    // question and is asked of every grain.
+    assert!(run.coverage.unaccounted.is_empty());
 }
 
 /// The unit is the authored entry, and the fixture tree shows both consequences.
@@ -1323,6 +1441,10 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             // the block is the unit that survives.
             Grain::Document,
             Grain::Document,
+            // The third of them, and the one whose subject is a pair of
+            // documents that no edge connects. Nothing smaller than the corpus
+            // holds both claimants of one identifier.
+            Grain::Corpus,
             // The six Document-origin rules, which read the body rather than
             // the front matter. The grain is the same and the view is not:
             // each one declares `NEEDS_BODY`.
@@ -1387,10 +1509,22 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         .filter(|served| served.scope.needs_phase_a())
         .map(|served| served.rule)
         .collect();
-    assert_eq!(structural, [declaration::RULE, identity::RULE]);
+    assert_eq!(
+        structural,
+        [declaration::RULE, identity::RULE, duplicate::RULE]
+    );
     assert_eq!(
         run.served[8].scope.render(),
         "document scope, one document and its front matter, and what phase A could not make of it"
+    );
+    // The same declaration at the other grain, and the sentence says what the
+    // difference is: one document's news against the identity of every
+    // document. A reader counting the barriers finds the word here.
+    assert_eq!(run.served[10].rule, duplicate::RULE);
+    assert_eq!(
+        run.served[10].scope.render(),
+        "corpus scope, every row of the census, and what phase A could not make of each \
+         document's identity, and it is a barrier"
     );
 
     // Exactly one rule reads the clock, and the report names it. A reader who

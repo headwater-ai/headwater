@@ -11,7 +11,7 @@
     "seen": 25,
     "classified": 23,
     "checked": 22,
-    "instances": 242
+    "instances": 243
   },
   "rules": [
     {
@@ -94,6 +94,12 @@
       "obligations": [
         "OB-FIX-26"
       ]
+    },
+    {
+      "rule": "identifier.claimed_twice",
+      "scope": "corpus",
+      "version": 1,
+      "obligations": []
     },
     {
       "rule": "voice.forbidden_construction",
@@ -757,6 +763,10 @@
     {
       "path": "check/spec/03-no-instance.md",
       "digest": "sha256:bb254e9a27d62cf8ff126895c545a797d9eeadee7e756bd34a7536ce21cba7ad"
+    },
+    {
+      "path": "check/spec/04-untyped.md",
+      "digest": "sha256:ef34b3e4254620599be769fb2e28826e330b9a6b8972ed7ef32d2d3baaeddf2b"
     },
     {
       "path": "check/spec/05-no-summary.md",

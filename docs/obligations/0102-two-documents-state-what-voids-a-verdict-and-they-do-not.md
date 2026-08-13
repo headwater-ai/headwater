@@ -3,7 +3,7 @@ id: OBL-repo-0102
 title: "Two documents state what voids a verdict, and they do not agree"
 status: current
 status_since: 2026-08-13
-last_verified: 2026-08-13
+last_verified: 2026-08-14
 summary: "Spec 12 voids a verdict by a tree diff, and the engine voids it by a hash comparison that no added document reaches."
 provenance:
   warrant: accepted
@@ -39,6 +39,10 @@ The first is a sentence that the published test falsifies. Spec 12 rules that a 
 The second is that the reading of [OBL-repo-0017](0017-publishing-the-read-set-skips-a-re-run-on-two-of-the-eighteen.md) points the gate at the merges it cannot inspect. Two Shape rules generate over every kind, so an edit to any classified document voids almost every instance. The merges that a gate could carry are therefore the ones that add rather than edit. That is the class that a comparison over listed inputs cannot see.
 
 The third is the clock. The void condition of both specifications reads a tree alone. A windowed participation expectation goes stale with no tree change at all, and `readset.rs` says so where no specification does.
+
+The first consequence has a construction, and `identifier.claimed_twice` is the rule that supplies it. One branch adds a document that mints `SPEC-HW-new`. A second branch adds a different document that mints the same identifier. Each branch is valid, because each holds one claimant of it. The merge holds two claimants, so the merge result is invalid. The read set of the corpus-scoped instance lists every document of the branch that produced it. Neither branch lists the document that the other one added. Every listed hash therefore stands, and a comparison over listed inputs reports that both verdicts survive.
+
+The cache and the gate read one artifact by two procedures, and that is why one of the two is sound. A run rebuilds the read set of every instance from the tree in front of it. A document that the tree gained joins that set and moves the key. A gate holds the set that an earlier run published and compares it against a later tree. A document that the tree gained is on no list. That a cache cannot serve a stale verdict is therefore no evidence about what a gate can decide.
 
 ## Discharge
 
