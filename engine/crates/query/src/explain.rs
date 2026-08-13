@@ -72,7 +72,10 @@ impl Surface<'_> {
                 path: document.path.to_string(),
                 id: document.id.map(str::to_string),
                 kind: Some(document.kind.to_string()),
-                derivation: lines(&document.derivation.explain()),
+                derivation: document
+                    .derivation
+                    .map(|derivation| lines(&derivation.explain()))
+                    .unwrap_or_default(),
                 purpose: self
                     .shape()
                     .purpose_of(document.kind)

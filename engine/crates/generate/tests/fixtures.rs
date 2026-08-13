@@ -384,6 +384,119 @@ fn a_generated_file_is_censused_as_generated_and_orphaned_when_nothing_writes_it
     );
 }
 
+/// A generated document is a document of its shelf, and an index of that shelf
+/// names it.
+///
+/// The engine held two definitions of "is a document" and only one of them
+/// moved when #132 made a generated file a node. `Outcome::node` admitted a
+/// generated row that resolved a kind, so the identifier index and the edge
+/// builder both held it. `Surface::documents` read `Outcome::Typed` alone, so
+/// every read built on it dropped the same file: a shelf index left the row
+/// out, the export called its node set "every node the census holds" while
+/// emitting one fewer than the graph carries, and `explain` answered "no kind"
+/// about a document that resolves one.
+///
+/// Nothing reported the drop. `docs/spec/README.md` went from 16 rows to 15 the
+/// day a projection took `docs/spec/09-open-questions.md`, and the only
+/// evidence was the byte diff of a generated file. This test is the evidence
+/// there was none of.
+///
+/// The shape it runs over is the repository's own, in the fixture tree: the
+/// `archive` shelf holds no authored document and one generated one, which is
+/// `generate/archive/RETIRED.md` with the identity `GD-FIX-archive`. So the
+/// index of that shelf is written or it is not, with nothing else to confuse
+/// the reading.
+#[test]
+fn a_generated_document_is_a_document_of_its_shelf() {
+    // The fixture tree, copied, so that a write lands beside the documents the
+    // plan was derived from rather than in a tree that holds only outputs.
+    let tree = empty_tree("shelved");
+    copy_tree(&fixtures_dir().join("generate"), &tree.join("generate"));
+
+    let root = load_map(&fixtures_dir().join("generate.taxonomy.yml"));
+    let before = Built::over(&Corpus::new(&tree, "generate"), &root);
+    let projections = Projections::read(&root).expect("the projections read");
+    let first = plan(
+        &before.surface(),
+        &before.census,
+        &projections,
+        &fixture_identity(),
+    );
+    let report = write(&tree, &first);
+    assert!(!report.has_errors(), "{}", report.render());
+
+    // The tree now holds the generated document, so the census walks it.
+    let after = Built::over(&Corpus::new(&tree, "generate"), &root);
+    let surface = after.surface();
+    const RETIRED: &str = "generate/archive/RETIRED.md";
+    assert_eq!(
+        after
+            .census
+            .rows
+            .iter()
+            .find(|row| row.path == RETIRED)
+            .map(|row| row.outcome.class()),
+        Some("generated"),
+        "the fixture did not write the document this test is about"
+    );
+
+    // One: the read agrees with the graph about what a document is.
+    let shelved = surface
+        .documents()
+        .into_iter()
+        .find(|document| document.path == RETIRED)
+        .expect("a generated document that declares an identity is a document");
+    assert_eq!(shelved.kind, "guide");
+    assert_eq!(shelved.id, Some("GD-FIX-archive"));
+
+    // Two: `explain` answers about it, rather than reporting that nothing is
+    // required of a file it can fully type.
+    let explained = surface
+        .explain(RETIRED)
+        .expect("a generated document explains");
+    assert_eq!(explained.kind.as_deref(), Some("guide"));
+    assert_eq!(explained.id.as_deref(), Some("GD-FIX-archive"));
+
+    // Three: the index of the shelf it sits on names it. On the reading this
+    // test replaces, the `archive` shelf held no document, so the declaration
+    // produced the reason below instead of a file.
+    let second = plan(&surface, &after.census, &projections, &fixture_identity());
+    let index = second
+        .outputs
+        .iter()
+        .find(|output| output.path == "generate/archive/README.md")
+        .expect("an index of the shelf the generated document sits on");
+    assert!(
+        index.bytes.contains("[GD-FIX-archive](RETIRED.md)"),
+        "{}",
+        index.bytes
+    );
+    assert!(
+        !second
+            .unwritten
+            .iter()
+            .any(|unwritten| unwritten.at == "generate/archive/README.md"),
+        "the shelf still reads as empty: {:?}",
+        second.unwritten
+    );
+}
+
+/// Copy a directory tree, so that a test may write into a corpus rather than
+/// beside one.
+fn copy_tree(from: &Path, to: &Path) {
+    std::fs::create_dir_all(to).expect("the destination");
+    for entry in std::fs::read_dir(from).expect("the source tree") {
+        let entry = entry.expect("an entry");
+        let target = to.join(entry.file_name());
+        match entry.file_type().expect("a file type").is_dir() {
+            true => copy_tree(&entry.path(), &target),
+            false => {
+                std::fs::copy(entry.path(), &target).expect("the copy");
+            }
+        }
+    }
+}
+
 /// Every generated file opens with the marker that lets the next run overwrite
 /// it.
 ///

@@ -54,7 +54,7 @@ pub mod route;
 pub use explain::Explanation;
 pub use route::{Budget, Route, Silence};
 
-use headwater_census::census::{Census, Outcome, Row};
+use headwater_census::census::{Census, Row};
 use headwater_census::resolve::Resolution;
 use headwater_census::shelves::Taxonomy;
 use headwater_check::Shape;
@@ -117,8 +117,15 @@ pub struct Document<'a> {
     /// route may offer.
     pub id: Option<&'a str>,
     pub facets: &'a Mapping,
-    /// The derivation the census recorded, which is what `explain` prints.
-    pub derivation: &'a Resolution,
+    /// The derivation the census recorded, which is what `explain` prints, and
+    /// `None` where the census recorded none.
+    ///
+    /// A typed row always carries one, because kind resolution is how the row
+    /// became typed. A generated row carries the same derivation when its
+    /// front matter resolved a kind, and no derivation at all when the file
+    /// carries a first-line marker and no block. The second shape reaches no
+    /// index and no read here, and the type says so rather than a comment.
+    pub derivation: Option<&'a Resolution>,
 }
 
 /// A pointer: what a read offers instead of content.
@@ -216,7 +223,29 @@ impl<'a> Surface<'a> {
         self.relations
     }
 
-    /// Every classified document, in the census's own path order.
+    /// Every document of the corpus, in the census's own path order.
+    ///
+    /// "Every document" is [`Outcome::node`]'s answer and never a second one.
+    /// The census admits a generated Markdown file that declares an identity as
+    /// a document, and the identifier index and the edge builder both read it
+    /// that way. A read here that answered `Typed` alone would hold a second
+    /// definition of "is a document", and the two would disagree about exactly
+    /// the files that a projection took over.
+    ///
+    /// That disagreement was live, and nothing reported it. `docs/spec/README.md`
+    /// indexes the `spec_series` shelf; `docs/spec/09-open-questions.md` is a
+    /// document of that shelf, carrying an identifier that three edges and 136
+    /// citations reach; and the index dropped the row on the day a projection
+    /// took the path. The export called its own node set "every node the census
+    /// holds" while emitting one fewer than the graph carries.
+    ///
+    /// So a shelf index is the set of *documents*, and never the set of
+    /// documents that a human typed. Which verb writes a file is a fact about
+    /// its maintenance, and
+    /// [spec 6](../../../../docs/spec/06-engine-architecture.md#projections)
+    /// spends that fact on excusing the file from checks. It is not a fact
+    /// about whether the corpus holds the document, and no reader of an index
+    /// asks the first question.
     pub fn documents(&self) -> Vec<Document<'a>> {
         self.census
             .rows
@@ -225,11 +254,10 @@ impl<'a> Surface<'a> {
             .collect()
     }
 
-    /// One census row as a document, and `None` for a row that carries no kind.
+    /// One census row as a document, and `None` for a row that the graph holds
+    /// as no node.
     fn of(&self, row: &'a Row) -> Option<Document<'a>> {
-        let Outcome::Typed { kind, derivation } = &row.outcome else {
-            return None;
-        };
+        let (kind, derivation) = row.outcome.node()?;
         let document = row.document.as_ref()?;
         Some(Document {
             path: &row.path,
