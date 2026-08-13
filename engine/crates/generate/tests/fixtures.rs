@@ -394,12 +394,14 @@ fn every_output_carries_its_own_marker() {
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
-/// is what a prose edit must not change. Two files are written. The descriptor
+/// is what a prose edit must not change. Three files are written. The descriptor
 /// sits at the path Q14 fixes, and the index of the specification shelf sits at
 /// the path this repository's overlay declares. That second one is the list the
-/// root README used to carry by hand. The package declares indexes for two
-/// shelves this tree holds no document on, so those two produce a reason rather
-/// than a file, and the register produces a third.
+/// root README used to carry by hand. The third is the index of the decisions
+/// shelf, which the package has declared since the first-run walkthrough and
+/// which produced a reason rather than a file until #124 filled that shelf. The
+/// package still declares an index for one shelf this tree holds no document on,
+/// so that one produces a reason, and the register produces a second.
 ///
 /// **The order is the plan's order, and it is asserted.** A declared projection
 /// is planned before the engine-defined descriptor, so a taxonomy that declares
@@ -410,7 +412,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_two_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_three_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -436,14 +438,19 @@ fn this_repository_generates_its_two_artifacts_and_accounts_for_the_rest() {
     let paths: Vec<&str> = plan.outputs.iter().map(|o| o.path.as_str()).collect();
     assert_eq!(
         paths,
-        vec!["docs/spec/README.md", descriptor::PATH],
-        "this repository writes the specification index and the descriptor, in that order"
+        vec![
+            "docs/decisions/README.md",
+            "docs/spec/README.md",
+            descriptor::PATH
+        ],
+        "this repository writes the decisions index, the specification index and \
+         the descriptor, in that order"
     );
-    // Two declared shelves that hold no document, and the register. Nothing is
+    // One declared shelf that holds no document, and the register. Nothing is
     // passed over: a projection that produced no file states a reason.
     assert_eq!(
         plan.unwritten.len(),
-        3,
+        2,
         "a projection produced neither a file nor a reason"
     );
     for unwritten in &plan.unwritten {

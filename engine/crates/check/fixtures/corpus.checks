@@ -1,24 +1,25 @@
-77 seen, 36 classified, 36 checked, 460 check instances
-      1 generated, held to regeneration by `headwater generate --check`
-     26 skipped: this document writes no fragment into itself
+99 seen, 57 classified, 57 checked, 630 check instances
+      2 generated, held to regeneration by `headwater generate --check`
+     47 skipped: this document writes no fragment into itself
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
 adoption
   1 pairs open, 0 closed, holding 1 finding, in 1 task
   AD-1 1 open, 0 closed, holding 1 finding, owner the specification authors, until 2027-06-30
     The one entry of `.ste-lint-baseline.json` that this corpus still owes. The baseline held two when the linter retired. The other named a semicolon inside a block quotation, which the engine does not report at all, because the parser hands a quoted block to no lexical rule
-36 documents in the read set
-     36 instances of facet.required.missing
-     36 instances of facet.value.not_permitted
-     36 instances of identifier.pattern.not_met
-     36 instances of shelf.placement_is_primary
+57 documents in the read set
+     57 instances of facet.required.missing
+     57 instances of facet.value.not_permitted
+     57 instances of identifier.pattern.not_met
+     57 instances of shelf.placement_is_primary
      86 instances of relation.reciprocity.missing
-    114 instances of relation.endpoint.not_permitted
+    137 instances of relation.endpoint.not_permitted
      15 instances of relation.participation.overdue
-     17 instances of voice.forbidden_construction
+     38 instances of voice.forbidden_construction
      16 instances of language.controlled.not_met
      16 instances of language.retired_term.used
      16 instances of language.source_form.not_met
-     36 instances of link.fragment.unresolved
+     21 instances of section.required.missing
+     57 instances of link.fragment.unresolved
 suppressions
   4 findings hidden by 4 directives
       4 false_positive
@@ -59,12 +60,15 @@ rules, and for each the scope that binds it
   control.mechanism.unimplemented
     taxonomy scope, the resolved taxonomy, and no document
 register
-  18 obligations: 18 verified, 0 gap, 0 unverifiable, 0 with no disposition
-      7 high, 7 verified
-      6 medium, 6 verified
+  21 obligations: 18 verified, 2 gap, 1 unverifiable, 0 with no disposition
+      8 high, 7 verified
+      8 medium, 6 verified
       5 low, 5 verified
   OB-LANG-1 verified, 3 findings escaped under it
   OB-LANG-3 verified, 1 finding escaped under it, 1 finding is migration-pending under it
+  OB-DR-1 gap, owner the decision-record entry, target a change-scoped rule that reads the prior version, which spec 12 already supplies as `needs_prior`
+  OB-DR-2 gap, owner the decision-record entry, target a rule over state dwell time, which `taxonomy audit` already measures and no check reads
+  OB-DR-3 unverifiable, To count the decisions in a document is to reason about what the prose asserts, which spec 1 forswears. The shelf is homogeneous and the section contract requires one `Decision` heading, and a second decision under that heading is invisible to both
   18 controls
      18 posture advisory
      18 acts detective

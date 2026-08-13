@@ -87,6 +87,10 @@ facets:
     required: false
     type: integer
     volatility: stable
+  title:
+    required: false
+    type: string
+    volatility: stable
 regimes:
   lifecycle:
     standard:
@@ -176,6 +180,9 @@ kinds:
         - Context
         - Decision
         - Consequences
+    facets:
+      require:
+        - title
   specification:
     is_a: governed_document
     purpose: behavior
@@ -230,6 +237,21 @@ kinds:
           severity: warn
           rationale: "an evaluation that no register cites closed nothing"
     voice: narrative
+  obligation_record:
+    facets:
+      require:
+        - title
+    identifier:
+      scheme: obligation_record_id
+    is_a: governed_document
+    lifecycle: standard
+    purpose: obligation
+    sections:
+      require:
+        - Context
+        - Obligation
+        - Discharge
+    voice: declarative
   obligation_register:
     facets:
       require:
@@ -350,6 +372,16 @@ relations:
     reciprocal: required
     to:
       - evaluation
+  discharges:
+    cardinality: many
+    created_by: hook
+    family: evidence
+    from:
+      - evaluation
+    inverse: discharged_by
+    reciprocal: required
+    to:
+      - obligation_record
 shelves:
   decisions:
     path: "docs/decisions/**"
@@ -363,6 +395,10 @@ shelves:
     homogeneous: true
     kind: evaluation
     path: "docs/evaluations/**"
+  obligations:
+    homogeneous: true
+    kind: obligation_record
+    path: "docs/obligations/**"
   reviews:
     discriminator: doc_type
     homogeneous: false
@@ -388,6 +424,10 @@ identifier_schemes:
     allocation: minted-once
     namespace: HW
     pattern: "EVAL-{namespace}-{slug}"
+  obligation_record_id:
+    allocation: reconcile-first
+    namespace: repo
+    pattern: "OBL-{namespace}-{seq:04d}"
   register_id:
     allocation: minted-once
     namespace: HW
@@ -528,6 +568,35 @@ obligations:
     class: cohesion
     prevents: process.traceability
     severity: high
+  OB-DR-1:
+    class: cohesion
+    disposition:
+      gap:
+        owner: "the decision-record entry"
+        target: "a change-scoped rule that reads the prior version, which spec 12 already supplies as `needs_prior`"
+    prevents: content.inconsistent
+    rationale: "A record that changed after the decision was taken cannot be cited, because the reader of the citation and the writer of it read two different texts. Every later document that names the decision inherits the drift silently"
+    severity: high
+    statement: "An accepted decision record is amended by succession and never by edit"
+  OB-DR-2:
+    class: cohesion
+    disposition:
+      gap:
+        owner: "the decision-record entry"
+        target: "a rule over state dwell time, which `taxonomy audit` already measures and no check reads"
+    prevents: process.maintenance
+    rationale: "A log that fills with proposals is the failure this tradition is most often reported to have, and a proposal nobody ruled on is indistinguishable from a decision nobody wrote"
+    severity: medium
+    statement: "A proposed decision record reaches acceptance or rejection"
+  OB-DR-3:
+    class: coherence
+    disposition:
+      unverifiable:
+        reasoning: "To count the decisions in a document is to reason about what the prose asserts, which spec 1 forswears. The shelf is homogeneous and the section contract requires one `Decision` heading, and a second decision under that heading is invisible to both"
+    prevents: content.unclear
+    rationale: "Two decisions in one record cannot be superseded apart, so the first of them to fall takes the second with it or keeps it alive under a heading nobody reads"
+    severity: medium
+    statement: "A decision record records one decision"
 controls:
   CT-COV-1:
     mechanism: "phase:census.classification"
