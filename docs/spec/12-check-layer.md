@@ -77,6 +77,10 @@ Three rules make the declared subset of [Q13](09-decisions.md#q13--linkml-and-sh
 
 That last rule follows practice rather than invention. An OGC API implementation serves the conformance classes that it supports, and a listed class obliges the whole capability behind it. Headwater owes one thing more, because its check registry comes from an adopter's taxonomy rather than from a published universe. An outside reader cannot compute the complement, so the export states both halves ([evaluation](../evaluations/graph-export-and-federation.md)).
 
+The differential is a test rather than a rule, and it lives at `engine/crates/generate/tests/differential.rs`. It runs a stock JSON Schema validator over the emitted schema. It compares the result with the finding set of this engine, document for document. The corpus that it reads breaks each claimed family on purpose. Two empty sets agree over every emitter, so a differential over a corpus that violates nothing establishes nothing.
+
+That test took two constructs out of the JSON Schema emitter. Each one arrived with an inverted meaning, which the third rule above refuses. A kind that forbids a facet became `not`, and no check reports a document that states a forbidden facet. A facet with a declared value set became a bare `enum`, and the check declines a value that it cannot read as a scalar. Each construct rejected a document that this engine accepts. The first one is gone and the loss set records the drop. The second one now carries a guard that admits what the check admits.
+
 ## Scope — the declaration everything else rests on
 
 Every check declares what it needs to see.

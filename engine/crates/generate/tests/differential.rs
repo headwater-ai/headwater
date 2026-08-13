@@ -291,7 +291,7 @@ fn evaluate(root: &Value, schema: &Value, instance: &Value, at: &str, out: &mut 
                 for property in properties.entries() {
                     let name = property.key.value.as_str();
                     if let Some(held) = member(instance, name) {
-                        constrain(root, &property.value.value, held, at, name, out);
+                        constrain(&property.value.value, held, at, name, out);
                     }
                 }
             }
@@ -350,7 +350,7 @@ fn evaluate(root: &Value, schema: &Value, instance: &Value, at: &str, out: &mut 
 /// `facet.value.not_permitted`, and so is the guarded form the emitter writes.
 /// The guard is honored here rather than assumed: a composite passes the first
 /// branch, which is what the native check does when it cannot read a scalar.
-fn constrain(root: &Value, schema: &Value, held: &Value, at: &str, facet: &str, out: &mut Vec<Record>) {
+fn constrain(schema: &Value, held: &Value, at: &str, facet: &str, out: &mut Vec<Record>) {
     let Some(members) = schema.as_map() else {
         return;
     };
@@ -376,7 +376,7 @@ fn constrain(root: &Value, schema: &Value, held: &Value, at: &str, facet: &str, 
             "anyOf" => {
                 let any = seq(value).iter().any(|branch| {
                     let mut probe = Vec::new();
-                    constrain(root, branch, held, at, facet, &mut probe);
+                    constrain(branch, held, at, facet, &mut probe);
                     probe.is_empty()
                 });
                 if !any {
@@ -424,9 +424,7 @@ fn enum_holds(value: &Value, held: &Value) -> bool {
         // saying so truthfully here is what lets the adversarial test see it.
         return false;
     };
-    seq(value)
-        .iter()
-        .any(|member| text(member) == actual.text)
+    seq(value).iter().any(|member| text(member) == actual.text)
 }
 
 fn type_holds(value: &Value, instance: &Value) -> bool {
