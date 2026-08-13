@@ -33,6 +33,23 @@
 //! obligations are verified *by severity*. Spec 4's own worked finding carries
 //! `error` against `OB-014`, which carries `medium`, so the two were never one
 //! field.
+//!
+//! # Fixability is the patch, and it stopped being a field
+//!
+//! Spec 4 lists fixability among the members and
+//! [spec 12](../../../../docs/spec/12-check-layer.md#fixability) says what may
+//! carry it: "A check may return a patch alongside a finding." Until `--fix`
+//! there was no patch, so a `fixable: bool` stood in for one, and three files
+//! said in a comment that a flag with nothing behind it claims a capability the
+//! engine does not have.
+//!
+//! [`crate::Patch`] is the thing itself, and [`Finding::fixable`] reads it. A
+//! second field beside it could disagree with it, and
+//! [OBL-repo-0087](../../../../docs/obligations/0087-fixable-has-two-readings-inside-one-engine.md)
+//! is the record of that disagreement already standing between two rules. The
+//! reading this engine now carries is "the engine will fix it". The other
+//! reading — that the defect has a mechanical remedy — is what the severity
+//! already says, on the bar `CLAUDE.md` states.
 
 /// What a check says about a finding. Whether it blocks is the control's
 /// business ([spec 12](../../../../docs/spec/12-check-layer.md#severity-is-the-checks-posture-is-the-controls)).
@@ -70,12 +87,19 @@ pub struct Finding {
     pub message: String,
     /// What to do. Never empty: a finding that states no remedy is a complaint.
     pub remediation: String,
-    /// Whether a fix is mechanical and total
+    /// The correction this engine will write under `check --fix`, and nothing
+    /// where it will write none
     /// ([spec 12](../../../../docs/spec/12-check-layer.md#fixability)).
-    pub fixable: bool,
+    pub patch: Option<crate::Patch>,
 }
 
 impl Finding {
+    /// Whether a patch rides with this finding. See the module comment: this is
+    /// read from the patch rather than declared beside it.
+    pub fn fixable(&self) -> bool {
+        self.patch.is_some()
+    }
+
     /// The sort key [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
     /// fixes: path, line, check id, message.
     ///
@@ -101,7 +125,7 @@ impl Finding {
         let _ = writeln!(
             out,
             "  fix{}: {}",
-            if self.fixable { " (mechanical)" } else { "" },
+            if self.fixable() { " (mechanical)" } else { "" },
             self.remediation
         );
         out
@@ -143,7 +167,7 @@ mod tests {
             column: 1,
             message: "m".into(),
             remediation: "r".into(),
-            fixable: false,
+            patch: None,
         }
     }
 

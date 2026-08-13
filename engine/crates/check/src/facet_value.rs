@@ -156,7 +156,7 @@ impl DocumentCheck for Values {
                         view.path(),
                         values.join(", ")
                     ),
-                    fixable: false,
+                    patch: None,
                 })
             })
             .collect();

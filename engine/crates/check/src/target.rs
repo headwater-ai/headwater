@@ -136,7 +136,7 @@ impl EdgeCheck for Targets<'_> {
             // correct outcome: the repair is another identifier, a new
             // document, a kind on a document that has none, or the deletion of
             // the entry, and only the author knows which of the four was meant.
-            fixable: false,
+            patch: None,
         })
     }
 }

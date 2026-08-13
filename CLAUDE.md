@@ -34,6 +34,8 @@ Every rule above is a check that `headwater check` runs, and the taxonomy of thi
 
     git config core.hooksPath .githooks
 
+`headwater check --fix` writes the corrections the engine can derive without judgment, in your working tree, and prints what it wrote on standard error. Today that is a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal link. It leaves every finding whose remedy is a rewrite, and it refuses a file rather than half-writing one. Read the diff before you commit it.
+
 The hook needs a built engine and fails open with one printed line when there is none. Build it once with `cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml`. The CI job builds the engine and runs the same check on every pull request, so an unbuilt clone delays a finding rather than losing it. Run `headwater check` yourself to read the advisory findings, which the hook does not print.
 
 **The escape hatches, and what each one means.** A directive on the offending block marks a deliberate exception, with the reason in the source where a reader will find it:

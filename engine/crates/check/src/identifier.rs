@@ -498,7 +498,7 @@ impl DocumentCheck for Identifier {
                 view.path(),
                 template.render()
             ),
-            fixable: false,
+            patch: None,
         })
     }
 }

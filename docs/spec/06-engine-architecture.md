@@ -231,8 +231,9 @@ A tool acquires a security obligation when it publishes a claim that a boundary 
 ### CLI
 
 ```
-headwater check      [--strict] [--no-cache] [--now <date>] [--read-set <path>]
-                     [--register <path>] [--format text|json|sarif|markdown]
+headwater check      [--strict] [--fix] [--no-cache] [--now <date>]
+                     [--read-set <path>] [--register <path>]
+                     [--format text|json|sarif|markdown]
 headwater gate       --read-set <path> [--now <date>]
 headwater generate   [--check]
 headwater new        <kind> --title <text> [--relates <relation>=<identifier>]
@@ -251,6 +252,8 @@ headwater probe      [--tier regression|campaign] [--arm present|absent] [--cate
 ```
 
 **This grammar is a statement of fact about the engine, and a name it declares either runs or waits.** Every verb the engine ships is above. A name that the engine has not built stays here when something nameable would make it real. The engine then says what the name waits on when a caller types it. `query <expression>` is such a name, because no document states what an expression is. The verb ships the day one does. The same reading covers `coverage` and `probe`. It covers `taxonomy diff`, `taxonomy migrate` and `taxonomy audit`, and the five export targets that no consumer has asked for. A name that nothing could make real has no place here, and `--changed-only` is the one such name this grammar carried. The test between the two is not how far away the work is. It is whether any document or any consumer could turn the name into a verb that runs.
+
+**`--fix` writes the patch that rides with a finding, and the report a caller reads is the run after the write.** A finding carries a patch only under the [fixability bar](12-check-layer.md#fixability). So the flag decides no verdict, and it reaches no finding that carries no patch. It reaches no suppressed finding either, because the runner filters before a reader or a writer sees the list. Every patch is held against the bytes it names, and every result is read back. A document whose shape the engine guessed wrong is refused with nothing written. A refusal is not a finding and no flag softens one: the verb was asked to write and did not. The account of what was written goes to standard error, because `--format` puts one artifact on standard output.
 
 **`new` is the one verb that writes a document, and each of its three flags carries a rule.** `--title` is required, because the file name and the facet in the `name` role both come from it and the engine invents neither. `--now` injects the clock that the two date facets take, on the terms [spec 12](12-check-layer.md#determinism-concretely) fixes for a check. `--relates` names a relation and the identifier at the other end, and it is repeatable. The verb refuses a relation that the taxonomy assigns to another creator, an end that the relation forbids, and a target that resolves to nothing. Where reciprocity is required, it writes the far half into the target document. [Spec 3](03-authoring-and-lifecycle.md#templates-and-scaffolding) states what it derives and what it leaves to a person.
 

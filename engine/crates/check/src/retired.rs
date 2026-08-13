@@ -136,6 +136,29 @@ impl DocumentCheck for Retired {
                 if !crate::voice::contains_word(&text, &term.term) {
                     continue;
                 }
+                // The term as the author wrote it, which is what a patch has to
+                // replace and what decides the case the replacement takes. The
+                // match above was over the lowered text, so an offset into it
+                // is an offset into the authored text exactly when lowering
+                // moved no byte. It does move one for a handful of characters
+                // outside this corpus, and a patch is the irreversible half, so
+                // the guard is a length rather than an assumption.
+                let written = match text.len() == sentence.authored.len() {
+                    false => None,
+                    true => crate::voice::word_at(&text, &term.term)
+                        .and_then(|at| sentence.authored.get(at..at + term.term.len()))
+                        .map(str::to_string),
+                };
+                let patch = match (&written, &term.replacement) {
+                    (Some(written), Some(replacement)) => crate::patch::substitution(
+                        view.path(),
+                        body,
+                        &sentence,
+                        written,
+                        &crate::patch::matching_case(written, replacement),
+                    ),
+                    _ => None,
+                };
                 findings.push(Finding {
                     rule: self::RULE,
                     severity: match term.replacement {
@@ -156,8 +179,10 @@ impl DocumentCheck for Retired {
                     },
                     // Spec 2 decides this, and it is the one place in the engine
                     // where a taxonomy entry rather than a rule says whether the
-                    // fix is mechanical.
-                    fixable: term.replacement.is_some(),
+                    // fix is mechanical. An entry with a replacement whose term
+                    // this engine cannot place in the source carries the same
+                    // remediation prose and no patch.
+                    patch,
                 });
             }
         }

@@ -77,6 +77,7 @@
 //! corpus can tell a scaffolded edge from a hand-typed one.
 
 pub mod declared;
+pub mod fix;
 pub mod write;
 
 use headwater_census::census::Census;

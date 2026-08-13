@@ -124,7 +124,16 @@ impl DocumentCheck for Placement {
                  and this document restates it as `{facet}: {value}`"
             ),
             remediation: format!("remove `{facet}` from the front matter of {}", view.path()),
-            fixable: true,
+            // No patch, and this rule used to claim one. The remedy is
+            // mechanical — spec 12 puts "normalize front-matter key order"
+            // among its own examples — and the engine does not write it. What
+            // [`crate::Patch`] carries is what `check --fix` will do, so the
+            // claim goes with the capability. A deletion inside front matter
+            // needs a read-back guard over a mapping, and the two shapes that
+            // ship guard a run of prose and a `relations:` block.
+            // [OBL-repo-0103](../../../../docs/obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md)
+            // holds the remainder.
+            patch: None,
         })
     }
 }

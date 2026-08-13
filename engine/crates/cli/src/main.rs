@@ -65,9 +65,9 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 const USAGE: &str = "\
-headwater check              [--strict] [--no-cache] [--now <date>] [--read-set <path>]
-                             [--register <path>] [--format text|json|sarif|markdown]
-                             [--root <path>]
+headwater check              [--strict] [--fix] [--no-cache] [--now <date>]
+                             [--read-set <path>] [--register <path>]
+                             [--format text|json|sarif|markdown] [--root <path>]
 headwater gate               --read-set <path> [--now <date>] [--root <path>]
 headwater route              <task description> [--budget <n>] [--root <path>]
 headwater explain            <path|identifier> [--root <path>]
@@ -131,6 +131,15 @@ headwater taxonomy resolve   [--check] [--root <path>]
   --strict       `check` only: exit non-zero when a finding is an error. Without
                  it the run is advisory and always exits 0, which is the default
                  spec 6 fixes.
+  --fix          `check` only: write the patch that rides with a finding, in
+                 this working tree. A finding carries one only when the fix is
+                 mechanical and total, and a finding an author suppressed
+                 carries none. Every patch is held against the bytes it names
+                 and the result is read back before it lands, so a file whose
+                 shape this engine guessed wrong is refused with nothing
+                 written. The report that follows is the run after the write,
+                 and the account of what was written goes to standard error.
+                 It exits non-zero on a refusal.
   --no-cache     `check` only: read and write no cache, and evaluate every
                  instance. This run and a cached one write the same bytes to
                  standard output, and a difference between them is a defect in
@@ -211,6 +220,7 @@ fn main() -> ExitCode {
     let mut arguments = std::env::args().skip(1);
     let mut strict = false;
     let mut check_only = false;
+    let mut fixing = false;
     let mut cached = true;
     let mut now: Option<Date> = None;
     let mut read_set: Option<PathBuf> = None;
@@ -233,6 +243,7 @@ fn main() -> ExitCode {
         match argument.as_str() {
             "--strict" => strict = true,
             "--check" => check_only = true,
+            "--fix" => fixing = true,
             "--no-cache" => cached = false,
             "--now" => match arguments.next().as_deref().map(Date::parse) {
                 Some(Some(date)) => now = Some(date),
@@ -330,7 +341,18 @@ fn main() -> ExitCode {
 
     let verb: Vec<&str> = words.iter().map(String::as_str).collect();
     match verb.as_slice() {
-        ["check"] => check(&root, strict, cached, now, read_set, register_out, format),
+        ["check"] => check(
+            &root,
+            Asked {
+                strict,
+                cached,
+                fixing,
+                now,
+                read_set,
+                register_out,
+                format,
+            },
+        ),
         ["gate"] => gate(&root, read_set, now),
         ["route"] => fail("`route` takes a task description. Try `headwater route \"add rate limiting to the ingest API\"`"),
         ["route", task @ ..] => route(&root, &task.join(" "), budget),
@@ -574,6 +596,22 @@ fn load(root: &Path) -> Result<Loaded, ExitCode> {
 }
 
 impl Loaded {
+    /// What a run of the checks is held against. One constructor, because a
+    /// second one is where two runs over one tree start to differ, and
+    /// `check --fix` runs the checks twice on purpose.
+    fn declared(&self) -> Declared<'_> {
+        Declared {
+            lock: &self.lock.digest,
+            taxonomy: &self.taxonomy,
+            shape: &self.shape,
+            relations: &self.relations,
+            config: &self.config,
+            register: &self.register,
+            adoption: self.lock.adoption.as_ref(),
+            source: headwater_lock::LOCK,
+        }
+    }
+
     fn surface(&self) -> Surface<'_> {
         Surface::over(
             &self.census,
@@ -1096,15 +1134,94 @@ fn gate(root: &Path, read_set: Option<PathBuf>, now: Option<Date>) -> ExitCode {
     }
 }
 
-fn check(
+/// `headwater check --fix`: write the patches, then run the checks again.
+///
+/// [Spec 12](../../../../docs/spec/12-check-layer.md#fixability) fixes what may
+/// be written and [`headwater_scaffold::fix`] carries the guards. This function
+/// is the shell: it takes the patches of one run, composes them, writes what
+/// composed, and hands back what refused.
+///
+/// **The report a caller reads is the run after the fix**, which is why this
+/// happens before the run below rather than after it. A fix that produced a
+/// document the engine's own checks reject is a defect in the fix, and a report
+/// from before the write would hide it for exactly one run.
+///
+/// It writes to standard error. `--format` puts one artifact on standard
+/// output, and a line about a file this run wrote is not part of that artifact.
+fn fix(
     root: &Path,
+    ctx: &Context,
+    cached: bool,
+) -> Result<Vec<headwater_scaffold::fix::Refused>, ExitCode> {
+    let loaded = load(root)?;
+    let mut cache = match cached {
+        true => Cache::at(root, &loaded.lock.digest),
+        false => Cache::disabled(),
+    };
+    let run = headwater_check::run(
+        &loaded.census,
+        &loaded.graph,
+        &loaded.declared(),
+        ctx,
+        &mut cache,
+    );
+    cache.write(root);
+
+    // A suppressed finding is not in this list, which is the author asking for
+    // the text to stand. The runner filters, and a fix reads what a reader
+    // reads.
+    let patches: Vec<headwater_check::Patch> = run
+        .findings
+        .iter()
+        .filter_map(|finding| finding.patch.clone())
+        .collect();
+    let composed = headwater_scaffold::fix::compose(root, &patches);
+    if let Err(refusal) = headwater_scaffold::fix::apply(root, &composed.files) {
+        eprintln!("headwater: {refusal}");
+        return Err(ExitCode::FAILURE);
+    }
+    for file in &composed.files {
+        eprintln!(
+            "headwater: fixed {} ({} patch{})",
+            file.path,
+            file.applied,
+            match file.applied {
+                1 => "",
+                _ => "es",
+            }
+        );
+    }
+    if composed.is_empty() {
+        eprintln!("headwater: no finding of this run carries a patch");
+    }
+    Ok(composed.refused)
+}
+
+/// What one invocation of `check` was asked for.
+///
+/// One value rather than eight parameters. The flags decide what a run reads,
+/// what it writes and what it exits with, and a caller that passed two of them
+/// in the wrong order would compile.
+struct Asked {
     strict: bool,
     cached: bool,
+    fixing: bool,
     now: Option<Date>,
     read_set: Option<PathBuf>,
     register_out: Option<PathBuf>,
     format: Option<String>,
-) -> ExitCode {
+}
+
+fn check(root: &Path, asked: Asked) -> ExitCode {
+    let Asked {
+        strict,
+        cached,
+        fixing,
+        now,
+        read_set,
+        register_out,
+        format,
+    } = asked;
     // The vocabulary is decided before anything is read, so a run that would
     // refuse the flag refuses it before it walks a corpus. `export --format`
     // names an emitter target and this names an output format: two lists, two
@@ -1133,6 +1250,17 @@ fn check(
             return ExitCode::FAILURE;
         }
     };
+    // The write, and then the read. See `fix` above: the report below is the
+    // state after the patches landed, so a fix that produced a document these
+    // checks reject reports it on the same run rather than on the next one.
+    let refused = match fixing {
+        false => Vec::new(),
+        true => match fix(root, &ctx, cached) {
+            Ok(refused) => refused,
+            Err(code) => return code,
+        },
+    };
+
     let loaded = match load(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
@@ -1142,11 +1270,7 @@ fn check(
         consumer: _,
         census: taken,
         graph,
-        shape,
-        taxonomy,
-        relations: declarations,
-        register,
-        config,
+        ..
     } = &loaded;
 
     // Phase B. The cache is keyed on the lock digest among other things, so a
@@ -1156,22 +1280,7 @@ fn check(
         true => Cache::at(root, &lock.digest),
         false => Cache::disabled(),
     };
-    let run = headwater_check::run(
-        taken,
-        graph,
-        &Declared {
-            lock: &lock.digest,
-            taxonomy,
-            shape,
-            relations: declarations,
-            config,
-            register,
-            adoption: lock.adoption.as_ref(),
-            source: headwater_lock::LOCK,
-        },
-        &ctx,
-        &mut cache,
-    );
+    let run = headwater_check::run(taken, graph, &loaded.declared(), &ctx, &mut cache);
     cache.write(root);
 
     // A run in a vocabulary that is not the terminal's. Spec 6 lists four
@@ -1259,6 +1368,25 @@ fn check(
     // `--no-cache` and a cached run write the same bytes to standard output,
     // and a line here would be the one thing that made them differ.
     eprint!("{}", run.cache.render());
+
+    // A refusal is not a finding, so no `--strict` softens it. It says this
+    // verb was asked to write and did not, and a run that swallowed that would
+    // leave a caller believing a corpus was fixed.
+    if !refused.is_empty() {
+        eprintln!(
+            "headwater: {} file{} refused the patch it was offered, and nothing was written to \
+             any of them:",
+            refused.len(),
+            match refused.len() {
+                1 => "",
+                _ => "s",
+            }
+        );
+        for refusal in &refused {
+            eprintln!("  {refusal}");
+        }
+        return ExitCode::FAILURE;
+    }
 
     if strict && run.has_errors() {
         return ExitCode::FAILURE;

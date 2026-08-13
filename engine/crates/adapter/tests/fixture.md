@@ -1,6 +1,6 @@
 ## `headwater check`
 
-41 findings, 23 of them errors across 22 of 25 documents, against `headwater/fixture` 1.0.0 at `df65f944066ea09a96b442765fec1a1d98dfe025eda3dc420882edb5ae5cd310`, evaluated at 2026-08-12.
+42 findings, 24 of them errors across 22 of 25 documents, against `headwater/fixture` 1.0.0 at `df65f944066ea09a96b442765fec1a1d98dfe025eda3dc420882edb5ae5cd310`, evaluated at 2026-08-12.
 
 | Severity | Where | Rule | Finding |
 |---|---|---|---|
@@ -22,11 +22,12 @@
 | error | `check/spec/07-prose-defects.md:25` | `language.controlled.not_met` | `ste_house` admits no contraction, and this sentence writes `doesn't` |
 | error | `check/spec/07-prose-defects.md:27` | `language.controlled.not_met` | `ste_house` declares the tag `en-US`, and this sentence writes `behaviour` |
 | warn | `check/spec/07-prose-defects.md:29` | `language.controlled.not_met` | `ste_house` admits no semicolon in running prose, and this sentence writes one |
-| error | `check/spec/07-prose-defects.md:35` | `language.retired_term.used` | `ste_house` retires `reference system`, and this sentence writes it: the corpus renamed it |
-| warn | `check/spec/07-prose-defects.md:37` | `language.retired_term.used` | `ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives |
-| error | `check/spec/07-prose-defects.md:48` | `language.source_form.not_met` | `ste_house` writes one paragraph on one line, and this line continues the paragraph above |
-| error | `check/spec/07-prose-defects.md:49` | `language.source_form.not_met` | `ste_house` writes one paragraph on one line, and this line continues the paragraph above |
-| error | `check/spec/07-prose-defects.md:53` | `link.fragment.unresolved` | `#no-such-section` names no heading of this document |
+| error | `check/spec/07-prose-defects.md:39` | `language.controlled.not_met` | `ste_house` admits no contraction, and this sentence writes `doesn't` |
+| error | `check/spec/07-prose-defects.md:43` | `language.retired_term.used` | `ste_house` retires `reference system`, and this sentence writes it: the corpus renamed it |
+| warn | `check/spec/07-prose-defects.md:45` | `language.retired_term.used` | `ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives |
+| error | `check/spec/07-prose-defects.md:56` | `language.source_form.not_met` | `ste_house` writes one paragraph on one line, and this line continues the paragraph above |
+| error | `check/spec/07-prose-defects.md:57` | `language.source_form.not_met` | `ste_house` writes one paragraph on one line, and this line continues the paragraph above |
+| error | `check/spec/07-prose-defects.md:61` | `link.fragment.unresolved` | `#no-such-section` names no heading of this document |
 | error | `check/spec/09-contract-missing.md` | `section.required.missing` | `decision_record` requires the section `Decision`, and no heading of this document says so |
 | warn | `check/spec/10-suppressed.md:27` | `language.controlled.not_met` | `ste_house` holds prose to 25 words a sentence, and this one has 31 |
 | error | `check/spec/11-identifier-mismatch.md:2` | `identifier.pattern.not_met` | `SPEC-HW-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `HW-mismatch` is where the namespace `FIX` was expected |

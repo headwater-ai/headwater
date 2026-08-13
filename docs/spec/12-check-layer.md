@@ -221,6 +221,30 @@ A check may return a patch alongside a finding. The rule for whether it may retu
 
 To regenerate a stale projection, to add a missing reciprocal link, to normalize front-matter key order, to correct the format of an identifier: these are mechanical. To rewrite a section to satisfy a contract, to choose a summary, to resolve a conflict between two live decisions: these are not. Those carry remediation prose instead. A plausible automatic fix for them would be worse than none, because it would be applied unread.
 
+**Fixability is the patch, and never a second field beside it.** The bar above is a test over a defect. `fixable` in a report answers a narrower question: whether `headwater check --fix` writes this correction. A finding is fixable when a patch rides with it, and two values cannot disagree where there is one. [OBL-repo-0087](../obligations/0087-fixable-has-two-readings-inside-one-engine.md) records the reading that the flag lost. The severity carries that reading: a defect whose remedy is mechanical is an error, and the engine may still write nothing.
+
+**The bar is per finding rather than per rule.** One rule states two defects whose remedies differ. `doesn't` expands to `does not` and nothing else, and `it's` is `it is` or `it has`, so a reader of the sentence settles the second. Both are the same rule and the same severity, and only the first carries a patch.
+
+### What a patch may say
+
+Two shapes, and each one is a promise the engine can keep.
+
+- **A byte range of one file, and the text to put there.** The offsets come from the parser's spans, and the patch also states what the check believes lies at them.
+- **One edge half, as a relation and a target.** No offset, because the shape of the far document decides where the half goes.
+
+### A patch is written, read back, and refused
+
+A rewrite at a wrong offset corrupts a document rather than reporting a wrong line. The offsets of a prose patch come from a [correctness root](#the-correctness-roots). So the write path carries the promise the scaffolder makes for a reciprocal half. It assumes, it tests the assumption against the file, and a wrong assumption is a refusal with nothing written.
+
+Four guards, and every one of them holds one file at a time.
+
+1. The range opens after the front-matter block. A facet is a different writer with a different read-back.
+2. The bytes at the range are the bytes the check read.
+3. The range lies inside one run of this author's prose that reads every byte it spans. A code span, a link and a block quotation each reach a rule with the markup removed. So an offset taken from the text a reader sees can land early.
+4. The result parses again as the same document with the substitution in it. Every block keeps its kind, its quote depth and its runs, every run keeps its owner, and every link keeps its destination.
+
+The fourth guard is what makes the promise, and the first three are insurance. A patch that turned a word into markup changes the parse, and a patch inside a link's destination does the same. The parse is what the guard compares.
+
 ## Severity is the check's; posture is the control's
 
 A check reports severity. Whether that severity blocks is the **control's** business ([spec 4](04-assurance-model.md)), not the check's.

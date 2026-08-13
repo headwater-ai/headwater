@@ -147,7 +147,7 @@ impl DocumentCheck for Identity<'_> {
                 column: 0,
                 message: Problem::SourceHasNoIdentifier.to_string(),
                 remediation: self.mint(),
-                fixable: false,
+                patch: None,
             });
         }
 
@@ -191,7 +191,7 @@ fn finding(reported: &Reported, sourceless: bool, facet: &str) -> Option<Finding
              names a document by its identifier and a document with none can stand at neither end \
              of one"
         ),
-        fixable: false,
+        patch: None,
     })
 }
 
@@ -246,7 +246,7 @@ mod tests {
         ] {
             let bare = finding(&reported(defect.clone()), false, "id").expect("a finding");
             assert_eq!(bare.severity, Severity::Error, "{bare:#?}");
-            assert!(!bare.fixable, "{bare:#?}");
+            assert!(!bare.fixable(), "{bare:#?}");
             assert_eq!(bare.line, 2, "{bare:#?}");
             assert!(bare.remediation.contains("`id` key"), "{bare:#?}");
             assert!(!bare.message.contains("relations"), "{bare:#?}");

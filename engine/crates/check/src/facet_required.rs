@@ -120,7 +120,7 @@ impl DocumentCheck for Required {
                     "add `{facet}:` to the front matter of {}, with the value this document has",
                     view.path()
                 ),
-                fixable: false,
+                patch: None,
             })
             .collect();
         Outcome::failed(findings)

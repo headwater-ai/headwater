@@ -104,8 +104,8 @@ register
   relation.endpoint.not_permitted reaches OB-FIX-5, OB-FIX-17, and a finding names one obligation, so it names none
   identifier.claimed_twice reaches no obligation, so it names none
   coverage.document_unchecked reaches no obligation, so it names none
-42 findings
-     24 error
+43 findings
+     25 error
      18 warn
 
 instances
@@ -607,7 +607,7 @@ check/evaluations/eta.md:8:7 error
   fix: declare this relation between kinds `assesses` permits, or widen its `from` in the taxonomy; the document at that end is check/evaluations/eta.md
 check/evaluations/gamma.md:3:1 error
   shelf.placement_is_primary (OB-FIX-2): `evaluations` is homogeneous and carries the kind `evaluation`, and this document restates it as `doc_type: evaluation`
-  fix (mechanical): remove `doc_type` from the front matter of check/evaluations/gamma.md
+  fix: remove `doc_type` from the front matter of check/evaluations/gamma.md
 check/evaluations/gamma.md:9:7 error
   relation.reciprocity.missing (OB-FIX-1): `EVAL-FIX-gamma` declares `cited_by: SPEC-FIX-both-halves`, and `cites_evidence` requires both ends, so check/spec/00-both-halves.md owes `cites_evidence`
   fix (mechanical): add `cites_evidence: EVAL-FIX-gamma` under `relations:` in check/spec/00-both-halves.md
@@ -646,26 +646,29 @@ check/spec/07-prose-defects.md:23:1 warn
   fix: split the sentence, or move a clause into its own sentence
 check/spec/07-prose-defects.md:25:1 error
   language.controlled.not_met (OB-FIX-8): `ste_house` admits no contraction, and this sentence writes `doesn't`
-  fix: write `doesn't` out in full
+  fix (mechanical): write `does not`
 check/spec/07-prose-defects.md:27:1 error
   language.controlled.not_met (OB-FIX-8): `ste_house` declares the tag `en-US`, and this sentence writes `behaviour`
-  fix: write `behavior`
+  fix (mechanical): write `behavior`
 check/spec/07-prose-defects.md:29:1 warn
   language.controlled.not_met (OB-FIX-8): `ste_house` admits no semicolon in running prose, and this sentence writes one
   fix: split the sentence in two, and let each half state one thing
-check/spec/07-prose-defects.md:35:1 error
+check/spec/07-prose-defects.md:39:1 error
+  language.controlled.not_met (OB-FIX-8): `ste_house` admits no contraction, and this sentence writes `doesn't`
+  fix (mechanical): write `does not`
+check/spec/07-prose-defects.md:43:1 error
   language.retired_term.used (OB-FIX-22): `ste_house` retires `reference system`, and this sentence writes it: the corpus renamed it
   fix (mechanical): write `taxonomy`
-check/spec/07-prose-defects.md:37:1 warn
+check/spec/07-prose-defects.md:45:1 warn
   language.retired_term.used (OB-FIX-22): `ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives
   fix: rewrite the sentence without `robust`
-check/spec/07-prose-defects.md:48:1 error
+check/spec/07-prose-defects.md:56:1 error
   language.source_form.not_met (OB-FIX-21): `ste_house` writes one paragraph on one line, and this line continues the paragraph above
   fix: join this line to the line above, or end the paragraph there
-check/spec/07-prose-defects.md:49:1 error
+check/spec/07-prose-defects.md:57:1 error
   language.source_form.not_met (OB-FIX-21): `ste_house` writes one paragraph on one line, and this line continues the paragraph above
   fix: join this line to the line above, or end the paragraph there
-check/spec/07-prose-defects.md:53:32 error
+check/spec/07-prose-defects.md:61:32 error
   link.fragment.unresolved (OB-FIX-10): `#no-such-section` names no heading of this document
   fix: point it at a heading of check/spec/07-prose-defects.md, or write the heading it names
 check/spec/09-contract-missing.md error

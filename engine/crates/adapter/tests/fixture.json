@@ -222,7 +222,7 @@
       "column": 1,
       "message": "`evaluations` is homogeneous and carries the kind `evaluation`, and this document restates it as `doc_type: evaluation`",
       "remediation": "remove `doc_type` from the front matter of check/evaluations/gamma.md",
-      "fixable": true,
+      "fixable": false,
       "escape": "none"
     },
     {
@@ -376,8 +376,8 @@
       "line": 25,
       "column": 1,
       "message": "`ste_house` admits no contraction, and this sentence writes `doesn't`",
-      "remediation": "write `doesn't` out in full",
-      "fixable": false,
+      "remediation": "write `does not`",
+      "fixable": true,
       "escape": "none"
     },
     {
@@ -389,7 +389,7 @@
       "column": 1,
       "message": "`ste_house` declares the tag `en-US`, and this sentence writes `behaviour`",
       "remediation": "write `behavior`",
-      "fixable": false,
+      "fixable": true,
       "escape": "none"
     },
     {
@@ -405,11 +405,23 @@
       "escape": "none"
     },
     {
+      "rule": "language.controlled.not_met",
+      "severity": "error",
+      "obligation": "OB-FIX-8",
+      "path": "check/spec/07-prose-defects.md",
+      "line": 39,
+      "column": 1,
+      "message": "`ste_house` admits no contraction, and this sentence writes `doesn't`",
+      "remediation": "write `does not`",
+      "fixable": true,
+      "escape": "none"
+    },
+    {
       "rule": "language.retired_term.used",
       "severity": "error",
       "obligation": "OB-FIX-22",
       "path": "check/spec/07-prose-defects.md",
-      "line": 35,
+      "line": 43,
       "column": 1,
       "message": "`ste_house` retires `reference system`, and this sentence writes it: the corpus renamed it",
       "remediation": "write `taxonomy`",
@@ -421,7 +433,7 @@
       "severity": "warn",
       "obligation": "OB-FIX-22",
       "path": "check/spec/07-prose-defects.md",
-      "line": 37,
+      "line": 45,
       "column": 1,
       "message": "`ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives",
       "remediation": "rewrite the sentence without `robust`",
@@ -433,7 +445,7 @@
       "severity": "error",
       "obligation": "OB-FIX-21",
       "path": "check/spec/07-prose-defects.md",
-      "line": 48,
+      "line": 56,
       "column": 1,
       "message": "`ste_house` writes one paragraph on one line, and this line continues the paragraph above",
       "remediation": "join this line to the line above, or end the paragraph there",
@@ -445,7 +457,7 @@
       "severity": "error",
       "obligation": "OB-FIX-21",
       "path": "check/spec/07-prose-defects.md",
-      "line": 49,
+      "line": 57,
       "column": 1,
       "message": "`ste_house` writes one paragraph on one line, and this line continues the paragraph above",
       "remediation": "join this line to the line above, or end the paragraph there",
@@ -457,7 +469,7 @@
       "severity": "error",
       "obligation": "OB-FIX-10",
       "path": "check/spec/07-prose-defects.md",
-      "line": 53,
+      "line": 61,
       "column": 32,
       "message": "`#no-such-section` names no heading of this document",
       "remediation": "point it at a heading of check/spec/07-prose-defects.md, or write the heading it names",
@@ -778,7 +790,7 @@
     },
     {
       "path": "check/spec/07-prose-defects.md",
-      "digest": "sha256:b00708ea7ec9b3c649a542c20455d377fa6df0cb2248d66466097e3eeba74bd0"
+      "digest": "sha256:382ee8daa0b93c158b4452aec7a7545d6461ada2c15f7cab273c63facefccc1f"
     },
     {
       "path": "check/spec/08-contract-met.md",

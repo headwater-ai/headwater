@@ -176,7 +176,7 @@ impl Duplicate {
                     column,
                     message: message.clone(),
                     remediation: remediation.clone(),
-                    fixable: false,
+                    patch: None,
                 }
             })
             .collect()
@@ -230,7 +230,7 @@ mod tests {
 
         for finding in &found {
             assert_eq!(finding.severity, Severity::Error, "{finding:#?}");
-            assert!(!finding.fixable, "{finding:#?}");
+            assert!(!finding.fixable(), "{finding:#?}");
             // One sentence, and it names both documents wherever it is read.
             assert!(finding.message.contains("docs/spec/00-first.md"));
             assert!(finding.message.contains("docs/spec/04-twin.md"));
