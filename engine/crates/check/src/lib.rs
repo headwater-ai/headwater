@@ -84,6 +84,7 @@
 //! places. Turning them into findings needs an obligation for each class, which
 //! the base package does not declare, and #59 is where that lands.
 
+pub mod adoption;
 pub mod cache;
 pub mod context;
 pub mod coverage;
@@ -105,6 +106,7 @@ pub mod shape;
 pub mod suppression;
 pub mod voice;
 
+pub use adoption::Ledger;
 pub use cache::Cache;
 pub use context::{Context, Date};
 pub use coverage::Coverage;
@@ -170,6 +172,12 @@ pub struct Declared<'a> {
     pub relations: &'a Declarations,
     /// Obligations and controls: the path from a rule to what it serves.
     pub register: &'a Register,
+    /// The `adoption` block of the lock, where the lock declares one.
+    ///
+    /// It arrives as a mapping rather than as tasks because the lock does not
+    /// know what a rule is. [`crate::adoption::read`] turns it into tasks and
+    /// reports what it could not read.
+    pub adoption: Option<&'a headwater_yaml::Mapping>,
     /// Where the four above came from, as a path a reader can open.
     ///
     /// It is here because two rules of [`register`] are about the taxonomy
@@ -193,6 +201,7 @@ pub struct Run {
     /// What this run's authors suppressed, and what became of each directive.
     /// See [`suppression`]: the filter is the runner's, and a check never sees
     /// it.
+    pub adoption: Ledger,
     pub suppressions: Inventory,
     /// What each rule sees and what it serves, in [`RULES`] order. A rule that
     /// reaches no obligation is in this list too, because a rule that cannot
@@ -365,17 +374,30 @@ pub fn run(
     // obligation is stamped. So a cache holds what a check decided, an
     // inventory holds what a reader did not see, and the two cannot drift
     // ([`suppression`]).
-    let (declared_suppressions, refused) = suppression::declared(census, &RULES);
-    let (findings, suppressions) = suppression::apply(
+    // The adoption payload runs first, which is the precedence spec 4 fixes:
+    // waiver, then migration-pending, then suppression. A finding a task holds
+    // never reaches a directive, so the two inventories partition by the order
+    // of these two calls rather than by a rule checked afterwards.
+    let (declared_tasks, task_refusals) = match declared.adoption {
+        Some(block) => adoption::read(block, &RULES),
+        None => (Vec::new(), Vec::new()),
+    };
+    let (findings, adoption) = adoption::apply(
         finding::sorted(findings),
-        declared_suppressions,
-        refused,
+        declared_tasks,
+        task_refusals,
         ctx.now(),
     );
 
-    // After the filter, because what escaped is what an author hid from this
-    // report and the inventory is where that is recorded.
+    let (declared_suppressions, refused) = suppression::declared(census, &RULES);
+    let (findings, suppressions) =
+        suppression::apply(findings, declared_suppressions, refused, ctx.now());
+
+    // After both filters, because what escaped is what a reader of the findings
+    // list did not see there, and the two inventories are where that is
+    // recorded. They are counted apart so that the partition is checkable.
     register.escaped_from(declared.register, &suppressions);
+    register.pending_from(declared.register, &adoption);
 
     let read_set = ReadSet::of(
         declared.lock,
@@ -391,6 +413,7 @@ pub fn run(
         instances,
         coverage,
         findings,
+        adoption,
         suppressions,
         served,
         read_set,
@@ -471,6 +494,10 @@ impl Run {
         use std::fmt::Write;
         let mut out = String::new();
         out.push_str(&self.coverage.render());
+        // Spec 7 puts the count of open pairs "beside coverage", and spec 4
+        // says what it adds there: a payload that never shrinks is visible from
+        // the second run rather than at its expiry.
+        out.push_str(&self.adoption.render());
         // Spec 12 puts the read set here, "beside its coverage numbers". The
         // size is beside them and the union is an artifact of its own, because
         // a hash of every document is a thing a gate reads and a thing a

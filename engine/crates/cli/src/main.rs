@@ -69,6 +69,9 @@ headwater check              [--strict] [--no-cache] [--now <date>] [--read-set 
 headwater route              <task description> [--budget <n>] [--root <path>]
 headwater explain            <path|identifier> [--root <path>]
 headwater mcp                [--root <path>]
+headwater init               [--corpus <dir>] [--package <name>] [--root <path>]
+headwater infer              [--owner <name>] [--until <date>] [--write]
+                             [--now <date>] [--root <path>]
 headwater taxonomy validate  [--root <path>]
 headwater taxonomy resolve   [--check] [--root <path>]
 
@@ -81,6 +84,13 @@ headwater taxonomy resolve   [--check] [--root <path>]
   mcp                serve the reads above to an agent over the Model Context
                      Protocol, on standard input and output. It registers no
                      tool that writes.
+  init               scaffold the consumer declaration and the overlay for a
+                     repository that has neither, and print the questions that
+                     no tree answers. It refuses to overwrite a binding.
+  infer              report the debt this taxonomy raises over this corpus as
+                     an adoption payload: `(document, rule)` pairs under tasks
+                     that each carry an owner and an expiry. It prints the
+                     payload and writes nothing without `--write`.
   taxonomy validate  resolve the sources and report every rule of spec 2's
                      list, and what each one did not decide. Writes nothing.
   taxonomy resolve   write `.headwater/taxonomy.lock`. It is written only when
@@ -109,6 +119,19 @@ headwater taxonomy resolve   [--check] [--root <path>]
                  authored: every obligation with its disposition, every control
                  with its health, and what escaped under each.
   --budget <n>   `route` only: how many pointers it may offer. Five by default.
+  --owner <name>
+                 `infer` only: who owns the debt it proposes. Required with
+                 `--write`, because an owner is the field that ranks declared
+                 debt above a suppression and this engine will not invent one.
+  --until <date> `infer` only: the last day the tasks it proposes hold, as
+                 `YYYY-MM-DD`. Ninety days out by default.
+  --write        `infer` only: put the payload in the lock, which is committed
+                 and reviewed. Without it nothing is written.
+  --corpus <dir> `init` only: the corpus root to declare. Proposed from the
+                 tree by default.
+  --package <name>
+                 `init` only: the package to take. `headwater/standard` by
+                 default.
   --check        `taxonomy resolve` only: write nothing and exit non-zero when
                  the committed lock is not what the sources resolve to.
   --root <path>  the repository to read. Defaults to the working directory.
@@ -124,6 +147,11 @@ fn main() -> ExitCode {
     let mut register_out: Option<PathBuf> = None;
     let mut root: Option<PathBuf> = None;
     let mut budget: Option<usize> = None;
+    let mut write = false;
+    let mut owner: Option<String> = None;
+    let mut until: Option<Date> = None;
+    let mut corpus_root: Option<String> = None;
+    let mut package: Option<String> = None;
     let mut words: Vec<String> = Vec::new();
 
     while let Some(argument) = arguments.next() {
@@ -140,6 +168,24 @@ fn main() -> ExitCode {
                 Some(Ok(value)) if value > 0 => budget = Some(value),
                 Some(_) => return fail("--budget takes a whole number above zero"),
                 None => return fail("--budget names a number and none followed it"),
+            },
+            "--write" => write = true,
+            "--owner" => match arguments.next() {
+                Some(name) => owner = Some(name),
+                None => return fail("--owner names a person or a team and none followed it"),
+            },
+            "--corpus" => match arguments.next() {
+                Some(directory) => corpus_root = Some(directory),
+                None => return fail("--corpus names a directory and none followed it"),
+            },
+            "--package" => match arguments.next() {
+                Some(name) => package = Some(name),
+                None => return fail("--package names a package and none followed it"),
+            },
+            "--until" => match arguments.next().as_deref().map(Date::parse) {
+                Some(Some(date)) => until = Some(date),
+                Some(None) => return fail("--until takes a date written `YYYY-MM-DD`"),
+                None => return fail("--until names a date and none followed it"),
             },
             "--register" => match arguments.next() {
                 Some(path) => register_out = Some(PathBuf::from(path)),
@@ -180,6 +226,8 @@ fn main() -> ExitCode {
         ["explain"] => fail("`explain` takes a path or an identifier"),
         ["explain", target] => explain(&root, target),
         ["mcp"] => mcp(&root),
+        ["init"] => init(&root, corpus_root, package),
+        ["infer"] => infer(&root, owner, until, write, now),
         // Spec 6 lists this verb and no document of the specification states
         // what an expression is. The engine names the gap rather than invent a
         // form, which is the posture the resolver takes over a `$package`
@@ -199,7 +247,8 @@ fn main() -> ExitCode {
         [] => fail("no verb. Try `headwater check`"),
         [other, ..] => fail(&format!(
             "`{other}` is not a verb this binary carries yet. \
-             It carries `check`, `route`, `explain`, `mcp` and `taxonomy`"
+             It carries `check`, `route`, `explain`, `mcp`, `init`, `infer` and \
+             `taxonomy`"
         )),
     }
 }
@@ -255,11 +304,17 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
+    // The payload is the one authored part of the lock, so a resolve reads it
+    // off the committed file and writes it back. A resolve that dropped it
+    // would delete an adopter's accounting as a side effect of a taxonomy edit,
+    // and the run after it would report every pair the payload was holding.
+    let adoption = headwater_lock::adoption_at(root);
     let text = match headwater_lock::write(
         &repository.consumer.package,
         &repository.consumer.version,
         &sources,
         &repository.resolution,
+        adoption.as_ref(),
     ) {
         Ok(text) => text,
         Err(findings) => {
@@ -502,6 +557,7 @@ fn check(
             shape,
             relations: declarations,
             register,
+            adoption: lock.adoption.as_ref(),
             source: headwater_lock::LOCK,
         },
         &ctx,
@@ -560,6 +616,560 @@ fn check(
         return ExitCode::FAILURE;
     }
     ExitCode::SUCCESS
+}
+
+/// How long a task holds when nobody says.
+///
+/// A quarter. Spec 7 wants the expiry to force a conversation, and a date the
+/// adopter did not choose should arrive while the people who ran `infer` are
+/// still the people who own the corpus. It is a default rather than a rule: a
+/// payload states its own dates and `--until` writes them.
+const DEFAULT_WINDOW: i64 = 90;
+
+/// `headwater infer`: the payload, computed from the diff between nothing and
+/// one.
+///
+/// [Q12](../../../../docs/spec/09-decisions.md#q12--migration-path-for-an-existing-corpus):
+/// before the first taxonomy a corpus is governed by nothing, so every document
+/// in it is trivially valid, and the findings the first taxonomy raises are that
+/// taxonomy's migration payload.
+///
+/// **The run that computes a payload ignores the payload.** It is the diff
+/// between nothing and one, and a run that read the committed block would
+/// compute the diff between the debt already declared and one. Re-running would
+/// then propose an empty payload, and the second run would report the whole of
+/// the debt as new findings.
+///
+/// It writes nothing without `--write`. A payload is a commitment with a name
+/// and a date on it, so it is printed for a person to read before it is a file
+/// they have to review in a diff.
+fn infer(
+    root: &Path,
+    owner: Option<String>,
+    until: Option<Date>,
+    write: bool,
+    now: Option<Date>,
+) -> ExitCode {
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let ctx = match now.map(Context::at).or_else(Context::from_system_clock) {
+        Some(ctx) => ctx,
+        None => {
+            return fail("the host clock is before 1970, and this engine will not guess a date")
+        }
+    };
+    let until = until.unwrap_or_else(|| ctx.now().plus_days(DEFAULT_WINDOW));
+    if until < ctx.now() {
+        return fail(&format!(
+            "--until {until} is in the past, and a task that has already lapsed accounts for nothing"
+        ));
+    }
+
+    let run = headwater_check::run(
+        &loaded.census,
+        &loaded.graph,
+        &Declared {
+            lock: &loaded.lock.digest,
+            taxonomy: &loaded.taxonomy,
+            shape: &loaded.shape,
+            relations: &loaded.relations,
+            register: &loaded.register,
+            adoption: None,
+            source: headwater_lock::LOCK,
+        },
+        &ctx,
+        &mut Cache::disabled(),
+    );
+
+    // One task per rule. A rule is the unit an adopter works down, because the
+    // fix for every pair under it is the same fix, and it is the unit the
+    // coverage report already counts by.
+    //
+    // `run.findings` is what a reader of the report sees, so a finding an
+    // author already suppressed does not enter the payload. The precedence spec
+    // 4 fixes runs in one direction only when it is applied once, and a pair in
+    // both inventories would be the double count that precedence exists to
+    // prevent.
+    let mut tasks: Vec<(&'static str, Vec<&headwater_check::Finding>)> = Vec::new();
+    for finding in &run.findings {
+        match tasks.iter_mut().find(|(rule, _)| *rule == finding.rule) {
+            Some((_, held)) => held.push(finding),
+            None => tasks.push((finding.rule, vec![finding])),
+        }
+    }
+
+    let owner =
+        match (&owner, write) {
+            (Some(owner), _) => owner.clone(),
+            // Refused rather than defaulted. The owner is the field spec 4 ranks a
+            // migration state above a suppression for, and an owner this engine
+            // invented would rank it above nothing.
+            (None, true) => return fail(
+                "--write needs --owner. An owner is the field spec 4 ranks declared debt above a \
+                 suppression for, and this engine will not invent one",
+            ),
+            (None, false) => "TODO name a person or a team".to_string(),
+        };
+
+    let mut payload = String::new();
+    payload.push_str("tasks:\n");
+    for (index, (rule, held)) in tasks.iter().enumerate() {
+        payload.push_str(&format!("  - id: AD-{}\n", index + 1));
+        payload.push_str(&format!(
+            "    statement: {}\n",
+            quoted(&format!(
+                "{} {} of {rule}, raised when this taxonomy first reached this corpus",
+                held.len(),
+                match held.len() {
+                    1 => "finding",
+                    _ => "findings",
+                }
+            ))
+        ));
+        // Quoted, because an owner is whatever a person typed and a team name
+        // holding a colon would otherwise write a payload that does not load.
+        payload.push_str(&format!("    owner: {}\n", quoted(&owner)));
+        payload.push_str(&format!("    until: {until}\n"));
+        payload.push_str("    pairs:\n");
+        // The cell, once. Two findings of one rule on one document are one
+        // pair, which is the grain spec 7 fixes.
+        let mut cells: Vec<&str> = held.iter().map(|finding| finding.path.as_str()).collect();
+        cells.sort_unstable();
+        cells.dedup();
+        for path in cells {
+            payload.push_str(&format!("      - {{path: {path}, rule: {rule}}}\n"));
+        }
+    }
+
+    let pairs: usize = payload.matches("      - {path: ").count();
+    match tasks.is_empty() {
+        true => println!("no finding, so no debt to declare"),
+        false => println!(
+            "{pairs} pairs of debt, in {} {}, expiring {until}",
+            tasks.len(),
+            match tasks.len() {
+                1 => "task",
+                _ => "tasks",
+            }
+        ),
+    }
+
+    // What the tree holds that the proposal does not explain. Spec 7 makes this
+    // one of the three artifacts of one read, and it is the half a payload
+    // cannot carry: an unclassified file raises no finding to declare.
+    let unexplained: Vec<&headwater_census::census::Row> = loaded
+        .census
+        .rows
+        .iter()
+        .filter(|row| matches!(row.outcome.class(), "untyped" | "unreadable"))
+        .collect();
+    println!("\nwhat this taxonomy does not explain");
+    match unexplained.is_empty() {
+        true => println!("  every file the census walked classified"),
+        false => {
+            println!(
+                "  {} files classified as nothing, and no payload can hold them",
+                unexplained.len()
+            );
+            for row in unexplained.iter().take(10) {
+                println!("    {} {}", row.path, row.outcome.class());
+            }
+            if unexplained.len() > 10 {
+                println!("    and {} more", unexplained.len() - 10);
+            }
+        }
+    }
+
+    // The debt that is not a rule violation. Spec 5 ranks a route on the scent
+    // facet, so a document with none is reachable by name and by nothing else.
+    // A payload holds the finding where a facet contract requires a summary. It
+    // cannot hold this, because where no contract requires one there is no
+    // finding to declare, and the corpus is still unsearchable.
+    let surface = loaded.surface();
+    let documents = surface.documents();
+    let mute: Vec<&str> = documents
+        .iter()
+        .filter(|document| surface.summary(document).is_none())
+        .map(|document| document.path)
+        .collect();
+    println!("\nwhat nothing will route to");
+    if documents.is_empty() {
+        println!("  no document classified, so a route has nothing to reach whatever it matches");
+    } else {
+        match mute.is_empty() {
+            true => println!("  every classified document states a summary"),
+            false => println!(
+                "  {} of {} classified documents state no summary, so a task matches them on \
+                 their path and their anchors alone",
+                mute.len(),
+                documents.len()
+            ),
+        }
+    }
+    // Routing matches a task against declared purposes before it matches any
+    // text, so a taxonomy with none is silent whatever the corpus says.
+    let purposes = &surface.shape().purposes;
+    match purposes.is_empty() {
+        true => println!(
+            "  the taxonomy declares no purposes, so a task matches nothing. `headwater init` \
+             writes the question that fills them in"
+        ),
+        false => println!(
+            "  {} purposes are declared, and a task is matched against their `answers` phrases",
+            purposes.len()
+        ),
+    }
+
+    // The `answers` phrases decide what routes where, and no check reads them.
+    // A purpose is matched on the terms that separate it from the others, so
+    // two purposes whose phrases share every term separate nothing and every
+    // task matches both equally. This measures it and reports it. It is not a
+    // finding: a rule would need an obligation and a control, and what is
+    // missing first is the measurement.
+    let phrases: Vec<(&str, Vec<String>)> = purposes
+        .iter()
+        .map(|purpose| {
+            (
+                purpose.name.as_str(),
+                headwater_query::terms(&purpose.answers.join(" ")),
+            )
+        })
+        .collect();
+    let mut mute_purposes: Vec<&str> = Vec::new();
+    let mut collisions: Vec<(&str, &str)> = Vec::new();
+    for (index, (name, terms)) in phrases.iter().enumerate() {
+        if terms.is_empty() {
+            mute_purposes.push(name);
+            continue;
+        }
+        for (other, others) in phrases.iter().skip(index + 1) {
+            if others.is_empty() {
+                continue;
+            }
+            // Separating terms in either direction. None in both is the case
+            // where a task cannot tell the two apart.
+            let apart = terms.iter().any(|term| !others.contains(term))
+                || others.iter().any(|term| !terms.contains(term));
+            if !apart {
+                collisions.push((name, other));
+            }
+        }
+    }
+    for name in &mute_purposes {
+        println!(
+            "  the purpose {name} states no `answers`, so only its one-sentence intent is matched"
+        );
+    }
+    for (left, right) in &collisions {
+        println!(
+            "  the purposes {left} and {right} answer the same terms, so no task separates them"
+        );
+    }
+    if !purposes.is_empty() && mute_purposes.is_empty() && collisions.is_empty() {
+        println!("  every purpose answers a term no other purpose answers");
+    }
+
+    // Reported after the two sections above and never instead of them. A corpus
+    // whose files classify as nothing raises no finding, and an `infer` that
+    // answered "no debt" and stopped would report a taxonomy that fits as the
+    // same result as a taxonomy that touches nothing. Those are the two
+    // outcomes of first contact and they are opposite ones.
+    if tasks.is_empty() {
+        println!("\nthis corpus raises no finding against this taxonomy, so it declares no debt");
+        if !unexplained.is_empty() {
+            println!(
+                "  read that with the {} unclassified files above. A taxonomy that classifies \
+                 nothing raises nothing",
+                unexplained.len()
+            );
+        }
+        return ExitCode::SUCCESS;
+    }
+
+    if !write {
+        println!("\nthe payload, which --write puts in the lock\n");
+        print!("{}", indent(&payload));
+        println!(
+            "\nRun again with --write --owner <name> to commit it. Until it is in the lock, \
+             `headwater check` reports every pair above as a finding"
+        );
+        return ExitCode::SUCCESS;
+    }
+
+    let block = match headwater_yaml::load(&payload) {
+        Ok(node) => match node.value.as_map() {
+            Some(map) => map.clone(),
+            None => return fail("the payload this run built is not a mapping, which is a defect"),
+        },
+        Err(errors) => {
+            return fail(&format!(
+                "the payload this run built does not load: {}",
+                headwater_yaml::error::render(&errors)
+            ))
+        }
+    };
+
+    // Written through the resolver, so the lock a payload lands in is the lock
+    // the sources produce. A payload written into a stale lock would be debt
+    // declared against a taxonomy nobody committed.
+    let repository = match headwater_resolve::repository(root) {
+        Ok(repository) => repository,
+        Err(errors) => {
+            eprintln!("headwater: the taxonomy did not resolve, so no payload can be written");
+            eprint!("{}", indent(&render_errors(&errors)));
+            return ExitCode::FAILURE;
+        }
+    };
+    let sources = match headwater_resolve::package::sources(root, &repository.consumer) {
+        Ok(sources) => sources,
+        Err(errors) => {
+            eprint!("{}", indent(&render_errors(&errors)));
+            return ExitCode::FAILURE;
+        }
+    };
+    let text = match headwater_lock::write(
+        &repository.consumer.package,
+        &repository.consumer.version,
+        &sources,
+        &repository.resolution,
+        Some(&block),
+    ) {
+        Ok(text) => text,
+        Err(findings) => {
+            eprint!("{}", indent(&render_errors(&findings)));
+            return ExitCode::FAILURE;
+        }
+    };
+    let path = root.join(headwater_lock::LOCK);
+    if let Err(error) = std::fs::write(&path, &text) {
+        return fail(&format!("cannot write {}: {error}", path.display()));
+    }
+    println!("\nwrote the payload into {}", headwater_lock::LOCK);
+    println!("  {pairs} pairs, owner {owner}, until {until}");
+    ExitCode::SUCCESS
+}
+
+/// `headwater init`: the consumer declaration and the overlay, scaffolded.
+///
+/// Spec 7 makes `init` and [`infer`] one command with two evidence sources: the
+/// tree, and an interview. This is the half that asks. It emits an overlay and
+/// never a resolved taxonomy, which is what keeps a bundle selection add-only.
+///
+/// **The interview is conducted through the file rather than through a
+/// terminal.** Every answer it collects ends up committed and reviewed, and a
+/// prompt that produced the same file would make the verb non-deterministic and
+/// untestable for the sake of asking the same questions in a worse place. So
+/// the questions are written where the answers go, each one marked, and the
+/// verb prints the list of what is unanswered.
+fn init(root: &Path, corpus_root: Option<String>, package: Option<String>) -> ExitCode {
+    let declaration = root.join(headwater_resolve::package::CONSUMER);
+    if declaration.exists() {
+        return fail(&format!(
+            "{} is already there, so this repository is already bound. \
+             `headwater infer` is the verb that reads an existing binding",
+            headwater_resolve::package::CONSUMER
+        ));
+    }
+
+    // The corpus root, proposed from the tree. The directory holding the most
+    // Markdown, because that is the evidence a tree offers about where its
+    // documentation is, and the adopter overrides it with one word.
+    let proposed = corpus_root.or_else(|| busiest_directory(root));
+    let corpus_root = match proposed {
+        Some(root) => root,
+        None => {
+            return fail(
+                "no directory under this repository holds a Markdown file, so nothing here \
+                 proposes a corpus root. Pass --corpus <dir> to name one",
+            )
+        }
+    };
+
+    // The package, found rather than assumed. Nothing in this engine fetches
+    // one, so a name that resolves to no package on disk is reported here
+    // instead of by `taxonomy resolve` two commands later.
+    let package = package.unwrap_or_else(|| "headwater/standard".to_string());
+    let found = headwater_resolve::package::find_version(root, &package);
+
+    let mut declaration_text = String::new();
+    declaration_text.push_str(&format!(
+        "\
+# The consumer declaration, written by `headwater init`. It says two things,
+# and they are different questions: what schema this repository takes, and what
+# tree it walks.
+#
+# `headwater taxonomy resolve` reads this and writes {}. Everything after that
+# reads the lock and never these sources.
+
+taxonomy:
+  package: {package}
+",
+        headwater_lock::LOCK
+    ));
+    match &found {
+        Some(version) => declaration_text.push_str(&format!("  version: {version}\n")),
+        None => declaration_text.push_str(
+            "  # INTERVIEW: no package of this name is under `packages/`, and nothing in this\n\
+             \x20 # engine fetches one. Vendor the package, then pin the version it declares.\n\
+             \x20 version: 0.0.0\n",
+        ),
+    }
+    declaration_text.push_str(&format!(
+        "\
+  # A bundle is an optional part of the package, and a selection is add-only.
+  # INTERVIEW: which traditions does this corpus already follow?
+  bundles: []
+  overlay: .headwater/overlay.yml
+
+corpus:
+  # Proposed from this tree: the directory holding the most Markdown.
+  root: {corpus_root}
+  # An exclusion states a reason. A pattern with none is a silent pass with a
+  # configuration file in front of it, so the reason is not optional.
+  # exclude:
+  #   - path: {corpus_root}/vendor/**
+  #     reason: vendored copies of documents another team owns
+"
+    ));
+
+    let overlay_text = format!(
+        "\
+# The adopter overlay, written by `headwater init`. It is an overlay and never a
+# resolved taxonomy, so nothing here can weaken the package it sits on: a
+# bundle selection is add-only, and an add-only overlay carries no operation
+# that removes a base rule.
+#
+# Every block below is a question this engine cannot answer from a tree. It is
+# prose about what this corpus is for, and a corpus does not state it.
+#
+# INTERVIEW 1 --- what does each purpose answer?
+#
+# A task is matched against declared purposes before it is matched against any
+# text, and it is matched on the `answers` phrases first. Two purposes whose
+# phrases share every term separate nothing, and every task then matches both
+# equally. Read `{package}`'s purposes, and add the phrases a person here would
+# actually type.
+#
+#   add:
+#     purposes.rationale.answers: [\"why is it this way\", \"what was rejected\"]
+#
+# INTERVIEW 2 --- what identifies a document, and what does the prefix mean?
+#
+# A relation names its target by identifier. A corpus whose documents carry none
+# has no edges, and no check about an edge can say anything about it.
+#
+#   add:
+#     identifier_schemes.doc_id: {{pattern: \"DOC-{{namespace}}-{{slug}}\", namespace: ACME, allocation: minted-once}}
+#     kinds.<kind>.identifier: {{scheme: doc_id}}
+#
+# INTERVIEW 3 --- what does this corpus already write?
+#
+# Run `headwater infer` once this file resolves. It reports the files that
+# classify as nothing, which is the half a payload cannot carry, and the
+# documents that state no summary, which nothing will route to.
+
+add: {{}}
+"
+    );
+
+    if let Some(parent) = declaration.parent() {
+        if let Err(error) = std::fs::create_dir_all(parent) {
+            return fail(&format!("cannot create {}: {error}", parent.display()));
+        }
+    }
+    if let Err(error) = std::fs::write(&declaration, &declaration_text) {
+        return fail(&format!("cannot write {}: {error}", declaration.display()));
+    }
+    let overlay = root.join(".headwater/overlay.yml");
+    if let Err(error) = std::fs::write(&overlay, &overlay_text) {
+        return fail(&format!("cannot write {}: {error}", overlay.display()));
+    }
+
+    println!("wrote {}", headwater_resolve::package::CONSUMER);
+    println!("wrote .headwater/overlay.yml");
+    println!("\nwhat this read off the tree");
+    println!("  corpus root {corpus_root}");
+    match &found {
+        Some(version) => println!("  package {package} {version}, under `packages/`"),
+        None => println!(
+            "  package {package} is not under `packages/`, and nothing here fetches one. \
+             Vendor it before resolving"
+        ),
+    }
+    println!("\nwhat it cannot read off a tree, and asked instead");
+    println!("  the phrases each purpose answers, which decide what a task routes to");
+    println!("  the identifier scheme, and what its prefix discriminates");
+    println!("  which bundles this corpus already follows");
+    println!(
+        "\nAnswer them in .headwater/overlay.yml, then run `headwater taxonomy resolve` and \
+         `headwater infer`"
+    );
+    ExitCode::SUCCESS
+}
+
+/// The directory under `root` holding the most Markdown files.
+///
+/// One level down, and never `root` itself. A repository whose Markdown is at
+/// the top is a repository whose corpus root is the whole of it, and proposing
+/// that would put the census over `target/` and `node_modules/`.
+/// A scalar as a double-quoted YAML string.
+///
+/// Everything this verb emits goes through it rather than only the fields that
+/// look dangerous today. A payload that does not load is a payload the next
+/// command refuses, and the failure would be reported against the lock rather
+/// than against the text that produced it.
+fn quoted(text: &str) -> String {
+    let mut out = String::with_capacity(text.len() + 2);
+    out.push('"');
+    for character in text.chars() {
+        match character {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            other => out.push(other),
+        }
+    }
+    out.push('"');
+    out
+}
+
+fn busiest_directory(root: &Path) -> Option<String> {
+    let mut best: Option<(String, usize)> = None;
+    let entries = std::fs::read_dir(root).ok()?;
+    for entry in entries.flatten() {
+        let name = entry.file_name().to_string_lossy().to_string();
+        if name.starts_with('.') || !entry.path().is_dir() {
+            continue;
+        }
+        let count = markdown_under(&entry.path(), 0);
+        if count == 0 {
+            continue;
+        }
+        if best.as_ref().is_none_or(|(_, most)| count > *most) {
+            best = Some((name, count));
+        }
+    }
+    best.map(|(name, _)| name)
+}
+
+fn markdown_under(directory: &Path, depth: usize) -> usize {
+    if depth > 6 {
+        return 0;
+    }
+    let Ok(entries) = std::fs::read_dir(directory) else {
+        return 0;
+    };
+    let mut count = 0;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            count += markdown_under(&path, depth + 1);
+        } else if path.extension().is_some_and(|extension| extension == "md") {
+            count += 1;
+        }
+    }
+    count
 }
 
 /// Two spaces in front of each line of a section, so that three reports in one

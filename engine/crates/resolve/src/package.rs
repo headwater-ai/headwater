@@ -177,6 +177,20 @@ pub fn sources(root: &Path, consumer: &Consumer) -> Result<Vec<Source>, Vec<Reso
 }
 
 /// The package directory whose manifest declares `name`.
+/// The version a package on disk declares, or `None` where no package under
+/// `packages/` carries that name.
+///
+/// `headwater init` writes a consumer declaration that pins a version, and a
+/// version it invented would be refused by `sources` two commands later with a
+/// message about a mismatch rather than about the missing package. This is the
+/// same lookup, asked early, and it answers `None` rather than an error because
+/// a repository with no package vendored is the ordinary state of a repository
+/// that has not been bound yet.
+pub fn find_version(root: &Path, name: &str) -> Option<String> {
+    let (_, manifest) = find(root, name).ok()?;
+    text(&manifest, "version")
+}
+
 fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>> {
     let packages = root.join(PACKAGES);
     let mut entries: Vec<PathBuf> = std::fs::read_dir(&packages)

@@ -19,3 +19,8 @@ headwater-graph = { path = "../graph" }
 headwater-lock = { path = "../lock" }
 headwater-query = { path = "../query" }
 headwater-resolve = { path = "../resolve" }
+
+# `headwater infer` builds an adoption payload as text and loads it back before
+# it goes into the lock, so what the verb prints and what it stores are one
+# artifact that went through one reader.
+headwater-yaml = { path = "../yaml" }

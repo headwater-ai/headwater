@@ -57,5 +57,5 @@ register
      11 with no promotion record, so nothing states what would promote them
       2 permanently advisory
       2 producing facts rather than findings
-  escaped findings, in the precedence spec 4 fixes: no waiver mechanism exists, no migration-pending mechanism exists, 2 suppressed
+  escaped findings, in the precedence spec 4 fixes: no waiver mechanism exists, 0 migration-pending, 2 suppressed
   every rule this engine carries reaches one obligation
