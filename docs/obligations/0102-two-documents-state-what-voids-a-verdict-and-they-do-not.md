@@ -46,10 +46,16 @@ The cache and the gate read one artifact by two procedures, and that is why one 
 
 ## Discharge
 
-One statement in spec 12 of what a gate reads, and the statement decides three things. It decides whether the test is a diff of two trees or a comparison over listed inputs. It decides whether the clock voids a verdict. It decides whether membership of the census counts as an input.
+**This record is discharged.** [Spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) carries one statement of what a gate reads. A gate reads the published read set and the tree in front of it, and nothing else. `headwater gate --read-set <path>` is that statement as a verb, and the statement decides the three things above.
 
-[OBL-repo-0028](0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md) holds the other half of the answer. A diff of two trees needs a tree, and no run computes one. So the specification today asks for a test that the engine cannot run.
+**The test is a comparison over listed inputs.** A gate hashes the file at each listed path and holds it against the hash the run recorded. [OBL-repo-0028](0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md) holds the other reading, and this ruling settles the dependency rather than waits on it. A comparison over listed inputs needs no tree, so a run that computes none blocks nothing here. That record stands on [spec 6](../spec/06-engine-architecture.md#ci-adapters), which asks a run for a tree for reasons of its own.
 
-Nothing ships a wrong verdict while this stands open. No verb of this engine takes a read set and a later tree, and the commit hook re-runs the corpus. Every verdict today is therefore a verdict about the tree that produced it.
+**The clock voids a verdict.** The artifact names each rule that read the injected clock on a `windowed` line. A gate asked about another day voids those rules, and no tree change is needed for that.
 
-A model in Alloy is the cheaper instrument for the first decision, and it is optional. It holds documents as atoms, and a branch as a pair of a read set and a write set. One invariant over the whole corpus then produces the trace that a comparison over listed inputs misses.
+**Membership of the census is an input, and a list of members carries no membership.** A read set records what a run read. It never records that those were all the documents there were. So nothing this design holds carries a corpus-scoped verdict across a merge. The artifact names each such rule on a `barrier` line, and a gate voids every barrier whatever the listed hashes did. [Spec 10 §F.6](../spec/10-theoretical-foundations.md#f6-write-skew-names-the-anomaly-and-read-sets-detect-it) names the piece the transfer dropped: a read set is not a predicate lock.
+
+**The construction in the section above runs against the engine.** Two trees each hold one claimant of one identifier, and each tree passes `headwater check --strict`. The merge holds both claimants and fails it. A gate that holds the first tree's read set against the merged tree reports that the verdict does not carry, and it names the barrier. The same gate over the same artifact with the `barrier` line struck out reports that the verdict carries. That second run is the phantom itself, measured rather than argued.
+
+**A model in Alloy is unnecessary, because the trace runs.** The model was the cheap instrument for the first decision. It holds documents as atoms, and a branch as a pair of a read set and a write set. A trace against the engine answers the same question at a higher standard, and this record carries one.
+
+**Two documents keep the reading this record found, and each keeps it for a reason.** [Q21](../decisions/0021-terminological-succession-and-validity-under-merge.md) is a decision, and succession amends a decision rather than an edit. [What a check can know](../evaluations/what-a-check-can-know.md) is an evaluation, and an evaluation records what one exercise concluded. A reader who meets either sentence reads a record rather than a rule.
