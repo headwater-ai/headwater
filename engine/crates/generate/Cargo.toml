@@ -18,6 +18,15 @@ headwater-census = { path = "../census" }
 # already apply, and the query surface owns it.
 headwater-query = { path = "../query" }
 
+# An export carries the property graph, so the emitter reads the graph rather
+# than a projection of it. Every other emitter here reads pointers.
+headwater-graph = { path = "../graph" }
+
+# The JSON Schema emitter reads the facet and kind declarations, which is what
+# the shape holds. It emits no check, and it reads what the generated Shape
+# checks read, so the two cannot drift.
+headwater-check = { path = "../check" }
+
 [dev-dependencies]
 # A fixture corpus needs a taxonomy resolved from sources, in the way every
 # other crate's fixture tree does.
@@ -25,5 +34,3 @@ headwater-resolve = { path = "../resolve" }
 # The dogfood test states this repository's own identity, and it reads the lock
 # for it rather than re-resolving, because the lock is what the binary reads.
 headwater-lock = { path = "../lock" }
-headwater-graph = { path = "../graph" }
-headwater-check = { path = "../check" }

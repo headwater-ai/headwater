@@ -176,6 +176,18 @@ impl<'a> Surface<'a> {
         self.taxonomy
     }
 
+    /// The graph this surface reads.
+    ///
+    /// Every other read here is a projection of the graph and hands back a
+    /// pointer or a neighbour, because spec 5 rules that "a read never returns
+    /// content". An export is the one caller that needs the graph itself: it
+    /// carries the property graph rather than an answer computed from it, and a
+    /// second traversal built out of [`Surface::related`] would be a second
+    /// derivation of the edge set that could disagree with this one.
+    pub fn graph(&self) -> &'a Graph {
+        self.graph
+    }
+
     pub fn relations(&self) -> &'a Declarations {
         self.relations
     }

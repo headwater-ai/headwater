@@ -50,16 +50,24 @@
 //! was to rule that a path the engine fixes needs no marker, and that rule ends
 //! with this engine overwriting a file an adopter wrote by hand.
 //!
-//! # No output states when it was generated
+//! # No output states when it was generated, and the export verb is where the
+//! # exception lives
 //!
 //! `--check` compares bytes. A timestamp inside a generated file makes every run
 //! differ from the last one, so the gate reports drift on a corpus nobody
 //! touched. Every marker this module writes is therefore a function of the kind
 //! alone. Spec 6 asks a *filtered export* to state "when it was generated", and
 //! that sentence and this one cannot both hold for an artifact that `--check`
-//! covers. The contradiction is recorded in
-//! [spec 13](../../../../docs/spec/13-open-obligations.md) against the export
-//! verb, which is where it lands.
+//! covers.
+//!
+//! They hold for different artifacts, which is what settles it. **The time is
+//! injected and never read**, exactly as
+//! [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+//! injects the clock into a check rather than let one call a syscall. A
+//! committed export is held to regeneration and gets no time, so `plan` passes
+//! none. An export that leaves the repository is the artifact spec 6 is talking
+//! about, and `headwater export --at <date>` supplies its time. Same corpus,
+//! same lock, same injected clock, byte-identical output, in both cases.
 
 use headwater_census::census::Census;
 use headwater_census::resolve::{shelf_for, ShelfMatch};
@@ -69,7 +77,11 @@ use headwater_yaml::value::{Mapping, Value};
 use std::path::Path;
 
 pub mod descriptor;
+pub mod export;
+pub mod profile;
 mod shelf_index;
+
+pub use profile::{Admission, Clause, Emitter, Filter, Grain, Profile};
 
 /// The word that marks a file as this engine's output.
 pub const MARKER: &str = "headwater:generated";
@@ -163,12 +175,37 @@ pub struct Declaration {
     /// what a declaration with no `for` says.
     pub shelves: Vec<String>,
     pub output: String,
+    /// The profile this entry belongs to, and the half of it this entry states.
+    pub membership: profile::Membership,
+}
+
+impl Declaration {
+    /// The emitter target this entry writes through.
+    ///
+    /// An entry that names no `format` takes the native export. Spec 6 makes
+    /// the native graph JSON the one an adopter gets with no external consumer
+    /// at all, so it is the target a declaration falls back to rather than an
+    /// error a declaration has to avoid.
+    pub fn emitter(&self) -> Emitter {
+        self.membership.emitter.unwrap_or(Emitter::Json)
+    }
 }
 
 /// The `projections` block of a resolved taxonomy.
 #[derive(Clone, Debug, Default)]
 pub struct Projections {
     pub declared: Vec<Declaration>,
+    /// Every declared export profile, in the order the entries first name each
+    /// one. Assembled by [`profile::group`], which refuses a profile that two
+    /// entries describe differently.
+    pub profiles: Vec<Profile>,
+}
+
+impl Projections {
+    /// The profile of a name, which is what `--profile` selects.
+    pub fn profile(&self, name: &str) -> Option<&Profile> {
+        self.profiles.iter().find(|one| one.name == name)
+    }
 }
 
 impl Projections {
@@ -249,11 +286,26 @@ impl Projections {
                     }
                 }
             }
+            let membership = profile::Membership::read(body, index, item.span, &mut errors);
             out.declared.push(Declaration {
                 kind,
                 shelves,
                 output: output.text.clone(),
+                membership,
             });
+        }
+        // The grouping runs over what read, so a taxonomy with one bad entry
+        // reports that entry rather than a disagreement between it and the rest.
+        if errors.is_empty() {
+            let memberships: Vec<profile::Membership> = out
+                .declared
+                .iter()
+                .map(|declaration| declaration.membership.clone())
+                .collect();
+            match profile::group(&memberships) {
+                Ok(profiles) => out.profiles = profiles,
+                Err(found) => errors.extend(found),
+            }
         }
         match errors.is_empty() {
             true => Ok(out),
@@ -337,6 +389,7 @@ pub fn plan(
     for declaration in &projections.declared {
         match declaration.kind {
             Kind::ShelfIndex => shelf_index::emit(surface, census, declaration, &mut plan),
+            Kind::GraphExport => graph_export(surface, projections, declaration, &mut plan),
             other => plan.unwritten.push(Unwritten {
                 at: declaration.output.clone(),
                 kind: other,
@@ -349,6 +402,62 @@ pub fn plan(
     plan
 }
 
+/// One declared `graph_export`, written through the emitter its profile names.
+///
+/// Spec 6: "A graph export is a projection like the others. The taxonomy
+/// declares its output path, so whether an export is committed is a schema
+/// decision and not an engine default. A declared export is held to regeneration
+/// by `generate --check`, exactly as a shelf index is."
+///
+/// Two things stop a declaration from producing a file, and both are reported
+/// rather than dropped. An emitter that this release does not build is one. A
+/// census with an omission that no loss reason covers is the other, and that one
+/// is a defect in this engine rather than in the taxonomy. Writing the file
+/// anyway would commit the artifact whose trustworthiness the census exists to
+/// establish.
+///
+/// No generation time is injected here. An artifact that `--check` compares by
+/// byte cannot carry a clock reading, and `headwater export --at` is where the
+/// artifact that leaves the repository gets one.
+fn graph_export(
+    surface: &Surface<'_>,
+    projections: &Projections,
+    declaration: &Declaration,
+    plan: &mut Plan,
+) {
+    let name = declaration.membership.name.clone();
+    let Some(profile) = projections.profile(&name) else {
+        plan.unwritten.push(Unwritten {
+            at: declaration.output.clone(),
+            kind: Kind::GraphExport,
+            reason: format!("names the profile `{name}`, and no entry assembled one"),
+        });
+        return;
+    };
+    match export::emit(surface, profile, declaration.emitter(), None) {
+        Ok(emission) if emission.census.is_defective() => plan.unwritten.push(Unwritten {
+            at: declaration.output.clone(),
+            kind: Kind::GraphExport,
+            reason: format!(
+                "the projection census found {} node and {} edge omissions that no declared \
+                 loss reason covers, which is a defect in this emitter. Run `headwater export \
+                 --profile {name}` to read them",
+                emission.census.nodes.unaccounted, emission.census.edges.unaccounted
+            ),
+        }),
+        Ok(emission) => plan.outputs.push(Output {
+            path: declaration.output.clone(),
+            kind: Kind::GraphExport,
+            bytes: emission.bytes,
+        }),
+        Err(refusal) => plan.unwritten.push(Unwritten {
+            at: declaration.output.clone(),
+            kind: Kind::GraphExport,
+            reason: refusal.reason(),
+        }),
+    }
+}
+
 /// Why a declarable kind produces nothing yet, and who owns it.
 ///
 /// Named rather than ignored, and each one names the issue that owns it. This is
@@ -357,11 +466,6 @@ pub fn plan(
 /// and never as an empty result.
 fn unbuilt(kind: Kind) -> &'static str {
     match kind {
-        Kind::GraphExport => {
-            "the emitters, the loss set and the projection census are issue #65, and an export \
-             that declared no loss set would be the untrusted projector spec 6 built the census \
-             to catch"
-        }
         Kind::RelationView => {
             "a relation view needs the traceability grain that the obligation and control \
              register holds, and no document states which relations a view covers"
@@ -378,7 +482,9 @@ fn unbuilt(kind: Kind) -> &'static str {
             "a transcription needs a resolver that reads text from a pinned snapshot, and Q19 \
              leaves whether it ships at all to the first adopter who asks"
         }
-        Kind::ShelfIndex | Kind::CoverageReport | Kind::CorpusDescriptor => "this engine emits it",
+        Kind::ShelfIndex | Kind::GraphExport | Kind::CoverageReport | Kind::CorpusDescriptor => {
+            "this engine emits it"
+        }
     }
 }
 
