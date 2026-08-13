@@ -29,7 +29,9 @@ The verb marks a field `hand entry` when no declaration determines it. Read its 
 
 **The body under each required heading.** The headings come from the kind's section contract and the prose does not. An `obligation_record` states the context, what the corpus owes, and what would discharge it. A `decision` states the context, the decision, and the consequences.
 
-**The provenance block.** No taxonomy declares one, so the verb writes none while every hand-typed document carries one — [OBL-repo-0030](../../../docs/obligations/0030-the-provenance-block-belongs-to-the-engine-and-nothing-states.md) holds that gap. Copy the shape from a sibling on the same shelf, and know that no check reads what you wrote. Never write `accepted_by` for yourself: acceptance is a human act, and an agent that stamps its own output has written a false name.
+**The provenance block.** No taxonomy declares one, so the verb writes none while every hand-typed document carries one — [OBL-repo-0030](../../../docs/obligations/0030-the-provenance-block-belongs-to-the-engine-and-nothing-states.md) holds that gap. Copy the shape from a sibling on the same shelf, and know that no check reads a single field of what you wrote.
+
+**The `accepted_by` line is the one you must not write on your own authority.** Stop rule 5 forbids it outright, and the shelf you are copying from breaks that rule in every case: 161 of the 161 agent-drafted documents here carry an `accepted_by` that the drafting agent typed, which is what [OBL-repo-0108](../../../docs/obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md) measures and asks a human to settle. Until it is settled, write the line only for a document that goes into a pull request a named human will read, and say in the proposal that the stamp is what you are asking them to accept. Never write it for a document that nobody will review, and never move a `warrant` to `accepted` on a document that is already there.
 
 ## Relations
 

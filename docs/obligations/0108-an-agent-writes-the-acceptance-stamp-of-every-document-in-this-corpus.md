@@ -1,0 +1,59 @@
+---
+id: OBL-repo-0108
+title: "An agent writes the acceptance stamp of every document in this corpus"
+status: current
+status_since: 2026-08-14
+last_verified: 2026-08-14
+summary: "Stop rule 5 forbids an agent to write `accepted_by`, and 161 of the 161 agent-drafted documents here carry one that the drafting agent typed."
+provenance:
+  warrant: accepted
+  agency: mixed
+  drafted_by: claude-opus-5
+  activity: measure+draft
+  accepted_by: j.baxter
+  evidence_basis: evidenced
+relations:
+  traces_to:
+    - SPEC-HW-ai-integration
+    - SPEC-HW-authoring-and-lifecycle
+---
+
+# An agent writes the acceptance stamp of every document in this corpus
+
+## Context
+
+[Stop rule 5](../spec/05-ai-integration.md#the-stop-rules) states the bar. An agent never writes `accepted_by`, and it never moves a warrant to `accepted`. It drafts, and it marks what it drafted as `asserted` where no human read the result. [Spec 11](../spec/11-adjacent-work.md#l5-onboarding-ships-the-synthesized-tier-and-marks-nothing) names the failure the rule prevents: a stamp that an agent applies to its own output, with a false name attached.
+
+A count over the corpus root, excluding the package content that the descriptor excludes:
+
+| reading | value |
+|---|---|
+| documents with front matter | 164 |
+| documents with a provenance block | 163 |
+| blocks that name an agent in `drafted_by` | 161 |
+| of those, blocks that also carry `accepted_by` | **161** |
+| of those, blocks that carry `warrant: asserted` instead | **0** |
+
+The agent that drafted each document typed `accepted_by: j.baxter` and `warrant: accepted` into it, before any human read a word of it. That is every case where the rule could apply, and the rate is one.
+
+This record does the same thing, in its own front matter, for the reason the next section gives.
+
+## Obligation
+
+The corpus owes a ruling, and the two available answers differ in what they cost.
+
+**The rule is right and the practice is wrong.** An agent writes `warrant: asserted` and no `accepted_by`. A human moves both at review. Nothing in this engine moves a warrant, so the human moves it by hand on every document, and 161 documents need the correction.
+
+**The practice is right and the rule is worded wrong.** A pull request is the acceptance, the block is part of what the human reviews, and a merge is the act that `accepted_by` names. Under this reading the stamp is a proposal until the merge and a fact after it.
+
+The second reading is defensible and the bytes do not carry it. A document that a human merged and a document that an agent stamped and nobody read are the same file. So the corpus cannot answer the question that [spec 3](../spec/03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed) says provenance exists to make a query rather than an archaeology exercise.
+
+Nothing reports any of this. [OBL-repo-0030](0030-the-provenance-block-belongs-to-the-engine-and-nothing-states.md) records that no taxonomy declares the block, so no rule reads a field of it. A stop rule with no instrument is a preference. This is the measurement of what that preference costs over 161 documents.
+
+## Discharge
+
+A ruling on which reading holds, in the decision register, because the two answers assign the act to different parties.
+
+Under the second reading, the block owes a form that separates a proposed stamp from a merged one. A warrant of `asserted` at draft time and a promotion at merge is one shape. It needs an actor that this engine does not have. [OBL-repo-0105](0105-nothing-plays-the-hook-role-that-two-relations-name.md) already records that the `hook` actor plays no part anywhere.
+
+Under either reading, the block owes a declaration before a rule can read it, which is `OBL-repo-0030`.
