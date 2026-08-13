@@ -361,11 +361,7 @@ fn encode_patch(patch: Option<&Patch>) -> String {
             escape(expect),
             escape(replacement)
         ),
-        Some(Patch::Half {
-            path,
-            relation,
-            id,
-        }) => format!(
+        Some(Patch::Half { path, relation, id }) => format!(
             "half\t{}\t{}\t{}",
             escape(path),
             escape(relation),

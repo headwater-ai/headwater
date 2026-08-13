@@ -129,7 +129,12 @@ impl std::fmt::Display for Refused {
                 "the patch at byte {at} of {path} opens inside the front-matter block, and this \
                  writer only rewrites prose"
             ),
-            Refused::Moved { path, at, expected, found } => write!(
+            Refused::Moved {
+                path,
+                at,
+                expected,
+                found,
+            } => write!(
                 f,
                 "{path} holds `{found}` at byte {at} where the check read `{expected}`, so the \
                  file moved under the run and nothing is written"
@@ -209,11 +214,10 @@ pub fn apply(root: &Path, files: &[Fixed]) -> Result<(), Refused> {
 /// into the front matter, which moves every byte of the body along, so an
 /// offset the check computed is an offset into the file before the splice.
 fn one_file(root: &Path, path: &str, patches: &[&Patch]) -> Result<Option<Fixed>, Refused> {
-    let source =
-        std::fs::read_to_string(root.join(path)).map_err(|error| Refused::Unreadable {
-            path: path.to_string(),
-            why: error.to_string(),
-        })?;
+    let source = std::fs::read_to_string(root.join(path)).map_err(|error| Refused::Unreadable {
+        path: path.to_string(),
+        why: error.to_string(),
+    })?;
 
     let text: Vec<&Patch> = patches
         .iter()
@@ -387,7 +391,10 @@ fn recognizable(
     }
     for (was, is) in before.links.iter().zip(&after.links) {
         if was.destination != is.destination || was.form != is.form || was.image != is.image {
-            return Err(format!("the link to `{}` is not the one it was", was.destination));
+            return Err(format!(
+                "the link to `{}` is not the one it was",
+                was.destination
+            ));
         }
     }
     for (index, (was, is)) in before.blocks.iter().zip(&after.blocks).enumerate() {
@@ -455,7 +462,10 @@ mod tests {
     #[test]
     fn a_substitution_lands_and_the_rest_of_the_file_is_untouched() {
         let dir = tree(&[("a.md", DOC)]);
-        let composed = compose(dir.path(), &[text_patch("a.md", DOC, "behaviour", "behavior")]);
+        let composed = compose(
+            dir.path(),
+            &[text_patch("a.md", DOC, "behaviour", "behavior")],
+        );
         assert!(composed.refused.is_empty(), "{:?}", composed.refused);
         assert_eq!(composed.files.len(), 1);
         assert_eq!(
@@ -469,10 +479,20 @@ mod tests {
     /// bytes that hold something else.
     #[test]
     fn a_file_that_moved_under_the_patch_is_refused_with_nothing_written() {
-        let dir = tree(&[("a.md", "---\nid: D-1\n---\n\n# A title\n\nQuite other words here.\n")]);
-        let composed = compose(dir.path(), &[text_patch("a.md", DOC, "behaviour", "behavior")]);
+        let dir = tree(&[(
+            "a.md",
+            "---\nid: D-1\n---\n\n# A title\n\nQuite other words here.\n",
+        )]);
+        let composed = compose(
+            dir.path(),
+            &[text_patch("a.md", DOC, "behaviour", "behavior")],
+        );
         assert!(composed.files.is_empty());
-        assert!(matches!(composed.refused[0], Refused::Moved { .. }), "{:?}", composed.refused);
+        assert!(
+            matches!(composed.refused[0], Refused::Moved { .. }),
+            "{:?}",
+            composed.refused
+        );
     }
 
     /// Guard 3. A code span reaches a rule with its backticks gone, so an
@@ -482,7 +502,10 @@ mod tests {
     fn an_offset_inside_a_code_span_is_refused() {
         let source = "---\nid: D-1\n---\n\n# A title\n\nThe `behaviour` flag.\n";
         let dir = tree(&[("a.md", source)]);
-        let composed = compose(dir.path(), &[text_patch("a.md", source, "behaviour", "behavior")]);
+        let composed = compose(
+            dir.path(),
+            &[text_patch("a.md", source, "behaviour", "behavior")],
+        );
         assert!(composed.files.is_empty());
         assert!(
             matches!(composed.refused[0], Refused::Unanchored { .. }),
@@ -497,7 +520,10 @@ mod tests {
     fn an_offset_inside_a_block_quote_is_refused() {
         let source = "---\nid: D-1\n---\n\n# A title\n\n> The behaviour they describe.\n";
         let dir = tree(&[("a.md", source)]);
-        let composed = compose(dir.path(), &[text_patch("a.md", source, "behaviour", "behavior")]);
+        let composed = compose(
+            dir.path(),
+            &[text_patch("a.md", source, "behaviour", "behavior")],
+        );
         assert!(composed.files.is_empty());
         assert!(
             matches!(composed.refused[0], Refused::Unanchored { .. }),
@@ -512,7 +538,10 @@ mod tests {
     fn a_substitution_inside_a_links_text_lands_and_keeps_the_link() {
         let source = "---\nid: D-1\n---\n\n# A title\n\nRead [the behaviour note](x.md) first.\n";
         let dir = tree(&[("a.md", source)]);
-        let composed = compose(dir.path(), &[text_patch("a.md", source, "behaviour", "behavior")]);
+        let composed = compose(
+            dir.path(),
+            &[text_patch("a.md", source, "behaviour", "behavior")],
+        );
         assert!(composed.refused.is_empty(), "{:?}", composed.refused);
         assert!(composed.files[0].text.contains("[the behavior note](x.md)"));
     }
@@ -522,7 +551,10 @@ mod tests {
     fn an_offset_inside_the_front_matter_is_refused() {
         let source = "---\nid: D-1\nname: behaviour\n---\n\n# A title\n\nWords.\n";
         let dir = tree(&[("a.md", source)]);
-        let composed = compose(dir.path(), &[text_patch("a.md", source, "behaviour", "behavior")]);
+        let composed = compose(
+            dir.path(),
+            &[text_patch("a.md", source, "behaviour", "behavior")],
+        );
         assert!(composed.files.is_empty());
         assert!(
             matches!(composed.refused[0], Refused::NotInTheBody { .. }),
@@ -537,7 +569,10 @@ mod tests {
     #[test]
     fn a_replacement_that_reads_as_markup_is_refused() {
         let dir = tree(&[("a.md", DOC)]);
-        let composed = compose(dir.path(), &[text_patch("a.md", DOC, "behaviour", "beha`viou`r")]);
+        let composed = compose(
+            dir.path(),
+            &[text_patch("a.md", DOC, "behaviour", "beha`viou`r")],
+        );
         assert!(composed.files.is_empty());
         assert!(
             matches!(composed.refused[0], Refused::Unrecognizable { .. }),
@@ -568,7 +603,8 @@ mod tests {
     /// moved by the earlier substitutions.
     #[test]
     fn two_substitutions_in_one_file_both_land_at_the_bytes_they_named() {
-        let source = "---\nid: D-1\n---\n\n# A title\n\nThe behaviour of it.\n\nA catalogue of them.\n";
+        let source =
+            "---\nid: D-1\n---\n\n# A title\n\nThe behaviour of it.\n\nA catalogue of them.\n";
         let dir = tree(&[("a.md", source)]);
         let composed = compose(
             dir.path(),
@@ -620,7 +656,10 @@ mod tests {
     #[test]
     fn a_patch_that_changes_nothing_writes_no_file() {
         let dir = tree(&[("a.md", DOC)]);
-        let composed = compose(dir.path(), &[text_patch("a.md", DOC, "behaviour", "behaviour")]);
+        let composed = compose(
+            dir.path(),
+            &[text_patch("a.md", DOC, "behaviour", "behaviour")],
+        );
         assert!(composed.is_empty(), "{composed:?}");
     }
 

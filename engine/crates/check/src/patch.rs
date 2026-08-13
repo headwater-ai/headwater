@@ -243,7 +243,10 @@ mod tests {
     /// lands one character early inside the source.
     #[test]
     fn a_word_inside_a_code_span_gets_no_patch() {
-        assert_eq!(sentence_patch("The `behaviour` flag.\n", "behaviour", "behavior"), None);
+        assert_eq!(
+            sentence_patch("The `behaviour` flag.\n", "behaviour", "behavior"),
+            None
+        );
     }
 
     /// A quoted block is another author's words, and no rule reads one. The
@@ -293,7 +296,10 @@ mod tests {
 
     #[test]
     fn a_word_that_is_only_part_of_a_longer_word_gets_no_patch() {
-        assert_eq!(sentence_patch("Two licences here.\n", "licence", "license"), None);
+        assert_eq!(
+            sentence_patch("Two licences here.\n", "licence", "license"),
+            None
+        );
     }
 
     /// A source that escapes an entity spends more bytes than its text reads,
@@ -304,8 +310,7 @@ mod tests {
     #[test]
     fn an_entity_beside_a_word_does_not_move_the_words_offset() {
         let source = "Ampersand &amp; behaviour together.\n";
-        let Some(Patch::Text { start, end, .. }) =
-            sentence_patch(source, "behaviour", "behavior")
+        let Some(Patch::Text { start, end, .. }) = sentence_patch(source, "behaviour", "behavior")
         else {
             panic!("no patch");
         };

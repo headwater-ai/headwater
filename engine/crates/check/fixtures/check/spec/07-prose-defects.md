@@ -30,6 +30,14 @@ The resolver reads one profile; the rest belong to the adopter.
 
 The two sources agree (Smith, 2004; Jones, 2007) about the shape, and a semicolon inside a parenthesis is not a run-on.
 
+## The three spans a patch must not land at
+
+A code span carries one and no rule reads it: `it doesn't matter` is a name rather than prose.
+
+> A quoted author writes what they write, and it doesn't answer to this regime.
+
+A link's text is this author's own prose, so [it doesn't escape](00-both-halves.md) the rule.
+
 ## Retired terms
 
 The reference system resolves each name, which is the retirement that names a replacement.
