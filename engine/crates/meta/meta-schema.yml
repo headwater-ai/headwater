@@ -208,7 +208,11 @@ definitions:
       nuclearity: {enum: [multinuclear, nucleus-satellite]}
       nucleus: {enum: [from, to]}
       inherits: {seq: {scalar: string}}
-      # guess: spec 2 writes `many` and the unwritten default is one.
+      # guess: spec 2 writes `many` and states no default. This corpus refutes
+      # `one`, because `applied_in` declares no cardinality and one review
+      # prompt names three targets under it. The value set stays closed on what
+      # spec 2 writes, and spec 13 carries the default and the question of
+      # whether a declaration binds the inverse relation name.
       cardinality: {enum: [one, many]}
       created_by: {enum: [author, scaffold, generator, hook, agent, import], required: true}
       attributes: {map: {block: relation_attribute}}
