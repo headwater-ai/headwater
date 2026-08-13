@@ -62,10 +62,14 @@
 //! identifier was reused, is a question about the whole corpus and about
 //! documents that no longer exist. It is not this rule.
 //!
-//! **Absence.** A typed document that declares no identifier is already
-//! [`headwater_graph::index::Defect::NoIdentifier`], reported where it costs
-//! something: that document is neither end of any edge. This check skips it,
-//! visibly, and the skip names the front-matter key that was read.
+//! **Absence.** A typed document that declares no identifier is
+//! [`crate::identity`]'s, which reports it where it costs something: that
+//! document is neither end of any edge. This check skips it, visibly, and the
+//! skip names the front-matter key that was read. The two rules ask two
+//! questions and read two declarations. This one needs a scheme to compare an
+//! identifier against, and it generates over the kinds that name one. That one
+//! asks whether a document can be named at all, and it generates over the kinds
+//! that a relation admits.
 //!
 //! That second one is the whole of what this check does about the guess in
 //! [`headwater_graph::Config`]. The key that holds an identifier is a parameter

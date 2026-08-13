@@ -87,6 +87,8 @@ graph/spec/01-second.md:11:15
   edge: `audited_by` -> 12345 `ado_work_item` names the resolver `ado-snapshot`, which this run does not have
 graph/spec/01-second.md:15:7
   relations: an entry of `cites_evidence` declares no `to`, so it names no target
+graph/spec/01-second.md:16:7
+  relations: an entry of `cites_evidence` is a sequence, and an entry is a target or a mapping with `to`
 graph/spec/02-listed-relations.md:5:3
   relations: `relations` is a sequence, and it names relation types
 graph/spec/03-anonymous.md:1:1

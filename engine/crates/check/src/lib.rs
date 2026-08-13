@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The runner: fourteen checks, coverage against the census, a published read
+//! The runner: sixteen checks, coverage against the census, a published read
 //! set, a suppression inventory, and text findings in one order.
 //!
 //! [Spec 12](../../../../docs/spec/12-check-layer.md#two-phases-and-why-the-order-matters)
@@ -10,7 +10,7 @@
 //!
 //! # Where the rules come from
 //!
-//! Thirteen of the fourteen are **generated**. None of them names a facet, a
+//! Fifteen of the sixteen are **generated**. None of them names a facet, a
 //! kind, a relation, an identifier scheme or a number of days: each reads a
 //! declaration out of the resolved taxonomy and instantiates itself over
 //! whatever that declaration produced.
@@ -23,6 +23,13 @@
 //!
 //! Four of the five origins are represented. Shape, Graph and Document are
 //! here. Corpus and Plugin are not, and neither has a rule that needs it yet.
+//!
+//! Two of the Graph-origin rules are **document-grained**, which the other
+//! three are not. [`declaration`] and [`identity`] route the phase-A defects
+//! that stop an edge from existing: an edge-scoped instance exists per edge, so
+//! no edge-scoped rule reaches a block whose entries produced none. The origin
+//! is what a rule reads and the grain is what one instance covers, and the two
+//! were never one statement.
 //!
 //! The four Document-origin rules are generated from a declaration in the same
 //! sense the others are, and two of them meet a limit the language puts there.
@@ -94,22 +101,32 @@
 //! the obligation and the control, so the finding travels the same binding as
 //! every other one.
 //!
-//! What stays outside is the rest of `headwater_graph::Problem`: a `relations:`
-//! block that is not a mapping, an unknown relation name, an entry with no
-//! `to`, a repeated triple, and a source document with no identifier. Each one
-//! stops an edge from existing, so no edge-scoped rule can be instantiated over
-//! it, and each is still reported under the graph heading alone.
+//! The rest of `headwater_graph::Problem` is routed too, and at the other
+//! grain. A `relations:` block that is not a mapping, an unknown relation name,
+//! an unusable entry, an entry with no `to` and a repeated triple are
+//! [`declaration`]. A source document with no identifier is [`identity`], with
+//! the two identifier-index defects that say the same thing from the other
+//! side. Each of those stops an edge from *existing*, so the unit that survives
+//! is the document that wrote the block, and the report the build already
+//! produced reaches the check on the view rather than beside it.
+//!
+//! One defect of phase A is still unrouted, and it is the one whose grain is
+//! wrong: two documents that claim one identifier are
+//! `headwater_graph::index::Defect::Duplicate`, and a document-scoped instance
+//! reads one of the two.
 
 pub mod adoption;
 pub mod cache;
 pub mod context;
 pub mod coverage;
+pub mod declaration;
 pub mod endpoint;
 pub mod facet_required;
 pub mod facet_value;
 pub mod finding;
 pub mod fragment;
 pub mod identifier;
+pub mod identity;
 pub mod instance;
 pub mod language;
 pub mod participation;
@@ -147,7 +164,7 @@ use headwater_graph::{Declarations, Graph};
 
 /// The rules this runner carries, in the order a report lists them.
 ///
-/// Twelve are generated from the taxonomy, one reads no declaration, one is
+/// Fourteen are generated from the taxonomy, one reads no declaration, one is
 /// the coverage guarantee itself, and the last two are about the taxonomy
 /// rather than about the corpus. A rule that is generated has no entry of its
 /// own anywhere: the list is the *templates*, and the instance count is what a
@@ -156,7 +173,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 17] = [
+pub const RULES: [&str; 19] = [
     facet_required::RULE,
     facet_value::RULE,
     identifier::RULE,
@@ -165,6 +182,8 @@ pub const RULES: [&str; 17] = [
     reciprocity::RULE,
     endpoint::RULE,
     participation::RULE,
+    declaration::RULE,
+    identity::RULE,
     voice::RULE,
     language::RULE,
     retired::RULE,
@@ -333,6 +352,18 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::neighbourhood_exports::<participation::Participation<'_>>(),
         ),
         (
+            declaration::RULE,
+            scope::document_scope::<declaration::Unusable<'_>>(),
+            scope::document_version::<declaration::Unusable<'_>>(),
+            scope::document_exports::<declaration::Unusable<'_>>(),
+        ),
+        (
+            identity::RULE,
+            scope::document_scope::<identity::Identity<'_>>(),
+            scope::document_version::<identity::Identity<'_>>(),
+            scope::document_exports::<identity::Identity<'_>>(),
+        ),
+        (
             voice::RULE,
             scope::document_scope::<voice::Voice>(),
             scope::document_version::<voice::Voice>(),
@@ -433,7 +464,7 @@ pub fn run(
     ctx: &Context,
     cache: &mut Cache,
 ) -> Run {
-    // Registration, in full: fourteen checks, each named once. The scope trait each
+    // Registration, in full: sixteen checks, each named once. The scope trait each
     // one implements decides what it is handed, so this function cannot widen
     // a view by calling the wrong instantiation.
     let required = facet_required::Required::over(declared.shape);
@@ -445,6 +476,12 @@ pub fn run(
     let reciprocity = reciprocity::Reciprocity::over(declared.relations);
     let endpoints = endpoint::Endpoints::over(declared.relations, declared.shape);
     let participation = participation::Participation::over(declared.shape, declared.relations);
+    let declarations = declaration::Unusable::over(declared.relations, declared.shape);
+    let identities = identity::Identity::over(
+        declared.relations,
+        declared.shape,
+        &declared.config.identifier_facet,
+    );
     let voice = voice::Voice::over(declared.shape);
     let language = language::Language::over(declared.shape);
     let retired = retired::Retired::over(declared.shape);
@@ -453,10 +490,16 @@ pub fn run(
     let fragments = fragment::Fragments;
 
     let digests = scope::Digests::of(census);
-    let mut instances = scope::over_documents(&required, census, ctx, cache);
-    instances.extend(scope::over_documents(&values, census, ctx, cache));
-    instances.extend(scope::over_documents(&identifiers, census, ctx, cache));
-    instances.extend(scope::over_documents(&placement, census, ctx, cache));
+    let mut instances = scope::over_documents(&required, census, graph, ctx, cache);
+    instances.extend(scope::over_documents(&values, census, graph, ctx, cache));
+    instances.extend(scope::over_documents(
+        &identifiers,
+        census,
+        graph,
+        ctx,
+        cache,
+    ));
+    instances.extend(scope::over_documents(&placement, census, graph, ctx, cache));
     instances.extend(scope::over_edges(&targets, graph, &digests, ctx, cache));
     instances.extend(scope::over_edges(&reciprocity, graph, &digests, ctx, cache));
     instances.extend(scope::over_edges(&endpoints, graph, &digests, ctx, cache));
@@ -468,12 +511,32 @@ pub fn run(
         ctx,
         cache,
     ));
-    instances.extend(scope::over_documents(&voice, census, ctx, cache));
-    instances.extend(scope::over_documents(&language, census, ctx, cache));
-    instances.extend(scope::over_documents(&retired, census, ctx, cache));
-    instances.extend(scope::over_documents(&source_form, census, ctx, cache));
-    instances.extend(scope::over_documents(&sections, census, ctx, cache));
-    instances.extend(scope::over_documents(&fragments, census, ctx, cache));
+    instances.extend(scope::over_documents(
+        &declarations,
+        census,
+        graph,
+        ctx,
+        cache,
+    ));
+    instances.extend(scope::over_documents(
+        &identities,
+        census,
+        graph,
+        ctx,
+        cache,
+    ));
+    instances.extend(scope::over_documents(&voice, census, graph, ctx, cache));
+    instances.extend(scope::over_documents(&language, census, graph, ctx, cache));
+    instances.extend(scope::over_documents(&retired, census, graph, ctx, cache));
+    instances.extend(scope::over_documents(
+        &source_form,
+        census,
+        graph,
+        ctx,
+        cache,
+    ));
+    instances.extend(scope::over_documents(&sections, census, graph, ctx, cache));
+    instances.extend(scope::over_documents(&fragments, census, graph, ctx, cache));
 
     let coverage = Coverage::of(census, &instances);
 

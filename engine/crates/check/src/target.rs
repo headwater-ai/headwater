@@ -49,12 +49,12 @@
 //! one can only be asked after the first is answered.
 //!
 //! It is also not every phase-A defect of a `relations:` block. A block that is
-//! not a mapping, an unknown relation name, an entry with no `to`, a repeated
-//! triple and a source with no identifier are `headwater_graph::Problem`, and
-//! each one stops an edge from existing at all. No edge means no instance, so
-//! no rule here can reach them. They are reported under the graph heading and
-//! they answer to nothing, which is the same shape of gap one level further
-//! back.
+//! not a mapping, an unknown relation name, an unusable entry, an entry with no
+//! `to`, a repeated triple and a source with no identifier are
+//! `headwater_graph::edges::Problem`, and each one stops an edge from existing
+//! at all. No edge means no instance, so no rule at this grain reaches them.
+//! [`crate::declaration`] and [`crate::identity`] carry them at the grain that
+//! survives, which is the document that wrote the block.
 //!
 //! # The scope
 //!

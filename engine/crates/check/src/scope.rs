@@ -35,10 +35,18 @@
 //!
 //! # What a check still declares, and what it cannot
 //!
-//! The grain comes from the trait. `NEEDS_BODY` and `NEEDS_CLOCK` stay
-//! declarations, because each is a real input requirement rather than a claim
-//! about the grain, and both are enforced the same way: a view returns nothing
-//! to a check that did not declare the input.
+//! The grain comes from the trait. `NEEDS_BODY`, `NEEDS_PHASE_A` and
+//! `NEEDS_CLOCK` stay declarations, because each is a real input requirement
+//! rather than a claim about the grain, and all three are enforced the same
+//! way: a view returns nothing to a check that did not declare the input.
+//!
+//! `NEEDS_PHASE_A` is the third of them and the newest.
+//! [`headwater_graph::Trouble`] is what the graph build could not make of one
+//! document, and a rule that routes a phase-A defect to a finding has to read
+//! it. It arrives **on the view**, restricted to the one document the instance
+//! is over, rather than on the check: a check that held the whole report and
+//! looked its own path up in it could look a sibling's path up just as easily,
+//! and that is the widening this module exists to make impossible.
 //!
 //! `VERSION` is the other declaration, and it is the one component of a cache
 //! key that no input supplies. It says which edition of a rule reached a
@@ -89,7 +97,7 @@ use crate::instance::{Input, Instance, Outcome};
 use headwater_census::census::{Census, Outcome as Classification};
 use headwater_census::resolve::Step;
 use headwater_doc::Body;
-use headwater_graph::{Direction, Edge, Graph, Target};
+use headwater_graph::{Direction, Edge, Graph, Target, Trouble};
 use headwater_yaml::{Mapping, Span};
 
 /// A typed row that carries no document. Unreachable, and recorded rather than
@@ -158,14 +166,16 @@ impl Grain {
 pub struct Scope {
     grain: Grain,
     needs_body: bool,
+    needs_phase_a: bool,
     needs_clock: bool,
 }
 
 impl Scope {
-    pub(crate) const fn document(needs_body: bool, needs_clock: bool) -> Self {
+    pub(crate) const fn document(needs_body: bool, needs_phase_a: bool, needs_clock: bool) -> Self {
         Scope {
             grain: Grain::Document,
             needs_body,
+            needs_phase_a,
             needs_clock,
         }
     }
@@ -174,6 +184,7 @@ impl Scope {
         Scope {
             grain: Grain::Edge,
             needs_body: false,
+            needs_phase_a: false,
             needs_clock,
         }
     }
@@ -182,6 +193,7 @@ impl Scope {
         Scope {
             grain: Grain::Neighbourhood { depth: 1 },
             needs_body: false,
+            needs_phase_a: false,
             needs_clock,
         }
     }
@@ -190,6 +202,7 @@ impl Scope {
         Scope {
             grain: Grain::Corpus,
             needs_body: false,
+            needs_phase_a: false,
             needs_clock: false,
         }
     }
@@ -198,6 +211,7 @@ impl Scope {
         Scope {
             grain: Grain::Taxonomy,
             needs_body: false,
+            needs_phase_a: false,
             needs_clock: false,
         }
     }
@@ -208,6 +222,15 @@ impl Scope {
 
     pub fn needs_body(&self) -> bool {
         self.needs_body
+    }
+
+    /// Whether an instance of this scope receives what phase A could not make
+    /// of its document. It joins the cache key on the same terms the body does
+    /// not need to: a report about one document is a function of that
+    /// document's bytes, which the read set already carries, and the flag is in
+    /// the key because it changes what the instance read.
+    pub fn needs_phase_a(&self) -> bool {
+        self.needs_phase_a
     }
 
     /// Whether an instance of this scope receives the injected clock, and so
@@ -229,6 +252,14 @@ impl Scope {
             (Grain::Corpus, _) => "every row of the census, and it is a barrier",
             (Grain::Taxonomy, _) => "the resolved taxonomy, and no document",
         };
+        // Phase A's report about this document, where the rule declared it. A
+        // reader who counts the barriers has to see that this instance read one
+        // more thing than its front matter, and that the one more thing is
+        // still about the one document.
+        let phase_a = match self.needs_phase_a {
+            true => ", and what phase A could not make of it",
+            false => "",
+        };
         // The clock is named because it is an input like any other, and because
         // spec 12 puts it in the cache key. A reader who asks why a warm run
         // re-evaluated one rule and not another reads the answer here.
@@ -236,7 +267,7 @@ impl Scope {
             true => ", and the injected clock",
             false => "",
         };
-        format!("{} scope, {carries}{clock}", self.grain.name())
+        format!("{} scope, {carries}{phase_a}{clock}", self.grain.name())
     }
 }
 
@@ -272,6 +303,15 @@ pub trait DocumentCheck {
     /// receives nothing from [`DocumentView::body`], so the declaration is the
     /// access rather than a note beside it.
     const NEEDS_BODY: bool = false;
+    /// Whether the view carries what phase A could not make of this document,
+    /// on the same terms: a check that does not declare it receives nothing
+    /// from [`DocumentView::phase_a`].
+    ///
+    /// It is what a rule that routes a structural finding needs, and it is
+    /// deliberately not a handle on the graph. The view carries the report for
+    /// the one document the instance is over and no other, so a rule that
+    /// reports a phase-A defect still cannot read a sibling.
+    const NEEDS_PHASE_A: bool = false;
     /// Whether the view carries the injected clock, on the same terms and with
     /// one more consequence: it joins the cache key.
     const NEEDS_CLOCK: bool = false;
@@ -364,7 +404,7 @@ pub trait NeighbourhoodCheck {
 
 /// The scope of a document-scoped check, derived from its trait.
 pub fn document_scope<C: DocumentCheck>() -> Scope {
-    Scope::document(C::NEEDS_BODY, C::NEEDS_CLOCK)
+    Scope::document(C::NEEDS_BODY, C::NEEDS_PHASE_A, C::NEEDS_CLOCK)
 }
 
 /// The scope of an edge-scoped check, derived from its trait.
@@ -436,6 +476,7 @@ pub struct DocumentView<'a> {
     placed_on: Option<&'a str>,
     facets: &'a Mapping,
     body: Option<&'a Body>,
+    phase_a: Option<Trouble<'a>>,
     clock: Option<Date>,
 }
 
@@ -465,6 +506,16 @@ impl<'a> DocumentView<'a> {
     /// The body, and only for a check that declared `NEEDS_BODY`.
     pub fn body(&self) -> Option<&'a Body> {
         self.body
+    }
+
+    /// What phase A could not make of **this** document, and only for a check
+    /// that declared `NEEDS_PHASE_A`.
+    ///
+    /// It is the graph build's own answer rather than a second reading of the
+    /// same front matter. See [`headwater_graph::Trouble`] for why a check that
+    /// re-derived it would be a second definition of one defect.
+    pub fn phase_a(&self) -> Option<&Trouble<'a>> {
+        self.phase_a.as_ref()
     }
 
     /// The injected date, and only for a check that declared `NEEDS_CLOCK`.
@@ -675,9 +726,18 @@ impl Digests {
 /// One instance per typed document the check generates over. An untyped row
 /// has no kind and so no document instance, and the census already reports it
 /// with its own outcome.
+///
+/// The graph is here for one reason: a check that declared `NEEDS_PHASE_A`
+/// receives what the build could not make of *its* document. A row the census
+/// classified as generated is not a typed row, so no instance is created over
+/// one and no phase-A report about one reaches a rule. That is spec 6's
+/// exemption holding at this grain rather than a second decision here: the
+/// content of a generated file is a function of its emitter, and
+/// `generate --check` is what holds it.
 pub fn over_documents<C: DocumentCheck>(
     check: &C,
     census: &Census,
+    graph: &Graph,
     ctx: &Context,
     cache: &mut Cache,
 ) -> Vec<Instance> {
@@ -713,6 +773,12 @@ pub fn over_documents<C: DocumentCheck>(
             facets: &document.facets,
             body: match C::NEEDS_BODY {
                 true => Some(&document.body),
+                false => None,
+            },
+            // Built per row and only where the trait asked for it, so a rule
+            // that did not declare the input pays nothing and receives nothing.
+            phase_a: match C::NEEDS_PHASE_A {
+                true => Some(graph.about(&row.path)),
                 false => None,
             },
             clock,

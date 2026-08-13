@@ -110,6 +110,29 @@ pub struct Graph {
     pub problems: Vec<edges::Reported>,
 }
 
+/// What phase A could not make of one document.
+///
+/// Both lists hold what this build already decided, in the order it recorded
+/// them. The type exists so that a check over one document reads the build's
+/// answer rather than deriving a second one from the same front matter. Two
+/// readings of one `relations:` block are two definitions of a defect, and only
+/// the build's reading carries the resolution it did: whether two spellings of
+/// one anchor are one target is a fact the resolvers hold, and no reader of
+/// front matter alone reaches it.
+#[derive(Clone, Debug, Default)]
+pub struct Trouble<'a> {
+    /// What the identifier index could not make of the document.
+    pub identity: Vec<&'a index::Reported>,
+    /// What the edge build could not make of its `relations:` block.
+    pub relations: Vec<&'a edges::Reported>,
+}
+
+impl Trouble<'_> {
+    pub fn is_empty(&self) -> bool {
+        self.identity.is_empty() && self.relations.is_empty()
+    }
+}
+
 /// An external anchor, as a node: one identity, however many edges reach it.
 #[derive(Clone, Debug)]
 pub struct AnchorNode {
@@ -137,6 +160,28 @@ impl Graph {
             links,
             skipped,
             problems,
+        }
+    }
+
+    /// Everything phase A could not make of one document, by path.
+    ///
+    /// One lookup rather than two, because a defect of the identifier index and
+    /// a defect of a `relations:` block are one document's news to one author.
+    /// A caller that filtered the two lists itself would be a second reading of
+    /// which report belongs to which file.
+    pub fn about(&self, path: &str) -> Trouble<'_> {
+        Trouble {
+            identity: self
+                .index
+                .defects
+                .iter()
+                .filter(|defect| defect.path == path)
+                .collect(),
+            relations: self
+                .problems
+                .iter()
+                .filter(|problem| problem.path == path)
+                .collect(),
         }
     }
 

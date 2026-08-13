@@ -271,9 +271,10 @@ impl Cache {
         text.push_str(&format!("rule {rule}\n"));
         text.push_str(&format!("version {version}\n"));
         text.push_str(&format!(
-            "scope {} body={} clock={}\n",
+            "scope {} body={} phase_a={} clock={}\n",
             scope.grain().name(),
             scope.needs_body(),
+            scope.needs_phase_a(),
             scope.needs_clock()
         ));
         // The one injected value, and it is written exactly when the scope
@@ -534,7 +535,7 @@ mod tests {
     /// the cache incapable of changing a verdict.
     #[test]
     fn every_component_of_the_key_moves_it() {
-        let scope = Scope::document(false, false);
+        let scope = Scope::document(false, false, false);
         let base = cache()
             .key("r", 1, scope, "a.md", &inputs(Some("sha256:one")), None)
             .expect("a key");
@@ -545,7 +546,15 @@ mod tests {
             cache().key(
                 "r",
                 1,
-                Scope::document(true, false),
+                Scope::document(true, false, false),
+                "a.md",
+                &inputs(Some("sha256:one")),
+                None,
+            ),
+            cache().key(
+                "r",
+                1,
+                Scope::document(false, true, false),
                 "a.md",
                 &inputs(Some("sha256:one")),
                 None,
@@ -579,7 +588,7 @@ mod tests {
             cache().key(
                 "r",
                 1,
-                Scope::document(false, true),
+                Scope::document(false, false, true),
                 "a.md",
                 &inputs(Some("sha256:one")),
                 day("2026-08-12"),
@@ -611,7 +620,7 @@ mod tests {
     /// the clock on both sides.
     #[test]
     fn two_days_are_two_keys_for_a_check_that_reads_the_clock() {
-        let scope = Scope::document(false, true);
+        let scope = Scope::document(false, false, true);
         let monday = cache()
             .key(
                 "r",
@@ -642,7 +651,7 @@ mod tests {
     /// can move stays served from a cache when the date turns over.
     #[test]
     fn a_check_that_does_not_read_the_clock_keys_the_same_on_every_day() {
-        let scope = Scope::document(false, false);
+        let scope = Scope::document(false, false, false);
         let monday = cache().key(
             "r",
             1,
@@ -673,7 +682,7 @@ mod tests {
             cache().key(
                 "r",
                 1,
-                Scope::document(false, true),
+                Scope::document(false, false, true),
                 "a.md",
                 &inputs(Some("sha256:one")),
                 None
@@ -691,7 +700,7 @@ mod tests {
             cache().key(
                 "r",
                 1,
-                Scope::document(false, false),
+                Scope::document(false, false, false),
                 "a.md",
                 &inputs(None),
                 None
@@ -708,7 +717,7 @@ mod tests {
             Cache::disabled().key(
                 "r",
                 1,
-                Scope::document(false, false),
+                Scope::document(false, false, false),
                 "a.md",
                 &inputs(Some("d")),
                 None

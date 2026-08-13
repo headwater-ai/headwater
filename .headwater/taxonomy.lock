@@ -16,12 +16,12 @@
 
 lock:
   format: 2
-  digest: sha256:3150f8701b51133921a9637a8328e56b717d964ecec7fc22fd27c0d6de0b9b56
+  digest: sha256:4f0721119a8afc4cac94bda8c6696d7261e7e0588eca251196547428ffe54677
   package: headwater/standard
   version: 1.0.0
   sources:
     - path: packages/headwater-standard/taxonomy.yml
-      digest: sha256:5a96e32213dd92bdb57b5d1b931c9a66a7e141e80476e46b37f2be372e8c8c03
+      digest: sha256:a99544d7ef4ea8ba5a348f61d71f0ec416f72a8f4426a6693ca156a6f63c0232
     - path: docs/taxonomies/design-spec/bundle.yml
       digest: sha256:0dd73708d7200b7b02389a7dc8811ddc80ab61ece7892efd7391cdf504d6bda0
     - path: docs/taxonomies/decision-record/bundle.yml
@@ -577,6 +577,18 @@ resolved:
       class: cohesion
       prevents: content.inconsistent
       severity: high
+    OB-REL-5:
+      statement: "Every entry a relations block declares becomes an edge of the graph"
+      rationale: "A block the build could not read declares nothing, so the corpus is missing exactly the relations its author wrote down, and the author is the only person who ever sees the claim"
+      class: cohesion
+      prevents: content.inconsistent
+      severity: high
+    OB-ID-2:
+      statement: "A document that a relation may name declares one identifier that names it"
+      rationale: "A document with no identifier is neither end of any edge, so every relation it declares and every relation that names it is lost while the document itself is reported as classified and checked"
+      class: cohesion
+      prevents: content.incomplete
+      severity: high
     OB-REL-2:
       statement: "Both ends of a relation instance are kinds that the relation permits"
       rationale: "An edge between kinds a relation forbids is an assertion that the taxonomy never sanctioned, and every query over that relation inherits it"
@@ -754,6 +766,30 @@ resolved:
         criteria:
           window: "one release of the taxonomy over an adopting corpus"
           threshold: "no false positive, because the rule reports what the graph build already resolved rather than deriving a second answer of its own"
+          sample: "every finding of one run over the adopting corpus, adjudicated once"
+    CT-REL-5:
+      mechanism: "check:relation.declaration.unusable"
+      discharges:
+        - OB-REL-5
+      trigger: pull_request
+      posture: advisory
+      acts: detective
+      promotion:
+        criteria:
+          window: "one release of the taxonomy over an adopting corpus"
+          threshold: "no false positive, because the rule reports what the graph build already threw away rather than reading the block a second time"
+          sample: "every finding of one run over the adopting corpus, adjudicated once"
+    CT-ID-2:
+      mechanism: "check:identifier.unusable"
+      discharges:
+        - OB-ID-2
+      trigger: pull_request
+      posture: advisory
+      acts: detective
+      promotion:
+        criteria:
+          window: "one release of the taxonomy over an adopting corpus"
+          threshold: "no false positive, because the rule reports what the identifier index already refused rather than deriving a second answer"
           sample: "every finding of one run over the adopting corpus, adjudicated once"
     CT-REL-2:
       mechanism: "check:relation.endpoint.not_permitted"
