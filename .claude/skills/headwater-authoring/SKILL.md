@@ -21,6 +21,8 @@ A `Write` of a new document under `docs/` is refused by the `PreToolUse` hook, w
 
 The verb never overwrites. To change a title after the fact, edit the `title` facet and rename the file yourself, because [OBL-repo-0106](../../../docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md) records that no rule reads a shelf layout after birth.
 
+**Every run that writes a document also appends one capture-cost reading, and that is why the verb matters beyond convenience.** The line goes to `.headwater/capture-cost.jsonl`, it holds counts and no prose, and it names no person and no agent. Commit it with the document it names: the two arrive in one working tree, and a reading whose document is not on the tree is reported as resolving to nothing. A document you write by any other route carries no reading at all, and `headwater capture` then reports a lower reach rather than the same one. A run that exits non-zero because the reading did not land prints the line to append by hand.
+
 ## What the run leaves you, and how to fill each one
 
 The verb marks a field `hand entry` when no declaration determines it. Read its report rather than this list — the report is derived from the lock and this paragraph is not.

@@ -280,6 +280,50 @@ if [ -x "$engine" ]; then
         esac
     fi
 
+    printf '\n# headwater-authoring, against the store the verb writes\n'
+
+    # A second scratch with no store at all, because this case counts readings
+    # and the committed store already holds some. The grain of the assertions is
+    # the numerator and the direction of the denominator, never the corpus size:
+    # a fixture that pinned the document count would move on every document this
+    # repository adds, for a reason that has nothing to do with the claim.
+    sentence='A document you write by any other route carries no reading at all'
+    name='a document written by another route lowers the reach and never raises it'
+    if ! grep -qF "$sentence" "$skills/headwater-authoring/SKILL.md"; then
+        fail "$name" "the skill no longer says: $sentence"
+    else
+        clean=$(mktemp -d "${TMPDIR:-/tmp}/headwater-capture-XXXXXX")
+        cp -r "$root/docs" "$clean/docs"
+        cp -r "$root/.headwater" "$clean/.headwater"
+        rm -f "$clean/.headwater/capture-cost.jsonl"
+        rm -rf "$clean/.headwater/cache"
+
+        "$engine" new obligation_record --title 'A record the store watched' \
+            --now 2026-08-14 --root "$clean" >/dev/null 2>&1
+        scaffolded=$("$engine" capture --root "$clean" |
+            sed -n 's/^  \([0-9]*\) of \([0-9]*\) classified documents carry a reading$/\1 \2/p')
+
+        # The same document shape, written by no verb at all.
+        printf -- '---\nid: OBL-repo-9998\ntitle: "A record no verb wrote"\nstatus: current\nstatus_since: 2026-08-14\nlast_verified: 2026-08-14\nsummary: "Written by no verb, to hold the reach figure against a route the store does not watch."\n---\n\n# A record no verb wrote\n\n## Context\n\nNone.\n\n## Obligation\n\nNone.\n\n## Discharge\n\nNone.\n' \
+            > "$clean/docs/obligations/9998-a-record-no-verb-wrote.md"
+        by_hand=$("$engine" capture --root "$clean" |
+            sed -n 's/^  \([0-9]*\) of \([0-9]*\) classified documents carry a reading$/\1 \2/p')
+        rm -rf "$clean"
+
+        set -- $scaffolded
+        was_reached=${1:-0} was_total=${2:-0}
+        set -- $by_hand
+        now_reached=${1:-0} now_total=${2:-0}
+        if [ "$was_reached" = "1" ] && [ "$now_reached" = "1" ] &&
+            [ "$now_total" -eq $((was_total + 1)) ]; then
+            pass "$name"
+        else
+            fail "$name" \
+                "scaffolded read $was_reached of $was_total, and after a hand-written document \
+it read $now_reached of $now_total. The numerator must hold at 1 and the denominator must rise by 1"
+        fi
+    fi
+
     printf '\n# headwater-maintainer, against the hook it invokes\n'
 
     # The agent tells its reader to drive the write hook by hand, one path at a
