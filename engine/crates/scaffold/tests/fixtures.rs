@@ -164,6 +164,7 @@ fn cases() -> Vec<Case> {
         // What it writes.
         case("design_spec", "A scaffolded fourth part"),
         case("decision_record", "A scaffolded decision"),
+        case("numbered", "A file named from its own identifier"),
         case("standalone", "A kind no relation may name"),
         case("decision_record", "A successor with a far half")
             .relating("supersedes", "SPEC-FIX-the-second-part"),
@@ -185,6 +186,7 @@ fn cases() -> Vec<Case> {
         case("orphan", "A kind on no shelf"),
         case("ambiguous", "A kind on two shelves"),
         case("misplaced", "A shelf that globs early"),
+        case("holed", "A layout with nothing to fill it"),
         case("decision_record", ""),
         case("unopened_record", "A regime with no initial state"),
         case("chaptered", "An integer nothing derives"),
@@ -253,6 +255,7 @@ fn variant(refusal: &Refusal) -> &'static str {
         Refusal::KindUnshelved { .. } => "KindUnshelved",
         Refusal::KindOnManyShelves { .. } => "KindOnManyShelves",
         Refusal::ShelfPathNotLiteral { .. } => "ShelfPathNotLiteral",
+        Refusal::LayoutUnresolved { .. } => "LayoutUnresolved",
         Refusal::TitleEmpty => "TitleEmpty",
         Refusal::FacetUndeterminable { .. } => "FacetUndeterminable",
         Refusal::SchemeUnreadable { .. } => "SchemeUnreadable",
@@ -388,12 +391,13 @@ fn what_the_minter_writes_the_rule_admits() {
 /// for a reader to notice.
 #[test]
 fn every_refusal_branch_has_a_case() {
-    const BRANCHES: [&str; 18] = [
+    const BRANCHES: [&str; 19] = [
         "KindUnknown",
         "KindAbstract",
         "KindUnshelved",
         "KindOnManyShelves",
         "ShelfPathNotLiteral",
+        "LayoutUnresolved",
         "TitleEmpty",
         "FacetUndeterminable",
         "SchemeUnreadable",

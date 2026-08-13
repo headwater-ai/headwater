@@ -80,11 +80,19 @@ add:
   # --- shelves --------------------------------------------------------------
   # Decisions sit on the base shelf, which is homogeneous and already declares
   # the kind. Obligation records need a shelf of their own.
+  #
+  # `layout` is what names the file. `{seq}` is the sequence of the identifier
+  # the run mints, so the number on the file and the number in `OBL-repo-0106`
+  # are one value written twice rather than two values that may disagree. No
+  # facet holds it, which is why the layout reads the identifier instead.
+  # Without this line the verb names a record after its title alone, and a shelf
+  # whose siblings all sort by number gains one that sorts by its first letter.
 
   shelves.obligations:
     path: docs/obligations/**
     homogeneous: true
     kind: obligation_record
+    layout: "{seq:04d}-{slug}.md"
 
   # --- identifier schemes ---------------------------------------------------
   # `reconcile-first` over the corpus is the right denominator here, because an

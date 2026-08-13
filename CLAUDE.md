@@ -60,3 +60,15 @@ None of them binds. A `Bash` call that writes a file matches no matcher, `disabl
 The second hatch is for debt rather than for an exception. The `adoption` block of `.headwater/taxonomy.lock` holds `(document, rule)` pairs under a task with an owner and an expiry. A pending finding is reported with its task beside it and does not fail a strict run. `headwater infer --owner <name> --write` writes one, and `headwater check` reports how many pairs remain on every run. This repository declares one task, which carries the last entry of the linter baseline that the engine still reports.
 
 **Writing spec prose.** Invoke the `ste-editor` skill before you rewrite a document under `docs/spec/`, and run `headwater check` on the result. The skill carries the rules that no check reads: consistent terms, multi-word nouns kept to three words, and the judgment calls that a lexical rule cannot make.
+
+**The three skills, and when each one loads.** Nothing makes a skill load. A harness reads a description and a model picks, which [spec 5](docs/spec/05-ai-integration.md#how-a-skill-reaches-an-agent-and-what-nothing-does) states as a measurement rather than a property. This paragraph is the one mechanism stronger than a description, and it costs context on every session.
+
+| skill | invoke it before |
+|---|---|
+| `headwater-authoring` | you add or revise any document under `docs/`, and whenever `headwater new` refuses |
+| `headwater-taxonomy` | you touch `packages/`, `docs/taxonomies/` or `.headwater/overlay.yml` |
+| `ste-editor` | you rewrite prose under `docs/spec/` |
+
+`.claude/agents/headwater-maintainer.md` is the maintainer subagent: hand it a change and it reports what the change touched, what is now stale, what the corpus is owed, and what it could not decide. It proposes and never accepts.
+
+`sh .claude/skills/fixtures.sh` holds every claim these files make about the engine. It is a blocking CI step, half of its cases are derived from the skill files rather than listed, and it writes only into a scratch copy of the corpus.
