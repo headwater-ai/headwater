@@ -1,9 +1,13 @@
-160 nodes, 360 declared edge halves
-    357 to a document
-      3 to an anchor
+162 nodes, 370 declared edge halves
+    363 to a document
+      7 to an anchor
 0 prose links that did not resolve
 
 anchors
+      1 code_path `.claude/hooks/intent.sh` via source-tree
+      1 code_path `.claude/hooks/lib.sh` via source-tree
+      1 code_path `.claude/hooks/review.sh` via source-tree
+      1 code_path `.claude/hooks/write.sh` via source-tree
       1 code_path `engine/crates/check/src/language.rs` via source-tree
       1 code_path `spike` via source-tree
       1 code_path `tools/rdf-probe/emit.py` via source-tree

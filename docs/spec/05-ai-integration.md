@@ -18,6 +18,11 @@ relations:
     - EVAL-HW-the-measurement-layer
     - EVAL-HW-the-serving-boundary
     - EVAL-HW-warrant-and-adjudication
+  governs:
+    - .claude/hooks/lib.sh
+    - .claude/hooks/intent.sh
+    - .claude/hooks/write.sh
+    - .claude/hooks/review.sh
 ---
 
 # 5 — AI integration
