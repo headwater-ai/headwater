@@ -25,6 +25,37 @@
 //! `Reason::NoFrontMatter` is the first case, and every other reason is the
 //! second.
 //!
+//! # A file this engine wrote is a third thing, and it is none of the six
+//!
+//! A projection lands inside the corpus root — a shelf index has to land on its
+//! shelf — so the walk reaches it like any other file. It carries no front
+//! matter, because its first line is the generated-file marker, so the six
+//! outcomes above would report it as an untyped document of the shelf it landed
+//! on, against every contract that shelf's kind requires. The artifact this
+//! engine wrote would become a finding against the corpus, on every run.
+//!
+//! None of the three outcomes an author could act on is true of it.
+//! [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#lifecycle)
+//! exempts a generated projection from acceptance and holds it to regeneration
+//! instead, so `untyped` is wrong: nobody is going to type it. `excluded` is
+//! wrong: no declaration excludes it, and the corpus root is where it belongs.
+//! `typed` is wrong twice over, because it would then be routed to checks whose
+//! findings name the wrong author — the content of a generated file is a
+//! function of the emitter, and an author cannot fix it in the file.
+//!
+//! So a marked file gets a row of its own, with the reason on it, in the way an
+//! excluded path does. **The census accounts for it and judges nothing about
+//! it**, which is the division this module keeps everywhere: `headwater generate
+//! --check` holds a generated file to the bytes its emitter produces now, and
+//! that verb is the only one that reports drift in one. Two reports of one fact
+//! send its author to two places.
+//!
+//! The marker is a **claim**, and this module cannot test it: testing it needs
+//! the projection declarations, which the census does not read. The generator
+//! tests it, by reading this census beside its own plan and reporting a marked
+//! file that no declaration writes. That test is what stops the marker from
+//! being a line an author can add to exempt a document from every check.
+//!
 //! # Precedence, stated because a row has one outcome
 //!
 //! A file can be several things at once — excluded *and* unparseable, on no
@@ -36,18 +67,34 @@
 //! 2. a declared exclusion claims the path, and the corpus's own statement about
 //!    a file outranks anything the engine would work out about it;
 //! 3. the file is not Markdown, so it is not a document;
-//! 4. the bytes will not read as text, or the front matter will not load — a
-//!    defect in the file, and it outranks every remaining outcome because it is
-//!    the only one that is nobody's ordinary corpus state;
-//! 5. no shelf claims the path, or two claim it equally;
-//! 6. there is no front-matter block, on a path that a shelf does claim;
-//! 7. kind resolution ran on the front matter, and it reports its own outcome.
+//! 4. the bytes will not read as text;
+//! 5. the first line marks the file as this engine's own output;
+//! 6. the front matter will not load — a defect in the file, and it outranks
+//!    every remaining outcome because it is the only one that is nobody's
+//!    ordinary corpus state;
+//! 7. no shelf claims the path, or two claim it equally;
+//! 8. there is no front-matter block, on a path that a shelf does claim;
+//! 9. kind resolution ran on the front matter, and it reports its own outcome.
 //!
-//! Step 5 sits above step 6 on purpose. A file with no front matter and no shelf
+//! Step 7 sits above step 8 on purpose. A file with no front matter and no shelf
 //! has two things wrong with it, and the shelf is the one that decides whether
 //! the other matters: a path that no shelf claims is a file the taxonomy has no
 //! opinion about, and telling its author to add front matter would be advice
 //! about a document this corpus has not said it wants.
+//!
+//! Step 5 sits above step 6 for the reason step 2 sits where it does: a
+//! statement about who wrote a file outranks what the engine would work out from
+//! its content. The two cases are in fact disjoint, because a marker on the
+//! first line is a first line that is not `---`, so such a file has no block to
+//! fail to load. The order is fixed anyway, because a row has one outcome and a
+//! reader should not have to derive which.
+//!
+//! **Step 3 sits above step 5, and that is a boundary rather than an oversight.**
+//! A generated file in a format that is not Markdown is already accounted for as
+//! `not a document`, which is true of it and reports nothing against it. Moving
+//! the marker test above the extension test would mean reading every file under
+//! the corpus root — including every image and every archive — to ask a question
+//! whose answer changes no verdict.
 
 use crate::resolve::{self, Resolution};
 use crate::shelves::Taxonomy;
@@ -103,6 +150,14 @@ pub enum Outcome {
         kind: String,
         derivation: Box<Resolution>,
     },
+    /// This engine wrote the file, and the file says so on its first line.
+    ///
+    /// `kind` is the projection kind the marker names, and it is **what the
+    /// file claims rather than what is true**: anything can write the line, and
+    /// nothing here reads the projection declarations to test the claim. It is
+    /// `None` where the marker names nothing, which is what a marker somebody
+    /// wrote by hand usually looks like.
+    Generated { kind: Option<String> },
     /// Read, and carrying no kind.
     Untyped(Untyped),
     /// The engine could not read the file.
@@ -232,6 +287,20 @@ fn outcome_of(entry: &walk::Entry, taxonomy: &Taxonomy) -> Read {
         Err(_) => return hashed(Outcome::Unreadable(Unreadable::NotText), digest),
     };
 
+    // Step 5. Before the parse, because a marked file has no front matter to
+    // parse and because who wrote a file outranks what its content would say.
+    // The predicate is `headwater-mark`'s and not this module's: the generator
+    // writes the marker, this reads it, and a second copy of the rule here is
+    // how the two would come to disagree about which files this engine wrote.
+    if headwater_mark::carries_marker(&entry.path, &source) {
+        return hashed(
+            Outcome::Generated {
+                kind: headwater_mark::kind_named(&entry.path, &source),
+            },
+            digest,
+        );
+    }
+
     // The one distinction this module exists to keep: a file with no block is
     // an untyped document, and a file whose block will not load is a file the
     // engine could not read.
@@ -300,6 +369,7 @@ impl Outcome {
     pub fn class(&self) -> &'static str {
         match self {
             Outcome::Typed { .. } => "typed",
+            Outcome::Generated { .. } => "generated",
             Outcome::Untyped(_) => "untyped",
             Outcome::Unreadable(_) => "unreadable",
             Outcome::Excluded { .. } => "excluded",
@@ -312,6 +382,15 @@ impl Outcome {
     pub fn detail(&self) -> String {
         match self {
             Outcome::Typed { kind, .. } => kind.clone(),
+            // What holds the file, rather than what this row will not do to it.
+            // A reader who finds a generated file in a report is asking which
+            // verb owns it, and the answer is the same for every one of them.
+            Outcome::Generated { kind } => match kind {
+                Some(kind) => format!(
+                    "`{kind}`, and `headwater generate --check` holds it rather than this census"
+                ),
+                None => "`headwater generate --check` holds it rather than this census".to_string(),
+            },
             Outcome::Untyped(Untyped::NoFrontMatter) => {
                 "no front matter, so nobody has typed this file".to_string()
             }
@@ -346,8 +425,9 @@ impl Census {
     /// Counts per outcome class, in the order the classes are declared, so that
     /// two reports line up column by column.
     pub fn counts(&self) -> Vec<(&'static str, usize)> {
-        const CLASSES: [&str; 6] = [
+        const CLASSES: [&str; 7] = [
             "typed",
+            "generated",
             "untyped",
             "unreadable",
             "excluded",
@@ -541,7 +621,8 @@ mod tests {
                 Outcome::Excluded { .. }
                 | Outcome::NotADocument
                 | Outcome::Unwalkable(_)
-                | Outcome::Unreadable(_) => {
+                | Outcome::Unreadable(_)
+                | Outcome::Generated { .. } => {
                     assert!(!parsed, "{} carries a document nothing read", row.path)
                 }
                 Outcome::Untyped(Untyped::Unresolved { .. }) => {}
@@ -585,6 +666,60 @@ mod tests {
             .expect("the fixture");
         let bytes = std::fs::read(fixtures().join(&row.path)).expect("the fixture reads");
         assert_eq!(row.digest, Some(headwater_hash::digest(&bytes)));
+    }
+
+    /// The outcome this module gained, on the file that motivated it.
+    ///
+    /// `walk/spec/generated-index.md` sits on a shelf whose kind is chosen by a
+    /// discriminator, and it carries no front matter, no identifier and no
+    /// section. Every one of those is a contract that shelf's kind requires. It
+    /// is a generated row rather than an untyped one, so nothing is reported
+    /// against it and nobody is told to type it.
+    #[test]
+    fn a_marked_file_on_a_shelf_is_generated_and_not_untyped() {
+        let census = take(&corpus(), &taxonomy());
+        let row = census
+            .rows
+            .iter()
+            .find(|row| row.path == "walk/spec/generated-index.md")
+            .expect("the fixture");
+        assert!(
+            matches!(row.outcome, Outcome::Generated { .. }),
+            "{:?}",
+            row.outcome
+        );
+        // The shelf does claim the path, which is what makes the row load
+        // bearing: the alternative outcome was available and was not taken.
+        assert!(matches!(
+            resolve::shelf_for(&row.path, &taxonomy()),
+            resolve::ShelfMatch::Matched { .. }
+        ));
+        let Outcome::Generated { kind } = &row.outcome else {
+            unreachable!()
+        };
+        assert_eq!(kind.as_deref(), Some("shelf_index"));
+    }
+
+    /// The false positive that would cost the most.
+    ///
+    /// A document that names the marker in its prose is an authored document,
+    /// and this repository's own specification is one. Classifying it as
+    /// generated would drop it out of every check silently, which is the shape
+    /// of defect [spec 4](../../../../docs/spec/04-assurance-model.md) exists to
+    /// prevent.
+    #[test]
+    fn a_document_that_quotes_the_marker_below_the_first_line_stays_typed() {
+        let census = take(&corpus(), &taxonomy());
+        let row = census
+            .rows
+            .iter()
+            .find(|row| row.path == "walk/spec/quotes-the-marker.md")
+            .expect("the fixture");
+        assert!(
+            matches!(&row.outcome, Outcome::Typed { kind, .. } if kind == "design_spec"),
+            "{:?}",
+            row.outcome
+        );
     }
 
     #[test]

@@ -32,6 +32,7 @@ version = "0.0.0"
 dependencies = [
  "headwater-doc",
  "headwater-hash",
+ "headwater-mark",
  "headwater-meta",
  "headwater-resolve",
  "headwater-yaml",
