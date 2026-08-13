@@ -152,6 +152,10 @@ The engine implements these projection kinds: shelf indexes, shelf sections, rel
 
 A graph export is a projection like the others. The taxonomy declares its output path, so whether an export is committed is a schema decision and not an engine default ([principle 1](00-vision-and-scope.md#design-principles)). A declared export is held to regeneration by `generate --check`, exactly as a shelf index is.
 
+**A committed export regenerates on every edit to a facet it carries, and that is the `Cargo.lock` regime.** The native export is lossless, so it carries every facet of every document, and `summary` is one of them. An edit to one summary changes the export, and `generate --check` then fails until somebody regenerates it. A committed copy that survived a source edit would be a committed copy that had drifted, which is what the gate exists to catch. This corpus already pays the same cost on its shelf index, which carries the summary of every document on the shelf.
+
+**An adopter who wants a committed artifact that a summary edit leaves alone has two controls, and neither one drops a facet.** The first is which corpus the profile carries. The second is whether the taxonomy declares an output path at all, because an export with no declared path is never committed. `headwater export --format` writes such an artifact to standard output on demand. A filter over facet values is not a third control, and [the filter section](#an-export-profile-carries-a-filter) below states why.
+
 Exports fall into two classes, and only one class preserves fidelity.
 
 - **The native graph export** carries the property graph with no loss, and that includes the instance attributes on edges ([Q4](09-decisions.md#q4--relation-storage)). It is what the federation tier reads ([spec 7](07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)).
@@ -187,6 +191,8 @@ Six rules make the filter honest, and three of them already hold elsewhere.
 - **The declaration travels with the artifact.** A filtered export states that it is filtered, and it states when it was generated. A copy of an artifact carries neither of those unless the artifact does.
 
 **The class half of that fourth rule waits on an emitter that needs it.** The declaration reaches facet values, and the document is the unit that a filter withholds. A class filter acts on an emitter that carries some classes and not others. Neither of the two emitters that exist is one. The native export carries every class, and a JSON Schema carries no instance at all. So the first emitter that partitions by class is the one that gives a class filter something to act on.
+
+**The attribute half waits on a consumer, and until then a filter reaches no attribute.** The engine evaluates a clause over a document's facet values and withholds that document whole. It never projects an attribute off a document that it carries. So no profile can emit a graph that holds a document and omits its summary. What would ask for one is a consumer that wants a committed artifact which a summary edit leaves alone. That work reaches past the filter, because the projection census would have to account for a withheld attribute as well as a withheld node. And [`exportable_as`](12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule) would have to rule whether an export that drops a declared facet still conforms.
 
 **The generation time is injected, and that is what lets it coexist with a byte gate.** The rule above and the regeneration gate look incompatible. A time inside an output moves on every run, so `generate --check` reports drift over a corpus that nobody touched. They hold together because they cover two artifacts. A **committed** export is held to regeneration and carries no time at all. An export that **leaves** the repository is the artifact the rule above is about, and `headwater export --at <date>` supplies its time. The clock is thus a value that a caller injects. [Spec 12](12-check-layer.md#determinism-concretely) injects it into a check for the same reason, rather than let one read a syscall. Same corpus, same lock, same injected clock, byte-identical output, under both.
 
@@ -225,8 +231,8 @@ A tool acquires a security obligation when it publishes a claim that a boundary 
 ### CLI
 
 ```
-headwater check      [--changed-only] [--strict] [--read-set <path>]
-                     [--format text|json|sarif|markdown]
+headwater check      [--strict] [--no-cache] [--now <date>] [--read-set <path>]
+                     [--register <path>] [--format text|json|sarif|markdown]
 headwater gate       --read-set <path> [--now <date>]
 headwater generate   [--check]
 headwater new        <kind> [--title ...]
@@ -236,10 +242,14 @@ headwater explain    <path|identifier>
 headwater mcp
 headwater export     [--profile ...] [--format json|jsonschema|shacl|rdf|skos|okf|linkml]
                      [--at <date>] [--check]
+headwater init       [--corpus <dir>] [--package <name>]
+headwater infer      [--owner <name>] [--until <date>] [--write]
 headwater taxonomy   validate | resolve | diff | migrate | audit
 headwater coverage   [--format ...]
 headwater probe      [--tier regression|campaign] [--arm present|absent] [--category ...]
 ```
+
+**This grammar is a statement of fact about the engine, and a name it declares either runs or waits.** Every verb the engine ships is above. A name that the engine has not built stays here when something nameable would make it real. The engine then says what the name waits on when a caller types it. `query <expression>` is such a name, because no document states what an expression is. The verb ships the day one does. The same reading covers `new`, `coverage` and `probe`. It covers `taxonomy diff`, `taxonomy migrate` and `taxonomy audit`, and the five export targets that no consumer has asked for. A name that nothing could make real has no place here, and `--changed-only` is the one such name this grammar carried. The test between the two is not how far away the work is. It is whether any document or any consumer could turn the name into a verb that runs.
 
 `probe` is the one verb that reaches the network, so it never runs inside `check` and never gates ([spec 5](05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose)). It projects the cost of a run against the tier's declared budget and refuses a run that exceeds it. Every run writes its transcript and reports the run identity, the realized cost, and the interval around each rate.
 
@@ -249,7 +259,7 @@ headwater probe      [--tier regression|campaign] [--arm present|absent] [--cate
 
 The CLI is advisory by default (exit 0 with findings on stdout). Use `--strict` for gates. The default is deliberate: a tool that blocks on first contact is removed, and a removed tool catches nothing.
 
-**No flag decides which findings count.** `--changed-only` scopes the work and never the verdict, because a full run over the same tree and the same lock reaches the same result. That is what makes it sound for a 200 ms hook. A mode that evaluated only newly touched documents would be a second input to the verdict that no reviewer sees. It would also report the rest as neither checked nor skipped. An adopter who wants patient debt gets it from the [adoption payload](07-distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy). That is a fact about the corpus, rather than a property of an invocation ([Q12](09-decisions.md#q12--migration-path-for-an-existing-corpus)).
+**No flag decides which findings count, and there is no `--changed-only`.** A flag that took a caller's list of changed documents would put a second input into the verdict that no reviewer sees. It would also report the rest as neither checked nor skipped. A scope derived from content rather than from a list is the cache, and the cache ships. So the one job such a flag has is to pay for a 200 ms hook, and that job is either forbidden or already paid. [OBL-repo-0080](../obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md) holds the measurement. An adopter who wants patient debt gets it from the [adoption payload](07-distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy). That is a fact about the corpus, rather than a property of an invocation ([Q12](09-decisions.md#q12--migration-path-for-an-existing-corpus)).
 
 **`--read-set` writes what the report already states.** A run reports the union of its in-scope inputs beside its coverage numbers ([spec 12](12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)). The flag writes the same bytes to a file. The reader that needs them is a gate, which holds this run against a later tree and reads a file rather than a report. The flag decides no finding and it moves no verdict.
 

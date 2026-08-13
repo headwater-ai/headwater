@@ -1,6 +1,6 @@
-201 seen, 158 classified, 158 checked, 2442 check instances
+201 seen, 158 classified, 158 checked, 2446 check instances
       3 generated, held to regeneration by `headwater generate --check`
-    148 skipped: this document writes no fragment into itself
+    147 skipped: this document writes no fragment into itself
      21 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
 adoption
   1 pairs open, 0 closed, holding 1 finding, in 1 task
@@ -11,9 +11,9 @@ adoption
     158 instances of facet.value.not_permitted
     158 instances of identifier.pattern.not_met
     158 instances of shelf.placement_is_primary
-    355 instances of relation.target.unresolved
+    357 instances of relation.target.unresolved
      86 instances of relation.reciprocity.missing
-    266 instances of relation.endpoint.not_permitted
+    268 instances of relation.endpoint.not_permitted
      15 instances of relation.participation.overdue
     158 instances of relation.declaration.unusable
     158 instances of identifier.unusable
