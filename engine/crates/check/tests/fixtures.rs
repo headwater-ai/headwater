@@ -201,7 +201,6 @@ fn corpus_of(root: &Path, resolved: &headwater_resolve::Repository) -> Corpus {
     )
 }
 
-
 /// The precedence spec 4 fixes, over one tree that exercises both mechanisms.
 ///
 /// Spec 4 orders waiver, then migration-pending, then suppression, "so the
@@ -295,7 +294,10 @@ fn a_pending_finding_never_blocks() {
         .collect();
     errors.sort();
     errors.dedup();
-    assert!(bare.has_errors(), "the fixture tree carries an error finding");
+    assert!(
+        bare.has_errors(),
+        "the fixture tree carries an error finding"
+    );
 
     // A pair is a `(document, rule)` cell, so it holds every finding of that
     // rule on that document rather than the one that prompted it. That is the
@@ -311,10 +313,11 @@ fn a_pending_finding_never_blocks() {
         })
         .count();
 
-    let pairs: String = errors
-        .iter()
-        .map(|(path, rule)| format!("      - {{path: {path}, rule: {rule}}}\n"))
-        .collect();
+    let mut pairs = String::new();
+    for (path, rule) in &errors {
+        use std::fmt::Write;
+        let _ = writeln!(pairs, "      - {{path: {path}, rule: {rule}}}");
+    }
     let payload = headwater_yaml::load(&format!(
         "\
 tasks:
@@ -341,11 +344,24 @@ tasks:
         !laden.has_errors(),
         "declared debt failed a strict run, which spec 7 says it never does"
     );
-    assert_eq!(laden.adoption.open(), expected);
+    // The two numbers, and they are different numbers. A pair is what an
+    // adopter closes; a finding is what a reader would have seen. The cell
+    // absorbs the second finding of one rule on one document, which is the
+    // property the module doc states and the reason the report prints both.
+    assert_eq!(
+        laden.adoption.open(),
+        errors.len(),
+        "one pair per declared cell"
+    );
+    assert_eq!(
+        laden.adoption.held(),
+        expected,
+        "every finding in those cells"
+    );
     assert!(
         expected > errors.len(),
         "this tree has a document with two findings of one rule, which is what \
-         makes the line above a statement about the grain"
+         makes the two assertions above a statement about the grain"
     );
 }
 

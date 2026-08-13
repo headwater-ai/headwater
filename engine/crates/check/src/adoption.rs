@@ -179,8 +179,9 @@ fn task(map: Option<&Mapping>, rules: &[&'static str]) -> Result<Task, String> {
     // Spec 4 ranks a migration state above a suppression because it carries an
     // owner and a task list where a suppression carries one author's judgment.
     // A task with no owner is a suppression with more syntax.
-    let owner = scalar(map, "owner")
-        .ok_or("it names no `owner`, which is the field spec 4 ranks this above a suppression for")?;
+    let owner = scalar(map, "owner").ok_or(
+        "it names no `owner`, which is the field spec 4 ranks this above a suppression for",
+    )?;
     let until = scalar(map, "until")
         .ok_or("it states no `until`, and debt with no expiry is a permanent exemption")?;
     let until = Date::parse(until)
@@ -197,8 +198,14 @@ fn task(map: Option<&Mapping>, rules: &[&'static str]) -> Result<Task, String> {
     let mut pairs = Vec::with_capacity(items.len());
     for item in items {
         let entry = item.value.as_map().ok_or("a pair is not a mapping")?;
-        let path = entry.get("path").and_then(scalar_of).ok_or("a pair names no `path`")?;
-        let rule = entry.get("rule").and_then(scalar_of).ok_or("a pair names no `rule`")?;
+        let path = entry
+            .get("path")
+            .and_then(scalar_of)
+            .ok_or("a pair names no `path`")?;
+        let rule = entry
+            .get("rule")
+            .and_then(scalar_of)
+            .ok_or("a pair names no `rule`")?;
         // Spec 7: a label by document alone blankets every finding on that
         // document. A glob is that label with a pair's syntax.
         if path.contains('*') {
@@ -259,7 +266,10 @@ pub fn apply(
     let mut pending = Vec::new();
     // Which declared pairs were met this run. A pair not met is a pair that
     // stopped failing, which is the number that makes a payload visibly shrink.
-    let mut met: Vec<Vec<bool>> = tasks.iter().map(|task| vec![false; task.pairs.len()]).collect();
+    let mut met: Vec<Vec<bool>> = tasks
+        .iter()
+        .map(|task| vec![false; task.pairs.len()])
+        .collect();
 
     for finding in findings {
         let hit = tasks.iter_mut().enumerate().find_map(|(index, task)| {
@@ -314,12 +324,23 @@ impl Ledger {
     /// Pairs still failing. This is the number spec 7 puts beside coverage:
     /// "a payload that does not move is then visible from the second run rather
     /// than from the expiry".
+    ///
+    /// Pairs rather than findings, because a pair is the unit an adopter closes
+    /// and the two numbers move apart. One document that raises four findings of
+    /// one rule is one pair, and fixing three of the four moves neither count.
+    /// [`Ledger::held`] is the other number, and the report prints both.
     pub fn open(&self) -> usize {
         self.tasks
             .iter()
             .filter(|task| task.state == State::Open)
-            .map(|task| task.held)
+            .map(|task| task.pairs.len() - task.closed.len())
             .sum()
+    }
+
+    /// Findings the payload held. The number a reader compares against the
+    /// findings list to see what a green run is standing on.
+    pub fn held(&self) -> usize {
+        self.tasks.iter().map(|task| task.held).sum()
     }
 
     /// Declared pairs that raised no finding, which is the payload shrinking.
@@ -359,9 +380,11 @@ impl Ledger {
         out.push_str("adoption\n");
         let _ = writeln!(
             out,
-            "  {} pairs open, {} closed, in {} {}",
+            "  {} pairs open, {} closed, holding {} {}, in {} {}",
             self.open(),
             self.closed(),
+            self.held(),
+            verb(self.held(), "finding", "findings"),
             self.tasks.len(),
             verb(self.tasks.len(), "task", "tasks")
         );
@@ -370,10 +393,12 @@ impl Ledger {
                 State::Open => {
                     let _ = writeln!(
                         out,
-                        "  {} {} open, {} closed, owner {}, until {}",
+                        "  {} {} open, {} closed, holding {} {}, owner {}, until {}",
                         task.id,
-                        task.held,
+                        task.pairs.len() - task.closed.len(),
                         task.closed.len(),
+                        task.held,
+                        verb(task.held, "finding", "findings"),
                         task.owner,
                         task.until
                     );
@@ -540,7 +565,10 @@ tasks:
         let (tasks, refused) = read(&block, &RULES);
         assert!(tasks.is_empty());
         assert_eq!(refused.len(), 1);
-        assert!(refused[0].why.contains("one document at a time"), "{refused:?}");
+        assert!(
+            refused[0].why.contains("one document at a time"),
+            "{refused:?}"
+        );
     }
 
     /// The field spec 4 ranks a migration state above a suppression for.
@@ -623,7 +651,10 @@ tasks:
         );
         let (tasks, refused) = read(&block, &RULES);
         assert!(tasks.is_empty());
-        assert!(refused[0].why.contains("accounts for nothing"), "{refused:?}");
+        assert!(
+            refused[0].why.contains("accounts for nothing"),
+            "{refused:?}"
+        );
     }
 
     /// The first task that names a pair holds it, and only one does.

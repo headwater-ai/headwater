@@ -510,7 +510,8 @@ core:
     #[test]
     fn a_lock_reads_back_to_the_taxonomy_it_was_written_from() {
         let (sources, resolution) = resolved(VALID);
-        let text = write("acme/fixture", "1.0.0", &sources, &resolution, None).expect("it validates");
+        let text =
+            write("acme/fixture", "1.0.0", &sources, &resolution, None).expect("it validates");
         let lock = read(&text).expect("the lock reads");
         assert_eq!(lock.canonical(), resolution.render());
         assert_eq!(lock.digest, digest(&resolution.render()));
@@ -520,7 +521,8 @@ core:
     #[test]
     fn an_edit_to_the_taxonomy_inside_the_lock_is_caught() {
         let (sources, resolution) = resolved(VALID);
-        let text = write("acme/fixture", "1.0.0", &sources, &resolution, None).expect("it validates");
+        let text =
+            write("acme/fixture", "1.0.0", &sources, &resolution, None).expect("it validates");
         // The edit a reviewer would never see: one word in the body, and the
         // digest left alone.
         let tampered = text.replace("homogeneous: true", "homogeneous: false");
@@ -531,7 +533,8 @@ core:
     #[test]
     fn an_edit_to_the_header_comment_is_not_a_stale_lock() {
         let (sources, resolution) = resolved(VALID);
-        let text = write("acme/fixture", "1.0.0", &sources, &resolution, None).expect("it validates");
+        let text =
+            write("acme/fixture", "1.0.0", &sources, &resolution, None).expect("it validates");
         let commented = format!("# somebody added a note\n{text}");
         let lock = read(&commented).expect("the lock still reads");
         assert!(matches(&lock, &resolution));
@@ -556,7 +559,8 @@ core:
     #[test]
     fn the_body_of_a_lock_is_the_canonical_text_indented_and_nothing_else() {
         let (sources, resolution) = resolved(VALID);
-        let text = write("acme/fixture", "1.0.0", &sources, &resolution, None).expect("it validates");
+        let text =
+            write("acme/fixture", "1.0.0", &sources, &resolution, None).expect("it validates");
         let mut body = String::new();
         for line in text.lines().skip_while(|line| *line != "resolved:").skip(1) {
             body.push_str(line.strip_prefix("  ").unwrap_or(line));
@@ -568,7 +572,8 @@ core:
     #[test]
     fn a_lock_from_a_later_engine_says_so_rather_than_guessing() {
         let (sources, resolution) = resolved(VALID);
-        let text = write("acme/fixture", "1.0.0", &sources, &resolution, None).expect("it validates");
+        let text =
+            write("acme/fixture", "1.0.0", &sources, &resolution, None).expect("it validates");
         let later = text.replace(&format!("format: {FORMAT}"), "format: 9");
         assert!(matches!(read(&later), Err(LockError::Format { .. })));
     }
@@ -576,7 +581,8 @@ core:
     #[test]
     fn a_moved_source_is_named_and_an_untouched_one_is_not() {
         let (sources, resolution) = resolved(VALID);
-        let text = write("acme/fixture", "1.0.0", &sources, &resolution, None).expect("it validates");
+        let text =
+            write("acme/fixture", "1.0.0", &sources, &resolution, None).expect("it validates");
         let lock = read(&text).expect("the lock reads");
         // The source is `base.yml` relative to a root that holds no such file,
         // so it reads as moved. That is the honest answer for a file that is

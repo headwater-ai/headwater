@@ -99,6 +99,17 @@ impl Date {
         Date { days }
     }
 
+    /// This date, moved by whole days.
+    ///
+    /// `headwater infer` uses it for the default expiry of a task it proposes.
+    /// The arithmetic is on the day count rather than on the calendar, so it
+    /// cannot produce a date that does not exist.
+    pub const fn plus_days(&self, days: i64) -> Self {
+        Date {
+            days: self.days + days,
+        }
+    }
+
     /// Whole days from `origin` to this date. Negative when this date is
     /// earlier, which a caller reads as a window that has not opened.
     pub fn days_since(&self, origin: Date) -> i64 {

@@ -48,6 +48,7 @@ dependencies = [
  "headwater-lock",
  "headwater-query",
  "headwater-resolve",
+ "headwater-yaml",
 ]
 
 [[package]]
