@@ -1,24 +1,28 @@
-21 seen, 19 classified, 18 checked, 160 check instances
+25 seen, 23 classified, 22 checked, 242 check instances
       1 generated, held to regeneration by `headwater generate --check`
-     17 skipped: this document writes no fragment into itself
-     12 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+     21 skipped: this document writes no fragment into itself
+     16 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: `guarded` forbids hedging, and this engine has no pattern set for it
       2 skipped: `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
-19 documents in the read set
-     18 instances of facet.required.missing
-     18 instances of facet.value.not_permitted
-     18 instances of identifier.pattern.not_met
-     19 instances of shelf.placement_is_primary
-      9 instances of relation.target.unresolved
+      1 skipped: no `id` facet, which is the key this engine reads an identifier from and which no declaration states
+      1 skipped: the `id` facet is a sequence, and an identifier is a word
+23 documents in the read set
+     22 instances of facet.required.missing
+     22 instances of facet.value.not_permitted
+     22 instances of identifier.pattern.not_met
+     23 instances of shelf.placement_is_primary
+     10 instances of relation.target.unresolved
       4 instances of relation.reciprocity.missing
-      6 instances of relation.endpoint.not_permitted
+      7 instances of relation.endpoint.not_permitted
       7 instances of relation.participation.overdue
-     11 instances of voice.forbidden_construction
-     11 instances of language.controlled.not_met
-      9 instances of language.retired_term.used
-      9 instances of language.source_form.not_met
+     22 instances of relation.declaration.unusable
+     22 instances of identifier.unusable
+     15 instances of voice.forbidden_construction
+     15 instances of language.controlled.not_met
+     13 instances of language.retired_term.used
+     13 instances of language.source_form.not_met
       2 instances of section.required.missing
-     19 instances of link.fragment.unresolved
+     23 instances of link.fragment.unresolved
 suppressions
   2 findings hidden by 2 directives
       1 false_positive
@@ -46,6 +50,10 @@ rules, and for each the scope that binds it
     edge scope, one relation instance and both endpoints
   relation.participation.overdue
     neighbourhood scope, one document and the documents one relation away from it, and the injected clock
+  relation.declaration.unusable
+    document scope, one document and its front matter, and what phase A could not make of it
+  identifier.unusable
+    document scope, one document and its front matter, and what phase A could not make of it
   voice.forbidden_construction
     document scope, one document, its front matter and its body
   language.controlled.not_met
@@ -65,8 +73,8 @@ rules, and for each the scope that binds it
   control.mechanism.unimplemented
     taxonomy scope, the resolved taxonomy, and no document
 register
-  24 obligations: 19 verified, 2 gap, 1 unverifiable, 2 with no disposition
-      8 high, 7 verified
+  26 obligations: 21 verified, 2 gap, 1 unverifiable, 2 with no disposition
+     10 high, 9 verified
       8 medium, 6 verified
       8 low, 6 verified
   OB-FIX-7 verified, 1 finding escaped under it
@@ -77,23 +85,23 @@ register
   OB-FIX-17 verified, and it states a gap as well, which is two dispositions
   OB-FIX-18 with no disposition, and CT-FIX-15 claims to discharge it under a mechanism this engine does not implement
   OB-FIX-20 gap, owner the fixture tree, and no target, and CT-FIX-17 claims to discharge it under a mechanism this engine does not implement, which is two dispositions
-  21 controls
-     20 posture advisory
+  23 controls
+     22 posture advisory
       1 posture blocking
-     20 acts detective
+     22 acts detective
       1 acts preventive
-     17 name a rule this engine carries
+     19 name a rule this engine carries
       1 name a phase this engine runs
       2 name a mechanism this engine does not implement
       1 name a mechanism outside this engine
-     19 with no promotion record, so nothing states what would promote them
+     21 with no promotion record, so nothing states what would promote them
       1 with criteria
       1 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver mechanism exists, 0 migration-pending, 2 suppressed
   relation.endpoint.not_permitted reaches OB-FIX-5, OB-FIX-17, and a finding names one obligation, so it names none
   coverage.document_unchecked reaches no obligation, so it names none
-35 findings
-     17 error
+42 findings
+     24 error
      18 warn
 
 instances
@@ -133,6 +141,14 @@ instances
     passed
   facet.required.missing check/spec/13-dangling.md
     passed
+  facet.required.missing check/spec/14-relations-not-a-mapping.md
+    passed
+  facet.required.missing check/spec/15-unusable-entries.md
+    passed
+  facet.required.missing check/spec/16-no-identifier.md
+    passed
+  facet.required.missing check/spec/17-identifier-not-a-word.md
+    passed
   facet.value.not_permitted check/evaluations/alpha.md
     passed
   facet.value.not_permitted check/evaluations/beta.md
@@ -168,6 +184,14 @@ instances
   facet.value.not_permitted check/spec/11-identifier-mismatch.md
     passed
   facet.value.not_permitted check/spec/13-dangling.md
+    passed
+  facet.value.not_permitted check/spec/14-relations-not-a-mapping.md
+    passed
+  facet.value.not_permitted check/spec/15-unusable-entries.md
+    passed
+  facet.value.not_permitted check/spec/16-no-identifier.md
+    passed
+  facet.value.not_permitted check/spec/17-identifier-not-a-word.md
     passed
   identifier.pattern.not_met check/evaluations/alpha.md
     passed
@@ -205,6 +229,14 @@ instances
     failed
   identifier.pattern.not_met check/spec/13-dangling.md
     passed
+  identifier.pattern.not_met check/spec/14-relations-not-a-mapping.md
+    passed
+  identifier.pattern.not_met check/spec/15-unusable-entries.md
+    passed
+  identifier.pattern.not_met check/spec/16-no-identifier.md
+    skipped: no `id` facet, which is the key this engine reads an identifier from and which no declaration states
+  identifier.pattern.not_met check/spec/17-identifier-not-a-word.md
+    skipped: the `id` facet is a sequence, and an identifier is a word
   shelf.placement_is_primary check/evaluations/alpha.md
     passed
   shelf.placement_is_primary check/evaluations/beta.md
@@ -243,6 +275,14 @@ instances
     skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
   shelf.placement_is_primary check/spec/13-dangling.md
     skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  shelf.placement_is_primary check/spec/14-relations-not-a-mapping.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  shelf.placement_is_primary check/spec/15-unusable-entries.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  shelf.placement_is_primary check/spec/16-no-identifier.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  shelf.placement_is_primary check/spec/17-identifier-not-a-word.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
   relation.target.unresolved check/evaluations/alpha.md + check/spec/00-both-halves.md
     passed
   relation.target.unresolved check/evaluations/delta.md + check/spec/02-cited-only.md
@@ -261,6 +301,8 @@ instances
     failed
   relation.target.unresolved check/spec/13-dangling.md
     failed
+  relation.target.unresolved check/spec/15-unusable-entries.md + check/evaluations/alpha.md
+    passed
   relation.reciprocity.missing check/spec/00-both-halves.md + check/evaluations/alpha.md
     passed
   relation.reciprocity.missing check/evaluations/delta.md + check/spec/02-cited-only.md
@@ -281,7 +323,9 @@ instances
     passed
   relation.endpoint.not_permitted check/spec/01-one-half.md + check/evaluations/alpha.md
     passed
-  relation.participation.overdue check/evaluations/alpha.md + check/spec/00-both-halves.md + check/evaluations/eta.md + check/spec/01-one-half.md
+  relation.endpoint.not_permitted check/spec/15-unusable-entries.md + check/evaluations/alpha.md
+    passed
+  relation.participation.overdue check/evaluations/alpha.md + check/spec/00-both-halves.md + check/evaluations/eta.md + check/spec/01-one-half.md + check/spec/15-unusable-entries.md
     passed
   relation.participation.overdue check/evaluations/beta.md + check/spec/01-one-half.md
     passed
@@ -295,6 +339,94 @@ instances
     passed
   relation.participation.overdue check/evaluations/zeta.md
     passed
+  relation.declaration.unusable check/evaluations/alpha.md
+    passed
+  relation.declaration.unusable check/evaluations/beta.md
+    passed
+  relation.declaration.unusable check/evaluations/delta.md
+    passed
+  relation.declaration.unusable check/evaluations/epsilon.md
+    passed
+  relation.declaration.unusable check/evaluations/eta.md
+    passed
+  relation.declaration.unusable check/evaluations/gamma.md
+    passed
+  relation.declaration.unusable check/evaluations/zeta.md
+    passed
+  relation.declaration.unusable check/spec/00-both-halves.md
+    passed
+  relation.declaration.unusable check/spec/01-one-half.md
+    passed
+  relation.declaration.unusable check/spec/02-cited-only.md
+    passed
+  relation.declaration.unusable check/spec/05-no-summary.md
+    passed
+  relation.declaration.unusable check/spec/06-retired.md
+    passed
+  relation.declaration.unusable check/spec/07-prose-defects.md
+    passed
+  relation.declaration.unusable check/spec/08-contract-met.md
+    passed
+  relation.declaration.unusable check/spec/09-contract-missing.md
+    passed
+  relation.declaration.unusable check/spec/10-suppressed.md
+    passed
+  relation.declaration.unusable check/spec/11-identifier-mismatch.md
+    passed
+  relation.declaration.unusable check/spec/13-dangling.md
+    passed
+  relation.declaration.unusable check/spec/14-relations-not-a-mapping.md
+    failed
+  relation.declaration.unusable check/spec/15-unusable-entries.md
+    failed
+  relation.declaration.unusable check/spec/16-no-identifier.md
+    passed
+  relation.declaration.unusable check/spec/17-identifier-not-a-word.md
+    passed
+  identifier.unusable check/evaluations/alpha.md
+    passed
+  identifier.unusable check/evaluations/beta.md
+    passed
+  identifier.unusable check/evaluations/delta.md
+    passed
+  identifier.unusable check/evaluations/epsilon.md
+    passed
+  identifier.unusable check/evaluations/eta.md
+    passed
+  identifier.unusable check/evaluations/gamma.md
+    passed
+  identifier.unusable check/evaluations/zeta.md
+    passed
+  identifier.unusable check/spec/00-both-halves.md
+    passed
+  identifier.unusable check/spec/01-one-half.md
+    passed
+  identifier.unusable check/spec/02-cited-only.md
+    passed
+  identifier.unusable check/spec/05-no-summary.md
+    passed
+  identifier.unusable check/spec/06-retired.md
+    passed
+  identifier.unusable check/spec/07-prose-defects.md
+    passed
+  identifier.unusable check/spec/08-contract-met.md
+    passed
+  identifier.unusable check/spec/09-contract-missing.md
+    passed
+  identifier.unusable check/spec/10-suppressed.md
+    passed
+  identifier.unusable check/spec/11-identifier-mismatch.md
+    passed
+  identifier.unusable check/spec/13-dangling.md
+    passed
+  identifier.unusable check/spec/14-relations-not-a-mapping.md
+    passed
+  identifier.unusable check/spec/15-unusable-entries.md
+    passed
+  identifier.unusable check/spec/16-no-identifier.md
+    failed
+  identifier.unusable check/spec/17-identifier-not-a-word.md
+    failed
   voice.forbidden_construction check/spec/00-both-halves.md
     passed
   voice.forbidden_construction check/spec/01-one-half.md
@@ -316,6 +448,14 @@ instances
   voice.forbidden_construction check/spec/11-identifier-mismatch.md
     passed
   voice.forbidden_construction check/spec/13-dangling.md
+    passed
+  voice.forbidden_construction check/spec/14-relations-not-a-mapping.md
+    passed
+  voice.forbidden_construction check/spec/15-unusable-entries.md
+    passed
+  voice.forbidden_construction check/spec/16-no-identifier.md
+    passed
+  voice.forbidden_construction check/spec/17-identifier-not-a-word.md
     passed
   language.controlled.not_met check/spec/00-both-halves.md
     passed
@@ -339,6 +479,14 @@ instances
     passed
   language.controlled.not_met check/spec/13-dangling.md
     passed
+  language.controlled.not_met check/spec/14-relations-not-a-mapping.md
+    passed
+  language.controlled.not_met check/spec/15-unusable-entries.md
+    passed
+  language.controlled.not_met check/spec/16-no-identifier.md
+    passed
+  language.controlled.not_met check/spec/17-identifier-not-a-word.md
+    passed
   language.retired_term.used check/spec/00-both-halves.md
     passed
   language.retired_term.used check/spec/01-one-half.md
@@ -357,6 +505,14 @@ instances
     passed
   language.retired_term.used check/spec/13-dangling.md
     passed
+  language.retired_term.used check/spec/14-relations-not-a-mapping.md
+    passed
+  language.retired_term.used check/spec/15-unusable-entries.md
+    passed
+  language.retired_term.used check/spec/16-no-identifier.md
+    passed
+  language.retired_term.used check/spec/17-identifier-not-a-word.md
+    passed
   language.source_form.not_met check/spec/00-both-halves.md
     passed
   language.source_form.not_met check/spec/01-one-half.md
@@ -374,6 +530,14 @@ instances
   language.source_form.not_met check/spec/11-identifier-mismatch.md
     passed
   language.source_form.not_met check/spec/13-dangling.md
+    passed
+  language.source_form.not_met check/spec/14-relations-not-a-mapping.md
+    passed
+  language.source_form.not_met check/spec/15-unusable-entries.md
+    passed
+  language.source_form.not_met check/spec/16-no-identifier.md
+    passed
+  language.source_form.not_met check/spec/17-identifier-not-a-word.md
     passed
   section.required.missing check/spec/08-contract-met.md
     passed
@@ -416,6 +580,14 @@ instances
   link.fragment.unresolved check/spec/11-identifier-mismatch.md
     skipped: this document writes no fragment into itself
   link.fragment.unresolved check/spec/13-dangling.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved check/spec/14-relations-not-a-mapping.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved check/spec/15-unusable-entries.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved check/spec/16-no-identifier.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved check/spec/17-identifier-not-a-word.md
     skipped: this document writes no fragment into itself
 
 check/evaluations/delta.md:8:7 error
@@ -505,6 +677,27 @@ check/spec/13-dangling.md:9:7 error
 check/spec/13-dangling.md:10:7 error
   relation.target.unresolved (OB-FIX-24): `SPEC-FIX-dangling` declares `assesses: SPEC-FIX-untyped`, and that target names check/spec/04-untyped.md, which is untyped: the census gave it no kind, and an endpoint is a kind
   fix: give check/spec/04-untyped.md a kind, because both ends of a declared relation are kinds and only a typed document is a node
+check/spec/14-relations-not-a-mapping.md:8:3 error
+  relation.declaration.unusable (OB-FIX-25): `relations` is a sequence, and it names relation types
+  fix: write `relations:` as a mapping whose keys are relation names, because Q4 puts every relation instance under one key and the relation is that key
+check/spec/15-unusable-entries.md:8:3 error
+  relation.declaration.unusable (OB-FIX-25): `invented_relation` is neither a declared relation nor a declared inverse
+  fix: write a relation this taxonomy declares, or the inverse of one, in place of `invented_relation`, or declare `invented_relation` in the taxonomy
+check/spec/15-unusable-entries.md:11:7 error
+  relation.declaration.unusable (OB-FIX-25): `assesses` names EVAL-FIX-alpha twice, and the second declares no second edge
+  fix: delete one of the two entries of `assesses` that name EVAL-FIX-alpha. Q4 identifies an edge by its source, its relation and its normalized target, so the second declares no second edge, and the instance attributes on it are lost with it
+check/spec/15-unusable-entries.md:12:7 error
+  relation.declaration.unusable (OB-FIX-25): an entry of `assesses` is a sequence, and an entry is a target or a mapping with `to`
+  fix: write each entry of `assesses` as a target reference, or as a mapping with `to:` and the instance attributes beside it
+check/spec/15-unusable-entries.md:13:7 error
+  relation.declaration.unusable (OB-FIX-25): an entry of `assesses` declares no `to`, so it names no target
+  fix: give this entry of `assesses` a `to:`, or delete it, because an entry that names no target declares no edge and the attributes on it reach nothing
+check/spec/16-no-identifier.md:1:1 error
+  identifier.unusable (OB-FIX-26): a typed `design_spec` that declares no identifier, so no edge can name it, and every entry of its `relations:` block is lost with it, because an edge is identified by its source
+  fix: write one identifier of this document under the `id` key, because a relation names a document by its identifier and a document with none can stand at neither end of one
+check/spec/17-identifier-not-a-word.md:2:1 error
+  identifier.unusable (OB-FIX-26): the identifier is not a scalar, and an identifier is a word
+  fix: write one identifier of this document under the `id` key, because a relation names a document by its identifier and a document with none can stand at neither end of one
 engine/crates/check/fixtures/check.taxonomy.yml warn
   control.mechanism.unimplemented (OB-FIX-12): control CT-FIX-15 names the mechanism check:no.such.rule, which this engine does not implement, so nothing discharges OB-FIX-18
   fix: name a rule this engine carries, or a phase of it, or a mechanism outside it under a prefix this engine does not read

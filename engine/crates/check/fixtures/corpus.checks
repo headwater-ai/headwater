@@ -1,4 +1,4 @@
-201 seen, 158 classified, 158 checked, 2125 check instances
+201 seen, 158 classified, 158 checked, 2441 check instances
       3 generated, held to regeneration by `headwater generate --check`
     148 skipped: this document writes no fragment into itself
      21 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
@@ -15,6 +15,8 @@ adoption
      86 instances of relation.reciprocity.missing
     266 instances of relation.endpoint.not_permitted
      15 instances of relation.participation.overdue
+    158 instances of relation.declaration.unusable
+    158 instances of identifier.unusable
     139 instances of voice.forbidden_construction
     117 instances of language.controlled.not_met
     117 instances of language.retired_term.used
@@ -44,6 +46,10 @@ rules, and for each the scope that binds it
     edge scope, one relation instance and both endpoints
   relation.participation.overdue
     neighbourhood scope, one document and the documents one relation away from it, and the injected clock
+  relation.declaration.unusable
+    document scope, one document and its front matter, and what phase A could not make of it
+  identifier.unusable
+    document scope, one document and its front matter, and what phase A could not make of it
   voice.forbidden_construction
     document scope, one document, its front matter and its body
   language.controlled.not_met
@@ -63,8 +69,8 @@ rules, and for each the scope that binds it
   control.mechanism.unimplemented
     taxonomy scope, the resolved taxonomy, and no document
 register
-  22 obligations: 19 verified, 2 gap, 1 unverifiable, 0 with no disposition
-      9 high, 8 verified
+  24 obligations: 21 verified, 2 gap, 1 unverifiable, 0 with no disposition
+     11 high, 10 verified
       8 medium, 6 verified
       5 low, 5 verified
   OB-LANG-1 verified, 3 findings escaped under it
@@ -72,13 +78,13 @@ register
   OB-DR-1 gap, owner the decision-record entry, target a change-scoped rule that reads the prior version, which spec 12 already supplies as `needs_prior`
   OB-DR-2 gap, owner the decision-record entry, target a rule over state dwell time, which `taxonomy audit` already measures and no check reads
   OB-DR-3 unverifiable, To count the decisions in a document is to reason about what the prose asserts, which spec 1 forswears. The shelf is homogeneous and the section contract requires one `Decision` heading, and a second decision under that heading is invisible to both
-  19 controls
-     19 posture advisory
-     19 acts detective
-     17 name a rule this engine carries
+  21 controls
+     21 posture advisory
+     21 acts detective
+     19 name a rule this engine carries
       2 name a phase this engine runs
      12 with no promotion record, so nothing states what would promote them
-      3 with criteria
+      5 with criteria
       2 permanently advisory
       2 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver mechanism exists, 1 migration-pending, 4 suppressed

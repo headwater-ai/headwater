@@ -232,6 +232,20 @@ obligations:
     prevents: content.inconsistent
     severity: high
 
+  OB-REL-5:
+    statement: Every entry a relations block declares becomes an edge of the graph
+    rationale: A block the build could not read declares nothing, so the corpus is missing exactly the relations its author wrote down, and the author is the only person who ever sees the claim
+    class: cohesion
+    prevents: content.inconsistent
+    severity: high
+
+  OB-ID-2:
+    statement: A document that a relation may name declares one identifier that names it
+    rationale: A document with no identifier is neither end of any edge, so every relation it declares and every relation that names it is lost while the document itself is reported as classified and checked
+    class: cohesion
+    prevents: content.incomplete
+    severity: high
+
   OB-REL-2:
     statement: Both ends of a relation instance are kinds that the relation permits
     rationale: An edge between kinds a relation forbids is an assertion that the taxonomy never sanctioned, and every query over that relation inherits it
@@ -409,6 +423,30 @@ controls:
       criteria:
         window: one release of the taxonomy over an adopting corpus
         threshold: no false positive, because the rule reports what the graph build already resolved rather than deriving a second answer of its own
+        sample: every finding of one run over the adopting corpus, adjudicated once
+
+  CT-REL-5:
+    mechanism: check:relation.declaration.unusable
+    discharges: [OB-REL-5]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: one release of the taxonomy over an adopting corpus
+        threshold: no false positive, because the rule reports what the graph build already threw away rather than reading the block a second time
+        sample: every finding of one run over the adopting corpus, adjudicated once
+
+  CT-ID-2:
+    mechanism: check:identifier.unusable
+    discharges: [OB-ID-2]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: one release of the taxonomy over an adopting corpus
+        threshold: no false positive, because the rule reports what the identifier index already refused rather than deriving a second answer
         sample: every finding of one run over the adopting corpus, adjudicated once
 
   CT-REL-2:

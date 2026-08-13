@@ -93,9 +93,10 @@ Scope =
   | Shelf                    // every document on one shelf — sibling comparison
   | Corpus                   // everything
 
-  + needs_body:  bool
-  + needs_clock: bool
-  + needs_prior: bool        // change-scoped only: the prior committed version
+  + needs_body:    bool
+  + needs_phase_a: bool      // what phase A could not make of this document
+  + needs_clock:   bool
+  + needs_prior:   bool      // change-scoped only: the prior committed version
 ```
 
 Scope gives four things. The fourth makes the other three trustworthy.
@@ -169,7 +170,19 @@ That order is the direct answer to the silent-pass failure mode. The denominator
 
 **A structural finding needs a rule before a gate can act on it.** Three of the four above are a census row. The coverage rule reads the census, so a document with no instance is a finding already. A dangling edge has no row, because a row is a file and an edge is not one. `relation.target.unresolved` is the rule that carries it. Its unit is one entry of one `relations:` block, because a target that binds to nothing has no second endpoint to pair with.
 
-Five other defects of a `relations:` block reach no rule. Two of them are a block that is not a mapping, and a relation name that no declaration holds. The other three are an entry with no target, a repeated triple, and a source document with no identifier. Each one stops an edge from existing, so no edge-scoped rule has an instance over it. The graph reports all five, and `--strict` passes over them.
+A defect that stops an edge from existing needs another grain. Five of them do that, and each leaves nothing to instantiate an edge-scoped rule over.
+
+- a `relations:` block that is not a mapping
+- a relation name that no declaration holds
+- an entry that is neither a target reference nor a mapping
+- an entry that names no target
+- a triple that one document writes twice
+
+The unit that survives is the document that wrote the block. `relation.declaration.unusable` is document-scoped, and its view carries what phase A made of that one document. A second reading of the same front matter would be a second definition of each defect. One of the five would also disagree with the build. A repeated triple is a repeated **normalized** target, and only a resolver decides that.
+
+`identifier.unusable` carries the sixth. A document with no identifier is neither end of any edge. The census counts it as checked, and every relation it declares is lost. The identifier index says the same thing from the other side. It says it again for a document that writes a sequence where one identifier belongs.
+
+Two documents that claim one identifier reach no rule. The graph reports the second one in path order. Which document is second is a fact about the corpus rather than about either file. A document-scoped instance reads one of the two, so the grain is wrong rather than the message.
 
 ## Findings
 

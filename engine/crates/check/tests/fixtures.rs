@@ -4,8 +4,14 @@
 //! [Spec 12](../../../../docs/spec/12-check-layer.md#testing-a-check-without-a-failing-fixture-does-not-ship)
 //! sets the floor: "every check ships with at least one fixture that it fails
 //! and one that it passes." The tree under `fixtures/check/` carries both for
-//! each of the eleven rules, and `check.report` records every instance and every
-//! finding it produces.
+//! each rule, and `check.report` records every instance and every finding it
+//! produces.
+//!
+//! One test here runs over another crate's tree. `crates/graph/fixtures/graph/`
+//! is where the five defects of a `relations:` block were first detected, one
+//! per member, and it is the corpus that proved detection was real while
+//! nothing routed it. Running the check layer over that same tree is what says
+//! the route exists, on the corpus the claim was made about.
 //!
 //!     HEADWATER_BLESS=1 cargo test -p headwater-check --test fixtures
 //!
@@ -17,9 +23,10 @@ use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::scope::{over_documents, over_edges, Digests};
 use headwater_check::{
-    coverage, endpoint, facet_required, facet_value, fragment, language, participation, placement,
-    reciprocity, retired, sections, source_form, target, voice, Cache, Context, Date, Declared,
-    Detail, DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain, Outcome, Register, Run, Shape,
+    coverage, declaration, endpoint, facet_required, facet_value, fragment, identity, language,
+    participation, placement, reciprocity, retired, sections, source_form, target, voice, Cache,
+    Context, Date, Declared, Detail, DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain,
+    Outcome, Register, Run, Shape,
 };
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -546,6 +553,262 @@ fn a_target_that_binds_to_nothing_is_a_finding_that_names_which_defect_it_is() {
     assert_ne!(nothing.line, untyped.line, "{findings:#?}");
 }
 
+/// Every way a `relations:` block fails reaches a rule, and a clean block passes.
+///
+/// The graph detected all four of these and printed them under its own heading,
+/// and `--strict` exited 0 over every one. The fixture carries the block defect
+/// in a file of its own, because it stops the build before it reads an entry,
+/// and the four entry defects together in a second file.
+#[test]
+fn every_defect_of_a_relations_block_is_a_finding_that_names_the_entry() {
+    let run = fixture_run();
+    let findings: Vec<&headwater_check::Finding> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.rule == declaration::RULE)
+        .collect();
+    assert_eq!(findings.len(), 5, "{findings:#?}");
+    assert!(
+        findings
+            .iter()
+            .all(|finding| finding.severity == headwater_check::Severity::Error),
+        "{findings:#?}"
+    );
+    // No fix. A repeated triple looks mechanical and is not: either entry may
+    // carry an attribute the other does not.
+    assert!(!findings.iter().any(|finding| finding.fixable));
+
+    let block = findings
+        .iter()
+        .find(|finding| finding.path == "check/spec/14-relations-not-a-mapping.md")
+        .expect("the block that is not a mapping");
+    assert!(block.message.contains("is a sequence"), "{block:#?}");
+
+    // The four entry defects, each with its own repair, all in one document and
+    // all at different lines.
+    let entries: Vec<&&headwater_check::Finding> = findings
+        .iter()
+        .filter(|finding| finding.path == "check/spec/15-unusable-entries.md")
+        .collect();
+    assert_eq!(entries.len(), 4, "{entries:#?}");
+    let mut lines: Vec<usize> = entries.iter().map(|finding| finding.line).collect();
+    lines.sort();
+    lines.dedup();
+    assert_eq!(lines.len(), 4, "{entries:#?}");
+    for expected in [
+        "is neither a declared relation nor a declared inverse",
+        "twice, and the second declares no second edge",
+        "is a sequence, and an entry is a target or a mapping with `to`",
+        "declares no `to`, so it names no target",
+    ] {
+        assert!(
+            entries
+                .iter()
+                .any(|finding| finding.message.contains(expected)),
+            "no finding said {expected}: {entries:#?}"
+        );
+    }
+
+    // The passing half. Every typed document of a kind a relation admits gets
+    // an instance, so the rule has a denominator rather than a finding count
+    // that reads as one.
+    let clean = run
+        .instances
+        .iter()
+        .find(|instance| {
+            instance.rule == declaration::RULE && instance.at() == "check/spec/00-both-halves.md"
+        })
+        .expect("the fixture");
+    assert!(clean.findings().is_empty(), "{clean:#?}");
+
+    // And the same document that carries the four defects also declared one
+    // usable entry, which became an edge. A rule that reported the block rather
+    // than the entry would have thrown that edge away with the rest.
+    assert!(
+        run.instances.iter().any(|instance| {
+            instance.rule == target::RULE
+                && instance
+                    .paths()
+                    .contains(&"check/spec/15-unusable-entries.md")
+        }),
+        "the usable entry of the failing fixture produced no edge"
+    );
+}
+
+/// A document nothing can name is one finding, and it says what the block lost.
+///
+/// Three phase-A reports name one repair: the identifier index says the
+/// document has no identity, it says a sequence of two is not an identifier,
+/// and the edge build says the block below has no source. One rule reports
+/// once, because one edit closes all three.
+#[test]
+fn a_document_that_cannot_be_named_reports_once_and_states_what_it_cost() {
+    let run = fixture_run();
+    let findings: Vec<&headwater_check::Finding> = run
+        .findings
+        .iter()
+        .filter(|finding| finding.rule == identity::RULE)
+        .collect();
+    assert_eq!(findings.len(), 2, "{findings:#?}");
+    assert!(
+        findings
+            .iter()
+            .all(|finding| finding.severity == headwater_check::Severity::Error),
+        "{findings:#?}"
+    );
+
+    // The document with edges: one finding, and the sentence carries the cost.
+    let sourceless = findings
+        .iter()
+        .find(|finding| finding.path == "check/spec/16-no-identifier.md")
+        .expect("the document with no identifier");
+    assert!(
+        sourceless.message.contains("declares no identifier"),
+        "{sourceless:#?}"
+    );
+    assert!(
+        sourceless
+            .message
+            .contains("every entry of its `relations:` block is lost with it"),
+        "{sourceless:#?}"
+    );
+
+    // The document with none: the same defect, and no claim about edges it
+    // never declared.
+    let unnamed = findings
+        .iter()
+        .find(|finding| finding.path == "check/spec/17-identifier-not-a-word.md")
+        .expect("the identifier that is not a word");
+    assert!(
+        unnamed.message.contains("an identifier is a word"),
+        "{unnamed:#?}"
+    );
+    assert!(!unnamed.message.contains("relations"), "{unnamed:#?}");
+
+    // The pattern rule reads neither of them, and it skips rather than passing.
+    // Two rules over one key, and only one of them owns absence.
+    for path in [
+        "check/spec/16-no-identifier.md",
+        "check/spec/17-identifier-not-a-word.md",
+    ] {
+        let instance = run
+            .instances
+            .iter()
+            .find(|instance| {
+                instance.rule == headwater_check::identifier::RULE && instance.at() == path
+            })
+            .expect("the fixture");
+        assert!(
+            matches!(instance.outcome, Outcome::Skipped(_)),
+            "{instance:#?}"
+        );
+    }
+}
+
+/// The corpus that proved detection, run through the check layer.
+///
+/// `crates/graph/fixtures/graph/` holds one instance of each member of
+/// `headwater_graph::edges::Problem` and of `index::Defect`. Before this change
+/// the graph printed all of them and not one reached a rule, so none carried an
+/// obligation or a severity. This asserts the route, member by member, on that
+/// same tree.
+///
+/// It does **not** assert that `--strict` goes from 0 to 1 there, because it was
+/// already 1: that tree declares four edges whose targets bind to nothing, and
+/// `relation.target.unresolved` has reported them since #132. What was 0 is the
+/// number of these seven defects that a gate could act on.
+#[test]
+fn the_graph_fixture_corpus_routes_every_phase_a_defect_of_a_relation() {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../graph/fixtures");
+    let corpus = Corpus::new(&dir, "graph");
+    let root = load_map(&dir.join("graph.taxonomy.yml"));
+    let run = run_over(
+        &corpus,
+        &root,
+        "sha256:the-graph-fixture-tree",
+        "engine/crates/graph/fixtures/graph.taxonomy.yml",
+        &mut Cache::disabled(),
+    );
+
+    // One row per member, in the words the graph build already wrote.
+    let expected = [
+        (
+            declaration::RULE,
+            "graph/spec/02-listed-relations.md",
+            "`relations` is a sequence",
+        ),
+        (
+            declaration::RULE,
+            "graph/spec/01-second.md",
+            "`invented_relation` is neither a declared relation",
+        ),
+        (
+            declaration::RULE,
+            "graph/spec/01-second.md",
+            "is a sequence, and an entry is a target or a mapping",
+        ),
+        (
+            declaration::RULE,
+            "graph/spec/01-second.md",
+            "declares no `to`, so it names no target",
+        ),
+        // The member no reader of front matter alone can reach: two spellings
+        // of one path are one target because a resolver said so.
+        (
+            declaration::RULE,
+            "graph/spec/00-first.md",
+            "names graph/spec/01-second.md twice",
+        ),
+        (
+            identity::RULE,
+            "graph/spec/03-anonymous.md",
+            "every entry of its `relations:` block is lost with it",
+        ),
+        (
+            identity::RULE,
+            "graph/spec/05-sequence-identifier.md",
+            "an identifier is a word",
+        ),
+    ];
+    for (rule, path, text) in expected {
+        assert!(
+            run.findings.iter().any(|finding| finding.rule == rule
+                && finding.path == path
+                && finding.message.contains(text)),
+            "{rule} reported nothing at {path} about {text}:\n{:#?}",
+            run.findings
+                .iter()
+                .map(|finding| (finding.rule, &finding.path, &finding.message))
+                .collect::<Vec<_>>()
+        );
+    }
+
+    // Every one of them blocks a strict run, which is what none of them did.
+    for finding in run
+        .findings
+        .iter()
+        .filter(|finding| finding.rule == declaration::RULE || finding.rule == identity::RULE)
+    {
+        assert_eq!(
+            finding.severity,
+            headwater_check::Severity::Error,
+            "{finding:#?}"
+        );
+    }
+    assert!(run.has_errors());
+
+    // The one defect that stays where it is. `04-twin.md` and `00-first.md`
+    // both claim `SPEC-FIX-first`, and a document-scoped instance reads one of
+    // the two. See `crates/check/src/identity.rs` for why that is a grain
+    // rather than a message.
+    assert!(
+        !run.findings
+            .iter()
+            .any(|finding| finding.path == "graph/spec/04-twin.md"),
+        "a duplicate identifier was reported at a grain that cannot decide it"
+    );
+}
+
 /// The unit is the authored entry, and the fixture tree shows both consequences.
 ///
 /// A Q4 pair cannot carry a target that resolved to nothing, so a rule about
@@ -967,8 +1230,8 @@ fn a_classified_document_with_no_instance_is_a_finding_and_an_untyped_one_is_not
         .map(|finding| finding.path.as_str())
         .collect();
     assert_eq!(paths, ["check/spec/03-no-instance.md"]);
-    assert_eq!(run.coverage.seen(), 21);
-    assert_eq!(run.coverage.classified(), 19);
+    assert_eq!(run.coverage.seen(), 25);
+    assert_eq!(run.coverage.classified(), 23);
 
     // A file this engine wrote is the third state, and it is accounted for
     // without being judged. `check/spec/12-generated.md` sits on a heterogeneous
@@ -1054,6 +1317,12 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             Grain::Edge,
             Grain::Edge,
             Grain::Neighbourhood { depth: 1 },
+            // The two Graph-origin rules whose grain is the document. Each one
+            // routes a phase-A defect that stops an edge from existing, so
+            // there is no edge to instantiate over and the document that wrote
+            // the block is the unit that survives.
+            Grain::Document,
+            Grain::Document,
             // The six Document-origin rules, which read the body rather than
             // the front matter. The grain is the same and the view is not:
             // each one declares `NEEDS_BODY`.
@@ -1109,6 +1378,21 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         [target::RULE, reciprocity::RULE, endpoint::RULE]
     );
 
+    // Exactly two rules read what phase A could not make of their document,
+    // and the report names them. The declaration is on the same footing as the
+    // body: a view returns nothing to a check that did not ask.
+    let structural: Vec<&str> = run
+        .served
+        .iter()
+        .filter(|served| served.scope.needs_phase_a())
+        .map(|served| served.rule)
+        .collect();
+    assert_eq!(structural, [declaration::RULE, identity::RULE]);
+    assert_eq!(
+        run.served[8].scope.render(),
+        "document scope, one document and its front matter, and what phase A could not make of it"
+    );
+
     // Exactly one rule reads the clock, and the report names it. A reader who
     // asks why a warm run re-evaluated one rule and not another reads it here.
     let clocked: Vec<&str> = run
@@ -1150,10 +1434,23 @@ fn a_document_check_receives_the_body_only_when_it_declares_it() {
     }
 
     let census = fixture_census();
-    let declared = over_documents(&Reader::<true>, &census, &pinned(), &mut Cache::disabled());
-    let did_not = over_documents(&Reader::<false>, &census, &pinned(), &mut Cache::disabled());
+    let graph = fixture_graph();
+    let declared = over_documents(
+        &Reader::<true>,
+        &census,
+        &graph,
+        &pinned(),
+        &mut Cache::disabled(),
+    );
+    let did_not = over_documents(
+        &Reader::<false>,
+        &census,
+        &graph,
+        &pinned(),
+        &mut Cache::disabled(),
+    );
 
-    assert_eq!(declared.len(), 19, "one instance per typed document");
+    assert_eq!(declared.len(), 23, "one instance per typed document");
     assert_eq!(declared.len(), did_not.len());
     assert!(declared
         .iter()
@@ -1205,7 +1502,7 @@ fn the_read_set_of_an_instance_comes_from_the_view_and_not_from_the_check() {
         &Config::default(),
     );
 
-    for instance in over_documents(&Silent, &census, &pinned(), &mut Cache::disabled()) {
+    for instance in over_documents(&Silent, &census, &graph, &pinned(), &mut Cache::disabled()) {
         assert_eq!(instance.reads.len(), 1, "{instance:#?}");
         // And each read carries the hash of what it read, which is the half
         // that #54 left for the cache key to need.

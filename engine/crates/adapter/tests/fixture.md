@@ -1,6 +1,6 @@
 ## `headwater check`
 
-34 findings, 16 of them errors across 18 of 21 documents, against `headwater/fixture` 1.0.0 at `74633eb89de77b0e4c90e110f481d2f4a41fa4901b1ace760b37d66351822015`, evaluated at 2026-08-12.
+41 findings, 23 of them errors across 22 of 25 documents, against `headwater/fixture` 1.0.0 at `df65f944066ea09a96b442765fec1a1d98dfe025eda3dc420882edb5ae5cd310`, evaluated at 2026-08-12.
 
 | Severity | Where | Rule | Finding |
 |---|---|---|---|
@@ -32,6 +32,13 @@
 | error | `check/spec/11-identifier-mismatch.md:2` | `identifier.pattern.not_met` | `SPEC-HW-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `HW-mismatch` is where the namespace `FIX` was expected |
 | error | `check/spec/13-dangling.md:9` | `relation.target.unresolved` | `SPEC-FIX-dangling` declares `assesses: SPEC-FIX-no-such-document`, and that target resolves to nothing at all |
 | error | `check/spec/13-dangling.md:10` | `relation.target.unresolved` | `SPEC-FIX-dangling` declares `assesses: SPEC-FIX-untyped`, and that target names check/spec/04-untyped.md, which is untyped: the census gave it no kind, and an endpoint is a kind |
+| error | `check/spec/14-relations-not-a-mapping.md:8` | `relation.declaration.unusable` | `relations` is a sequence, and it names relation types |
+| error | `check/spec/15-unusable-entries.md:8` | `relation.declaration.unusable` | `invented_relation` is neither a declared relation nor a declared inverse |
+| error | `check/spec/15-unusable-entries.md:11` | `relation.declaration.unusable` | `assesses` names EVAL-FIX-alpha twice, and the second declares no second edge |
+| error | `check/spec/15-unusable-entries.md:12` | `relation.declaration.unusable` | an entry of `assesses` is a sequence, and an entry is a target or a mapping with `to` |
+| error | `check/spec/15-unusable-entries.md:13` | `relation.declaration.unusable` | an entry of `assesses` declares no `to`, so it names no target |
+| error | `check/spec/16-no-identifier.md:1` | `identifier.unusable` | a typed `design_spec` that declares no identifier, so no edge can name it, and every entry of its `relations:` block is lost with it, because an edge is identified by its source |
+| error | `check/spec/17-identifier-not-a-word.md:2` | `identifier.unusable` | the identifier is not a scalar, and an identifier is a word |
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `control.mechanism.unimplemented` | control CT-FIX-15 names the mechanism check:no.such.rule, which this engine does not implement, so nothing discharges OB-FIX-18 |
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `control.mechanism.unimplemented` | control CT-FIX-17 names the mechanism phase:no.such.phase, which this engine does not implement, so nothing discharges OB-FIX-20 |
 | warn | `engine/crates/check/fixtures/check.taxonomy.yml` | `obligation.disposition.not_one` | obligation OB-FIX-16 carries no disposition: no control discharges it, and it states neither a gap nor an acceptance |
@@ -49,4 +56,4 @@
 
 </details>
 
-19 documents in the read set. 24 obligations, 19 verified.
+23 documents in the read set. 26 obligations, 21 verified.

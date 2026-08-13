@@ -229,6 +229,18 @@ obligations:
     class: cohesion
     prevents: content.inconsistent
     severity: high
+  OB-FIX-25:
+    statement: Every entry a relations block declares becomes an edge of the graph
+    rationale: A block the build could not read declares nothing, so the corpus is missing the relations its author wrote down
+    class: cohesion
+    prevents: content.inconsistent
+    severity: high
+  OB-FIX-26:
+    statement: A document that a relation may name declares one identifier that names it
+    rationale: A document with no identifier is neither end of any edge, and every relation it declares is lost with it
+    class: cohesion
+    prevents: content.incomplete
+    severity: high
   OB-FIX-23:
     statement: An identifier is a string the scheme its kind names admits
     rationale: An identifier travels into tickets and commit messages, and one outside its own namespace collides with a corpus that nobody here can rewrite
@@ -415,6 +427,20 @@ controls:
   CT-FIX-21:
     mechanism: check:relation.target.unresolved
     discharges: [OB-FIX-24]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+
+  CT-FIX-22:
+    mechanism: check:relation.declaration.unusable
+    discharges: [OB-FIX-25]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+
+  CT-FIX-23:
+    mechanism: check:identifier.unusable
+    discharges: [OB-FIX-26]
     trigger: pull_request
     posture: advisory
     acts: detective

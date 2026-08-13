@@ -4,14 +4,14 @@
   "taxonomy": {
     "package": "headwater/fixture",
     "version": "1.0.0",
-    "lock": "74633eb89de77b0e4c90e110f481d2f4a41fa4901b1ace760b37d66351822015"
+    "lock": "df65f944066ea09a96b442765fec1a1d98dfe025eda3dc420882edb5ae5cd310"
   },
   "clock": "2026-08-12",
   "coverage": {
-    "seen": 21,
-    "classified": 19,
-    "checked": 18,
-    "instances": 160
+    "seen": 25,
+    "classified": 23,
+    "checked": 22,
+    "instances": 242
   },
   "rules": [
     {
@@ -77,6 +77,22 @@
       "version": 1,
       "obligations": [
         "OB-FIX-6"
+      ]
+    },
+    {
+      "rule": "relation.declaration.unusable",
+      "scope": "document",
+      "version": 1,
+      "obligations": [
+        "OB-FIX-25"
+      ]
+    },
+    {
+      "rule": "identifier.unusable",
+      "scope": "document",
+      "version": 1,
+      "obligations": [
+        "OB-FIX-26"
       ]
     },
     {
@@ -541,6 +557,90 @@
       "escape": "none"
     },
     {
+      "rule": "relation.declaration.unusable",
+      "severity": "error",
+      "obligation": "OB-FIX-25",
+      "path": "check/spec/14-relations-not-a-mapping.md",
+      "line": 8,
+      "column": 3,
+      "message": "`relations` is a sequence, and it names relation types",
+      "remediation": "write `relations:` as a mapping whose keys are relation names, because Q4 puts every relation instance under one key and the relation is that key",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "relation.declaration.unusable",
+      "severity": "error",
+      "obligation": "OB-FIX-25",
+      "path": "check/spec/15-unusable-entries.md",
+      "line": 8,
+      "column": 3,
+      "message": "`invented_relation` is neither a declared relation nor a declared inverse",
+      "remediation": "write a relation this taxonomy declares, or the inverse of one, in place of `invented_relation`, or declare `invented_relation` in the taxonomy",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "relation.declaration.unusable",
+      "severity": "error",
+      "obligation": "OB-FIX-25",
+      "path": "check/spec/15-unusable-entries.md",
+      "line": 11,
+      "column": 7,
+      "message": "`assesses` names EVAL-FIX-alpha twice, and the second declares no second edge",
+      "remediation": "delete one of the two entries of `assesses` that name EVAL-FIX-alpha. Q4 identifies an edge by its source, its relation and its normalized target, so the second declares no second edge, and the instance attributes on it are lost with it",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "relation.declaration.unusable",
+      "severity": "error",
+      "obligation": "OB-FIX-25",
+      "path": "check/spec/15-unusable-entries.md",
+      "line": 12,
+      "column": 7,
+      "message": "an entry of `assesses` is a sequence, and an entry is a target or a mapping with `to`",
+      "remediation": "write each entry of `assesses` as a target reference, or as a mapping with `to:` and the instance attributes beside it",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "relation.declaration.unusable",
+      "severity": "error",
+      "obligation": "OB-FIX-25",
+      "path": "check/spec/15-unusable-entries.md",
+      "line": 13,
+      "column": 7,
+      "message": "an entry of `assesses` declares no `to`, so it names no target",
+      "remediation": "give this entry of `assesses` a `to:`, or delete it, because an entry that names no target declares no edge and the attributes on it reach nothing",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "identifier.unusable",
+      "severity": "error",
+      "obligation": "OB-FIX-26",
+      "path": "check/spec/16-no-identifier.md",
+      "line": 1,
+      "column": 1,
+      "message": "a typed `design_spec` that declares no identifier, so no edge can name it, and every entry of its `relations:` block is lost with it, because an edge is identified by its source",
+      "remediation": "write one identifier of this document under the `id` key, because a relation names a document by its identifier and a document with none can stand at neither end of one",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "identifier.unusable",
+      "severity": "error",
+      "obligation": "OB-FIX-26",
+      "path": "check/spec/17-identifier-not-a-word.md",
+      "line": 2,
+      "column": 1,
+      "message": "the identifier is not a scalar, and an identifier is a word",
+      "remediation": "write one identifier of this document under the `id` key, because a relation names a document by its identifier and a document with none can stand at neither end of one",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
       "rule": "control.mechanism.unimplemented",
       "severity": "warn",
       "obligation": "OB-FIX-12",
@@ -689,6 +789,22 @@
     {
       "path": "check/spec/13-dangling.md",
       "digest": "sha256:4b5fdd89f22e4d82ee47b8b77652168b082ec821800ad890cf12569980412336"
+    },
+    {
+      "path": "check/spec/14-relations-not-a-mapping.md",
+      "digest": "sha256:6227db15ae52d35b0f49e63b059aa9d15b37bada401d19339ac3a92e403f72b3"
+    },
+    {
+      "path": "check/spec/15-unusable-entries.md",
+      "digest": "sha256:b0cec4bd6cad730288e9c126bf7daabd890f52975e80840ec1266fef86eacb87"
+    },
+    {
+      "path": "check/spec/16-no-identifier.md",
+      "digest": "sha256:2f42a485abe65d5e2c22de86c8bfecb7bbfc1e06e64ef2f6c64c914fc7792b85"
+    },
+    {
+      "path": "check/spec/17-identifier-not-a-word.md",
+      "digest": "sha256:9d82bc120f67b7b5a999433bbae8502e18587777cf94bcc8254491ebe9c73981"
     }
   ]
 }
