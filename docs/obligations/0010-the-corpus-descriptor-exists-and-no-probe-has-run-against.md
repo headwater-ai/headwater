@@ -29,6 +29,6 @@ The Discovery and Navigability probe categories are the instrument, and this cor
 
 ## Discharge
 
-**The artifact under test exists now, and the instrument still does not.** `headwater generate` writes `.headwater/corpus.json`, and `generate --check` holds it to regeneration. The first descriptor over this corpus names one root, one exclusion, the taxonomy identity, the lock hash and three entry points. Three, because five shelves are declared and two hold no document. So a probe has something to run against, and no probe has run.
+**The artifact under test exists now, and the instrument still does not.** `headwater generate` writes `.headwater/corpus.json`, and `generate --check` holds it to regeneration. The descriptor over this corpus names one root, one exclusion, the taxonomy identity, the lock hash and five entry points. Five, because six shelves are declared and one holds no document. So a probe has something to run against, and no probe has run.
 
 The descriptor carries each declared export profile as well, and this repository declares none, so that list is empty and means it.
