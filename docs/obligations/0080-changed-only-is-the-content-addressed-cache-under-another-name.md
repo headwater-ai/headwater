@@ -27,6 +27,8 @@ relations:
 
 The cache also derives what moved from content hashes rather than from a list that a caller supplies. A flag that took such a list would add an input to the verdict that no reviewer sees. Spec 6 forbids that in the paragraph that now states there is no flag.
 
+**One closed argument loses a premise here.** [Q12](../decisions/0012-migration-path-for-an-existing-corpus.md) refused `--since <ref>` on three grounds, and the third was that the name is taken by `--changed-only`. No binary ever carried that flag, so the name was taken by a line in spec 6 rather than by a mechanism. Q12's ruling stands on its other two grounds. The first is that a flag which decides the findings that count makes two runs over one tree disagree. The second is that such a flag turns an unchecked document into an unreported one. That decision record and the [first-contact evaluation](../evaluations/first-contact.md) keep their text, because each one records what was argued on its date.
+
 ## Obligation
 
 What no flag reaches is Phase A. `headwater explain` walks the corpus, parses it, builds the graph and runs no check. It costs 38 to 45 ms on the same corpus and the same build. So Phase A is about seven tenths of the warm run and about a twelfth of the cold one. To scope it is to cache the census and the graph, and [Q6](../spec/09-decisions.md#q6--where-the-corpus-graph-lives-at-rest) rules that nothing stores the graph. [OBL-repo-0072](0072-a-cache-of-check-results-does-not-make-a-run-proportional.md) carries what that leaves open in spec 6's own promise.
