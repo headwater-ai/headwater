@@ -240,6 +240,22 @@ impl Scope {
     }
 }
 
+/// The emitter targets a check exports to, and the empty set is the common
+/// value.
+///
+/// [Spec 12](../../../../docs/spec/12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule)
+/// states the bar a name in this set has to clear: the emitted constraint
+/// catches exactly what the native check catches, in both directions. A
+/// construct that misses a document the check reports is a partial
+/// translation, and a construct that rejects a document the check accepts is
+/// worse, because a loss set cannot record it. A differential test is what
+/// permits a value here, and `engine/crates/generate/tests/differential.rs`
+/// is that test.
+///
+/// The declaration sits on the check rather than in a table beside it, for the
+/// reason the scope does. A second list of rules is a list that drifts.
+pub type ExportTargets = &'static [&'static str];
+
 /// A check over one document.
 pub trait DocumentCheck {
     const RULE: &'static str;
@@ -247,6 +263,11 @@ pub trait DocumentCheck {
     /// it keys the cache, and raising it is what invalidates every entry an
     /// earlier edition wrote.
     const VERSION: u32;
+    /// The emitter targets this check exports to. See [`ExportTargets`]. The
+    /// default is the empty set, because most checks reach nothing a schema
+    /// language can say, and a default of "unexported" cannot claim coverage
+    /// by accident.
+    const EXPORTABLE_AS: ExportTargets = &[];
     /// Whether the view carries the body. A check that does not declare it
     /// receives nothing from [`DocumentView::body`], so the declaration is the
     /// access rather than a note beside it.
@@ -270,6 +291,8 @@ pub trait EdgeCheck {
     const RULE: &'static str;
     /// As [`DocumentCheck::VERSION`].
     const VERSION: u32;
+    /// As [`DocumentCheck::EXPORTABLE_AS`].
+    const EXPORTABLE_AS: ExportTargets = &[];
     /// As [`DocumentCheck::NEEDS_CLOCK`].
     const NEEDS_CLOCK: bool = false;
 
@@ -288,6 +311,8 @@ pub trait NeighbourhoodCheck {
     const RULE: &'static str;
     /// As [`DocumentCheck::VERSION`].
     const VERSION: u32;
+    /// As [`DocumentCheck::EXPORTABLE_AS`].
+    const EXPORTABLE_AS: ExportTargets = &[];
     /// As [`DocumentCheck::NEEDS_CLOCK`].
     const NEEDS_CLOCK: bool = false;
 
@@ -334,6 +359,21 @@ pub fn edge_version<C: EdgeCheck>() -> u32 {
 /// The edition of a neighbourhood-scoped check, derived from its trait.
 pub fn neighbourhood_version<C: NeighbourhoodCheck>() -> u32 {
     C::VERSION
+}
+
+/// The export targets of a document-scoped check, derived from its trait.
+pub fn document_exports<C: DocumentCheck>() -> ExportTargets {
+    C::EXPORTABLE_AS
+}
+
+/// The export targets of an edge-scoped check, derived from its trait.
+pub fn edge_exports<C: EdgeCheck>() -> ExportTargets {
+    C::EXPORTABLE_AS
+}
+
+/// The export targets of a neighbourhood-scoped check, derived from its trait.
+pub fn neighbourhood_exports<C: NeighbourhoodCheck>() -> ExportTargets {
+    C::EXPORTABLE_AS
 }
 
 /// The clock a check of this scope receives, and nothing for one that did not
