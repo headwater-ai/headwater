@@ -397,9 +397,54 @@ pub fn plan(
             }),
         }
     }
-    descriptor::emit(surface, identity, &mut plan);
+    descriptor::emit(surface, identity, projections, &mut plan);
     plan.unwritten.extend(engine_defined());
     plan
+}
+
+/// The plan for `headwater export`: the declared exports, and nothing else.
+///
+/// The same emitter, the same census and the same marker rule that `plan` uses
+/// for a `graph_export`, over the subset one profile names. `selected` is what
+/// `--profile` supplies; `None` takes every declared profile, which is spec 6's
+/// rule that "with no profile named, the engine writes every declared profile,
+/// so a filtered audience is never omitted by accident".
+///
+/// A profile the taxonomy does not declare is an error rather than an empty
+/// plan. An empty plan reports success over nothing, and a caller who mistyped
+/// a profile name would read that as an export.
+pub fn export_plan(
+    surface: &Surface<'_>,
+    projections: &Projections,
+    selected: Option<&str>,
+) -> Result<Plan, String> {
+    if let Some(name) = selected {
+        if projections.profile(name).is_none() {
+            return Err(match projections.profiles.is_empty() {
+                true => format!("no profile is called `{name}`, and this taxonomy declares none"),
+                false => format!(
+                    "no profile is called `{name}`. This taxonomy declares {}",
+                    projections
+                        .profiles
+                        .iter()
+                        .map(|profile| format!("`{}`", profile.name))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ),
+            });
+        }
+    }
+    let mut plan = Plan::default();
+    for declaration in &projections.declared {
+        if declaration.kind != Kind::GraphExport {
+            continue;
+        }
+        if selected.is_some_and(|name| name != declaration.membership.name) {
+            continue;
+        }
+        graph_export(surface, projections, declaration, &mut plan);
+    }
+    Ok(plan)
 }
 
 /// One declared `graph_export`, written through the emitter its profile names.

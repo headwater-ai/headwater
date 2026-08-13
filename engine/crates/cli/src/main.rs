@@ -70,6 +70,8 @@ headwater route              <task description> [--budget <n>] [--root <path>]
 headwater explain            <path|identifier> [--root <path>]
 headwater mcp                [--root <path>]
 headwater generate           [--check] [--root <path>]
+headwater export             [--profile <name>] [--format json|jsonschema] [--at <date>]
+                             [--check] [--root <path>]
 headwater init               [--corpus <dir>] [--package <name>] [--root <path>]
 headwater infer              [--owner <name>] [--until <date>] [--write]
                              [--now <date>] [--root <path>]
@@ -88,6 +90,13 @@ headwater taxonomy resolve   [--check] [--root <path>]
   generate           write every projection the taxonomy declares, and report
                      every one it does not write with the reason. It refuses to
                      overwrite a file that carries no generated-file marker.
+  export             emit one declared export profile through one emitter
+                     target, with the loss set the target declares and the
+                     projection census that holds the output against the graph.
+                     With `--format` it writes the artifact to standard output,
+                     which is what a consumer outside this repository asks for.
+                     Without one it writes every declared export to the path its
+                     taxonomy names, and `--check` holds those to regeneration.
   init               scaffold the consumer declaration and the overlay for a
                      repository that has neither, and print the questions that
                      no tree answers. It refuses to overwrite a binding.
@@ -142,6 +151,21 @@ headwater taxonomy resolve   [--check] [--root <path>]
                  taxonomy sources, so it answers whether the lock is current.
                  `generate --check` reads the corpus through the lock, so it
                  answers whether a derived artifact is.
+  --profile <name>
+                 `export` only: which declared export profile to emit. Every
+                 declared profile by default, so a filtered audience is never
+                 omitted by accident.
+  --format <target>
+                 `export` only: the emitter target. `json` is the native
+                 property graph with no loss and `jsonschema` constrains front
+                 matter. The other five targets of spec 6 parse and report the
+                 consumer each one waits on. With this flag the artifact goes to
+                 standard output and no declared output path is touched.
+  --at <date>    `export` only: the generation time the artifact states, as
+                 `YYYY-MM-DD`. Absent by default, because an artifact that
+                 `--check` compares by byte cannot carry a clock reading. Spec 6
+                 asks a filtered export that leaves the repository to state one,
+                 and this is where it is injected.
   --root <path>  the repository to read. Defaults to the working directory.
 ";
 
@@ -160,6 +184,9 @@ fn main() -> ExitCode {
     let mut until: Option<Date> = None;
     let mut corpus_root: Option<String> = None;
     let mut package: Option<String> = None;
+    let mut profile: Option<String> = None;
+    let mut format: Option<String> = None;
+    let mut generated_at: Option<String> = None;
     let mut words: Vec<String> = Vec::new();
 
     while let Some(argument) = arguments.next() {
@@ -178,6 +205,21 @@ fn main() -> ExitCode {
                 None => return fail("--budget names a number and none followed it"),
             },
             "--write" => write = true,
+            "--profile" => match arguments.next() {
+                Some(name) => profile = Some(name),
+                None => return fail("--profile names an export profile and none followed it"),
+            },
+            "--format" => match arguments.next() {
+                Some(name) => format = Some(name),
+                None => return fail("--format names an emitter target and none followed it"),
+            },
+            "--at" => match arguments.next() {
+                Some(text) => match Date::parse(&text) {
+                    Some(_) => generated_at = Some(text),
+                    None => return fail("--at takes a date written `YYYY-MM-DD`"),
+                },
+                None => return fail("--at names a date and none followed it"),
+            },
             "--owner" => match arguments.next() {
                 Some(name) => owner = Some(name),
                 None => return fail("--owner names a person or a team and none followed it"),
@@ -235,6 +277,7 @@ fn main() -> ExitCode {
         ["explain", target] => explain(&root, target),
         ["mcp"] => mcp(&root),
         ["generate"] => generate(&root, check_only),
+        ["export"] => export(&root, profile, format, generated_at, check_only),
         ["init"] => init(&root, corpus_root, package),
         ["infer"] => infer(&root, owner, until, write, now),
         // Spec 6 lists this verb and no document of the specification states
@@ -256,8 +299,8 @@ fn main() -> ExitCode {
         [] => fail("no verb. Try `headwater check`"),
         [other, ..] => fail(&format!(
             "`{other}` is not a verb this binary carries yet. \
-             It carries `check`, `route`, `explain`, `mcp`, `init`, `infer` and \
-             `taxonomy`"
+             It carries `check`, `route`, `explain`, `mcp`, `generate`, `export`, \
+             `init`, `infer` and `taxonomy`"
         )),
     }
 }
@@ -563,6 +606,131 @@ fn generate(root: &Path, check_only: bool) -> ExitCode {
         return ExitCode::FAILURE;
     }
     ExitCode::SUCCESS
+}
+
+/// `headwater export`.
+///
+/// Two modes, and the flag that separates them is `--format`. Spec 6 gives the
+/// reason for both in one sentence: export "carries its own verb because a
+/// consumer outside the repository asks for one format at a time".
+///
+/// **With a target named**, the artifact goes to standard output. That consumer
+/// holds no clone, wants one vocabulary, and takes bytes on a pipe. No declared
+/// output path is involved, so a target the taxonomy never declared is still
+/// emittable, which is what makes the flag worth having.
+///
+/// **With none**, it writes what the taxonomy declared, to the paths the
+/// taxonomy names, and `--check` holds them to regeneration. That is the same
+/// comparison `generate --check` performs, over the subset one profile names.
+///
+/// The census goes to standard error in the first mode and to standard output in
+/// the second, so that a redirected artifact is the artifact and nothing else.
+fn export(
+    root: &Path,
+    profile: Option<String>,
+    format: Option<String>,
+    generated_at: Option<String>,
+    check_only: bool,
+) -> ExitCode {
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let projections = match headwater_generate::Projections::read(&loaded.lock.taxonomy) {
+        Ok(projections) => projections,
+        Err(errors) => return refused("the projections", &errors),
+    };
+    let surface = loaded.surface();
+
+    let Some(target) = format else {
+        if generated_at.is_some() {
+            return fail(
+                "--at states the time an artifact that leaves this repository was generated,                  and it is refused for a declared output. A committed export is held to                  regeneration by byte, so a clock reading inside one would fail the gate on a                  morning when nothing changed. Name a target with --format",
+            );
+        }
+        let plan = match headwater_generate::export_plan(&surface, &projections, profile.as_deref())
+        {
+            Ok(plan) => plan,
+            Err(message) => return fail(&message),
+        };
+        let report = match check_only {
+            true => headwater_generate::check(root, &plan),
+            false => headwater_generate::write(root, &plan),
+        };
+        print!("{}", report.render());
+        if report.has_errors() {
+            eprintln!(
+                "headwater: a declared export is not what this corpus and this lock produce"
+            );
+            return ExitCode::FAILURE;
+        }
+        return ExitCode::SUCCESS;
+    };
+
+    let Some(emitter) = headwater_generate::Emitter::parse(&target) else {
+        return fail(&format!(
+            "`{target}` is not an emitter target. Spec 6 names {}",
+            headwater_generate::Emitter::ALL
+                .iter()
+                .map(|one| format!("`{}`", one.name()))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    };
+    if check_only {
+        return fail(
+            "--check compares a committed artifact against what a run produces, and --format              writes to standard output where nothing is committed. Run `headwater export              --check` over the declared outputs instead",
+        );
+    }
+
+    // One artifact on a pipe is one profile. With several declared and none
+    // named, the engine asks rather than concatenate two JSON documents into a
+    // stream that no reader parses.
+    let selected: Vec<&headwater_generate::Profile> = match &profile {
+        Some(name) => match projections.profile(name) {
+            Some(profile) => vec![profile],
+            None => return fail(&format!("no profile is called `{name}`")),
+        },
+        None => projections.profiles.iter().collect(),
+    };
+    let profile = match selected.as_slice() {
+        [one] => *one,
+        [] => {
+            return fail(
+                "this taxonomy declares no projection, so it declares no export profile.                  Spec 6 makes a profile an entry under `projections`",
+            )
+        }
+        several => {
+            return fail(&format!(
+                "--format writes one artifact to standard output and this taxonomy declares {}                  profiles. Name one with --profile: {}",
+                several.len(),
+                several
+                    .iter()
+                    .map(|profile| format!("`{}`", profile.name))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ))
+        }
+    };
+
+    match headwater_generate::export::emit(&surface, profile, emitter, generated_at.as_deref()) {
+        Ok(emission) => {
+            print!("{}", emission.bytes);
+            eprint!("{}", headwater_generate::export::render(&emission.census));
+            if emission.census.is_defective() {
+                eprintln!(
+                    "headwater: the projection census found an omission that no declared loss                      reason covers, which is a defect in this emitter rather than in the corpus"
+                );
+                return ExitCode::FAILURE;
+            }
+            ExitCode::SUCCESS
+        }
+        Err(refusal) => {
+            eprintln!("headwater: nothing was exported");
+            eprintln!("  {}", refusal.reason());
+            ExitCode::FAILURE
+        }
+    }
 }
 
 /// `headwater mcp`: the reads above, served to an agent.
