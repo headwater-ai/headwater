@@ -286,6 +286,32 @@ pub trait DocumentCheck {
     fn evaluate(&self, view: &DocumentView<'_>) -> Outcome;
 }
 
+/// What one edge-scoped instance is created over.
+///
+/// Both members are one relation instance, which is the grain
+/// [spec 12](../../../../docs/spec/12-check-layer.md#the-four-scopes) fixes for
+/// this trait. They differ over what counts as one, and the difference is
+/// whether the target resolved.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EdgeUnit {
+    /// The pair that
+    /// [Q4](../../../../docs/spec/09-decisions.md#q4--relation-storage)
+    /// identifies: a source identifier, a relation, and a target document. Two
+    /// reciprocal halves are one instance of it, and an edge whose target is
+    /// not a document is no instance at all, because there is no second
+    /// endpoint to read.
+    Pair,
+    /// One entry of one `relations:` block, whatever its target became.
+    ///
+    /// A rule about the target *string* has to reach an entry whose string
+    /// bound to nothing, and a pair cannot carry one. A target that no document
+    /// answers to has no far end, so nothing at that end can have written the
+    /// other half. Two halves of one bound pair are two instances here, and
+    /// correctly so: they are two strings, written by two authors, in two
+    /// files, and each one is right or wrong on its own.
+    Entry,
+}
+
 /// A check over one relation instance and both of its endpoints.
 pub trait EdgeCheck {
     const RULE: &'static str;
@@ -295,6 +321,16 @@ pub trait EdgeCheck {
     const EXPORTABLE_AS: ExportTargets = &[];
     /// As [`DocumentCheck::NEEDS_CLOCK`].
     const NEEDS_CLOCK: bool = false;
+    /// What one instance of this check covers. See [`EdgeUnit`].
+    ///
+    /// It is a declaration on the trait rather than an argument that the runner
+    /// passes, for the reason the grain is a trait rather than a returned
+    /// value: a unit that the caller chose is a second fact beside the check,
+    /// and nothing holds the two together. It stays off [`Scope`] because it
+    /// selects which instances exist rather than what one instance may read,
+    /// and what one instance may read is the whole of what a scope states and
+    /// what a cache key covers.
+    const UNIT: EdgeUnit = EdgeUnit::Pair;
 
     /// The generation step, as [`DocumentCheck::instantiates`], over the name
     /// of the relation an edge declares.
@@ -694,9 +730,16 @@ pub fn over_documents<C: DocumentCheck>(
 
 /// Instantiate an edge-scoped check over a graph.
 ///
-/// One instance per declared pair the check generates over, and a pair is the
-/// unit whichever end wrote it. An anchor and an unbound target are not
-/// document pairs, and `declared_triple` says so by returning nothing.
+/// The unit comes off the trait, and it decides what one instance covers.
+/// [`EdgeUnit::Pair`] groups the two reciprocal halves of one Q4 triple and
+/// reaches no edge whose target is not a document, because `declared_triple`
+/// returns nothing for one. [`EdgeUnit::Entry`] takes every declared edge as
+/// written, which is the only unit that reaches a target that bound to
+/// nothing.
+///
+/// One function rather than two, because the grouping is the only difference
+/// and everything after it — the view, the read set, the key, the cache — has
+/// to be the same for both. Two functions is where the two would drift.
 pub fn over_edges<C: EdgeCheck>(
     check: &C,
     graph: &Graph,
@@ -710,13 +753,30 @@ pub fn over_edges<C: EdgeCheck>(
     // with no sort here.
     let mut pairs: Vec<(String, Vec<&Edge>)> = Vec::new();
     for edge in &graph.edges {
-        let Some((source, relation, target)) = edge.declared_triple() else {
+        let Some(key) = (match C::UNIT {
+            EdgeUnit::Pair => edge
+                .declared_triple()
+                .and_then(
+                    |(source, relation, target)| match check.instantiates(&relation) {
+                        true => Some(format!("{source}\u{1f}{relation}\u{1f}{target}")),
+                        false => None,
+                    },
+                ),
+            // The authored triple, which the graph already holds to be unique
+            // inside one document: a repeated one is `Problem::RepeatedTriple`
+            // and declares no second edge. The name is the one an author wrote
+            // rather than the relation it resolves to, because two halves of
+            // one pair are two entries at this unit and they carry two names.
+            EdgeUnit::Entry => match check.instantiates(&edge.declared) {
+                true => {
+                    let (source, name, target) = edge.triple();
+                    Some(format!("{source}\u{1f}{name}\u{1f}{target}"))
+                }
+                false => None,
+            },
+        }) else {
             continue;
         };
-        if !check.instantiates(&relation) {
-            continue;
-        }
-        let key = format!("{source}\u{1f}{relation}\u{1f}{target}");
         match pairs.iter_mut().find(|(known, _)| known == &key) {
             Some((_, halves)) => halves.push(edge),
             None => pairs.push((key, vec![edge])),

@@ -225,6 +225,13 @@ obligations:
     prevents: content.inconsistent
     severity: high
 
+  OB-REL-4:
+    statement: Every target a relation instance names resolves to a document or to an external anchor
+    rationale: An edge that resolves to nothing is a claim about a thing the corpus does not hold, and every query, projection and export over that relation inherits the claim while the report of it stops at the graph build
+    class: cohesion
+    prevents: content.inconsistent
+    severity: high
+
   OB-REL-2:
     statement: Both ends of a relation instance are kinds that the relation permits
     rationale: An edge between kinds a relation forbids is an assertion that the taxonomy never sanctioned, and every query over that relation inherits it
@@ -391,6 +398,18 @@ controls:
     trigger: pull_request
     posture: advisory
     acts: detective
+
+  CT-REL-4:
+    mechanism: check:relation.target.unresolved
+    discharges: [OB-REL-4]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: one release of the taxonomy over an adopting corpus
+        threshold: no false positive, because the rule reports what the graph build already resolved rather than deriving a second answer of its own
+        sample: every finding of one run over the adopting corpus, adjudicated once
 
   CT-REL-2:
     mechanism: check:relation.endpoint.not_permitted

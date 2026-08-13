@@ -223,6 +223,12 @@ obligations:
     class: cohesion
     prevents: content.inconsistent
     severity: medium
+  OB-FIX-24:
+    statement: Every target a relation instance names resolves to a document or to an anchor
+    rationale: An edge that resolves to nothing is a claim about a thing the corpus does not hold
+    class: cohesion
+    prevents: content.inconsistent
+    severity: high
   OB-FIX-23:
     statement: An identifier is a string the scheme its kind names admits
     rationale: An identifier travels into tickets and commit messages, and one outside its own namespace collides with a corpus that nobody here can rewrite
@@ -406,6 +412,13 @@ controls:
     trigger: pull_request
     posture: advisory
     acts: detective
+  CT-FIX-21:
+    mechanism: check:relation.target.unresolved
+    discharges: [OB-FIX-24]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+
   CT-FIX-20:
     mechanism: check:identifier.pattern.not_met
     discharges: [OB-FIX-23]

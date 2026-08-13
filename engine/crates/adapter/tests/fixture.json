@@ -4,14 +4,14 @@
   "taxonomy": {
     "package": "headwater/fixture",
     "version": "1.0.0",
-    "lock": "918fa7a6d4592f6eb7dacb9031abcaef82fac0377c40fbb95a697f87a3df3d02"
+    "lock": "74633eb89de77b0e4c90e110f481d2f4a41fa4901b1ace760b37d66351822015"
   },
   "clock": "2026-08-12",
   "coverage": {
-    "seen": 20,
-    "classified": 18,
-    "checked": 17,
-    "instances": 142
+    "seen": 21,
+    "classified": 19,
+    "checked": 18,
+    "instances": 160
   },
   "rules": [
     {
@@ -44,6 +44,14 @@
       "version": 1,
       "obligations": [
         "OB-FIX-2"
+      ]
+    },
+    {
+      "rule": "relation.target.unresolved",
+      "scope": "edge",
+      "version": 1,
+      "obligations": [
+        "OB-FIX-24"
       ]
     },
     {
@@ -509,6 +517,30 @@
       "escape": "none"
     },
     {
+      "rule": "relation.target.unresolved",
+      "severity": "error",
+      "obligation": "OB-FIX-24",
+      "path": "check/spec/13-dangling.md",
+      "line": 9,
+      "column": 7,
+      "message": "`SPEC-FIX-dangling` declares `assesses: SPEC-FIX-no-such-document`, and that target resolves to nothing at all",
+      "remediation": "write the identifier of a document that exists under `assesses`, or mint `SPEC-FIX-no-such-document` on the document this entry means",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "relation.target.unresolved",
+      "severity": "error",
+      "obligation": "OB-FIX-24",
+      "path": "check/spec/13-dangling.md",
+      "line": 10,
+      "column": 7,
+      "message": "`SPEC-FIX-dangling` declares `assesses: SPEC-FIX-untyped`, and that target names check/spec/04-untyped.md, which is untyped: the census gave it no kind, and an endpoint is a kind",
+      "remediation": "give check/spec/04-untyped.md a kind, because both ends of a declared relation are kinds and only a typed document is a node",
+      "fixable": false,
+      "escape": "none"
+    },
+    {
       "rule": "control.mechanism.unimplemented",
       "severity": "warn",
       "obligation": "OB-FIX-12",
@@ -653,6 +685,10 @@
     {
       "path": "check/spec/11-identifier-mismatch.md",
       "digest": "sha256:68f87dae942b5f7ef8b0a2aa47c3635a774c4ea65d0895e1d6895e5617d86a5b"
+    },
+    {
+      "path": "check/spec/13-dangling.md",
+      "digest": "sha256:4b5fdd89f22e4d82ee47b8b77652168b082ec821800ad890cf12569980412336"
     }
   ]
 }

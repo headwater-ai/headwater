@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The runner: thirteen checks, coverage against the census, a published read
+//! The runner: fourteen checks, coverage against the census, a published read
 //! set, a suppression inventory, and text findings in one order.
 //!
 //! [Spec 12](../../../../docs/spec/12-check-layer.md#two-phases-and-why-the-order-matters)
@@ -10,7 +10,7 @@
 //!
 //! # Where the rules come from
 //!
-//! Twelve of the thirteen are **generated**. None of them names a facet, a
+//! Thirteen of the fourteen are **generated**. None of them names a facet, a
 //! kind, a relation, an identifier scheme or a number of days: each reads a
 //! declaration out of the resolved taxonomy and instantiates itself over
 //! whatever that declaration produced.
@@ -76,15 +76,29 @@
 //! needs one. [`coverage`] states why a corpus-grained rule is the runner's
 //! accounting rather than a check.
 //!
-//! # Phase A outcomes stay in Phase A
+//! # Three phase-A outcomes stay in phase A, and one of them could not
 //!
 //! Spec 12 calls an unparseable file, an unclassifiable path, a dangling edge
-//! and an ambiguous shelf match *structural findings*. This runner does not
-//! re-report them as findings. The census and the graph already account for
-//! every one of them, each with the row or the exception line that names the
-//! author who can act, and a second report of one fact sends that author to two
-//! places. Turning them into findings needs an obligation for each class, which
-//! the base package does not declare, and #59 is where that lands.
+//! and an ambiguous shelf match *structural findings*. Three of the four are a
+//! census row. The census accounts for each one with the row that names the
+//! author who can act, [`coverage`] reads that census, and a document with no
+//! instance is already a finding. So this runner does not re-report them: a
+//! second report of one fact sends its author to two places.
+//!
+//! **A dangling edge is the member with no row, and that made it the member
+//! with no rule.** A row is a file and an edge is not one, so nothing in the
+//! coverage account reaches it. The graph printed it under its own heading and
+//! it answered to no obligation, carried no severity, and left `--strict`
+//! exiting 0 over a corpus whose edges pointed at nothing. [`target`] closes
+//! that, and #59 supplied what it was waiting for: the base package declares
+//! the obligation and the control, so the finding travels the same binding as
+//! every other one.
+//!
+//! What stays outside is the rest of `headwater_graph::Problem`: a `relations:`
+//! block that is not a mapping, an unknown relation name, an entry with no
+//! `to`, a repeated triple, and a source document with no identifier. Each one
+//! stops an edge from existing, so no edge-scoped rule can be instantiated over
+//! it, and each is still reported under the graph heading alone.
 
 pub mod adoption;
 pub mod cache;
@@ -109,6 +123,7 @@ pub mod sections;
 pub mod shape;
 pub mod source_form;
 pub mod suppression;
+pub mod target;
 pub mod voice;
 
 pub use adoption::Ledger;
@@ -120,8 +135,8 @@ pub use instance::{Input, Instance, Outcome};
 pub use readset::ReadSet;
 pub use register::{Bound, Register};
 pub use scope::{
-    DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain, NeighbourhoodCheck, NeighbourhoodView,
-    Scope,
+    DocumentCheck, DocumentView, EdgeCheck, EdgeUnit, EdgeView, Grain, NeighbourhoodCheck,
+    NeighbourhoodView, Scope,
 };
 pub use shape::{Purpose, Shape};
 pub use suppression::Inventory;
@@ -141,11 +156,12 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 16] = [
+pub const RULES: [&str; 17] = [
     facet_required::RULE,
     facet_value::RULE,
     identifier::RULE,
     placement::RULE,
+    target::RULE,
     reciprocity::RULE,
     endpoint::RULE,
     participation::RULE,
@@ -293,6 +309,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::document_exports::<placement::Placement>(),
         ),
         (
+            target::RULE,
+            scope::edge_scope::<target::Targets<'_>>(),
+            scope::edge_version::<target::Targets<'_>>(),
+            scope::edge_exports::<target::Targets<'_>>(),
+        ),
+        (
             reciprocity::RULE,
             scope::edge_scope::<reciprocity::Reciprocity>(),
             scope::edge_version::<reciprocity::Reciprocity>(),
@@ -411,7 +433,7 @@ pub fn run(
     ctx: &Context,
     cache: &mut Cache,
 ) -> Run {
-    // Registration, in full: thirteen checks, each named once. The scope trait each
+    // Registration, in full: fourteen checks, each named once. The scope trait each
     // one implements decides what it is handed, so this function cannot widen
     // a view by calling the wrong instantiation.
     let required = facet_required::Required::over(declared.shape);
@@ -419,6 +441,7 @@ pub fn run(
     let identifiers =
         identifier::Identifier::over(declared.shape, &declared.config.identifier_facet);
     let placement = placement::Placement::over(declared.taxonomy);
+    let targets = target::Targets::over(declared.relations);
     let reciprocity = reciprocity::Reciprocity::over(declared.relations);
     let endpoints = endpoint::Endpoints::over(declared.relations, declared.shape);
     let participation = participation::Participation::over(declared.shape, declared.relations);
@@ -434,6 +457,7 @@ pub fn run(
     instances.extend(scope::over_documents(&values, census, ctx, cache));
     instances.extend(scope::over_documents(&identifiers, census, ctx, cache));
     instances.extend(scope::over_documents(&placement, census, ctx, cache));
+    instances.extend(scope::over_edges(&targets, graph, &digests, ctx, cache));
     instances.extend(scope::over_edges(&reciprocity, graph, &digests, ctx, cache));
     instances.extend(scope::over_edges(&endpoints, graph, &digests, ctx, cache));
     instances.extend(scope::over_neighbourhoods(
