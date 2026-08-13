@@ -113,7 +113,7 @@ declarations
           relation (required) enum[exactMatch closeMatch broadMatch narrowMatch relatedMatch]
           target (required) scalar:string
   projections seq of members
-      kind (required) scalar:string
+      kind (required) enum[shelf_index relation_view agent_rules site_nav graph_export template transcription]
       for seq of scalar:string
       output (required) scalar:string
       profile scalar:string
