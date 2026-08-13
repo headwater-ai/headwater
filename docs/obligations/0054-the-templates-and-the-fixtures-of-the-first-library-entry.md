@@ -3,7 +3,7 @@ id: OBL-repo-0054
 title: "The templates and the fixtures of the first library entry disagree with Q4"
 status: current
 status_since: 2026-08-12
-last_verified: 2026-08-13
+last_verified: 2026-08-14
 summary: "Every template of the design-spec entry writes a relation at the top level with a path as the target, which Q4 refused."
 provenance:
   warrant: accepted
@@ -30,3 +30,5 @@ So the one surface that an author copies teaches the shape that the decision ref
 ## Discharge
 
 The entry predates neither ruling, which makes this a review gap in the admission criteria. What closes it is an edit to the templates and a criterion that reads them.
+
+**The scaffolder reads no template file, so the defect is a teaching defect and only that.** [Spec 3](../spec/03-authoring-and-lifecycle.md#templates-and-scaffolding) rules that a template is derived from the kind declaration, and `headwater new` derives one. A file under `templates/` reaches an author who opens it and reaches nothing else. So a wrong shape there teaches a wrong shape and produces no wrong document, which is a smaller cost than this record read it as. It is also a cost that no check catches, because a taxonomy package sits outside the corpus root of every corpus it types.
