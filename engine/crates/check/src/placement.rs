@@ -131,7 +131,7 @@ impl DocumentCheck for Placement {
             // claim goes with the capability. A deletion inside front matter
             // needs a read-back guard over a mapping, and the two shapes that
             // ship guard a run of prose and a `relations:` block.
-            // [OBL-repo-0104](../../../../docs/obligations/0104-the-front-matter-half-of-a-patch-has-no-writer.md)
+            // [OBL-repo-0103](../../../../docs/obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md)
             // holds the remainder.
             patch: None,
         })
