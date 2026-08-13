@@ -546,12 +546,7 @@ fn generate(root: &Path, check_only: bool) -> ExitCode {
         Err(errors) => return refused("the projections", &errors),
     };
     let surface = loaded.surface();
-    let plan = headwater_generate::plan(
-        &surface,
-        &loaded.census,
-        &projections,
-        &loaded.identity(),
-    );
+    let plan = headwater_generate::plan(&surface, &loaded.census, &projections, &loaded.identity());
     let report = match check_only {
         true => headwater_generate::check(root, &plan),
         false => headwater_generate::write(root, &plan),
