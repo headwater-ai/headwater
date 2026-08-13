@@ -54,6 +54,58 @@ impl Json {
         out
     }
 
+    /// The same value, indented, and ending in a newline.
+    ///
+    /// A protocol message is one line, because the client that reads it is a
+    /// program and a newline inside a framed message buys nothing. A generated
+    /// file is committed and read in a diff, so a change to one member has to
+    /// arrive as a change to one line. Two renderings, one value, and the
+    /// escaping below is shared rather than copied.
+    ///
+    /// An empty array or object stays on its own line. A two-line form for
+    /// nothing is noise, and it is also a member that a diff would show moving
+    /// when the thing it holds is still empty.
+    pub fn render_pretty(&self) -> String {
+        let mut out = String::new();
+        self.write_pretty(0, &mut out);
+        out.push('\n');
+        out
+    }
+
+    fn write_pretty(&self, depth: usize, out: &mut String) {
+        match self {
+            Json::Array(items) if !items.is_empty() => {
+                out.push_str("[\n");
+                for (at, item) in items.iter().enumerate() {
+                    indent(depth + 1, out);
+                    item.write_pretty(depth + 1, out);
+                    out.push_str(match at + 1 < items.len() {
+                        true => ",\n",
+                        false => "\n",
+                    });
+                }
+                indent(depth, out);
+                out.push(']');
+            }
+            Json::Object(members) if !members.is_empty() => {
+                out.push_str("{\n");
+                for (at, (key, value)) in members.iter().enumerate() {
+                    indent(depth + 1, out);
+                    escape(key, out);
+                    out.push_str(": ");
+                    value.write_pretty(depth + 1, out);
+                    out.push_str(match at + 1 < members.len() {
+                        true => ",\n",
+                        false => "\n",
+                    });
+                }
+                indent(depth, out);
+                out.push('}');
+            }
+            other => other.write(out),
+        }
+    }
+
     fn write(&self, out: &mut String) {
         match self {
             Json::Raw(text) => out.push_str(text),
@@ -85,6 +137,12 @@ impl Json {
                 out.push('}');
             }
         }
+    }
+}
+
+fn indent(depth: usize, out: &mut String) {
+    for _ in 0..depth {
+        out.push_str("  ");
     }
 }
 
