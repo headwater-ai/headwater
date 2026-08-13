@@ -127,6 +127,12 @@ pub const SCOPE: Scope = Scope::taxonomy();
 /// reason [`crate::coverage::VERSION`] is: no trait carries it.
 pub const VERSION: u32 = 1;
 
+/// The emitter targets these two rules export to, stated here for the reason
+/// [`SCOPE`] is. Empty, and not because nothing could say it: these rules are
+/// about the taxonomy rather than about a document, and a front-matter schema
+/// has no instance to hold them against.
+pub const EXPORTABLE_AS: crate::scope::ExportTargets = &[];
+
 /// The obligations and controls of a resolved taxonomy.
 #[derive(Clone, Debug, Default)]
 pub struct Register {

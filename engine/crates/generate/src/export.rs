@@ -499,9 +499,12 @@ fn of_value(value: &Value) -> Json {
 /// - A required facet becomes `required`. The native check reports a document
 ///   of a kind that states no value for a facet the kind requires, and so does
 ///   the keyword.
-/// - A facet with a declared value set becomes `enum`. Same set, same verdict.
-/// - A forbidden facet becomes `not: {required: [...]}`, which is the same
-///   statement read the other way.
+/// - A facet with a declared value set becomes `enum` under a guard that lets a
+///   mapping or a list through, because the check declines one too. Same set,
+///   same verdict.
+/// - A forbidden facet becomes nothing, and the loss set says so. See
+///   [`forbidden_facets`]: no check reports the document a prohibition would
+///   reject, so carrying it would state more than the engine enforces.
 ///
 /// Everything else is graph-scoped, corpus-scoped, temporal, or about a body,
 /// and a validator that holds one instance in its hand reaches none of them.
@@ -528,6 +531,7 @@ fn schema(surface: &Surface<'_>, all: &[Node<'_>]) -> Body {
     let taxonomy = surface.taxonomy();
 
     let mut defs = Vec::new();
+    let mut forbids = false;
     for kind in &shape.kinds {
         let required = shape.required_facets(&kind.name);
         let mut properties = Vec::new();
@@ -554,27 +558,10 @@ fn schema(surface: &Surface<'_>, all: &[Node<'_>]) -> Body {
                 ),
             ));
         }
-        // A forbidden facet is the same statement read the other way, and the
-        // native check reports exactly the document this rejects.
-        let forbidden = forbidden_facets(shape, &kind.name);
-        if !forbidden.is_empty() {
-            members.push((
-                "not".to_string(),
-                Json::object([(
-                    "anyOf",
-                    Json::Array(
-                        forbidden
-                            .iter()
-                            .map(|name| {
-                                Json::object([(
-                                    "required",
-                                    Json::Array(vec![Json::string(name.as_str())]),
-                                )])
-                            })
-                            .collect(),
-                    ),
-                )]),
-            ));
+        // A prohibition is not emitted. See `forbidden_facets` for the reason,
+        // and for the loss that records the drop.
+        if !forbidden_facets(shape, &kind.name).is_empty() {
+            forbids = true;
         }
         defs.push((kind.name.clone(), Json::Object(members)));
     }
@@ -679,6 +666,17 @@ fn schema(surface: &Surface<'_>, all: &[Node<'_>]) -> Body {
                  as far as the edge it hangs on, which is to say not at all"
             .to_string(),
     });
+    if forbids {
+        losses.push(Loss {
+            class: Class::Attribute,
+            name: "facets.forbid".to_string(),
+            reason: "a kind that forbids a facet generates no value check over it, and nothing \
+                     reports a document that states one. A schema keyword that rejected such a \
+                     document would carry more force than the check it claims, so the \
+                     prohibition is dropped rather than translated"
+                .to_string(),
+        });
+    }
     losses.push(Loss {
         class: Class::Attribute,
         name: "the binding".to_string(),
@@ -710,31 +708,59 @@ fn schema(surface: &Surface<'_>, all: &[Node<'_>]) -> Body {
     }
 }
 
-/// The constraint one facet puts on its value.
+/// The constraint one facet contributes, and the guard that keeps it equivalent.
 ///
-/// A facet with a declared value set becomes an `enum` over exactly that set. A
-/// facet with none gets no constraint at all, and the omission is deliberate.
-/// The taxonomy declares whether a facet is required and what values it admits,
-/// and it declares no type. A `type: string` here would be this emitter
-/// inventing a constraint that no native check enforces, which is the
-/// resemblance spec 12 refuses.
+/// A facet with no declared value set gets no constraint at all, and the
+/// omission is deliberate. The taxonomy declares whether a facet is required and
+/// what values it admits, and it declares no type. A `type: string` here would
+/// be this emitter inventing a constraint that no native check enforces, which
+/// is the resemblance spec 12 refuses.
+///
+/// A declared value set becomes `enum` over the same members. The guard is the
+/// part the differential forced. `facet.value.not_permitted` produces nothing
+/// for a value it cannot read as a scalar, because a mapping where the taxonomy
+/// declared a set of scalars is a shape defect and the meta-schema owns shape.
+/// A bare `enum` rejects that document, which is a constraint arriving with
+/// more force than the check it claims to carry. So the emitted form admits a
+/// composite and enumerates a scalar, which is what the check does.
 fn constraint(shape: &headwater_check::Shape, name: &str) -> Json {
     match shape.facet(name) {
         Some(facet) if !facet.values.is_empty() => Json::object([(
-            "enum",
-            Json::Array(
-                facet
-                    .values
-                    .iter()
-                    .map(|value| Json::string(value.as_str()))
-                    .collect(),
-            ),
+            "anyOf",
+            Json::Array(vec![
+                Json::object([(
+                    "type",
+                    Json::Array(vec![Json::string("object"), Json::string("array")]),
+                )]),
+                Json::object([(
+                    "enum",
+                    Json::Array(
+                        facet
+                            .values
+                            .iter()
+                            .map(|value| Json::string(value.as_str()))
+                            .collect(),
+                    ),
+                )]),
+            ]),
         )]),
         _ => Json::Object(Vec::new()),
     }
 }
 
 /// The facets a kind forbids, including the ones it inherits.
+///
+/// The schema emitter reads this to learn whether a taxonomy forbids anything,
+/// and then drops the prohibition rather than carrying it. `not: {anyOf: [...]}`
+/// rejects a document that states a forbidden facet, and no check in the
+/// registry reports that document: `facet.value.not_permitted` generates no
+/// instance over a kind that forbids the facet, which is the whole of what the
+/// prohibition does natively. A schema keyword that rejected it would report an
+/// error the engine does not, and
+/// [spec 12](../../../../docs/spec/12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule)
+/// rules that an emitter omits a construct whose meaning inverts. The loss set
+/// records the drop, which is a different statement: less coverage, not a
+/// wrong answer.
 fn forbidden_facets(shape: &headwater_check::Shape, kind: &str) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for ancestor in shape.ancestry(kind) {

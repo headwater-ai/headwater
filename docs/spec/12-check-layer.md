@@ -45,8 +45,8 @@ Spec 6 sketched three tiers. The correct decomposition is five. It comes from th
 
 | Origin | Comes from | Examples | Exportable as |
 |---|---|---|---|
-| **Shape** | the TBox, generated | required facet, enum membership, identifier pattern, cardinality, unknown-facet detection | LinkML + SHACL |
-| **Graph** | relation declarations, generated | reciprocity, endpoint kinds, lifecycle-sensitivity, satellite inheritance, live conflicts, windowed participation expectations | SHACL (via SPARQL) |
+| **Shape** | the TBox, generated | required facet, enum membership, identifier pattern, cardinality, unknown-facet detection | JSON Schema, and LinkML or SHACL when either emitter arrives |
+| **Graph** | relation declarations, generated | reciprocity, endpoint kinds, lifecycle-sensitivity, satellite inheritance, live conflicts, windowed participation expectations | SHACL (via SPARQL), when that emitter arrives |
 | **Corpus** | declarations that need many documents | facet orthogonality, continuity distribution, scent distinctiveness | — |
 | **Document** | regimes, applied to the body | voice, section contract, normative language, size budgets, prose-link resolution | — |
 | **Plugin** | adopter code | anything organization-specific | — |
@@ -59,7 +59,7 @@ This table settles three things.
 
 One example in that row asks for more than the row supplies. Prose-link resolution reads the destination of a link, and a fragment on that destination names a heading of another document. No scope below carries a second document's body. So the half that a document decides alone is a Document check. The other half waits for a grain that this list does not hold ([13 — Open obligations](13-open-obligations.md#design-work-that-nothing-blocks)).
 
-**`exportable_as` is machine-checkable.** The emitted shapes are generated from exactly the checks that declare a target, and the next section states the rules that keep the claim honest.
+**`exportable_as` is machine-checkable.** The emitted shapes are generated from exactly the checks that declare a target, and the next section states the rules that keep the claim honest. The last column above states what an origin can reach, and the declaration is per rule. Two rules declare a target today, and both name `jsonschema`.
 
 ### `exportable_as` is a set with a partition rule
 
@@ -76,6 +76,10 @@ Three rules make the declared subset of [Q13](09-decisions.md#q13--linkml-and-sh
 **The declaration travels with the artifact.** An export carries its own coverage statement, so a consumer who copies the export copies the statement too. A statement that lives beside the artifact arrives separately, or not at all.
 
 That last rule follows practice rather than invention. An OGC API implementation serves the conformance classes that it supports, and a listed class obliges the whole capability behind it. Headwater owes one thing more, because its check registry comes from an adopter's taxonomy rather than from a published universe. An outside reader cannot compute the complement, so the export states both halves ([evaluation](../evaluations/graph-export-and-federation.md)).
+
+The differential is a test rather than a rule, and it lives at `engine/crates/generate/tests/differential.rs`. It runs a stock JSON Schema validator over the emitted schema. It compares the result with the finding set of this engine, document for document. The corpus that it reads breaks each claimed family on purpose. Two empty sets agree over every emitter, so a differential over a corpus that violates nothing establishes nothing.
+
+That test took two constructs out of the JSON Schema emitter. Each one arrived with an inverted meaning, which the third rule above refuses. A kind that forbids a facet became `not`, and no check reports a document that states a forbidden facet. A facet with a declared value set became a bare `enum`, and the check declines a value that it cannot read as a scalar. Each construct rejected a document that this engine accepts. The first one is gone and the loss set records the drop. The second one now carries a guard that admits what the check admits.
 
 ## Scope — the declaration everything else rests on
 

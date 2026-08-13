@@ -42,7 +42,7 @@
 
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
-use crate::scope::{DocumentCheck, DocumentView};
+use crate::scope::{DocumentCheck, DocumentView, ExportTargets};
 use crate::shape::Shape;
 
 pub const RULE: &str = "facet.value.not_permitted";
@@ -114,6 +114,13 @@ impl DocumentCheck for Values {
     const RULE: &'static str = self::RULE;
     /// See [`crate::placement::Placement::VERSION`].
     const VERSION: u32 = 1;
+    /// A declared value set becomes an `enum` over the same members, under a
+    /// guard that lets a mapping or a list through. The guard is what makes
+    /// the translation equivalent rather than stricter, because this check
+    /// declines a value it cannot read as a scalar and a bare `enum` would
+    /// reject one. See the module comment above, and the differential at
+    /// `engine/crates/generate/tests/differential.rs`.
+    const EXPORTABLE_AS: ExportTargets = &["jsonschema"];
 
     fn instantiates(&self, kind: &str) -> bool {
         !self.admitted_by(kind).is_empty()

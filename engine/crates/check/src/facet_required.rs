@@ -43,7 +43,7 @@
 
 use crate::finding::{Finding, Severity};
 use crate::instance::Outcome;
-use crate::scope::{DocumentCheck, DocumentView};
+use crate::scope::{DocumentCheck, DocumentView, ExportTargets};
 use crate::shape::Shape;
 
 pub const RULE: &str = "facet.required.missing";
@@ -84,6 +84,12 @@ impl DocumentCheck for Required {
     /// changes, because that is what invalidates the cached verdicts of the
     /// edition before it ([`crate::cache`]).
     const VERSION: u32 = 1;
+    /// A required facet becomes a member of the `required` array of the kind
+    /// that owes it, and a validator reports one error for each member that a
+    /// document does not state. That is the same document and the same facet,
+    /// and `engine/crates/generate/tests/differential.rs` measures it in both
+    /// directions over a corpus that breaks the rule on purpose.
+    const EXPORTABLE_AS: ExportTargets = &["jsonschema"];
 
     /// A kind that owes no facet generates no instance. An instance that could
     /// only ever pass counts a document as checked by a rule that had nothing

@@ -62,6 +62,12 @@ pub const SCOPE: Scope = Scope::corpus();
 /// engine produced the result and this rule produces some of it.
 pub const VERSION: u32 = 1;
 
+/// The emitter targets this rule exports to, stated here for the reason
+/// [`SCOPE`] is. It is empty and it stays empty: this rule reads the whole
+/// census, and a validator that holds one document in its hand cannot ask
+/// whether another document was checked.
+pub const EXPORTABLE_AS: crate::scope::ExportTargets = &[];
+
 /// One document, and what this run did about it.
 #[derive(Clone, Debug)]
 pub struct Document {

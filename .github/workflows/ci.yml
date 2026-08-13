@@ -51,9 +51,19 @@ jobs:
       - name: Lint
         run: cargo clippy --all-targets -- -D warnings
         working-directory: engine
+      - name: The stock JSON Schema validator the export differential runs against
+        # `engine/crates/generate/tests/differential.rs` compares the emitted
+        # schema's finding set with the engine's, and it holds its own evaluator
+        # to an implementation nobody here wrote. Absent, that one comparison
+        # skips, because the pinned build container carries no Python.
+        # HEADWATER_STOCK_VALIDATOR below turns the skip into a failure, so this
+        # gate cannot go quiet by losing a dependency.
+        run: python3 -m pip install --user jsonschema PyYAML
       - name: Test
         run: cargo test
         working-directory: engine
+        env:
+          HEADWATER_STOCK_VALIDATOR: required
 
   headwater:
     name: headwater check (advisory)

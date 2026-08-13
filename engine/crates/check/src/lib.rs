@@ -255,6 +255,147 @@ pub struct Serves {
     /// so a read set that stated a different one would describe another run.
     pub version: u32,
     pub obligation: Bound,
+    /// The emitter targets this rule exports to, read off the same trait as
+    /// the scope and the edition. See [`scope::ExportTargets`], and
+    /// [`partition`] for the rule that keeps the claim honest.
+    pub exportable_as: scope::ExportTargets,
+}
+
+/// The check registry: every rule, with the scope, the edition and the export
+/// targets that its declaration carries.
+///
+/// One list, read in three places. A rule that appears here and not in
+/// [`RULES`] is a compile error, because the array is sized from it.
+fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()] {
+    [
+        (
+            facet_required::RULE,
+            scope::document_scope::<facet_required::Required>(),
+            scope::document_version::<facet_required::Required>(),
+            scope::document_exports::<facet_required::Required>(),
+        ),
+        (
+            facet_value::RULE,
+            scope::document_scope::<facet_value::Values>(),
+            scope::document_version::<facet_value::Values>(),
+            scope::document_exports::<facet_value::Values>(),
+        ),
+        (
+            identifier::RULE,
+            scope::document_scope::<identifier::Identifier>(),
+            scope::document_version::<identifier::Identifier>(),
+            scope::document_exports::<identifier::Identifier>(),
+        ),
+        (
+            placement::RULE,
+            scope::document_scope::<placement::Placement>(),
+            scope::document_version::<placement::Placement>(),
+            scope::document_exports::<placement::Placement>(),
+        ),
+        (
+            reciprocity::RULE,
+            scope::edge_scope::<reciprocity::Reciprocity>(),
+            scope::edge_version::<reciprocity::Reciprocity>(),
+            scope::edge_exports::<reciprocity::Reciprocity>(),
+        ),
+        (
+            endpoint::RULE,
+            scope::edge_scope::<endpoint::Endpoints<'_>>(),
+            scope::edge_version::<endpoint::Endpoints<'_>>(),
+            scope::edge_exports::<endpoint::Endpoints<'_>>(),
+        ),
+        (
+            participation::RULE,
+            scope::neighbourhood_scope::<participation::Participation<'_>>(),
+            scope::neighbourhood_version::<participation::Participation<'_>>(),
+            scope::neighbourhood_exports::<participation::Participation<'_>>(),
+        ),
+        (
+            voice::RULE,
+            scope::document_scope::<voice::Voice>(),
+            scope::document_version::<voice::Voice>(),
+            scope::document_exports::<voice::Voice>(),
+        ),
+        (
+            language::RULE,
+            scope::document_scope::<language::Language>(),
+            scope::document_version::<language::Language>(),
+            scope::document_exports::<language::Language>(),
+        ),
+        (
+            retired::RULE,
+            scope::document_scope::<retired::Retired>(),
+            scope::document_version::<retired::Retired>(),
+            scope::document_exports::<retired::Retired>(),
+        ),
+        (
+            source_form::RULE,
+            scope::document_scope::<source_form::SourceForm>(),
+            scope::document_version::<source_form::SourceForm>(),
+            scope::document_exports::<source_form::SourceForm>(),
+        ),
+        (
+            sections::RULE,
+            scope::document_scope::<sections::Sections>(),
+            scope::document_version::<sections::Sections>(),
+            scope::document_exports::<sections::Sections>(),
+        ),
+        (
+            fragment::RULE,
+            scope::document_scope::<fragment::Fragments>(),
+            scope::document_version::<fragment::Fragments>(),
+            scope::document_exports::<fragment::Fragments>(),
+        ),
+        (
+            coverage::RULE,
+            coverage::SCOPE,
+            coverage::VERSION,
+            coverage::EXPORTABLE_AS,
+        ),
+        (
+            register::DISPOSITION,
+            register::SCOPE,
+            register::VERSION,
+            register::EXPORTABLE_AS,
+        ),
+        (
+            register::MECHANISM,
+            register::SCOPE,
+            register::VERSION,
+            register::EXPORTABLE_AS,
+        ),
+    ]
+}
+
+/// The check registry, split in two for one emitter target.
+///
+/// [Spec 12](../../../../docs/spec/12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule)
+/// asks for both halves and for neither to be authored. Both come from
+/// [`declared`], so no rule can fall into both or into neither, and a rule
+/// added to the registry lands in one of them without anybody remembering to
+/// put it there.
+#[derive(Clone, Debug)]
+pub struct Partition {
+    pub target: String,
+    pub exported: Vec<&'static str>,
+    pub unexported: Vec<&'static str>,
+}
+
+/// Split the registry for `target`, in [`RULES`] order.
+pub fn partition(target: &str) -> Partition {
+    let mut exported = Vec::new();
+    let mut unexported = Vec::new();
+    for (rule, _, _, targets) in registry() {
+        match targets.contains(&target) {
+            true => exported.push(rule),
+            false => unexported.push(rule),
+        }
+    }
+    Partition {
+        target: target.to_string(),
+        exported,
+        unexported,
+    }
 }
 
 /// Run every check over one census and the graph built from it.
@@ -328,84 +469,16 @@ pub fn run(
     // because the binding is data. A rule states its id, a control names that
     // id and the obligations it discharges, and one place reads the two
     // together. See [`register`] for why that place is not the check.
-    let served: Vec<Serves> = [
-        (
-            facet_required::RULE,
-            scope::document_scope::<facet_required::Required>(),
-            scope::document_version::<facet_required::Required>(),
-        ),
-        (
-            facet_value::RULE,
-            scope::document_scope::<facet_value::Values>(),
-            scope::document_version::<facet_value::Values>(),
-        ),
-        (
-            identifier::RULE,
-            scope::document_scope::<identifier::Identifier>(),
-            scope::document_version::<identifier::Identifier>(),
-        ),
-        (
-            placement::RULE,
-            scope::document_scope::<placement::Placement>(),
-            scope::document_version::<placement::Placement>(),
-        ),
-        (
-            reciprocity::RULE,
-            scope::edge_scope::<reciprocity::Reciprocity>(),
-            scope::edge_version::<reciprocity::Reciprocity>(),
-        ),
-        (
-            endpoint::RULE,
-            scope::edge_scope::<endpoint::Endpoints<'_>>(),
-            scope::edge_version::<endpoint::Endpoints<'_>>(),
-        ),
-        (
-            participation::RULE,
-            scope::neighbourhood_scope::<participation::Participation<'_>>(),
-            scope::neighbourhood_version::<participation::Participation<'_>>(),
-        ),
-        (
-            voice::RULE,
-            scope::document_scope::<voice::Voice>(),
-            scope::document_version::<voice::Voice>(),
-        ),
-        (
-            language::RULE,
-            scope::document_scope::<language::Language>(),
-            scope::document_version::<language::Language>(),
-        ),
-        (
-            retired::RULE,
-            scope::document_scope::<retired::Retired>(),
-            scope::document_version::<retired::Retired>(),
-        ),
-        (
-            source_form::RULE,
-            scope::document_scope::<source_form::SourceForm>(),
-            scope::document_version::<source_form::SourceForm>(),
-        ),
-        (
-            sections::RULE,
-            scope::document_scope::<sections::Sections>(),
-            scope::document_version::<sections::Sections>(),
-        ),
-        (
-            fragment::RULE,
-            scope::document_scope::<fragment::Fragments>(),
-            scope::document_version::<fragment::Fragments>(),
-        ),
-        (coverage::RULE, coverage::SCOPE, coverage::VERSION),
-        (register::DISPOSITION, register::SCOPE, register::VERSION),
-        (register::MECHANISM, register::SCOPE, register::VERSION),
-    ]
-    .into_iter()
-    .map(|(rule, scope, version)| Serves {
-        rule,
-        scope,
-        version,
-        obligation: declared.register.bound(rule),
-    })
-    .collect();
+    let served: Vec<Serves> = registry()
+        .into_iter()
+        .map(|(rule, scope, version, exportable_as)| Serves {
+            rule,
+            scope,
+            version,
+            obligation: declared.register.bound(rule),
+            exportable_as,
+        })
+        .collect();
     for finding in &mut findings {
         finding.obligation = match served.iter().find(|served| served.rule == finding.rule) {
             Some(Serves {

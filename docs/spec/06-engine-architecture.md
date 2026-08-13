@@ -85,8 +85,8 @@ A check is a pure function from a **scoped view** of the graph to findings. Chec
 
 | Origin | Comes from | Exportable as |
 |---|---|---|
-| **Shape** | the taxonomy, generated | JSON Schema, SHACL, LinkML |
-| **Graph** | relation declarations, generated | SHACL |
+| **Shape** | the taxonomy, generated | JSON Schema, and SHACL or LinkML when either emitter arrives |
+| **Graph** | relation declarations, generated | SHACL, when that emitter arrives |
 | **Corpus** | declarations that need many documents at once | — |
 | **Document** | regimes applied to the body, which is not in the graph | — |
 | **Plugin** | adopter code | — |
@@ -94,6 +94,8 @@ A check is a pure function from a **scoped view** of the graph to findings. Chec
 The first two are *generated*: a new facet or relation brings its checks with no code. That is the point of taxonomy-as-data, and most of the check count is there. The last three are why a native engine exists at all. They are exactly what LinkML and SHACL cannot express.
 
 The last column is a **set of emitter targets**, not one format. A check exportable to SHACL need not be exportable to JSON Schema, and most checks export to nothing. The engine generates both the exported set and the unexported set from one registry. A target may appear only when the emitted constraint is equivalent to the native check. [Spec 12](12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule) owns the partition rule and the equivalence bar.
+
+The column above states what an origin can reach. The declaration is per rule, and it lives on the check as `EXPORTABLE_AS`. Two rules declare a target today. `facet.required.missing` and `facet.value.not_permitted` both name `jsonschema`, and a differential test established each one.
 
 Every check declares its **scope** (document, edge, neighborhood, shelf, corpus), and the engine enforces it. A check sees only what it declared. Scope is what makes change-scoped evaluation exact, cache keys sound, and parallelism safe.
 
