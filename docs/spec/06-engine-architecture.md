@@ -101,14 +101,20 @@ The design — scope semantics, instances and coverage, the two-phase census, fi
 
 ## Projections
 
-Projections are generated artifacts. The taxonomy declares each one, and each has the same contract:
+Projections are generated artifacts. Each one has the same contract:
 
 ```
 headwater generate            # write
 headwater generate --check    # fail if any committed output differs
 ```
 
-The engine implements these projection kinds: shelf indexes, relation views (decision lineage, traceability matrices), agent rule files, site navigation, graph export, coverage reports, and templates. A transcription of a pinned external snapshot is one more ([Q19](09-decisions.md#q19--inbound-integration-an-external-system-of-record)). A projection carries a generated-file marker. The engine refuses to overwrite a file that lacks the marker and did not come from a previous run. Thus a projection can never silently destroy an authored document.
+The engine implements these projection kinds: shelf indexes, relation views (decision lineage, traceability matrices), agent rule files, site navigation, graph export, coverage reports, and templates. A transcription of a pinned external snapshot is one more ([Q19](09-decisions.md#q19--inbound-integration-an-external-system-of-record)).
+
+**Seven of the nine are declarable, and two are not.** A taxonomy names the kind and the output path, and [principle 1](00-vision-and-scope.md#design-principles) makes that path a schema decision. The coverage report and the corpus descriptor are the exceptions. [Spec 4](04-assurance-model.md#every-obligation-has-exactly-one-disposition) makes the register engine-defined and non-optional, and [Q20](09-decisions.md#q20--where-scent-lives) fixes the descriptor at `.headwater/corpus.json`. Both hold that standing for one reason. A reader who must consult the taxonomy to find an artifact already knows what it would tell them. So a declaration of either would put a second copy of one artifact at a path the engine did not fix. The meta-schema therefore closes the declarable seven as a value set, and `headwater generate` writes the other two under no declaration at all.
+
+**A projection carries a generated-file marker, and the marker is the record of the previous run.** The engine refuses to overwrite a file that lacks it. Read as two permissions, that rule asks the engine to remember what it wrote last time, and it does not need to. A manifest beside the file is a second statement of one fact, which is the drift [principle 2](00-vision-and-scope.md#design-principles) rules against. So the engine reads the bytes on disk. A path that holds nothing is written. A file whose first line carries the marker is overwritten. Anything else is refused, and the run names the path. Thus a projection can never silently destroy an authored document.
+
+**No generated file states when it was generated.** `generate --check` compares bytes. A timestamp inside an output makes every run differ from the last one, so the gate would report drift over a corpus that nobody touched. [Q17](09-decisions.md#q17--governed-access-and-the-solution-layer) asks a filtered export to state when it ran, and the two rules cannot both hold for an artifact this gate covers. [Spec 13](13-open-obligations.md) carries the conflict.
 
 ### An export is a projection, and it declares what it dropped
 

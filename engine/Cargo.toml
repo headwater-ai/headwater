@@ -5,6 +5,7 @@ members = [
     "crates/check",
     "crates/cli",
     "crates/doc",
+    "crates/generate",
     "crates/graph",
     "crates/hash",
     "crates/lock",

@@ -73,6 +73,17 @@ jobs:
         # reached against a taxonomy that nobody committed, so the advisory
         # posture has nothing to be advisory about.
         run: ./engine/target/release/headwater taxonomy resolve --check
+      - name: Every projection is what this corpus produces
+        # This blocks too, and for the reason the step above blocks rather than
+        # the reason the check below is advisory. A projection that differs from
+        # its source is not a judgment about prose somebody wrote. It is a
+        # derived artifact that is out of date, the remedy is one command, and
+        # spec 12 blocks on what a machine repairs.
+        #
+        # It needs no `--now`. Nothing this verb writes reads a clock, which is
+        # what lets it sit above the step that fixes the date for the three runs
+        # after it.
+        run: ./engine/target/release/headwater generate --check
       - name: The date this job evaluates at
         # A windowed participation expectation compares a declared origin date
         # against `ctx.now`, so the clock is an input to the verdict and the

@@ -424,7 +424,13 @@ impl Surface<'_> {
     /// The repeat count is bounded by the list length. Precedence over a corpus
     /// is not guaranteed acyclic, and a cycle in it must reorder a list rather
     /// than hang a query an agent is waiting on.
-    fn by_precedence(&self, pointers: &mut Vec<Pointer>) {
+    ///
+    /// Public because a shelf index is the third consumer spec 2 names for this
+    /// derivation, after a routing result and the document a conflict is
+    /// reported against. `headwater generate` calls it. A generator that sorted
+    /// its entries by any other rule would disagree with what `route` and
+    /// `explain` already tell a reader about the same two documents.
+    pub fn by_precedence(&self, pointers: &mut Vec<Pointer>) {
         for _ in 0..pointers.len() {
             let mut moved = false;
             'pass: for i in 0..pointers.len() {

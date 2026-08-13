@@ -69,6 +69,7 @@ headwater check              [--strict] [--no-cache] [--now <date>] [--read-set 
 headwater route              <task description> [--budget <n>] [--root <path>]
 headwater explain            <path|identifier> [--root <path>]
 headwater mcp                [--root <path>]
+headwater generate           [--check] [--root <path>]
 headwater init               [--corpus <dir>] [--package <name>] [--root <path>]
 headwater infer              [--owner <name>] [--until <date>] [--write]
                              [--now <date>] [--root <path>]
@@ -84,6 +85,9 @@ headwater taxonomy resolve   [--check] [--root <path>]
   mcp                serve the reads above to an agent over the Model Context
                      Protocol, on standard input and output. It registers no
                      tool that writes.
+  generate           write every projection the taxonomy declares, and report
+                     every one it does not write with the reason. It refuses to
+                     overwrite a file that carries no generated-file marker.
   init               scaffold the consumer declaration and the overlay for a
                      repository that has neither, and print the questions that
                      no tree answers. It refuses to overwrite a binding.
@@ -132,8 +136,12 @@ headwater taxonomy resolve   [--check] [--root <path>]
   --package <name>
                  `init` only: the package to take. `headwater/standard` by
                  default.
-  --check        `taxonomy resolve` only: write nothing and exit non-zero when
-                 the committed lock is not what the sources resolve to.
+  --check        `taxonomy resolve` and `generate`: write nothing and exit
+                 non-zero when what is committed is not what a run produces. The
+                 two read different things. `taxonomy resolve --check` reads the
+                 taxonomy sources, so it answers whether the lock is current.
+                 `generate --check` reads the corpus through the lock, so it
+                 answers whether a derived artifact is.
   --root <path>  the repository to read. Defaults to the working directory.
 ";
 
@@ -226,6 +234,7 @@ fn main() -> ExitCode {
         ["explain"] => fail("`explain` takes a path or an identifier"),
         ["explain", target] => explain(&root, target),
         ["mcp"] => mcp(&root),
+        ["generate"] => generate(&root, check_only),
         ["init"] => init(&root, corpus_root, package),
         ["infer"] => infer(&root, owner, until, write, now),
         // Spec 6 lists this verb and no document of the specification states
@@ -496,6 +505,43 @@ fn explain(root: &Path, target: &str) -> ExitCode {
             ExitCode::FAILURE
         }
     }
+}
+
+/// `headwater generate`, and `--check` over what is committed.
+///
+/// Advisory is not the default here, and that is deliberate. Spec 6 fixes the
+/// advisory posture for `check`, which reports findings about prose a person
+/// wrote. A projection that differs from its source is not a finding about a
+/// document, it is an artifact that is out of date, and the remedy is one
+/// command rather than a judgment. So a difference exits non-zero, in the way
+/// `taxonomy resolve --check` does over a stale lock.
+fn generate(root: &Path, check_only: bool) -> ExitCode {
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let projections = match headwater_generate::Projections::read(&loaded.lock.taxonomy) {
+        Ok(projections) => projections,
+        Err(errors) => return refused("the projections", &errors),
+    };
+    let surface = loaded.surface();
+    let plan = headwater_generate::plan(&surface, &loaded.census, &projections);
+    let report = match check_only {
+        true => headwater_generate::check(root, &plan),
+        false => headwater_generate::write(root, &plan),
+    };
+    print!("{}", report.render());
+    if report.has_errors() {
+        match check_only {
+            true => eprintln!(
+                "headwater: a projection is not what this corpus and this lock produce. \
+                 Run `headwater generate` and commit the result"
+            ),
+            false => eprintln!("headwater: a projection did not write"),
+        }
+        return ExitCode::FAILURE;
+    }
+    ExitCode::SUCCESS
 }
 
 /// `headwater mcp`: the reads above, served to an agent.

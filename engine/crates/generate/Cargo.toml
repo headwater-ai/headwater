@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "headwater-generate"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+# The projections block is read off the resolved taxonomy, which is a mapping,
+# in the way the obligations and controls block is.
+headwater-yaml = { path = "../yaml" }
+
+# A shelf index groups the census rows by the shelf that claimed each one, and
+# the shelf name is already in the row that classified it.
+headwater-census = { path = "../census" }
+
+# The reading order of a generated index is the derivation `route` and `explain`
+# already apply, and the query surface owns it.
+headwater-query = { path = "../query" }
+
+[dev-dependencies]
+# A fixture corpus needs a taxonomy resolved from sources, in the way every
+# other crate's fixture tree does.
+headwater-resolve = { path = "../resolve" }
+headwater-graph = { path = "../graph" }
+headwater-check = { path = "../check" }

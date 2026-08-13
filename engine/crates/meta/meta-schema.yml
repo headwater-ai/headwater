@@ -351,9 +351,29 @@ definitions:
 
   projection:
     members:
-      # gap: the projection kinds are named across spec 2 and spec 6 and no
-      # value set collects them.
-      kind: {scalar: string, required: true}
+      # The projection kinds a taxonomy may declare. Spec 6 (Projections) names
+      # the set the engine implements, and Q19 adds `transcription` to it. This
+      # position was marked as a gap until the generator arrived, and building
+      # the generator showed it was one question that hides two.
+      #
+      # The kinds do not form one value set. They form two, and only this one
+      # belongs on a declaration. Two kinds are engine-defined: the register of
+      # spec 4 (Every obligation has exactly one disposition) and the corpus
+      # descriptor of Q20. Neither takes its output path from a declaration, and
+      # a taxonomy that named either here would put a second copy of one
+      # artifact at a path the engine did not fix. So the enum below is the
+      # declarable seven, and `headwater generate` writes the other two whether
+      # or not any taxonomy mentions a projection at all.
+      kind:
+        enum:
+          - shelf_index
+          - relation_view
+          - agent_rules
+          - site_nav
+          - graph_export
+          - template
+          - transcription
+        required: true
       for: {seq: {scalar: string}}
       output: {scalar: string, required: true}
       profile: {scalar: string}
