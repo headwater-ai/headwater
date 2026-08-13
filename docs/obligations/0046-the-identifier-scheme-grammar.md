@@ -32,4 +32,4 @@ So the engine cannot read the prefix that it mints, and [identifier integrity](.
 
 The generated check `identifier.pattern.not_met` reads the same string and reports around the gap. It parses the pattern into literal runs and placeholders. So it names the segment that stopped a match, and it still cannot decide that two schemes mint disjoint identifiers.
 
-A declared grammar also lets an RDF projection derive a document IRI rather than invent one, as the [worked example](../evaluations/owl-skos-worked-example.md#the-method) does from a file path today. That is a meta-schema change, so it costs a taxonomy major version once the meta-schema ships, and nothing today. [Spec 3](../spec/03-authoring-and-lifecycle.md#identifiers) is where the grammar belongs.
+A declared grammar also lets an RDF projection derive a document IRI rather than invent one. The [worked example](../evaluations/owl-skos-worked-example.md#the-method) derives one from a file path today. That is a meta-schema change, so it costs a taxonomy major version once the meta-schema ships, and nothing today. [Spec 3](../spec/03-authoring-and-lifecycle.md#identifiers) is where the grammar belongs.

@@ -29,4 +29,4 @@ So an author who changes what a rule decides and leaves the version alone reads 
 
 ## Discharge
 
-This is the same class of gap as [the fixture question for a correctness root that is a type](0079-a-correctness-root-that-is-a-type-has-no-failing-fixture.md), which is a correctness root whose defect no fixture can reach.
+[The fixture question for a correctness root that is a type](0079-a-correctness-root-that-is-a-type-has-no-failing-fixture.md) is the same class of gap. Both name a correctness root whose defect no fixture can reach.

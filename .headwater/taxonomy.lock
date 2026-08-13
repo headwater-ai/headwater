@@ -16,7 +16,7 @@
 
 lock:
   format: 2
-  digest: sha256:8398854f4c5670a1cf638b86d79459d93c2b8bd5f7eca7cfe7b3a4a97e0df29b
+  digest: sha256:3150f8701b51133921a9637a8328e56b717d964ecec7fc22fd27c0d6de0b9b56
   package: headwater/standard
   version: 1.0.0
   sources:
@@ -27,7 +27,7 @@ lock:
     - path: docs/taxonomies/decision-record/bundle.yml
       digest: sha256:ab208e17527154e67d7d0eccd495f493f0f40faf8df7ce3191ac8d1ac4369c2e
     - path: .headwater/overlay.yml
-      digest: sha256:e0b0d936d826366f2842000ad479990cefb827bf9407b9e13e41e44f5483f20f
+      digest: sha256:c2708d45cb97bf3479dda275de2041af379422c0f4cdc937be72da71c41867e0
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -299,6 +299,7 @@ resolved:
       identifier:
         scheme: obligation_record_id
       is_a: governed_document
+      language: ste_house
       lifecycle: standard
       purpose: obligation
       sections:

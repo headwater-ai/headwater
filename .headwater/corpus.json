@@ -13,7 +13,7 @@
       "taxonomy": {
         "package": "headwater/standard",
         "version": "1.0.0",
-        "lock": "sha256:8398854f4c5670a1cf638b86d79459d93c2b8bd5f7eca7cfe7b3a4a97e0df29b"
+        "lock": "sha256:3150f8701b51133921a9637a8328e56b717d964ecec7fc22fd27c0d6de0b9b56"
       },
       "entry_points": [
         {
@@ -25,6 +25,11 @@
           "shelf": "evaluations",
           "path": "docs/evaluations/default-taxonomy-first-run.md",
           "id": "EVAL-HW-default-taxonomy-first-run"
+        },
+        {
+          "shelf": "obligations",
+          "path": "docs/obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md",
+          "id": "OBL-repo-0001"
         },
         {
           "shelf": "reviews",

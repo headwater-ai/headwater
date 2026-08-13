@@ -28,7 +28,7 @@ Mapping integrity requires that a mapping name "kinds and facet values that exis
 
 ## Obligation
 
-The corpus owes a declaration for a size budget, a way to mark a kind agent-facing, and a component that resolves the other taxonomy of a mapping.
+The corpus owes a declaration for a size budget, and a way to mark a kind agent-facing. It also owes the component that resolves the other taxonomy of a mapping.
 
 ## Discharge
 
