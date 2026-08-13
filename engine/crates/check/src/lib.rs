@@ -93,6 +93,7 @@ pub mod facet_required;
 pub mod facet_value;
 pub mod finding;
 pub mod fragment;
+pub mod identifier;
 pub mod instance;
 pub mod language;
 pub mod participation;
@@ -136,9 +137,10 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 15] = [
+pub const RULES: [&str; 16] = [
     facet_required::RULE,
     facet_value::RULE,
+    identifier::RULE,
     placement::RULE,
     reciprocity::RULE,
     endpoint::RULE,
@@ -174,6 +176,20 @@ pub struct Declared<'a> {
     pub shape: &'a Shape,
     /// Relation types and anchor kinds.
     pub relations: &'a Declarations,
+    /// The two front-matter keys the graph phase reads by name, and the one
+    /// thing here that is not a declaration.
+    ///
+    /// It is here because a rule that reads an identifier has to read it from
+    /// somewhere, and no declaration states where. A kind declares
+    /// `identifier: {scheme: …}` and nothing names the key that holds the
+    /// minted value, so [`headwater_graph::Config`] carries the guess and
+    /// `.headwater/README.md` records it. The alternative was to write `id`
+    /// into [`identifier`], which would put the same guess in two places and
+    /// let them disagree. Taking the parameter means that settling the question
+    /// changes a declaration, and that a corpus whose identifiers live under
+    /// another key gets one answer from the index and the same answer from the
+    /// rule.
+    pub config: &'a headwater_graph::Config,
     /// Obligations and controls: the path from a rule to what it serves.
     pub register: &'a Register,
     /// The `adoption` block of the lock, where the lock declares one.
@@ -255,6 +271,7 @@ pub fn run(
     // a view by calling the wrong instantiation.
     let required = facet_required::Required::over(declared.shape);
     let values = facet_value::Values::over(declared.shape);
+    let identifiers = identifier::Identifier::over(declared.shape, &declared.config.identifier_facet);
     let placement = placement::Placement::over(declared.taxonomy);
     let reciprocity = reciprocity::Reciprocity::over(declared.relations);
     let endpoints = endpoint::Endpoints::over(declared.relations, declared.shape);
@@ -269,6 +286,7 @@ pub fn run(
     let digests = scope::Digests::of(census);
     let mut instances = scope::over_documents(&required, census, ctx, cache);
     instances.extend(scope::over_documents(&values, census, ctx, cache));
+    instances.extend(scope::over_documents(&identifiers, census, ctx, cache));
     instances.extend(scope::over_documents(&placement, census, ctx, cache));
     instances.extend(scope::over_edges(&reciprocity, graph, &digests, ctx, cache));
     instances.extend(scope::over_edges(&endpoints, graph, &digests, ctx, cache));
@@ -315,6 +333,11 @@ pub fn run(
             facet_value::RULE,
             scope::document_scope::<facet_value::Values>(),
             scope::document_version::<facet_value::Values>(),
+        ),
+        (
+            identifier::RULE,
+            scope::document_scope::<identifier::Identifier>(),
+            scope::document_version::<identifier::Identifier>(),
         ),
         (
             placement::RULE,

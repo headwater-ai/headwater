@@ -97,12 +97,13 @@ fn run_at(
     let register = Register::read(root).expect("the register reads");
     let shape = Shape::read(root).expect("the shape reads");
     let taken = census::take(corpus, &taxonomy);
+    let config = Config::default();
     let graph = Graph::build(
         &taken,
         &declarations,
         &Resolvers::over(corpus),
         corpus,
-        &Config::default(),
+        &config,
     );
     headwater_check::run(
         &taken,
@@ -112,6 +113,7 @@ fn run_at(
             taxonomy: &taxonomy,
             shape: &shape,
             relations: &declarations,
+            config: &config,
             register: &register,
             adoption,
             source,

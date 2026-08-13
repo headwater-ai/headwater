@@ -382,6 +382,11 @@ struct Loaded {
     taxonomy: Taxonomy,
     relations: Declarations,
     register: Register,
+    /// The front-matter keys the graph phase reads by name. Held here, and
+    /// built once, so the index and the identifier rule read an identifier from
+    /// the same key. Two `Config::default()` calls would be two guesses that a
+    /// future adopter setting could pull apart.
+    config: Config,
 }
 
 fn load(root: &Path) -> Result<Loaded, ExitCode> {
@@ -420,12 +425,13 @@ fn load(root: &Path) -> Result<Loaded, ExitCode> {
     };
 
     let census = census::take(&corpus, &taxonomy);
+    let config = Config::default();
     let graph = Graph::build(
         &census,
         &relations,
         &Resolvers::over(&corpus),
         &corpus,
-        &Config::default(),
+        &config,
     );
     Ok(Loaded {
         lock,
@@ -435,6 +441,7 @@ fn load(root: &Path) -> Result<Loaded, ExitCode> {
         taxonomy,
         relations,
         register,
+        config,
     })
 }
 
@@ -539,6 +546,7 @@ fn check(
         taxonomy,
         relations: declarations,
         register,
+        config,
     } = &loaded;
 
     // Phase B. The cache is keyed on the lock digest among other things, so a
@@ -556,6 +564,7 @@ fn check(
             taxonomy,
             shape,
             relations: declarations,
+            config,
             register,
             adoption: lock.adoption.as_ref(),
             source: headwater_lock::LOCK,
@@ -675,6 +684,7 @@ fn infer(
             taxonomy: &loaded.taxonomy,
             shape: &loaded.shape,
             relations: &loaded.relations,
+            config: &loaded.config,
             register: &loaded.register,
             adoption: None,
             source: headwater_lock::LOCK,

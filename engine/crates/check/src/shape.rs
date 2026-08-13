@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The declarations the Shape and Graph checks are generated from: `facets`
-//! and `kinds`.
+//! The declarations the Shape and Graph checks are generated from: `facets`,
+//! `kinds` and `identifier_schemes`.
 //!
 //! The same posture as [`crate::register`], [`headwater_census::shelves`] and
 //! [`headwater_graph::declarations`], for the same reason. Nothing here
@@ -50,6 +50,26 @@ pub struct Shape {
     pub voice: Vec<VoiceRegime>,
     /// `regimes.language`, on the same terms.
     pub language: Vec<LanguageRegime>,
+    /// `identifier_schemes`, which a kind reaches through `identifier.scheme`.
+    pub identifier_schemes: Vec<IdentifierScheme>,
+}
+
+/// An identifier scheme: the shape a minted identifier takes.
+///
+/// Three members, and this reader keeps two of them. `pattern` and `namespace`
+/// decide what an identifier looks like. `allocation` decides how one is
+/// issued, which is a corpus-grained question about collision and reuse, and no
+/// document-scoped rule reads it. See [`crate::identifier`].
+#[derive(Clone, Debug)]
+pub struct IdentifierScheme {
+    pub name: String,
+    /// The template, as declared. It is quoted back in a finding, so it is held
+    /// as written rather than as parsed.
+    pub pattern: String,
+    /// The one part of the template that an overlay may not change
+    /// ([spec 2](../../../../docs/spec/02-taxonomy-model.md#the-core-is-semantic-not-lexical)).
+    pub namespace: String,
+    pub span: Span,
 }
 
 /// A voice regime: the constructions its prose does not use.
@@ -157,6 +177,10 @@ pub struct Kind {
     pub language: Option<String>,
     /// `sections.require`, as this kind declares it. [`Shape::required_sections`]
     /// is the inherited set.
+    /// `identifier.scheme`, the name of the scheme a document of this kind is
+    /// minted under. A kind that names none, and whose ancestors name none,
+    /// generates no identifier instance.
+    pub identifier_scheme: Option<String>,
     pub sections: Vec<String>,
     /// `relations.expect`, which is where a windowed participation expectation
     /// is declared ([spec 2](../../../../docs/spec/02-taxonomy-model.md#participation-expectations)).
@@ -259,6 +283,39 @@ impl Shape {
             }
         }
 
+        if let Some(schemes) = root.get("identifier_schemes") {
+            match &schemes.value {
+                Value::Map(map) => {
+                    for entry in map {
+                        let Some(body) = entry.value.value.as_map() else {
+                            errors.push(DeclarationError {
+                                message: format!(
+                                    "identifier scheme `{}` is {}, and a scheme is a mapping",
+                                    entry.key.value,
+                                    entry.value.value.kind_name()
+                                ),
+                                span: entry.key.span,
+                            });
+                            continue;
+                        };
+                        shape.identifier_schemes.push(IdentifierScheme {
+                            name: entry.key.value.clone(),
+                            pattern: scalar(body, "pattern").unwrap_or_default(),
+                            namespace: scalar(body, "namespace").unwrap_or_default(),
+                            span: entry.key.span,
+                        });
+                    }
+                }
+                other => errors.push(DeclarationError {
+                    message: format!(
+                        "`identifier_schemes` is {}, and it names identifier schemes",
+                        other.kind_name()
+                    ),
+                    span: schemes.span,
+                }),
+            }
+        }
+
         if let Some(regimes) = root.get("regimes").and_then(|node| node.value.as_map()) {
             if let Some(voice) = regimes.get("voice").and_then(|node| node.value.as_map()) {
                 for entry in voice {
@@ -309,6 +366,25 @@ impl Shape {
             .iter()
             .find_map(|step| step.voice.clone())?;
         self.voice.iter().find(|regime| regime.name == name)
+    }
+
+    /// The identifier scheme a kind mints under, through the chain that names
+    /// it.
+    ///
+    /// Single-valued, so it walks the chain the way [`Shape::voice_of`] does
+    /// rather than accumulating the way [`Shape::required_facets`] does: a
+    /// document carries one identifier and not one per ancestor. A kind that
+    /// names a scheme no `identifier_schemes` block declares reads as no scheme
+    /// rather than as an invented one, for the reason [`Shape::purpose_of`]
+    /// gives.
+    pub fn identifier_scheme_of(&self, kind: &str) -> Option<&IdentifierScheme> {
+        let name = self
+            .ancestry(kind)
+            .into_iter()
+            .find_map(|step| step.identifier_scheme.clone())?;
+        self.identifier_schemes
+            .iter()
+            .find(|scheme| scheme.name == name)
     }
 
     /// The language regime a kind is held to, on the same terms.
@@ -503,6 +579,10 @@ fn read_kind(name: &str, value: &Value, span: Span) -> Result<Kind, DeclarationE
             .unwrap_or_default(),
         voice: scalar(map, "voice"),
         language: scalar(map, "language"),
+        identifier_scheme: map
+            .get("identifier")
+            .and_then(|node| node.value.as_map())
+            .and_then(|identifier| scalar(identifier, "scheme")),
         sections: map
             .get("sections")
             .and_then(|node| node.value.as_map())
