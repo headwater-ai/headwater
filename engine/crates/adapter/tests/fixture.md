@@ -56,4 +56,4 @@
 
 </details>
 
-23 documents in the read set. 26 obligations, 21 verified.
+24 documents in the read set. 26 obligations, 21 verified.

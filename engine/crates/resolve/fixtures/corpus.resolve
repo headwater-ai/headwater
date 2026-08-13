@@ -64,8 +64,8 @@ declarations, by member count
   identifier_schemes: 6 members
   core: 1 member
   projections: 3 items
-  obligations: 24 members
-  controls: 21 members
+  obligations: 25 members
+  controls: 22 members
 
 `taxonomy validate`: valid
 

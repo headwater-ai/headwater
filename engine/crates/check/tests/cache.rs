@@ -228,6 +228,100 @@ fn an_edited_document_is_evaluated_again() {
     assert!(after.cache.hits > touched, "{:?}", after.cache);
 }
 
+/// A duplicate settled in the *other* file is not served from a stale entry.
+///
+/// This is the experiment that decided the grain of
+/// `identifier.claimed_twice`, and it is written as a test so that a later
+/// edition cannot quietly move the rule back.
+///
+/// Two documents claim one identifier. The identifier index reports the
+/// collision against `06-retired.md`, because it comes second in path order,
+/// and path order is a fact about the corpus rather than about either file. A
+/// document-scoped rule would therefore key its verdict on `06-retired.md`
+/// alone. The repair below never touches that file: it changes the identifier
+/// of `05-no-summary.md`, which is the *other* claimant, and the assertion is
+/// that the failure goes away anyway.
+///
+/// A document-grained rule fails here and passes every other test in this file.
+/// Its key would name one file, that file's bytes are identical across the two
+/// runs, and the cache would serve the failure it stored — a stale verdict that
+/// spec 12 calls a correctness bug rather than a performance one. The read set
+/// of a corpus-scoped instance holds both claimants, so the repair moves the
+/// key.
+#[test]
+fn a_duplicate_settled_in_the_other_file_is_not_served_stale() {
+    const FIRST: &str = "check/spec/05-no-summary.md";
+    const SECOND: &str = "check/spec/06-retired.md";
+    let root = corpus_for("duplicate");
+
+    // Plant it. `06-retired.md` takes the identifier of `05-no-summary.md`,
+    // and neither identifier is the target of any relation in this tree, so
+    // nothing else about the corpus moves.
+    rewrite(
+        &root.join(SECOND),
+        "id: SPEC-FIX-retired",
+        "id: SPEC-FIX-no-summary",
+    );
+    let untouched = std::fs::read(root.join(SECOND)).expect("the second claimant");
+
+    let mut cold = Cache::at(&root, LOCK);
+    let planted = run_over(&root, &mut cold);
+    cold.write(&root);
+
+    let claimed = |run: &Run| {
+        run.findings
+            .iter()
+            .filter(|finding| finding.rule == headwater_check::duplicate::RULE)
+            .count()
+    };
+    assert_eq!(claimed(&planted), 2, "one collision, one finding per file");
+
+    // Settle it in the file the report does not name, and only there.
+    rewrite(
+        &root.join(FIRST),
+        "id: SPEC-FIX-no-summary",
+        "id: SPEC-FIX-summary-less",
+    );
+    assert_eq!(
+        untouched,
+        std::fs::read(root.join(SECOND)).expect("the second claimant"),
+        "the repair edited the file the finding was reported against, which is \
+         the case this test is not about"
+    );
+
+    let mut warm = Cache::at(&root, LOCK);
+    let settled = run_over(&root, &mut warm);
+
+    assert_eq!(
+        claimed(&settled),
+        0,
+        "the cache served a duplicate that the other claimant had already \
+         settled: {:#?}",
+        settled
+            .findings
+            .iter()
+            .filter(|finding| finding.rule == headwater_check::duplicate::RULE)
+            .collect::<Vec<_>>()
+    );
+    assert_eq!(
+        settled.render(Detail::EveryInstance),
+        run_over(&root, &mut Cache::disabled()).render(Detail::EveryInstance),
+        "the cached run reported a verdict over the corpus as it was"
+    );
+
+    // And the cache was doing its job rather than being empty: everything the
+    // edit did not reach was served from it.
+    assert!(settled.cache.hits > 0, "{:?}", settled.cache);
+}
+
+/// One line of one fixture, rewritten in the private copy of the tree.
+fn rewrite(path: &Path, from: &str, to: &str) {
+    let source = std::fs::read_to_string(path).expect("the fixture reads");
+    let edited = source.replace(from, to);
+    assert_ne!(source, edited, "{} does not carry {from}", path.display());
+    std::fs::write(path, edited).expect("the copy writes");
+}
+
 /// A day that passed is not served from the entry written before it.
 ///
 /// This is the hole [spec 13](../../../../docs/spec/13-open-obligations.md)

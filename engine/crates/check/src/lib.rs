@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The runner: sixteen checks, coverage against the census, a published read
+//! The runner: seventeen checks, coverage against the census, a published read
 //! set, a suppression inventory, and text findings in one order.
 //!
 //! [Spec 12](../../../../docs/spec/12-check-layer.md#two-phases-and-why-the-order-matters)
@@ -10,19 +10,24 @@
 //!
 //! # Where the rules come from
 //!
-//! Fifteen of the sixteen are **generated**. None of them names a facet, a
+//! Fifteen of the seventeen are **generated**. None of them names a facet, a
 //! kind, a relation, an identifier scheme or a number of days: each reads a
 //! declaration out of the resolved taxonomy and instantiates itself over
 //! whatever that declaration produced.
 //! That is what [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)
 //! means by "a new facet or relation in the taxonomy produces its checks with
 //! no code", and it is why the rule list is short while the instance count is
-//! not. [`coverage`] is the runner's own accounting, and [`fragment`] reads no
-//! declaration because the language has no member that turns prose-link
-//! resolution on or off.
+//! not. [`coverage`] is the runner's own accounting. [`fragment`] and
+//! [`duplicate`] read no declaration, because the language has no member that
+//! turns prose-link resolution or identifier uniqueness on or off: spec 3
+//! states the second of them of every corpus.
 //!
 //! Four of the five origins are represented. Shape, Graph and Document are
-//! here. Corpus and Plugin are not, and neither has a rule that needs it yet.
+//! here, and Plugin is not. `Corpus` in that table is an *origin* — a rule
+//! generated from a declaration that needs many documents — and no such
+//! declaration exists yet. [`duplicate`] is corpus-*scoped* and Graph-origin,
+//! which is the distinction the two lists have always drawn: the origin is what
+//! a rule reads a declaration from, and the grain is what one instance covers.
 //!
 //! Two of the Graph-origin rules are **document-grained**, which the other
 //! three are not. [`declaration`] and [`identity`] route the phase-A defects
@@ -68,7 +73,7 @@
 //! rules that a check receives a scoped view and cannot ask for a wider one,
 //! and that the enforcement is the feature. Each rule below implements one
 //! scope trait, and that trait is the only way to receive the matching view.
-//! [`run`] names the thirteen checks it runs, which is the whole of
+//! [`run`] names the seventeen checks it runs, which is the whole of
 //! registration.
 //! The scope a trait fixes is now read twice: once for the report, and once as
 //! a component of the cache key that spec 12 derives from the same fact. The
@@ -78,10 +83,13 @@
 //! `Neighbourhood` is here, at depth 1, because
 //! [`participation`] needed a grain that `Edge` does not reach: an edge-scoped
 //! instance exists per edge, and a participation expectation is about an edge
-//! that nobody declared. `Shelf` and a corpus-scoped *trait* are still absent,
-//! and the reason is the one this module already applies to a cache: no rule
-//! needs one. [`coverage`] states why a corpus-grained rule is the runner's
-//! accounting rather than a check.
+//! that nobody declared. `Corpus` is here for the same kind of reason and one
+//! step further out: [`duplicate`] is about two documents that no edge
+//! connects, so no relational grain reaches the pair. `Shelf` is still absent,
+//! and [`duplicate`] states why it could not have carried this rule either.
+//! [`coverage`] is corpus-grained and is still the runner's accounting rather
+//! than a check, and it now says which of the two facts about that grain was
+//! the reason.
 //!
 //! # Three phase-A outcomes stay in phase A, and one of them could not
 //!
@@ -110,16 +118,19 @@
 //! is the document that wrote the block, and the report the build already
 //! produced reaches the check on the view rather than beside it.
 //!
-//! One defect of phase A is still unrouted, and it is the one whose grain is
-//! wrong: two documents that claim one identifier are
-//! `headwater_graph::index::Defect::Duplicate`, and a document-scoped instance
-//! reads one of the two.
+//! Every defect of phase A now reaches a rule, and the last one to arrive is
+//! the one that needed a fifth grain. Two documents that claim one identifier
+//! are `headwater_graph::index::Defect::Duplicate`, a document-scoped instance
+//! reads one of the two, and [`duplicate`] reads the corpus. It is the first
+//! corpus-scoped check this engine carries, and spec 12 calls those the
+//! barriers.
 
 pub mod adoption;
 pub mod cache;
 pub mod context;
 pub mod coverage;
 pub mod declaration;
+pub mod duplicate;
 pub mod endpoint;
 pub mod facet_required;
 pub mod facet_value;
@@ -152,8 +163,8 @@ pub use instance::{Input, Instance, Outcome};
 pub use readset::ReadSet;
 pub use register::{Bound, Register};
 pub use scope::{
-    DocumentCheck, DocumentView, EdgeCheck, EdgeUnit, EdgeView, Grain, NeighbourhoodCheck,
-    NeighbourhoodView, Scope,
+    CorpusCheck, CorpusView, DocumentCheck, DocumentView, EdgeCheck, EdgeUnit, EdgeView, Grain,
+    NeighbourhoodCheck, NeighbourhoodView, Scope,
 };
 pub use shape::{Purpose, Shape};
 pub use suppression::Inventory;
@@ -164,7 +175,7 @@ use headwater_graph::{Declarations, Graph};
 
 /// The rules this runner carries, in the order a report lists them.
 ///
-/// Fourteen are generated from the taxonomy, one reads no declaration, one is
+/// Fifteen are generated from the taxonomy, two read no declaration, one is
 /// the coverage guarantee itself, and the last two are about the taxonomy
 /// rather than about the corpus. A rule that is generated has no entry of its
 /// own anywhere: the list is the *templates*, and the instance count is what a
@@ -173,7 +184,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 19] = [
+pub const RULES: [&str; 20] = [
     facet_required::RULE,
     facet_value::RULE,
     identifier::RULE,
@@ -184,6 +195,7 @@ pub const RULES: [&str; 19] = [
     participation::RULE,
     declaration::RULE,
     identity::RULE,
+    duplicate::RULE,
     voice::RULE,
     language::RULE,
     retired::RULE,
@@ -364,6 +376,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::document_exports::<identity::Identity<'_>>(),
         ),
         (
+            duplicate::RULE,
+            scope::corpus_scope::<duplicate::Duplicate>(),
+            scope::corpus_version::<duplicate::Duplicate>(),
+            scope::corpus_exports::<duplicate::Duplicate>(),
+        ),
+        (
             voice::RULE,
             scope::document_scope::<voice::Voice>(),
             scope::document_version::<voice::Voice>(),
@@ -464,7 +482,7 @@ pub fn run(
     ctx: &Context,
     cache: &mut Cache,
 ) -> Run {
-    // Registration, in full: sixteen checks, each named once. The scope trait each
+    // Registration, in full: seventeen checks, each named once. The scope trait each
     // one implements decides what it is handed, so this function cannot widen
     // a view by calling the wrong instantiation.
     let required = facet_required::Required::over(declared.shape);
@@ -482,6 +500,7 @@ pub fn run(
         declared.shape,
         &declared.config.identifier_facet,
     );
+    let duplicates = duplicate::Duplicate::over(&declared.config.identifier_facet);
     let voice = voice::Voice::over(declared.shape);
     let language = language::Language::over(declared.shape);
     let retired = retired::Retired::over(declared.shape);
@@ -525,6 +544,7 @@ pub fn run(
         ctx,
         cache,
     ));
+    instances.extend(scope::over_corpus(&duplicates, census, graph, cache));
     instances.extend(scope::over_documents(&voice, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&language, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&retired, census, graph, ctx, cache));
