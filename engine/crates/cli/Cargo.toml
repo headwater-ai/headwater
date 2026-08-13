@@ -21,6 +21,11 @@ headwater-census = { path = "../census" }
 headwater-check = { path = "../check" }
 headwater-generate = { path = "../generate" }
 headwater-graph = { path = "../graph" }
+
+# The one implementation of the digest function. `gate` re-hashes each input a
+# read set lists, and a gate that hashed by another rule than the census would
+# report that every file in the tree had moved.
+headwater-hash = { path = "../hash" }
 headwater-lock = { path = "../lock" }
 headwater-query = { path = "../query" }
 headwater-resolve = { path = "../resolve" }

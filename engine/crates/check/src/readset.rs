@@ -11,9 +11,9 @@
 //!
 //! So this module adds no measurement. [`crate::Instance`] has carried a path
 //! and a content hash per input since the cache landed, and this is the union of
-//! them with the three run-level components beside it.
+//! them with the run-level components beside it.
 //!
-//! # What the union is for, and why a merge is then an ordinary change
+//! # What the union is for, and the one test it supports
 //!
 //! [Q21](../../../../docs/spec/09-decisions.md#q21--terminological-succession-and-validity-under-merge)
 //! rules that validity is not preserved under merge: "two changes that are each
@@ -22,22 +22,46 @@
 //! what a serializable database detects it with. Git holds none, which is why
 //! it merges two such changes without a conflict.
 //!
-//! A published read set closes that. Given the read set of a run and the tree a
-//! merge produced, a gate compares each input against the tree it now has. An
-//! input whose hash moved invalidates the instances that read it, and an empty
-//! result means that the verdict still applies. Neither answer needs a run.
+//! Spec 12 rules what a gate reads, and the ruling is one test:
+//! [`crate::gate`] holds the published set against a later tree, and it reads
+//! **nothing that the set does not list**. That is what makes the answer cheap,
+//! and it is also the limit of what the answer is worth. An input whose hash
+//! moved voids the verdict. A file the set does not list is invisible to the
+//! comparison, so the artifact carries, in lines of its own, every reason a
+//! comparison over a list cannot decide.
 //!
-//! The three run-level components are not decoration. A verdict is about one
-//! state of the corpus **and one day**: a run that evaluated a windowed
-//! expectation a month ago says nothing about today, whatever the tree did. And
-//! a lock that moved voids every result at once, because the lock digest is a
-//! component of every cache key.
+//! There are three such reasons and this module writes all three down.
+//!
+//! **A barrier.** A corpus-grained instance decides its verdict from the
+//! *extent* of the census rather than from the contents of any member of it.
+//! `identifier.claimed_twice` fires on the presence of a second claimant, so
+//! its verdict rests on the absence of a document rather than on the bytes of
+//! a listed one. No list of `(path, digest)` pairs states "and no other
+//! document exists". So each such rule gets a `barrier` line, and a gate that
+//! reads one reports that the verdict does not carry.
+//!
+//! **The clock.** A verdict is about one state of the corpus **and one day**. A
+//! run that evaluated a windowed expectation a month ago says nothing about
+//! today, whatever the tree did. The rules that read the clock get a `windowed`
+//! line, and a gate that reads one on a later day reports that the verdict does
+//! not carry.
+//!
+//! **An input with no content hash.** [`crate::cache`] refuses to key an
+//! instance whose input carries no digest, because a key over a hash that does
+//! not exist is the correctness bug spec 12 names. A read set cannot take the
+//! same way out: an input this run read has to appear, or the union is not the
+//! union. So it appears with no hash, it is counted apart, and a gate that
+//! meets one cannot decide that the verdict survives.
+//!
+//! The lock is the fourth component, and it is a comparison rather than a
+//! refusal. A lock that moved voids every result at once, because the lock
+//! digest is a component of every cache key.
 //!
 //! # Where it is published, and what that costs
 //!
 //! [`Coverage`](crate::Coverage) reports the size beside its own numbers, and
 //! the union itself is an artifact the CLI writes: a section of the report, and
-//! a file for a gate that has to compare it against a later tree.
+//! a file that `headwater gate` compares against a later tree.
 //!
 //! Q21's open half asks whether publishing this is free. The measurement is one
 //! subtraction and it is in
@@ -46,21 +70,33 @@
 //! four orders of magnitude more than that. It is free at this corpus's scale
 //! and the number that would decide an adopter's is not this repository's.
 //!
-//! # An input with no content hash is in the set, and it is counted apart
+//! # The union is a union, so a gate decides about the run
 //!
-//! [`crate::cache`] refuses to key an instance whose input carries no digest,
-//! because a key over a hash that does not exist is the correctness bug spec 12
-//! names. A read set has the same problem and it cannot take the same way out:
-//! an input this run read has to appear, or the union is not the union. So it
-//! appears with no hash, and the count of them is reported. A gate that meets
-//! one cannot decide that the verdict survives, and a summary that hid them
-//! would let it decide exactly that.
+//! One thing this artifact does not carry is which instance read which input.
+//! The union is taken across every instance, and the mapping is gone by the
+//! time the file is written. A gate therefore answers one question about the
+//! whole run rather than one question per instance, and [`crate::gate`] says so
+//! in the words it prints. A per-instance answer wants a per-instance artifact,
+//! and this is not one.
 
 use crate::context::Date;
 use crate::instance::{Input, Instance};
+use crate::scope::Grain;
 
-/// The union of what one run read, with the three components that are about
-/// the run rather than about a document.
+/// One rule as a run served it: which edition ran, and whether it read the
+/// clock.
+///
+/// Both come off the trait the check implements, by way of [`crate::Serves`].
+/// Neither is stated beside the scope, for the reason [`crate::scope`] gives.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Rule {
+    pub name: &'static str,
+    pub version: u32,
+    pub needs_clock: bool,
+}
+
+/// The union of what one run read, with the components that are about the run
+/// rather than about a document.
 #[derive(Clone, Debug)]
 pub struct ReadSet {
     /// The digest of the taxonomy lock every result rests on.
@@ -71,6 +107,16 @@ pub struct ReadSet {
     pub clock: Date,
     /// Each rule and the edition of it that ran, in [`crate::RULES`] order.
     pub versions: Vec<(&'static str, u32)>,
+    /// The rules that put a corpus-grained instance in this run, in
+    /// [`crate::RULES`] order.
+    ///
+    /// Derived from the instances rather than from the registry, because a
+    /// rule that generated nothing read nothing, and a barrier line is a claim
+    /// about what ran.
+    pub barriers: Vec<&'static str>,
+    /// The rules that read the injected clock and put an instance in this run,
+    /// in [`crate::RULES`] order. Same derivation, and the same reason.
+    pub windowed: Vec<&'static str>,
     /// Every input any instance read, once each, in path order.
     pub inputs: Vec<Input>,
 }
@@ -82,12 +128,7 @@ impl ReadSet {
     /// the census, for the reason the instances take them from the census: two
     /// passes over one corpus can disagree, and a read set that disagreed with
     /// the cache keys would report a state that no run evaluated.
-    pub fn of(
-        lock: &str,
-        clock: Date,
-        versions: Vec<(&'static str, u32)>,
-        instances: &[Instance],
-    ) -> Self {
+    pub fn of(lock: &str, clock: Date, rules: &[Rule], instances: &[Instance]) -> Self {
         let mut inputs: Vec<Input> = Vec::new();
         for instance in instances {
             for input in &instance.reads {
@@ -97,10 +138,26 @@ impl ReadSet {
                 }
             }
         }
+        let barrier = |rule: &Rule| {
+            instances
+                .iter()
+                .any(|instance| instance.rule == rule.name && instance.grain == Grain::Corpus)
+        };
+        let ran = |rule: &Rule| instances.iter().any(|instance| instance.rule == rule.name);
         ReadSet {
             lock: lock.to_string(),
             clock,
-            versions,
+            versions: rules.iter().map(|rule| (rule.name, rule.version)).collect(),
+            barriers: rules
+                .iter()
+                .filter(|rule| barrier(rule))
+                .map(|rule| rule.name)
+                .collect(),
+            windowed: rules
+                .iter()
+                .filter(|rule| rule.needs_clock && ran(rule))
+                .map(|rule| rule.name)
+                .collect(),
             inputs,
         }
     }
@@ -120,14 +177,29 @@ impl ReadSet {
     /// It carries no digest. A recorded report holds this line, and a hash of a
     /// paragraph belongs in the artifact rather than in a file that a reader
     /// re-blesses whenever a sentence moves.
+    ///
+    /// A barrier is named here rather than left to the artifact alone, because
+    /// a count of documents reads as a verdict that a gate could carry, and a
+    /// run that holds a barrier has no such verdict to offer.
     pub fn summary(&self) -> String {
-        match self.unhashed() {
+        let mut line = match self.unhashed() {
             0 => format!("{} documents in the read set", self.inputs.len()),
             unhashed => format!(
                 "{} documents in the read set, {unhashed} of them with no content hash",
                 self.inputs.len()
             ),
+        };
+        if !self.barriers.is_empty() {
+            let barriers = self.barriers.len();
+            let noun = match barriers {
+                1 => "barrier",
+                _ => "barriers",
+            };
+            line.push_str(&format!(
+                ", and {barriers} {noun} that no gate carries across a merge"
+            ));
         }
+        line
     }
 
     /// The artifact: everything a gate needs to decide whether a verdict
@@ -137,6 +209,15 @@ impl ReadSet {
         let mut out = String::new();
         let _ = writeln!(out, "lock {}", self.lock);
         let _ = writeln!(out, "clock {}", self.clock.render());
+        // Above the versions, because these two lines decide the answer on
+        // their own. A reader who stops at the first block has read why this
+        // verdict does not carry, where it does not.
+        for rule in &self.barriers {
+            let _ = writeln!(out, "barrier {rule}");
+        }
+        for rule in &self.windowed {
+            let _ = writeln!(out, "windowed {rule}");
+        }
         for (rule, version) in &self.versions {
             let _ = writeln!(out, "version {rule} {version}");
         }
@@ -162,8 +243,25 @@ mod tests {
         Date::parse("2026-08-12").expect("a date")
     }
 
+    fn rule(name: &'static str, needs_clock: bool) -> Rule {
+        Rule {
+            name,
+            version: 1,
+            needs_clock,
+        }
+    }
+
     fn instance(rule: &'static str, reads: Vec<Input>) -> Instance {
-        Instance::of(rule, crate::Grain::Document, reads, Outcome::Passed)
+        Instance::of(rule, Grain::Document, reads, Outcome::Passed)
+    }
+
+    fn over_the_corpus(rule: &'static str) -> Instance {
+        Instance::of(
+            rule,
+            Grain::Corpus,
+            vec![Input::new("a.md", Some("sha256:a"))],
+            Outcome::Passed,
+        )
     }
 
     /// Two instances over one document contribute one entry, and the entries
@@ -173,7 +271,7 @@ mod tests {
         let set = ReadSet::of(
             "sha256:lock",
             date(),
-            vec![("r", 1)],
+            &[rule("r", false)],
             &[
                 instance("r", vec![Input::new("b.md", Some("sha256:b"))]),
                 instance(
@@ -195,7 +293,7 @@ mod tests {
         let set = ReadSet::of(
             "sha256:lock",
             date(),
-            Vec::new(),
+            &[],
             &[instance("r", vec![Input::new("a.md", None)])],
         );
         assert_eq!(set.unhashed(), 1);
@@ -203,20 +301,64 @@ mod tests {
         assert!(set.summary().contains("1 of them with no content hash"));
     }
 
-    /// The artifact carries the three run-level components spec 12 names
-    /// beside the documents.
+    /// The artifact carries the lock, the clock and the versions that spec 12
+    /// names, beside the documents.
     #[test]
     fn the_artifact_carries_the_lock_the_clock_and_the_versions() {
         let text = ReadSet::of(
             "sha256:lock",
             date(),
-            vec![("first.rule", 1), ("second.rule", 3)],
+            &[rule("first.rule", false), rule("second.rule", false)],
             &[instance("first.rule", vec![Input::new("a.md", Some("d"))])],
         )
         .render();
         assert_eq!(
             text,
-            "lock sha256:lock\nclock 2026-08-12\nversion first.rule 1\nversion second.rule 3\ninput a.md d\n"
+            "lock sha256:lock\nclock 2026-08-12\nversion first.rule 1\nversion second.rule 1\ninput a.md d\n"
         );
+    }
+
+    /// A rule with a corpus-grained instance is written down as a barrier, and
+    /// the summary states what that costs a gate.
+    #[test]
+    fn a_corpus_grained_instance_writes_a_barrier_line() {
+        let set = ReadSet::of(
+            "sha256:lock",
+            date(),
+            &[rule("wide.rule", false)],
+            &[over_the_corpus("wide.rule")],
+        );
+        assert_eq!(set.barriers, vec!["wide.rule"]);
+        assert!(set.render().contains("\nbarrier wide.rule\n"));
+        assert!(set.summary().contains("1 barrier that no gate carries"));
+    }
+
+    /// A rule that declares the clock and generated an instance is windowed. A
+    /// rule that declares it and generated nothing read nothing, so it is not.
+    #[test]
+    fn windowed_names_the_rules_that_read_the_clock_and_ran() {
+        let set = ReadSet::of(
+            "sha256:lock",
+            date(),
+            &[rule("dated.rule", true), rule("absent.rule", true)],
+            &[instance("dated.rule", vec![Input::new("a.md", Some("d"))])],
+        );
+        assert_eq!(set.windowed, vec!["dated.rule"]);
+        assert!(!set.render().contains("windowed absent.rule"));
+    }
+
+    /// A rule that generated a document-grained instance is no barrier,
+    /// however many documents the run holds.
+    #[test]
+    fn a_document_grained_rule_is_no_barrier() {
+        let set = ReadSet::of(
+            "sha256:lock",
+            date(),
+            &[rule("narrow.rule", false)],
+            &[instance("narrow.rule", vec![Input::new("a.md", Some("d"))])],
+        );
+        assert!(set.barriers.is_empty());
+        assert!(!set.render().contains("barrier"));
+        assert_eq!(set.summary(), "1 documents in the read set");
     }
 }

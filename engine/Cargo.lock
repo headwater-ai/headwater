@@ -60,6 +60,7 @@ dependencies = [
  "headwater-check",
  "headwater-generate",
  "headwater-graph",
+ "headwater-hash",
  "headwater-lock",
  "headwater-query",
  "headwater-resolve",

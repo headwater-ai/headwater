@@ -6,7 +6,7 @@ adoption
   1 pairs open, 0 closed, holding 1 finding, in 1 task
   AD-1 1 open, 0 closed, holding 1 finding, owner the specification authors, until 2027-06-30
     The one entry of `.ste-lint-baseline.json` that this corpus still owes. The baseline held two when the linter retired. The other named a semicolon inside a block quotation, which the engine does not report at all, because the parser hands a quoted block to no lexical rule
-159 documents in the read set
+159 documents in the read set, and 1 barrier that no gate carries across a merge
     158 instances of facet.required.missing
     158 instances of facet.value.not_permitted
     158 instances of identifier.pattern.not_met
