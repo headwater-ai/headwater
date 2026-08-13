@@ -3,6 +3,7 @@ headwater/standard 1.0.0
 sources, in application order
   packages/headwater-standard/taxonomy.yml
   docs/taxonomies/design-spec/bundle.yml
+  docs/taxonomies/decision-record/bundle.yml
   .headwater/overlay.yml
 
 operations
@@ -23,6 +24,15 @@ operations
   add.shelves.spec_series (docs/taxonomies/design-spec/bundle.yml)
   add.shelves.evaluations (docs/taxonomies/design-spec/bundle.yml)
   add.shelves.reviews (docs/taxonomies/design-spec/bundle.yml)
+  add.facets.title (docs/taxonomies/decision-record/bundle.yml)
+  add.kinds.decision.facets (docs/taxonomies/decision-record/bundle.yml)
+  add.kinds.obligation_record (docs/taxonomies/decision-record/bundle.yml)
+  add.relations.discharges (docs/taxonomies/decision-record/bundle.yml)
+  add.shelves.obligations (docs/taxonomies/decision-record/bundle.yml)
+  add.identifier_schemes.obligation_record_id (docs/taxonomies/decision-record/bundle.yml)
+  add.obligations.OB-DR-1 (docs/taxonomies/decision-record/bundle.yml)
+  add.obligations.OB-DR-2 (docs/taxonomies/decision-record/bundle.yml)
+  add.obligations.OB-DR-3 (docs/taxonomies/decision-record/bundle.yml)
   add.identifier_schemes.spec_id (.headwater/overlay.yml)
   add.identifier_schemes.register_id (.headwater/overlay.yml)
   add.identifier_schemes.evaluation_id (.headwater/overlay.yml)
@@ -44,16 +54,16 @@ declarations, by member count
   version: 1.0.0
   purposes: 4 members
   vocabularies: 1 member
-  facets: 6 members
+  facets: 7 members
   regimes: 3 members
   anchors: 1 member
-  kinds: 9 members
-  relations: 8 members
-  shelves: 5 members
-  identifier_schemes: 5 members
+  kinds: 10 members
+  relations: 9 members
+  shelves: 6 members
+  identifier_schemes: 6 members
   core: 1 member
   projections: 2 items
-  obligations: 18 members
+  obligations: 21 members
   controls: 18 members
 
 `taxonomy validate`: valid

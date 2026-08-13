@@ -13,9 +13,14 @@
       "taxonomy": {
         "package": "headwater/standard",
         "version": "1.0.0",
-        "lock": "sha256:9b167e3d79ddce35554472d05c2545c9042dae863715c7ee45495b94b747b404"
+        "lock": "sha256:dce28ff2932fd988eec9d3055dadc10b6c2b818eadccda816069c35a53a9cca5"
       },
       "entry_points": [
+        {
+          "shelf": "decisions",
+          "path": "docs/decisions/0001-implementation-language.md",
+          "id": "DR-repo-0001"
+        },
         {
           "shelf": "evaluations",
           "path": "docs/evaluations/default-taxonomy-first-run.md",
