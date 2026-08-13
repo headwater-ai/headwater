@@ -16,12 +16,12 @@
 
 lock:
   format: 2
-  digest: sha256:5d73cf435edd5eaedb1e01f6117fdf75a4a1a1a769ec96628cdd3f5a2d7905a2
+  digest: sha256:a61d23660fb5205e1dedac6253911c991c6a8b20e57a7796f5c6cefa0ede44eb
   package: headwater/standard
   version: 1.0.0
   sources:
     - path: packages/headwater-standard/taxonomy.yml
-      digest: sha256:f5932d9b532aa76fff7787099cd8c69e2f64b0ff54bb1918bc18401075917069
+      digest: sha256:31e40174266222110a0356c17c917a57dc26b452463167db7c783d89953c9713
     - path: docs/taxonomies/design-spec/bundle.yml
       digest: sha256:0dd73708d7200b7b02389a7dc8811ddc80ab61ece7892efd7391cdf504d6bda0
     - path: .headwater/overlay.yml
@@ -510,6 +510,12 @@ resolved:
       class: cohesion
       prevents: content.inconsistent
       severity: medium
+    OB-ID-1:
+      statement: "An identifier is a string that the scheme its kind names admits"
+      rationale: "An identifier is minted to travel, so it appears in commit messages, tickets and agent prompts. A corpus can rewrite its own documents at any time and it can never rewrite somebody else's ticket, which is why an identifier outside its own namespace is unrecoverable rather than untidy"
+      class: cohesion
+      prevents: content.inconsistent
+      severity: high
     OB-REL-2:
       statement: "Both ends of a relation instance are kinds that the relation permits"
       rationale: "An edge between kinds a relation forbids is an assertion that the taxonomy never sanctioned, and every query over that relation inherits it"
@@ -637,6 +643,13 @@ resolved:
       mechanism: "check:facet.value.not_permitted"
       discharges:
         - OB-FACET-2
+      trigger: pull_request
+      posture: advisory
+      acts: detective
+    CT-ID-1:
+      mechanism: "check:identifier.pattern.not_met"
+      discharges:
+        - OB-ID-1
       trigger: pull_request
       posture: advisory
       acts: detective

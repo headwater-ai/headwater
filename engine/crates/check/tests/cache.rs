@@ -92,12 +92,13 @@ fn run_at(root: &Path, ctx: &Context, cache: &mut Cache) -> Run {
     let register = Register::read(declared).expect("the register reads");
     let shape = Shape::read(declared).expect("the shape reads");
     let taken = census::take(&corpus, &taxonomy);
+    let config = Config::default();
     let graph = Graph::build(
         &taken,
         &declarations,
         &Resolvers::over(&corpus),
         &corpus,
-        &Config::default(),
+        &config,
     );
     headwater_check::run(
         &taken,
@@ -107,6 +108,7 @@ fn run_at(root: &Path, ctx: &Context, cache: &mut Cache) -> Run {
             taxonomy: &taxonomy,
             shape: &shape,
             relations: &declarations,
+            config: &config,
             register: &register,
             adoption: None,
             source: "engine/crates/check/tests/cache.rs",

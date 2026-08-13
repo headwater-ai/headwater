@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The runner: eleven checks, coverage against the census, a published read
+//! The runner: thirteen checks, coverage against the census, a published read
 //! set, a suppression inventory, and text findings in one order.
 //!
 //! [Spec 12](../../../../docs/spec/12-check-layer.md#two-phases-and-why-the-order-matters)
@@ -10,9 +10,10 @@
 //!
 //! # Where the rules come from
 //!
-//! Nine of the eleven are **generated**. None of them names a facet, a kind, a
-//! relation or a number of days: each reads a declaration out of the resolved
-//! taxonomy and instantiates itself over whatever that declaration produced.
+//! Twelve of the thirteen are **generated**. None of them names a facet, a
+//! kind, a relation, an identifier scheme or a number of days: each reads a
+//! declaration out of the resolved taxonomy and instantiates itself over
+//! whatever that declaration produced.
 //! That is what [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)
 //! means by "a new facet or relation in the taxonomy produces its checks with
 //! no code", and it is why the rule list is short while the instance count is
@@ -60,7 +61,8 @@
 //! rules that a check receives a scoped view and cannot ask for a wider one,
 //! and that the enforcement is the feature. Each rule below implements one
 //! scope trait, and that trait is the only way to receive the matching view.
-//! [`run`] names the ten checks it runs, which is the whole of registration.
+//! [`run`] names the thirteen checks it runs, which is the whole of
+//! registration.
 //! The scope a trait fixes is now read twice: once for the report, and once as
 //! a component of the cache key that spec 12 derives from the same fact. The
 //! injected clock rides the same declaration, so a rule that reads a date
@@ -93,6 +95,7 @@ pub mod facet_required;
 pub mod facet_value;
 pub mod finding;
 pub mod fragment;
+pub mod identifier;
 pub mod instance;
 pub mod language;
 pub mod participation;
@@ -129,16 +132,19 @@ use headwater_graph::{Declarations, Graph};
 
 /// The rules this runner carries, in the order a report lists them.
 ///
-/// Ten are generated from the taxonomy and one is the coverage guarantee
-/// itself. A rule that is generated has no entry of its own anywhere: the list
-/// is the *templates*, and the instance count is what a taxonomy decides.
+/// Twelve are generated from the taxonomy, one reads no declaration, one is
+/// the coverage guarantee itself, and the last two are about the taxonomy
+/// rather than about the corpus. A rule that is generated has no entry of its
+/// own anywhere: the list is the *templates*, and the instance count is what a
+/// taxonomy decides.
 ///
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 15] = [
+pub const RULES: [&str; 16] = [
     facet_required::RULE,
     facet_value::RULE,
+    identifier::RULE,
     placement::RULE,
     reciprocity::RULE,
     endpoint::RULE,
@@ -174,6 +180,20 @@ pub struct Declared<'a> {
     pub shape: &'a Shape,
     /// Relation types and anchor kinds.
     pub relations: &'a Declarations,
+    /// The two front-matter keys the graph phase reads by name, and the one
+    /// thing here that is not a declaration.
+    ///
+    /// It is here because a rule that reads an identifier has to read it from
+    /// somewhere, and no declaration states where. A kind declares
+    /// `identifier: {scheme: …}` and nothing names the key that holds the
+    /// minted value, so [`headwater_graph::Config`] carries the guess and
+    /// `.headwater/README.md` records it. The alternative was to write `id`
+    /// into [`identifier`], which would put the same guess in two places and
+    /// let them disagree. Taking the parameter means that settling the question
+    /// changes a declaration, and that a corpus whose identifiers live under
+    /// another key gets one answer from the index and the same answer from the
+    /// rule.
+    pub config: &'a headwater_graph::Config,
     /// Obligations and controls: the path from a rule to what it serves.
     pub register: &'a Register,
     /// The `adoption` block of the lock, where the lock declares one.
@@ -250,11 +270,13 @@ pub fn run(
     ctx: &Context,
     cache: &mut Cache,
 ) -> Run {
-    // Registration, in full: ten checks, each named once. The scope trait each
+    // Registration, in full: thirteen checks, each named once. The scope trait each
     // one implements decides what it is handed, so this function cannot widen
     // a view by calling the wrong instantiation.
     let required = facet_required::Required::over(declared.shape);
     let values = facet_value::Values::over(declared.shape);
+    let identifiers =
+        identifier::Identifier::over(declared.shape, &declared.config.identifier_facet);
     let placement = placement::Placement::over(declared.taxonomy);
     let reciprocity = reciprocity::Reciprocity::over(declared.relations);
     let endpoints = endpoint::Endpoints::over(declared.relations, declared.shape);
@@ -269,6 +291,7 @@ pub fn run(
     let digests = scope::Digests::of(census);
     let mut instances = scope::over_documents(&required, census, ctx, cache);
     instances.extend(scope::over_documents(&values, census, ctx, cache));
+    instances.extend(scope::over_documents(&identifiers, census, ctx, cache));
     instances.extend(scope::over_documents(&placement, census, ctx, cache));
     instances.extend(scope::over_edges(&reciprocity, graph, &digests, ctx, cache));
     instances.extend(scope::over_edges(&endpoints, graph, &digests, ctx, cache));
@@ -315,6 +338,11 @@ pub fn run(
             facet_value::RULE,
             scope::document_scope::<facet_value::Values>(),
             scope::document_version::<facet_value::Values>(),
+        ),
+        (
+            identifier::RULE,
+            scope::document_scope::<identifier::Identifier>(),
+            scope::document_version::<identifier::Identifier>(),
         ),
         (
             placement::RULE,

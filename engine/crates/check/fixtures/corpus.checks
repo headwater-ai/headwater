@@ -1,4 +1,4 @@
-61 seen, 36 classified, 36 checked, 424 check instances
+61 seen, 36 classified, 36 checked, 460 check instances
      26 skipped: this document writes no fragment into itself
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
 adoption
@@ -8,6 +8,7 @@ adoption
 36 documents in the read set
      36 instances of facet.required.missing
      36 instances of facet.value.not_permitted
+     36 instances of identifier.pattern.not_met
      36 instances of shelf.placement_is_primary
      86 instances of relation.reciprocity.missing
     114 instances of relation.endpoint.not_permitted
@@ -27,6 +28,8 @@ rules, and for each the scope that binds it
   facet.required.missing
     document scope, one document and its front matter
   facet.value.not_permitted
+    document scope, one document and its front matter
+  identifier.pattern.not_met
     document scope, one document and its front matter
   shelf.placement_is_primary
     document scope, one document and its front matter
@@ -55,18 +58,18 @@ rules, and for each the scope that binds it
   control.mechanism.unimplemented
     taxonomy scope, the resolved taxonomy, and no document
 register
-  17 obligations: 17 verified, 0 gap, 0 unverifiable, 0 with no disposition
-      6 high, 6 verified
+  18 obligations: 18 verified, 0 gap, 0 unverifiable, 0 with no disposition
+      7 high, 7 verified
       6 medium, 6 verified
       5 low, 5 verified
   OB-LANG-1 verified, 3 findings escaped under it
   OB-LANG-3 verified, 1 finding escaped under it, 1 finding is migration-pending under it
-  17 controls
-     17 posture advisory
-     17 acts detective
-     15 name a rule this engine carries
+  18 controls
+     18 posture advisory
+     18 acts detective
+     16 name a rule this engine carries
       2 name a phase this engine runs
-     11 with no promotion record, so nothing states what would promote them
+     12 with no promotion record, so nothing states what would promote them
       2 with criteria
       2 permanently advisory
       2 producing facts rather than findings

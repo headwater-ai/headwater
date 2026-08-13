@@ -65,6 +65,16 @@ regimes:
         - {term: robust, reason: it stands in for the failure the thing survives}
     ste_strict: {tag: en-US, controlled: ASD-STE100, profile: strict}
 
+# Three schemes, because spec 2 writes two forms of local part and each one is a
+# different matcher: `{slug}` is a free token and `{seq:04d}` is a fixed-width
+# integer. The namespace is `FIX` in all three, which is the part of a pattern
+# that the invariant core does not let an overlay change.
+
+identifier_schemes:
+  spec_id:     {pattern: "SPEC-{namespace}-{slug}",  namespace: FIX, allocation: minted-once}
+  eval_id:     {pattern: "EVAL-{namespace}-{slug}",  namespace: FIX, allocation: minted-once}
+  decision_id: {pattern: "DR-{namespace}-{seq:04d}", namespace: FIX, allocation: reconcile-first}
+
 kinds:
   governed_document:
     abstract: true
@@ -72,11 +82,13 @@ kinds:
 
   design_spec:
     is_a: governed_document
+    identifier: {scheme: spec_id}
     voice: declarative
     language: ste_house
 
   evaluation:
     is_a: governed_document
+    identifier: {scheme: eval_id}
     relations:
       expect:
         - id: evidence-cited
@@ -94,15 +106,17 @@ kinds:
   # rules at once is one nobody can read.
   decision_record:
     is_a: governed_document
+    identifier: {scheme: decision_id}
     voice: guarded
     language: ste_strict
     sections: {require: [Context, Decision]}
 
-  # A kind that forbids every facet the two Shape rules read, so neither of them
-  # generates an instance over it. That is what leaves a classified document
-  # with no instance at all, which is the failing fixture the coverage rule
-  # needs. See `crates/check/src/facet_value.rs` for why a rule that
-  # instantiated over every typed document would make that finding unreachable.
+  # A kind that forbids every facet the two Shape rules read and mints under no
+  # identifier scheme, so none of the three generates an instance over it. That
+  # is what leaves a classified document with no instance at all, which is the
+  # failing fixture the coverage rule needs. See
+  # `crates/check/src/facet_value.rs` for why a rule that instantiated over
+  # every typed document would make that finding unreachable.
   note:
     facets: {forbid: [status, status_since, summary]}
 
@@ -209,6 +223,12 @@ obligations:
     class: cohesion
     prevents: content.inconsistent
     severity: medium
+  OB-FIX-23:
+    statement: An identifier is a string the scheme its kind names admits
+    rationale: An identifier travels into tickets and commit messages, and one outside its own namespace collides with a corpus that nobody here can rewrite
+    class: cohesion
+    prevents: content.inconsistent
+    severity: high
 
   # The register's own two rules, and then one obligation per state the
   # register can put an obligation in. Every branch of `Disposition` and of
@@ -383,6 +403,12 @@ controls:
   CT-FIX-10:
     mechanism: check:link.fragment.unresolved
     discharges: [OB-FIX-10]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+  CT-FIX-20:
+    mechanism: check:identifier.pattern.not_met
+    discharges: [OB-FIX-23]
     trigger: pull_request
     posture: advisory
     acts: detective
