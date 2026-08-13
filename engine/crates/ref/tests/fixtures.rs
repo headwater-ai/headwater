@@ -170,5 +170,5 @@ fn this_repositorys_own_overlay_addresses_parse() {
     }
     // The count is here so that a source which stops holding an `add` block
     // makes this test fail rather than pass over nothing.
-    assert_eq!(seen, 31, "the two sources declare 31 add operations");
+    assert_eq!(seen, 32, "the two sources declare 32 add operations");
 }

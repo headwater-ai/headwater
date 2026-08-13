@@ -117,6 +117,13 @@ add:
   kinds.decision_register.language:   ste_house
   kinds.obligation_register.language: ste_house
 
+  # The obligation records carry the prose that the obligation register held
+  # until #126 moved it. The regime follows the prose rather than the file it
+  # sits in, so a rule that read a paragraph in `docs/spec/` still reads it on
+  # `docs/obligations/`. Without this line the conversion would have taken 101
+  # paragraphs of this repository's own writing out of every language rule.
+  kinds.obligation_record.language:   ste_house
+
 # --- projections ------------------------------------------------------------
 # `projections` is a list in the base, so an `add` cannot reach it, and this is
 # the one operation in this file that is not an `add`. Spec 13 records that
