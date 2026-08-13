@@ -169,3 +169,19 @@ jobs:
             ./engine/target/release/headwater check --now "$HEADWATER_NOW" --format "$format" > "warm.$format"
             diff "none.$format" "warm.$format"
           done
+      - name: The harness hooks refuse what they claim to refuse
+        # The hooks in `.claude/hooks/` sit outside the corpus root, so no check
+        # reads them and `cargo test` never sees them. This step is what holds
+        # them. It drives all four registered positions through the same
+        # standard input the harness writes, and every refusal in it is provoked
+        # on purpose: a hook that has refused nothing is a hook nobody has seen
+        # work.
+        #
+        # It blocks. A hook binds nothing inside a session, and that is exactly
+        # why a broken one stays invisible until someone reads a diff that a
+        # refusal should have stopped.
+        #
+        # Last, because it plants one document under `docs/obligations/` to make
+        # the review hook refuse, and removes it again. Every step above reads
+        # the corpus, and none of them may see it.
+        run: sh .claude/hooks/fixtures.sh

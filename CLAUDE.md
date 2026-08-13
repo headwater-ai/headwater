@@ -38,6 +38,19 @@ Every rule above is a check that `headwater check` runs, and the taxonomy of thi
 
 The hook needs a built engine and fails open with one printed line when there is none. Build it once with `cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml`. The CI job builds the engine and runs the same check on every pull request, so an unbuilt clone delays a finding rather than losing it. Run `headwater check` yourself to read the advisory findings, which the hook does not print.
 
+**What runs before commit time, in this harness.** `.claude/settings.json` registers three hooks in `.claude/hooks/`, one for each moment [spec 5](docs/spec/05-ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind) names. Git does not install them and Claude Code loads them when the repository opens, which is the opposite of the line above.
+
+| Position | Script | What it does |
+|---|---|---|
+| `UserPromptSubmit` | `intent.sh` | `headwater route` on your prompt, and nothing at all when the route is silent |
+| `PreToolUse` on `Write`/`Edit` | `write.sh` | refuses a raw write of a document that does not exist yet, and names `headwater new`. An edit to an existing document passes |
+| `PostToolUse` on `Write`/`Edit` | `write.sh` | names the documents that declare `governs` over the path you just edited. Advisory, and it blocks nothing |
+| `Stop` | `review.sh` | runs `.githooks/pre-commit` and stops the turn on what would stop the commit |
+
+Each one calls a verb that already ships, and none carries a rule of its own. The review hook invokes the commit hook rather than repeating it, so this repository still runs exactly one thing at commit time. Every one of them fails open: no built engine, no `python3`, or an input it cannot read, and the action proceeds.
+
+None of them binds. A `Bash` call that writes a file matches no matcher, `disableAllHooks` turns all of them off with no record anywhere, and `git commit --no-verify` skips the gate below them. What holds a change is the commit gate and the CI job. `sh .claude/hooks/fixtures.sh` runs all four positions against recorded input, including every refusal.
+
 **The escape hatches, and what each one means.** A directive on the offending block marks a deliberate exception, with the reason in the source where a reader will find it:
 
     …the term the cited authors use. <!-- headwater allow=language.retired_term.used scope=block until=2027-12-31 reason=false_positive note=quoting Star and Griesemer -->
