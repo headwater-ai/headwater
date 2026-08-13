@@ -29,7 +29,7 @@
 use crate::{reported, Reported, Subject};
 use headwater_check::register::Bound;
 use headwater_check::Run;
-use headwater_query::json::Json;
+use headwater_yaml::json::Json;
 
 /// The version of this document's own shape.
 ///

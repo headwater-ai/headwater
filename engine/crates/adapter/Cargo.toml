@@ -12,9 +12,10 @@ publish.workspace = true
 # that reason.
 headwater-check = { path = "../check" }
 
-# The JSON writer. `headwater-query` owns it because a protocol message needed
-# one first, and a second writer of one format is the drift spec 4 names.
-headwater-query = { path = "../query" }
+# The JSON writer, which sits beside the JSON reader. `headwater-yaml` owns
+# both, because three crates emit JSON and a writer in any one of them would be
+# a dependency the other two take on a crate they need for nothing else.
+headwater-yaml = { path = "../yaml" }
 
 [dev-dependencies]
 # The suite runs the whole pipeline over the check crate's fixture tree, so it
@@ -23,4 +24,3 @@ headwater-query = { path = "../query" }
 headwater-census = { path = "../census" }
 headwater-graph = { path = "../graph" }
 headwater-hash = { path = "../hash" }
-headwater-yaml = { path = "../yaml" }

@@ -97,7 +97,7 @@ use crate::{reported, Escape, Format, Loss, Reported, Subject, TOOL, TOOL_URI};
 use headwater_check::instance::Input;
 use headwater_check::register::Bound;
 use headwater_check::{Run, Severity};
-use headwater_query::json::Json;
+use headwater_yaml::json::Json;
 
 /// The version of the format, which is a member of the document.
 pub const VERSION: &str = "2.1.0";

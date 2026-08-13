@@ -3,7 +3,7 @@ id: OBL-repo-0004
 title: "Working-tree write tools have no measured effect on the assisted fraction"
 status: current
 status_since: 2026-08-10
-last_verified: 2026-08-13
+last_verified: 2026-08-14
 summary: "Q7 claims that write tools raise the assisted fraction, and the treatment has never been applied."
 provenance:
   warrant: accepted
@@ -29,4 +29,6 @@ That metric is the instrument, and a comparison needs a baseline and a treatment
 
 ## Discharge
 
-The unassisted baseline that such a comparison needs is the typing pass that [Q4's entry](0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) records. The treatment is absent, because no write tool has authored anything in this repository.
+The unassisted baseline that such a comparison needs is the typing pass that [Q4's entry](0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) records. The treatment is absent, because no write tool has authored anything in this repository. `headwater mcp` registers no tool that writes at all, and [#71](https://github.com/headwater-ai/headwater/issues/71) is the issue that would register one.
+
+**A store for the metric now exists, and it cannot separate the two arms.** `.headwater/capture-cost.jsonl` holds one reading per run of `headwater new`, and every reading looks the same whatever called the verb. That is deliberate: a field with one value tests nothing, and this engine has one surface. So the day a write tool ships, the store owes a term that names the surface of a run. Without it a reading from a terminal and a reading from a protocol are one population. The comparison this record asks for would then read its own baseline as its treatment.

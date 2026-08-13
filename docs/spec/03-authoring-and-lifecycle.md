@@ -220,7 +220,31 @@ The metric is reported in the adaptive layer of the [assurance model](04-assuran
 
 **The scaffolder reports the fraction of one run, and a run is all that it can report.** The denominator is the four terms above: the required front matter, the required sections, the identifier, and the halves of each proposed edge. A section counts as its heading and never as its prose. The heading is what the section contract reads, and the prose is what a person owes. Each edge counts two halves, and the reciprocal one is the half that follows from the target that an author named.
 
-**No reader of a committed corpus can derive the fraction, and one ruling is why.** [Q4](09-decisions.md#q4--relation-storage) keeps `created_by` on the relation type, so the value states who a taxonomy expects to pay for an edge rather than who wrote one. A scaffolded edge and a hand-typed edge of the same relation are one string on disk. So the reading has to be taken where the work happens, and a trend needs a store that the run writes to. [OBL-repo-0001](../obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) carries that debt.
+**No reader of a committed corpus can derive the fraction, and one ruling is why.** [Q4](09-decisions.md#q4--relation-storage) keeps `created_by` on the relation type, so the value states who a taxonomy expects to pay for an edge rather than who wrote one. A scaffolded edge and a hand-typed edge of the same relation are one string on disk. So the reading has to be taken where the work happens, and a trend needs a store that the run writes to.
+
+## What the capture-cost store records, and what it refuses to
+
+The store is `.headwater/capture-cost.jsonl`. A run of `headwater new` that writes a document appends one line to it, and no line is ever rewritten. A run whose document landed and whose reading did not exits non-zero. A silent hole in the denominator is the one state that no later reading can report.
+
+**What a reading holds.** The four terms above, the kind, the path the run wrote, and the identifier it minted. Beside them go the date of the injected clock and the digest of the taxonomy the run resolved. The digest is there because the denominator is a count of declarations. A required facet that the scaffolder can fill raises the fraction with no change in what a person types. So two readings taken under two digests are two measurements, and `headwater capture` states how many digests the readings span rather than averaging them. [OBL-repo-0109](../obligations/0109-the-capture-cost-denominator-is-set-by-declaration-and-not-by-work.md) holds the measurement of what that denominator does and does not count.
+
+**What a reading refuses to hold, and the reason for each.** Telemetry about capture cost is a measurement of people and of agents, so what is left out is a ruling rather than an omission.
+
+| not recorded | why |
+|---|---|
+| any person or agent | The remedy this section names for a falling fraction is to derive more or to require less. It is aimed at the taxonomy and never at the author, and a per-author number is a performance measure |
+| wall-clock time, and any duration | Neither is reproducible, and both would change the file on a run that measured the same thing |
+| the prose, and the title | The store holds counts. The document holds the words |
+| a run that refused | A refusal wrote no document, so there is nothing to attribute a reading to. A count of refusals is the first row under another name |
+| whether a hook or a skill ran | [Spec 5](05-ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind) says a hook binds nothing. A disabled hook and a hook that stayed silent produce one reading. The count would then fall when a harness changed, and read as a fall in authoring |
+
+**Where it lands, and who reads it.** Under `.headwater/`, which is outside the corpus root. No census row covers it, no language regime binds it, and no rule reads it. That is the boundary a taxonomy source already sits on, and it is there for the same reason. The file is committed plain text, so every reader of the repository recomputes each aggregate from the lines. A capture-cost number that a reader cannot recompute is a number that nobody should cite.
+
+**What the store cannot be made to overstate.** `headwater capture` reports the reach of the verb as the classified documents that a reading names, against every classified document. A document that arrived by any other route is classified and named by no reading, so it raises the denominator and lowers the fraction. A reading whose document is gone is named in the report and counted nowhere. The join reads the identifier first and the path second, so a rename after the reading is a move rather than a loss.
+
+**The reach figure carries the age of the store with it.** Every document that a corpus wrote before the store existed carries no reading and never could. So the report states the date of the first reading beside the fraction, and a reader holds the two together. A number that started at zero on the day the store shipped is not a finding about how those documents were written.
+
+[OBL-repo-0001](../obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) carries what the store still does not settle.
 
 ## Authoring surfaces
 

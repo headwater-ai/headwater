@@ -43,8 +43,8 @@
 //! a process: [`respond`] takes the text of a request and returns the text of a
 //! response, and [`serve`] is the loop around it.
 
-use crate::json::Json;
 use crate::{Budget, Resolved, Surface};
+use headwater_yaml::json::Json;
 use headwater_yaml::{Mapping, Value};
 
 /// The protocol version this server implements.
