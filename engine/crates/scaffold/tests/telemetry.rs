@@ -27,7 +27,7 @@ use headwater_check::Date;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::index::Index;
 use headwater_graph::Config;
-use headwater_scaffold::reading::{self, Classified, Reading, Reach, STORE};
+use headwater_scaffold::reading::{self, Classified, Reach, Reading, STORE};
 use headwater_scaffold::{propose, write, Assisted, Request, Sources};
 use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};
@@ -117,7 +117,8 @@ fn scaffold(root: &Path, kind: &str, title: &str) -> headwater_scaffold::Plan {
         },
     )
     .unwrap_or_else(|refusal| panic!("{kind} `{title}`: {refusal}"));
-    let composed = write::compose(root, &plan).unwrap_or_else(|refusal| panic!("{kind}: {refusal}"));
+    let composed =
+        write::compose(root, &plan).unwrap_or_else(|refusal| panic!("{kind}: {refusal}"));
     write::apply(root, &composed).expect("the files write");
     plan
 }
@@ -171,7 +172,11 @@ fn the_store_lands_outside_the_tree_the_census_walks() {
     let scratch = Scratch::new("placement");
     let root = &scratch.0;
     let plan = scaffold(root, "design_spec", "A scaffolded fourth part");
-    let reading = Reading::of(&plan, "sha256:fixture", Date::parse(PINNED).expect("a date"));
+    let reading = Reading::of(
+        &plan,
+        "sha256:fixture",
+        Date::parse(PINNED).expect("a date"),
+    );
     reading::append(root, &reading).expect("the reading appends");
     assert!(root.join(STORE).is_file(), "the store is on the tree");
 
@@ -179,7 +184,10 @@ fn the_store_lands_outside_the_tree_the_census_walks() {
     let shelves = Taxonomy::read(&resolved).expect("the shelves read");
     let taken = census::take(&Corpus::new(root.to_path_buf(), "corpus"), &shelves);
     assert!(
-        !taken.rows.iter().any(|row| row.path.contains("capture-cost")),
+        !taken
+            .rows
+            .iter()
+            .any(|row| row.path.contains("capture-cost")),
         "the census walked the store: {:?}",
         taken.rows.iter().map(|row| &row.path).collect::<Vec<_>>()
     );
@@ -262,7 +270,10 @@ fn a_document_that_arrived_by_another_route_lowers_the_reach() {
             "corpus/decisions/0008-a-scaffolded-one.md",
             Some("DR-FIX-0008"),
         ),
-        ("corpus/decisions/0009-typed-by-hand.md", Some("DR-FIX-0009")),
+        (
+            "corpus/decisions/0009-typed-by-hand.md",
+            Some("DR-FIX-0009"),
+        ),
     ]);
 
     let before = reading::reach(&readings, &scaffolded_only);
@@ -340,8 +351,15 @@ fn a_document_that_moved_after_its_reading_joins_on_its_identifier() {
 /// document is a loss that the report names rather than hides.
 #[test]
 fn a_reading_with_no_identifier_joins_on_its_path_alone() {
-    let readings = vec![a_reading("evaluation", "corpus/evaluations/a-look.md", None)];
-    let held = reading::reach(&readings, &corpus(&[("corpus/evaluations/a-look.md", None)]));
+    let readings = vec![a_reading(
+        "evaluation",
+        "corpus/evaluations/a-look.md",
+        None,
+    )];
+    let held = reading::reach(
+        &readings,
+        &corpus(&[("corpus/evaluations/a-look.md", None)]),
+    );
     assert_eq!(held.reached.len(), 1);
     assert_eq!(held.lost, Vec::<usize>::new());
 
@@ -363,7 +381,10 @@ fn two_readings_over_one_document_are_one_document_reached() {
         a_reading("evaluation", "corpus/evaluations/a-look.md", None),
         a_reading("evaluation", "corpus/evaluations/a-look.md", None),
     ];
-    let reach = reading::reach(&readings, &corpus(&[("corpus/evaluations/a-look.md", None)]));
+    let reach = reading::reach(
+        &readings,
+        &corpus(&[("corpus/evaluations/a-look.md", None)]),
+    );
     assert_eq!(reach.reached.len(), 1);
     assert_eq!(reach.lost, Vec::<usize>::new());
 }
