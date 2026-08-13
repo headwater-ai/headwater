@@ -158,10 +158,7 @@ fn partition(escaped: &[&Reported<'_>]) -> String {
             .filter(|entry| entry.escape == Some(escape))
             .count()
     };
-    let (pending, suppressed) = (
-        count(Escape::MigrationPending),
-        count(Escape::Suppression),
-    );
+    let (pending, suppressed) = (count(Escape::MigrationPending), count(Escape::Suppression));
     match (pending, suppressed) {
         (0, one) => format!("{one} suppressed"),
         (one, 0) => format!("{one} migration-pending"),

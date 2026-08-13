@@ -51,10 +51,10 @@
 //! under `cargo test`. What the cached run writes to standard error is the hit
 //! count, which belongs there because it is a fact about a disk.
 
+use headwater_adapter::{Format, Subject};
 use headwater_census::census::{self, Detail as CensusDetail};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
-use headwater_adapter::{Format, Subject};
 use headwater_check::{Cache, Context, Date, Declared, Register, Shape};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -874,25 +874,25 @@ fn check(
     // (spec 4). The lock hash is half of that statement, and the corpus tree is
     // the other half, which nothing computes yet.
     if translated.is_none() {
-    println!("taxonomy");
-    println!("  {} {}", lock.package, lock.version);
-    println!("  {}", lock.digest);
-    // The injected values are part of the state a verdict is about, so a run
-    // that does not report them cannot be reproduced from its own output.
-    println!("\nclock");
-    println!("  {}", ctx.now());
-    println!("\ncensus");
-    print!("{}", indent(&taken.render(CensusDetail::Exceptions)));
-    println!("\ngraph");
-    print!("{}", indent(&graph.render(GraphDetail::Exceptions)));
-    println!("\nchecks");
-    print!("{}", indent(&run.render(headwater_check::Detail::Findings)));
+        println!("taxonomy");
+        println!("  {} {}", lock.package, lock.version);
+        println!("  {}", lock.digest);
+        // The injected values are part of the state a verdict is about, so a run
+        // that does not report them cannot be reproduced from its own output.
+        println!("\nclock");
+        println!("  {}", ctx.now());
+        println!("\ncensus");
+        print!("{}", indent(&taken.render(CensusDetail::Exceptions)));
+        println!("\ngraph");
+        print!("{}", indent(&graph.render(GraphDetail::Exceptions)));
+        println!("\nchecks");
+        print!("{}", indent(&run.render(headwater_check::Detail::Findings)));
 
-    // The read set, which spec 12 asks a run to report beside its coverage
-    // numbers. It is the same bytes `--read-set` writes, so a gate reading the
-    // file and a reader of the report are looking at one artifact.
-    println!("\nread set");
-    print!("{}", indent(&run.read_set.render()));
+        // The read set, which spec 12 asks a run to report beside its coverage
+        // numbers. It is the same bytes `--read-set` writes, so a gate reading the
+        // file and a reader of the report are looking at one artifact.
+        println!("\nread set");
+        print!("{}", indent(&run.read_set.render()));
     }
 
     if let Some(path) = read_set {

@@ -334,7 +334,10 @@ fn result(entry: &Reported<'_>, rules: &[&'static str], run: &Run) -> Json {
     members.push(("message", message(entry)));
     members.push(("locations", Json::Array(vec![location(finding)])));
     if let Some(escape) = entry.escape {
-        members.push(("suppressions", Json::Array(vec![suppression(entry, escape)])));
+        members.push((
+            "suppressions",
+            Json::Array(vec![suppression(entry, escape)]),
+        ));
     }
     members.push(("properties", result_properties(entry, run)));
     Json::object(members)

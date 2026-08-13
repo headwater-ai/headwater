@@ -506,12 +506,8 @@ fn the_stock_reader_finds_the_same_findings_the_run_did() {
         ));
     }
 
-    let invented: Vec<&String> = reported_by_schema
-        .difference(&reported_by_engine)
-        .collect();
-    let dropped: Vec<&String> = reported_by_engine
-        .difference(&reported_by_schema)
-        .collect();
+    let invented: Vec<&String> = reported_by_schema.difference(&reported_by_engine).collect();
+    let dropped: Vec<&String> = reported_by_engine.difference(&reported_by_schema).collect();
     assert!(invented.is_empty(), "the emitter invented {invented:?}");
     assert!(dropped.is_empty(), "the emitter dropped {dropped:?}");
     assert!(!reported_by_engine.is_empty());
@@ -550,7 +546,9 @@ fn oracle(artifact: &str) -> Option<Vec<String>> {
          outside this repository pins the reading of SARIF: {reason}\nInstall it with: \
          pip install jsonschema"
     );
-    eprintln!("note: the stock SARIF validator did not run ({reason}), so this test proved nothing");
+    eprintln!(
+        "note: the stock SARIF validator did not run ({reason}), so this test proved nothing"
+    );
     None
 }
 

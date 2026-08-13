@@ -217,15 +217,11 @@ pub fn reported(run: &Run) -> Vec<Reported<'_>> {
         all.push(Reported {
             finding,
             escape: Some(Escape::MigrationPending),
-            task: run
-                .adoption
-                .tasks
-                .iter()
-                .find(|task| {
-                    task.pairs
-                        .iter()
-                        .any(|pair| pair.rule == finding.rule && pair.path == finding.path)
-                }),
+            task: run.adoption.tasks.iter().find(|task| {
+                task.pairs
+                    .iter()
+                    .any(|pair| pair.rule == finding.rule && pair.path == finding.path)
+            }),
             directive: None,
         });
     }
