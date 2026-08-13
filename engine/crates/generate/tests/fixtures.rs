@@ -147,7 +147,11 @@ fn the_fixture_tree_generates_the_recorded_projections() {
     let mut out = String::new();
     out.push_str("the plan\n");
     for output in &plan.outputs {
-        out.push_str(&format!("\n=== {} ({}) ===\n", output.path, output.kind.name()));
+        out.push_str(&format!(
+            "\n=== {} ({}) ===\n",
+            output.path,
+            output.kind.name()
+        ));
         out.push_str(&output.bytes);
     }
 
@@ -178,10 +182,18 @@ fn the_fixture_tree_generates_the_recorded_projections() {
     let edited = format!("{}\n- a line somebody added by hand\n", written[0]);
     std::fs::write(&first_path, &edited).expect("the hand edit");
     let drifted = check(&tree, &plan);
-    section(&mut out, "check over a hand-edited generated file", &drifted);
+    section(
+        &mut out,
+        "check over a hand-edited generated file",
+        &drifted,
+    );
     assert!(drifted.has_errors(), "a hand edit has to fail the gate");
     let repaired = write(&tree, &plan);
-    section(&mut out, "write over a hand-edited generated file", &repaired);
+    section(
+        &mut out,
+        "write over a hand-edited generated file",
+        &repaired,
+    );
     assert_eq!(
         std::fs::read_to_string(&first_path).expect("it is there"),
         written[0],
@@ -191,17 +203,28 @@ fn the_fixture_tree_generates_the_recorded_projections() {
     // 3: the gate over the tree the write produced.
     let held = check(&tree, &plan);
     section(&mut out, "check over what was written", &held);
-    assert!(!held.has_errors(), "a fresh write does not satisfy its own check");
+    assert!(
+        !held.has_errors(),
+        "a fresh write does not satisfy its own check"
+    );
 
     // 4: the gate over a tree that committed nothing.
     let bare = empty_tree("bare");
     let missing = check(&bare, &plan);
     section(&mut out, "check over an empty tree", &missing);
-    assert!(missing.has_errors(), "a missing projection has to fail the gate");
+    assert!(
+        missing.has_errors(),
+        "a missing projection has to fail the gate"
+    );
 
     // 5: an authored file already holds an output path.
     let occupied = empty_tree("occupied");
-    let target = plan.outputs.first().expect("the fixture generates one").path.clone();
+    let target = plan
+        .outputs
+        .first()
+        .expect("the fixture generates one")
+        .path
+        .clone();
     let authored = "# A heading somebody wrote\n\nNo marker, and not this engine's to destroy.\n";
     let at = occupied.join(&target);
     std::fs::create_dir_all(at.parent().expect("a parent")).expect("the directory");
@@ -307,7 +330,9 @@ fn this_repository_generates_nothing_and_accounts_for_all_of_it() {
         "the gate fails over a repository that claims to generate nothing"
     );
     assert!(
-        held.wrote.iter().all(|wrote| wrote.verdict != Verdict::Occupied),
+        held.wrote
+            .iter()
+            .all(|wrote| wrote.verdict != Verdict::Occupied),
         "a declared output path is held by an authored document"
     );
 }

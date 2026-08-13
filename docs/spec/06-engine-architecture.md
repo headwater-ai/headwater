@@ -101,7 +101,7 @@ The design — scope semantics, instances and coverage, the two-phase census, fi
 
 ## Projections
 
-Projections are generated artifacts. The taxonomy declares each one, and each has the same contract:
+Projections are generated artifacts. Each one has the same contract:
 
 ```
 headwater generate            # write

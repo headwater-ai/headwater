@@ -346,9 +346,7 @@ fn unbuilt(kind: Kind) -> &'static str {
             "a transcription needs a resolver that reads text from a pinned snapshot, and Q19 \
              leaves whether it ships at all to the first adopter who asks"
         }
-        Kind::ShelfIndex | Kind::CoverageReport | Kind::CorpusDescriptor => {
-            "this engine emits it"
-        }
+        Kind::ShelfIndex | Kind::CoverageReport | Kind::CorpusDescriptor => "this engine emits it",
     }
 }
 
@@ -445,11 +443,7 @@ impl Report {
         if !self.unwritten.is_empty() {
             out.push_str("\nwhat this verb does not write, and why\n");
             for unwritten in &self.unwritten {
-                out.push_str(&format!(
-                    "  {} {}\n",
-                    unwritten.kind.name(),
-                    unwritten.at
-                ));
+                out.push_str(&format!("  {} {}\n", unwritten.kind.name(), unwritten.at));
                 out.push_str(&format!("    {}\n", unwritten.reason));
             }
         }

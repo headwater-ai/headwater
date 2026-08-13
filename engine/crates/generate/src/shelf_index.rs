@@ -110,9 +110,7 @@ pub(crate) fn emit(
 /// The directory a shelf's glob claims: everything before the first glob
 /// construct, with no trailing separator.
 fn directory_of(pattern: &str) -> String {
-    let stop = pattern
-        .find(|c| matches!(c, '*' | '?' | '[' | '{'))
-        .unwrap_or(pattern.len());
+    let stop = pattern.find(['*', '?', '[', '{']).unwrap_or(pattern.len());
     pattern[..stop].trim_end_matches('/').to_string()
 }
 
@@ -122,8 +120,8 @@ fn render(shelf: &str, output: &str, ordered: &[Pointer]) -> String {
     // shelf index is Markdown. The fallback is a plain line rather than an
     // unmarked file, because an unmarked generated file is the one thing this
     // module must never produce.
-    let mark = marker(Kind::ShelfIndex, output)
-        .unwrap_or_else(|| format!("<!-- {} -->", crate::MARKER));
+    let mark =
+        marker(Kind::ShelfIndex, output).unwrap_or_else(|| format!("<!-- {} -->", crate::MARKER));
     out.push_str(&mark);
     out.push_str("\n\n# ");
     out.push_str(shelf);
@@ -139,7 +137,10 @@ fn render(shelf: &str, output: &str, ordered: &[Pointer]) -> String {
     let base = parent_of(output);
     for pointer in ordered {
         let target = relative(&base, &pointer.path);
-        let label = pointer.id.clone().unwrap_or_else(|| file_name(&pointer.path));
+        let label = pointer
+            .id
+            .clone()
+            .unwrap_or_else(|| file_name(&pointer.path));
         out.push_str(&format!("- [{label}]({target})"));
         if let Some(summary) = &pointer.summary {
             out.push_str(&format!(" — {summary}"));
