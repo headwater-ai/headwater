@@ -274,10 +274,14 @@ fn call(surface: &Surface<'_>, message: &Mapping) -> Result<Json, Failure> {
             let governing = surface.governing_docs_for_path(&argument);
             match governing.is_empty() {
                 true => format!("no document governs {argument}\n"),
-                false => governing
-                    .iter()
-                    .map(|pointer| format!("{}\n", pointer.render()))
-                    .collect(),
+                false => {
+                    let mut out = String::new();
+                    for pointer in &governing {
+                        out.push_str(&pointer.render());
+                        out.push('\n');
+                    }
+                    out
+                }
             }
         }
         // Unreachable: `tool` came out of `TOOLS`. Answered rather than

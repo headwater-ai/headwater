@@ -494,14 +494,14 @@ fn check(
         false => Cache::disabled(),
     };
     let run = headwater_check::run(
-        &taken,
-        &graph,
+        taken,
+        graph,
         &Declared {
             lock: &lock.digest,
-            taxonomy: &taxonomy,
-            shape: &shape,
-            relations: &declarations,
-            register: &register,
+            taxonomy,
+            shape,
+            relations: declarations,
+            register,
             source: headwater_lock::LOCK,
         },
         &ctx,
