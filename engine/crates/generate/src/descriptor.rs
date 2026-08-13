@@ -2,7 +2,7 @@
 //! The corpus descriptor: what a machine reads when it arrives with a location
 //! and nothing else.
 //!
-//! [Q20](../../../../docs/spec/09-decisions.md) fixes it at
+//! [Q14](../../../../docs/spec/09-decisions.md#q14--discovery-surface) fixes it at
 //! `.headwater/corpus.json` and makes it engine-defined, for the reason that a
 //! reader who must consult the taxonomy to find it already knows what it says.
 //! [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#arriving-at-a-corpus-cold)
@@ -74,7 +74,7 @@
 //! fixes needs no marker at all. The second is cheaper and it is wrong: it
 //! would have this engine overwrite whatever it found at `.headwater/`, and an
 //! adopter who hand-wrote a descriptor before this verb shipped is exactly the
-//! reader Q20 is addressed to.
+//! reader Q14 is addressed to.
 //!
 //! The member also does a second job, and that is what settles the choice.
 //! Spec 7 rules that **absence must not read as presence**: a reader that
@@ -88,7 +88,7 @@ use crate::{marker_text, Identity, Kind, Output, Plan};
 use headwater_query::json::Json;
 use headwater_query::Surface;
 
-/// The path Q20 fixes, relative to the repository root.
+/// The path Q14 fixes, relative to the repository root.
 pub const PATH: &str = ".headwater/corpus.json";
 
 /// The descriptor's own version, as `Major.Minor`.

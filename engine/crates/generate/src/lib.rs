@@ -16,11 +16,11 @@
 //! [principle 1](../../../../docs/spec/00-vision-and-scope.md#design-principles)
 //! makes the path a schema decision. Two are engine-defined. Spec 4 makes the
 //! register "engine-defined and non-optional", and
-//! [Q20](../../../../docs/spec/09-decisions.md) fixes the corpus descriptor at
-//! `.headwater/corpus.json`, both for the same reason: a reader who must consult
-//! the taxonomy to find an artifact already knows what the artifact would tell
-//! them. A declaration of either would put a second copy of one artifact at a
-//! path the engine did not fix.
+//! [Q14](../../../../docs/spec/09-decisions.md#q14--discovery-surface) fixes the
+//! corpus descriptor at `.headwater/corpus.json`. Both for the same reason: a
+//! reader who must consult the taxonomy to find an artifact already knows what
+//! the artifact would tell them. A declaration of either would put a second copy
+//! of one artifact at a path the engine did not fix.
 //!
 //! So [`Kind`] carries all nine and [`Kind::declarable`] separates them. The
 //! meta-schema's enum holds the seven.
@@ -110,7 +110,7 @@ pub enum Kind {
     Transcription,
     /// Spec 4: the register, engine-defined and non-optional.
     CoverageReport,
-    /// Q20: `.headwater/corpus.json`, engine-defined and non-optional.
+    /// Q14: `.headwater/corpus.json`, engine-defined and non-optional.
     CorpusDescriptor,
 }
 

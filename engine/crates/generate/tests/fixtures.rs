@@ -22,7 +22,9 @@ use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::Shape;
-use headwater_generate::{check, descriptor, plan, write, Identity, Plan, Projections, Report, Verdict};
+use headwater_generate::{
+    check, descriptor, plan, write, Identity, Plan, Projections, Report, Verdict,
+};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
@@ -133,8 +135,7 @@ fn fixture_identity() -> Identity {
         )],
         package: "headwater/fixture".to_string(),
         version: "1.0.0".to_string(),
-        lock: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
-            .to_string(),
+        lock: "sha256:0000000000000000000000000000000000000000000000000000000000000000".to_string(),
     }
 }
 
@@ -307,7 +308,7 @@ fn every_output_carries_its_own_marker() {
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
 /// is what a prose edit must not change. One file is written, the descriptor at
-/// the path Q20 fixes. The package declares indexes for two shelves this tree
+/// the path Q14 fixes. The package declares indexes for two shelves this tree
 /// holds no document on, so those two produce a reason rather than a file, and
 /// the register produces a third.
 ///
