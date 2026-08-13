@@ -23,7 +23,7 @@ relations:
 
 [Spec 6](../spec/06-engine-architecture.md#cli) states that there is no `--changed-only`, and this record holds the measurement behind that sentence. The one job such a flag has is to pay for a 200 ms commit hook without moving the verdict. The cache pays it.
 
-**The measurement, and the conditions it was taken under.** Over this repository a warm `headwater check` costs 56 to 61 ms, and the same run with `--no-cache` costs 470 to 486 ms. Seven runs of each, on a release build, on an eight-core host, against 201 files under `docs/` and 158 classified documents and 2,442 check instances. So check evaluation is about nine tenths of a cold run, and a warm cache serves all of it. A timing with no host, no build profile and no corpus size beside it cannot be re-derived, which is why this paragraph carries all three.
+**The measurement, and the conditions it was taken under.** Over this repository a warm `headwater check` costs 54 to 61 ms, and the same run with `--no-cache` costs 470 to 486 ms. Seven runs of each, on a release build, on an eight-core host, against 201 files under `docs/` and 158 classified documents and 2,446 check instances. So check evaluation is about nine tenths of a cold run, and a warm cache serves all of it. A timing with no host, no build profile and no corpus size beside it cannot be re-derived, which is why this paragraph carries all three.
 
 The cache also derives what moved from content hashes rather than from a list that a caller supplies. A flag that took such a list would add an input to the verdict that no reviewer sees. Spec 6 forbids that in the paragraph that now states there is no flag.
 
@@ -31,7 +31,7 @@ The cache also derives what moved from content hashes rather than from a list th
 
 ## Obligation
 
-What no flag reaches is Phase A. `headwater explain` walks the corpus, parses it, builds the graph and runs no check. It costs 38 to 45 ms on the same corpus and the same build. So Phase A is about seven tenths of the warm run and about a twelfth of the cold one. To scope it is to cache the census and the graph, and [Q6](../spec/09-decisions.md#q6--where-the-corpus-graph-lives-at-rest) rules that nothing stores the graph. [OBL-repo-0072](0072-a-cache-of-check-results-does-not-make-a-run-proportional.md) carries what that leaves open in spec 6's own promise.
+What no flag reaches is Phase A. `headwater explain` walks the corpus, parses it, builds the graph and runs no check. It costs 36 to 45 ms on the same corpus and the same build. So Phase A is about seven tenths of the warm run and about a twelfth of the cold one. To scope it is to cache the census and the graph, and [Q6](../spec/09-decisions.md#q6--where-the-corpus-graph-lives-at-rest) rules that nothing stores the graph. [OBL-repo-0072](0072-a-cache-of-check-results-does-not-make-a-run-proportional.md) carries what that leaves open in spec 6's own promise.
 
 ## Discharge
 
