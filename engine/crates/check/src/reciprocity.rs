@@ -141,7 +141,15 @@ impl EdgeCheck for Reciprocity<'_> {
                 written.source.id, written.name, written.raw_target, relation.name,
             ),
             remediation: format!("add `{name}: {target}` under `relations:` in {owed_by}"),
-            fixable: true,
+            // The patch names the far document, the relation and the target,
+            // and no offset. Where the half goes inside that document is the
+            // splice's answer, and `headwater_scaffold::write::splice` is the
+            // one thing in this engine that gives it.
+            patch: Some(crate::Patch::Half {
+                path: owed_by.clone(),
+                relation: name.clone(),
+                id: target.clone(),
+            }),
         })
     }
 }

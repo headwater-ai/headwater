@@ -185,7 +185,7 @@ impl EdgeCheck for Endpoints<'_> {
                  taxonomy; the document at that end is {}",
                     relation.name, end.key, end.path
                 ),
-                fixable: false,
+                patch: None,
             })
             .collect();
         Outcome::failed(findings)

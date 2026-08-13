@@ -620,7 +620,7 @@ mod tests {
             column: 1,
             message: "a message".to_string(),
             remediation: "do the thing".to_string(),
-            fixable: false,
+            patch: None,
         }
     }
 

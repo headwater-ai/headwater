@@ -145,7 +145,7 @@ impl DocumentCheck for SourceForm {
                     // Mechanical and total, and still no patch rides along:
                     // `check --fix` is #71, and a `fixable` flag with nothing
                     // behind it claims a capability the engine does not have.
-                    fixable: false,
+                    patch: None,
                 });
             }
         }

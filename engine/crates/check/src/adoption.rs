@@ -454,7 +454,7 @@ mod tests {
             column: 1,
             message: "a message".to_string(),
             remediation: "a remediation".to_string(),
-            fixable: false,
+            patch: None,
         }
     }
 

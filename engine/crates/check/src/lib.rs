@@ -144,6 +144,7 @@ pub mod identity;
 pub mod instance;
 pub mod language;
 pub mod participation;
+pub mod patch;
 pub mod placement;
 pub mod readset;
 pub mod reciprocity;
@@ -164,6 +165,7 @@ pub use coverage::Coverage;
 pub use finding::{Finding, Severity};
 pub use gate::{Recorded, Verdict};
 pub use instance::{Input, Instance, Outcome};
+pub use patch::Patch;
 pub use readset::{ReadSet, Rule};
 pub use register::{Bound, Register};
 pub use scope::{

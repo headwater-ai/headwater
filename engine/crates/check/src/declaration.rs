@@ -203,7 +203,7 @@ fn finding(reported: &Reported) -> Option<Finding> {
         // See the module comment: three of the four repairs are a rewrite, and
         // the fourth is a choice between two entries that only the author can
         // make.
-        fixable: false,
+        patch: None,
     })
 }
 
@@ -283,7 +283,7 @@ mod tests {
             let found = finding(&text).expect("a finding");
             assert!(found.remediation.contains(expected), "{found:#?}");
             assert_eq!(found.severity, Severity::Error, "{found:#?}");
-            assert!(!found.fixable, "{found:#?}");
+            assert!(!found.fixable(), "{found:#?}");
             // At the entry that declared it, which is the line an author edits.
             assert_eq!(found.line, 7, "{found:#?}");
             assert!(

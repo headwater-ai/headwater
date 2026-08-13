@@ -98,7 +98,7 @@ impl DocumentCheck for Fragments {
                 // The heading an author meant is a guess among the headings
                 // this document has, and spec 12 admits a fix only where one
                 // outcome is derivable without judgment.
-                fixable: false,
+                patch: None,
             })
             .collect();
         Outcome::failed(findings)

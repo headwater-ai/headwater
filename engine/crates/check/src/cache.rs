@@ -85,6 +85,7 @@
 use crate::context::Date;
 use crate::finding::{Finding, Severity};
 use crate::instance::{Input, Outcome};
+use crate::patch::Patch;
 use crate::scope::Scope;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -94,7 +95,12 @@ pub const CACHE: &str = ".headwater/cache/checks";
 
 /// The format of the cache file. A reader that meets a later one starts empty
 /// rather than guessing, which costs one full run.
-pub const FORMAT: &str = "headwater check cache 1";
+///
+/// Edition 2 carries the patch. A finding without its patch is a finding that
+/// `check --fix` would not act on, so a warm run and a cold one would write
+/// different files. That is the cache changing a result, one layer out from the
+/// verdict the differential in `tests/cache.rs` holds.
+pub const FORMAT: &str = "headwater check cache 2";
 
 /// What a run did with its cache.
 ///
@@ -307,9 +313,14 @@ impl Cache {
 /// names the rule, so a record that carried one would be a second place the
 /// binding lives, which is the drift [`crate::register`] exists to prevent.
 /// A verdict may hold several findings, so the record states how many and then
-/// writes seven fields for each. The count is what lets a reader tell a
-/// truncated record from a complete one without a second separator character
-/// that every field would then have to escape.
+/// writes six fields for each, and the patch after them. The count is what lets
+/// a reader tell a truncated record from a complete one without a second
+/// separator character that every field would then have to escape.
+///
+/// The patch opens with a word that says its shape, and each shape has a fixed
+/// number of fields after that word. So the reader knows how far the finding
+/// runs without a second count, and a shape this reader does not know is a
+/// record it drops rather than a record it half-reads.
 fn encode(outcome: &Outcome) -> Option<String> {
     match outcome {
         Outcome::Passed => Some("passed".to_string()),
@@ -322,14 +333,69 @@ fn encode(outcome: &Outcome) -> Option<String> {
                     finding.severity,
                     finding.line,
                     finding.column,
-                    finding.fixable,
                     escape(&finding.path),
                     escape(&finding.message),
                     escape(&finding.remediation),
+                    encode_patch(finding.patch.as_ref()),
                 ));
             }
             Some(record)
         }
+    }
+}
+
+/// A patch as the fields of a record, opening with the word that says its
+/// shape.
+fn encode_patch(patch: Option<&Patch>) -> String {
+    match patch {
+        None => "none".to_string(),
+        Some(Patch::Text {
+            path,
+            start,
+            end,
+            expect,
+            replacement,
+        }) => format!(
+            "text\t{start}\t{end}\t{}\t{}\t{}",
+            escape(path),
+            escape(expect),
+            escape(replacement)
+        ),
+        Some(Patch::Half {
+            path,
+            relation,
+            id,
+        }) => format!(
+            "half\t{}\t{}\t{}",
+            escape(path),
+            escape(relation),
+            escape(id)
+        ),
+    }
+}
+
+/// The patch a record carries, and nothing for a shape this reader does not
+/// know.
+///
+/// The outer `Option` is the read: `None` means the record is unreadable and
+/// the entry is dropped. The inner one is the finding's own, and `none` is the
+/// ordinary case for a rule that offers no patch.
+fn decode_patch<'a>(fields: &mut impl Iterator<Item = &'a str>) -> Option<Option<Patch>> {
+    match fields.next()? {
+        "none" => Some(None),
+        "text" => Some(Some(Patch::Text {
+            start: fields.next()?.parse().ok()?,
+            end: fields.next()?.parse().ok()?,
+            path: unescape(fields.next()?),
+            expect: unescape(fields.next()?),
+            replacement: unescape(fields.next()?),
+        })),
+        "half" => Some(Some(Patch::Half {
+            path: unescape(fields.next()?),
+            relation: unescape(fields.next()?),
+            id: unescape(fields.next()?),
+        })),
+        _ => None,
     }
 }
 
@@ -362,14 +428,10 @@ fn decode(rule: &'static str, record: &str) -> Option<Outcome> {
                     obligation: None,
                     line: fields.next()?.parse().ok()?,
                     column: fields.next()?.parse().ok()?,
-                    fixable: match fields.next()? {
-                        "true" => true,
-                        "false" => false,
-                        _ => return None,
-                    },
                     path: unescape(fields.next()?),
                     message: unescape(fields.next()?),
                     remediation: unescape(fields.next()?),
+                    patch: decode_patch(&mut fields)?,
                 });
             }
             match fields.next() {
@@ -444,7 +506,13 @@ mod tests {
             column: 3,
             message: "a message with a\ttab and a\nnewline and a \\ in it".to_string(),
             remediation: "do the thing".to_string(),
-            fixable: true,
+            patch: Some(Patch::Text {
+                path: "docs/spec/12-check-layer.md".to_string(),
+                start: 41,
+                end: 50,
+                expect: "behaviour".to_string(),
+                replacement: "behavior".to_string(),
+            }),
         }
     }
 
@@ -491,15 +559,20 @@ mod tests {
     #[test]
     fn a_record_this_engine_cannot_read_is_a_miss() {
         for record in [
-            "failed\t1\tcritical\t1\t1\ttrue\tp\tm\tr",
-            "failed\t1\terror\tnot-a-line\t1\ttrue\tp\tm\tr",
-            "failed\t1\terror\t1\t1\tmaybe\tp\tm\tr",
-            "failed\t1\terror\t1\t1\ttrue\tp\tm",
-            "failed\t1\terror\t1\t1\ttrue\tp\tm\tr\tone-more",
-            "failed\t2\terror\t1\t1\ttrue\tp\tm\tr",
+            "failed\t1\tcritical\t1\t1\tp\tm\tr\tnone",
+            "failed\t1\terror\tnot-a-line\t1\tp\tm\tr\tnone",
+            "failed\t1\terror\t1\t1\tp\tm\tr",
+            "failed\t1\terror\t1\t1\tp\tm\tr\tnone\tone-more",
+            "failed\t2\terror\t1\t1\tp\tm\tr\tnone",
             "failed\t0",
-            "failed\tmany\terror\t1\t1\ttrue\tp\tm\tr",
-            "failed\terror\t1\t1\ttrue\tp\tm\tr",
+            "failed\tmany\terror\t1\t1\tp\tm\tr\tnone",
+            "failed\terror\t1\t1\tp\tm\tr\tnone",
+            // A patch shape this engine does not know, and one whose fields
+            // run out. Neither is half-read: the record is dropped.
+            "failed\t1\terror\t1\t1\tp\tm\tr\tsomething-else\tx",
+            "failed\t1\terror\t1\t1\tp\tm\tr\ttext\t3",
+            "failed\t1\terror\t1\t1\tp\tm\tr\ttext\tnot-an-offset\t4\tp\ta\tb",
+            "failed\t1\terror\t1\t1\tp\tm\tr\thalf\tp\trel",
             "passed\tand-something-else",
             "reused",
             "",
@@ -511,7 +584,7 @@ mod tests {
     /// A file from another engine is an empty cache and never a refusal.
     #[test]
     fn a_file_this_engine_did_not_write_reads_as_an_empty_cache() {
-        assert!(read("headwater check cache 2\nk\tpassed\n").is_empty());
+        assert!(read("headwater check cache 3\nk\tpassed\n").is_empty());
         assert!(read("").is_empty());
         assert_eq!(
             read(&format!("{FORMAT}\nk\tpassed\nno-tab-here\n")).len(),

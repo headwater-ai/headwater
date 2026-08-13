@@ -250,7 +250,7 @@ impl NeighbourhoodCheck for Participation<'_> {
                     ),
                     None => format!("declare {owed} under `relations:` in {}", view.path()),
                 },
-                fixable: false,
+                patch: None,
             });
         }
 

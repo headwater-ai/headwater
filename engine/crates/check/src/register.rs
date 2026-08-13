@@ -651,7 +651,7 @@ impl Projection {
                         false => "give the obligation a control that discharges it".to_string(),
                     }
                 ),
-                fixable: false,
+                patch: None,
             });
         }
         for control in &self.controls {
@@ -674,7 +674,7 @@ impl Projection {
                 remediation: "name a rule this engine carries, or a phase of it, or a mechanism \
                               outside it under a prefix this engine does not read"
                     .to_string(),
-                fixable: false,
+                patch: None,
             });
         }
         findings

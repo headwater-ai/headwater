@@ -512,7 +512,7 @@ fn a_target_that_binds_to_nothing_is_a_finding_that_names_which_defect_it_is() {
     // And none of them offers a fix. A target that names nothing has no one
     // derivable outcome, which is spec 12's bar for offering one.
     assert!(
-        !findings.iter().any(|finding| finding.fixable),
+        !findings.iter().any(|finding| finding.fixable()),
         "{findings:#?}"
     );
 
@@ -576,7 +576,7 @@ fn every_defect_of_a_relations_block_is_a_finding_that_names_the_entry() {
     );
     // No fix. A repeated triple looks mechanical and is not: either entry may
     // carry an attribute the other does not.
-    assert!(!findings.iter().any(|finding| finding.fixable));
+    assert!(!findings.iter().any(|finding| finding.fixable()));
 
     let block = findings
         .iter()
@@ -816,7 +816,7 @@ fn the_graph_fixture_corpus_routes_every_phase_a_defect_of_a_relation() {
     assert_eq!(twins[0].message, twins[1].message, "{twins:#?}");
     for finding in &twins {
         assert_eq!(finding.severity, headwater_check::Severity::Error);
-        assert!(!finding.fixable, "{finding:#?}");
+        assert!(!finding.fixable(), "{finding:#?}");
         assert!(finding.message.contains("`SPEC-FIX-first`"), "{finding:#?}");
         assert!(finding.message.contains("graph/spec/00-first.md"));
         assert!(finding.message.contains("graph/spec/04-twin.md"));
@@ -1046,7 +1046,7 @@ fn either_missing_half_is_found_and_the_remediation_names_the_other_document() {
         "add `cites_evidence: EVAL-FIX-delta` under `relations:` in check/spec/02-cited-only.md"
     );
 
-    assert!(findings.iter().all(|finding| finding.fixable));
+    assert!(findings.iter().all(|finding| finding.fixable()));
 }
 
 /// Every finding of one verdict is reported, and not the first of them.
@@ -1069,7 +1069,7 @@ fn a_required_facet_that_is_absent_is_a_finding_with_no_line_and_no_fix() {
     // The finding is that a key is absent, so it anchors at no line, and its
     // value is a sentence somebody has to write rather than one to derive.
     assert_eq!(findings[0].line, 0);
-    assert!(!findings[0].fixable);
+    assert!(!findings[0].fixable());
 
     // The requirement is inherited: `governed_document` declares it and
     // `design_spec` is one. A check that read only the kind's own declaration
@@ -1242,7 +1242,7 @@ fn a_restated_discriminator_is_a_finding_at_the_line_that_restates_it() {
         .expect("the fixture");
     assert_eq!(finding.path, "check/evaluations/gamma.md");
     assert_eq!(finding.line, 3, "the finding is not at the `doc_type` key");
-    assert!(finding.fixable);
+    assert!(finding.fixable());
 
     // And exactly one, so no document on a heterogeneous shelf produced one.
     assert_eq!(

@@ -133,7 +133,7 @@ fn finding(entry: &Reported<'_>) -> Json {
     members.push(("column", number(finding.column)));
     members.push(("message", Json::string(finding.message.clone())));
     members.push(("remediation", Json::string(finding.remediation.clone())));
-    members.push(("fixable", Json::Bool(finding.fixable)));
+    members.push(("fixable", Json::Bool(finding.fixable())));
     // What became of it. A consumer that reads this member alone can partition
     // the set three ways, which is the question a CI surface exists to answer.
     members.push((

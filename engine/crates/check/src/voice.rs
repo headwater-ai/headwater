@@ -266,7 +266,7 @@ impl DocumentCheck for Voice {
                     remediation: category.instead.to_string(),
                     // A rewrite is never mechanical, which is the whole of why
                     // this rule is advisory. See the module comment.
-                    fixable: false,
+                    patch: None,
                 });
             }
         }
@@ -297,20 +297,30 @@ fn matched(category: &Category, sentence: &Sentence) -> Option<&'static str> {
 /// phrase, and a rule that reported it would be a false positive that no
 /// author can act on.
 pub(crate) fn contains_word(text: &str, pattern: &str) -> bool {
-    let letters: Vec<char> = text.chars().collect();
-    let needle: Vec<char> = pattern.chars().collect();
-    if needle.is_empty() || needle.len() > letters.len() {
-        return false;
+    word_at(text, pattern).is_some()
+}
+
+/// Where `text` first holds `pattern` at word boundaries, as a byte offset.
+///
+/// One definition of the boundary rather than two. A retired term with a
+/// replacement needs the position as well as the fact, and a second search that
+/// drew the boundary differently would patch a word this rule did not report.
+pub(crate) fn word_at(text: &str, pattern: &str) -> Option<usize> {
+    if pattern.is_empty() {
+        return None;
     }
-    (0..=letters.len() - needle.len()).any(|start| {
-        if letters[start..start + needle.len()] != needle[..] {
-            return false;
+    let mut from = 0usize;
+    while let Some(offset) = text.get(from..)?.find(pattern) {
+        let at = from + offset;
+        let end = at + pattern.len();
+        let before = text[..at].chars().next_back().is_none_or(|c| !is_word(c));
+        let after = text[end..].chars().next().is_none_or(|c| !is_word(c));
+        if before && after {
+            return Some(at);
         }
-        let before = start == 0 || !is_word(letters[start - 1]);
-        let end = start + needle.len();
-        let after = end == letters.len() || !is_word(letters[end]);
-        before && after
-    })
+        from = end;
+    }
+    None
 }
 
 fn is_word(c: char) -> bool {

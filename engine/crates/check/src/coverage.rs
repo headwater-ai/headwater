@@ -260,7 +260,7 @@ impl Coverage {
                 remediation: "check that the shelf pattern claims the right files, and that \
                               the kind declares something a check reads"
                     .to_string(),
-                fixable: false,
+                patch: None,
             })
             .collect()
     }

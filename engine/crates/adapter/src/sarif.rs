@@ -444,7 +444,7 @@ fn result_properties(entry: &Reported<'_>, run: &Run) -> Json {
         // above. `warn` and `warning` are the same judgment in two vocabularies,
         // and a consumer that reads one should be able to see the other.
         ("severity", Json::string(crate::severity(finding.severity))),
-        ("fixable", Json::Bool(finding.fixable)),
+        ("fixable", Json::Bool(finding.fixable())),
         ("remediation", Json::string(finding.remediation.clone())),
         (
             "escape",

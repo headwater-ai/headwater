@@ -35,8 +35,9 @@
 //!   makes that permanently advisory whatever the precision turns out to be.
 //! - **No contraction.** An error, because the expansion is mechanical and
 //!   total, which is the bar [spec 12](../../../../docs/spec/12-check-layer.md#fixability)
-//!   sets. No patch rides along yet: `--fix` is
-//!   [#71](https://github.com/headwater-ai/headwater/issues/71).
+//!   sets. A patch rides along for the endings whose expansion is one word.
+//!   [`EXPANSIONS`] is that table, and the paragraph below says which endings
+//!   are not in it.
 //! - **No semicolon in running prose**, ASD-STE100 writing rule 8.1. Advisory,
 //!   on the same bar: the remediation is to decide which clause carries the
 //!   sentence, and no rewrite of that kind is mechanical. Running prose is a
@@ -45,6 +46,18 @@
 //! - **The spelling variant the tag declares.** An error on the same terms. The
 //!   tag is data and the word list is not, which is the same split as the voice
 //!   patterns and is recorded in spec 13 as one gap rather than two.
+//!
+//! # Not every contraction has one expansion, and the split is per finding
+//!
+//! `doesn't` is `does not` and nothing else. `it's` is `it is` or `it has`, and
+//! `he'd` is `he had` or `he would`. Only a reader of the sentence decides
+//! those, so they fail the mechanical-and-total bar that the two above meet.
+//!
+//! [Spec 12](../../../../docs/spec/12-check-layer.md#fixability) puts the bar on
+//! the **fix** rather than on the rule, and [`crate::Finding`] carries the patch
+//! per finding, so the split needs no second rule and no second severity. A
+//! contraction in [`EXPANSIONS`] carries a patch. One outside it carries the
+//! same error with remediation prose, and a person writes it out.
 //!
 //! # This rule does not retire `tools/ste-lint.py`, and the PR that added it
 //! says what still keeps the Python alive
@@ -106,6 +119,48 @@ const SPELLINGS: [(&str, &str); 24] = [
     ("catalogues", "catalogs"),
     ("catalogued", "cataloged"),
 ];
+
+/// The contractions whose expansion is one outcome, in lower case.
+///
+/// A closed table for the reason [`SPELLINGS`] is one, and short for a second
+/// reason: an entry here is a promise that no reader of the sentence has to
+/// choose. `'d` and `'s` are absent because that promise is false for both.
+/// `'ll` is present, because the alternative is `shall`, which no document of
+/// this corpus writes and which ASD-STE100 does not admit.
+const EXPANSIONS: [(&str, &str); 22] = [
+    ("doesn't", "does not"),
+    ("don't", "do not"),
+    ("didn't", "did not"),
+    ("isn't", "is not"),
+    ("aren't", "are not"),
+    ("wasn't", "was not"),
+    ("weren't", "were not"),
+    ("hasn't", "has not"),
+    ("haven't", "have not"),
+    ("hadn't", "had not"),
+    ("won't", "will not"),
+    ("can't", "cannot"),
+    ("couldn't", "could not"),
+    ("shouldn't", "should not"),
+    ("wouldn't", "would not"),
+    ("mustn't", "must not"),
+    ("i'm", "I am"),
+    ("i've", "I have"),
+    ("we've", "we have"),
+    ("they've", "they have"),
+    ("we're", "we are"),
+    ("they're", "they are"),
+];
+
+/// The expansion of a contraction, with the case the author wrote carried over.
+///
+/// The apostrophe may be the typewriter one or the typographic one, and a table
+/// with both spellings of every entry would be two tables that could disagree.
+fn expansion(word: &str) -> Option<String> {
+    let key = word.replace('\u{2019}', "'").to_lowercase();
+    let (_, expanded) = EXPANSIONS.iter().find(|(from, _)| *from == key)?;
+    Some(crate::patch::matching_case(word, expanded))
+}
 
 /// The check, generated from the language regimes and the kinds that bind them.
 pub struct Language {
@@ -205,11 +260,15 @@ impl DocumentCheck for Language {
                 column: sentence.span.start.col,
                 message,
                 remediation,
-                // The expansion of a contraction is mechanical, and this rule
-                // still offers no patch: `check --fix` is #71, and a `fixable`
-                // flag with nothing behind it would claim a capability the
-                // engine does not have.
-                fixable: false,
+                patch: None,
+            };
+            // A substitution this rule can place. The two rules below that name
+            // a replacement reach it, and the two that ask for a rewrite do
+            // not: a sentence past the word limit and a semicolon both have a
+            // rewrite for a remediation, and spec 4 keeps that category
+            // advisory whatever a lexicon could do to it.
+            let substitute = |word: &str, replacement: &str| {
+                crate::patch::substitution(view.path(), body, &sentence, word, replacement)
             };
 
             if sentence.words > MAX_WORDS && !is_a_citation_line(&sentence.text) {
@@ -233,25 +292,39 @@ impl DocumentCheck for Language {
                 ));
             }
             if let Some(word) = contraction(&sentence.authored) {
-                findings.push(at(
+                // The expansion where the table holds one, and the prose where
+                // it does not. See the module comment: `it's` and `he'd` are
+                // the two endings a reader of the sentence has to settle.
+                let expanded = expansion(&word);
+                let mut finding = at(
                     Severity::Error,
                     format!(
                         "`{}` admits no contraction, and this sentence writes `{word}`",
                         bound.regime
                     ),
-                    format!("write `{word}` out in full"),
-                ));
+                    match &expanded {
+                        Some(expanded) => format!("write `{expanded}`"),
+                        None => format!("write `{word}` out in full"),
+                    },
+                );
+                finding.patch = expanded.and_then(|expanded| substitute(&word, &expanded));
+                findings.push(finding);
             }
             if american {
                 if let Some((british, american)) = spelling(&sentence.authored) {
-                    findings.push(at(
+                    // The table holds `behavior` and an author may have written
+                    // `Behaviour` at the head of a sentence.
+                    let american = crate::patch::matching_case(&british, american);
+                    let mut finding = at(
                         Severity::Error,
                         format!(
                             "`{}` declares the tag `{}`, and this sentence writes `{british}`",
                             bound.regime, bound.tag
                         ),
                         format!("write `{american}`"),
-                    ));
+                    );
+                    finding.patch = substitute(&british, &american);
+                    findings.push(finding);
                 }
             }
         }

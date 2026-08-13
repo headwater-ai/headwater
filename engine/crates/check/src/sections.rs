@@ -115,7 +115,7 @@ impl DocumentCheck for Sections {
                     "add a `{section}` heading to {}, with the content the kind is for",
                     view.path()
                 ),
-                fixable: false,
+                patch: None,
             })
             .collect();
         Outcome::failed(findings)
