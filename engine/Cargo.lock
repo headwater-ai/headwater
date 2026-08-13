@@ -81,6 +81,7 @@ dependencies = [
  "headwater-check",
  "headwater-graph",
  "headwater-lock",
+ "headwater-mark",
  "headwater-query",
  "headwater-resolve",
  "headwater-yaml",
@@ -108,6 +109,10 @@ dependencies = [
  "headwater-resolve",
  "headwater-yaml",
 ]
+
+[[package]]
+name = "headwater-mark"
+version = "0.0.0"
 
 [[package]]
 name = "headwater-meta"

@@ -295,7 +295,7 @@ fn every_output_carries_its_own_marker() {
     assert!(!plan.outputs.is_empty(), "the fixture generates something");
     for output in &plan.outputs {
         assert!(
-            headwater_generate::carries_marker(&output.path, &output.bytes),
+            headwater_mark::carries_marker(&output.path, &output.bytes),
             "{} opens with no generated-file marker",
             output.path
         );
@@ -396,7 +396,7 @@ fn the_descriptor_path_obeys_the_marker_rule() {
 
     // This engine's own output is recognized, so a second run overwrites it.
     assert!(
-        headwater_generate::carries_marker(&written.path, &written.bytes),
+        headwater_mark::carries_marker(&written.path, &written.bytes),
         "the descriptor does not carry a marker this engine can find"
     );
 

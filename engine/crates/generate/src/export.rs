@@ -48,7 +48,7 @@
 //! date than a guess by a serializer is.
 
 use crate::profile::{Admission, Emitter, Grain, Profile};
-use crate::{marker_text, Kind, MARKER};
+use crate::Kind;
 use headwater_graph::{Edge, Graph, Target};
 use headwater_query::json::Json;
 use headwater_query::{Document, Surface};
@@ -954,8 +954,8 @@ fn envelope(
 
     let mut members = vec![
         (
-            MARKER.to_string(),
-            Json::string(marker_text(Kind::GraphExport)),
+            headwater_mark::MARKER.to_string(),
+            Json::string(headwater_mark::marker_text(Kind::GraphExport.name())),
         ),
         ("export_version".to_string(), Json::string(VERSION)),
         ("profile".to_string(), Json::Object(declaration)),

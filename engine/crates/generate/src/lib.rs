@@ -46,9 +46,24 @@
 //! **Where the marker sits is the format's business, and it is found either
 //! way.** A commented format carries it on the first line. JSON has no comment,
 //! so the descriptor carries the same sentence in a top-level member, and
-//! [`carries_marker`] reads whichever of the two a path admits. The alternative
-//! was to rule that a path the engine fixes needs no marker, and that rule ends
-//! with this engine overwriting a file an adopter wrote by hand.
+//! [`headwater_mark::carries_marker`] reads whichever of the two a path admits.
+//! The alternative was to rule that a path the engine fixes needs no marker, and
+//! that rule ends with this engine overwriting a file an adopter wrote by hand.
+//!
+//! The wording and the two rules live in `headwater-mark` rather than here,
+//! because the census reads a marker too and it cannot depend on this crate.
+//! That crate's header says why.
+//!
+//! # A marked file that no declaration writes
+//!
+//! The marker is a claim, and this verb is what tests it. A file inside the
+//! corpus root that carries the marker is a file the census excuses from every
+//! document check, so the line would otherwise be a self-service exemption: add
+//! it to an authored document and nothing reports that document again. So a run
+//! reads the census beside the plan, and a marked file that no output claims is
+//! [`Orphaned`] — a stale artifact of a declaration that was removed or
+//! repointed, or a marker somebody wrote by hand. Both are errors, and the
+//! remedy for both is to delete the file or to restore the declaration.
 //!
 //! # No output states when it was generated, and the export verb is where the
 //! # exception lives
@@ -82,9 +97,6 @@ pub mod profile;
 mod shelf_index;
 
 pub use profile::{Admission, Clause, Emitter, Filter, Grain, Profile};
-
-/// The word that marks a file as this engine's output.
-pub const MARKER: &str = "headwater:generated";
 
 /// What the descriptor states that neither the graph nor the census holds.
 ///
@@ -634,88 +646,6 @@ impl Report {
     }
 }
 
-/// The comment syntax a path's format admits, which is where its marker goes.
-enum Comment {
-    /// Markdown, so an HTML comment.
-    Html,
-    /// YAML and anything else line-oriented.
-    Hash,
-    /// A format with no comment syntax. JSON is the one that reaches here.
-    None,
-}
-
-fn comment_for(path: &str) -> Comment {
-    match path.rsplit('.').next() {
-        Some("md") | Some("markdown") => Comment::Html,
-        Some("yml") | Some("yaml") | Some("toml") => Comment::Hash,
-        Some("json") => Comment::None,
-        _ => Comment::Hash,
-    }
-}
-
-/// What the marker says, without the word that names it and without the syntax
-/// that carries it.
-///
-/// Held apart from [`marker`] because a format with no comment carries the same
-/// sentence in a different place, and the two places name the marker
-/// differently. A comment has one line, so [`MARKER`] has to be a word inside
-/// it. A member has a key, so [`MARKER`] is the key and a value that repeated
-/// it would say the word twice. One wording, two frames, and neither of them
-/// holds a second copy of the other's part.
-pub fn marker_text(kind: Kind) -> String {
-    format!(
-        "{}. `headwater generate` writes this file, and `headwater generate --check` holds it. \
-         Edit the corpus, not this file.",
-        kind.name()
-    )
-}
-
-/// The marker line for a kind at a path, or `None` when the format carries no
-/// comment.
-///
-/// `None` is not a refusal. It says that the marker cannot be a line here, and
-/// the emitter for that format carries [`marker_text`] structurally instead:
-/// JSON reaches this arm, and [`descriptor`] writes the sentence into a
-/// top-level member. What matters to [`carries_marker`] is that the marker is
-/// findable, and not which syntax holds it.
-pub fn marker(kind: Kind, path: &str) -> Option<String> {
-    let body = format!("{MARKER} {}", marker_text(kind));
-    match comment_for(path) {
-        Comment::Html => Some(format!("<!-- {body} -->")),
-        Comment::Hash => Some(format!("# {body}")),
-        Comment::None => None,
-    }
-}
-
-/// Whether a file at a path marks itself as this engine's output.
-///
-/// Two rules, because the false positive the first one guards against exists in
-/// only one of the two formats.
-///
-/// **A commented format: the first line, and nowhere else.** A document that
-/// quotes the marker while discussing it is an authored document, and this
-/// repository's own specification is exactly such a document. Reading the first
-/// line alone is what keeps a run from overwriting it.
-///
-/// **JSON: a top-level member, wherever it sits.** A JSON file is not prose, so
-/// nothing in one discusses a marker, and the line rule would answer for the
-/// brace that opens the object rather than for the file. The member is the
-/// marker, and it is matched as a quoted key at the start of a line so that a
-/// string somewhere in the document which happens to hold the word does not
-/// count as one.
-pub fn carries_marker(path: &str, text: &str) -> bool {
-    let quoted = format!("\"{MARKER}\"");
-    match comment_for(path) {
-        Comment::None => text
-            .lines()
-            .any(|line| line.trim_start().starts_with(&quoted)),
-        _ => text
-            .lines()
-            .next()
-            .is_some_and(|line| line.contains(MARKER)),
-    }
-}
-
 /// Write the plan.
 pub fn write(root: &Path, plan: &Plan) -> Report {
     run(root, plan, false)
@@ -748,7 +678,9 @@ fn run(root: &Path, plan: &Plan, checking: bool) -> Report {
             // The marker decides before the difference does. A file that is
             // there and unmarked is authored, and reporting it as drift would
             // tell a reader to run the verb that destroys it.
-            (Some(text), _) if !carries_marker(&output.path, text) => Verdict::Occupied,
+            (Some(text), _) if !headwater_mark::carries_marker(&output.path, text) => {
+                Verdict::Occupied
+            }
             (Some(_), true) => Verdict::Differs,
             (None, true) => Verdict::Missing,
             (Some(_), false) => put(&path, &output.bytes, Verdict::Rewritten),

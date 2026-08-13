@@ -10,6 +10,11 @@ publish.workspace = true
 # in the way the obligations and controls block is.
 headwater-yaml = { path = "../yaml" }
 
+# The generated-file marker: what this crate writes into every output, and what
+# the census reads to keep a generated file out of the authored population. It
+# sits below both crates so that the writer and the reader cannot disagree.
+headwater-mark = { path = "../mark" }
+
 # A shelf index groups the census rows by the shelf that claimed each one, and
 # the shelf name is already in the row that classified it.
 headwater-census = { path = "../census" }
