@@ -38,17 +38,23 @@
 //! and a gate that fires on prose teaches everyone to bypass it. A path and an
 //! identifier move when the corpus moves, which is what a descriptor is for.
 //!
-//! **An export profile cannot be printed at all, and an empty list would be a
-//! false statement.** [Spec 6](../../../../docs/spec/06-engine-architecture.md#an-export-profile-carries-a-filter)
-//! makes a profile an entry under `projections` that names an audience, a
-//! target, a filter over facet values and a tombstone grain. The `projections`
-//! block reads a kind and an output path, and the meta-schema declares no other
-//! member, so no taxonomy can declare a profile yet. Printing `[]` would tell a
-//! reader that this corpus exports nothing. What is true is that nothing can
-//! declare an export. So the field is absent and the `unstated` block below
-//! carries the difference, which is the accounting
-//! [spec 4](../../../../docs/spec/04-assurance-model.md) requires everywhere a
-//! run produces less than it was asked for.
+//! **An export profile is read, and an empty list now means what it says.** This
+//! field was absent until the export verb landed, with an `unstated` block in
+//! its place, because the `projections` reader kept a kind and an output path
+//! and dropped the rest of a profile. Printing `[]` then would have told a
+//! reader that the corpus exports nothing when what was true is that nothing
+//! could declare an export. [`crate::profile`] reads the whole declaration now,
+//! so `[]` states the first of those two and the block is gone.
+//!
+//! **A profile states its name, its target, its output and its grain, and never
+//! its filter.** [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#arriving-at-a-corpus-cold)
+//! asks for "each declared export profile, with its output location and its
+//! tombstone grain", and it also rules that the descriptor is served and that a
+//! filter reaches it. A filter clause names facet values, which is one step
+//! closer to the content than the shape a descriptor is allowed to disclose. So
+//! a reader learns that a profile is filtered and at what grain, which is what
+//! spec 6 requires a filtered view to admit, and learns the clause from the
+//! export itself if the export reaches them.
 //!
 //! # Two things the five did not mention, and one of them is a correction
 //!
@@ -84,7 +90,8 @@
 //! two copies of one fact
 //! ([principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)).
 
-use crate::{marker_text, Identity, Kind, Output, Plan};
+use crate::profile::Grain;
+use crate::{marker_text, Identity, Kind, Output, Plan, Projections};
 use headwater_query::json::Json;
 use headwater_query::Surface;
 
@@ -100,7 +107,12 @@ pub const PATH: &str = ".headwater/corpus.json";
 /// re-meant moves the major.
 pub const VERSION: &str = "1.0";
 
-pub(crate) fn emit(surface: &Surface<'_>, identity: &Identity, plan: &mut Plan) {
+pub(crate) fn emit(
+    surface: &Surface<'_>,
+    identity: &Identity,
+    projections: &Projections,
+    plan: &mut Plan,
+) {
     let taxonomy = Json::object([
         ("package", Json::string(identity.package.as_str())),
         ("version", Json::string(identity.version.as_str())),
@@ -125,6 +137,7 @@ pub(crate) fn emit(surface: &Surface<'_>, identity: &Identity, plan: &mut Plan) 
         ("excluded", excluded),
         ("taxonomy", taxonomy),
         ("entry_points", Json::Array(entry_points(surface))),
+        ("exports", Json::Array(exports(projections))),
     ]);
 
     let value = Json::object([
@@ -134,7 +147,6 @@ pub(crate) fn emit(surface: &Surface<'_>, identity: &Identity, plan: &mut Plan) 
         ),
         ("descriptor_version", Json::string(VERSION)),
         ("corpora", Json::Array(vec![corpus])),
-        ("unstated", unstated()),
     ]);
 
     plan.outputs.push(Output {
@@ -180,25 +192,51 @@ fn entry_points(surface: &Surface<'_>) -> Vec<Json> {
     out
 }
 
-/// The fields spec 7 names that this engine cannot compute, and why.
+/// Every declared export profile, with what a cold reader may act on.
 ///
-/// Reported inside the artifact rather than omitted from it. A reader that
-/// found no `exports` member and no accounting would have to guess between a
-/// corpus that exports nothing and an engine that cannot say, and those have
-/// different remedies. This is the same refusal-with-a-reason that
-/// [`crate::Unwritten`] carries in the report, moved inside the file, because
-/// the file is what a cold reader gets and the report is not.
-fn unstated() -> Json {
-    Json::Array(vec![Json::object([
-        ("field", Json::string("exports")),
-        (
-            "reason",
-            Json::string(
-                "no taxonomy can declare an export profile yet. An export profile names an \
-                 audience, an emitter target, a filter and a tombstone grain, and a `projections` \
-                 entry carries a kind and an output path. An empty list here would say that this \
-                 corpus exports nothing, and what is true is that nothing can declare an export.",
+/// One row per declared `graph_export`, and not one per profile: a profile is
+/// an audience and it may hold several artifacts, and the location is what a
+/// reader who wants the bytes needs. A profile that declares no export produces
+/// no row here, because a reader cannot fetch an audience.
+fn exports(projections: &Projections) -> Vec<Json> {
+    let mut out = Vec::new();
+    for declaration in &projections.declared {
+        if declaration.kind != Kind::GraphExport {
+            continue;
+        }
+        let profile = projections.profile(&declaration.membership.name);
+        let filtered = profile.is_some_and(|profile| !profile.filter.is_empty());
+        let mut members = vec![
+            (
+                "profile".to_string(),
+                Json::string(declaration.membership.name.as_str()),
             ),
-        ),
-    ])])
+            (
+                "target".to_string(),
+                Json::string(declaration.emitter().name()),
+            ),
+            (
+                "output".to_string(),
+                Json::string(declaration.output.as_str()),
+            ),
+            ("filtered".to_string(), Json::Bool(filtered)),
+        ];
+        // The grain is what a filtered view owes its reader, so it travels with
+        // the profiles that are filtered. An unfiltered profile withholds
+        // nothing, and a grain for a set of nothing is a member that says
+        // nothing.
+        if filtered {
+            members.push((
+                "tombstone".to_string(),
+                Json::string(
+                    profile
+                        .map(|profile| profile.tombstone)
+                        .unwrap_or(Grain::Counted)
+                        .name(),
+                ),
+            ));
+        }
+        out.push(Json::Object(members));
+    }
+    out
 }

@@ -31,6 +31,11 @@ facets:
   summary:
     role: scent
     required: true
+  # The discriminator of the heterogeneous shelf below. Not required, because a
+  # document on a homogeneous shelf takes its kind from the directory and a
+  # facet that restated it would be a second copy of one fact.
+  doc_type:
+    values: [decision, guide]
 
 kinds:
   governed_document:
@@ -69,13 +74,33 @@ shelves:
   decisions: {path: "generate/decisions/**", homogeneous: true, kind: decision}
   guides:    {path: "generate/guides/**",    homogeneous: true, kind: guide}
   # Declared, and nothing is on it. An index of nothing asserts that a shelf is
-  # there, so the verb reports it and writes no file.
-  archive:   {path: "generate/archive/**",   homogeneous: true, kind: decision}
+  # there, so the verb reports it and writes no file. It is also the one
+  # heterogeneous shelf, which is what gives the JSON Schema emitter a shelf
+  # whose kind a front-matter member states. That is the only shape in which a
+  # schema can select a kind for itself, and it holds no document, so it moves
+  # no count.
+  archive:
+    path: "generate/archive/**"
+    homogeneous: false
+    discriminator: doc_type
+    kinds: [decision, guide]
 
 projections:
   - {kind: shelf_index, for: [decisions, guides, archive], output: "{shelf}/README.md"}
-  # Declared, and issue #65 owns the emitter. The verb names it rather than
-  # passing over it in silence.
+  # Two exports for one audience, which is what makes `default` a profile
+  # rather than a single entry. Both output paths sit outside the corpus root,
+  # so neither generated file is walked by the census that produced it.
   - kind: graph_export
     format: json
-    output: generate/export.json
+    output: exports/native.json
+  - kind: graph_export
+    format: jsonschema
+    output: exports/front-matter.schema.json
+  # A second audience, filtered. One document of this tree is a draft, and the
+  # exclusion withholds it and every edge that names it.
+  - kind: graph_export
+    profile: partner
+    format: json
+    output: exports/partner.json
+    filter: {exclude: {status: [draft]}}
+    tombstone: counted

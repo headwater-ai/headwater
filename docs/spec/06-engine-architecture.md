@@ -127,6 +127,8 @@ Exports fall into two classes, and only one class preserves fidelity.
 
 So every emitter declares a **loss set**: the node classes, edge classes, and attributes that its target cannot carry, each with a reason. Every export run then emits a **projection census**. Every node and every edge in the graph is either present in the output, or accounted for by a declared loss reason. An omission that no reason covers is a projector defect, and it fails the run.
 
+**A node of that census is a classified document or an external anchor, and an identifier is not what makes one.** A typed document that declares no identifier never reaches the identifier index, and it is still content that leaves a corpus or does not. A census over the index alone would let an emitter drop every unidentified document and report itself complete.
+
 That is the coverage doctrine of [spec 4](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for), applied one layer out. It answers the trust problem that the [SHACL evaluation](../evaluations/shacl-worked-example.md#problem-one-everything-downstream-trusts-the-projection-and-shacl-does-not-check-it) found. The projector was the component that everything downstream trusted and nothing could check. A round trip is the wrong instrument for the lossy class, and an earlier draft of [Q6](09-decisions.md#q6--where-the-corpus-graph-lives-at-rest) asked for one. The native export keeps its round-trip test, because an empty loss set is exactly what a round trip proves.
 
 **An emitter that cannot carry the warrant does not carry the content.** Every node carries a [warrant](01-conceptual-model.md#warrant), and the native export carries it with no loss. A target vocabulary that has no place for it produces an artifact in which unwarranted content is indistinguishable from accepted content. A loss-set entry reaches the consumer who reads the loss set and nobody else. The field also reports that ordinary tooling strips a mark which travels beside content ([spec 11 §P](11-adjacent-work.md#p--provenance-endorsement-and-the-record-of-a-judgment)). So such an emitter **withholds** every `asserted` and `transcribed` node, at the profile's declared tombstone grain, with its own inability to mark as the reason. That is [principle 7](00-vision-and-scope.md#design-principles) read the way that a filtered exporter reads it. An unmarked assertion is unrecoverable, and a withholding is visible and cheap ([Q15](09-decisions.md#q15--a-synthesized-content-tier)).
@@ -139,6 +141,8 @@ That is the coverage doctrine of [spec 4](04-assurance-model.md#no-silent-passes
 
 The export is the point where a corpus meets a reader that it does not control, so it is where a corpus decides what leaves. An **export profile** is an entry under `projections` ([spec 2](02-taxonomy-model.md#the-thirteen-declarations)). It names an audience, an emitter target, an output path, a **filter** over facet values, and a **tombstone grain**. A corpus with one audience declares one profile with no filter, which is the first release ([Q17](09-decisions.md#q17--governed-access-and-the-solution-layer)).
 
+**The audience is the name, and the name groups the entries.** The fifth rule below asks every projection inside a profile to regenerate from the filtered graph, so a profile holds more than one artifact. Two entries that write one audience name are two artifacts for it. **Two entries of one profile may not declare two filters, and the engine refuses the pair.** One audience has one answer about what it may see. Otherwise one of the two filters wins. The winner is whichever the reader reaches last, and the artifact that lost carries more than the profile permits. An entry that names no profile is in the profile called `default`. A name that nobody can type is a name that `--profile` cannot select.
+
 **The filter runs at export, and there is no reader to identify.** A profile filters for a destination and never for a person. So the engine holds no principals, evaluates no permission at request time, issues no credential, and records no read. The bytes of a filtered export live in a repository. The permissions of the hosting platform on that repository decide who reads them, exactly as they decide who reads the Markdown. One permission system, and it is not ours.
 
 Six rules make the filter honest, and three of them already hold elsewhere.
@@ -149,6 +153,10 @@ Six rules make the filter honest, and three of them already hold elsewhere.
 - **The filter is default-deny over classes.** A node class, an edge class, or an attribute that no profile names does not travel. So a later release that adds a class does not widen a profile that nobody re-read. A filter stated as a list of exclusions grows a hole every time the schema grows.
 - **Every projection inside a profile regenerates from the filtered graph.** Take a shelf index, a lineage view, or a navigation file. Built at full visibility and then shipped inside a filtered profile, each one carries what the filter removed. A count, a sort order, or an index of terms is enough. That failure is observed, and it is the one that survives a correct redaction.
 - **The declaration travels with the artifact.** A filtered export states that it is filtered, and it states when it was generated. A copy of an artifact carries neither of those unless the artifact does.
+
+**The class half of that fourth rule waits on an emitter that needs it.** The declaration reaches facet values, and the document is the unit that a filter withholds. A class filter acts on an emitter that carries some classes and not others. Neither of the two emitters that exist is one. The native export carries every class, and a JSON Schema carries no instance at all. So the first emitter that partitions by class is the one that gives a class filter something to act on.
+
+**The generation time is injected, and that is what lets it coexist with a byte gate.** The rule above and the regeneration gate look incompatible. A time inside an output moves on every run, so `generate --check` reports drift over a corpus that nobody touched. They hold together because they cover two artifacts. A **committed** export is held to regeneration and carries no time at all. An export that **leaves** the repository is the artifact the rule above is about, and `headwater export --at <date>` supplies its time. The clock is thus a value that a caller injects. [Spec 12](12-check-layer.md#determinism-concretely) injects it into a check for the same reason, rather than let one read a syscall. Same corpus, same lock, same injected clock, byte-identical output, under both.
 
 **The tombstone grain is declared, because the two things that a filtered view owes a reader are in tension.** A view must not look complete, and a report of what it withheld is itself a disclosure. Both cannot hold in full. The freedom-of-information statutes reached this exact conditional from the other direction, and so did the multilevel-security literature ([spec 11 §O](11-adjacent-work.md#o--the-serving-boundary-descriptors-redaction-and-the-write-path)).
 
@@ -193,7 +201,8 @@ headwater route      <task description>
 headwater query      <expression>
 headwater explain    <path|identifier>
 headwater mcp
-headwater export     [--profile ...] [--format json|jsonschema|shacl|rdf|skos|okf|linkml] [--check]
+headwater export     [--profile ...] [--format json|jsonschema|shacl|rdf|skos|okf|linkml]
+                     [--at <date>] [--check]
 headwater taxonomy   validate | resolve | diff | migrate | audit
 headwater coverage   [--format ...]
 headwater probe      [--tier regression|campaign] [--arm present|absent] [--category ...]
@@ -202,6 +211,8 @@ headwater probe      [--tier regression|campaign] [--arm present|absent] [--cate
 `probe` is the one verb that reaches the network, so it never runs inside `check` and never gates ([spec 5](05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose)). It projects the cost of a run against the tier's declared budget and refuses a run that exceeds it. Every run writes its transcript and reports the run identity, the realized cost, and the interval around each rate.
 
 `export` is the projection contract under another verb, and `--check` is the same comparison that `generate --check` performs. It carries its own verb because a consumer outside the repository asks for one format at a time. Only `json` and `jsonschema` ship in the first release, and each later format waits for a consumer who asks for it ([spec 13](13-open-obligations.md#what-waits-on-a-first-adopter)). `--profile` selects one declared export profile. With no profile named, the engine writes every declared profile, so a filtered audience is never omitted by accident.
+
+**`--format` names one target, and it writes to standard output.** That is the consumer this verb exists for: somebody outside the repository who holds no clone, wants one vocabulary, and reads bytes on a pipe. No declared output path is involved, so a target that no taxonomy declared is still reachable. Without the flag the verb writes what the taxonomy declared, to the paths the taxonomy names, which is where `--check` has something to compare against.
 
 The CLI is advisory by default (exit 0 with findings on stdout). Use `--strict` for gates. The default is deliberate: a tool that blocks on first contact is removed, and a removed tool catches nothing.
 
