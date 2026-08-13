@@ -3,7 +3,7 @@ id: OBL-repo-0002
 title: "Declarative voice is called detectable at useful precision, and the sample is unreachable"
 status: current
 status_since: 2026-08-11
-last_verified: 2026-08-13
+last_verified: 2026-08-14
 summary: "The three voice categories run over this corpus, and each one is an order of magnitude short of the sample the instrument asks for."
 provenance:
   warrant: accepted
@@ -15,6 +15,7 @@ provenance:
 relations:
   traces_to:
     - DR-repo-0005
+    - EVAL-HW-what-a-check-can-know
 ---
 
 # Declarative voice is called detectable at useful precision, and the sample is unreachable
@@ -23,7 +24,11 @@ relations:
 
 [Spec 8](../spec/08-design-departures.md) calls declarative voice "mechanically detectable at useful precision". The measurement that closed [Q5](../spec/09-decisions.md#q5--voice-checking-depth) covered three ASD-STE100 structural rules, used as proxies, and none of the three survives. The passive, progressive and auxiliary detectors lived in `tools/ste-lint.py` and retired with it. Q5 measured their false-positive rates at 8%, 83% and 56%, and no rule blocked on any of the three.
 
-So the measurement that closed Q5 cannot be repeated here, and an instrument that produced a closed finding is gone. That is a trade rather than an oversight. A detector nobody acts on is a warning count, and its reading is already recorded.
+So the measurement that closed Q5 does not run here, and the instrument that produced it is recoverable rather than lost. `tools/ste-lint.py` stands intact at `a39e3fb^`, which is commit `9f0d1d8`. [The evaluation](../evaluations/what-a-check-can-know.md) records the method beside it. The seed is `20260811`, and the samples are 60 of 449 passive findings, 25 of 54 auxiliary, and all 12 progressive. So a reader can repeat that measurement.
+
+A rebuild of the four detectors adds nothing to this claim. The evaluation states that it did not measure `future_intent`, `change_narration` or `phased_rollout`, which are the categories that the declarative regime forbids. A detector nobody acts on is a warning count, and its reading is already recorded.
+
+**The edge to that evaluation is `traces_to` and not `discharges`, and the difference matters.** The [decision-record entry](../taxonomies/decision-record/doctrine.md) declares `discharges` for the event that closes an entry, which is an instrument that ran and paid the debt. This record is open, and the evaluation says itself that it did not measure the three categories above. So `discharges` would state a closure that no run reached. What the taxonomy has no relation for is the honest link, which is an open record and the evidence it rests on. `cites_evidence` says that and runs from the three register kinds rather than from a record.
 
 ## Obligation
 
