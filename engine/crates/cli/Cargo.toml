@@ -13,6 +13,10 @@ path = "src/main.rs"
 # library that an editor, the MCP server or a CI adapter consumes directly, and
 # none of them starts this binary and parses its text.
 [dependencies]
+# The CI adapters. `check --format` is the one caller, and the dependency
+# points this way so that nothing in the engine below can reach a forge.
+headwater-adapter = { path = "../adapter" }
+
 headwater-census = { path = "../census" }
 headwater-check = { path = "../check" }
 headwater-generate = { path = "../generate" }

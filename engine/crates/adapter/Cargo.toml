@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "headwater-adapter"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+# The run is what an adapter translates: its findings, the two escape
+# inventories beside them, the register and the read set. Nothing here reads a
+# file and nothing here runs a check, and the dependency points one way for
+# that reason.
+headwater-check = { path = "../check" }
+
+# The JSON writer. `headwater-query` owns it because a protocol message needed
+# one first, and a second writer of one format is the drift spec 4 names.
+headwater-query = { path = "../query" }

@@ -15,6 +15,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b588b76d00fde79687d7646a9b5bdf3cc0f655e0bbd080335a95d7e96f3587da"
 
 [[package]]
+name = "headwater-adapter"
+version = "0.0.0"
+dependencies = [
+ "headwater-check",
+ "headwater-query",
+]
+
+[[package]]
 name = "headwater-census"
 version = "0.0.0"
 dependencies = [
@@ -42,6 +50,7 @@ dependencies = [
 name = "headwater-cli"
 version = "0.0.0"
 dependencies = [
+ "headwater-adapter",
  "headwater-census",
  "headwater-check",
  "headwater-generate",
