@@ -135,7 +135,7 @@ Criterion 5 of the [admission criteria](../README.md#admission-criteria) asks ea
 
 ## Findings
 
-These go to [13 — Open obligations](../../spec/13-open-obligations.md), on the route that the [library index](../README.md#where-a-finding-goes) fixes. Nothing here reopens a closed decision. Two of the six sharpen an item that already exists, and two more are new items.
+These go to [13 — Open obligations](../../spec/13-open-obligations.md), on the route that the [library index](../README.md#where-a-finding-goes) fixes. Nothing here reopens a closed decision. Three of the seven are new items in 13, two sharpen an item that is already there, one belongs in the glossary, and the last is a confirmation rather than a finding.
 
 **1. Composition between two library entries has no add-only form.** This is the finding that a second entry exists to produce, and the entry met it three times in one bundle.
 
@@ -153,7 +153,9 @@ The three share a root. Vocabulary that more than one tradition needs cannot liv
 
 **5. `obligation` names two things.** Spec 4 declares obligations as a taxonomy block: invariants that a corpus commits to. Spec 13 holds obligations as owed work. The two are unrelated and the specification calls both an obligation. This entry writes `obligation_record` and `OBL-` to keep them apart in one corpus, and the [glossary](../../spec/glossary.md) is where the general fix belongs.
 
-**6. This entry adds no `override` and no `remove`, and it is admissible.** That is not a finding, and it is recorded here because criterion 3 asks the question. Every operation in `bundle.yml` is an `add` at a key that the base and the design-spec entry both leave absent. `headwater taxonomy resolve` and `headwater taxonomy validate` confirm it over the merged result, with this bundle selected beside the first.
+**6. A declared `invalid_when` reaches no check, so two live contradictory decisions pass in silence.** The base declares `conflicts_with` with `invalid_when: {both: {status: current}}`. [Spec 2](../../spec/02-taxonomy-model.md#the-decision-relation-vocabulary) lists that state first among the four checks that the decision-relation vocabulary brings, and [spec 11](../../spec/11-adjacent-work.md) calls it a deterministic, blocking-eligible check that the design held all along. The engine reads the declaration in one place, where it makes the `status` facet count as read for the relevance canon, and no rule reports the state. The [fixtures](fixtures/README.md#what-a-run-does-not-report-and-should) plant two current decisions that contradict each other, and the run is clean. This is a check that two specifications promise and no code performs, which is a different class of gap from a form that nothing states.
+
+**7. This entry adds no `override` and no `remove`, and it is admissible.** That is not a finding, and it is recorded here because criterion 3 asks the question. Every operation in `bundle.yml` is an `add` at a key that the base and the design-spec entry both leave absent. `headwater taxonomy resolve` and `headwater taxonomy validate` confirm it over the merged result, with this bundle selected beside the first.
 
 ## What a migration inherits
 
