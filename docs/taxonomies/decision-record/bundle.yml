@@ -1,0 +1,139 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The decision-record taxonomy: the architecture-decision-record tradition, in
+# which one decision is one document and an accepted document is amended by
+# succession rather than by edit.
+#
+# An add-only overlay over the base package. doctrine.md states what the
+# tradition is, why each declaration is here, and what this draft assumed where
+# the specification is silent.
+#
+# Two things about this bundle are unusual, and both are deliberate.
+#
+# It adds no decision kind. The base already carries `kinds.decision` with
+# Nygard's three sections, so a second one beside it would be two live paths for
+# one tradition. What is here instead reaches into that kind at keys the base
+# leaves absent, which is what an `add` is for.
+#
+# It declares `requires: [design-spec]` for one line. `kinds.obligation_record`
+# serves the `obligation` purpose, the design-spec entry declares it, and
+# criterion 6 of the library index refuses a second declaration of the same
+# address. doctrine.md carries the finding.
+
+bundle: decision-record
+extends: headwater/standard@1.0.0
+requires: [design-spec]
+
+add:
+
+  # --- facets ---------------------------------------------------------------
+  # A generated index over this shelf labels each record with its identifier,
+  # because no facet in the base or in the design-spec entry carries a name
+  # (#123). A log of decisions that reads `DR-repo-0007` is not a log anybody
+  # reads, so this entry declares the facet. It reaches this entry's kinds and
+  # the base `decision` only, and doctrine.md states why that is not a fix.
+  #
+  # `stable` is the claim the tradition makes: an accepted record is amended by
+  # succession, so its name changes by rename and never by edit.
+
+  facets.title:
+    type: string
+    required: false
+    volatility: stable
+
+  # --- kinds ----------------------------------------------------------------
+  # The base `decision` kind is this tradition's kind. `is_a: governed_document`,
+  # `purpose: rationale`, `voice: declarative`, `lifecycle: standard`,
+  # `identifier: {scheme: decision_id}` and Nygard's three sections are all
+  # already there. Two keys are absent from it, and this entry writes both.
+
+  kinds.decision.facets:
+    require: [title]
+
+  kinds.obligation_record:
+    is_a: governed_document
+    purpose: obligation
+    identifier: {scheme: obligation_record_id}
+    voice: declarative
+    lifecycle: standard
+    facets:
+      require: [title]
+    sections: {require: [Context, Obligation, Discharge]}
+
+  # --- relations ------------------------------------------------------------
+  # One relation, and it is the one this corpus cannot state today. A decision
+  # reaches its evidence through the base's `traces_to`, and an obligation
+  # record reaches the decision that produced it the same way. Neither needs a
+  # declaration here. What has no form is the event that closes an obligation:
+  # an instrument ran, and the debt is paid.
+
+  relations.discharges:
+    family: evidence
+    from: [evaluation]
+    to:   [obligation_record]
+    inverse: discharged_by
+    reciprocal: required
+    cardinality: many
+    created_by: hook
+
+  # --- shelves --------------------------------------------------------------
+  # Decisions sit on the base shelf, which is homogeneous and already declares
+  # the kind. Obligation records need a shelf of their own.
+
+  shelves.obligations:
+    path: docs/obligations/**
+    homogeneous: true
+    kind: obligation_record
+
+  # --- identifier schemes ---------------------------------------------------
+  # `reconcile-first` over the corpus is the right denominator here, because an
+  # obligation record is a document and the corpus is what numbers it. Spec 13
+  # draws that line between this remedy and the contract-sidecar one, where a
+  # criterion numbers within its requirement instead.
+
+  identifier_schemes.obligation_record_id:
+    pattern: "OBL-{namespace}-{seq:04d}"
+    namespace: repo
+    allocation: reconcile-first
+
+  # --- obligations ----------------------------------------------------------
+  # The two invariants this tradition exists to hold, and neither one has a
+  # check. Both are `gap` dispositions rather than silence, which is what spec 4
+  # asks of an obligation that no control discharges.
+  #
+  # Both are about content and state over time. A participation expectation
+  # reports a missing edge, and neither of these is a missing edge. That is the
+  # check class doctrine.md names as the one this entry adds and the engine
+  # does not have.
+
+  obligations.OB-DR-1:
+    statement: An accepted decision record is amended by succession and never by edit
+    rationale: A record that changed after the decision was taken cannot be cited, because the reader of the citation and the writer of it read two different texts. Every later document that names the decision inherits the drift silently
+    class: cohesion
+    prevents: content.inconsistent
+    severity: high
+    disposition:
+      gap:
+        owner: the decision-record entry
+        target: a change-scoped rule that reads the prior version, which spec 12 already supplies as `needs_prior`
+
+  obligations.OB-DR-2:
+    statement: A proposed decision record reaches acceptance or rejection
+    rationale: A log that fills with proposals is the failure this tradition is most often reported to have, and a proposal nobody ruled on is indistinguishable from a decision nobody wrote
+    class: cohesion
+    prevents: process.maintenance
+    severity: medium
+    disposition:
+      gap:
+        owner: the decision-record entry
+        target: a rule over state dwell time, which `taxonomy audit` already measures and no check reads
+
+  obligations.OB-DR-3:
+    statement: A decision record records one decision
+    rationale: Two decisions in one record cannot be superseded apart, so the first of them to fall takes the second with it or keeps it alive under a heading nobody reads
+    class: coherence
+    prevents: content.unclear
+    severity: medium
+    disposition:
+      unverifiable:
+        reasoning: To count the decisions in a document is to reason about what the prose asserts, which spec 1 forswears. The shelf is homogeneous and the section contract requires one `Decision` heading, and a second decision under that heading is invisible to both
