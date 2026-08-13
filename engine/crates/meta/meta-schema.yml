@@ -353,8 +353,8 @@ definitions:
     members:
       # The projection kinds a taxonomy may declare. Spec 6 (Projections) names
       # the set the engine implements, and Q19 adds `transcription` to it. This
-      # position held a `gap:` marker until the generator arrived, and building
-      # the generator showed the gap was one question that hides two.
+      # position was marked as a gap until the generator arrived, and building
+      # the generator showed it was one question that hides two.
       #
       # The kinds do not form one value set. They form two, and only this one
       # belongs on a declaration. Two kinds are engine-defined: the register of
