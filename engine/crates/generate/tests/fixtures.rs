@@ -514,11 +514,42 @@ fn this_repository_generates_its_four_artifacts_and_accounts_for_the_rest() {
 /// The anchors are computed here rather than listed, so a decision renamed in
 /// its own document fails this test at the citation rather than in a reader's
 /// browser.
+///
+/// **The bytes come from the plan and not from the file**, so that a regression
+/// in the emitter fails here rather than only in the byte comparison of the test
+/// above. The committed file is then held against the same bytes, which is what
+/// makes this one test cover both the derivation and the commit.
 #[test]
 fn the_redirect_map_keeps_every_anchor_that_this_corpus_cites_into_it() {
     let root = repository_root();
-    let map = std::fs::read_to_string(root.join("docs/spec/09-open-questions.md"))
-        .expect("the redirect map is committed");
+    let resolved = headwater_resolve::repository(&root)
+        .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
+    let corpus = Corpus::declared(
+        &root,
+        &resolved.consumer.corpus_root,
+        &resolved.consumer.exclusions,
+    );
+    let built = Built::over(&corpus, &resolved.resolution.taxonomy);
+    let projections =
+        Projections::read(&resolved.resolution.taxonomy).expect("the projections read");
+    let plan: Plan = plan(
+        &built.surface(),
+        &built.census,
+        &projections,
+        &Identity::default(),
+    );
+    let map = plan
+        .outputs
+        .iter()
+        .find(|output| output.path == "docs/spec/09-open-questions.md")
+        .map(|output| output.bytes.clone())
+        .expect("the redirect map is planned");
+    assert_eq!(
+        std::fs::read_to_string(root.join("docs/spec/09-open-questions.md"))
+            .expect("the redirect map is committed"),
+        map,
+        "the committed redirect map is not what this corpus and this lock produce"
+    );
 
     // 2 and 3: the block, read as the census reads it.
     assert!(
