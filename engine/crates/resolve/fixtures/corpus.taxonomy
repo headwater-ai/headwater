@@ -458,6 +458,12 @@ obligations:
     class: cohesion
     prevents: content.inconsistent
     severity: medium
+  OB-ID-1:
+    statement: "An identifier is a string that the scheme its kind names admits"
+    rationale: "An identifier is minted to travel, so it appears in commit messages, tickets and agent prompts. A corpus can rewrite its own documents at any time and it can never rewrite somebody else's ticket, which is why an identifier outside its own namespace is unrecoverable rather than untidy"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: high
   OB-REL-2:
     statement: "Both ends of a relation instance are kinds that the relation permits"
     rationale: "An edge between kinds a relation forbids is an assertion that the taxonomy never sanctioned, and every query over that relation inherits it"
@@ -585,6 +591,13 @@ controls:
     mechanism: "check:facet.value.not_permitted"
     discharges:
       - OB-FACET-2
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+  CT-ID-1:
+    mechanism: "check:identifier.pattern.not_met"
+    discharges:
+      - OB-ID-1
     trigger: pull_request
     posture: advisory
     acts: detective
