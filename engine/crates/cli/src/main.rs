@@ -317,10 +317,15 @@ fn main() -> ExitCode {
              It carries `validate` and `resolve`"
         )),
         [] => fail("no verb. Try `headwater check`"),
+        // The list below is hand-maintained beside the arms above, and nothing
+        // holds the two together, so a new verb needs an edit in both places.
+        // Spec 6 keeps a third copy as the CLI grammar. #138 removed a name
+        // from that grammar which no arm here carries, and found this message
+        // one verb short of the arms in the same reading.
         [other, ..] => fail(&format!(
             "`{other}` is not a verb this binary carries yet. \
-             It carries `check`, `route`, `explain`, `mcp`, `generate`, `export`, \
-             `init`, `infer` and `taxonomy`"
+             It carries `check`, `gate`, `route`, `explain`, `mcp`, `generate`, \
+             `export`, `init`, `infer` and `taxonomy`"
         )),
     }
 }
