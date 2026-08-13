@@ -22,11 +22,11 @@ Headwater's premise: **make the structure of the corpus a machine-readable contr
 
 ## Read the specification
 
-[`docs/spec/README.md`](docs/spec/README.md) is the index of the specification shelf: every document on it, with the summary each one declares. It is generated. `headwater generate` writes it from the front matter of the documents themselves, and `headwater generate --check` fails the build when the two drift apart. A table of the same 16 documents used to sit here, kept aligned by hand against the files it described. That copy is the defect [principle 2](docs/spec/00-vision-and-scope.md#design-principles) names, and [13 — Open obligations](docs/spec/13-open-obligations.md#a-human-maintains-this-list-by-hand) filed it against this repository. Deleting it is the remedy that file asks for.
+[`docs/spec/README.md`](docs/spec/README.md) is the index of the specification shelf: every document the corpus checks, with the summary each one declares. It is generated. `headwater generate` writes it from the front matter of the documents themselves, and `headwater generate --check` fails the build when the two drift apart. A table of the specification documents used to sit here, kept aligned by hand against the files it described. That copy is the defect [principle 2](docs/spec/00-vision-and-scope.md#design-principles) names, and [13 — Open obligations](docs/spec/13-open-obligations.md#a-human-maintains-this-list-by-hand) filed it against this repository. Deleting it is the remedy that file asks for.
 
-The order in the index is the reading precedence this corpus derives from its own relations, and not the sequence number in each file name. So the two registers come before the tombstone they superseded, rather than after it.
+The order in the index is the reading precedence this corpus derives from its own relations, and not the sequence number in each file name. So [13 — Open obligations](docs/spec/13-open-obligations.md) comes before [10 — Theoretical foundations](docs/spec/10-theoretical-foundations.md), rather than after it.
 
-[`09-open-questions.md`](docs/spec/09-open-questions.md) stays at its old path as a redirect map, because the evaluations cite its anchors and this project does not rewrite them.
+[`09-open-questions.md`](docs/spec/09-open-questions.md) stays at its old path as a redirect map. This corpus cites its anchors 136 times, and this project does not rewrite a point-in-time record. A declared projection writes the file now, so the index above lists the fifteen documents that a person maintains and leaves this one out.
 
 The [glossary](docs/spec/glossary.md) lists every named concept in one place, with a link to the section that defines it. It also marks the eight terms that an author needs to file a document, which is the whole of the vocabulary that most readers meet.
 
