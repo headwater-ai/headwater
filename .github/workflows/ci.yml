@@ -6,7 +6,7 @@
 #   engine    does the code hold to its own fixtures?
 #   headwater does this corpus hold to its own taxonomy?
 #
-# The second job runs two steps, and only one of them is advisory. A stale lock
+# The second job runs several steps, and only one of them is advisory. A stale lock
 # blocks, because `headwater check` reads the lock and never the sources: a lock
 # that the sources no longer produce means the verdict came from a taxonomy that
 # nobody committed, and an advisory finding about the corpus then answers a
@@ -51,19 +51,22 @@ jobs:
       - name: Lint
         run: cargo clippy --all-targets -- -D warnings
         working-directory: engine
-      - name: The stock JSON Schema validator the export differential runs against
+      - name: The stock validators the two differentials run against
+        # Two suites hold an emitter to an implementation nobody here wrote.
         # `engine/crates/generate/tests/differential.rs` compares the emitted
-        # schema's finding set with the engine's, and it holds its own evaluator
-        # to an implementation nobody here wrote. Absent, that one comparison
-        # skips, because the pinned build container carries no Python.
-        # HEADWATER_STOCK_VALIDATOR below turns the skip into a failure, so this
-        # gate cannot go quiet by losing a dependency.
+        # JSON Schema's finding set with the engine's.
+        # `engine/crates/adapter/tests/fixtures.rs` validates the emitted SARIF
+        # against the OASIS schema and reads the finding set back out of it.
+        # Absent, each comparison skips, because the pinned build container
+        # carries no Python. The two variables below turn a skip into a failure,
+        # so neither gate can go quiet by losing a dependency.
         run: python3 -m pip install --user jsonschema PyYAML
       - name: Test
         run: cargo test
         working-directory: engine
         env:
           HEADWATER_STOCK_VALIDATOR: required
+          HEADWATER_SARIF_VALIDATOR: required
 
   headwater:
     name: headwater check (advisory)
@@ -109,15 +112,34 @@ jobs:
         # This is the run that is read. It reads no cache, so the report in the
         # summary is what the checks decided over this tree and never what a
         # disk remembered.
+        run: ./engine/target/release/headwater check --no-cache --now "$HEADWATER_NOW" | tee headwater-check.txt
+      - name: The job summary, from the adapter that writes one
+        # `--format markdown` is the adapter. Until it existed this step pasted
+        # the whole text report into a fenced block, which privileges no forge
+        # and also translates nothing: a reviewer wants the counts, the escaped
+        # findings marked as escaped, and a path they can click.
+        #
+        # It is a second run rather than a second rendering of the first,
+        # because the verb writes one format to standard output. Same tree, same
+        # lock, same injected clock, so the two agree by the same determinism
+        # that the cache step below tests.
+        run: ./engine/target/release/headwater check --no-cache --now "$HEADWATER_NOW" --format markdown >> "$GITHUB_STEP_SUMMARY"
+      - name: The SARIF this corpus emits is SARIF
+        # The suite in the job above validates the emitter over a fixture tree.
+        # This validates it over the corpus an adopter would point it at, which
+        # is the one that carries every kind of finding this repository can
+        # raise. Same schema and same reader, so a divergence between the two
+        # runs is a fact about the corpus rather than about the validator.
+        #
+        # It blocks. An invalid artifact is not a finding about prose somebody
+        # wrote: it is an emitter defect, and a forge that rejects the upload
+        # reports nothing at all.
         run: |
-          ./engine/target/release/headwater check --no-cache --now "$HEADWATER_NOW" | tee headwater-check.txt
-          {
-            echo '## `headwater check`'
-            echo
-            echo '```'
-            cat headwater-check.txt
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          python3 -m pip install --user jsonschema
+          ./engine/target/release/headwater check --no-cache --now "$HEADWATER_NOW" --format sarif > headwater.sarif
+          python3 engine/crates/adapter/tests/sarif_oracle.py \
+            engine/crates/adapter/tests/sarif-schema-2.1.0.json headwater.sarif > oracle.txt
+          head -1 oracle.txt | grep -qx "$(printf 'schema\tvalid')" || { cat oracle.txt; exit 1; }
       - name: The cache cannot change a verdict
         # Spec 12 makes the cache a correctness root, and the standing test is
         # that `headwater check --no-cache` and `headwater check` write the
@@ -131,8 +153,19 @@ jobs:
         # It blocks, and it is not a second posture on the corpus. A difference
         # here is a defect in the engine, and the report above is what the
         # advisory step reports whatever this one finds.
+        #
+        # Every format, not only the text one. A format is a rendering of one
+        # run, so a cache that changed a verdict would change all four, and one
+        # that changed only the SARIF would be a defect in the adapter. Both are
+        # things this catches and neither is something the text comparison
+        # alone would.
         run: |
           ./engine/target/release/headwater check --now "$HEADWATER_NOW" > cold.txt
           ./engine/target/release/headwater check --now "$HEADWATER_NOW" > warm.txt
           diff headwater-check.txt cold.txt
           diff headwater-check.txt warm.txt
+          for format in json sarif markdown; do
+            ./engine/target/release/headwater check --no-cache --now "$HEADWATER_NOW" --format "$format" > "none.$format"
+            ./engine/target/release/headwater check --now "$HEADWATER_NOW" --format "$format" > "warm.$format"
+            diff "none.$format" "warm.$format"
+          done

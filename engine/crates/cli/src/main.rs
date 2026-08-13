@@ -51,6 +51,7 @@
 //! under `cargo test`. What the cached run writes to standard error is the hit
 //! count, which belongs there because it is a fact about a disk.
 
+use headwater_adapter::{Format, Subject};
 use headwater_census::census::{self, Detail as CensusDetail};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
@@ -65,7 +66,8 @@ use std::process::ExitCode;
 
 const USAGE: &str = "\
 headwater check              [--strict] [--no-cache] [--now <date>] [--read-set <path>]
-                             [--register <path>] [--root <path>]
+                             [--register <path>] [--format text|json|sarif|markdown]
+                             [--root <path>]
 headwater route              <task description> [--budget <n>] [--root <path>]
 headwater explain            <path|identifier> [--root <path>]
 headwater mcp                [--root <path>]
@@ -156,7 +158,13 @@ headwater taxonomy resolve   [--check] [--root <path>]
                  declared profile by default, so a filtered audience is never
                  omitted by accident.
   --format <target>
-                 `export` only: the emitter target. `json` is the native
+                 `check`: which vocabulary to write the run in. `text` is the
+                 report a person reads and the default. `sarif` is what a forge
+                 ingests as a check run, `markdown` is a job summary or a review
+                 comment, and `json` is the finding shape spec 4 declares, for an
+                 adapter nobody here wrote. Each names what it could not carry.
+
+                 `export`: the emitter target. `json` is the native
                  property graph with no loss and `jsonschema` constrains front
                  matter. The other five targets of spec 6 parse and report the
                  consumer each one waits on. With this flag the artifact goes to
@@ -270,7 +278,7 @@ fn main() -> ExitCode {
 
     let verb: Vec<&str> = words.iter().map(String::as_str).collect();
     match verb.as_slice() {
-        ["check"] => check(&root, strict, cached, now, read_set, register_out),
+        ["check"] => check(&root, strict, cached, now, read_set, register_out, format),
         ["route"] => fail("`route` takes a task description. Try `headwater route \"add rate limiting to the ingest API\"`"),
         ["route", task @ ..] => route(&root, &task.join(" "), budget),
         ["explain"] => fail("`explain` takes a path or an identifier"),
@@ -755,7 +763,25 @@ fn check(
     now: Option<Date>,
     read_set: Option<PathBuf>,
     register_out: Option<PathBuf>,
+    format: Option<String>,
 ) -> ExitCode {
+    // The vocabulary is decided before anything is read, so a run that would
+    // refuse the flag refuses it before it walks a corpus. `export --format`
+    // names an emitter target and this names an output format: two lists, two
+    // enums, and the word `json` in both means a different artifact.
+    let format = match format.as_deref().map(Format::parse) {
+        None => Format::Text,
+        Some(Some(format)) => format,
+        Some(None) => {
+            let names: Vec<&str> = Format::ALL.iter().map(|format| format.name()).collect();
+            return fail(&format!(
+                "`check --format` takes one of {}. An emitter target of `export` is not one of \
+                 them: that flag names a vocabulary for the graph and this one names a \
+                 vocabulary for the findings",
+                names.join(", ")
+            ));
+        }
+    };
     // The one clock read of the whole engine, and it is here rather than in a
     // check. Spec 12: "`ctx.now` is a bound value, never a syscall." A run
     // whose host cannot say what day it is refuses rather than guesses, because
@@ -808,28 +834,67 @@ fn check(
     );
     cache.write(root);
 
+    // A run in a vocabulary that is not the terminal's. Spec 6 lists four
+    // formats and `headwater-adapter` writes three of them: the text report
+    // below is composed from the census and the graph as well as the run, and
+    // the adapters receive neither.
+    //
+    // What the flag does not touch: the exit status, the cache accounting on
+    // standard error, and the two files below. A flag that moved a verdict
+    // would be the second input to it that no reviewer sees.
+    let subject = Subject {
+        package: &lock.package,
+        version: &lock.version,
+        lock: &lock.digest,
+        now: &ctx.now().render(),
+    };
+    let translated = headwater_adapter::render(&run, &subject, format);
+    if let Some(artifact) = &translated {
+        print!("{artifact}");
+        // The census over what was written, in the shape spec 6 fixes for the
+        // graph emitters. A finding that reached no output and that no loss
+        // reason covers is a defect in the adapter, and it fails the run the
+        // way a defective projection census does.
+        let audited = headwater_adapter::census(&run, artifact);
+        if audited.is_defective() {
+            eprintln!(
+                "headwater: the {} adapter dropped {} of {} findings with no declared loss reason:",
+                format.name(),
+                audited.unaccounted.len(),
+                audited.findings
+            );
+            for missing in &audited.unaccounted {
+                eprintln!("  {missing}");
+            }
+            return ExitCode::FAILURE;
+        }
+    }
+
     // A run reports the state it evaluated, and the report is not optional
     // (spec 4). The lock hash is half of that statement, and the corpus tree is
     // the other half, which nothing computes yet.
-    println!("taxonomy");
-    println!("  {} {}", lock.package, lock.version);
-    println!("  {}", lock.digest);
-    // The injected values are part of the state a verdict is about, so a run
-    // that does not report them cannot be reproduced from its own output.
-    println!("\nclock");
-    println!("  {}", ctx.now());
-    println!("\ncensus");
-    print!("{}", indent(&taken.render(CensusDetail::Exceptions)));
-    println!("\ngraph");
-    print!("{}", indent(&graph.render(GraphDetail::Exceptions)));
-    println!("\nchecks");
-    print!("{}", indent(&run.render(headwater_check::Detail::Findings)));
+    if translated.is_none() {
+        println!("taxonomy");
+        println!("  {} {}", lock.package, lock.version);
+        println!("  {}", lock.digest);
+        // The injected values are part of the state a verdict is about, so a run
+        // that does not report them cannot be reproduced from its own output.
+        println!("\nclock");
+        println!("  {}", ctx.now());
+        println!("\ncensus");
+        print!("{}", indent(&taken.render(CensusDetail::Exceptions)));
+        println!("\ngraph");
+        print!("{}", indent(&graph.render(GraphDetail::Exceptions)));
+        println!("\nchecks");
+        print!("{}", indent(&run.render(headwater_check::Detail::Findings)));
 
-    // The read set, which spec 12 asks a run to report beside its coverage
-    // numbers. It is the same bytes `--read-set` writes, so a gate reading the
-    // file and a reader of the report are looking at one artifact.
-    println!("\nread set");
-    print!("{}", indent(&run.read_set.render()));
+        // The read set, which spec 12 asks a run to report beside its coverage
+        // numbers. It is the same bytes `--read-set` writes, so a gate reading the
+        // file and a reader of the report are looking at one artifact.
+        println!("\nread set");
+        print!("{}", indent(&run.read_set.render()));
+    }
+
     if let Some(path) = read_set {
         if let Err(error) = std::fs::write(&path, run.read_set.render()) {
             eprintln!("headwater: cannot write {}: {error}", path.display());

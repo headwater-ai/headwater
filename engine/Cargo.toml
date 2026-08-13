@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 [workspace]
 members = [
+    "crates/adapter",
     "crates/census",
     "crates/check",
     "crates/cli",
