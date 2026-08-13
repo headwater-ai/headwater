@@ -3,8 +3,8 @@ id: OBL-repo-0071
 title: "A corpus-scoped check makes the coverage rule unreachable"
 status: current
 status_since: 2026-08-12
-last_verified: 2026-08-13
-summary: "A corpus-scoped instance reads every document, so the zero-instance finding can never fire again."
+last_verified: 2026-08-14
+summary: "A corpus-scoped instance reads every document, and coverage counts routing rather than reading."
 provenance:
   warrant: accepted
   agency: mixed
@@ -30,4 +30,12 @@ What is open is the rule for the first real corpus-scoped check. Either such an 
 
 ## Discharge
 
-The engine avoids the collision today by keeping the coverage rule as the runner's accounting rather than a check over a view. A rule that instantiates over every typed document reaches the same end by a shorter route. It routes every document to a check before anything is read. The generated Shape checks instantiate per kind for that reason, so a kind that forbids what a rule reads gets no instance.
+The first of the two options holds. A corpus-scoped instance counts toward coverage for no document.
+
+Coverage counts routing, and routing is the generation step: a template, a declaration, and one instance per target. A document-scoped instance covers its document, and an edge-scoped one covers both endpoints. A corpus-scoped instance has one target, and that target is the corpus, so it accounts against no document whatever it read. `Grain::routes` in `engine/crates/check/src/scope.rs` carries the ruling. The match over the five grains is exhaustive, so a sixth grain answers this question rather than inherits an answer.
+
+[Spec 12](../spec/12-check-layer.md#instances-and-why-coverage-needs-them) states it, and one test holds it. `identifier.claimed_twice` is the first corpus-scoped check, it reads `check/spec/03-no-instance.md`, and the coverage finding against that file survives.
+
+The second option is refused. An instance that counted only for the documents its findings name makes coverage a function of the verdict. A rule that finds nothing then covers nothing, and a corpus with a defect reports higher coverage than a clean one.
+
+One cost stands. A rule that instantiates over every typed document reaches the unreachable end by a shorter route. Such a rule routes every document to a check before anything is read. The generated Shape checks instantiate per kind for that reason, so a kind that forbids what a rule reads gets no instance.

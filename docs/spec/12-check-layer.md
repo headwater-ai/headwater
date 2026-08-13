@@ -2,7 +2,7 @@
 id: SPEC-HW-check-layer
 status: current
 status_since: 2026-08-02
-last_verified: 2026-08-12
+last_verified: 2026-08-14
 summary: What a check is, how a scope constrains it, where it comes from, and what the check layer owes the engine.
 doc_type: design_spec
 sequence: 12
@@ -58,6 +58,8 @@ This table settles three things.
 **Document checks are the ones that no graph standard can reach**, because the body is not in the graph. That is the finding from the [SHACL instance-data evaluation](../evaluations/shacl-worked-example.md#does-this-help-with-the-actual-documents). Not by coincidence, they are also the checks that need source positions.
 
 One example in that row asks for more than the row supplies. Prose-link resolution reads the destination of a link, and a fragment on that destination names a heading of another document. No scope below carries a second document's body. So the half that a document decides alone is a Document check. The other half waits for a grain that this list does not hold ([13 — Open obligations](13-open-obligations.md#design-work-that-nothing-blocks)).
+
+**An origin is not a scope.** The origin says which part of the taxonomy a rule comes from, and the scope says what one instance of it covers. `identifier.claimed_twice` is Graph-origin, because the identifier index reports the collision, and it is corpus-scoped, because nothing smaller holds both claimants.
 
 **`exportable_as` is machine-checkable.** The emitted shapes are generated from exactly the checks that declare a target, and the next section states the rules that keep the claim honest. The last column above states what an origin can reach, and the declaration is per rule. Two rules declare a target today, and both name `jsonschema`.
 
@@ -158,6 +160,8 @@ A check is a template. The engine instantiates it for each target. For example, 
 
 Coverage accounting ([spec 4](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)) then comes directly from this, with no added mechanism. Each run records, per document, which instances were created, which ran, which were served from cache, and which were skipped with a reason. **A document with zero instances is a finding.** It means that a shelf pattern is wrong or that a file is misplaced. Both facts are good to know.
 
+**Coverage counts routing rather than reading.** The engine generates an instance over its targets: one document, or both endpoints of one edge. A corpus-scoped instance has one target and that target is the corpus, so it counts against no document, whatever it read. The alternative deletes the rule above. Such an instance reads every document. A report that counted reading would call every document checked, and the first corpus-scoped rule would make the finding unreachable. The instance count would rise and the finding count would fall, which reads in every report as an improvement.
+
 ## Two phases, and why the order matters
 
 **Phase A — classify and build.** The engine parses every file, resolves its kind, builds edges, and indexes identifiers. Failures here are structural findings: an unparseable file, an unclassifiable path, a dangling edge, an ambiguous shelf match.
@@ -182,7 +186,11 @@ The unit that survives is the document that wrote the block. `relation.declarati
 
 `identifier.unusable` carries the sixth. A document with no identifier is neither end of any edge. The census counts it as checked, and every relation it declares is lost. The identifier index says the same thing from the other side. It says it again for a document that writes a sequence where one identifier belongs.
 
-Two documents that claim one identifier reach no rule. The graph reports the second one in path order. Which document is second is a fact about the corpus rather than about either file. A document-scoped instance reads one of the two, so the grain is wrong rather than the message.
+Two documents that claim one identifier need a wider grain than either of them. Neither file is defective on its own. Each one declares a well-formed identifier that its scheme admits, and what is wrong is the pair. No document holds the pair. Nothing connects the two either, so `Edge` and `Neighbourhood` reach neither of them.
+
+`identifier.claimed_twice` is corpus-scoped for that reason, and it is the first barrier this engine carries. The read set of its one instance is every row of the census that carries a document, which is the set the identifier index reads. A document-scoped instance would read one file, so its key would name one file. The verdict would then survive every edit to the other claimant, which is the edit that settles the collision. A cache that serves a verdict across that edit is the correctness bug a complete key exists to prevent.
+
+The rule reports twice, once in each file, with one sentence that names both documents. The index reports the claimant that comes second in path order. Path order is a fact about the corpus rather than about either author. A single finding against the second file would report path order as the defect.
 
 ## Findings
 
@@ -278,5 +286,5 @@ This rule also connects to promotion ([spec 4](04-assurance-model.md#promotion-a
 ## What this leaves open
 
 - The `Neighbourhood(depth)` scope is speculative. If no real check needs depth > 1, the correct move is to cut it and to keep `Edge` as the only relational scope.
-- Whether `Shelf` is a separate scope or only `Corpus` with a filter. This matters only if sibling-comparison checks become common.
+- Whether `Shelf` is a separate scope or only `Corpus` with a filter. This matters only if sibling-comparison checks become common. The first sibling comparison did not settle it, and it could not. A taxonomy declares an identifier scheme per kind, several kinds sit on one shelf, and one kind sits on several shelves. So two claimants of one identifier need not share a shelf, and a shelf-scoped instance would pass over every collision that crosses one.
 - Whether plugins are in-process (fast, but a foreign-code trust question) or subprocess (safe, but the per-instance overhead can dominate for `Document`-scoped checks). [Q1](09-decisions.md#q1--implementation-language) supplies a third option that answers both horns. A WebAssembly component runs in-process, and it receives no filesystem, no network, and no clock unless the host grants them. That is the plugin contract above, restated as a capability model. The plugin design makes the call, and it is no longer a choice between two bad options. The [Q1 spike](../evaluations/language-spike-results.md) makes this plausible and does not test it. It compiled the engine *to* WebAssembly, which is not the same as hosting a component.
