@@ -23,6 +23,10 @@ relations:
     - .claude/hooks/intent.sh
     - .claude/hooks/write.sh
     - .claude/hooks/review.sh
+    - .claude/skills/fixtures.sh
+    - .claude/skills/headwater-authoring/SKILL.md
+    - .claude/skills/headwater-taxonomy/SKILL.md
+    - .claude/agents/headwater-maintainer.md
 ---
 
 # 5 — AI integration
@@ -149,7 +153,7 @@ A hook is a position where a harness hands control to this engine and takes it b
 
 **A hook is invisible or it is bypassed.** That is spec 6's performance argument read at this position, and the measurements above are what hold it.
 
-**A hook calls a verb and never a skill.** Each moment has a deterministic half and a judgment half, and a hook reaches the first one. The judgment half is an [authoring skill](#agent-surfaces), and how a skill reaches an agent is a separate question. This repository once ran a hook that refused an edit until a named skill had loaded, and that hook retired with the linter it served.
+**A hook calls a verb and never a skill.** Each moment has a deterministic half and a judgment half, and a hook reaches the first one. The judgment half is an [authoring skill](#agent-surfaces), and [how a skill reaches an agent](#how-a-skill-reaches-an-agent-and-what-nothing-does) is a separate question with its own answer below.
 
 The hooks of this repository are `.claude/hooks/`, which sits outside the corpus root. No census counts them and no check reads them. `.claude/hooks/fixtures.sh` is what holds them, and it provokes every refusal on purpose. A hook that has refused nothing is a hook that nobody has seen work.
 
@@ -179,15 +183,31 @@ Working-tree writes stay off by default, because a client may connect to a check
 
 **The server applies no filter to a corpus that its reader already holds.** It runs in-process against a checkout, so the reader has every byte. A filter there would control one reading path while the bytes stay readable along another. [Spec 11 §L.6](11-adjacent-work.md#l6-a-filter-in-the-tool-layer-is-advisory-and-the-documentation-says-so) records that failure in a shipped tool. A server that serves a reader who holds no checkout serves exactly one declared [export profile](06-engine-architecture.md#an-export-profile-carries-a-filter) and never mixes the two sources.
 
-**Authoring skills.** Packaged procedures for the work that bears judgment: to draft a decision record, to run a corpus-wide sweep, to propose a taxonomy change. Skills carry the doctrine that an agent needs, and they call the deterministic engine for everything mechanical. Thus the LLM does the reasoning and never the arithmetic.
+**Authoring skills.** Packaged procedures for the work that bears judgment: to draft a decision record, to run a corpus-wide sweep, to propose a taxonomy change. Skills carry the doctrine that an agent needs, and they call the deterministic engine for everything mechanical. Thus the LLM does the reasoning and never the arithmetic. This repository ships two of them, in `.claude/skills/`. `headwater-authoring` owns a document and `headwater-taxonomy` owns a declaration, which is the same boundary that [stop rule 3](#the-stop-rules) draws.
 
 This is also the system's answer to the capture-cost problem that killed every prior design-rationale tool ([spec 3](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric)). An agent can draft a decision record from evidence that already sits in the commit, the ticket, and the conversation. That moves the cost off the author, who was never the beneficiary. The claim is falsifiable, and it is tracked as the assisted fraction. If we enable agent authoring and the fraction does not rise, the argument fails, and we must then expect the adoption curve of gIBIS.
 
-**A maintainer subagent.** A context-isolated agent that owns documentation upkeep across a change: which documents this touched, what is now stale, what decision lacks evidence. It runs with a scoped instruction subset — its own bounded context — and does not inflate the always-on prompt of every session.
+**A maintainer subagent.** A context-isolated agent that owns documentation upkeep across a change: which documents this touched, what is now stale, what decision lacks evidence. It runs with a scoped instruction subset — its own bounded context — and does not inflate the always-on prompt of every session. `.claude/agents/headwater-maintainer.md` is that agent here, and its report carries a fourth part for what it could not decide. A report with no such part is a report that nobody can calibrate.
+
+#### How a skill reaches an agent, and what nothing does
+
+A hook cannot make a skill load, and the [hook contract](#the-hook-contract-and-what-a-hook-cannot-bind) states the reason. This repository once ran the design. A `PreToolUse` gate refused an edit until a named skill had loaded, and it retired with the linter it served. A refusal at that position catches the sessions that would have complied and misses the ones that would not.
+
+**A description is the mechanism that a harness supplies.** A harness reads the description of each installed skill, and a model picks one. That act is the routing act of [intent time](#intent-time-routing), performed by the model rather than by this engine, over a list the harness supplies. So a skill description is a summary in the [scent](#scent-is-the-thing-being-engineered) sense, and the same two measures grade it. Distinctiveness runs against the other installed skills, and non-restatement runs against the skill's own name.
+
+**One mechanism is stronger than a description, and it is not free.** An instruction file that a harness always loads may name a skill and say when to use it. That is a directive rather than a cue, and it reaches the model before any judgment about relevance. It also costs context on every session, and most sessions touch no document at all. This repository pays that cost in `CLAUDE.md`, for `ste-editor` and for the two skills above. The cost is the always-on prompt that a [subagent](#agent-surfaces) exists to avoid, so the two surfaces trade against each other rather than stack.
+
+**Routing cannot carry a skill, because a skill is not a document.** A skill sits outside the corpus root, so no census row covers it, and `headwater route` offers pointers to documents alone. A skill that moved inside the corpus would put prose that a harness executes under the language regimes. It would also give the shelf model a document that no reader reads as one.
+
+**So the reach of a skill is a measurement rather than a property.** The `opened` [expectation](#a-probe-is-a-document-with-a-declared-expectation) over a transcript is the instrument that says whether a description won. No probe has run, so nothing about the reach of a skill is known, and no claim about the [assisted fraction](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) rests on one.
+
+**What holds a skill is what holds a hook.** `.claude/skills/fixtures.sh` drives every claim that a skill makes about this engine against the engine. Half of its cases are derived from the skill files rather than listed. So a rule that a skill names and this engine drops fails the suite with no edit here. It runs as a blocking CI step, for the reason the hook suite does. A skill that describes an engine that moved under it produces a confident wrong answer.
+
+**A skill carries no rule of its own.** Every mechanical statement in one is a call to a verb that ships. A skill that copied a taxonomy rule would be the second authoring surface that [#130](https://github.com/headwater-ai/headwater/issues/130) refused, in a harness directory rather than a package.
 
 ### The machinery is the adoption model
 
-These surfaces read as conveniences, and they are not: they are the supply chain for the graph. Everything distinctive — routing, lifecycle propagation, impact detection, absence findings — degrades together when edge density stays low. The traceability literature that the design cites ([spec 10](10-theoretical-foundations.md#b5-traceability-information-models--our-idea-has-a-name-and-a-literature)) says that author-maintained links decay because the payer is not the beneficiary. A release can omit the authoring skills, the hooks that invoke them at intent, write, and review time, and the telemetry that watches them. Such a release leaves its central bet untested. That is why [spec 0](00-vision-and-scope.md#what-we-build) puts them in the first release rather than after it.
+These surfaces read as conveniences, and they are not: they are the supply chain for the graph. Everything distinctive — routing, lifecycle propagation, impact detection, absence findings — degrades together when edge density stays low. The traceability literature that the design cites ([spec 10](10-theoretical-foundations.md#b5-traceability-information-models--our-idea-has-a-name-and-a-literature)) says that author-maintained links decay because the payer is not the beneficiary. A release can omit the authoring skills, the hooks that put this engine at intent, write, and review time, and the telemetry that watches both. No hook invokes a skill, and the section above says what does. Such a release leaves its central bet untested. That is why [spec 0](00-vision-and-scope.md#what-we-build) puts them in the first release rather than after it.
 
 Three commitments make the machinery governable rather than merely present:
 

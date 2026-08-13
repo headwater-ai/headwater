@@ -181,7 +181,24 @@ jobs:
         # why a broken one stays invisible until someone reads a diff that a
         # refusal should have stopped.
         #
-        # Last, because it plants one document under `docs/obligations/` to make
-        # the review hook refuse, and removes it again. Every step above reads
-        # the corpus, and none of them may see it.
+        # Last but one, because it plants one document under `docs/obligations/`
+        # to make the review hook refuse, and removes it again. Every step above
+        # reads the corpus, and none of them may see it.
         run: sh .claude/hooks/fixtures.sh
+      - name: The skills say what this engine does
+        # `.claude/skills/` and `.claude/agents/` sit outside the corpus root
+        # too, and a skill is prose that nothing makes a model follow. What a
+        # suite holds is the half that is a claim about this engine: a verb a
+        # skill tells an agent to run, a refusal a skill says the verb makes, a
+        # rule a skill names, a path a skill cites.
+        #
+        # Half the cases are derived from the skill files rather than listed, so
+        # a skill added tomorrow reaches them with no edit to the runner.
+        #
+        # It blocks. A skill that describes an engine that moved under it is
+        # worse than no skill, because an agent that follows it produces a
+        # confident wrong answer, and nothing else reports the drift.
+        #
+        # It writes only into a scratch copy of the corpus under the temporary
+        # directory, so it may run after the step above with nothing between.
+        run: sh .claude/skills/fixtures.sh
