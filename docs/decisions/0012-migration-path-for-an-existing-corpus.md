@@ -27,7 +27,7 @@ One [evaluation](../evaluations/first-contact.md) settles this with [Q11](0011-l
 
 ## Decision
 
-Adoption is a migration from no taxonomy ([spec 7](../spec/07-distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy)). Before `headwater init` a corpus is governed by nothing, so every document is trivially valid. The findings that the proposed taxonomy raises over the existing tree are therefore the migration payload of that taxonomy's first version. A publisher computes a payload from the diff between two majors. At first contact, `infer` computes it from the diff between nothing and one.
+Adoption is a migration from no taxonomy ([spec 7](../spec/07-distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy)). Before `headwater init` a corpus is governed by nothing, so every document is trivially valid. The findings that the proposed taxonomy raises over the existing tree are therefore the migration payload of that taxonomy's first version. A publisher computes a payload from the diff between two majors. On first contact, `infer` computes it from the diff between nothing and one.
 
 ## Consequences
 
