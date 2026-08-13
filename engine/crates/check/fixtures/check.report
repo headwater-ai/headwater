@@ -1,21 +1,22 @@
-18 seen, 17 classified, 16 checked, 117 check instances
-     15 skipped: this document writes no fragment into itself
-     10 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+19 seen, 18 classified, 17 checked, 142 check instances
+     16 skipped: this document writes no fragment into itself
+     11 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: `guarded` forbids hedging, and this engine has no pattern set for it
       2 skipped: `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
-17 documents in the read set
-     16 instances of facet.required.missing
-     16 instances of facet.value.not_permitted
-     17 instances of shelf.placement_is_primary
+18 documents in the read set
+     17 instances of facet.required.missing
+     17 instances of facet.value.not_permitted
+     17 instances of identifier.pattern.not_met
+     18 instances of shelf.placement_is_primary
       4 instances of relation.reciprocity.missing
       6 instances of relation.endpoint.not_permitted
       7 instances of relation.participation.overdue
-      9 instances of voice.forbidden_construction
-      9 instances of language.controlled.not_met
-      7 instances of language.retired_term.used
-      7 instances of language.source_form.not_met
+     10 instances of voice.forbidden_construction
+     10 instances of language.controlled.not_met
+      8 instances of language.retired_term.used
+      8 instances of language.source_form.not_met
       2 instances of section.required.missing
-     17 instances of link.fragment.unresolved
+     18 instances of link.fragment.unresolved
 suppressions
   2 findings hidden by 2 directives
       1 false_positive
@@ -30,6 +31,8 @@ rules, and for each the scope that binds it
   facet.required.missing
     document scope, one document and its front matter
   facet.value.not_permitted
+    document scope, one document and its front matter
+  identifier.pattern.not_met
     document scope, one document and its front matter
   shelf.placement_is_primary
     document scope, one document and its front matter
@@ -58,8 +61,8 @@ rules, and for each the scope that binds it
   control.mechanism.unimplemented
     taxonomy scope, the resolved taxonomy, and no document
 register
-  22 obligations: 17 verified, 2 gap, 1 unverifiable, 2 with no disposition
-      6 high, 5 verified
+  23 obligations: 18 verified, 2 gap, 1 unverifiable, 2 with no disposition
+      7 high, 6 verified
       8 medium, 6 verified
       8 low, 6 verified
   OB-FIX-7 verified, 1 finding escaped under it
@@ -70,23 +73,23 @@ register
   OB-FIX-17 verified, and it states a gap as well, which is two dispositions
   OB-FIX-18 with no disposition, and CT-FIX-15 claims to discharge it under a mechanism this engine does not implement
   OB-FIX-20 gap, owner the fixture tree, and no target, and CT-FIX-17 claims to discharge it under a mechanism this engine does not implement, which is two dispositions
-  19 controls
-     18 posture advisory
+  20 controls
+     19 posture advisory
       1 posture blocking
-     18 acts detective
+     19 acts detective
       1 acts preventive
-     15 name a rule this engine carries
+     16 name a rule this engine carries
       1 name a phase this engine runs
       2 name a mechanism this engine does not implement
       1 name a mechanism outside this engine
-     17 with no promotion record, so nothing states what would promote them
+     18 with no promotion record, so nothing states what would promote them
       1 with criteria
       1 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver mechanism exists, 0 migration-pending, 2 suppressed
   relation.endpoint.not_permitted reaches OB-FIX-5, OB-FIX-17, and a finding names one obligation, so it names none
   coverage.document_unchecked reaches no obligation, so it names none
-32 findings
-     14 error
+33 findings
+     15 error
      18 warn
 
 instances
@@ -122,6 +125,8 @@ instances
     passed
   facet.required.missing check/spec/10-suppressed.md
     passed
+  facet.required.missing check/spec/11-identifier-mismatch.md
+    passed
   facet.value.not_permitted check/evaluations/alpha.md
     passed
   facet.value.not_permitted check/evaluations/beta.md
@@ -154,6 +159,42 @@ instances
     passed
   facet.value.not_permitted check/spec/10-suppressed.md
     passed
+  facet.value.not_permitted check/spec/11-identifier-mismatch.md
+    passed
+  identifier.pattern.not_met check/evaluations/alpha.md
+    passed
+  identifier.pattern.not_met check/evaluations/beta.md
+    passed
+  identifier.pattern.not_met check/evaluations/delta.md
+    passed
+  identifier.pattern.not_met check/evaluations/epsilon.md
+    passed
+  identifier.pattern.not_met check/evaluations/eta.md
+    passed
+  identifier.pattern.not_met check/evaluations/gamma.md
+    passed
+  identifier.pattern.not_met check/evaluations/zeta.md
+    passed
+  identifier.pattern.not_met check/spec/00-both-halves.md
+    passed
+  identifier.pattern.not_met check/spec/01-one-half.md
+    passed
+  identifier.pattern.not_met check/spec/02-cited-only.md
+    passed
+  identifier.pattern.not_met check/spec/05-no-summary.md
+    passed
+  identifier.pattern.not_met check/spec/06-retired.md
+    passed
+  identifier.pattern.not_met check/spec/07-prose-defects.md
+    passed
+  identifier.pattern.not_met check/spec/08-contract-met.md
+    passed
+  identifier.pattern.not_met check/spec/09-contract-missing.md
+    passed
+  identifier.pattern.not_met check/spec/10-suppressed.md
+    passed
+  identifier.pattern.not_met check/spec/11-identifier-mismatch.md
+    failed
   shelf.placement_is_primary check/evaluations/alpha.md
     passed
   shelf.placement_is_primary check/evaluations/beta.md
@@ -187,6 +228,8 @@ instances
   shelf.placement_is_primary check/spec/09-contract-missing.md
     skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
   shelf.placement_is_primary check/spec/10-suppressed.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  shelf.placement_is_primary check/spec/11-identifier-mismatch.md
     skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
   relation.reciprocity.missing check/spec/00-both-halves.md + check/evaluations/alpha.md
     passed
@@ -240,6 +283,8 @@ instances
     skipped: `guarded` forbids hedging, and this engine has no pattern set for it
   voice.forbidden_construction check/spec/10-suppressed.md
     failed
+  voice.forbidden_construction check/spec/11-identifier-mismatch.md
+    passed
   language.controlled.not_met check/spec/00-both-halves.md
     passed
   language.controlled.not_met check/spec/01-one-half.md
@@ -258,6 +303,8 @@ instances
     skipped: `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
   language.controlled.not_met check/spec/10-suppressed.md
     failed
+  language.controlled.not_met check/spec/11-identifier-mismatch.md
+    passed
   language.retired_term.used check/spec/00-both-halves.md
     passed
   language.retired_term.used check/spec/01-one-half.md
@@ -272,6 +319,8 @@ instances
     failed
   language.retired_term.used check/spec/10-suppressed.md
     passed
+  language.retired_term.used check/spec/11-identifier-mismatch.md
+    passed
   language.source_form.not_met check/spec/00-both-halves.md
     passed
   language.source_form.not_met check/spec/01-one-half.md
@@ -285,6 +334,8 @@ instances
   language.source_form.not_met check/spec/07-prose-defects.md
     failed
   language.source_form.not_met check/spec/10-suppressed.md
+    passed
+  language.source_form.not_met check/spec/11-identifier-mismatch.md
     passed
   section.required.missing check/spec/08-contract-met.md
     passed
@@ -323,6 +374,8 @@ instances
   link.fragment.unresolved check/spec/09-contract-missing.md
     skipped: this document writes no fragment into itself
   link.fragment.unresolved check/spec/10-suppressed.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved check/spec/11-identifier-mismatch.md
     skipped: this document writes no fragment into itself
 
 check/evaluations/delta.md:8:7 error
@@ -403,6 +456,9 @@ check/spec/09-contract-missing.md error
 check/spec/10-suppressed.md:27:1 warn
   language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words a sentence, and this one has 31
   fix: split the sentence, or move a clause into its own sentence
+check/spec/11-identifier-mismatch.md:2:1 error
+  identifier.pattern.not_met (OB-FIX-23): `SPEC-HW-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `HW-mismatch` is where the namespace `FIX` was expected
+  fix: write the identifier of check/spec/11-identifier-mismatch.md in the form `SPEC-FIX-<slug>`
 engine/crates/check/fixtures/check.taxonomy.yml warn
   control.mechanism.unimplemented (OB-FIX-12): control CT-FIX-15 names the mechanism check:no.such.rule, which this engine does not implement, so nothing discharges OB-FIX-18
   fix: name a rule this engine carries, or a phase of it, or a mechanism outside it under a prefix this engine does not read

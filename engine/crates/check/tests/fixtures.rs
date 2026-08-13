@@ -824,8 +824,8 @@ fn a_classified_document_with_no_instance_is_a_finding_and_an_untyped_one_is_not
         .map(|finding| finding.path.as_str())
         .collect();
     assert_eq!(paths, ["check/spec/03-no-instance.md"]);
-    assert_eq!(run.coverage.seen(), 18);
-    assert_eq!(run.coverage.classified(), 17);
+    assert_eq!(run.coverage.seen(), 19);
+    assert_eq!(run.coverage.classified(), 18);
 }
 
 /// The coverage numbers are computed against the census and never against the
@@ -876,6 +876,7 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             Grain::Document,
             Grain::Document,
             Grain::Document,
+            Grain::Document,
             Grain::Edge,
             Grain::Edge,
             Grain::Neighbourhood { depth: 1 },
@@ -920,6 +921,12 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         "document scope, one document and its front matter"
     );
 
+    // The identifier rule is the same, and it is worth stating: an identifier
+    // is front matter, so a rule that read the body to find one would be
+    // reading a mention of an identifier rather than the document's own.
+    assert!(!run.served[2].scope.needs_body());
+    assert_eq!(run.served[2].rule, headwater_check::identifier::RULE);
+
     // Exactly one rule reads the clock, and the report names it. A reader who
     // asks why a warm run re-evaluated one rule and not another reads it here.
     let clocked: Vec<&str> = run
@@ -930,7 +937,7 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         .collect();
     assert_eq!(clocked, [participation::RULE]);
     assert_eq!(
-        run.served[5].scope.render(),
+        run.served[6].scope.render(),
         "neighbourhood scope, one document and the documents one relation away from it, \
          and the injected clock"
     );
@@ -963,7 +970,7 @@ fn a_document_check_receives_the_body_only_when_it_declares_it() {
     let declared = over_documents(&Reader::<true>, &census, &pinned(), &mut Cache::disabled());
     let did_not = over_documents(&Reader::<false>, &census, &pinned(), &mut Cache::disabled());
 
-    assert_eq!(declared.len(), 17, "one instance per typed document");
+    assert_eq!(declared.len(), 18, "one instance per typed document");
     assert_eq!(declared.len(), did_not.len());
     assert!(declared
         .iter()

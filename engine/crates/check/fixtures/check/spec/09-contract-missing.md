@@ -1,5 +1,5 @@
 ---
-id: SPEC-FIX-contract-missing
+id: DR-FIX-0009
 doc_type: decision_record
 status: current
 status_since: 2026-01-05
