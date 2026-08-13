@@ -135,9 +135,14 @@ enum Match {
     Admitted,
     /// The segment that stopped the match, and what was left of the identifier
     /// when it did.
-    Refused { at: Segment, rest: String },
+    Refused {
+        at: Segment,
+        rest: String,
+    },
     /// Every segment matched and characters were left over.
-    Trailing { rest: String },
+    Trailing {
+        rest: String,
+    },
 }
 
 impl Template {
@@ -413,7 +418,11 @@ mod tests {
     #[test]
     fn a_slug_is_a_free_token_and_this_check_states_nothing_about_its_alphabet() {
         assert!(admits("SPEC-{namespace}-{slug}", "HW", "SPEC-HW-two-words"));
-        assert!(admits("SPEC-{namespace}-{slug}", "HW", "SPEC-HW-Mixed_Case9"));
+        assert!(admits(
+            "SPEC-{namespace}-{slug}",
+            "HW",
+            "SPEC-HW-Mixed_Case9"
+        ));
         // Present and not empty is the whole of the requirement.
         assert!(!admits("SPEC-{namespace}-{slug}", "HW", "SPEC-HW-"));
     }
