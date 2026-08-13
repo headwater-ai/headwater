@@ -31,6 +31,12 @@ facets:
   summary:
     role: scent
     required: true
+  # The facet in the `name` role. Not required, because one guide leaves it
+  # empty on purpose: that is the branch where a `shelf_sections` declines a
+  # whole file rather than writing one with a section missing.
+  title:
+    role: name
+    required: false
   # The discriminator of the heterogeneous shelf below. Not required, because a
   # document on a homogeneous shelf takes its kind from the directory and a
   # facet that restated it would be a second copy of one fact.
@@ -87,6 +93,12 @@ shelves:
 
 projections:
   - {kind: shelf_index, for: [decisions, guides, archive], output: "{shelf}/README.md"}
+  # One declaration over three shelves, so that one entry exercises all three
+  # branches of the sections emitter. `decisions` names every document and is
+  # written. `guides` holds one document with no name, so the whole file is
+  # declined and the plan says which document stopped it. `archive` holds no
+  # document at all.
+  - {kind: shelf_sections, for: [decisions, guides, archive], output: "{shelf}/SECTIONS.md"}
   # Two exports for one audience, which is what makes `default` a profile
   # rather than a single entry. Both output paths sit outside the corpus root,
   # so neither generated file is walked by the census that produced it.

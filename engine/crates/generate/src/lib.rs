@@ -22,8 +22,8 @@
 //! the artifact would tell them. A declaration of either would put a second copy
 //! of one artifact at a path the engine did not fix.
 //!
-//! So [`Kind`] carries all nine and [`Kind::declarable`] separates them. The
-//! meta-schema's enum holds the seven.
+//! So [`Kind`] carries all ten and [`Kind::declarable`] separates them. The
+//! meta-schema's enum holds the eight.
 //!
 //! # The marker is the record of the previous run
 //!
@@ -95,6 +95,7 @@ pub mod descriptor;
 pub mod export;
 pub mod profile;
 mod shelf_index;
+mod shelf_sections;
 
 pub use profile::{Admission, Clause, Emitter, Filter, Grain, Profile};
 
@@ -121,11 +122,13 @@ pub struct Identity {
 
 /// A projection kind.
 ///
-/// Nine of them. Seven a taxonomy declares, and two the engine defines. See the
+/// Ten of them. Eight a taxonomy declares, and two the engine defines. See the
 /// module header for why that split exists.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kind {
     ShelfIndex,
+    /// One heading, and therefore one anchor, for each document on a shelf.
+    ShelfSections,
     RelationView,
     AgentRules,
     SiteNav,
@@ -143,6 +146,7 @@ impl Kind {
     pub fn name(self) -> &'static str {
         match self {
             Kind::ShelfIndex => "shelf_index",
+            Kind::ShelfSections => "shelf_sections",
             Kind::RelationView => "relation_view",
             Kind::AgentRules => "agent_rules",
             Kind::SiteNav => "site_nav",
@@ -162,8 +166,9 @@ impl Kind {
     }
 
     /// The declarable kinds, in the order the meta-schema lists them.
-    pub const DECLARABLE: [Kind; 7] = [
+    pub const DECLARABLE: [Kind; 8] = [
         Kind::ShelfIndex,
+        Kind::ShelfSections,
         Kind::RelationView,
         Kind::AgentRules,
         Kind::SiteNav,
@@ -442,6 +447,9 @@ pub fn plan(
     for declaration in &projections.declared {
         match declaration.kind {
             Kind::ShelfIndex => shelf_index::emit(surface, census, declaration, &mut plan),
+            Kind::ShelfSections => {
+                shelf_sections::emit(surface, census, declaration, &mut plan)
+            }
             Kind::GraphExport => graph_export(surface, projections, declaration, &mut plan),
             other => plan.unwritten.push(Unwritten {
                 at: declaration.output.clone(),
@@ -606,9 +614,11 @@ fn unbuilt(kind: Kind) -> &'static str {
             "a transcription needs a resolver that reads text from a pinned snapshot, and Q19 \
              leaves whether it ships at all to the first adopter who asks"
         }
-        Kind::ShelfIndex | Kind::GraphExport | Kind::CoverageReport | Kind::CorpusDescriptor => {
-            "this engine emits it"
-        }
+        Kind::ShelfIndex
+        | Kind::ShelfSections
+        | Kind::GraphExport
+        | Kind::CoverageReport
+        | Kind::CorpusDescriptor => "this engine emits it",
     }
 }
 

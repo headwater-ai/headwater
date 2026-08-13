@@ -1,5 +1,6 @@
 ---
 id: DR-FIX-0002
+title: Rebuild the graph on every run
 status: current
 status_since: 2026-02-01
 summary: the graph is rebuilt on every run and never stored, which supersedes DR-FIX-0001

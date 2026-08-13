@@ -1,5 +1,6 @@
 ---
 id: GD-FIX-first-run
+title: The first run
 status: current
 status_since: 2026-02-02
 summary: what to do on a first run, and what to read when it refuses

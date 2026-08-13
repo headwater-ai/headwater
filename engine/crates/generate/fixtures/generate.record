@@ -20,6 +20,21 @@ the plan
 - [GD-FIX-first-run](first-run.md) — what to do on a first run, and what to read when it refuses
 - [GD-FIX-recovery](recovery.md) — how to recover a corpus whose lock and sources disagree (asserted, and no human has accepted it)
 
+=== generate/decisions/SECTIONS.md (shelf_sections) ===
+<!-- headwater:generated shelf_sections. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file. -->
+
+# decisions
+
+2 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+
+## Rebuild the graph on every run
+
+[DR-FIX-0002](0002-rebuild-the-graph.md) — the graph is rebuilt on every run and never stored, which supersedes DR-FIX-0001
+
+## Store the graph on disk
+
+[DR-FIX-0001](0001-store-the-graph.md) — the first ruling on where the corpus graph lives, replaced by DR-FIX-0002
+
 === exports/native.json (graph_export) ===
 {
   "headwater:generated": "graph_export. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
@@ -55,6 +70,7 @@ the plan
         "warrant": "accepted",
         "facets": {
           "id": "DR-FIX-0001",
+          "title": "Store the graph on disk",
           "status": "superseded",
           "status_since": "2026-02-01",
           "summary": "the first ruling on where the corpus graph lives, replaced by DR-FIX-0002",
@@ -76,6 +92,7 @@ the plan
         "warrant": "accepted",
         "facets": {
           "id": "DR-FIX-0002",
+          "title": "Rebuild the graph on every run",
           "status": "current",
           "status_since": "2026-02-01",
           "summary": "the graph is rebuilt on every run and never stored, which supersedes DR-FIX-0001",
@@ -100,6 +117,7 @@ the plan
         "warrant": "accepted",
         "facets": {
           "id": "GD-FIX-first-run",
+          "title": "The first run",
           "status": "current",
           "status_since": "2026-02-02",
           "summary": "what to do on a first run, and what to read when it refuses",
@@ -498,6 +516,7 @@ the plan
         "warrant": "accepted",
         "facets": {
           "id": "DR-FIX-0001",
+          "title": "Store the graph on disk",
           "status": "superseded",
           "status_since": "2026-02-01",
           "summary": "the first ruling on where the corpus graph lives, replaced by DR-FIX-0002",
@@ -519,6 +538,7 @@ the plan
         "warrant": "accepted",
         "facets": {
           "id": "DR-FIX-0002",
+          "title": "Rebuild the graph on every run",
           "status": "current",
           "status_since": "2026-02-01",
           "summary": "the graph is rebuilt on every run and never stored, which supersedes DR-FIX-0001",
@@ -543,6 +563,7 @@ the plan
         "warrant": "accepted",
         "facets": {
           "id": "GD-FIX-first-run",
+          "title": "The first run",
           "status": "current",
           "status_since": "2026-02-02",
           "summary": "what to do on a first run, and what to read when it refuses",
@@ -669,6 +690,8 @@ projections
     written
   shelf_index generate/guides/README.md
     written
+  shelf_sections generate/decisions/SECTIONS.md
+    written
   graph_export exports/native.json
     written
   graph_export exports/front-matter.schema.json
@@ -680,6 +703,10 @@ projections
 
 what this verb does not write, and why
   shelf_index generate/archive/README.md
+    the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  shelf_sections generate/guides/SECTIONS.md
+    `generate/guides/recovery.md` declares no `title`, and a section needs a heading that the corpus states. A file with one section missing hides the document it dropped
+  shelf_sections generate/archive/SECTIONS.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
@@ -691,6 +718,8 @@ projections
     unchanged
   shelf_index generate/guides/README.md
     unchanged
+  shelf_sections generate/decisions/SECTIONS.md
+    unchanged
   graph_export exports/native.json
     unchanged
   graph_export exports/front-matter.schema.json
@@ -702,6 +731,10 @@ projections
 
 what this verb does not write, and why
   shelf_index generate/archive/README.md
+    the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  shelf_sections generate/guides/SECTIONS.md
+    `generate/guides/recovery.md` declares no `title`, and a section needs a heading that the corpus states. A file with one section missing hides the document it dropped
+  shelf_sections generate/archive/SECTIONS.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
@@ -713,6 +746,8 @@ projections, held to regeneration
     committed, and it is not what this corpus and this lock produce
   shelf_index generate/guides/README.md
     unchanged
+  shelf_sections generate/decisions/SECTIONS.md
+    unchanged
   graph_export exports/native.json
     unchanged
   graph_export exports/front-matter.schema.json
@@ -724,6 +759,10 @@ projections, held to regeneration
 
 what this verb does not write, and why
   shelf_index generate/archive/README.md
+    the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  shelf_sections generate/guides/SECTIONS.md
+    `generate/guides/recovery.md` declares no `title`, and a section needs a heading that the corpus states. A file with one section missing hides the document it dropped
+  shelf_sections generate/archive/SECTIONS.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
@@ -735,6 +774,8 @@ projections
     rewritten
   shelf_index generate/guides/README.md
     unchanged
+  shelf_sections generate/decisions/SECTIONS.md
+    unchanged
   graph_export exports/native.json
     unchanged
   graph_export exports/front-matter.schema.json
@@ -746,6 +787,10 @@ projections
 
 what this verb does not write, and why
   shelf_index generate/archive/README.md
+    the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  shelf_sections generate/guides/SECTIONS.md
+    `generate/guides/recovery.md` declares no `title`, and a section needs a heading that the corpus states. A file with one section missing hides the document it dropped
+  shelf_sections generate/archive/SECTIONS.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
@@ -757,6 +802,8 @@ projections, held to regeneration
     unchanged
   shelf_index generate/guides/README.md
     unchanged
+  shelf_sections generate/decisions/SECTIONS.md
+    unchanged
   graph_export exports/native.json
     unchanged
   graph_export exports/front-matter.schema.json
@@ -768,6 +815,10 @@ projections, held to regeneration
 
 what this verb does not write, and why
   shelf_index generate/archive/README.md
+    the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  shelf_sections generate/guides/SECTIONS.md
+    `generate/guides/recovery.md` declares no `title`, and a section needs a heading that the corpus states. A file with one section missing hides the document it dropped
+  shelf_sections generate/archive/SECTIONS.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
@@ -779,6 +830,8 @@ projections, held to regeneration
     not committed, and this run would write it
   shelf_index generate/guides/README.md
     not committed, and this run would write it
+  shelf_sections generate/decisions/SECTIONS.md
+    not committed, and this run would write it
   graph_export exports/native.json
     not committed, and this run would write it
   graph_export exports/front-matter.schema.json
@@ -791,6 +844,10 @@ projections, held to regeneration
 what this verb does not write, and why
   shelf_index generate/archive/README.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  shelf_sections generate/guides/SECTIONS.md
+    `generate/guides/recovery.md` declares no `title`, and a section needs a heading that the corpus states. A file with one section missing hides the document it dropped
+  shelf_sections generate/archive/SECTIONS.md
+    the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
 fails the run: true
@@ -800,6 +857,8 @@ projections
   shelf_index generate/decisions/README.md
     a file is there and it carries no generated-file marker, so this engine will not overwrite it
   shelf_index generate/guides/README.md
+    written
+  shelf_sections generate/decisions/SECTIONS.md
     written
   graph_export exports/native.json
     written
@@ -812,6 +871,10 @@ projections
 
 what this verb does not write, and why
   shelf_index generate/archive/README.md
+    the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
+  shelf_sections generate/guides/SECTIONS.md
+    `generate/guides/recovery.md` declares no `title`, and a section needs a heading that the corpus states. A file with one section missing hides the document it dropped
+  shelf_sections generate/archive/SECTIONS.md
     the shelf `archive` holds no document, and an index of nothing asserts that a shelf is there
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it

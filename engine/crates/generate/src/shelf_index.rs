@@ -109,7 +109,7 @@ pub(crate) fn emit(
 
 /// The directory a shelf's glob claims: everything before the first glob
 /// construct, with no trailing separator.
-fn directory_of(pattern: &str) -> String {
+pub(crate) fn directory_of(pattern: &str) -> String {
     let stop = pattern.find(['*', '?', '[', '{']).unwrap_or(pattern.len());
     pattern[..stop].trim_end_matches('/').to_string()
 }
@@ -156,14 +156,14 @@ fn render(shelf: &str, output: &str, ordered: &[Pointer]) -> String {
     out
 }
 
-fn parent_of(path: &str) -> String {
+pub(crate) fn parent_of(path: &str) -> String {
     match path.rfind('/') {
         Some(at) => path[..at].to_string(),
         None => String::new(),
     }
 }
 
-fn file_name(path: &str) -> String {
+pub(crate) fn file_name(path: &str) -> String {
     match path.rfind('/') {
         Some(at) => path[at + 1..].to_string(),
         None => path.to_string(),
@@ -176,7 +176,7 @@ fn file_name(path: &str) -> String {
 /// path. A shelf glob can claim a path outside the directory its literal prefix
 /// names, and a link built by counting `../` from a guess is worse than a link
 /// that is plainly rooted.
-fn relative(base: &str, path: &str) -> String {
+pub(crate) fn relative(base: &str, path: &str) -> String {
     if base.is_empty() {
         return path.to_string();
     }
