@@ -15,3 +15,12 @@ headwater-check = { path = "../check" }
 # The JSON writer. `headwater-query` owns it because a protocol message needed
 # one first, and a second writer of one format is the drift spec 4 names.
 headwater-query = { path = "../query" }
+
+[dev-dependencies]
+# The suite runs the whole pipeline over the check crate's fixture tree, so it
+# needs what a run needs. It reads that tree rather than growing a second one:
+# see the suite's own comment for why.
+headwater-census = { path = "../census" }
+headwater-graph = { path = "../graph" }
+headwater-hash = { path = "../hash" }
+headwater-yaml = { path = "../yaml" }

@@ -1,0 +1,1691 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "headwater",
+          "informationUri": "https://github.com/headwater-ai/headwater",
+          "rules": [
+            {
+              "id": "facet.required.missing",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-3"
+                  ],
+                  "exportable_as": [
+                    "jsonschema"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "facet.value.not_permitted",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-4"
+                  ],
+                  "exportable_as": [
+                    "jsonschema"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "identifier.pattern.not_met",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-23"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "shelf.placement_is_primary",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-2"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "relation.reciprocity.missing",
+              "shortDescription": {
+                "text": "edge scope, one relation instance and both endpoints"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "edge",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-1"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "relation.endpoint.not_permitted",
+              "shortDescription": {
+                "text": "edge scope, one relation instance and both endpoints"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "edge",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-5",
+                    "OB-FIX-17"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "relation.participation.overdue",
+              "shortDescription": {
+                "text": "neighbourhood scope, one document and the documents one relation away from it, and the injected clock"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "neighbourhood",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-6"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "voice.forbidden_construction",
+              "shortDescription": {
+                "text": "document scope, one document, its front matter and its body"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-7"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "language.controlled.not_met",
+              "shortDescription": {
+                "text": "document scope, one document, its front matter and its body"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-8"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "language.retired_term.used",
+              "shortDescription": {
+                "text": "document scope, one document, its front matter and its body"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-22"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "language.source_form.not_met",
+              "shortDescription": {
+                "text": "document scope, one document, its front matter and its body"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-21"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "section.required.missing",
+              "shortDescription": {
+                "text": "document scope, one document, its front matter and its body"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-9"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "link.fragment.unresolved",
+              "shortDescription": {
+                "text": "document scope, one document, its front matter and its body"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-10"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "coverage.document_unchecked",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "obligation.disposition.not_one",
+              "shortDescription": {
+                "text": "taxonomy scope, the resolved taxonomy, and no document"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "taxonomy",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-11"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "control.mechanism.unimplemented",
+              "shortDescription": {
+                "text": "taxonomy scope, the resolved taxonomy, and no document"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "taxonomy",
+                  "version": 1,
+                  "obligations": [
+                    "OB-FIX-12"
+                  ],
+                  "exportable_as": []
+                }
+              }
+            }
+          ]
+        }
+      },
+      "columnKind": "unicodeCodePoints",
+      "invocations": [
+        {
+          "executionSuccessful": true
+        }
+      ],
+      "artifacts": [
+        {
+          "location": {
+            "uri": "check/evaluations/alpha.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "e651a58ed6489f388954343391d6321a708a2b7492bb4dc1386699a8bf65cc7b"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/evaluations/beta.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "37e03d2c518cced7604d74dd38c1949cbc72186db9b4a4bd5bb8f3fe9503d31d"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/evaluations/delta.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "2f0828576f6ae90573d0a3e6acb2ba64eacf43fd4221e4b821efd5ea335c948f"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/evaluations/epsilon.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "630bb5d4cad70de102c942ff505a8597f750ee2358fceb6fa5b73ff8a31a4337"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/evaluations/eta.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "d1882e10c05b15d1c6aafcc982b2ecbf429ec169a0fcd7ad11f79dbf5b20228a"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/evaluations/gamma.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "bb74fe7df19ea383b01be2f8686fb87dbea18757b4134e601e3e718aeee9e09b"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/evaluations/zeta.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "78ec68e48f9e8e1f8826c1280bdb523820556b14e2ac375f21cf8c1915240964"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/00-both-halves.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "d48e647e2eae1f8f70ff05df8faf4fe1b28aacce6d9730ba584d1143e6b5e76f"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/01-one-half.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "20a913097b2d04bc39e5ff8271b47a21dfaa135f78b5fdda234e38c3a30c7017"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/02-cited-only.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "9f4f5fff759b2f04d2956dabbb3cdc0e86bdc8f306159a58ad4f7f80cbad9c82"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/03-no-instance.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "bb254e9a27d62cf8ff126895c545a797d9eeadee7e756bd34a7536ce21cba7ad"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/05-no-summary.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "e93ab39ba0f3d03cf7593bc046d7c0a5aa0fbf102df0e02e2dbf34c263aa346d"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/06-retired.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "d40b65fea5627e9da5693ba6ff1239180b1a3b6a9ab83ed5b414f286d7ded636"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/07-prose-defects.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "b00708ea7ec9b3c649a542c20455d377fa6df0cb2248d66466097e3eeba74bd0"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/08-contract-met.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "1f137d2e39a164a976bcfb76d662b7469171f99bd3ce643c4d3fb2fd247ba34f"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/09-contract-missing.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "6bc8ae424b8a20472a5d244ed71613195ad527e11e4739ec7cf5fa88f4315d4a"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/10-suppressed.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "2258c21842ba066fc11cadfee7b462909dda6bd93cf7693e9c93fa786382ebba"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/11-identifier-mismatch.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "68f87dae942b5f7ef8b0a2aa47c3635a774c4ea65d0895e1d6895e5617d86a5b"
+          }
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "relation.reciprocity.missing",
+          "ruleIndex": 4,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`EVAL-FIX-delta` declares `cited_by: SPEC-FIX-cited-only`, and `cites_evidence` requires both ends, so check/spec/02-cited-only.md owes `cites_evidence`",
+            "markdown": "`EVAL-FIX-delta` declares `cited_by: SPEC-FIX-cited-only`, and `cites_evidence` requires both ends, so check/spec/02-cited-only.md owes `cites_evidence`\n\n**Fix:** add `cites_evidence: EVAL-FIX-delta` under `relations:` in check/spec/02-cited-only.md\n\n_Not reported: held by the adoption task AD-1, owned by the fixture tree, until 2027-01-01._"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/evaluations/delta.md"
+                },
+                "region": {
+                  "startLine": 8,
+                  "startColumn": 7
+                }
+              }
+            }
+          ],
+          "suppressions": [
+            {
+              "kind": "external",
+              "status": "accepted",
+              "justification": "held by the adoption task AD-1, owned by the fixture tree, until 2027-01-01",
+              "properties": {
+                "headwater": {
+                  "escape": "migration-pending"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": true,
+              "remediation": "add `cites_evidence: EVAL-FIX-delta` under `relations:` in check/spec/02-cited-only.md",
+              "escape": "migration-pending",
+              "obligation": "OB-FIX-1",
+              "obligation_severity": "medium"
+            }
+          }
+        },
+        {
+          "ruleId": "relation.participation.overdue",
+          "ruleIndex": 6,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`evidence-cited`: 219 days since `status_since`, and this `evaluation` reaches no `cites_evidence` to a `design_spec` inside the 30 days the taxonomy allows",
+            "markdown": "`evidence-cited`: 219 days since `status_since`, and this `evaluation` reaches no `cites_evidence` to a `design_spec` inside the 30 days the taxonomy allows\n\n**Fix:** declare `cites_evidence` to a `design_spec` under `relations:` in check/evaluations/epsilon.md, or record why it is not owed: an evaluation that no specification cites closed nothing"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/evaluations/epsilon.md"
+                },
+                "region": {
+                  "startLine": 4,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "declare `cites_evidence` to a `design_spec` under `relations:` in check/evaluations/epsilon.md, or record why it is not owed: an evaluation that no specification cites closed nothing",
+              "escape": "none",
+              "obligation": "OB-FIX-6",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "relation.endpoint.not_permitted",
+          "ruleIndex": 5,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`assesses` declares `from: [design_spec]`, and `EVAL-FIX-eta` at that end has the kind `evaluation`",
+            "markdown": "`assesses` declares `from: [design_spec]`, and `EVAL-FIX-eta` at that end has the kind `evaluation`\n\n**Fix:** declare this relation between kinds `assesses` permits, or widen its `from` in the taxonomy; the document at that end is check/evaluations/eta.md"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/evaluations/eta.md"
+                },
+                "region": {
+                  "startLine": 8,
+                  "startColumn": 7
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "declare this relation between kinds `assesses` permits, or widen its `from` in the taxonomy; the document at that end is check/evaluations/eta.md",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "shelf.placement_is_primary",
+          "ruleIndex": 3,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`evaluations` is homogeneous and carries the kind `evaluation`, and this document restates it as `doc_type: evaluation`",
+            "markdown": "`evaluations` is homogeneous and carries the kind `evaluation`, and this document restates it as `doc_type: evaluation`\n\n**Fix:** remove `doc_type` from the front matter of check/evaluations/gamma.md"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/evaluations/gamma.md"
+                },
+                "region": {
+                  "startLine": 3,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": true,
+              "remediation": "remove `doc_type` from the front matter of check/evaluations/gamma.md",
+              "escape": "none",
+              "obligation": "OB-FIX-2",
+              "obligation_severity": "medium"
+            }
+          }
+        },
+        {
+          "ruleId": "relation.reciprocity.missing",
+          "ruleIndex": 4,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`EVAL-FIX-gamma` declares `cited_by: SPEC-FIX-both-halves`, and `cites_evidence` requires both ends, so check/spec/00-both-halves.md owes `cites_evidence`",
+            "markdown": "`EVAL-FIX-gamma` declares `cited_by: SPEC-FIX-both-halves`, and `cites_evidence` requires both ends, so check/spec/00-both-halves.md owes `cites_evidence`\n\n**Fix:** add `cites_evidence: EVAL-FIX-gamma` under `relations:` in check/spec/00-both-halves.md"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/evaluations/gamma.md"
+                },
+                "region": {
+                  "startLine": 9,
+                  "startColumn": 7
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": true,
+              "remediation": "add `cites_evidence: EVAL-FIX-gamma` under `relations:` in check/spec/00-both-halves.md",
+              "escape": "none",
+              "obligation": "OB-FIX-1",
+              "obligation_severity": "medium"
+            }
+          }
+        },
+        {
+          "ruleId": "relation.reciprocity.missing",
+          "ruleIndex": 4,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`SPEC-FIX-one-half` declares `cites_evidence: EVAL-FIX-beta`, and `cites_evidence` requires both ends, so check/evaluations/beta.md owes `cited_by`",
+            "markdown": "`SPEC-FIX-one-half` declares `cites_evidence: EVAL-FIX-beta`, and `cites_evidence` requires both ends, so check/evaluations/beta.md owes `cited_by`\n\n**Fix:** add `cited_by: SPEC-FIX-one-half` under `relations:` in check/evaluations/beta.md"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/01-one-half.md"
+                },
+                "region": {
+                  "startLine": 9,
+                  "startColumn": 7
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": true,
+              "remediation": "add `cited_by: SPEC-FIX-one-half` under `relations:` in check/evaluations/beta.md",
+              "escape": "none",
+              "obligation": "OB-FIX-1",
+              "obligation_severity": "medium"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 8,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` holds prose to 25 words a sentence, and this one has 34",
+            "markdown": "`ste_house` holds prose to 25 words a sentence, and this one has 34\n\n**Fix:** split the sentence, or move a clause into its own sentence"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/01-one-half.md"
+                },
+                "region": {
+                  "startLine": 18,
+                  "startColumn": 151
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "split the sentence, or move a clause into its own sentence",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "coverage.document_unchecked",
+          "ruleIndex": 13,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "this document is classified and all 2 of its check instances were skipped",
+            "markdown": "this document is classified and all 2 of its check instances were skipped\n\n**Fix:** check that the shelf pattern claims the right files, and that the kind declares something a check reads"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/03-no-instance.md"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "check that the shelf pattern claims the right files, and that the kind declares something a check reads",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "facet.required.missing",
+          "ruleIndex": 0,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`design_spec` requires the facet `summary`, and it is not declared",
+            "markdown": "`design_spec` requires the facet `summary`, and it is not declared\n\n**Fix:** add `summary:` to the front matter of check/spec/05-no-summary.md, with the value this document has"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/05-no-summary.md"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "add `summary:` to the front matter of check/spec/05-no-summary.md, with the value this document has",
+              "escape": "none",
+              "obligation": "OB-FIX-3",
+              "obligation_severity": "high"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 8,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` holds prose to 25 words a sentence, and this one has 31",
+            "markdown": "`ste_house` holds prose to 25 words a sentence, and this one has 31\n\n**Fix:** split the sentence, or move a clause into its own sentence"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/05-no-summary.md"
+                },
+                "region": {
+                  "startLine": 12,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "split the sentence, or move a clause into its own sentence",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "facet.value.not_permitted",
+          "ruleIndex": 1,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`status` admits draft, current, superseded, and this document declares `retired`",
+            "markdown": "`status` admits draft, current, superseded, and this document declares `retired`\n\n**Fix:** change `status` in check/spec/06-retired.md to one of: draft, current, superseded"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/06-retired.md"
+                },
+                "region": {
+                  "startLine": 4,
+                  "startColumn": 9
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "change `status` in check/spec/06-retired.md to one of: draft, current, superseded",
+              "escape": "none",
+              "obligation": "OB-FIX-4",
+              "obligation_severity": "medium"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 8,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` holds prose to 25 words a sentence, and this one has 34",
+            "markdown": "`ste_house` holds prose to 25 words a sentence, and this one has 34\n\n**Fix:** split the sentence, or move a clause into its own sentence"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/06-retired.md"
+                },
+                "region": {
+                  "startLine": 11,
+                  "startColumn": 131
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "split the sentence, or move a clause into its own sentence",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "voice.forbidden_construction",
+          "ruleIndex": 7,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`declarative` forbids future_intent, and this sentence writes `will be`",
+            "markdown": "`declarative` forbids future_intent, and this sentence writes `will be`\n\n**Fix:** state what the system does now, or move the sentence to a document whose kind narrates"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 15,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "state what the system does now, or move the sentence to a document whose kind narrates",
+              "escape": "none",
+              "obligation": "OB-FIX-7",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "voice.forbidden_construction",
+          "ruleIndex": 7,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`declarative` forbids change_narration, and this sentence writes `we renamed`",
+            "markdown": "`declarative` forbids change_narration, and this sentence writes `we renamed`\n\n**Fix:** state the position that holds, and leave the change to the decision that made it"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 17,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "state the position that holds, and leave the change to the decision that made it",
+              "escape": "none",
+              "obligation": "OB-FIX-7",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "voice.forbidden_construction",
+          "ruleIndex": 7,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`declarative` forbids phased_rollout, and this sentence writes `for now`",
+            "markdown": "`declarative` forbids phased_rollout, and this sentence writes `for now`\n\n**Fix:** state what holds, and record the sequence in the plan that owns it"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 19,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "state what holds, and record the sequence in the plan that owns it",
+              "escape": "none",
+              "obligation": "OB-FIX-7",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 8,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` holds prose to 25 words a sentence, and this one has 43",
+            "markdown": "`ste_house` holds prose to 25 words a sentence, and this one has 43\n\n**Fix:** split the sentence, or move a clause into its own sentence"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 23,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "split the sentence, or move a clause into its own sentence",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 8,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` admits no contraction, and this sentence writes `doesn't`",
+            "markdown": "`ste_house` admits no contraction, and this sentence writes `doesn't`\n\n**Fix:** write `doesn't` out in full"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 25,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "write `doesn't` out in full",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 8,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` declares the tag `en-US`, and this sentence writes `behaviour`",
+            "markdown": "`ste_house` declares the tag `en-US`, and this sentence writes `behaviour`\n\n**Fix:** write `behavior`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 27,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "write `behavior`",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 8,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` admits no semicolon in running prose, and this sentence writes one",
+            "markdown": "`ste_house` admits no semicolon in running prose, and this sentence writes one\n\n**Fix:** split the sentence in two, and let each half state one thing"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 29,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "split the sentence in two, and let each half state one thing",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.retired_term.used",
+          "ruleIndex": 9,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` retires `reference system`, and this sentence writes it: the corpus renamed it",
+            "markdown": "`ste_house` retires `reference system`, and this sentence writes it: the corpus renamed it\n\n**Fix:** write `taxonomy`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 35,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": true,
+              "remediation": "write `taxonomy`",
+              "escape": "none",
+              "obligation": "OB-FIX-22",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.retired_term.used",
+          "ruleIndex": 9,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives",
+            "markdown": "`ste_house` retires `robust`, and this sentence writes it: it stands in for the failure the thing survives\n\n**Fix:** rewrite the sentence without `robust`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 37,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "rewrite the sentence without `robust`",
+              "escape": "none",
+              "obligation": "OB-FIX-22",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.source_form.not_met",
+          "ruleIndex": 10,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` writes one paragraph on one line, and this line continues the paragraph above",
+            "markdown": "`ste_house` writes one paragraph on one line, and this line continues the paragraph above\n\n**Fix:** join this line to the line above, or end the paragraph there"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 48,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "join this line to the line above, or end the paragraph there",
+              "escape": "none",
+              "obligation": "OB-FIX-21",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.source_form.not_met",
+          "ruleIndex": 10,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` writes one paragraph on one line, and this line continues the paragraph above",
+            "markdown": "`ste_house` writes one paragraph on one line, and this line continues the paragraph above\n\n**Fix:** join this line to the line above, or end the paragraph there"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 49,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "join this line to the line above, or end the paragraph there",
+              "escape": "none",
+              "obligation": "OB-FIX-21",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "link.fragment.unresolved",
+          "ruleIndex": 12,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`#no-such-section` names no heading of this document",
+            "markdown": "`#no-such-section` names no heading of this document\n\n**Fix:** point it at a heading of check/spec/07-prose-defects.md, or write the heading it names"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/07-prose-defects.md"
+                },
+                "region": {
+                  "startLine": 53,
+                  "startColumn": 32
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "point it at a heading of check/spec/07-prose-defects.md, or write the heading it names",
+              "escape": "none",
+              "obligation": "OB-FIX-10",
+              "obligation_severity": "medium"
+            }
+          }
+        },
+        {
+          "ruleId": "section.required.missing",
+          "ruleIndex": 11,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`decision_record` requires the section `Decision`, and no heading of this document says so",
+            "markdown": "`decision_record` requires the section `Decision`, and no heading of this document says so\n\n**Fix:** add a `Decision` heading to check/spec/09-contract-missing.md, with the content the kind is for"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/09-contract-missing.md"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "add a `Decision` heading to check/spec/09-contract-missing.md, with the content the kind is for",
+              "escape": "none",
+              "obligation": "OB-FIX-9",
+              "obligation_severity": "high"
+            }
+          }
+        },
+        {
+          "ruleId": "voice.forbidden_construction",
+          "ruleIndex": 7,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`declarative` forbids future_intent, and this sentence writes `will be`",
+            "markdown": "`declarative` forbids future_intent, and this sentence writes `will be`\n\n**Fix:** state what the system does now, or move the sentence to a document whose kind narrates\n\n_Not reported: suppressed at check/spec/10-suppressed.md:15 as accepted_deviation, until 2030-01-01 (this fixture states a plan on purpose)._"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/10-suppressed.md"
+                },
+                "region": {
+                  "startLine": 17,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "suppressions": [
+            {
+              "kind": "inSource",
+              "status": "accepted",
+              "justification": "suppressed at check/spec/10-suppressed.md:15 as accepted_deviation, until 2030-01-01 (this fixture states a plan on purpose)",
+              "properties": {
+                "headwater": {
+                  "escape": "suppression"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "state what the system does now, or move the sentence to a document whose kind narrates",
+              "escape": "suppression",
+              "obligation": "OB-FIX-7",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 8,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` holds prose to 25 words a sentence, and this one has 33",
+            "markdown": "`ste_house` holds prose to 25 words a sentence, and this one has 33\n\n**Fix:** split the sentence, or move a clause into its own sentence\n\n_Not reported: suppressed at check/spec/10-suppressed.md:21 as false_positive, until 2030-01-01 (the length is the fixture)._"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/10-suppressed.md"
+                },
+                "region": {
+                  "startLine": 21,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "suppressions": [
+            {
+              "kind": "inSource",
+              "status": "accepted",
+              "justification": "suppressed at check/spec/10-suppressed.md:21 as false_positive, until 2030-01-01 (the length is the fixture)",
+              "properties": {
+                "headwater": {
+                  "escape": "suppression"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "split the sentence, or move a clause into its own sentence",
+              "escape": "suppression",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "language.controlled.not_met",
+          "ruleIndex": 8,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "`ste_house` holds prose to 25 words a sentence, and this one has 31",
+            "markdown": "`ste_house` holds prose to 25 words a sentence, and this one has 31\n\n**Fix:** split the sentence, or move a clause into its own sentence"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/10-suppressed.md"
+                },
+                "region": {
+                  "startLine": 27,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "split the sentence, or move a clause into its own sentence",
+              "escape": "none",
+              "obligation": "OB-FIX-8",
+              "obligation_severity": "low"
+            }
+          }
+        },
+        {
+          "ruleId": "identifier.pattern.not_met",
+          "ruleIndex": 2,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`SPEC-HW-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `HW-mismatch` is where the namespace `FIX` was expected",
+            "markdown": "`SPEC-HW-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `HW-mismatch` is where the namespace `FIX` was expected\n\n**Fix:** write the identifier of check/spec/11-identifier-mismatch.md in the form `SPEC-FIX-<slug>`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/11-identifier-mismatch.md"
+                },
+                "region": {
+                  "startLine": 2,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": false,
+              "remediation": "write the identifier of check/spec/11-identifier-mismatch.md in the form `SPEC-FIX-<slug>`",
+              "escape": "none",
+              "obligation": "OB-FIX-23",
+              "obligation_severity": "high"
+            }
+          }
+        },
+        {
+          "ruleId": "control.mechanism.unimplemented",
+          "ruleIndex": 15,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "control CT-FIX-15 names the mechanism check:no.such.rule, which this engine does not implement, so nothing discharges OB-FIX-18",
+            "markdown": "control CT-FIX-15 names the mechanism check:no.such.rule, which this engine does not implement, so nothing discharges OB-FIX-18\n\n**Fix:** name a rule this engine carries, or a phase of it, or a mechanism outside it under a prefix this engine does not read"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "engine/crates/check/fixtures/check.taxonomy.yml"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "name a rule this engine carries, or a phase of it, or a mechanism outside it under a prefix this engine does not read",
+              "escape": "none",
+              "obligation": "OB-FIX-12",
+              "obligation_severity": "high"
+            }
+          }
+        },
+        {
+          "ruleId": "control.mechanism.unimplemented",
+          "ruleIndex": 15,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "control CT-FIX-17 names the mechanism phase:no.such.phase, which this engine does not implement, so nothing discharges OB-FIX-20",
+            "markdown": "control CT-FIX-17 names the mechanism phase:no.such.phase, which this engine does not implement, so nothing discharges OB-FIX-20\n\n**Fix:** name a rule this engine carries, or a phase of it, or a mechanism outside it under a prefix this engine does not read"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "engine/crates/check/fixtures/check.taxonomy.yml"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "name a rule this engine carries, or a phase of it, or a mechanism outside it under a prefix this engine does not read",
+              "escape": "none",
+              "obligation": "OB-FIX-12",
+              "obligation_severity": "high"
+            }
+          }
+        },
+        {
+          "ruleId": "obligation.disposition.not_one",
+          "ruleIndex": 14,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "obligation OB-FIX-16 carries no disposition: no control discharges it, and it states neither a gap nor an acceptance",
+            "markdown": "obligation OB-FIX-16 carries no disposition: no control discharges it, and it states neither a gap nor an acceptance\n\n**Fix:** give the obligation a control that discharges it, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "engine/crates/check/fixtures/check.taxonomy.yml"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "give the obligation a control that discharges it, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three",
+              "escape": "none",
+              "obligation": "OB-FIX-11",
+              "obligation_severity": "high"
+            }
+          }
+        },
+        {
+          "ruleId": "obligation.disposition.not_one",
+          "ruleIndex": 14,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "obligation OB-FIX-17 carries two dispositions: CT-FIX-14 discharges it, and it also states one for itself",
+            "markdown": "obligation OB-FIX-17 carries two dispositions: CT-FIX-14 discharges it, and it also states one for itself\n\n**Fix:** give the obligation a control that discharges it, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "engine/crates/check/fixtures/check.taxonomy.yml"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "give the obligation a control that discharges it, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three",
+              "escape": "none",
+              "obligation": "OB-FIX-11",
+              "obligation_severity": "high"
+            }
+          }
+        },
+        {
+          "ruleId": "obligation.disposition.not_one",
+          "ruleIndex": 14,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "obligation OB-FIX-18 carries no disposition: CT-FIX-15 names a mechanism this engine does not implement, so nothing discharges it, and it states neither a gap nor an acceptance",
+            "markdown": "obligation OB-FIX-18 carries no disposition: CT-FIX-15 names a mechanism this engine does not implement, so nothing discharges it, and it states neither a gap nor an acceptance\n\n**Fix:** name a mechanism this engine implements on CT-FIX-15, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "engine/crates/check/fixtures/check.taxonomy.yml"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "name a mechanism this engine implements on CT-FIX-15, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three",
+              "escape": "none",
+              "obligation": "OB-FIX-11",
+              "obligation_severity": "high"
+            }
+          }
+        },
+        {
+          "ruleId": "obligation.disposition.not_one",
+          "ruleIndex": 14,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "obligation OB-FIX-20 carries two dispositions: CT-FIX-17 claims to discharge it, and it also states one for itself",
+            "markdown": "obligation OB-FIX-20 carries two dispositions: CT-FIX-17 claims to discharge it, and it also states one for itself\n\n**Fix:** name a mechanism this engine implements on CT-FIX-17, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "engine/crates/check/fixtures/check.taxonomy.yml"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "warn",
+              "fixable": false,
+              "remediation": "name a mechanism this engine implements on CT-FIX-17, or state `disposition: {gap: {owner: …}}` or `disposition: {unverifiable: {reasoning: …}}` on it, and exactly one of the three",
+              "escape": "none",
+              "obligation": "OB-FIX-11",
+              "obligation_severity": "high"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "headwater": {
+          "taxonomy": {
+            "package": "headwater/fixture",
+            "version": "1.0.0",
+            "lock": "918fa7a6d4592f6eb7dacb9031abcaef82fac0377c40fbb95a697f87a3df3d02"
+          },
+          "clock": "2026-08-12",
+          "coverage": {
+            "seen": 19,
+            "classified": 18,
+            "checked": 17,
+            "instances": 142
+          },
+          "escaped": {
+            "waived": "no waiver mechanism exists",
+            "migration_pending": 1,
+            "suppressed": 2
+          },
+          "read_set": {
+            "inputs": 18,
+            "unhashed": 0
+          },
+          "loss_set": [
+            {
+              "field": "the obligation's severity",
+              "reason": "`level` is the check's scale, and SARIF has no second member for how much an invariant matters. A consumer that ranks by `level` ranks by the check",
+              "carried_in": "properties.headwater.obligation_severity"
+            },
+            {
+              "field": "the escape class",
+              "reason": "`suppression.kind` has two values and spec 4 fixes three escape classes. A directive is `inSource`; a task of the adoption payload is `external`, and a waiver would be `external` too",
+              "carried_in": "properties.headwater.escape"
+            },
+            {
+              "field": "the control's posture",
+              "reason": "no member says whether a finding stops a gate, and the engine emits what it evaluated and never orders what lands",
+              "carried_in": ""
+            },
+            {
+              "field": "coverage",
+              "reason": "a `kind: \"pass\"` result would count check instances, and the census counts documents, including the ones no check classified",
+              "carried_in": "run.properties.headwater.coverage"
+            },
+            {
+              "field": "the remediation of a mechanical fix",
+              "reason": "`fixes[]` carries replacement text and a finding carries prose with a `fixable` flag, so no result here carries a `fix`",
+              "carried_in": "properties.headwater.remediation and message.markdown"
+            },
+            {
+              "field": "the corpus tree",
+              "reason": "`run.automationDetails.id` is where one would go and nothing computes one. The read set is not a tree: it holds what the checks read",
+              "carried_in": ""
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
