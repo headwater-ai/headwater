@@ -120,6 +120,7 @@ struct Built {
     shape: Shape,
     taxonomy: Taxonomy,
     relations: Declarations,
+    config: Config,
 }
 
 impl Built {
@@ -141,6 +142,7 @@ impl Built {
             shape,
             taxonomy,
             relations,
+            config: Config::default(),
         }
     }
 
@@ -151,6 +153,7 @@ impl Built {
             &self.shape,
             &self.taxonomy,
             &self.relations,
+            &self.config,
         )
     }
 }

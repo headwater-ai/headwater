@@ -93,6 +93,7 @@ use std::path::Path;
 
 pub mod descriptor;
 pub mod export;
+pub mod identity;
 pub mod profile;
 mod shelf_index;
 mod shelf_sections;
@@ -184,6 +185,22 @@ impl Kind {
     }
 }
 
+/// What a generated document declares about itself: the `identity` block.
+///
+/// Two scalars, and the block is closed at two. See
+/// [`crate::identity`] for the argument, and the meta-schema for the same
+/// argument in the place a taxonomy author reads.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DeclaredIdentity {
+    /// The identifier the generated document carries, which is the identifier
+    /// every edge into it already names.
+    pub id: String,
+    /// The kind the generated document resolves to. A kind, and never a facet:
+    /// what the front matter needs in order to resolve it is the shelf's
+    /// business and this engine reads it from the shelf.
+    pub kind: String,
+}
+
 /// One entry of the `projections` block.
 #[derive(Clone, Debug)]
 pub struct Declaration {
@@ -194,6 +211,10 @@ pub struct Declaration {
     pub output: String,
     /// The profile this entry belongs to, and the half of it this entry states.
     pub membership: profile::Membership,
+    /// What the written file is, for a projection whose output is a document of
+    /// the corpus. `None` for a projection that writes a list beside the corpus,
+    /// which is every declaration that shipped before this member existed.
+    pub identity: Option<DeclaredIdentity>,
 }
 
 impl Declaration {
@@ -304,11 +325,13 @@ impl Projections {
                 }
             }
             let membership = profile::Membership::read(body, index, item.span, &mut errors);
+            let identity = identity::read(body, kind, index, item.span, &mut errors);
             out.declared.push(Declaration {
                 kind,
                 shelves,
                 output: output.text.clone(),
                 membership,
+                identity,
             });
         }
         // The grouping runs over what read, so a taxonomy with one bad entry

@@ -59,7 +59,7 @@ use headwater_census::resolve::Resolution;
 use headwater_census::shelves::Taxonomy;
 use headwater_check::Shape;
 use headwater_graph::declarations::{Declarations, Direction, Governs};
-use headwater_graph::{Edge, Graph, Target};
+use headwater_graph::{Config, Edge, Graph, Target};
 use headwater_yaml::Mapping;
 
 /// The facet role that carries the routing cue, from spec 2's closed registry.
@@ -94,6 +94,9 @@ pub struct Surface<'a> {
     shape: &'a Shape,
     taxonomy: &'a Taxonomy,
     relations: &'a Declarations,
+    /// The two front-matter keys the graph phase reads by name, held so that a
+    /// consumer which *writes* front matter writes it under the same two.
+    config: &'a Config,
     /// The facet in the `scent` role, which is where a summary lives. A
     /// taxonomy that declares none has no cue to serve, and every pointer then
     /// carries a path and no summary.
@@ -166,6 +169,7 @@ impl<'a> Surface<'a> {
         shape: &'a Shape,
         taxonomy: &'a Taxonomy,
         relations: &'a Declarations,
+        config: &'a Config,
     ) -> Self {
         Surface {
             census,
@@ -173,9 +177,19 @@ impl<'a> Surface<'a> {
             shape,
             taxonomy,
             relations,
+            config,
             scent: shape.facet_in_role(SCENT).map(|facet| facet.name.clone()),
             name: shape.facet_in_role(NAME).map(|facet| facet.name.clone()),
         }
+    }
+
+    /// The front-matter keys the graph phase read by name.
+    ///
+    /// Carried rather than defaulted, for the reason the binary carries one
+    /// copy of it: a caller that wrote an identifier under a second guess at
+    /// the key would write a document that the identifier index does not read.
+    pub fn config(&self) -> &'a Config {
+        self.config
     }
 
     pub fn shape(&self) -> &'a Shape {

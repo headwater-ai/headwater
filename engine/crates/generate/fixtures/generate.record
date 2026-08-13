@@ -35,6 +35,28 @@ the plan
 
 [DR-FIX-0001](0001-store-the-graph.md) — the first ruling on where the corpus graph lives, replaced by DR-FIX-0002
 
+=== generate/archive/RETIRED.md (shelf_sections) ===
+---
+"headwater:generated": "shelf_sections. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file."
+id: GD-FIX-archive
+doc_type: guide
+relations:
+  governed_by:
+    - DR-FIX-0002
+---
+
+# decisions
+
+2 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+
+## Rebuild the graph on every run
+
+[DR-FIX-0002](../decisions/0002-rebuild-the-graph.md) — the graph is rebuilt on every run and never stored, which supersedes DR-FIX-0001
+
+## Store the graph on disk
+
+[DR-FIX-0001](../decisions/0001-store-the-graph.md) — the first ruling on where the corpus graph lives, replaced by DR-FIX-0002
+
 === exports/native.json (graph_export) ===
 {
   "headwater:generated": "graph_export. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
@@ -53,8 +75,8 @@ the plan
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 4,
-      "carried": 4,
+      "in the graph": 5,
+      "carried": 5,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -105,7 +127,8 @@ the plan
               "DR-FIX-0001"
             ],
             "governs_guide": [
-              "GD-FIX-first-run"
+              "GD-FIX-first-run",
+              "GD-FIX-archive"
             ]
           }
         }
@@ -184,6 +207,15 @@ the plan
         }
       },
       {
+        "source": "generate/decisions/0002-rebuild-the-graph.md",
+        "relation": "governs_guide",
+        "written_as": "governs_guide",
+        "target": {
+          "bound": "nothing",
+          "reason": "resolves to nothing at all"
+        }
+      },
+      {
         "source": "generate/guides/first-run.md",
         "relation": "governs_guide",
         "written_as": "governed_by",
@@ -247,9 +279,9 @@ the plan
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 4,
+      "in the graph": 5,
       "carried": 0,
-      "accounted for": 4,
+      "accounted for": 5,
       "unaccounted for": 0
     },
     "accounted for": [
@@ -274,7 +306,7 @@ the plan
       {
         "class": "edge",
         "name": "governs_guide",
-        "count": 2,
+        "count": 3,
         "reason": "an edge is a resolved relation between two documents. A validator holds one instance and has no second document to reach, so endpoint legality, reciprocity and cardinality stay native. The schema constrains the shape of the `relations` block and never what it resolves to"
       }
     ],
@@ -486,8 +518,8 @@ the plan
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 4,
-      "carried": 4,
+      "in the graph": 5,
+      "carried": 5,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -551,7 +583,8 @@ the plan
               "DR-FIX-0001"
             ],
             "governs_guide": [
-              "GD-FIX-first-run"
+              "GD-FIX-first-run",
+              "GD-FIX-archive"
             ]
           }
         }
@@ -612,6 +645,15 @@ the plan
           "id": "GD-FIX-first-run",
           "path": "generate/guides/first-run.md",
           "kind": "guide"
+        }
+      },
+      {
+        "source": "generate/decisions/0002-rebuild-the-graph.md",
+        "relation": "governs_guide",
+        "written_as": "governs_guide",
+        "target": {
+          "bound": "nothing",
+          "reason": "resolves to nothing at all"
         }
       },
       {
@@ -692,6 +734,8 @@ projections
     written
   shelf_sections generate/decisions/SECTIONS.md
     written
+  shelf_sections generate/archive/RETIRED.md
+    written
   graph_export exports/native.json
     written
   graph_export exports/front-matter.schema.json
@@ -719,6 +763,8 @@ projections
   shelf_index generate/guides/README.md
     unchanged
   shelf_sections generate/decisions/SECTIONS.md
+    unchanged
+  shelf_sections generate/archive/RETIRED.md
     unchanged
   graph_export exports/native.json
     unchanged
@@ -748,6 +794,8 @@ projections, held to regeneration
     unchanged
   shelf_sections generate/decisions/SECTIONS.md
     unchanged
+  shelf_sections generate/archive/RETIRED.md
+    unchanged
   graph_export exports/native.json
     unchanged
   graph_export exports/front-matter.schema.json
@@ -775,6 +823,8 @@ projections
   shelf_index generate/guides/README.md
     unchanged
   shelf_sections generate/decisions/SECTIONS.md
+    unchanged
+  shelf_sections generate/archive/RETIRED.md
     unchanged
   graph_export exports/native.json
     unchanged
@@ -804,6 +854,8 @@ projections, held to regeneration
     unchanged
   shelf_sections generate/decisions/SECTIONS.md
     unchanged
+  shelf_sections generate/archive/RETIRED.md
+    unchanged
   graph_export exports/native.json
     unchanged
   graph_export exports/front-matter.schema.json
@@ -832,6 +884,8 @@ projections, held to regeneration
     not committed, and this run would write it
   shelf_sections generate/decisions/SECTIONS.md
     not committed, and this run would write it
+  shelf_sections generate/archive/RETIRED.md
+    not committed, and this run would write it
   graph_export exports/native.json
     not committed, and this run would write it
   graph_export exports/front-matter.schema.json
@@ -859,6 +913,8 @@ projections
   shelf_index generate/guides/README.md
     written
   shelf_sections generate/decisions/SECTIONS.md
+    written
+  shelf_sections generate/archive/RETIRED.md
     written
   graph_export exports/native.json
     written

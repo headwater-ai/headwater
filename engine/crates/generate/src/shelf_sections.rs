@@ -98,6 +98,23 @@ pub(crate) fn emit(
         return;
     }
 
+    // An identity is one document's, and a declaration that covers several
+    // shelves writes several files. Writing one identifier into each of them
+    // mints a collision that the identifier index would report against files
+    // nobody wrote by hand.
+    if wanted.len() > 1 && declaration.identity.is_some() {
+        plan.unwritten.push(Unwritten {
+            at: declaration.output.clone(),
+            kind: Kind::ShelfSections,
+            reason: format!(
+                "covers {} shelves and states one `identity`, so every file it wrote would carry \
+                 the same identifier",
+                wanted.len()
+            ),
+        });
+        return;
+    }
+
     for name in wanted {
         let Some(shelf) = taxonomy.shelves.iter().find(|shelf| shelf.name == name) else {
             plan.unwritten.push(Unwritten {
@@ -162,8 +179,29 @@ pub(crate) fn emit(
             continue;
         }
 
+        // The identity of the file, before its body, because a declaration that
+        // cannot say what the file is produces no file at all. A block written
+        // after the sections would put a document in the corpus that carries an
+        // identifier nothing resolves.
+        let front = match &declaration.identity {
+            None => None,
+            Some(identity) => {
+                match crate::identity::front_matter(surface, identity, &path, Kind::ShelfSections) {
+                    Ok(block) => Some(block),
+                    Err(reason) => {
+                        plan.unwritten.push(Unwritten {
+                            at: path,
+                            kind: Kind::ShelfSections,
+                            reason,
+                        });
+                        continue;
+                    }
+                }
+            }
+        };
+
         plan.outputs.push(Output {
-            bytes: render(&name, &path, &sections),
+            bytes: render(&name, &path, &sections, front.as_deref()),
             path,
             kind: Kind::ShelfSections,
         });
@@ -207,12 +245,23 @@ fn collision(sections: &[Section]) -> Option<String> {
     None
 }
 
-fn render(shelf: &str, output: &str, sections: &[Section]) -> String {
+fn render(shelf: &str, output: &str, sections: &[Section], front: Option<&str>) -> String {
     let mut out = String::new();
-    let mark = headwater_mark::marker(Kind::ShelfSections.name(), output)
-        .unwrap_or_else(|| format!("<!-- {} -->", headwater_mark::MARKER));
-    out.push_str(&mark);
-    out.push_str("\n\n# ");
+    // One marker, in whichever of the two places the file's shape admits. A
+    // document declares an identity, so its marker is a member of the block; a
+    // list declares none, so its marker is the first line. Writing both would
+    // say one thing twice and leave a comment above the fences, where no
+    // front-matter parser reads it.
+    match front {
+        Some(block) => out.push_str(block),
+        None => {
+            let mark = headwater_mark::marker(Kind::ShelfSections.name(), output)
+                .unwrap_or_else(|| format!("<!-- {} -->", headwater_mark::MARKER));
+            out.push_str(&mark);
+            out.push_str("\n\n");
+        }
+    }
+    out.push_str("# ");
     out.push_str(shelf);
     out.push_str("\n\n");
     out.push_str(&format!(
@@ -284,7 +333,7 @@ mod tests {
             section("d/0001.md", "DR-1", "Q1 — Implementation language"),
             section("d/0002.md", "DR-2", "Q2 — Schema format"),
         ];
-        let out = render("decisions", "d/README.md", &sections);
+        let out = render("decisions", "d/README.md", &sections, None);
         assert!(out.contains("\n## Q1 — Implementation language\n"), "{out}");
         assert!(out.contains("\n## Q2 — Schema format\n"), "{out}");
         assert!(
@@ -299,7 +348,7 @@ mod tests {
     #[test]
     fn the_section_body_carries_the_cue_then_the_destination() {
         let sections = vec![section("d/0001.md", "DR-1", "Q1")];
-        let out = render("decisions", "d/README.md", &sections);
+        let out = render("decisions", "d/README.md", &sections, None);
         assert!(out.contains("[DR-1](0001.md) — a summary"), "{out}");
     }
 
@@ -315,6 +364,44 @@ mod tests {
         assert!(reason.contains("d/0001.md"), "{reason}");
         assert!(reason.contains("d/0002.md"), "{reason}");
         assert!(reason.contains("Relation storage"), "{reason}");
+    }
+
+    /// A document declares an identity, and the marker moves inside the block.
+    /// A comment above the fences would put the block on line two, where no
+    /// front-matter parser reads it, so the two shapes have to be exclusive.
+    #[test]
+    fn an_identity_block_carries_the_marker_and_the_body_follows_it() {
+        let sections = vec![section("d/0001.md", "DR-1", "Q1 — Implementation language")];
+        let block = "---\n\"headwater:generated\": \"shelf_sections. x\"\nid: REG-HW-x\n---\n\n";
+        let out = render(
+            "decisions",
+            "docs/spec/09-open-questions.md",
+            &sections,
+            Some(block),
+        );
+        assert!(out.starts_with("---\n"), "{out}");
+        assert!(
+            headwater_mark::carries_marker("docs/spec/09-open-questions.md", &out),
+            "{out}"
+        );
+        assert!(out.contains("\n---\n\n# decisions\n"), "{out}");
+        assert!(out.contains("\n## Q1 — Implementation language\n"), "{out}");
+        // One marker, and never two. A file that carried both would state one
+        // fact twice, which is the drift a generated file exists to remove.
+        assert_eq!(out.matches(headwater_mark::MARKER).count(), 1, "{out}");
+    }
+
+    /// The shape that shipped first, unchanged: no identity, so a first-line
+    /// comment and no front matter at all.
+    #[test]
+    fn a_list_with_no_identity_keeps_its_first_line_marker() {
+        let sections = vec![section("d/0001.md", "DR-1", "Q1")];
+        let out = render("decisions", "d/README.md", &sections, None);
+        assert!(
+            out.starts_with("<!-- headwater:generated shelf_sections."),
+            "{out}"
+        );
+        assert!(!out.contains("\n---\n"), "{out}");
     }
 
     #[test]

@@ -69,6 +69,7 @@ struct Built {
     shape: Shape,
     taxonomy: Taxonomy,
     relations: Declarations,
+    config: Config,
 }
 
 impl Built {
@@ -90,6 +91,7 @@ impl Built {
             shape,
             taxonomy,
             relations,
+            config: Config::default(),
         }
     }
 
@@ -100,6 +102,7 @@ impl Built {
             &self.shape,
             &self.taxonomy,
             &self.relations,
+            &self.config,
         )
     }
 }
@@ -356,9 +359,23 @@ fn a_generated_file_is_censused_as_generated_and_orphaned_when_nothing_writes_it
     let mut expected: Vec<&str> = inside.iter().map(String::as_str).collect();
     expected.sort_unstable();
     assert_eq!(orphaned, expected);
+    // The report names what each file claims to be, read back out of whichever
+    // of the two places its shape put the marker: the first line of a list, and
+    // a member of the front-matter block of a document.
+    let mut claimed: Vec<(&str, Option<&str>)> = stale
+        .orphaned
+        .iter()
+        .map(|orphaned| (orphaned.path.as_str(), orphaned.kind.as_deref()))
+        .collect();
+    claimed.sort_unstable();
     assert_eq!(
-        stale.orphaned[0].kind.as_deref(),
-        Some("shelf_index"),
+        claimed,
+        vec![
+            ("generate/archive/RETIRED.md", Some("shelf_sections")),
+            ("generate/decisions/README.md", Some("shelf_index")),
+            ("generate/decisions/SECTIONS.md", Some("shelf_sections")),
+            ("generate/guides/README.md", Some("shelf_index")),
+        ],
         "the report names what the file claims to be"
     );
     assert!(
@@ -394,7 +411,7 @@ fn every_output_carries_its_own_marker() {
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
-/// is what a prose edit must not change. Three files are written. The descriptor
+/// is what a prose edit must not change. Four files are written. The descriptor
 /// sits at the path Q14 fixes, and the index of the specification shelf sits at
 /// the path this repository's overlay declares. That second one is the list the
 /// root README used to carry by hand. The third is the index of the decisions
@@ -412,7 +429,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_three_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_four_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -441,10 +458,11 @@ fn this_repository_generates_its_three_artifacts_and_accounts_for_the_rest() {
         vec![
             "docs/decisions/README.md",
             "docs/spec/README.md",
+            "docs/spec/09-open-questions.md",
             descriptor::PATH
         ],
-        "this repository writes the decisions index, the specification index and \
-         the descriptor, in that order"
+        "this repository writes the decisions index, the specification index, the \
+         redirect map and the descriptor, in that order"
     );
     // One declared shelf that holds no document, and the register. Nothing is
     // passed over: a projection that produced no file states a reason.
@@ -473,6 +491,129 @@ fn this_repository_generates_its_three_artifacts_and_accounts_for_the_rest() {
             .all(|wrote| wrote.verdict != Verdict::Occupied),
         "a declared output path is held by an authored document"
     );
+}
+
+/// The redirect map, which is the artifact the `identity` block exists for.
+///
+/// `docs/spec/09-open-questions.md` is a tombstone. All twenty-one questions
+/// closed, each one is a document on the decisions shelf, and 136 citations in
+/// this corpus name an anchor in this file. So three properties have to hold at
+/// once, and each one fails differently.
+///
+/// 1. **Every anchor a citation names is a heading of the file.** A heading is
+///    the only thing that makes an anchor, so a projection that wrote a bullet
+///    would drop all 136 in silence.
+/// 2. **The file declares the identity three other documents name.** A generated
+///    file with no front matter is no node, and the three edges into
+///    `REG-HW-open-questions` would resolve to nothing.
+/// 3. **The reciprocal half of each of those edges is in the block**, derived
+///    and never declared. Two documents supersede this one, `supersedes` says
+///    `reciprocal: required`, and a file that omitted the halves would report
+///    two findings against documents nobody edited.
+///
+/// The anchors are computed here rather than listed, so a decision renamed in
+/// its own document fails this test at the citation rather than in a reader's
+/// browser.
+#[test]
+fn the_redirect_map_keeps_every_anchor_that_this_corpus_cites_into_it() {
+    let root = repository_root();
+    let map = std::fs::read_to_string(root.join("docs/spec/09-open-questions.md"))
+        .expect("the redirect map is committed");
+
+    // 2 and 3: the block, read as the census reads it.
+    assert!(
+        headwater_mark::carries_marker("docs/spec/09-open-questions.md", &map),
+        "the redirect map carries no marker this engine can find"
+    );
+    assert!(
+        map.starts_with("---\n"),
+        "a document that declares an identity opens with the fence"
+    );
+    for member in [
+        "id: REG-HW-open-questions",
+        "doc_type: decision_register",
+        "  superseded_by:",
+        "    - REG-HW-decisions",
+        "    - REG-HW-open-obligations",
+    ] {
+        assert!(
+            map.contains(member),
+            "the redirect map's block states no `{member}`"
+        );
+    }
+
+    // 1: every anchor cited into the file, against every heading it writes.
+    let headings: Vec<String> = map
+        .lines()
+        .filter_map(|line| line.strip_prefix("## "))
+        .map(slug)
+        .collect();
+    let mut cited = Vec::new();
+    for path in ["docs", ".headwater", "README.md"] {
+        collect_citations(&root.join(path), "09-open-questions.md", &mut cited);
+    }
+    assert!(
+        cited.len() > 100,
+        "only {} citations into the redirect map, so this test is reading the wrong tree",
+        cited.len()
+    );
+    let mut missing: Vec<&str> = cited
+        .iter()
+        .map(String::as_str)
+        .filter(|anchor| !headings.contains(&anchor.to_string()))
+        .collect();
+    missing.sort_unstable();
+    missing.dedup();
+    assert_eq!(
+        missing,
+        Vec::<&str>::new(),
+        "an anchor this corpus cites reaches no heading of the generated file"
+    );
+}
+
+/// GitHub's heading slug: lower case, drop everything that is not a letter, a
+/// digit, a hyphen or an underscore, and map each space to one hyphen. Runs of
+/// spaces are not collapsed, which is why `Q1 — Implementation language` gives
+/// `q1--implementation-language`.
+fn slug(heading: &str) -> String {
+    heading
+        .trim()
+        .to_lowercase()
+        .chars()
+        .filter_map(|c| match c {
+            ' ' => Some('-'),
+            c if c.is_alphanumeric() || c == '-' || c == '_' => Some(c),
+            _ => None,
+        })
+        .collect()
+}
+
+/// Every `file#fragment` citation of one file name, anywhere under a directory.
+fn collect_citations(at: &Path, file: &str, out: &mut Vec<String>) {
+    if at.is_file() {
+        let Ok(text) = std::fs::read_to_string(at) else {
+            return;
+        };
+        for (_, rest) in text.match_indices(&format!("{file}#")).map(|(at, _)| {
+            let rest = &text[at + file.len() + 1..];
+            (at, rest)
+        }) {
+            let anchor: String = rest
+                .chars()
+                .take_while(|c| c.is_alphanumeric() || *c == '-' || *c == '_')
+                .collect();
+            if !anchor.is_empty() {
+                out.push(anchor);
+            }
+        }
+        return;
+    }
+    let Ok(entries) = std::fs::read_dir(at) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        collect_citations(&entry.path(), file, out);
+    }
 }
 
 /// An authored file at the descriptor's path is refused, and JSON is the reason
