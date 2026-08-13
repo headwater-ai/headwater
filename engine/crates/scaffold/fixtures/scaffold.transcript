@@ -60,6 +60,24 @@ TODO write this section.
 
 TODO write this section.
 
+=== new numbered --title "A file named from its own identifier"
+
+wrote corpus/numbers/0008-a-file-named-from-its-own-identifier.md
+identifier DR-FIX-0008 under `decision_id`, allocation reconcile-first, reconciled from 7
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+assisted 3 of 4 — fields 2/3, sections 0/0, identifier 1/1, halves 0/0
+--- the document ---
+---
+id: DR-FIX-0008
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+---
+
+# A file named from its own identifier
+
 === new standalone --title "A kind no relation may name"
 
 wrote corpus/standalones/a-kind-no-relation-may-name.md
@@ -269,7 +287,7 @@ TODO write this section.
 === new nonesuch --title "A kind nobody declared"
 
 refused, KindUnknown
-  no kind is named `nonesuch`. This taxonomy declares `addressed`, `ambiguous`, `annexed`, `chaptered`, `decision_record`, `deeper`, `design_spec`, `exhausted`, `misplaced`, `note`, `orphan`, `standalone`, `standard`, `unmintable`, `unopened_record`
+  no kind is named `nonesuch`. This taxonomy declares `addressed`, `ambiguous`, `annexed`, `chaptered`, `decision_record`, `deeper`, `design_spec`, `exhausted`, `holed`, `misplaced`, `note`, `numbered`, `orphan`, `standalone`, `standard`, `unmintable`, `unopened_record`
 
 === new governed_document --title "An abstract kind"
 
@@ -290,6 +308,11 @@ refused, KindOnManyShelves
 
 refused, ShelfPathNotLiteral
   the shelf `misplacements` declares `corpus/*/misplaced/**`, and a glob before the last segment names no directory to write into
+
+=== new holed --title "A layout with nothing to fill it"
+
+refused, LayoutUnresolved
+  the shelf `holes` declares `{seq:04d}-{slug}.md`, and `{seq:04d}` names neither a facet this document carries nor the sequence of the identifier it mints. A file name with a hole in it is not a name this verb writes
 
 === new decision_record --title ""
 

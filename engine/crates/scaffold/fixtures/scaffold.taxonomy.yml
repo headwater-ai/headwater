@@ -196,6 +196,23 @@ kinds:
     identifier: {scheme: spec_id}
     lifecycle: standard
 
+  # Its shelf's layout names `seq`, and its scheme writes one. The file name
+  # carries the number that the identifier already holds, and no facet holds a
+  # second copy of it. That is the shape of `docs/decisions/**` and of
+  # `docs/obligations/**`.
+  numbered:
+    is_a: governed_document
+    identifier: {scheme: decision_id}
+    lifecycle: standard
+
+  # The same layout over a scheme that mints a free token instead of a
+  # sequence. Nothing fills `{seq}`, so the name would carry a hole and
+  # `Refusal::LayoutUnresolved` is what the run reports.
+  holed:
+    is_a: governed_document
+    identifier: {scheme: spec_id}
+    lifecycle: standard
+
   # A kind under no abstract parent that no relation may name. It scaffolds
   # with no identifier, which is the true report about a document that is
   # neither end of any edge.
@@ -280,6 +297,20 @@ shelves:
     path: corpus/standalones/**
     homogeneous: true
     kind: standalone
+
+  # A layout that names the sequence of the identifier rather than a facet.
+  numbers:
+    path: corpus/numbers/**
+    homogeneous: true
+    kind: numbered
+    layout: "{seq:04d}-{slug}.md"
+
+  # The same layout over a kind whose scheme mints no sequence.
+  holes:
+    path: corpus/holes/**
+    homogeneous: true
+    kind: holed
+    layout: "{seq:04d}-{slug}.md"
 
 relations:
 

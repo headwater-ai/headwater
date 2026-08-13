@@ -16,16 +16,16 @@
 
 lock:
   format: 2
-  digest: sha256:2a294bbe2e0bde20888ec69e5242f41c7f0e9879c7fccef00b149d339e2e5ecb
+  digest: sha256:8fe1a44bab367819265cd3983beab1378767aab093dc45229fd61e8bb7edf71d
   package: headwater/standard
   version: 1.0.0
   sources:
     - path: packages/headwater-standard/taxonomy.yml
-      digest: sha256:a96ab36d5ad0a464ff6e63c6366c624f3caa4f08d6841558c0863010c973d0e2
+      digest: sha256:85b3e35b91d4502f6a87268ae83b8204ec2370c693949b37f27ee2afb33c4db4
     - path: docs/taxonomies/design-spec/bundle.yml
       digest: sha256:0dd73708d7200b7b02389a7dc8811ddc80ab61ece7892efd7391cdf504d6bda0
     - path: docs/taxonomies/decision-record/bundle.yml
-      digest: sha256:ab208e17527154e67d7d0eccd495f493f0f40faf8df7ce3191ac8d1ac4369c2e
+      digest: sha256:f1cb23a8958c3a2046b05c042cd5681d47543ba22c6a9f44972446aeafdd31a6
     - path: .headwater/overlay.yml
       digest: sha256:c2708d45cb97bf3479dda275de2041af379422c0f4cdc937be72da71c41867e0
 
@@ -443,6 +443,7 @@ resolved:
       path: "docs/decisions/**"
       homogeneous: true
       kind: decision
+      layout: "{seq:04d}-{slug}.md"
     specifications:
       path: "docs/specifications/**"
       homogeneous: true
@@ -454,6 +455,7 @@ resolved:
     obligations:
       homogeneous: true
       kind: obligation_record
+      layout: "{seq:04d}-{slug}.md"
       path: "docs/obligations/**"
     reviews:
       discriminator: doc_type

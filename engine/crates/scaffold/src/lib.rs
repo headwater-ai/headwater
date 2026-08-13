@@ -193,6 +193,10 @@ pub struct Minting {
     /// is not on the tree, so this number can only be a lower bound and the
     /// report says so.
     pub reconciled_from: Option<u64>,
+    /// The value the identifier writes at its `{seq}` segment, and nothing for
+    /// a scheme whose pattern carries none. A shelf layout may name it, which
+    /// is how a file name carries the number its identifier already holds.
+    pub sequence: Option<u64>,
 }
 
 /// A relation the new document may declare and this run did not write.
@@ -296,6 +300,13 @@ pub enum Refusal {
         shelf: String,
         pattern: String,
     },
+    /// The shelf's layout names a placeholder that this document holds nothing
+    /// for, so the rendered file name would carry a hole where a value belongs.
+    LayoutUnresolved {
+        shelf: String,
+        layout: String,
+        placeholder: String,
+    },
     /// The title is empty, so no slug and no name follow from it.
     TitleEmpty,
     /// A required facet that no declaration determines and no prompt may stand
@@ -393,6 +404,16 @@ impl std::fmt::Display for Refusal {
                 f,
                 "the shelf `{shelf}` declares `{pattern}`, and a glob before the last segment \
                  names no directory to write into"
+            ),
+            Refusal::LayoutUnresolved {
+                shelf,
+                layout,
+                placeholder,
+            } => write!(
+                f,
+                "the shelf `{shelf}` declares `{layout}`, and `{{{placeholder}}}` names neither a \
+                 facet this document carries nor the sequence of the identifier it mints. A file \
+                 name with a hole in it is not a name this verb writes"
             ),
             Refusal::TitleEmpty => write!(
                 f,
@@ -522,7 +543,13 @@ pub fn propose(sources: &Sources<'_>, request: &Request<'_>) -> Result<Plan, Ref
     let directory = literal_directory(shelf)?;
 
     let fields = front_matter(sources, kind, shelf, title, request.now)?;
-    let path = place(&directory, sources, shelf, &fields, &slug);
+
+    // The identifier is minted before the placement, because a shelf layout may
+    // name the sequence the identifier carries. Nothing is written either way,
+    // so the only thing this ordering decides is which refusal a request that
+    // trips two of them reports first.
+    let minting = mint(sources, kind, &slug)?;
+    let path = place(&directory, sources, shelf, &fields, &slug, minting.as_ref())?;
 
     if sources.index.by_path(&path).is_some() {
         return Err(Refusal::PathTaken { path });
@@ -549,7 +576,6 @@ pub fn propose(sources: &Sources<'_>, request: &Request<'_>) -> Result<Plan, Ref
         }
     }
 
-    let minting = mint(sources, kind, &slug)?;
     if let Some(minting) = &minting {
         if let Some(node) = sources.index.node(&minting.id) {
             return Err(Refusal::IdentifierTaken {
@@ -638,18 +664,35 @@ fn literal_directory(shelf: &Shelf) -> Result<String, Refusal> {
 
 /// The path, from the shelf's `layout` where it declares one.
 ///
-/// A layout's placeholders name facets, plus `{slug}`. A placeholder that names
-/// no field of this document is written as nothing, which never happens for a
-/// layout over facets a kind requires.
+/// Three sources fill a placeholder, and they are read in this order.
+///
+/// | placeholder | value |
+/// |---|---|
+/// | `{slug}` | the slug of the title |
+/// | a facet the document carries | that field's value |
+/// | `{seq}` | the sequence of the identifier this run mints |
+///
+/// The last one is why `place` runs after [`mint`]. A shelf whose kind numbers
+/// its identifiers holds that number once, in the identifier, and a file name
+/// that carried a second copy of it in a facet would be two writers of one
+/// fact. `docs/decisions/**` and `docs/obligations/**` are both that shape.
+/// `{namespace}` is the one part of an identifier that no layout may name,
+/// because a scheme's namespace is a constant and every file of the shelf would
+/// carry the same characters.
+///
+/// A placeholder that none of the three fills is a refusal rather than an empty
+/// string. A layout that renders `-a-title.md` names a document nobody asked
+/// for, and the declaration that produced it is the thing to repair.
 fn place(
     directory: &str,
     sources: &Sources<'_>,
     shelf: &Shelf,
     fields: &[Field],
     slug: &str,
-) -> String {
+    minting: Option<&Minting>,
+) -> Result<String, Refusal> {
     let Some(layout) = declared::layout(sources.resolved, &shelf.name) else {
-        return format!("{directory}/{slug}.md");
+        return Ok(format!("{directory}/{slug}.md"));
     };
     let mut name = String::new();
     let mut rest = layout;
@@ -658,25 +701,42 @@ fn place(
         let after = &rest[open + 1..];
         let Some(close) = after.find('}') else {
             name.push_str(&rest[open..]);
-            return format!("{directory}/{name}");
+            return Ok(format!("{directory}/{name}"));
         };
         let placeholder = &after[..close];
         let (key, specifier) = match placeholder.split_once(':') {
             Some((key, specifier)) => (key, Some(specifier)),
             None => (placeholder, None),
         };
-        if key == "slug" {
-            name.push_str(slug);
-        } else if let Some(field) = fields.iter().find(|field| field.key == key) {
-            name.push_str(&pad(&field.value, specifier));
+        let filled = match key {
+            "slug" => Some(slug.to_string()),
+            _ => match fields.iter().find(|field| field.key == key) {
+                Some(field) => Some(pad(&field.value, specifier)),
+                None => minting
+                    .filter(|_| key == "seq")
+                    .and_then(|minting| minting.sequence)
+                    .map(|value| pad(&value.to_string(), specifier)),
+            },
+        };
+        match filled {
+            Some(value) => name.push_str(&value),
+            None => {
+                return Err(Refusal::LayoutUnresolved {
+                    shelf: shelf.name.clone(),
+                    layout: layout.to_string(),
+                    placeholder: placeholder.to_string(),
+                })
+            }
         }
         rest = &after[close + 1..];
     }
     name.push_str(rest);
-    format!("{directory}/{name}")
+    Ok(format!("{directory}/{name}"))
 }
 
-/// `02d` on a value, which is the one specifier a shelf layout writes.
+/// A zero-padding specifier on a value, which is the one form a layout writes.
+/// `02d` and `04d` are the two this repository declares, and the width is read
+/// rather than assumed.
 fn pad(value: &str, specifier: Option<&str>) -> String {
     let Some(width) = specifier
         .and_then(|s| s.strip_prefix('0'))
@@ -948,6 +1008,7 @@ fn mint(sources: &Sources<'_>, kind: &str, slug: &str) -> Result<Option<Minting>
         scheme: scheme.name.clone(),
         allocation: declared::allocation(sources.resolved, &scheme.name).map(str::to_string),
         reconciled_from,
+        sequence: next,
     }))
 }
 

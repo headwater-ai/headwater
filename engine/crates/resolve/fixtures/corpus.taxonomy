@@ -389,6 +389,7 @@ shelves:
     path: "docs/decisions/**"
     homogeneous: true
     kind: decision
+    layout: "{seq:04d}-{slug}.md"
   specifications:
     path: "docs/specifications/**"
     homogeneous: true
@@ -400,6 +401,7 @@ shelves:
   obligations:
     homogeneous: true
     kind: obligation_record
+    layout: "{seq:04d}-{slug}.md"
     path: "docs/obligations/**"
   reviews:
     discriminator: doc_type

@@ -136,8 +136,13 @@ relations:
     to:   [governed_document, code_path]
     created_by: hook
 
+# `layout` names the file that `headwater new` writes on the shelf. The decision
+# shelf carries one because the tradition numbers its files, and `{seq}` is the
+# sequence of the identifier the run mints rather than a second copy of that
+# number in a facet. The specification shelf carries none, because a
+# specification is addressed by its subject and nothing numbers the shelf.
 shelves:
-  decisions:      {path: docs/decisions/**,      homogeneous: true, kind: decision}
+  decisions:      {path: docs/decisions/**,      homogeneous: true, kind: decision, layout: "{seq:04d}-{slug}.md"}
   specifications: {path: docs/specifications/**, homogeneous: true, kind: specification}
 
 identifier_schemes:
