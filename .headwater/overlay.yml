@@ -116,3 +116,22 @@ add:
   kinds.design_spec.language:         ste_house
   kinds.decision_register.language:   ste_house
   kinds.obligation_register.language: ste_house
+
+# --- projections ------------------------------------------------------------
+# `projections` is a list in the base, so an `add` cannot reach it, and this is
+# the one operation in this file that is not an `add`. Spec 13 records that
+# nothing states whether a *bundle* may use `add_to`. An adopter overlay is not
+# a bundle, and spec 2 supplies the operation for a list.
+#
+# The base declares an index for the two shelves that it declares, and this
+# corpus holds neither of them. The shelf that this corpus does hold is
+# `spec_series`, which the design-spec bundle declares. The specification table
+# in the root README was the copy of that shelf that a human kept aligned, and
+# the index below replaced it.
+
+add_to:
+
+  projections:
+    - kind: shelf_index
+      for: [spec_series]
+      output: "{shelf}/README.md"

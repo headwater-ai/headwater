@@ -22,22 +22,9 @@ Headwater's premise: **make the structure of the corpus a machine-readable contr
 
 ## Read the specification
 
-| # | Document | What it settles |
-|---|---|---|
-| 0 | [Vision and scope](docs/spec/00-vision-and-scope.md) | What we are building, for whom, and explicitly not building |
-| 1 | [Conceptual model](docs/spec/01-conceptual-model.md) | The vocabulary — corpus, shelf, kind, facet, relation, obligation |
-| 2 | [Taxonomy model](docs/spec/02-taxonomy-model.md) | **The core change**: taxonomy as a composable, validated schema |
-| 3 | [Authoring and lifecycle](docs/spec/03-authoring-and-lifecycle.md) | States, front matter, voice regimes, templates, identifiers |
-| 4 | [Assurance model](docs/spec/04-assurance-model.md) | Invariants, controls, the evidence register, defense in depth |
-| 5 | [AI integration](docs/spec/05-ai-integration.md) | Routing, rules, hooks, agents, the corpus MCP surface, efficacy |
-| 6 | [Engine architecture](docs/spec/06-engine-architecture.md) | One parse, one graph, pluggable checks; CLI and library shape |
-| 7 | [Distribution and federation](docs/spec/07-distribution-and-federation.md) | Publishing a taxonomy, consuming one, overlays, pins, drift |
-| 8 | [Design departures](docs/spec/08-design-departures.md) | The recurrent failure modes of governance tooling, and what we do instead |
-| 9 | [The decision register](docs/spec/09-decisions.md) | Every decision the design phase deferred, and the argument that settled it. All 21 are closed |
-| 10 | [Theoretical foundations](docs/spec/10-theoretical-foundations.md) | The research the design rests on, and the 20 changes it forced — all applied |
-| 11 | [Adjacent work](docs/spec/11-adjacent-work.md) | Existing tools and patterns that overlap — what to adopt, and what we already specified twice |
-| 12 | [The check layer](docs/spec/12-check-layer.md) | Where checks come from, how scope makes caching and change-scoping sound |
-| 13 | [Open obligations](docs/spec/13-open-obligations.md) | What the project still owes: the unmeasured claims, the work that waits on a first adopter |
+[`docs/spec/README.md`](docs/spec/README.md) is the index of the specification shelf: every document on it, with the summary each one declares. It is generated. `headwater generate` writes it from the front matter of the documents themselves, and `headwater generate --check` fails the build when the two drift apart. A table of the same 16 documents used to sit here, kept aligned by hand against the files it described. That copy is the defect [principle 2](docs/spec/00-vision-and-scope.md#design-principles) names, and [13 — Open obligations](docs/spec/13-open-obligations.md#a-human-maintains-this-list-by-hand) filed it against this repository. Deleting it is the remedy that file asks for.
+
+The order in the index is the reading precedence this corpus derives from its own relations, and not the sequence number in each file name. So the two registers come before the tombstone they superseded, rather than after it.
 
 [`09-open-questions.md`](docs/spec/09-open-questions.md) stays at its old path as a redirect map, because the evaluations cite its anchors and this project does not rewrite them.
 

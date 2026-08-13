@@ -415,6 +415,10 @@ projections:
       - decisions
       - specifications
     output: "{shelf}/README.md"
+  - kind: shelf_index
+    for:
+      - spec_series
+    output: "{shelf}/README.md"
 obligations:
   OB-COV-1:
     statement: "Every file under the corpus root is classified, or reported as unclassifiable"

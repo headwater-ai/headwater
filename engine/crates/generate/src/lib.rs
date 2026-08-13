@@ -388,7 +388,8 @@ impl Orphaned {
             None => "carries a generated-file marker that names no kind".to_string(),
         };
         format!(
-            "{claim}, and no declaration writes this path. Nothing regenerates this file and no              check reads it. Delete it, or restore the declaration that wrote it"
+            "{claim}, and no declaration writes this path. Nothing regenerates this file and no \
+             check reads it. Delete it, or restore the declaration that wrote it"
         )
     }
 }

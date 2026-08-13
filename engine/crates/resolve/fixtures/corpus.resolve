@@ -37,6 +37,7 @@ operations
   add.kinds.design_spec.language (.headwater/overlay.yml)
   add.kinds.decision_register.language (.headwater/overlay.yml)
   add.kinds.obligation_register.language (.headwater/overlay.yml)
+  add_to.projections (.headwater/overlay.yml)
 
 declarations, by member count
   taxonomy: headwater/standard
@@ -51,7 +52,7 @@ declarations, by member count
   shelves: 5 members
   identifier_schemes: 5 members
   core: 1 member
-  projections: 1 item
+  projections: 2 items
   obligations: 18 members
   controls: 18 members
 
