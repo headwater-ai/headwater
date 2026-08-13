@@ -148,7 +148,7 @@ Three consequences:
 
 ### C.2 Boundary objects — publisher and consumer
 
-Star and Griesemer (*Social Studies of Science*, 1989) define **boundary objects** as artifacts "plastic enough to adapt to local needs… yet robust enough to maintain a common identity across sites", weakly structured in common use and strongly structured in local use. <!-- headwater allow=language.controlled.not_met scope=block until=2027-12-31 reason=false_positive note=a definition quoted word for word, and not ours to split -->
+Star and Griesemer (*Social Studies of Science*, 1989) define **boundary objects** as artifacts "plastic enough to adapt to local needs… yet robust enough to maintain a common identity across sites", weakly structured in common use and strongly structured in local use. <!-- headwater allow=language.controlled.not_met scope=block until=2027-12-31 reason=false_positive note=a definition quoted word for word, and not ours to split --> <!-- headwater allow=language.retired_term.used scope=block until=2027-12-31 reason=false_positive note=the retired term is inside that quotation, and the rule reads an inline quotation as this author's prose -->
 
 That is the taxonomy package, stated better than spec 7 states it. But it carries a requirement that we do not yet meet: for identity to hold across sites, something must be *invariant*. Our overlay algebra currently lets a consumer override or remove almost anything, which means that two consumers of "the same" taxonomy may share nothing.
 

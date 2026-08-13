@@ -1,24 +1,47 @@
 #!/bin/sh
-# STE house profile check on staged spec prose.
+# The prose gate on this repository, which is `headwater check` and nothing else.
 #
 # Install once per clone (the repo ships the hook, git does not install it):
 #     git config core.hooksPath .githooks
+#
+# What blocks is what the engine reports as an error, which is the fixability
+# bar of spec 12 rather than a judgment about how much a defect matters. A
+# contraction, a British spelling, a hard-wrapped block and a retired term that
+# names its replacement are all repaired mechanically, so they block. A sentence
+# past the word limit, a semicolon in running prose and a stock metaphor are
+# repaired by rewriting, so they stay advisory and reach you in the CI summary.
+#
+# Two differences from the script this replaced. It read the staged content and
+# this reads the working tree, so a partial stage is checked as the tree stands.
+# And it needed only a Python interpreter, where this needs a built engine: the
+# hook fails open when there is none, and says so in one line, because the CI
+# job builds the engine and runs the same check on every pull request.
 
 root=$(git rev-parse --show-toplevel) || exit 0
 
-[ -f "$root/tools/ste-lint.py" ] || exit 0
-
-if python3 "$root/tools/ste-lint.py" --staged --quiet --errors-only; then
+engine="$root/engine/target/release/headwater"
+if [ ! -x "$engine" ]; then
+    echo "headwater: no built engine, so this commit is not checked for prose."
+    echo "  build it once: cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml"
     exit 0
 fi
 
+report=$("$engine" check --strict 2>&1)
+status=$?
+[ "$status" -eq 0 ] && exit 0
+
+# The error findings alone: a location line that ends in `error`, and the rule
+# line under it. Every other finding is advisory and belongs in the report a
+# reader asks for rather than in a hook that just refused a commit.
+printf '%s\n' "$report" | awk '/ error$/ {print; show = 1; next} show {print; show = 0}'
 cat <<'EOF'
 
-The staged spec prose does not pass the STE house profile. Your options:
-  - fix the errors above (tools/ste-lint.py <file> to re-check)
-  - mark a deliberate exception with a trailing comment on the offending line:
-        <!-- ste-lint: allow contraction -->
-  - grandfather them: tools/ste-lint.py --update-baseline, then review the diff
+`headwater check --strict` reports an error over this corpus. Your options:
+  - read them all: headwater check
+  - fix them, which for every error-severity rule is a mechanical edit
+  - mark a deliberate exception on the offending block:
+        <!-- headwater allow=<rule> scope=block until=<YYYY-MM-DD> reason=false_positive note=<why> -->
+  - declare it as debt with an owner and an expiry: headwater infer --owner <name> --write
   - skip this check for one commit: git commit --no-verify
 EOF
 exit 1

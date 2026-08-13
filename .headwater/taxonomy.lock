@@ -27,6 +27,24 @@ lock:
     - path: .headwater/overlay.yml
       digest: sha256:1da1bcf730878153d4abf6116a9270a3f7dcf3ed7213a0cdfc4134b3baf0ff92
 
+# The adoption payload: the debt this corpus declared when the taxonomy first
+# reached it. Every other line of this file is generated and this block is not.
+# `headwater infer` writes it, a person edits it, and `headwater taxonomy
+# resolve` carries it through untouched. Each task names an owner and an expiry,
+# and holds the `(document, rule)` pairs it accounts for. A pair that stops
+# failing is a task shrinking, and `headwater check` reports the count that
+# remains on every run.
+
+adoption:
+  tasks:
+    - id: AD-1
+      statement: "The one entry of `.ste-lint-baseline.json` that this corpus still owes. The baseline held two when the linter retired. The other named a semicolon inside a block quotation, which the engine does not report at all, because the parser hands a quoted block to no lexical rule"
+      owner: "the specification authors"
+      until: 2027-06-30
+      pairs:
+        - path: docs/spec/02-taxonomy-model.md
+          rule: language.retired_term.used
+
 # The resolved taxonomy. The digest above is over this text with the two
 # leading spaces of each line removed, which is the form the resolver writes
 # and the form a round trip loads back.

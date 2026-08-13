@@ -379,7 +379,7 @@ That is §H in operational form. §H sets the target as bounded, auditable non-d
 
 This is the one finding that contradicts something we specified.
 
-Serena ships a convention document to every onboarded project. One of its rules reads: "Memories themselves should not contain information about when to read them; this is the responsibility of the referring memory." <!-- ste-lint: allow semicolon # direct quotation from the shipped memory_maintenance template --> The convention also asks each reference to do more than name its target, and to say which aspects of the subject the target covers.
+Serena ships a convention document to every onboarded project. One of its rules reads: "Memories themselves should not contain information about when to read them; this is the responsibility of the referring memory." <!-- headwater allow=language.controlled.not_met scope=block until=2027-12-31 reason=false_positive note=the semicolon is inside a quotation of the shipped memory_maintenance template, and the rule reads an inline quotation as this author's prose --> The convention also asks each reference to do more than name its target, and to say which aspects of the subject the target covers.
 
 [Spec 5](05-ai-integration.md#scent-is-the-thing-being-engineered) puts that cue in the `summary` facet of the target, and calls the summary facet "the corpus's entire scent surface". Serena puts it on the edge. Both designs engineer scent deliberately, and they place it in opposite locations.
 
