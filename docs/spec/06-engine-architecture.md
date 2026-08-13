@@ -235,7 +235,8 @@ headwater check      [--strict] [--no-cache] [--now <date>] [--read-set <path>]
                      [--register <path>] [--format text|json|sarif|markdown]
 headwater gate       --read-set <path> [--now <date>]
 headwater generate   [--check]
-headwater new        <kind> [--title ...]
+headwater new        <kind> --title <text> [--relates <relation>=<identifier>]
+                     [--now <date>]
 headwater route      <task description>
 headwater query      <expression>
 headwater explain    <path|identifier>
@@ -249,7 +250,9 @@ headwater coverage   [--format ...]
 headwater probe      [--tier regression|campaign] [--arm present|absent] [--category ...]
 ```
 
-**This grammar is a statement of fact about the engine, and a name it declares either runs or waits.** Every verb the engine ships is above. A name that the engine has not built stays here when something nameable would make it real. The engine then says what the name waits on when a caller types it. `query <expression>` is such a name, because no document states what an expression is. The verb ships the day one does. The same reading covers `new`, `coverage` and `probe`. It covers `taxonomy diff`, `taxonomy migrate` and `taxonomy audit`, and the five export targets that no consumer has asked for. A name that nothing could make real has no place here, and `--changed-only` is the one such name this grammar carried. The test between the two is not how far away the work is. It is whether any document or any consumer could turn the name into a verb that runs.
+**This grammar is a statement of fact about the engine, and a name it declares either runs or waits.** Every verb the engine ships is above. A name that the engine has not built stays here when something nameable would make it real. The engine then says what the name waits on when a caller types it. `query <expression>` is such a name, because no document states what an expression is. The verb ships the day one does. The same reading covers `coverage` and `probe`. It covers `taxonomy diff`, `taxonomy migrate` and `taxonomy audit`, and the five export targets that no consumer has asked for. A name that nothing could make real has no place here, and `--changed-only` is the one such name this grammar carried. The test between the two is not how far away the work is. It is whether any document or any consumer could turn the name into a verb that runs.
+
+**`new` is the one verb that writes a document, and each of its three flags carries a rule.** `--title` is required, because the file name and the facet in the `name` role both come from it and the engine invents neither. `--now` injects the clock that the two date facets take, on the terms [spec 12](12-check-layer.md#determinism-concretely) fixes for a check. `--relates` names a relation and the identifier at the other end, and it is repeatable. The verb refuses a relation that the taxonomy assigns to another creator, an end that the relation forbids, and a target that resolves to nothing. Where reciprocity is required, it writes the far half into the target document. [Spec 3](03-authoring-and-lifecycle.md#templates-and-scaffolding) states what it derives and what it leaves to a person.
 
 `probe` is the one verb that reaches the network, so it never runs inside `check` and never gates ([spec 5](05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose)). It projects the cost of a run against the tier's declared budget and refuses a run that exceeds it. Every run writes its transcript and reports the run identity, the realized cost, and the interval around each rate.
 

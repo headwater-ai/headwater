@@ -90,6 +90,16 @@
 //! its content: the correct `{slug}` for a document is a name somebody chooses,
 //! and a `{seq:04d}` this engine picked would be an allocation, which is the
 //! part of the specification this rule just said it does not implement.
+//!
+//! # The template is public, because a second grammar would drift
+//!
+//! [`Template`] parses the three placeholder forms, and it is the only reader
+//! of them in this engine. `headwater new` mints an identifier, and a minter
+//! that carried its own parser would be a second statement of one grammar. The
+//! two would then disagree the day a placeholder form is added, and the report
+//! of the disagreement would be this rule firing on the engine's own output.
+//! So [`Template::mint`] fills the segments that [`Template::matches`] reads,
+//! and the standing test is that what the minter writes this rule admits.
 
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
@@ -100,7 +110,7 @@ pub const RULE: &str = "identifier.pattern.not_met";
 
 /// One piece of a template, in declaration order.
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum Segment {
+pub enum Segment {
     /// Characters that appear as written. The scheme's prefix is one of these.
     Literal(String),
     /// `{namespace}`: the declared namespace, and no other string.
@@ -124,14 +134,35 @@ impl Segment {
 }
 
 /// A template this check cannot read, and the reason a skip states.
+///
+/// The same value is the reason a minter refuses. A scheme whose pattern this
+/// module cannot read is a scheme under which no identifier can be checked and
+/// none should be issued, and one sentence says both.
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct Unreadable(String);
+pub struct Unreadable(pub String);
+
+impl std::fmt::Display for Unreadable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
 
 /// A parsed `pattern`, with the namespace it was declared beside.
 #[derive(Clone, Debug)]
-struct Template {
+pub struct Template {
     segments: Vec<Segment>,
     namespace: String,
+}
+
+/// What a template asks a minter for, beyond what the declaration already says.
+///
+/// A literal and the namespace come from the scheme. These two do not: a slug
+/// is a name somebody chooses and a sequence is an allocation over the corpus.
+/// So a caller reads this before it mints, and it supplies what the list names.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Needs {
+    Slug,
+    Sequence { width: usize },
 }
 
 /// The outcome of matching one identifier against one template.
@@ -151,7 +182,7 @@ enum Match {
 
 impl Template {
     /// Read a `pattern` into segments, or say why it cannot be read.
-    fn parse(pattern: &str, namespace: &str) -> Result<Self, Unreadable> {
+    pub fn parse(pattern: &str, namespace: &str) -> Result<Self, Unreadable> {
         let mut segments: Vec<Segment> = Vec::new();
         let mut literal = String::new();
         let mut rest = pattern;
@@ -203,8 +234,88 @@ impl Template {
         })
     }
 
+    /// What this template asks a minter for, in the order the pattern writes it.
+    pub fn needs(&self) -> Vec<Needs> {
+        self.segments
+            .iter()
+            .filter_map(|segment| match segment {
+                Segment::Slug => Some(Needs::Slug),
+                Segment::Sequence { width } => Some(Needs::Sequence { width: *width }),
+                Segment::Literal(_) | Segment::Namespace => None,
+            })
+            .collect()
+    }
+
+    /// Fill the segments, in the same reading that [`Template::matches`] uses.
+    ///
+    /// A caller supplies a slug and a sequence, and the template decides which
+    /// of the two it writes. Two refusals, and each one is a string this
+    /// template admits no identifier for. A slug the pattern asks for and the
+    /// caller does not hold has no substitute, and a sequence past the declared
+    /// width would produce an identifier that the rule above then refuses.
+    pub fn mint(&self, slug: Option<&str>, sequence: Option<u64>) -> Result<String, Unreadable> {
+        let mut minted = String::new();
+        for segment in &self.segments {
+            match segment {
+                Segment::Literal(text) => minted.push_str(text),
+                Segment::Namespace => minted.push_str(&self.namespace),
+                Segment::Slug => match slug {
+                    Some(slug) if !slug.is_empty() => minted.push_str(slug),
+                    _ => {
+                        return Err(Unreadable(format!(
+                            "`{}` writes `{{slug}}`, and this run holds no name to put there",
+                            self.render()
+                        )))
+                    }
+                },
+                Segment::Sequence { width } => {
+                    let value = sequence.unwrap_or(0);
+                    let written = format!("{value:0width$}");
+                    if written.len() != *width {
+                        return Err(Unreadable(format!(
+                            "the next sequence value is {value}, and `{}` holds {width} digits",
+                            self.render()
+                        )));
+                    }
+                    minted.push_str(&written);
+                }
+            }
+        }
+        Ok(minted)
+    }
+
+    /// Whether this template admits an identifier, with no report of where it
+    /// stopped. The minter's own test, and the check above needs the detail.
+    pub fn admits(&self, identifier: &str) -> bool {
+        matches!(self.matches(identifier), Match::Admitted)
+    }
+
+    /// The sequence value an identifier carries, for a template that writes one.
+    ///
+    /// `None` for a template with no sequence segment, and for an identifier
+    /// this template does not admit. Reconcile-first allocation is the one
+    /// caller: it reads the highest value the corpus already spent.
+    pub fn sequence_of(&self, identifier: &str) -> Option<u64> {
+        if !self.admits(identifier) {
+            return None;
+        }
+        let mut rest = identifier;
+        for segment in &self.segments {
+            match segment {
+                Segment::Literal(text) => rest = rest.strip_prefix(text.as_str())?,
+                Segment::Namespace => rest = rest.strip_prefix(self.namespace.as_str())?,
+                Segment::Slug => return None,
+                Segment::Sequence { width } => {
+                    let head = rest.get(..*width)?;
+                    return head.parse::<u64>().ok();
+                }
+            }
+        }
+        None
+    }
+
     /// The template as a person reads it, for the remediation line.
-    fn render(&self) -> String {
+    pub fn render(&self) -> String {
         self.segments
             .iter()
             .map(|segment| match segment {

@@ -603,7 +603,7 @@ The end of a nucleus–satellite relation that cannot stand alone. It inherits d
 
 ### Scaffolding
 
-`headwater new` creates a document with correct placement, front matter, sections, and identifier, and prints the relations that the document is expected to declare. See [spec 3](03-authoring-and-lifecycle.md#templates-and-scaffolding).
+`headwater new` creates a document with correct placement, front matter, sections, and identifier, and prints the relations that the document is expected to declare. It also proposes an edge that the taxonomy assigns to a scaffold, and writes the reciprocal half into the document at the far end. What it writes is authored rather than generated, so every check reads it. See [spec 3](03-authoring-and-lifecycle.md#templates-and-scaffolding).
 
 ### Scent
 

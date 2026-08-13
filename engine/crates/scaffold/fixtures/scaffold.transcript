@@ -1,0 +1,368 @@
+=== new design_spec --title "A scaffolded fourth part"
+
+wrote corpus/spec/04-a-scaffolded-fourth-part.md
+identifier SPEC-FIX-a-scaffolded-fourth-part under `spec_id`, allocation minted-once, reconciled from nothing
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+  doc_type = design_spec [scaffolded: the shelf `spec_series` is heterogeneous, and `doc_type` is its discriminator]
+  sequence = 4 [scaffolded: the shelf `spec_series` writes `sequence` into its layout, and this is the next value on it]
+assisted 7 of 8 — fields 4/5, sections 2/2, identifier 1/1, halves 0/0
+--- the document ---
+---
+id: SPEC-FIX-a-scaffolded-fourth-part
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+doc_type: design_spec
+sequence: 4
+---
+
+# A scaffolded fourth part
+
+## Scope
+
+TODO write this section.
+
+## Behavior
+
+TODO write this section.
+
+=== new decision_record --title "A scaffolded decision"
+
+wrote corpus/decisions/a-scaffolded-decision.md
+identifier DR-FIX-0008 under `decision_id`, allocation reconcile-first, reconciled from 7
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+  title = A scaffolded decision [scaffolded: the facet is in the `name` role, and `--title` is the name]
+assisted 7 of 8 — fields 3/4, sections 3/3, identifier 1/1, halves 0/0
+--- the document ---
+---
+id: DR-FIX-0008
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+title: "A scaffolded decision"
+---
+
+# A scaffolded decision
+
+## Context
+
+TODO write this section.
+
+## Decision
+
+TODO write this section.
+
+## Consequences
+
+TODO write this section.
+
+=== new standalone --title "A kind no relation may name"
+
+wrote corpus/standalones/a-kind-no-relation-may-name.md
+no identifier
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+assisted 2 of 3 — fields 2/3, sections 0/0, identifier 0/0, halves 0/0
+--- the document ---
+---
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+---
+
+# A kind no relation may name
+
+=== new decision_record --title "A successor with a far half" --relates supersedes=SPEC-FIX-the-second-part
+
+wrote corpus/decisions/a-successor-with-a-far-half.md
+identifier DR-FIX-0008 under `decision_id`, allocation reconcile-first, reconciled from 7
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+  title = A successor with a far half [scaffolded: the facet is in the `name` role, and `--title` is the name]
+  edge supersedes -> SPEC-FIX-the-second-part [created_by: scaffold]
+    far half `superseded_by` into corpus/spec/02-the-second-part.md
+assisted 8 of 10 — fields 3/4, sections 3/3, identifier 1/1, halves 1/2
+--- the document ---
+---
+id: DR-FIX-0008
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+title: "A successor with a far half"
+relations:
+  supersedes:
+    - SPEC-FIX-the-second-part
+---
+
+# A successor with a far half
+
+## Context
+
+TODO write this section.
+
+## Decision
+
+TODO write this section.
+
+## Consequences
+
+TODO write this section.
+
+=== new decision_record --title "A successor into a block with the key" --relates supersedes=SPEC-FIX-the-third-part
+
+wrote corpus/decisions/a-successor-into-a-block-with-the-key.md
+identifier DR-FIX-0008 under `decision_id`, allocation reconcile-first, reconciled from 7
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+  title = A successor into a block with the key [scaffolded: the facet is in the `name` role, and `--title` is the name]
+  edge supersedes -> SPEC-FIX-the-third-part [created_by: scaffold]
+    far half `superseded_by` into corpus/spec/03-the-third-part.md
+assisted 8 of 10 — fields 3/4, sections 3/3, identifier 1/1, halves 1/2
+--- the document ---
+---
+id: DR-FIX-0008
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+title: "A successor into a block with the key"
+relations:
+  supersedes:
+    - SPEC-FIX-the-third-part
+---
+
+# A successor into a block with the key
+
+## Context
+
+TODO write this section.
+
+## Decision
+
+TODO write this section.
+
+## Consequences
+
+TODO write this section.
+
+=== new decision_record --title "A successor into a document with no block" --relates supersedes=DR-FIX-0007
+
+wrote corpus/decisions/a-successor-into-a-document-with-no-block.md
+identifier DR-FIX-0008 under `decision_id`, allocation reconcile-first, reconciled from 7
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+  title = A successor into a document with no block [scaffolded: the facet is in the `name` role, and `--title` is the name]
+  edge supersedes -> DR-FIX-0007 [created_by: scaffold]
+    far half `superseded_by` into corpus/decisions/an-earlier-decision.md
+assisted 8 of 10 — fields 3/4, sections 3/3, identifier 1/1, halves 1/2
+--- the document ---
+---
+id: DR-FIX-0008
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+title: "A successor into a document with no block"
+relations:
+  supersedes:
+    - DR-FIX-0007
+---
+
+# A successor into a document with no block
+
+## Context
+
+TODO write this section.
+
+## Decision
+
+TODO write this section.
+
+## Consequences
+
+TODO write this section.
+
+=== new decision_record --title "An assessment with no far half" --relates assesses=SPEC-FIX-the-first-part
+
+wrote corpus/decisions/an-assessment-with-no-far-half.md
+identifier DR-FIX-0008 under `decision_id`, allocation reconcile-first, reconciled from 7
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+  title = An assessment with no far half [scaffolded: the facet is in the `name` role, and `--title` is the name]
+  edge assesses -> SPEC-FIX-the-first-part [created_by: scaffold]
+    no far half
+assisted 7 of 10 — fields 3/4, sections 3/3, identifier 1/1, halves 0/2
+--- the document ---
+---
+id: DR-FIX-0008
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+title: "An assessment with no far half"
+relations:
+  assesses:
+    - SPEC-FIX-the-first-part
+---
+
+# An assessment with no far half
+
+## Context
+
+TODO write this section.
+
+## Decision
+
+TODO write this section.
+
+## Consequences
+
+TODO write this section.
+
+=== new decision_record --title "Two edges at once" --relates supersedes=SPEC-FIX-the-second-part --relates assesses=SPEC-FIX-the-first-part
+
+wrote corpus/decisions/two-edges-at-once.md
+identifier DR-FIX-0008 under `decision_id`, allocation reconcile-first, reconciled from 7
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+  title = Two edges at once [scaffolded: the facet is in the `name` role, and `--title` is the name]
+  edge supersedes -> SPEC-FIX-the-second-part [created_by: scaffold]
+    far half `superseded_by` into corpus/spec/02-the-second-part.md
+  edge assesses -> SPEC-FIX-the-first-part [created_by: scaffold]
+    no far half
+assisted 8 of 12 — fields 3/4, sections 3/3, identifier 1/1, halves 1/4
+--- the document ---
+---
+id: DR-FIX-0008
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+title: "Two edges at once"
+relations:
+  supersedes:
+    - SPEC-FIX-the-second-part
+  assesses:
+    - SPEC-FIX-the-first-part
+---
+
+# Two edges at once
+
+## Context
+
+TODO write this section.
+
+## Decision
+
+TODO write this section.
+
+## Consequences
+
+TODO write this section.
+
+=== new nonesuch --title "A kind nobody declared"
+
+refused, KindUnknown
+  no kind is named `nonesuch`. This taxonomy declares `addressed`, `ambiguous`, `annexed`, `chaptered`, `decision_record`, `deeper`, `design_spec`, `exhausted`, `misplaced`, `note`, `orphan`, `standalone`, `standard`, `unmintable`, `unopened_record`
+
+=== new governed_document --title "An abstract kind"
+
+refused, KindAbstract
+  `governed_document` is abstract, and an abstract kind is a kind that no document ever is
+
+=== new orphan --title "A kind on no shelf"
+
+refused, KindUnshelved
+  no shelf claims `orphan`, so a document of it would land where the census reads it back as something else. Declare a shelf for the kind first
+
+=== new ambiguous --title "A kind on two shelves"
+
+refused, KindOnManyShelves
+  `ambiguous` sits on `first_claim`, `second_claim`, and nothing states which one a new document joins
+
+=== new misplaced --title "A shelf that globs early"
+
+refused, ShelfPathNotLiteral
+  the shelf `misplacements` declares `corpus/*/misplaced/**`, and a glob before the last segment names no directory to write into
+
+=== new decision_record --title ""
+
+refused, TitleEmpty
+  the title is empty, and the file name and the document's name both come from it
+
+=== new unopened_record --title "A regime with no initial state"
+
+refused, FacetUndeterminable
+  `unopened_record` requires the facet `status`, and no lifecycle regime that this kind binds declares an `initial` state. A prompt in that field is a value the checks refuse, so this run writes nothing
+
+=== new chaptered --title "An integer nothing derives"
+
+refused, FacetUndeterminable
+  `chaptered` requires the facet `chapter`, and it is declared `type: integer`, and a prompt is not one. A prompt in that field is a value the checks refuse, so this run writes nothing
+
+=== new addressed --title "A closed set nothing derives"
+
+refused, FacetUndeterminable
+  `addressed` requires the facet `audience`, and it declares a closed value set and it carries no role this engine derives a value for. A prompt in that field is a value the checks refuse, so this run writes nothing
+
+=== new unmintable --title "A pattern that cannot be read"
+
+refused, SchemeUnreadable
+  the scheme `broken_id` cannot be read: the pattern `BAD-{slug}-{namespace}` writes `{slug}` before another segment, and a free token has no stated end
+
+=== new exhausted --title "A sequence field that is full"
+
+refused, MintRefused
+  the identifier this run built is one the scheme `exhausted_id` does not admit: the next sequence value is 100, and `EX-FIX-00` holds 2 digits. That is a defect in the scaffolder rather than in the declaration
+
+=== new annexed --title "A layout that lands on another shelf"
+
+refused, PlacementDoesNotResolve
+  corpus/annexes/deep/a-layout-that-lands-on-another-shelf.md classifies as a document of the shelf `deeps` rather than as `annexed`, so the placement this run derived is not the placement the census reads. That is a defect in the scaffolder
+
+=== new standard --title "A relation endpoint with no scheme"
+
+refused, Unnameable
+  `standard` names no identifier scheme, and `supersedes`, `assesses`, `traces_to` may name a document of it. Such a document is neither end of any edge, which `identifier.unusable` reports on every run. Declare `kinds.standard.identifier` first
+
+=== new design_spec --title "The first part"
+
+refused, IdentifierTaken
+  `SPEC-FIX-the-first-part` is already declared on corpus/spec/01-the-first-part.md, and an identifier is never reused
+
+=== new decision_record --title "An earlier decision"
+
+refused, PathTaken
+  corpus/decisions/an-earlier-decision.md is already there, and this verb never overwrites a document
+
+=== new decision_record --title "A relation nobody declared" --relates flibberty=DR-FIX-0007
+
+refused, RelationUnknown
+  no relation is named `flibberty`. This taxonomy declares `assesses`, `refines`, `supersedes`
+
+=== new decision_record --title "An edge a hook pays for" --relates traces_to=DR-FIX-0007
+
+refused, RelationNotScaffolded
+  `traces_to` declares `created_by: hook`, and this verb proposes the edges the taxonomy assigns to a scaffold. Write it by hand, or change what the declaration says pays for it
+
+=== new decision_record --title "A source end the relation forbids" --relates refines=SPEC-FIX-the-first-part
+
+refused, EndpointNotPermitted
+  `refines` does not admit `decision_record` at its source end, which admits `design_spec`
+
+=== new design_spec --title "A target end the relation forbids" --relates refines=DR-FIX-0007
+
+refused, EndpointNotPermitted
+  `refines` does not admit `decision_record` at its target end, which admits `design_spec`
+
+=== new decision_record --title "A target that resolves to nothing" --relates supersedes=DR-FIX-9999
+
+refused, TargetUnresolved
+  `supersedes` names `DR-FIX-9999`, and no document of this corpus carries that identifier
+

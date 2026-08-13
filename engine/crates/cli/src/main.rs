@@ -72,6 +72,8 @@ headwater gate               --read-set <path> [--now <date>] [--root <path>]
 headwater route              <task description> [--budget <n>] [--root <path>]
 headwater explain            <path|identifier> [--root <path>]
 headwater mcp                [--root <path>]
+headwater new                <kind> --title <text> [--relates <relation>=<identifier>]
+                             [--now <date>] [--root <path>]
 headwater generate           [--check] [--root <path>]
 headwater export             [--profile <name>] [--format json|jsonschema] [--at <date>]
                              [--check] [--root <path>]
@@ -96,6 +98,14 @@ headwater taxonomy resolve   [--check] [--root <path>]
   mcp                serve the reads above to an agent over the Model Context
                      Protocol, on standard input and output. It registers no
                      tool that writes.
+  new                scaffold a document of a kind: the placement its shelf
+                     dictates, the front matter its facets require, the sections
+                     its contract requires, an identifier under its scheme, and
+                     the edges the taxonomy assigns to a scaffold. It writes no
+                     generated-file marker, because what it writes is an
+                     authored document from the moment it lands and every check
+                     reads it. It decides everything before it writes anything,
+                     and it never overwrites a document.
   generate           write every projection the taxonomy declares, and report
                      every one it does not write with the reason. It refuses to
                      overwrite a file that carries no generated-file marker.
@@ -125,7 +135,7 @@ headwater taxonomy resolve   [--check] [--root <path>]
                  instance. This run and a cached one write the same bytes to
                  standard output, and a difference between them is a defect in
                  the cache rather than a result.
-  --now <date>   `check` and `gate`: the date to evaluate against, as
+  --now <date>   `check`, `gate` and `new`: the date to evaluate against, as
                  `YYYY-MM-DD`. Defaults to today. Spec 12 makes the clock an
                  injected value rather than a syscall inside a check, and this
                  flag is where it is injected: same corpus, same lock, same
@@ -144,6 +154,15 @@ headwater taxonomy resolve   [--check] [--root <path>]
                  `obligations` and `controls` declarations, generated and never
                  authored: every obligation with its disposition, every control
                  with its health, and what escaped under each.
+  --title <text> `new` only: what the document is called. Required, because the
+                 file name and the facet in the `name` role both come from it.
+  --relates <relation>=<identifier>
+                 `new` only, and repeatable: an edge to propose, as a relation
+                 and the identifier of the document at the other end. It is
+                 refused unless the taxonomy declares `created_by: scaffold` on
+                 the relation, unless both ends are kinds the relation permits,
+                 and unless the target resolves. Where reciprocity is required
+                 the far half is written into the target document.
   --budget <n>   `route` only: how many pointers it may offer. Five by default.
   --owner <name>
                  `infer` only: who owns the debt it proposes. Required with
@@ -206,6 +225,8 @@ fn main() -> ExitCode {
     let mut profile: Option<String> = None;
     let mut format: Option<String> = None;
     let mut generated_at: Option<String> = None;
+    let mut title: Option<String> = None;
+    let mut relates: Vec<(String, String)> = Vec::new();
     let mut words: Vec<String> = Vec::new();
 
     while let Some(argument) = arguments.next() {
@@ -238,6 +259,26 @@ fn main() -> ExitCode {
                     None => return fail("--at takes a date written `YYYY-MM-DD`"),
                 },
                 None => return fail("--at names a date and none followed it"),
+            },
+            "--title" => match arguments.next() {
+                Some(text) => title = Some(text),
+                None => return fail("--title names the document and none followed it"),
+            },
+            "--relates" => match arguments.next() {
+                Some(pair) => match pair.split_once('=') {
+                    Some((relation, target)) if !relation.is_empty() && !target.is_empty() => {
+                        relates.push((relation.to_string(), target.to_string()))
+                    }
+                    _ => {
+                        return fail(
+                            "--relates takes `<relation>=<identifier>`, as in \
+                             `--relates supersedes=DR-repo-0007`",
+                        )
+                    }
+                },
+                None => {
+                    return fail("--relates names a relation and a target, and none followed it")
+                }
             },
             "--owner" => match arguments.next() {
                 Some(name) => owner = Some(name),
@@ -296,6 +337,10 @@ fn main() -> ExitCode {
         ["explain"] => fail("`explain` takes a path or an identifier"),
         ["explain", target] => explain(&root, target),
         ["mcp"] => mcp(&root),
+        ["new"] => fail(
+            "`new` takes a kind. Try `headwater new decision --title \"Adopt an overlay\"`",
+        ),
+        ["new", kind] => new(&root, kind, title, &relates, now),
         ["generate"] => generate(&root, check_only),
         ["export"] => export(&root, profile, format, generated_at, check_only),
         ["init"] => init(&root, corpus_root, package),
@@ -324,7 +369,7 @@ fn main() -> ExitCode {
         // one verb short of the arms in the same reading.
         [other, ..] => fail(&format!(
             "`{other}` is not a verb this binary carries yet. \
-             It carries `check`, `gate`, `route`, `explain`, `mcp`, `generate`, \
+             It carries `check`, `gate`, `route`, `explain`, `mcp`, `new`, `generate`, \
              `export`, `init`, `infer` and `taxonomy`"
         )),
     }
@@ -595,6 +640,215 @@ fn explain(root: &Path, target: &str) -> ExitCode {
             ExitCode::FAILURE
         }
     }
+}
+
+/// `headwater new <kind>`: the scaffolder.
+///
+/// [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+/// makes this a correctness root, and `headwater_scaffold` carries the argument
+/// for the three properties that follow from it. This function is the shell:
+/// it loads, it proposes, it prints, and it writes.
+///
+/// # The report states where every value came from
+///
+/// A scaffolder that printed only what it wrote would ask a reader to trust the
+/// output because a tool produced it, which is the sentence the issue exists to
+/// refuse. So every field names the declaration behind it, and the assisted
+/// fraction at the end is the count of those origins rather than a number this
+/// verb keeps beside them.
+///
+/// **What the fraction measures.** One run. It is not a property of the corpus
+/// and it cannot become one:
+/// [Q4](../../../../docs/decisions/0004-relation-storage.md) keeps `created_by`
+/// on the relation type, so a later reader of a committed corpus cannot tell a
+/// scaffolded edge from a hand-typed one.
+/// [OBL-repo-0001](../../../../docs/obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md)
+/// holds the debt that nothing trends this number yet.
+fn new(
+    root: &Path,
+    kind: &str,
+    title: Option<String>,
+    relates: &[(String, String)],
+    now: Option<Date>,
+) -> ExitCode {
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let Some(title) = title else {
+        return fail(
+            "`new` takes `--title <text>`. The file name and the document's own name both come \
+             from it, and this engine invents neither",
+        );
+    };
+    let now = match now {
+        Some(now) => now,
+        None => match Context::from_system_clock() {
+            Some(context) => context.now(),
+            None => {
+                return fail(
+                    "the host clock is before the epoch, and this engine will not guess a date",
+                )
+            }
+        },
+    };
+
+    let index = headwater_graph::index::Index::build(&loaded.census, &loaded.config);
+    let sources = headwater_scaffold::Sources {
+        resolved: &loaded.lock.taxonomy,
+        shape: &loaded.shape,
+        shelves: &loaded.taxonomy,
+        relations: &loaded.relations,
+        census: &loaded.census,
+        index: &index,
+        config: &loaded.config,
+    };
+    let request = headwater_scaffold::Request {
+        kind,
+        title: &title,
+        now,
+        relates,
+    };
+
+    let plan = match headwater_scaffold::propose(&sources, &request) {
+        Ok(plan) => plan,
+        Err(refusal) => return refuse(&refusal.to_string()),
+    };
+    let composed = match headwater_scaffold::write::compose(root, &plan) {
+        Ok(composed) => composed,
+        Err(refusal) => return refuse(&refusal.to_string()),
+    };
+    if let Err(refusal) = headwater_scaffold::write::apply(root, &composed) {
+        return refuse(&refusal.to_string());
+    }
+
+    print!("{}", scaffold_report(&plan, &composed));
+    ExitCode::SUCCESS
+}
+
+/// What `headwater new` writes to standard output.
+///
+/// Held apart from the verb so that a test reads the report of a plan without
+/// a process and without a tree.
+fn scaffold_report(
+    plan: &headwater_scaffold::Plan,
+    composed: &[headwater_scaffold::write::Composed],
+) -> String {
+    use std::fmt::Write;
+    let mut out = String::new();
+
+    for file in composed {
+        let verb = match file.created {
+            true => "wrote",
+            false => "edited",
+        };
+        let _ = writeln!(out, "{verb} {}", file.path);
+    }
+
+    let _ = writeln!(out, "\nwhat the taxonomy decided");
+    let _ = writeln!(out, "  kind {} on the shelf `{}`", plan.kind, plan.shelf);
+    if let Some(minting) = &plan.minting {
+        let _ = writeln!(
+            out,
+            "  identifier {} under `{}`, allocation {}",
+            minting.id,
+            minting.scheme,
+            minting.allocation.as_deref().unwrap_or("unstated")
+        );
+        if let Some(highest) = minting.reconciled_from {
+            let _ = writeln!(
+                out,
+                "    reconciled against {highest}, which is the highest value on this tree. \
+                 A document that was deleted is not on the tree, so this is a lower bound on \
+                 what was ever allocated"
+            );
+        }
+    } else {
+        let _ = writeln!(
+            out,
+            "  no identifier: `{}` names no scheme, and no relation may name a document of it",
+            plan.kind
+        );
+    }
+    for field in &plan.fields {
+        let _ = writeln!(out, "  {} — {}", field.key, field.origin.reason());
+    }
+    for section in &plan.sections {
+        let _ = writeln!(
+            out,
+            "  section `{}` — the kind requires it",
+            section.heading
+        );
+    }
+
+    if !plan.edges.is_empty() {
+        let _ = writeln!(out, "\nthe edges it proposed");
+        for edge in &plan.edges {
+            let _ = writeln!(
+                out,
+                "  {} {} — `created_by: {}`, so a scaffold pays for it",
+                edge.relation, edge.target, edge.created_by
+            );
+            match &edge.reciprocal {
+                Some(half) => {
+                    let _ = writeln!(
+                        out,
+                        "    the far half `{}` went into {}, because reciprocity is required",
+                        half.relation, half.path
+                    );
+                }
+                None => {
+                    let _ = writeln!(out, "    the relation asks for no far half");
+                }
+            }
+        }
+        let _ = writeln!(
+            out,
+            "  no facet of another document moved. `on_target` is a lifecycle event, and no \
+             rule of this engine reads a transition"
+        );
+    }
+
+    if !plan.expected.is_empty() {
+        let _ = writeln!(out, "\nwhat this document may also declare, and nobody did");
+        for expected in &plan.expected {
+            let _ = writeln!(
+                out,
+                "  {} to {} — `created_by: {}`",
+                expected.relation,
+                expected.to.join(", "),
+                expected.created_by
+            );
+        }
+    }
+
+    let assisted = plan.assisted();
+    let _ = writeln!(out, "\nassisted fraction of this run");
+    let _ = writeln!(
+        out,
+        "  {} of {} — front matter {}/{}, sections {}/{}, identifier {}/{}, edge halves {}/{}",
+        assisted.supplied(),
+        assisted.total(),
+        assisted.fields.0,
+        assisted.fields.1,
+        assisted.sections.0,
+        assisted.sections.1,
+        assisted.identifier.0,
+        assisted.identifier.1,
+        assisted.edge_halves.0,
+        assisted.edge_halves.1,
+    );
+    let _ = writeln!(
+        out,
+        "  It counts a section heading and never its prose, and it counts one run rather than \
+         this corpus. Q4 keeps `created_by` on the relation type, so no reader of a committed \
+         corpus can tell a scaffolded edge from a hand-typed one"
+    );
+    let _ = writeln!(
+        out,
+        "\nRun `headwater check` over the result. Nothing this verb wrote is exempt from a rule"
+    );
+    out
 }
 
 /// `headwater generate`, and `--check` over what is committed.
@@ -1592,5 +1846,15 @@ fn refused(what: &str, errors: &[headwater_census::shelves::DeclarationError]) -
 
 fn fail(message: &str) -> ExitCode {
     eprintln!("headwater: {message}\n\n{USAGE}");
+    ExitCode::FAILURE
+}
+
+/// A refusal that is a fact about the corpus rather than a mistyped command.
+///
+/// [`fail`] prints the grammar, because a caller who wrote the wrong flag is
+/// reading it. A caller whose taxonomy declares no shelf for a kind is not, and
+/// a hundred lines of grammar under that sentence buries the sentence.
+fn refuse(message: &str) -> ExitCode {
+    eprintln!("headwater: {message}");
     ExitCode::FAILURE
 }

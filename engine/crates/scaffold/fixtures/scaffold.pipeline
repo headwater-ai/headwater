@@ -1,0 +1,282 @@
+touched corpus/spec/04-a-scaffolded-fourth-part.md
+touched corpus/decisions/a-scaffolded-successor.md
+touched corpus/spec/02-the-second-part.md
+touched corpus/decisions/a-second-successor.md
+touched corpus/decisions/an-earlier-decision.md
+
+9 seen, 9 classified, 9 checked, 91 check instances
+      9 skipped: this document writes no fragment into itself
+      4 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+9 documents in the read set, and 1 barrier that no gate carries across a merge
+      9 instances of facet.required.missing
+      9 instances of facet.value.not_permitted
+      8 instances of identifier.pattern.not_met
+      9 instances of shelf.placement_is_primary
+      7 instances of relation.target.unresolved
+      3 instances of relation.reciprocity.missing
+      4 instances of relation.endpoint.not_permitted
+      9 instances of relation.declaration.unusable
+      9 instances of identifier.unusable
+      1 instances of identifier.claimed_twice
+      7 instances of voice.forbidden_construction
+      7 instances of section.required.missing
+      9 instances of link.fragment.unresolved
+rules, and for each the scope that binds it
+  facet.required.missing
+    document scope, one document and its front matter
+  facet.value.not_permitted
+    document scope, one document and its front matter
+  identifier.pattern.not_met
+    document scope, one document and its front matter
+  shelf.placement_is_primary
+    document scope, one document and its front matter
+  relation.target.unresolved
+    edge scope, one relation instance and both endpoints
+  relation.reciprocity.missing
+    edge scope, one relation instance and both endpoints
+  relation.endpoint.not_permitted
+    edge scope, one relation instance and both endpoints
+  relation.participation.overdue
+    neighbourhood scope, one document and the documents one relation away from it, and the injected clock
+  relation.declaration.unusable
+    document scope, one document and its front matter, and what phase A could not make of it
+  identifier.unusable
+    document scope, one document and its front matter, and what phase A could not make of it
+  identifier.claimed_twice
+    corpus scope, every row of the census, and what phase A could not make of each document's identity, and it is a barrier
+  voice.forbidden_construction
+    document scope, one document, its front matter and its body
+  language.controlled.not_met
+    document scope, one document, its front matter and its body
+  language.retired_term.used
+    document scope, one document, its front matter and its body
+  language.source_form.not_met
+    document scope, one document, its front matter and its body
+  section.required.missing
+    document scope, one document, its front matter and its body
+  link.fragment.unresolved
+    document scope, one document, its front matter and its body
+  coverage.document_unchecked
+    corpus scope, every row of the census, and it is a barrier
+  obligation.disposition.not_one
+    taxonomy scope, the resolved taxonomy, and no document
+  control.mechanism.unimplemented
+    taxonomy scope, the resolved taxonomy, and no document
+register
+  1 obligations: 1 verified, 0 gap, 0 unverifiable, 0 with no disposition
+      1 high, 1 verified
+  1 controls
+      1 posture advisory
+      1 acts detective
+      1 name a rule this engine carries
+      1 with no promotion record, so nothing states what would promote them
+  escaped findings, in the precedence spec 4 fixes: no waiver mechanism exists, 0 migration-pending, 0 suppressed
+  facet.required.missing reaches no obligation, so it names none
+  facet.value.not_permitted reaches no obligation, so it names none
+  identifier.pattern.not_met reaches no obligation, so it names none
+  shelf.placement_is_primary reaches no obligation, so it names none
+  relation.target.unresolved reaches no obligation, so it names none
+  relation.reciprocity.missing reaches no obligation, so it names none
+  relation.endpoint.not_permitted reaches no obligation, so it names none
+  relation.participation.overdue reaches no obligation, so it names none
+  relation.declaration.unusable reaches no obligation, so it names none
+  identifier.claimed_twice reaches no obligation, so it names none
+  voice.forbidden_construction reaches no obligation, so it names none
+  language.controlled.not_met reaches no obligation, so it names none
+  language.retired_term.used reaches no obligation, so it names none
+  language.source_form.not_met reaches no obligation, so it names none
+  section.required.missing reaches no obligation, so it names none
+  link.fragment.unresolved reaches no obligation, so it names none
+  coverage.document_unchecked reaches no obligation, so it names none
+  obligation.disposition.not_one reaches no obligation, so it names none
+  control.mechanism.unimplemented reaches no obligation, so it names none
+1 findings
+      1 error
+
+instances
+  facet.required.missing corpus/decisions/a-scaffolded-successor.md
+    passed
+  facet.required.missing corpus/decisions/a-second-successor.md
+    passed
+  facet.required.missing corpus/decisions/an-earlier-decision.md
+    passed
+  facet.required.missing corpus/exhausted/the-last-one.md
+    passed
+  facet.required.missing corpus/spec/01-the-first-part.md
+    passed
+  facet.required.missing corpus/spec/02-the-second-part.md
+    passed
+  facet.required.missing corpus/spec/03-the-third-part.md
+    passed
+  facet.required.missing corpus/spec/04-a-scaffolded-fourth-part.md
+    passed
+  facet.required.missing corpus/standards/a-standard.md
+    passed
+  facet.value.not_permitted corpus/decisions/a-scaffolded-successor.md
+    passed
+  facet.value.not_permitted corpus/decisions/a-second-successor.md
+    passed
+  facet.value.not_permitted corpus/decisions/an-earlier-decision.md
+    passed
+  facet.value.not_permitted corpus/exhausted/the-last-one.md
+    passed
+  facet.value.not_permitted corpus/spec/01-the-first-part.md
+    passed
+  facet.value.not_permitted corpus/spec/02-the-second-part.md
+    passed
+  facet.value.not_permitted corpus/spec/03-the-third-part.md
+    passed
+  facet.value.not_permitted corpus/spec/04-a-scaffolded-fourth-part.md
+    passed
+  facet.value.not_permitted corpus/standards/a-standard.md
+    passed
+  identifier.pattern.not_met corpus/decisions/a-scaffolded-successor.md
+    passed
+  identifier.pattern.not_met corpus/decisions/a-second-successor.md
+    passed
+  identifier.pattern.not_met corpus/decisions/an-earlier-decision.md
+    passed
+  identifier.pattern.not_met corpus/exhausted/the-last-one.md
+    passed
+  identifier.pattern.not_met corpus/spec/01-the-first-part.md
+    passed
+  identifier.pattern.not_met corpus/spec/02-the-second-part.md
+    passed
+  identifier.pattern.not_met corpus/spec/03-the-third-part.md
+    passed
+  identifier.pattern.not_met corpus/spec/04-a-scaffolded-fourth-part.md
+    passed
+  shelf.placement_is_primary corpus/decisions/a-scaffolded-successor.md
+    passed
+  shelf.placement_is_primary corpus/decisions/a-second-successor.md
+    passed
+  shelf.placement_is_primary corpus/decisions/an-earlier-decision.md
+    passed
+  shelf.placement_is_primary corpus/exhausted/the-last-one.md
+    passed
+  shelf.placement_is_primary corpus/spec/01-the-first-part.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  shelf.placement_is_primary corpus/spec/02-the-second-part.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  shelf.placement_is_primary corpus/spec/03-the-third-part.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  shelf.placement_is_primary corpus/spec/04-a-scaffolded-fourth-part.md
+    skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+  shelf.placement_is_primary corpus/standards/a-standard.md
+    passed
+  relation.target.unresolved corpus/decisions/a-scaffolded-successor.md + corpus/spec/02-the-second-part.md
+    passed
+  relation.target.unresolved corpus/decisions/a-second-successor.md + corpus/decisions/an-earlier-decision.md
+    passed
+  relation.target.unresolved corpus/decisions/an-earlier-decision.md + corpus/decisions/a-second-successor.md
+    passed
+  relation.target.unresolved corpus/spec/02-the-second-part.md + corpus/spec/01-the-first-part.md
+    passed
+  relation.target.unresolved corpus/spec/02-the-second-part.md + corpus/spec/03-the-third-part.md
+    passed
+  relation.target.unresolved corpus/spec/02-the-second-part.md + corpus/decisions/a-scaffolded-successor.md
+    passed
+  relation.target.unresolved corpus/spec/03-the-third-part.md + corpus/spec/02-the-second-part.md
+    passed
+  relation.reciprocity.missing corpus/decisions/a-scaffolded-successor.md + corpus/spec/02-the-second-part.md
+    passed
+  relation.reciprocity.missing corpus/decisions/a-second-successor.md + corpus/decisions/an-earlier-decision.md
+    passed
+  relation.reciprocity.missing corpus/spec/02-the-second-part.md + corpus/spec/03-the-third-part.md
+    passed
+  relation.endpoint.not_permitted corpus/decisions/a-scaffolded-successor.md + corpus/spec/02-the-second-part.md
+    passed
+  relation.endpoint.not_permitted corpus/decisions/a-second-successor.md + corpus/decisions/an-earlier-decision.md
+    passed
+  relation.endpoint.not_permitted corpus/spec/02-the-second-part.md + corpus/spec/01-the-first-part.md
+    passed
+  relation.endpoint.not_permitted corpus/spec/02-the-second-part.md + corpus/spec/03-the-third-part.md
+    passed
+  relation.declaration.unusable corpus/decisions/a-scaffolded-successor.md
+    passed
+  relation.declaration.unusable corpus/decisions/a-second-successor.md
+    passed
+  relation.declaration.unusable corpus/decisions/an-earlier-decision.md
+    passed
+  relation.declaration.unusable corpus/exhausted/the-last-one.md
+    passed
+  relation.declaration.unusable corpus/spec/01-the-first-part.md
+    passed
+  relation.declaration.unusable corpus/spec/02-the-second-part.md
+    passed
+  relation.declaration.unusable corpus/spec/03-the-third-part.md
+    passed
+  relation.declaration.unusable corpus/spec/04-a-scaffolded-fourth-part.md
+    passed
+  relation.declaration.unusable corpus/standards/a-standard.md
+    passed
+  identifier.unusable corpus/decisions/a-scaffolded-successor.md
+    passed
+  identifier.unusable corpus/decisions/a-second-successor.md
+    passed
+  identifier.unusable corpus/decisions/an-earlier-decision.md
+    passed
+  identifier.unusable corpus/exhausted/the-last-one.md
+    passed
+  identifier.unusable corpus/spec/01-the-first-part.md
+    passed
+  identifier.unusable corpus/spec/02-the-second-part.md
+    passed
+  identifier.unusable corpus/spec/03-the-third-part.md
+    passed
+  identifier.unusable corpus/spec/04-a-scaffolded-fourth-part.md
+    passed
+  identifier.unusable corpus/standards/a-standard.md
+    failed
+  identifier.claimed_twice corpus/decisions/a-scaffolded-successor.md + corpus/decisions/a-second-successor.md + corpus/decisions/an-earlier-decision.md + corpus/exhausted/the-last-one.md + corpus/spec/01-the-first-part.md + corpus/spec/02-the-second-part.md + corpus/spec/03-the-third-part.md + corpus/spec/04-a-scaffolded-fourth-part.md + corpus/standards/a-standard.md
+    passed
+  voice.forbidden_construction corpus/decisions/a-scaffolded-successor.md
+    passed
+  voice.forbidden_construction corpus/decisions/a-second-successor.md
+    passed
+  voice.forbidden_construction corpus/decisions/an-earlier-decision.md
+    passed
+  voice.forbidden_construction corpus/spec/01-the-first-part.md
+    passed
+  voice.forbidden_construction corpus/spec/02-the-second-part.md
+    passed
+  voice.forbidden_construction corpus/spec/03-the-third-part.md
+    passed
+  voice.forbidden_construction corpus/spec/04-a-scaffolded-fourth-part.md
+    passed
+  section.required.missing corpus/decisions/a-scaffolded-successor.md
+    passed
+  section.required.missing corpus/decisions/a-second-successor.md
+    passed
+  section.required.missing corpus/decisions/an-earlier-decision.md
+    passed
+  section.required.missing corpus/spec/01-the-first-part.md
+    passed
+  section.required.missing corpus/spec/02-the-second-part.md
+    passed
+  section.required.missing corpus/spec/03-the-third-part.md
+    passed
+  section.required.missing corpus/spec/04-a-scaffolded-fourth-part.md
+    passed
+  link.fragment.unresolved corpus/decisions/a-scaffolded-successor.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved corpus/decisions/a-second-successor.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved corpus/decisions/an-earlier-decision.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved corpus/exhausted/the-last-one.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved corpus/spec/01-the-first-part.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved corpus/spec/02-the-second-part.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved corpus/spec/03-the-third-part.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved corpus/spec/04-a-scaffolded-fourth-part.md
+    skipped: this document writes no fragment into itself
+  link.fragment.unresolved corpus/standards/a-standard.md
+    skipped: this document writes no fragment into itself
+
+corpus/standards/a-standard.md:1:1 error
+  identifier.unusable (OB-FIX-1): a typed `standard` that declares no identifier, so no edge can name it
+  fix: write one identifier of this document under the `id` key, because a relation names a document by its identifier and a document with none can stand at neither end of one

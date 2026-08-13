@@ -109,6 +109,18 @@ headwater new decision --title "Adopt overlay-based taxonomy customization"
 
 resolves the kind, allocates an identifier, seeds front matter, and emits required sections with prompts. It places the file where the shelf layout dictates. It also prints the relations that the new document is expected to declare.
 
+**A template is derived, and no file holds one.** The rule above says so, and one consequence follows for a package. [Spec 7](07-distribution-and-federation.md#publishing) puts a `templates/` directory in the anatomy of a package, and a file there teaches an author rather than feeding the scaffolder. A source that the scaffolder read would be a second authoring surface. [#130](https://github.com/headwater-ai/headwater/issues/130) refused one on a projection declaration, and the reason reaches a scaffolder unchanged. A taxonomy sits outside the corpus root. No census row covers it, no language regime binds it, and no rule reads its links. Prose that the corpus governs would move to the one place that the corpus cannot see.
+
+**A scaffolded document is authored, and every check reads it.** A projection carries a generated-file marker, and no check reads the file. [Spec 6](06-engine-architecture.md#projections) gives two reasons for that. The content is a function of the emitter, and an author cannot repair it in the file. Neither clause holds for a scaffolded document. Nothing writes the file a second time. So an author repairs it where it stands, and the repair survives. The test between the two is regeneration, and it is the whole of the difference. So a scaffolded document carries no marker, and the rule that a generated output is exempt reaches it nowhere.
+
+**What the taxonomy determines, the scaffolder writes. What it does not, the scaffolder asks.** The shelf that claims the kind decides the directory, and the shelf layout decides the file name. The lifecycle regime decides the opening state. The injected clock decides the two dates. The discriminator of a heterogeneous shelf takes the kind. The section contract decides the headings. A facet that no declaration determines carries a prompt instead of a value, and the run reports it as hand entry.
+
+**A required facet that nothing determines and no prompt fits is a refusal.** A closed value set admits no prompt, and neither does an integer or a date. A value the engine picked there would be a state that nobody chose. That is the fabricated fact that [spec 12](12-check-layer.md#the-correctness-roots) holds a scaffolder to account for. So the run writes nothing and names the facet and the kind.
+
+**Allocation reads a tree, and a tree holds no history.** The rule below says that a deleted document does not free its number. The corpus is what the engine reads, and a deleted document is not on it. So the highest value that a run finds is a lower bound on every value ever allocated. The report of each minted identifier states that bound.
+
+**The verb reports where every value came from, and a reader needs that more than the file.** A tool that printed only its output would ask for trust on one ground: that a tool produced it. This specification refuses that reading everywhere else. Each field names the declaration behind it, and the [assisted fraction](#capture-cost-is-a-tracked-metric) is the count of those origins rather than a second number beside them.
+
 ## Identifiers
 
 Some artifacts need stable names that survive a move, a rename, or a read out of context. These artifacts are decisions, requirements, acceptance criteria, controls, and obligations.
@@ -201,6 +213,10 @@ The fraction is used in two ways:
 - **As the test of the agent-authoring claim.** [Spec 5](05-ai-integration.md) argues that an agent that drafts from evidence already present in the commit, the ticket, and the conversation shifts capture cost off the author. That is the first genuinely new answer to that objection in thirty years. Either the assisted fraction rises when agent authoring is enabled, or the claim is wrong. This is how we find out.
 
 The metric is reported in the adaptive layer of the [assurance model](04-assurance-model.md), alongside efficacy results.
+
+**The scaffolder reports the fraction of one run, and a run is all that it can report.** The denominator is the four terms above: the required front matter, the required sections, the identifier, and the halves of each proposed edge. A section counts as its heading and never as its prose. The heading is what the section contract reads, and the prose is what a person owes. Each edge counts two halves, and the reciprocal one is the half that follows from the target that an author named.
+
+**No reader of a committed corpus can derive the fraction, and one ruling is why.** [Q4](09-decisions.md#q4--relation-storage) keeps `created_by` on the relation type, so the value states who a taxonomy expects to pay for an edge rather than who wrote one. A scaffolded edge and a hand-typed edge of the same relation are one string on disk. So the reading has to be taken where the work happens, and a trend needs a store that the run writes to. [OBL-repo-0001](../obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) carries that debt.
 
 ## Authoring surfaces
 
