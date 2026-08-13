@@ -1,6 +1,6 @@
-27 files under the corpus root
+28 files under the corpus root
       3 typed
-      1 generated
+      2 generated
      11 untyped
       3 unreadable
       2 excluded
@@ -49,6 +49,8 @@ walk/spaces and ünicode.md
   untyped: no shelf pattern claims this path
 walk/spec/generated-index.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+walk/spec/generated-register.md
+  generated: `shelf_sections`, and `headwater generate --check` holds it rather than this census
 walk/spec/no-discriminator.md
   untyped: the shelf is heterogeneous and the document declares no `doc_type`
 walk/spec/no-front-matter.md

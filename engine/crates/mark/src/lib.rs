@@ -36,6 +36,20 @@
 //! A commented format carries it on the first line. JSON has no comment, so a
 //! JSON output carries the same sentence in a top-level member.
 //! [`carries_marker`] reads whichever of the two a path admits.
+//!
+//! # A Markdown document with front matter has a member surface too
+//!
+//! The first line of such a file is `---`, and a comment above the block would
+//! put the block on line 2, where no front-matter parser looks for it. So a
+//! generated Markdown file that declares an identity carries the marker the way
+//! JSON does: as a top-level member of the block, under the quoted key
+//! [`MARKER`].
+//!
+//! The false-positive guard survives, because the member is read **inside the
+//! block and nowhere else**. A document that quotes the marker in its prose is
+//! an authored document, and this repository's own specification is one. The
+//! bounded region is what keeps the two apart, and it is the same bound the
+//! first-line rule uses for a file with no block.
 
 /// The word that marks a file as this engine's output.
 pub const MARKER: &str = "headwater:generated";
@@ -79,6 +93,18 @@ pub fn marker_text(kind: &str) -> String {
     )
 }
 
+/// The marker as a front-matter member, for a generated Markdown document that
+/// declares an identity.
+///
+/// The key is quoted because [`MARKER`] holds a colon, and an unquoted key that
+/// holds one is a key that YAML reads as two. The value is quoted for the same
+/// class of reason: [`marker_text`] holds a period and a backtick, and a plain
+/// scalar that opens with neither is still a scalar nobody should have to
+/// reason about.
+pub fn marker_member(kind: &str) -> String {
+    format!("\"{MARKER}\": \"{}\"", marker_text(kind))
+}
+
 /// The marker line for a kind at a path, or `None` when the format carries no
 /// comment.
 ///
@@ -113,6 +139,11 @@ pub fn marker(kind: &str, path: &str) -> Option<String> {
 /// marker, and it is matched as a quoted key at the start of a line so that a
 /// string somewhere in the document which happens to hold the word does not
 /// count as one.
+///
+/// **Markdown, additionally: a member of the front-matter block.** The same
+/// rule as JSON, bounded to the block, because a Markdown body is prose and a
+/// member rule over the whole file would read a quoted marker in a fenced
+/// example as this engine's own output.
 pub fn carries_marker(path: &str, text: &str) -> bool {
     marker_line(path, text).is_some()
 }
@@ -133,11 +164,15 @@ pub fn kind_named(path: &str, text: &str) -> Option<String> {
     // A reader that skipped this step answers `-->` for a file whose first line
     // is the bare word, because the terminator is the next thing on the line
     // and it is not a period.
+    // A member reads the same way wherever it sits, so the two formats that
+    // admit one share the arm. What tells them apart is where `marker_line`
+    // looked, and that is its business rather than this function's.
+    let member = line.trim_start().starts_with(&quoted());
     let after = match comment_for(path) {
         // `"headwater:generated": "shelf_index. …` — step over the quote, the
         // colon and the quote that opens the value, then stop at the quote that
         // closes it.
-        Comment::None => line
+        _ if member => line
             .split_once(&quoted())
             .map(|(_, rest)| rest.trim_start())?
             .strip_prefix(':')?
@@ -145,6 +180,7 @@ pub fn kind_named(path: &str, text: &str) -> Option<String> {
             .strip_prefix('"')?
             .split('"')
             .next()?,
+        Comment::None => return None,
         Comment::Html => {
             let body = line.split_once(MARKER).map(|(_, rest)| rest)?.trim_end();
             body.strip_suffix("-->").unwrap_or(body)
@@ -169,8 +205,31 @@ fn marker_line<'a>(path: &str, text: &'a str) -> Option<&'a str> {
         Comment::None => text
             .lines()
             .find(|line| line.trim_start().starts_with(&quoted())),
-        _ => text.lines().next().filter(|line| line.contains(MARKER)),
+        // The first line, and then the block. The two are disjoint: a first
+        // line that carries the marker is a first line that is not `---`, so
+        // such a file has no block for the second rule to read.
+        Comment::Html => text
+            .lines()
+            .next()
+            .filter(|line| line.contains(MARKER))
+            .or_else(|| front_matter(text).find(|line| line.trim_start().starts_with(&quoted()))),
+        Comment::Hash => text.lines().next().filter(|line| line.contains(MARKER)),
     }
+}
+
+/// The lines between the fences of a front-matter block, and none when the text
+/// opens with no block.
+///
+/// The opening fence is the first line and nothing else, which is the rule
+/// [`headwater_doc`] splits on. The block ends at the next fence, so a `---`
+/// inside the body is out of reach whether or not the block was ever closed.
+fn front_matter(text: &str) -> impl Iterator<Item = &str> {
+    let mut lines = text.lines();
+    let opened = lines.next() == Some("---");
+    lines.take_while(|line| *line != "---").take(match opened {
+        true => usize::MAX,
+        false => 0,
+    })
 }
 
 fn quoted() -> String {
@@ -237,6 +296,43 @@ mod tests {
         let bare = format!("<!-- {MARKER} -->\n");
         assert!(carries_marker("docs/spec/13-open-obligations.md", &bare));
         assert_eq!(kind_named("docs/spec/13-open-obligations.md", &bare), None);
+    }
+
+    #[test]
+    fn a_markdown_document_carries_the_marker_inside_its_front_matter_block() {
+        let generated = format!(
+            "---\nid: REG-HW-open-questions\n{}\n---\n\n## Q1\n",
+            marker_member("shelf_sections")
+        );
+        assert!(carries_marker("docs/spec/09-open-questions.md", &generated));
+        assert_eq!(
+            kind_named("docs/spec/09-open-questions.md", &generated).as_deref(),
+            Some("shelf_sections")
+        );
+
+        // The guard the block rule has to keep: a member is a member of the
+        // block, and a body that quotes one is prose. This repository's own
+        // specification is a document that does exactly that.
+        let quoting = format!(
+            "---\nid: SPEC-HW-engine\n---\n\nA projection writes {}.\n",
+            marker_member("shelf_sections")
+        );
+        assert!(!carries_marker(
+            "docs/spec/06-engine-architecture.md",
+            &quoting
+        ));
+
+        // And a file whose body opens a second `---` block does not reach the
+        // rule either, because the block ends at the first fence after the
+        // first line.
+        let fenced = format!(
+            "---\nid: SPEC-HW-engine\n---\n\n---\n{}\n---\n",
+            marker_member("shelf_sections")
+        );
+        assert!(!carries_marker(
+            "docs/spec/06-engine-architecture.md",
+            &fenced
+        ));
     }
 
     #[test]

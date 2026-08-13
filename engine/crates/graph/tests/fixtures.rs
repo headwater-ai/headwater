@@ -289,10 +289,57 @@ fn a_quoted_link_is_counted_and_never_bound() {
     assert_eq!(bound, 1, "the quoted link reached the binding");
 }
 
-/// The graph and the census are two accounts of one corpus, and every node of
-/// the first is a typed row of the second.
+/// A generated document that declares an identity is a node at both ends.
+///
+/// [Spec 6](../../../../docs/spec/06-engine-architecture.md#projections) says
+/// no check reads a generated document, and the reason it gives is that an
+/// author cannot repair its content in the file. That reason is about checks.
+/// The identity of such a file comes from the declaration that writes it, and
+/// `generate --check` is what holds it, so the graph reads it like any other
+/// document.
+///
+/// Reading the exemption as a statement about identity is what left a
+/// projection able to write only a file that nothing cites.
 #[test]
-fn every_node_of_the_graph_is_a_typed_row_of_the_census() {
+fn a_generated_document_that_declares_an_identity_is_a_node_at_both_ends() {
+    let graph = fixture_graph();
+
+    let node = graph
+        .index
+        .node("SPEC-FIX-generated")
+        .expect("the generated document is on the node shelf");
+    assert_eq!(node.path, "graph/spec/06-generated-register.md");
+    assert_eq!(node.kind.as_deref(), Some("design_spec"));
+
+    // The target end: another document names it, and the edge binds to a
+    // document rather than to nothing.
+    let named = graph
+        .edges
+        .iter()
+        .find(|edge| edge.raw_target == "SPEC-FIX-generated")
+        .expect("an edge names it");
+    assert!(
+        matches!(&named.target, Target::Document { path, .. }
+            if path == "graph/spec/06-generated-register.md"),
+        "{:?}",
+        named.target
+    );
+
+    // The source end: it declares an edge of its own, and that edge has a
+    // source like any other.
+    let declared = graph
+        .edges
+        .iter()
+        .find(|edge| edge.source.id == "SPEC-FIX-generated")
+        .expect("it declares an edge");
+    assert_eq!(declared.source.kind, "design_spec");
+    assert!(declared.is_bound(), "{:?}", declared.target);
+}
+
+/// The graph and the census are two accounts of one corpus, and every node of
+/// the first is a row of the second that resolved a kind.
+#[test]
+fn every_node_of_the_graph_is_a_row_of_the_census_that_resolved_a_kind() {
     let root = repository_root();
     let resolved = repository(&root);
     let corpus = Corpus::declared(
@@ -311,8 +358,8 @@ fn every_node_of_the_graph_is_a_typed_row_of_the_census() {
             .find(|row| row.path == node.path)
             .unwrap_or_else(|| panic!("{} is a node and absent from the census", node.path));
         assert!(
-            matches!(row.outcome, census::Outcome::Typed { .. }),
-            "{} is a node and not a typed row",
+            row.outcome.node().is_some(),
+            "{} is a node and its row resolved no kind",
             node.path
         );
     }

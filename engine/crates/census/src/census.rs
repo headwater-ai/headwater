@@ -50,6 +50,32 @@
 //! that verb is the only one that reports drift in one. Two reports of one fact
 //! send its author to two places.
 //!
+//! # A generated file can still be a node, and the reason above says nothing
+//! # against it
+//!
+//! [Spec 6](../../../../docs/spec/06-engine-architecture.md#projections) gives
+//! one reason no check reads a generated document: its content is a function of
+//! the emitter, and an author cannot repair it in the file. **That reason is
+//! about checks. It says nothing about identity.** The identifier and the kind
+//! of a generated file are a function of the declaration that writes it, and a
+//! wrong one is repaired in the declaration, which is what `generate --check`
+//! already holds.
+//!
+//! The consequence of reading it as a statement about identity was that a
+//! projection could only write a file that no document points at. The one
+//! property that makes an artifact worth generating, that many documents depend
+//! on it, was the property that made it ungeneratable.
+//!
+//! So a marked file that carries front matter keeps its own outcome **and**
+//! carries what it parsed. [`Outcome::Generated`] holds the projection kind the
+//! marker claims and, separately, the document kind the block resolved.
+//! [`Outcome::node`] is what the identifier index and the edge builder read, and
+//! it is the one definition of "this row is a node of the graph".
+//!
+//! Nothing about the check side moves. A generated row is not
+//! [`Outcome::Typed`], no check instantiates over it, and the coverage account
+//! counts it under `generated` as before.
+//!
 //! The marker is a **claim**, and this module cannot test it: testing it needs
 //! the projection declarations, which the census does not read. The generator
 //! tests it, by reading this census beside its own plan and reporting a marked
@@ -72,9 +98,18 @@
 //! 6. the front matter will not load — a defect in the file, and it outranks
 //!    every remaining outcome because it is the only one that is nobody's
 //!    ordinary corpus state;
-//! 7. no shelf claims the path, or two claim it equally;
-//! 8. there is no front-matter block, on a path that a shelf does claim;
-//! 9. kind resolution ran on the front matter, and it reports its own outcome.
+//! 7. the front-matter block carries the marker as a member, which is where a
+//!    generated Markdown document that declares an identity puts it;
+//! 8. no shelf claims the path, or two claim it equally;
+//! 9. there is no front-matter block, on a path that a shelf does claim;
+//! 10. kind resolution ran on the front matter, and it reports its own outcome.
+//!
+//! Step 7 sits where step 5 does, and for the same reason: a statement about
+//! who wrote a file outranks what the engine would work out from its content.
+//! It sits below step 6 because a block that will not load is a block whose
+//! members nobody can read, so the question it asks has no answer there. Kind
+//! resolution still runs for a row that reaches step 7, because a node needs a
+//! kind, and its outcome rides on the row rather than replacing it.
 //!
 //! Step 7 sits above step 8 on purpose. A file with no front matter and no shelf
 //! has two things wrong with it, and the shelf is the one that decides whether
@@ -150,14 +185,27 @@ pub enum Outcome {
         kind: String,
         derivation: Box<Resolution>,
     },
-    /// This engine wrote the file, and the file says so on its first line.
-    ///
-    /// `kind` is the projection kind the marker names, and it is **what the
-    /// file claims rather than what is true**: anything can write the line, and
-    /// nothing here reads the projection declarations to test the claim. It is
-    /// `None` where the marker names nothing, which is what a marker somebody
-    /// wrote by hand usually looks like.
-    Generated { kind: Option<String> },
+    /// This engine wrote the file, and the file says so.
+    Generated {
+        /// The projection kind the marker names, and it is **what the file
+        /// claims rather than what is true**: anything can write the marker,
+        /// and nothing here reads the projection declarations to test the
+        /// claim. It is `None` where the marker names nothing, which is what a
+        /// marker somebody wrote by hand usually looks like.
+        projection: Option<String>,
+        /// The document kind the front matter resolved, for a generated file
+        /// that declares an identity. `None` for one that declares no front
+        /// matter, which every projection that writes a list produces.
+        ///
+        /// This is the half that makes a generated file a node. It is a second
+        /// field rather than a second outcome, because the two facts are
+        /// independent: the marker says who wrote the file and the block says
+        /// what the file is.
+        kind: Option<String>,
+        /// The derivation that produced `kind`, which a finding about an edge
+        /// of this document anchors to.
+        derivation: Option<Box<Resolution>>,
+    },
     /// Read, and carrying no kind.
     Untyped(Untyped),
     /// The engine could not read the file.
@@ -292,10 +340,12 @@ fn outcome_of(entry: &walk::Entry, taxonomy: &Taxonomy) -> Read {
     // The predicate is `headwater-mark`'s and not this module's: the generator
     // writes the marker, this reads it, and a second copy of the rule here is
     // how the two would come to disagree about which files this engine wrote.
-    if headwater_mark::carries_marker(&entry.path, &source) {
+    if headwater_mark::carries_marker(&entry.path, &source) && !marked_in_front_matter(&source) {
         return hashed(
             Outcome::Generated {
-                kind: headwater_mark::kind_named(&entry.path, &source),
+                projection: headwater_mark::kind_named(&entry.path, &source),
+                kind: None,
+                derivation: None,
             },
             digest,
         );
@@ -327,21 +377,49 @@ fn outcome_of(entry: &walk::Entry, taxonomy: &Taxonomy) -> Read {
     };
 
     let resolution = resolve::resolve(&entry.path, &document.facets, taxonomy);
-    let outcome = match &resolution.outcome {
-        resolve::Outcome::Typed(kind) => Outcome::Typed {
-            kind: kind.clone(),
-            derivation: Box::new(resolution.clone()),
+    // Step 7. The block loaded, so its members are readable, and the marker is
+    // one of them. Kind resolution ran first because a node needs a kind, and
+    // its outcome rides on the row rather than replacing it.
+    let outcome = match headwater_mark::carries_marker(&entry.path, &source) {
+        true => Outcome::Generated {
+            projection: headwater_mark::kind_named(&entry.path, &source),
+            kind: match &resolution.outcome {
+                resolve::Outcome::Typed(kind) => Some(kind.clone()),
+                resolve::Outcome::Untyped(_) => None,
+            },
+            derivation: Some(Box::new(resolution.clone())),
         },
-        resolve::Outcome::Untyped(reason) => Outcome::Untyped(Untyped::Unresolved {
-            reason: reason.clone(),
-            derivation: Box::new(resolution.clone()),
-        }),
+        false => match &resolution.outcome {
+            resolve::Outcome::Typed(kind) => Outcome::Typed {
+                kind: kind.clone(),
+                derivation: Box::new(resolution.clone()),
+            },
+            resolve::Outcome::Untyped(reason) => Outcome::Untyped(Untyped::Unresolved {
+                reason: reason.clone(),
+                derivation: Box::new(resolution.clone()),
+            }),
+        },
     };
     Read {
         outcome,
         document: Some(Box::new(document)),
         digest: Some(digest),
     }
+}
+
+/// Whether the marker sits inside a front-matter block rather than above one.
+///
+/// The two positions produce two different rows: a marker on the first line is
+/// a file with no block to parse, and a marker inside the block is a file whose
+/// block this census reads. `headwater_mark` owns both rules and answers one
+/// question about them, so this asks it the question twice rather than stating
+/// a third rule of its own: a file whose first line carries the marker is the
+/// first case, and a marked file whose first line does not is the second.
+fn marked_in_front_matter(source: &str) -> bool {
+    // The path is a Markdown one by the time this runs, and only a Markdown
+    // path admits both positions. The name is fixed here rather than taken,
+    // because the answer is about the first line and not about the file.
+    !headwater_mark::carries_marker("a.md", source.lines().next().unwrap_or_default())
 }
 
 /// An outcome the walk reached without reading a byte of the file.
@@ -363,6 +441,30 @@ fn hashed(outcome: Outcome, digest: String) -> Read {
 }
 
 impl Outcome {
+    /// The kind this row resolved and the derivation that produced it, for a
+    /// row that the graph may hold as a node.
+    ///
+    /// One definition, read by the identifier index and by the edge builder. A
+    /// second reading of "which rows are nodes" is how the two would come to
+    /// disagree, and a graph whose node set and edge set disagree reports a
+    /// correct verdict about a corpus that nobody has.
+    ///
+    /// Two outcomes answer. A typed document is the ordinary one. A generated
+    /// document that declared an identity is the other, and the reason it
+    /// answers is that spec 6 excuses it from *checks* rather than from
+    /// identity. See the module comment.
+    pub fn node(&self) -> Option<(&str, Option<&Resolution>)> {
+        match self {
+            Outcome::Typed { kind, derivation } => Some((kind, Some(derivation))),
+            Outcome::Generated {
+                kind: Some(kind),
+                derivation,
+                ..
+            } => Some((kind, derivation.as_deref())),
+            _ => None,
+        }
+    }
+
     /// The class this outcome counts under. One word per class, and the set is
     /// the census's own vocabulary: a report that invents a class per message
     /// cannot be counted.
@@ -385,7 +487,7 @@ impl Outcome {
             // What holds the file, rather than what this row will not do to it.
             // A reader who finds a generated file in a report is asking which
             // verb owns it, and the answer is the same for every one of them.
-            Outcome::Generated { kind } => match kind {
+            Outcome::Generated { projection, .. } => match projection {
                 Some(kind) => format!(
                     "`{kind}`, and `headwater generate --check` holds it rather than this census"
                 ),
@@ -621,9 +723,25 @@ mod tests {
                 Outcome::Excluded { .. }
                 | Outcome::NotADocument
                 | Outcome::Unwalkable(_)
-                | Outcome::Unreadable(_)
-                | Outcome::Generated { .. } => {
+                | Outcome::Unreadable(_) => {
                     assert!(!parsed, "{} carries a document nothing read", row.path)
+                }
+                // A generated row carries a document exactly when it declared
+                // one. The kind rides on the document rather than on the
+                // marker, so a marked file with no block resolves none, and a
+                // resolved kind is what puts the row on the node shelf.
+                Outcome::Generated { kind, .. } => {
+                    assert!(
+                        kind.is_none() || parsed,
+                        "{} resolved a kind from a block nothing read",
+                        row.path
+                    );
+                    assert_eq!(
+                        kind.is_some(),
+                        row.outcome.node().is_some(),
+                        "{} disagrees with itself about being a node",
+                        row.path
+                    );
                 }
                 Outcome::Untyped(Untyped::Unresolved { .. }) => {}
             }
@@ -694,10 +812,64 @@ mod tests {
             resolve::shelf_for(&row.path, &taxonomy()),
             resolve::ShelfMatch::Matched { .. }
         ));
-        let Outcome::Generated { kind } = &row.outcome else {
+        let Outcome::Generated {
+            projection,
+            kind,
+            derivation,
+        } = &row.outcome
+        else {
             unreachable!()
         };
-        assert_eq!(kind.as_deref(), Some("shelf_index"));
+        assert_eq!(projection.as_deref(), Some("shelf_index"));
+        // No block, so no kind and no derivation, and so no node. This is the
+        // shape every projection that writes a list produces.
+        assert_eq!(kind.as_deref(), None);
+        assert!(derivation.is_none());
+        assert!(row.outcome.node().is_none());
+        assert!(row.document.is_none());
+    }
+
+    /// A generated file that declares an identity is generated **and** a node.
+    ///
+    /// The two facts are independent. The marker says who wrote the file, and
+    /// [spec 6](../../../../docs/spec/06-engine-architecture.md#projections)
+    /// gives one consequence of it: no check reads the file, because an author
+    /// cannot repair its content there. The block says what the file is, and
+    /// the graph reads that. A reading of the first as an answer to the second
+    /// is what left a projection able to write only a file that nothing cites.
+    #[test]
+    fn a_marked_file_that_declares_an_identity_is_generated_and_a_node() {
+        let census = take(&corpus(), &taxonomy());
+        let row = census
+            .rows
+            .iter()
+            .find(|row| row.path == "walk/spec/generated-register.md")
+            .expect("the fixture");
+
+        let Outcome::Generated {
+            projection,
+            kind,
+            derivation,
+        } = &row.outcome
+        else {
+            panic!("{:?}", row.outcome)
+        };
+        assert_eq!(projection.as_deref(), Some("shelf_sections"));
+        assert_eq!(kind.as_deref(), Some("decision_register"));
+        assert!(derivation.is_some());
+
+        // The row carries what it parsed, which is what the index and the edge
+        // builder read. Before this, a marked row carried no document at all.
+        assert!(row.document.is_some());
+        assert_eq!(
+            row.outcome.node().map(|(kind, _)| kind),
+            Some("decision_register")
+        );
+
+        // And it is still not typed, so no check instantiates over it and the
+        // coverage account counts it where it counted it before.
+        assert!(!matches!(row.outcome, Outcome::Typed { .. }));
+        assert_eq!(row.outcome.class(), "generated");
     }
 
     /// The false positive that would cost the most.
