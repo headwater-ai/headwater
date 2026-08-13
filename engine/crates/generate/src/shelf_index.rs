@@ -120,9 +120,8 @@ fn render(shelf: &str, output: &str, ordered: &[Pointer]) -> String {
     // shelf index is Markdown. The fallback is a plain line rather than an
     // unmarked file, because an unmarked generated file is the one thing this
     // module must never produce.
-    let mark =
-        headwater_mark::marker(Kind::ShelfIndex.name(), output)
-            .unwrap_or_else(|| format!("<!-- {} -->", headwater_mark::MARKER));
+    let mark = headwater_mark::marker(Kind::ShelfIndex.name(), output)
+        .unwrap_or_else(|| format!("<!-- {} -->", headwater_mark::MARKER));
     out.push_str(&mark);
     out.push_str("\n\n# ");
     out.push_str(shelf);

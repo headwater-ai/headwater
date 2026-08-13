@@ -190,12 +190,16 @@ mod tests {
         // that quotes the marker while discussing it. This repository's own
         // specification is such a document.
         let quoting = format!("---\ntitle: Spec 6\n---\n\nA projection carries `{MARKER}`.\n");
-        assert!(!carries_marker("docs/spec/06-engine-architecture.md", &quoting));
+        assert!(!carries_marker(
+            "docs/spec/06-engine-architecture.md",
+            &quoting
+        ));
     }
 
     #[test]
     fn json_carries_the_marker_as_a_member_wherever_it_sits() {
-        let text = format!("{{\n  \"version\": \"1.0\",\n  \"{MARKER}\": \"corpus_descriptor. \"\n}}\n");
+        let text =
+            format!("{{\n  \"version\": \"1.0\",\n  \"{MARKER}\": \"corpus_descriptor. \"\n}}\n");
         assert!(carries_marker(".headwater/corpus.json", &text));
 
         // A string that holds the word is not a member that is the marker.
@@ -216,7 +220,10 @@ mod tests {
             let line = marker(kind, path).expect("a commented format");
             assert_eq!(kind_named(path, &line).as_deref(), Some(kind));
         }
-        let json = format!("{{\n  \"{MARKER}\": \"{}\"\n}}\n", marker_text("graph_export"));
+        let json = format!(
+            "{{\n  \"{MARKER}\": \"{}\"\n}}\n",
+            marker_text("graph_export")
+        );
         assert_eq!(
             kind_named("docs/graph.json", &json).as_deref(),
             Some("graph_export")

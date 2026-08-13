@@ -143,9 +143,7 @@ pub(crate) fn emit(
     let value = Json::object([
         (
             headwater_mark::MARKER,
-            Json::string(headwater_mark::marker_text(
-                Kind::CorpusDescriptor.name(),
-            )),
+            Json::string(headwater_mark::marker_text(Kind::CorpusDescriptor.name())),
         ),
         ("descriptor_version", Json::string(VERSION)),
         ("corpora", Json::Array(vec![corpus])),
