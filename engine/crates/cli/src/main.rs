@@ -68,6 +68,7 @@ const USAGE: &str = "\
 headwater check              [--strict] [--no-cache] [--now <date>] [--read-set <path>]
                              [--register <path>] [--format text|json|sarif|markdown]
                              [--root <path>]
+headwater gate               --read-set <path> [--now <date>] [--root <path>]
 headwater route              <task description> [--budget <n>] [--root <path>]
 headwater explain            <path|identifier> [--root <path>]
 headwater mcp                [--root <path>]
@@ -82,6 +83,12 @@ headwater taxonomy resolve   [--check] [--root <path>]
 
   check              run the pipeline over the corpus, against the taxonomy in
                      the committed lock.
+  gate               hold the read set of an earlier run against the tree in
+                     front of it, and report whether the verdicts of that run
+                     carry to this one. It reads only what the set lists, so it
+                     reports the reach of its own answer and never reports that
+                     a corpus is green. It exits non-zero on a verdict that does
+                     not carry, which is the signal to run the checks again.
   route              resolve a task description to the documents that govern it,
                      as pointers. It is silent when nothing matches.
   explain            why a document is the kind it is, what it serves, and what
@@ -118,15 +125,19 @@ headwater taxonomy resolve   [--check] [--root <path>]
                  instance. This run and a cached one write the same bytes to
                  standard output, and a difference between them is a defect in
                  the cache rather than a result.
-  --now <date>   `check` only: the date to evaluate against, as `YYYY-MM-DD`.
-                 Defaults to today. Spec 12 makes the clock an injected value
-                 rather than a syscall inside a check, and this flag is where it
-                 is injected: same corpus, same lock, same date, same bytes.
+  --now <date>   `check` and `gate`: the date to evaluate against, as
+                 `YYYY-MM-DD`. Defaults to today. Spec 12 makes the clock an
+                 injected value rather than a syscall inside a check, and this
+                 flag is where it is injected: same corpus, same lock, same
+                 date, same bytes. On `gate` it is the day the question is
+                 asked about, and a run that read the clock is void on any
+                 other day.
   --read-set <path>
-                 `check` only: write the read set of this run to a file as well
-                 as to the report. It is what a gate compares against a later
-                 tree to decide whether this verdict survives a merge, without
-                 running the checks again.
+                 `check`: write the read set of this run to a file as well as
+                 to the report. `gate`: the file to hold against this tree, and
+                 the flag is required there. The artifact is what decides
+                 whether a verdict survives a merge without running the checks
+                 again.
   --register <path>
                  `check` only: write the register of this run to a file as well
                  as to the report. Spec 4 makes it a projection of the
@@ -279,6 +290,7 @@ fn main() -> ExitCode {
     let verb: Vec<&str> = words.iter().map(String::as_str).collect();
     match verb.as_slice() {
         ["check"] => check(&root, strict, cached, now, read_set, register_out, format),
+        ["gate"] => gate(&root, read_set, now),
         ["route"] => fail("`route` takes a task description. Try `headwater route \"add rate limiting to the ingest API\"`"),
         ["route", task @ ..] => route(&root, &task.join(" "), budget),
         ["explain"] => fail("`explain` takes a path or an identifier"),
@@ -755,6 +767,74 @@ fn mcp(root: &Path) -> ExitCode {
         std::io::stdout().lock(),
     );
     ExitCode::SUCCESS
+}
+
+/// `headwater gate`: the read set of an earlier run, held against this tree.
+///
+/// [Spec 12](../../../../docs/spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
+/// rules what a gate reads, and [`headwater_check::gate`] is that ruling. This
+/// function is the shell around it: it opens the artifact, asks the filesystem
+/// for the bytes at each listed path, and prints what the decision was.
+///
+/// It walks no corpus and it resolves no taxonomy. That is the whole economy of
+/// the artifact: the answer costs one hash per listed input, and it costs no
+/// run. It is also the limit of the answer, which the report states every time.
+fn gate(root: &Path, read_set: Option<PathBuf>, now: Option<Date>) -> ExitCode {
+    let path =
+        match read_set {
+            Some(path) => path,
+            None => return fail(
+                "`gate` holds a read set against this tree and takes the file that carries one. \
+                 Try `headwater check --read-set run.readset` on one tree, then `headwater gate \
+                 --read-set run.readset` on another",
+            ),
+        };
+    let text = match std::fs::read_to_string(&path) {
+        Ok(text) => text,
+        Err(error) => return fail(&format!("cannot read {}: {error}", path.display())),
+    };
+    let recorded = match headwater_check::Recorded::parse(&text) {
+        Ok(recorded) => recorded,
+        Err(refusal) => {
+            return fail(&format!(
+                "{} does not read as a read set. {}",
+                path.display(),
+                refusal.render()
+            ))
+        }
+    };
+    // The same clock rule `check` follows, and for the same reason: a gate that
+    // guessed the day would carry a windowed verdict across the day it expired.
+    let asked = match now.or_else(|| Context::from_system_clock().map(|ctx| ctx.now())) {
+        Some(asked) => asked,
+        None => {
+            eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
+            return ExitCode::FAILURE;
+        }
+    };
+    // The lock, and nothing else of the taxonomy. A lock that moved voids every
+    // result at once, so its digest is the one component a gate compares that is
+    // not a document.
+    let lock = match headwater_lock::at(root) {
+        Ok(lock) => lock,
+        Err(error) => {
+            eprintln!("headwater: {error}");
+            return ExitCode::FAILURE;
+        }
+    };
+    let verdict = headwater_check::gate::decide(&recorded, &lock.digest, asked, |listed| {
+        std::fs::read(root.join(listed))
+            .ok()
+            .map(|bytes| headwater_hash::digest(&bytes))
+    });
+    print!("{}", verdict.render());
+    match verdict.carries() {
+        true => ExitCode::SUCCESS,
+        // Spec 12: "a false invalidation costs one run. A false survival ships
+        // an invalid corpus with a green report." A non-zero exit is the signal
+        // to run the checks again, and it is the cheaper of the two errors.
+        false => ExitCode::FAILURE,
+    }
 }
 
 fn check(

@@ -136,6 +136,7 @@ pub mod facet_required;
 pub mod facet_value;
 pub mod finding;
 pub mod fragment;
+pub mod gate;
 pub mod identifier;
 pub mod identity;
 pub mod instance;
@@ -159,8 +160,9 @@ pub use cache::Cache;
 pub use context::{Context, Date};
 pub use coverage::Coverage;
 pub use finding::{Finding, Severity};
+pub use gate::{Recorded, Verdict};
 pub use instance::{Input, Instance, Outcome};
-pub use readset::ReadSet;
+pub use readset::{ReadSet, Rule};
 pub use register::{Bound, Register};
 pub use scope::{
     CorpusCheck, CorpusView, DocumentCheck, DocumentView, EdgeCheck, EdgeUnit, EdgeView, Grain,
@@ -625,15 +627,18 @@ pub fn run(
     register.escaped_from(declared.register, &suppressions);
     register.pending_from(declared.register, &adoption);
 
-    let read_set = ReadSet::of(
-        declared.lock,
-        ctx.now(),
-        served
-            .iter()
-            .map(|served| (served.rule, served.version))
-            .collect(),
-        &instances,
-    );
+    // Every rule as this run served it, which is where a read set takes the
+    // edition and the clock declaration from. Both come off the trait, so
+    // neither is a second fact beside the scope ([`scope`]).
+    let rules: Vec<Rule> = served
+        .iter()
+        .map(|served| Rule {
+            name: served.rule,
+            version: served.version,
+            needs_clock: served.scope.needs_clock(),
+        })
+        .collect();
+    let read_set = ReadSet::of(declared.lock, ctx.now(), &rules, &instances);
 
     Run {
         instances,

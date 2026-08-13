@@ -56,4 +56,4 @@
 
 </details>
 
-24 documents in the read set. 26 obligations, 21 verified.
+24 documents in the read set, and 1 barrier that no gate carries across a merge. 26 obligations, 21 verified.
