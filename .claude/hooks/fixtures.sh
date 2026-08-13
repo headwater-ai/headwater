@@ -135,9 +135,6 @@ else
 fi
 
 printf '\n# review.sh, on Stop\n'
-expect 'a stop the hook already blocked is let through, so no turn loops' \
-    review.sh 0 '' \
-    '{"hook_event_name":"Stop","stop_hook_active":true}'
 if [ -x "$engine" ]; then
     expect 'a tree the commit gate passes lets the turn end' \
         review.sh 0 '' \
@@ -186,6 +183,14 @@ if [ -x "$engine" ]; then
     expect 'the refusal carries the remediation the commit gate prints' \
         review.sh 2 'headwater check' \
         '{"hook_event_name":"Stop","stop_hook_active":false}'
+
+    # The loop guard, and it is asserted here rather than over a clean tree on
+    # purpose. Over a clean tree the gate exits 0 anyway, so the case passes
+    # whether the guard runs or not, and a fixture that cannot fail proves
+    # nothing. The planted document makes the guard the only way out.
+    expect 'a stop the hook already blocked is let through, so no turn loops' \
+        review.sh 0 '' \
+        '{"hook_event_name":"Stop","stop_hook_active":true}'
 
     rm -f "$planted"
     trap - EXIT INT TERM
