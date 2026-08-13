@@ -1,0 +1,43 @@
+{
+  "headwater:generated": "corpus_descriptor. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
+  "descriptor_version": "1.0",
+  "corpora": [
+    {
+      "root": "docs",
+      "excluded": [
+        {
+          "path": "docs/taxonomies/**",
+          "reason": "package content. This directory is the design-spec library entry, and a taxonomy package that lives inside the corpus it types has no home in the shelf model. Nothing in the base package or in the entry says whether package content is corpus content, and spec 13 records the gap; this repository answers it locally, here, with a reason."
+        }
+      ],
+      "taxonomy": {
+        "package": "headwater/standard",
+        "version": "1.0.0",
+        "lock": "sha256:a61d23660fb5205e1dedac6253911c991c6a8b20e57a7796f5c6cefa0ede44eb"
+      },
+      "entry_points": [
+        {
+          "shelf": "evaluations",
+          "path": "docs/evaluations/default-taxonomy-first-run.md",
+          "id": "EVAL-HW-default-taxonomy-first-run"
+        },
+        {
+          "shelf": "reviews",
+          "path": "docs/reviews/core-concepts-findings-assessment.md",
+          "id": "REV-HW-core-concepts-assessment"
+        },
+        {
+          "shelf": "spec_series",
+          "path": "docs/spec/00-vision-and-scope.md",
+          "id": "SPEC-HW-vision-and-scope"
+        }
+      ]
+    }
+  ],
+  "unstated": [
+    {
+      "field": "exports",
+      "reason": "no taxonomy can declare an export profile yet. An export profile names an audience, an emitter target, a filter and a tombstone grain, and a `projections` entry carries a kind and an output path. An empty list here would say that this corpus exports nothing, and what is true is that nothing can declare an export."
+    }
+  ]
+}

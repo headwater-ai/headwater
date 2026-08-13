@@ -502,15 +502,19 @@ fn comment_for(path: &str) -> Comment {
     }
 }
 
-/// What the marker says, without the syntax that carries it.
+/// What the marker says, without the word that names it and without the syntax
+/// that carries it.
 ///
 /// Held apart from [`marker`] because a format with no comment carries the same
-/// sentence in a different place. The descriptor puts it in a member and a
-/// shelf index puts it in a comment, and one wording serves both.
+/// sentence in a different place, and the two places name the marker
+/// differently. A comment has one line, so [`MARKER`] has to be a word inside
+/// it. A member has a key, so [`MARKER`] is the key and a value that repeated
+/// it would say the word twice. One wording, two frames, and neither of them
+/// holds a second copy of the other's part.
 pub fn marker_text(kind: Kind) -> String {
     format!(
-        "{MARKER} {}. `headwater generate` writes this file, and `headwater generate --check` \
-         holds it. Edit the corpus, not this file.",
+        "{}. `headwater generate` writes this file, and `headwater generate --check` holds it. \
+         Edit the corpus, not this file.",
         kind.name()
     )
 }
@@ -524,7 +528,7 @@ pub fn marker_text(kind: Kind) -> String {
 /// top-level member. What matters to [`carries_marker`] is that the marker is
 /// findable, and not which syntax holds it.
 pub fn marker(kind: Kind, path: &str) -> Option<String> {
-    let body = marker_text(kind);
+    let body = format!("{MARKER} {}", marker_text(kind));
     match comment_for(path) {
         Comment::Html => Some(format!("<!-- {body} -->")),
         Comment::Hash => Some(format!("# {body}")),
