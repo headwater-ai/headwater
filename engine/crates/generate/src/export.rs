@@ -708,15 +708,13 @@ fn schema(surface: &Surface<'_>, all: &[Node<'_>]) -> Body {
     }
 }
 
-/// The constraint one facet puts on its value.
-///
-/// A facet with a declared value set becomes an `enum` over exactly that set. A
-/// facet with none gets no constraint at all, and the omission is deliberate.
-/// The taxonomy declares whether a facet is required and what values it admits,
-/// and it declares no type. A `type: string` here would be this emitter
-/// inventing a constraint that no native check enforces, which is the
-/// resemblance spec 12 refuses.
 /// The constraint one facet contributes, and the guard that keeps it equivalent.
+///
+/// A facet with no declared value set gets no constraint at all, and the
+/// omission is deliberate. The taxonomy declares whether a facet is required and
+/// what values it admits, and it declares no type. A `type: string` here would
+/// be this emitter inventing a constraint that no native check enforces, which
+/// is the resemblance spec 12 refuses.
 ///
 /// A declared value set becomes `enum` over the same members. The guard is the
 /// part the differential forced. `facet.value.not_permitted` produces nothing

@@ -45,8 +45,8 @@ Spec 6 sketched three tiers. The correct decomposition is five. It comes from th
 
 | Origin | Comes from | Examples | Exportable as |
 |---|---|---|---|
-| **Shape** | the TBox, generated | required facet, enum membership, identifier pattern, cardinality, unknown-facet detection | LinkML + SHACL |
-| **Graph** | relation declarations, generated | reciprocity, endpoint kinds, lifecycle-sensitivity, satellite inheritance, live conflicts, windowed participation expectations | SHACL (via SPARQL) |
+| **Shape** | the TBox, generated | required facet, enum membership, identifier pattern, cardinality, unknown-facet detection | JSON Schema, and LinkML or SHACL when either emitter arrives |
+| **Graph** | relation declarations, generated | reciprocity, endpoint kinds, lifecycle-sensitivity, satellite inheritance, live conflicts, windowed participation expectations | SHACL (via SPARQL), when that emitter arrives |
 | **Corpus** | declarations that need many documents | facet orthogonality, continuity distribution, scent distinctiveness | — |
 | **Document** | regimes, applied to the body | voice, section contract, normative language, size budgets, prose-link resolution | — |
 | **Plugin** | adopter code | anything organization-specific | — |
@@ -59,7 +59,7 @@ This table settles three things.
 
 One example in that row asks for more than the row supplies. Prose-link resolution reads the destination of a link, and a fragment on that destination names a heading of another document. No scope below carries a second document's body. So the half that a document decides alone is a Document check. The other half waits for a grain that this list does not hold ([13 — Open obligations](13-open-obligations.md#design-work-that-nothing-blocks)).
 
-**`exportable_as` is machine-checkable.** The emitted shapes are generated from exactly the checks that declare a target, and the next section states the rules that keep the claim honest.
+**`exportable_as` is machine-checkable.** The emitted shapes are generated from exactly the checks that declare a target, and the next section states the rules that keep the claim honest. The last column above states what an origin can reach, and the declaration is per rule. Two rules declare a target today, and both name `jsonschema`.
 
 ### `exportable_as` is a set with a partition rule
 
