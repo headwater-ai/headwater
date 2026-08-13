@@ -245,6 +245,7 @@ kinds:
     identifier:
       scheme: obligation_record_id
     is_a: governed_document
+    language: ste_house
     lifecycle: standard
     purpose: obligation
     sections:
