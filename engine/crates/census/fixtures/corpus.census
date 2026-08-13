@@ -1,8 +1,8 @@
-62 files under the corpus root
+77 files under the corpus root
      36 typed
       1 generated
       2 untyped
-     21 excluded
+     36 excluded
       2 not a document
       2 typed decision_register
      13 typed design_spec
@@ -12,8 +12,8 @@
       5 typed review_record
 
 exclusions
-     21 `docs/taxonomies/**`
-        package content. This directory is the design-spec library entry, and a taxonomy package that lives inside the corpus it types has no home in the shelf model. Nothing in the base package or in the entry says whether package content is corpus content, and spec 13 records the gap; this repository answers it locally, here, with a reason.
+     36 `docs/taxonomies/**`
+        package content. This directory is the canonical taxonomy library, and a taxonomy package that lives inside the corpus it types has no home in the shelf model. Nothing in the base package or in either entry says whether package content is corpus content, and spec 13 records the gap; this repository answers it locally, here, with a reason. A fixture corpus under an entry is package content twice over, because it is a corpus that another root is meant to walk.
 
 docs/LICENSE
   not a document: not a Markdown file
@@ -22,6 +22,36 @@ docs/doctrine/maturity-model.md
 docs/spec/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/taxonomies/README.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/bundle.yml
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/doctrine.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/README.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/corpus/docs/decisions/0001-deliver-at-least-once.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/corpus/docs/decisions/0002-store-attempts-in-postgres.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/corpus/docs/decisions/0003-refuse-a-dead-letter-queue.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/corpus/docs/decisions/0004-deliver-exactly-once-per-destination.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/corpus/docs/decisions/0005-partition-by-tenant.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/corpus/docs/decisions/0006-hold-attempt-state-in-redis.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/corpus/docs/evaluations/retry-ceiling-measurement.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/corpus/docs/obligations/0001-window-length-is-unmeasured.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/corpus/docs/obligations/0002-redis-durability-waits-on-an-operator.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/fixtures/corpus/docs/obligations/0003-integration-guide-states-the-old-guarantee.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/templates/decision.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/decision-record/templates/obligation_record.md
   excluded: docs/taxonomies/**
 docs/taxonomies/design-spec/bundle.yml
   excluded: docs/taxonomies/**

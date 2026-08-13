@@ -121,5 +121,10 @@ Each admitted entry adds a line below, with its bundle name and the tradition th
 | Entry | Bundle | The tradition |
 |---|---|---|
 | [`design-spec`](design-spec/) | `design-spec` | The numbered specification series of IETF RFCs, academic papers, and software design documents |
+| [`decision-record`](decision-record/) | `decision-record` | The architecture-decision-record tradition of Nygard, MADR and the tooling around them |
 
 The design-spec entry carries six findings against the specification, which its [doctrine](design-spec/doctrine.md#findings) states in full. Two of them are worth reading before a second entry is authored. A bundle cannot extend a list, so no entry may ship its own lifecycle ladder or its own projection. And the base's `specification` kind carries a section contract that a tradition with other headings cannot reuse.
+
+**The second entry is what tested criterion 6, and criterion 6 is the one that cost.** The decision-record entry serves the `obligation` purpose, which the design-spec entry declares, and no entry may declare an address that another entry already holds. So it declares `requires: [design-spec]` for one line, and an ADR-keeping team inherits a tradition of numbered specifications that it need not use. Two more addresses were closed to it in the same way: an endpoint list of concrete kinds, and a kind's list of required facets. Its [doctrine](decision-record/doctrine.md#findings) states the three as one finding. Shared vocabulary belongs to the base, because an entry is the one place where nothing composes.
+
+**The second entry also stopped adding what the base already had.** The base declares `kinds.decision` with Nygard's three sections, so the decision-record entry adds no decision kind and writes into the base kind at the keys it leaves absent. That is the operation an `add` was specified for, and it is the remedy that design-spec's second finding asks for, applied from the other side.
