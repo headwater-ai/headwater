@@ -1,6 +1,10 @@
-61 seen, 36 classified, 36 checked, 392 check instances
+61 seen, 36 classified, 36 checked, 424 check instances
      26 skipped: this document writes no fragment into itself
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+adoption
+  1 pairs open, 0 closed, holding 1 finding, in 1 task
+  AD-1 1 open, 0 closed, holding 1 finding, owner the specification authors, until 2027-06-30
+    The one entry of `.ste-lint-baseline.json` that this corpus still owes. The baseline held two when the linter retired. The other named a semicolon inside a block quotation, which the engine does not report at all, because the parser hands a quoted block to no lexical rule
 36 documents in the read set
      36 instances of facet.required.missing
      36 instances of facet.value.not_permitted
@@ -10,12 +14,15 @@
      15 instances of relation.participation.overdue
      17 instances of voice.forbidden_construction
      16 instances of language.controlled.not_met
+     16 instances of language.retired_term.used
+     16 instances of language.source_form.not_met
      36 instances of link.fragment.unresolved
 suppressions
-  2 findings hidden by 2 directives
-      2 false_positive
-      2 of language.controlled.not_met
-      2 on the shelf spec_series
+  4 findings hidden by 4 directives
+      4 false_positive
+      3 of language.controlled.not_met
+      1 of language.retired_term.used
+      4 on the shelf spec_series
 rules, and for each the scope that binds it
   facet.required.missing
     document scope, one document and its front matter
@@ -33,6 +40,10 @@ rules, and for each the scope that binds it
     document scope, one document, its front matter and its body
   language.controlled.not_met
     document scope, one document, its front matter and its body
+  language.retired_term.used
+    document scope, one document, its front matter and its body
+  language.source_form.not_met
+    document scope, one document, its front matter and its body
   section.required.missing
     document scope, one document, its front matter and its body
   link.fragment.unresolved
@@ -44,18 +55,20 @@ rules, and for each the scope that binds it
   control.mechanism.unimplemented
     taxonomy scope, the resolved taxonomy, and no document
 register
-  15 obligations: 15 verified, 0 gap, 0 unverifiable, 0 with no disposition
+  17 obligations: 17 verified, 0 gap, 0 unverifiable, 0 with no disposition
       6 high, 6 verified
       6 medium, 6 verified
-      3 low, 3 verified
-  OB-LANG-1 verified, 2 findings escaped under it
-  15 controls
-     15 posture advisory
-     15 acts detective
-     13 name a rule this engine carries
+      5 low, 5 verified
+  OB-LANG-1 verified, 3 findings escaped under it
+  OB-LANG-3 verified, 1 finding escaped under it, 1 finding is migration-pending under it
+  17 controls
+     17 posture advisory
+     17 acts detective
+     15 name a rule this engine carries
       2 name a phase this engine runs
      11 with no promotion record, so nothing states what would promote them
+      2 with criteria
       2 permanently advisory
       2 producing facts rather than findings
-  escaped findings, in the precedence spec 4 fixes: no waiver mechanism exists, 0 migration-pending, 2 suppressed
+  escaped findings, in the precedence spec 4 fixes: no waiver mechanism exists, 1 migration-pending, 4 suppressed
   every rule this engine carries reaches one obligation

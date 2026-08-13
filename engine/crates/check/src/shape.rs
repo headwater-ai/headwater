@@ -67,6 +67,19 @@ pub struct VoiceRegime {
     pub span: Span,
 }
 
+/// One term a corpus retired.
+///
+/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the-language-regime-carries-the-terms-that-the-corpus-retired):
+/// "Each entry carries the term, a required reason, and an optional
+/// replacement", and the replacement is what decides whether the fix is a
+/// substitution or a rewrite.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RetiredTerm {
+    pub term: String,
+    pub reason: String,
+    pub replacement: Option<String>,
+}
+
 /// A language regime: the tag, and the controlled language the prose is held to.
 ///
 /// `controlled` and `profile` are two strings and the meta-schema marks both as
@@ -83,6 +96,11 @@ pub struct LanguageRegime {
     /// The controlled language, and nothing for a regime that declares none.
     pub controlled: Option<String>,
     pub profile: Option<String>,
+    /// How the source is written, and nothing for a regime that fixes no form.
+    /// A closed set in the meta-schema, so a value outside it never arrives.
+    pub source_form: Option<String>,
+    /// The terms this corpus retired, in the order the regime lists them.
+    pub retired_terms: Vec<RetiredTerm>,
     pub span: Span,
 }
 
@@ -264,6 +282,8 @@ impl Shape {
                         tag: scalar(map, "tag").unwrap_or_default(),
                         controlled: scalar(map, "controlled"),
                         profile: scalar(map, "profile"),
+                        source_form: scalar(map, "source_form"),
+                        retired_terms: retired_terms(map),
                         span: entry.key.span,
                     });
                 }
@@ -574,6 +594,32 @@ fn sequence(map: &Mapping, key: &str) -> Vec<String> {
                 .collect()
         })
         .unwrap_or_default()
+}
+
+/// The retired terms of one language regime.
+///
+/// An entry without a `term` or without a `reason` is dropped rather than
+/// guessed at: the meta-schema requires both, so a source that reaches here
+/// missing one has already been refused, and inventing a reason would put words
+/// in a finding that no taxonomy wrote.
+fn retired_terms(map: &Mapping) -> Vec<RetiredTerm> {
+    let Some(items) = map
+        .get("retired_terms")
+        .and_then(|node| node.value.as_seq())
+    else {
+        return Vec::new();
+    };
+    items
+        .iter()
+        .filter_map(|item| {
+            let entry = item.value.as_map()?;
+            Some(RetiredTerm {
+                term: scalar(entry, "term")?,
+                reason: scalar(entry, "reason")?,
+                replacement: scalar(entry, "replacement"),
+            })
+        })
+        .collect()
 }
 
 #[cfg(test)]

@@ -93,6 +93,17 @@ pub struct Block {
     /// How many block quotes enclose it. Zero is the document's own author.
     pub quote_depth: usize,
     pub runs: Vec<Run>,
+    /// Where the source broke this block over a line without ending it: one
+    /// span per CommonMark soft break, in document order.
+    ///
+    /// Every rule that reads prose reads a soft break as a space, and that is
+    /// correct for prose. It is the whole of the fact for a rule about the
+    /// source form, because a paragraph that a later commit reflows reads the
+    /// same and is written differently. Nothing except the parser can tell a
+    /// soft break from a backslash hard break, so the parser keeps the
+    /// difference here rather than leaving each rule to guess it from a line
+    /// count.
+    pub soft_breaks: Vec<Span>,
 }
 
 impl Block {
@@ -303,8 +314,18 @@ pub fn scan(source: &str, body: &str, offset: usize) -> Body {
             }
             // A break inside a paragraph is whitespace to every rule that reads
             // the paragraph as prose, so it arrives as a space rather than as a
-            // newline that a sentence splitter would have to know about.
-            Event::SoftBreak | Event::HardBreak => {
+            // newline that a sentence splitter would have to know about. The
+            // soft break is also recorded, because a rule about the source form
+            // reads the break itself and a backslash hard break is deliberate.
+            Event::SoftBreak => {
+                let ownership = ownership(&open, quote_depth);
+                let span = span_of(range.clone());
+                if let Some(block) = open.last_mut() {
+                    block.soft_breaks.push(span);
+                }
+                push_text(&mut open, &mut links, " ", range, ownership);
+            }
+            Event::HardBreak => {
                 let ownership = ownership(&open, quote_depth);
                 push_text(&mut open, &mut links, " ", range, ownership);
             }
@@ -332,6 +353,7 @@ fn block(kind: BlockKind, span: Span, quote_depth: usize) -> Block {
         span,
         quote_depth,
         runs: Vec::new(),
+        soft_breaks: Vec::new(),
     }
 }
 
@@ -379,5 +401,63 @@ fn form_of(link_type: LinkType) -> LinkForm {
         LinkType::Autolink => LinkForm::Autolink,
         LinkType::Email => LinkForm::Email,
         LinkType::WikiLink { .. } => LinkForm::Reference,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn body_of(source: &str) -> Body {
+        scan(source, source, 0)
+    }
+
+    /// The fact a source-form rule reads. A paragraph written over two lines
+    /// holds one soft break, and the break points at the line the source wrapped
+    /// onto.
+    /// The fact a source-form rule reads. A paragraph written over two lines
+    /// holds one soft break, and the break ends where the source wrapped onto.
+    ///
+    /// The block span is no substitute. It ends on the line after the last one
+    /// the paragraph writes, because the range the parser reports runs to the
+    /// start of the next block, and a rule that compared its two line numbers
+    /// would report every paragraph in the corpus.
+    #[test]
+    fn a_wrapped_paragraph_records_the_break() {
+        let body = body_of("One sentence that the source\nbroke over two lines.\n");
+        let paragraph = &body.blocks[0];
+        assert_eq!(paragraph.kind, BlockKind::Paragraph);
+        assert_eq!(paragraph.soft_breaks.len(), 1);
+        assert_eq!(paragraph.soft_breaks[0].end.line, 2);
+        assert_eq!(paragraph.soft_breaks[0].end.col, 1);
+        assert_eq!((paragraph.span.start.line, paragraph.span.end.line), (1, 3));
+    }
+
+    /// The distinction the parser exists to make here. A trailing backslash is a
+    /// break the author asked for, and `CLAUDE.md` allows it. Nothing that counts
+    /// lines can tell the two apart, and this can.
+    #[test]
+    fn a_backslash_break_is_not_a_soft_break() {
+        let body = body_of("One line the author broke\\\non purpose.\n");
+        let paragraph = &body.blocks[0];
+        assert_eq!((paragraph.span.start.line, paragraph.span.end.line), (1, 3));
+        assert!(paragraph.soft_breaks.is_empty());
+    }
+
+    /// One line is one block with nothing recorded, which is the shape of every
+    /// paragraph this repository writes.
+    #[test]
+    fn a_paragraph_on_one_line_records_nothing() {
+        let body = body_of("One sentence on one line.\n");
+        assert!(body.blocks[0].soft_breaks.is_empty());
+    }
+
+    /// A fenced block is verbatim, and a rule about the source form has no
+    /// business inside it. The scan keeps its breaks on the code block, where the
+    /// rule that skips code never reads them.
+    #[test]
+    fn a_code_block_keeps_its_breaks_on_the_code_block() {
+        let body = body_of("```\nfirst\nsecond\n```\n");
+        assert_eq!(body.blocks[0].kind, BlockKind::Code);
     }
 }

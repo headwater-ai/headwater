@@ -1,8 +1,0 @@
-{
-  "comment": "Pre-existing STE violations, grandfathered. Regenerate with tools/ste-lint.py --update-baseline. Editing the offending text invalidates its entry, so touched prose must be fixed.",
-  "version": 1,
-  "entries": {
-    "4de16edb1e052ff2": "docs/spec/02-taxonomy-model.md: stock-phrase: robust",
-    "9fecfe84399e4ea6": "docs/spec/11-adjacent-work.md: semicolon: Recorded: counterweight evidence added to Q13; provenance precedent added to Q15"
-  }
-}

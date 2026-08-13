@@ -239,6 +239,20 @@ obligations:
     prevents: content.unclear
     severity: low
 
+  OB-LANG-2:
+    statement: The source of a document under a language regime that fixes a source form is written in that form
+    rationale: A source form is invisible to a reader and loud in a diff, so a paragraph that one commit reflows hides the one word another commit changed
+    class: cohesion
+    prevents: content.unclear
+    severity: low
+
+  OB-LANG-3:
+    statement: Prose of a kind under a language regime does not write a term that regime retired
+    rationale: A retirement that lives in a commit message is inherited by nobody, so a branch written from an earlier commit reintroduces the term and the merge is clean
+    class: cohesion
+    prevents: content.inconsistent
+    severity: low
+
   OB-SECT-1:
     statement: Every section a kind requires is a heading of every document of that kind
     rationale: A document that omits a section leaves unanswered the question its kind promised to answer, and a reader cannot tell that from an answer of none
@@ -397,6 +411,30 @@ controls:
     promotion:
       permanently_advisory:
         reasoning: The same rule spec 4 states in general. A sentence past the word limit is shortened by deciding which clause carries the meaning, and no mechanical rewrite makes that decision
+
+  CT-LANG-2:
+    mechanism: check:language.source_form.not_met
+    discharges: [OB-LANG-2]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: one release of the taxonomy over an adopting corpus
+        threshold: no false positive, because the parser reports the break rather than a rule inferring it from a line count
+        sample: every finding of one run over the adopting corpus, adjudicated once
+
+  CT-LANG-3:
+    mechanism: check:language.retired_term.used
+    discharges: [OB-LANG-3]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: one release of the taxonomy over an adopting corpus
+        threshold: no false positive on an entry that names a replacement, which is the half that is a substitution
+        sample: every finding of one run over the adopting corpus, adjudicated once
 
   CT-SECT-1:
     mechanism: check:section.required.missing

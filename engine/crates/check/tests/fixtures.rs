@@ -18,8 +18,8 @@ use headwater_census::walk::Corpus;
 use headwater_check::scope::{over_documents, over_edges, Digests};
 use headwater_check::{
     coverage, endpoint, facet_required, facet_value, fragment, language, participation, placement,
-    reciprocity, sections, voice, Cache, Context, Date, Declared, Detail, DocumentCheck,
-    DocumentView, EdgeCheck, EdgeView, Grain, Outcome, Register, Run, Shape,
+    reciprocity, retired, sections, source_form, voice, Cache, Context, Date, Declared, Detail,
+    DocumentCheck, DocumentView, EdgeCheck, EdgeView, Grain, Outcome, Register, Run, Shape,
 };
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -877,9 +877,11 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             Grain::Edge,
             Grain::Edge,
             Grain::Neighbourhood { depth: 1 },
-            // The four Document-origin rules, which read the body rather than
+            // The six Document-origin rules, which read the body rather than
             // the front matter. The grain is the same and the view is not:
             // each one declares `NEEDS_BODY`.
+            Grain::Document,
+            Grain::Document,
             Grain::Document,
             Grain::Document,
             Grain::Document,
@@ -898,7 +900,14 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         .collect();
     assert_eq!(
         bodies,
-        [voice::RULE, language::RULE, sections::RULE, fragment::RULE]
+        [
+            voice::RULE,
+            language::RULE,
+            retired::RULE,
+            source_form::RULE,
+            sections::RULE,
+            fragment::RULE
+        ]
     );
 
     // The required-facet check reads front matter and never a body, and the

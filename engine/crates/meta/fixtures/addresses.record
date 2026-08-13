@@ -1,7 +1,7 @@
 kinds.design_spec.identifier => lands on members(scheme)
 kinds.design_spec.language => lands on scalar:string
 shelves.decisions.path => lands on scalar:string
-regimes.language.ste_house => lands on members(tag controlled profile retired_terms)
+regimes.language.ste_house => lands on members(tag controlled profile source_form retired_terms)
 regimes.lifecycle.standard.transitions => lands on map of seq of scalar:string
 regimes.lifecycle.standard.transitions.draft => lands on seq of scalar:string
 regimes.lifecycle.standard.transitions.draft.0 => inside the list at `regimes.lifecycle.standard.transitions.draft`

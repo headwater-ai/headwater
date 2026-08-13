@@ -181,6 +181,11 @@ definitions:
       # A closed set here would refuse a committed source.
       controlled: {scalar: string}
       profile: {scalar: string}
+      # How the source of a document under this regime is written, as opposed to
+      # what its prose says. A closed set, unlike `controlled` above, because
+      # nothing is committed against it yet and a set that starts open never
+      # closes.
+      source_form: {enum: [unconstrained, one_line_per_block]}
       retired_terms: {seq: {block: retired_term}}
 
   retired_term:

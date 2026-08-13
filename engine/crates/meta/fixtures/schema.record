@@ -33,6 +33,7 @@ declarations
         tag (required) scalar:string
         controlled scalar:string
         profile scalar:string
+        source_form enum[unconstrained one_line_per_block]
         retired_terms seq of members
             term (required) scalar:string
             reason (required) scalar:string

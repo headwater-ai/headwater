@@ -37,6 +37,11 @@
 //!   total, which is the bar [spec 12](../../../../docs/spec/12-check-layer.md#fixability)
 //!   sets. No patch rides along yet: `--fix` is
 //!   [#71](https://github.com/headwater-ai/headwater/issues/71).
+//! - **No semicolon in running prose**, ASD-STE100 writing rule 8.1. Advisory,
+//!   on the same bar: the remediation is to decide which clause carries the
+//!   sentence, and no rewrite of that kind is mechanical. Running prose is a
+//!   paragraph or a list item, and never a heading or a table cell, where a
+//!   semicolon separates items rather than joins clauses.
 //! - **The spelling variant the tag declares.** An error on the same terms. The
 //!   tag is data and the word list is not, which is the same split as the voice
 //!   patterns and is recorded in spec 13 as one gap rather than two.
@@ -52,6 +57,7 @@ use crate::finding::{Finding, Severity};
 use crate::instance::Outcome;
 use crate::scope::{DocumentCheck, DocumentView};
 use crate::shape::Shape;
+use headwater_doc::body::BlockKind;
 
 pub const RULE: &str = "language.controlled.not_met";
 
@@ -216,6 +222,16 @@ impl DocumentCheck for Language {
                     "split the sentence, or move a clause into its own sentence".to_string(),
                 ));
             }
+            if runs_on(&sentence.authored) && is_running_prose(sentence.kind) {
+                findings.push(at(
+                    Severity::Warn,
+                    format!(
+                        "`{}` admits no semicolon in running prose, and this sentence writes one",
+                        bound.regime
+                    ),
+                    "split the sentence in two, and let each half state one thing".to_string(),
+                ));
+            }
             if let Some(word) = contraction(&sentence.authored) {
                 findings.push(at(
                     Severity::Error,
@@ -255,6 +271,33 @@ impl DocumentCheck for Language {
 /// it is still a sentence.
 fn is_a_citation_line(text: &str) -> bool {
     text.matches(" · ").count() >= 2
+}
+
+/// Whether a block holds running prose, as opposed to a label.
+///
+/// A heading and a table cell are lists of terms with punctuation between them,
+/// and a semicolon there separates items rather than joins two clauses. The
+/// rule and its reason are `tools/ste-lint.py`'s, moved here unchanged.
+fn is_running_prose(kind: BlockKind) -> bool {
+    matches!(kind, BlockKind::Paragraph | BlockKind::Item)
+}
+
+/// Whether a sentence writes a semicolon outside a parenthesis.
+///
+/// A semicolon inside a parenthesis separates the items of an aside, and a
+/// citation is the case this corpus writes: `(Smith, 2004; Jones, 2007)` is one
+/// parenthetical rather than a run-on sentence.
+fn runs_on(text: &str) -> bool {
+    let mut depth = 0usize;
+    for c in text.chars() {
+        match c {
+            '(' => depth += 1,
+            ')' => depth = depth.saturating_sub(1),
+            ';' if depth == 0 => return true,
+            _ => {}
+        }
+    }
+    false
 }
 
 /// The first contraction of a sentence, if any.
@@ -337,6 +380,25 @@ mod tests {
         assert_eq!(contraction("they're here").as_deref(), Some("they're"));
         assert_eq!(contraction("it's here").as_deref(), Some("it's"));
         assert_eq!(contraction("we'll read it").as_deref(), Some("we'll"));
+    }
+
+    #[test]
+    fn a_semicolon_inside_a_parenthesis_is_not_a_run_on() {
+        assert!(runs_on(
+            "The resolver reads one profile; the rest are the adopter's"
+        ));
+        assert!(!runs_on(
+            "The two sources agree (Smith, 2004; Jones, 2007) on the shape"
+        ));
+        assert!(!runs_on("No semicolon at all"));
+    }
+
+    #[test]
+    fn a_semicolon_is_a_run_on_only_in_running_prose() {
+        assert!(is_running_prose(BlockKind::Paragraph));
+        assert!(is_running_prose(BlockKind::Item));
+        assert!(!is_running_prose(BlockKind::Heading(2)));
+        assert!(!is_running_prose(BlockKind::TableCell));
     }
 
     #[test]

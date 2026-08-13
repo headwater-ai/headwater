@@ -16,16 +16,34 @@
 
 lock:
   format: 2
-  digest: sha256:e3877344f45781c914ec94f70554fb1fac90e8df02a3922f338b84ab1e82141e
+  digest: sha256:5d73cf435edd5eaedb1e01f6117fdf75a4a1a1a769ec96628cdd3f5a2d7905a2
   package: headwater/standard
   version: 1.0.0
   sources:
     - path: packages/headwater-standard/taxonomy.yml
-      digest: sha256:14baa59dd0aae30349b6853d9084e7d5c0eccbceb30140fe58362882481a974a
+      digest: sha256:f5932d9b532aa76fff7787099cd8c69e2f64b0ff54bb1918bc18401075917069
     - path: docs/taxonomies/design-spec/bundle.yml
       digest: sha256:0dd73708d7200b7b02389a7dc8811ddc80ab61ece7892efd7391cdf504d6bda0
     - path: .headwater/overlay.yml
-      digest: sha256:a3fba3d733444d939fc9c845daf742653d8b99fa82ffc473b5885cb740d574f3
+      digest: sha256:1da1bcf730878153d4abf6116a9270a3f7dcf3ed7213a0cdfc4134b3baf0ff92
+
+# The adoption payload: the debt this corpus declared when the taxonomy first
+# reached it. Every other line of this file is generated and this block is not.
+# `headwater infer` writes it, a person edits it, and `headwater taxonomy
+# resolve` carries it through untouched. Each task names an owner and an expiry,
+# and holds the `(document, rule)` pairs it accounts for. A pair that stops
+# failing is a task shrinking, and `headwater check` reports the count that
+# remains on every run.
+
+adoption:
+  tasks:
+    - id: AD-1
+      statement: "The one entry of `.ste-lint-baseline.json` that this corpus still owes. The baseline held two when the linter retired. The other named a semicolon inside a block quotation, which the engine does not report at all, because the parser hands a quoted block to no lexical rule"
+      owner: "the specification authors"
+      until: 2027-06-30
+      pairs:
+        - path: docs/spec/02-taxonomy-model.md
+          rule: language.retired_term.used
 
 # The resolved taxonomy. The digest above is over this text with the two
 # leading spaces of each line removed, which is the form the resolver writes
@@ -147,6 +165,44 @@ resolved:
       ste_house:
         controlled: ASD-STE100
         profile: house
+        retired_terms:
+          - term: load-bearing
+            reason: "it stands in for the thing that depends on it"
+          - term: "load bearing"
+            reason: "it stands in for the thing that depends on it"
+          - term: first-class
+            reason: "it stands in for what the thing actually gets"
+          - term: "first class"
+            reason: "it stands in for what the thing actually gets"
+          - term: battle-tested
+            reason: "it stands in for where the thing has run and for how long"
+          - term: "battle tested"
+            reason: "it stands in for where the thing has run and for how long"
+          - term: "north star"
+            reason: "it stands in for the goal"
+          - term: delve
+            reason: "it stands in for examine, study or read"
+          - term: seamless
+            reason: "it stands in for what the joins would otherwise cost"
+          - term: seamlessly
+            reason: "it stands in for what the joins would otherwise cost"
+          - term: holistic
+            reason: "it stands in for the parts it covers"
+          - term: holistically
+            reason: "it stands in for the parts it covers"
+          - term: "deep dive"
+            reason: "it stands in for a detailed review"
+          - term: leverage
+            reason: "it stands in for use or apply"
+          - term: leverages
+            reason: "it stands in for use or apply"
+          - term: leveraged
+            reason: "it stands in for use or apply"
+          - term: leveraging
+            reason: "it stands in for use or apply"
+          - term: robust
+            reason: "it stands in for the failure the thing survives"
+        source_form: one_line_per_block
         tag: en-US
   anchors:
     code_path:
@@ -472,6 +528,18 @@ resolved:
       class: cohesion
       prevents: content.unclear
       severity: low
+    OB-LANG-2:
+      statement: "The source of a document under a language regime that fixes a source form is written in that form"
+      rationale: "A source form is invisible to a reader and loud in a diff, so a paragraph that one commit reflows hides the one word another commit changed"
+      class: cohesion
+      prevents: content.unclear
+      severity: low
+    OB-LANG-3:
+      statement: "Prose of a kind under a language regime does not write a term that regime retired"
+      rationale: "A retirement that lives in a commit message is inherited by nobody, so a branch written from an earlier commit reintroduces the term and the merge is clean"
+      class: cohesion
+      prevents: content.inconsistent
+      severity: low
     OB-SECT-1:
       statement: "Every section a kind requires is a heading of every document of that kind"
       rationale: "A document that omits a section leaves unanswered the question its kind promised to answer, and a reader cannot tell that from an answer of none"
@@ -606,6 +674,30 @@ resolved:
       promotion:
         permanently_advisory:
           reasoning: "The same rule spec 4 states in general. A sentence past the word limit is shortened by deciding which clause carries the meaning, and no mechanical rewrite makes that decision"
+    CT-LANG-2:
+      mechanism: "check:language.source_form.not_met"
+      discharges:
+        - OB-LANG-2
+      trigger: pull_request
+      posture: advisory
+      acts: detective
+      promotion:
+        criteria:
+          window: "one release of the taxonomy over an adopting corpus"
+          threshold: "no false positive, because the parser reports the break rather than a rule inferring it from a line count"
+          sample: "every finding of one run over the adopting corpus, adjudicated once"
+    CT-LANG-3:
+      mechanism: "check:language.retired_term.used"
+      discharges:
+        - OB-LANG-3
+      trigger: pull_request
+      posture: advisory
+      acts: detective
+      promotion:
+        criteria:
+          window: "one release of the taxonomy over an adopting corpus"
+          threshold: "no false positive on an entry that names a replacement, which is the half that is a substitution"
+          sample: "every finding of one run over the adopting corpus, adjudicated once"
     CT-SECT-1:
       mechanism: "check:section.required.missing"
       discharges:

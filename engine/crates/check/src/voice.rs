@@ -296,7 +296,7 @@ fn matched(category: &Category, sentence: &Sentence) -> Option<&'static str> {
 /// list of the splitter: `at first` inside `at first-order` is a different
 /// phrase, and a rule that reported it would be a false positive that no
 /// author can act on.
-fn contains_word(text: &str, pattern: &str) -> bool {
+pub(crate) fn contains_word(text: &str, pattern: &str) -> bool {
     let letters: Vec<char> = text.chars().collect();
     let needle: Vec<char> = pattern.chars().collect();
     if needle.is_empty() || needle.len() > letters.len() {

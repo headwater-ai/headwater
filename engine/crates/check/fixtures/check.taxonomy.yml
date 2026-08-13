@@ -52,7 +52,17 @@ regimes:
     declarative: {forbid: [future_intent, change_narration, phased_rollout]}
     guarded: {forbid: [hedging]}
   language:
-    ste_house: {tag: en-US, controlled: ASD-STE100, profile: house}
+    ste_house:
+      tag: en-US
+      controlled: ASD-STE100
+      profile: house
+      source_form: one_line_per_block
+      # Two entries, because the replacement is what decides the posture. The
+      # first is a substitution and an error, the second is a rewrite and
+      # advisory.
+      retired_terms:
+        - {term: reference system, reason: the corpus renamed it, replacement: taxonomy}
+        - {term: robust, reason: it stands in for the failure the thing survives}
     ste_strict: {tag: en-US, controlled: ASD-STE100, profile: strict}
 
 kinds:
@@ -293,6 +303,18 @@ obligations:
   # A stated gap, and a control that claims it under a mechanism this engine
   # does not implement. The gap is what the register goes with, because nothing
   # discharges it, and the two dispositions on the page are still reported.
+  OB-FIX-22:
+    statement: Prose of a kind under a language regime does not write a term that regime retired
+    rationale: A retirement that lives in a commit message is inherited by nobody
+    class: cohesion
+    prevents: content.inconsistent
+    severity: low
+  OB-FIX-21:
+    statement: The source of a document under a language regime that fixes a source form is written in that form
+    rationale: A source form is invisible to a reader and loud in a diff
+    class: cohesion
+    prevents: content.unclear
+    severity: low
   OB-FIX-20:
     statement: A document names the audience it is written for
     rationale: Prose written for nobody in particular is read by nobody in particular
@@ -426,6 +448,18 @@ controls:
   # it reads, over an obligation that states a gap. The gap is the disposition
   # the register goes with, because nothing discharges it, and the claim on the
   # page is reported beside it.
+  CT-FIX-19:
+    mechanism: check:language.retired_term.used
+    discharges: [OB-FIX-22]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+  CT-FIX-18:
+    mechanism: check:language.source_form.not_met
+    discharges: [OB-FIX-21]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
   CT-FIX-17:
     mechanism: phase:no.such.phase
     discharges: [OB-FIX-20]
