@@ -33,17 +33,37 @@
 //! # Corpus grain, and why no view enforces it
 //!
 //! This rule reads every row of the census, so its grain is `Corpus` and a
-//! report says so. What it is not is a corpus-scoped *check*, and the reason
-//! is worth stating rather than discovering. An instance is what coverage
-//! counts, so an instance of this rule over the corpus would read every
-//! document and account every one of them as checked. The rule would then
-//! make its own finding unreachable.
-//!
-//! So coverage is the runner's accounting over the instance record, which is
-//! where [spec 12](../../../../docs/spec/12-check-layer.md#instances-and-why-coverage-needs-them)
-//! puts it: "coverage accounting then comes directly from this, with no added
+//! report says so. What it is not is a corpus-scoped *check*: it is the
+//! runner's accounting over the instance record, which is where
+//! [spec 12](../../../../docs/spec/12-check-layer.md#instances-and-why-coverage-needs-them)
+//! puts it — "coverage accounting then comes directly from this, with no added
 //! mechanism". It states [`SCOPE`] for a reader and receives no view, so the
 //! enforcement question does not arise for it.
+//!
+//! # Coverage counts routing, and a corpus-scoped instance routes to nothing
+//!
+//! An earlier edition of this comment read the paragraph above as a bar on
+//! corpus-scoped *checks* in general: an instance of one reads every document,
+//! coverage counts what an instance reads, so the first such rule would account
+//! every document as checked and make OB-COV-2 unreachable. The reading was
+//! right about the arithmetic and wrong about which of the two is the defect.
+//!
+//! OB-COV-2 is "every classified document is **routed** to at least one
+//! check", and routing is the generation step: a template, a declaration, and
+//! one instance per target. A document-scoped instance is routed to its
+//! document; an edge-scoped one to both endpoints, which is why coverage counts
+//! it against each. A corpus-scoped instance has one target and it is the
+//! corpus. It reads every document and is routed to none of them, so it is
+//! counted against none of them: see [`crate::Grain::routes`], which is where
+//! that ruling is written and matched exhaustively, so a new grain has to
+//! decide it rather than inherit it.
+//!
+//! The finding this preserves is the reachable one. `check/spec/03-no-instance.md`
+//! in the fixture tree is a classified document that no rule reads, and
+//! [`crate::duplicate`] reads it along with every other document that carries
+//! front matter. Counting the read would have deleted the failing fixture of
+//! this rule while the instance count went up, which reads in every report as
+//! an improvement.
 
 use crate::finding::{Finding, Severity};
 use crate::instance::{Instance, Outcome as InstanceOutcome};
@@ -54,7 +74,7 @@ pub const RULE: &str = "coverage.document_unchecked";
 
 /// The grain this rule has. See the module comment for why it is stated here
 /// rather than derived from a trait: this rule receives no view.
-pub const SCOPE: Scope = Scope::corpus();
+pub const SCOPE: Scope = Scope::corpus(false);
 
 /// Which edition of this rule reached a verdict, stated here for the reason
 /// [`SCOPE`] is: no trait carries it. It is published in the read set beside
@@ -74,8 +94,10 @@ pub struct Document {
     pub path: String,
     /// The census's own word for what became of the file.
     pub class: &'static str,
-    /// Instances that read this document. One instance may read two, so the
-    /// sum of this field over the corpus is larger than the instance count.
+    /// Instances routed to this document. One instance may be routed to two,
+    /// so the sum of this field over the corpus is larger than the number of
+    /// routed instances. An instance that read this document without being
+    /// routed to it is not here: see the module comment.
     pub created: usize,
     pub ran: usize,
     /// One entry per skipped instance: the rule, and why it did not run.
@@ -87,7 +109,10 @@ pub struct Document {
 pub struct Coverage {
     /// One entry per census row, in the census's own order.
     pub documents: Vec<Document>,
-    /// Instances created, counted once each however many documents each read.
+    /// Instances created, counted once each however many documents each read,
+    /// and of every grain. This is the run's own total rather than the routed
+    /// subset: a reader asking how much work a run did is asking about all of
+    /// it.
     pub instances: usize,
     /// Instances accounted to a path the census never walked. Never zero
     /// without meaning it: such an instance is a check reading outside the
@@ -115,6 +140,10 @@ impl Coverage {
         for instance in instances {
             for path in instance.paths() {
                 let Some(document) = documents.iter_mut().find(|d| d.path == path) else {
+                    // Recorded whatever the grain, because this is a statement
+                    // about the denominator rather than about coverage: an
+                    // instance of any grain that read outside the census read
+                    // outside the set every guarantee here is computed over.
                     // A check that read a file the census never walked. It
                     // cannot happen today, because every instance is created
                     // from a census row, and it is recorded rather than
@@ -122,6 +151,12 @@ impl Coverage {
                     unaccounted.push(path.to_string());
                     continue;
                 };
+                // Read, and routed to the corpus rather than to this document.
+                // See the module comment: to count it would make the finding
+                // below unreachable for every document such a rule reads.
+                if !instance.grain.routes() {
+                    continue;
+                }
                 document.created += 1;
                 match instance.outcome {
                     InstanceOutcome::Skipped(ref reason) => {

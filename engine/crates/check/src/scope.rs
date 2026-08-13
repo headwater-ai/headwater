@@ -23,9 +23,9 @@
 //!    check cannot widen the view it was handed, and cannot make a wider one.
 //! 2. **[`Scope`] has private fields and no public constructor.** A check
 //!    cannot mint one, so the reported scope is derived from the trait rather
-//!    than supplied beside it. [`document_scope`], [`edge_scope`] and
-//!    [`neighbourhood_scope`] are the derivation, and each one reads only its
-//!    own trait.
+//!    than supplied beside it. [`document_scope`], [`edge_scope`],
+//!    [`neighbourhood_scope`] and [`corpus_scope`] are the derivation, and each
+//!    one reads only its own trait.
 //! 3. **The read set is the view's and never the check's.** An instance
 //!    records what the view carried, so a check cannot under-report what it
 //!    read. Spec 12 needs that set twice over: as the cache key, and as the
@@ -155,6 +155,30 @@ impl Grain {
             Grain::Taxonomy => "taxonomy",
         }
     }
+
+    /// Whether an instance of this grain is **routed** to the documents it
+    /// reads, which is the question [`crate::coverage`] asks of it.
+    ///
+    /// [Spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+    /// states OB-COV-2 as "every classified document is routed to at least one
+    /// check", and routing is the generation step: a template, a declaration,
+    /// and one instance per target. The three grains above route, and their
+    /// targets are documents or the edges between them. The two below do not.
+    /// A corpus-grained instance exists once and its target is the corpus, so
+    /// it is nobody's routing however many documents it reads.
+    ///
+    /// The distinction is here because the alternative deletes a rule. A
+    /// corpus-scoped instance reads every document, so a coverage report that
+    /// counted reading would call every document checked, and
+    /// `coverage.document_unchecked` could never fire again. One rule would
+    /// then declare the whole corpus covered, which is the silent pass the
+    /// census exists to prevent.
+    pub fn routes(self) -> bool {
+        match self {
+            Grain::Document | Grain::Edge | Grain::Neighbourhood { .. } => true,
+            Grain::Corpus | Grain::Taxonomy => false,
+        }
+    }
 }
 
 /// What one check instance may read.
@@ -198,11 +222,11 @@ impl Scope {
         }
     }
 
-    pub(crate) const fn corpus() -> Self {
+    pub(crate) const fn corpus(needs_phase_a: bool) -> Self {
         Scope {
             grain: Grain::Corpus,
             needs_body: false,
-            needs_phase_a: false,
+            needs_phase_a,
             needs_clock: false,
         }
     }
@@ -249,16 +273,20 @@ impl Scope {
             (Grain::Neighbourhood { .. }, _) => {
                 "one document and the documents one relation away from it"
             }
-            (Grain::Corpus, _) => "every row of the census, and it is a barrier",
+            (Grain::Corpus, _) => "every row of the census",
             (Grain::Taxonomy, _) => "the resolved taxonomy, and no document",
         };
-        // Phase A's report about this document, where the rule declared it. A
-        // reader who counts the barriers has to see that this instance read one
-        // more thing than its front matter, and that the one more thing is
-        // still about the one document.
-        let phase_a = match self.needs_phase_a {
-            true => ", and what phase A could not make of it",
-            false => "",
+        // Phase A's report, where the rule declared it. A reader who counts the
+        // barriers has to see that this instance read one more thing than front
+        // matter, and the two grains that declare it read two different sets:
+        // one document's news at document grain, and the identity of every
+        // document at corpus grain.
+        let phase_a = match (self.needs_phase_a, self.grain) {
+            (false, _) => "",
+            (true, Grain::Corpus) => {
+                ", and what phase A could not make of each document's identity"
+            }
+            (true, _) => ", and what phase A could not make of it",
         };
         // The clock is named because it is an input like any other, and because
         // spec 12 puts it in the cache key. A reader who asks why a warm run
@@ -267,7 +295,17 @@ impl Scope {
             true => ", and the injected clock",
             false => "",
         };
-        format!("{} scope, {carries}{phase_a}{clock}", self.grain.name())
+        // Spec 12 calls the corpus-scoped checks the barriers, and the word is
+        // last so that it reads as a statement about the scope rather than
+        // about the inputs listed before it.
+        let barrier = match self.grain {
+            Grain::Corpus => ", and it is a barrier",
+            _ => "",
+        };
+        format!(
+            "{} scope, {carries}{phase_a}{clock}{barrier}",
+            self.grain.name()
+        )
     }
 }
 
@@ -382,6 +420,38 @@ pub trait EdgeCheck {
     fn evaluate(&self, view: &EdgeView<'_>) -> Outcome;
 }
 
+/// A check over the whole corpus: spec 12's barrier.
+///
+/// There is no `instantiates`, and the absence is the grain. Every other trait
+/// here generates one instance per target out of a declaration, and this one
+/// has a single target that no declaration selects. So the count of the
+/// barriers is the count of the corpus-scoped rules, which is the number
+/// [spec 12](../../../../docs/spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on)
+/// asks a reader to be able to read rather than discover under load.
+///
+/// A rule belongs here when its subject is a relation between two documents
+/// that no edge connects. Two documents that claim one identifier are the
+/// case: nothing links them, so [`Grain::Neighbourhood`] does not reach them,
+/// and a document-scoped instance reads one of the two, so its key survives
+/// every edit to the other one.
+pub trait CorpusCheck {
+    const RULE: &'static str;
+    /// As [`DocumentCheck::VERSION`].
+    const VERSION: u32;
+    /// As [`DocumentCheck::EXPORTABLE_AS`].
+    const EXPORTABLE_AS: ExportTargets = &[];
+    /// Whether the view carries what phase A could not make of the identity of
+    /// any document, on [`DocumentCheck::NEEDS_PHASE_A`]'s terms.
+    ///
+    /// The document-grained flag hands a rule the report about its own file and
+    /// nothing else, which is what keeps that grain honest. There is no such
+    /// restriction to make here: this scope reads the corpus, so the report it
+    /// receives is the corpus-wide one.
+    const NEEDS_PHASE_A: bool = false;
+
+    fn evaluate(&self, view: &CorpusView<'_>) -> Outcome;
+}
+
 /// A check over one document and the documents one relation away from it.
 pub trait NeighbourhoodCheck {
     const RULE: &'static str;
@@ -417,6 +487,11 @@ pub fn neighbourhood_scope<C: NeighbourhoodCheck>() -> Scope {
     Scope::neighbourhood(C::NEEDS_CLOCK)
 }
 
+/// The scope of a corpus-scoped check, derived from its trait.
+pub fn corpus_scope<C: CorpusCheck>() -> Scope {
+    Scope::corpus(C::NEEDS_PHASE_A)
+}
+
 /// The edition of a document-scoped check, derived from its trait.
 ///
 /// A report reads this the way it reads the scope, and for the same reason:
@@ -437,6 +512,11 @@ pub fn neighbourhood_version<C: NeighbourhoodCheck>() -> u32 {
     C::VERSION
 }
 
+/// The edition of a corpus-scoped check, derived from its trait.
+pub fn corpus_version<C: CorpusCheck>() -> u32 {
+    C::VERSION
+}
+
 /// The export targets of a document-scoped check, derived from its trait.
 pub fn document_exports<C: DocumentCheck>() -> ExportTargets {
     C::EXPORTABLE_AS
@@ -449,6 +529,11 @@ pub fn edge_exports<C: EdgeCheck>() -> ExportTargets {
 
 /// The export targets of a neighbourhood-scoped check, derived from its trait.
 pub fn neighbourhood_exports<C: NeighbourhoodCheck>() -> ExportTargets {
+    C::EXPORTABLE_AS
+}
+
+/// The export targets of a corpus-scoped check, derived from its trait.
+pub fn corpus_exports<C: CorpusCheck>() -> ExportTargets {
     C::EXPORTABLE_AS
 }
 
@@ -687,6 +772,48 @@ impl<'a> NeighbourhoodView<'a> {
     }
 }
 
+/// The corpus, as the one rule that reads it needs it.
+///
+/// The read set is every census row that **carries a document**, and that set
+/// is the derivation rather than a choice. `Index::build` opens no file: it
+/// reads the identifier facet of each row that carries a document, and a row
+/// that carries none contributed nothing and could not have. A row the walk
+/// never read has no digest either, and an input with no digest is one
+/// [`crate::cache`] refuses to key at all, so a read set that held every row
+/// would leave this instance permanently unkeyed and the barrier permanently
+/// re-evaluated.
+///
+/// Every transition into and out of that set moves the key. A file that gains
+/// front matter gains a row with a document. One that loses it leaves the set.
+/// A new file arrives as a new input. An exclusion pattern is in the lock, and
+/// the lock digest is a component of every key. So there is no edit to this
+/// corpus that changes what this rule decides and leaves its key where it was.
+pub struct CorpusView<'a> {
+    identity: Option<&'a [headwater_graph::index::Reported]>,
+    reads: Vec<Input>,
+}
+
+impl<'a> CorpusView<'a> {
+    /// What the identifier index could not make of any document, and only for
+    /// a check that declared `NEEDS_PHASE_A`.
+    ///
+    /// It is the build's own answer rather than a second reading of the same
+    /// front matter, which is [`DocumentView::phase_a`]'s reason and one more
+    /// besides. Whether two documents claim one identifier is a judgment over
+    /// both shelves of the index in one order, and a rule that re-derived it
+    /// from the corpus would be a second definition of the defect that decides
+    /// which of the two the graph already bound every edge to.
+    pub fn identity(&self) -> Option<&'a [headwater_graph::index::Reported]> {
+        self.identity
+    }
+
+    /// Every document this view was built over. See the type comment for why
+    /// the set is the rows that carry a document rather than every row.
+    pub fn reads(&self) -> &[Input] {
+        &self.reads
+    }
+}
+
 /// The digest of each document the census read, by path.
 ///
 /// An edge-scoped view is built from the graph, and a digest is a fact the
@@ -756,6 +883,7 @@ pub fn over_documents<C: DocumentCheck>(
         let Some(document) = &row.document else {
             instances.push(Instance::skipped(
                 C::RULE,
+                Grain::Document,
                 vec![Input::new(&row.path, row.digest.as_deref())],
                 NO_DOCUMENT,
             ));
@@ -789,7 +917,7 @@ pub fn over_documents<C: DocumentCheck>(
         let outcome = cache.outcome(C::RULE, C::VERSION, scope, &row.path, &reads, clock, || {
             check.evaluate(&view)
         });
-        instances.push(Instance::of(C::RULE, reads, outcome));
+        instances.push(Instance::of(C::RULE, Grain::Document, reads, outcome));
     }
     instances
 }
@@ -861,7 +989,7 @@ pub fn over_edges<C: EdgeCheck>(
         let outcome = cache.outcome(C::RULE, C::VERSION, scope, triple, &reads, clock, || {
             check.evaluate(&view)
         });
-        instances.push(Instance::of(C::RULE, reads, outcome));
+        instances.push(Instance::of(C::RULE, Grain::Edge, reads, outcome));
     }
     instances
 }
@@ -894,6 +1022,7 @@ pub fn over_neighbourhoods<C: NeighbourhoodCheck>(
         let Some(document) = &row.document else {
             instances.push(Instance::skipped(
                 C::RULE,
+                Grain::Neighbourhood { depth: 1 },
                 vec![Input::new(&row.path, row.digest.as_deref())],
                 NO_DOCUMENT,
             ));
@@ -919,9 +1048,58 @@ pub fn over_neighbourhoods<C: NeighbourhoodCheck>(
         let outcome = cache.outcome(C::RULE, C::VERSION, scope, &row.path, &reads, clock, || {
             check.evaluate(&view)
         });
-        instances.push(Instance::of(C::RULE, reads, outcome));
+        instances.push(Instance::of(
+            C::RULE,
+            Grain::Neighbourhood { depth: 1 },
+            reads,
+            outcome,
+        ));
     }
     instances
+}
+
+/// The target of the one instance a corpus-scoped check creates.
+///
+/// A target tells two instances apart that read the same documents. There is
+/// one instance of a corpus-scoped rule, so this is a constant, and it is in
+/// the key for the reason every other target is: it says what the instance was
+/// about, and no read set says that.
+const CORPUS: &str = "the corpus";
+
+/// Instantiate a corpus-scoped check over a census and a graph.
+///
+/// One instance, whatever the corpus holds. That is the count spec 12 calls the
+/// barrier count, and it is the tell that separates this grain from a
+/// document-scoped rule with a wide read set: the instance count moves by one
+/// and the read set moves by the size of the corpus.
+pub fn over_corpus<C: CorpusCheck>(
+    check: &C,
+    census: &Census,
+    graph: &Graph,
+    cache: &mut Cache,
+) -> Vec<Instance> {
+    let scope = corpus_scope::<C>();
+    let reads: Vec<Input> = census
+        .rows
+        .iter()
+        .filter(|row| row.document.is_some())
+        .map(|row| Input::new(&row.path, row.digest.as_deref()))
+        .collect();
+    let view = CorpusView {
+        identity: match C::NEEDS_PHASE_A {
+            true => Some(&graph.index.defects),
+            false => None,
+        },
+        reads: reads.clone(),
+    };
+    // No clock. `CorpusCheck` declares none, so `clock_for` would have nothing
+    // to bind and the key would carry nothing about a day. The first
+    // corpus-scoped rule that reads a date brings the declaration with it, on
+    // the terms the other three traits already state.
+    let outcome = cache.outcome(C::RULE, C::VERSION, scope, CORPUS, &reads, None, || {
+        check.evaluate(&view)
+    });
+    vec![Instance::of(C::RULE, Grain::Corpus, reads, outcome)]
 }
 
 /// Every document one relation away from each document, built once per run.

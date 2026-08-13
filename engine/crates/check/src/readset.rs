@@ -163,7 +163,7 @@ mod tests {
     }
 
     fn instance(rule: &'static str, reads: Vec<Input>) -> Instance {
-        Instance::of(rule, reads, Outcome::Passed)
+        Instance::of(rule, crate::Grain::Document, reads, Outcome::Passed)
     }
 
     /// Two instances over one document contribute one entry, and the entries
