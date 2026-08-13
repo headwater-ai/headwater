@@ -16,11 +16,11 @@
 //! [principle 1](../../../../docs/spec/00-vision-and-scope.md#design-principles)
 //! makes the path a schema decision. Two are engine-defined. Spec 4 makes the
 //! register "engine-defined and non-optional", and
-//! [Q20](../../../../docs/spec/09-decisions.md) fixes the corpus descriptor at
-//! `.headwater/corpus.json`, both for the same reason: a reader who must consult
-//! the taxonomy to find an artifact already knows what the artifact would tell
-//! them. A declaration of either would put a second copy of one artifact at a
-//! path the engine did not fix.
+//! [Q14](../../../../docs/spec/09-decisions.md#q14--discovery-surface) fixes the
+//! corpus descriptor at `.headwater/corpus.json`. Both for the same reason: a
+//! reader who must consult the taxonomy to find an artifact already knows what
+//! the artifact would tell them. A declaration of either would put a second copy
+//! of one artifact at a path the engine did not fix.
 //!
 //! So [`Kind`] carries all nine and [`Kind::declarable`] separates them. The
 //! meta-schema's enum holds the seven.
@@ -37,11 +37,18 @@
 //! rules against. So this engine reads one permission from the bytes on disk:
 //!
 //! - the path holds nothing — write it,
-//! - the path holds a file whose first line carries the marker — overwrite it,
+//! - the path holds a file that carries the marker — overwrite it,
 //! - the path holds anything else — refuse, and say which path.
 //!
 //! An authored document is never destroyed, which is the property spec 6 asks
 //! the marker for.
+//!
+//! **Where the marker sits is the format's business, and it is found either
+//! way.** A commented format carries it on the first line. JSON has no comment,
+//! so the descriptor carries the same sentence in a top-level member, and
+//! [`carries_marker`] reads whichever of the two a path admits. The alternative
+//! was to rule that a path the engine fixes needs no marker, and that rule ends
+//! with this engine overwriting a file an adopter wrote by hand.
 //!
 //! # No output states when it was generated
 //!
@@ -61,10 +68,32 @@ use headwater_query::{Document, Pointer, Surface};
 use headwater_yaml::value::{Mapping, Value};
 use std::path::Path;
 
+pub mod descriptor;
 mod shelf_index;
 
 /// The word that marks a file as this engine's output.
 pub const MARKER: &str = "headwater:generated";
+
+/// What the descriptor states that neither the graph nor the census holds.
+///
+/// Plain strings, and never the lock or the consumer declaration as types. What
+/// this crate needs from a resolution is four strings and a list of pairs, and
+/// taking the types would give the generator a dependency on the resolver for
+/// nothing. [`headwater_census::walk::Corpus::declared`] takes the same posture
+/// over the same pairs, for the same reason.
+#[derive(Clone, Debug, Default)]
+pub struct Identity {
+    /// The corpus root, as the consumer declaration wrote it.
+    pub corpus_root: String,
+    /// Each declared exclusion, with the reason it states.
+    pub exclusions: Vec<(String, String)>,
+    /// The taxonomy package the consumer took, and the version it pinned.
+    pub package: String,
+    pub version: String,
+    /// The digest of the canonical taxonomy text: spec 6's "taxonomy lock
+    /// hash".
+    pub lock: String,
+}
 
 /// A projection kind.
 ///
@@ -81,7 +110,7 @@ pub enum Kind {
     Transcription,
     /// Spec 4: the register, engine-defined and non-optional.
     CoverageReport,
-    /// Q20: `.headwater/corpus.json`, engine-defined and non-optional.
+    /// Q14: `.headwater/corpus.json`, engine-defined and non-optional.
     CorpusDescriptor,
 }
 
@@ -274,34 +303,36 @@ pub struct Plan {
 
 /// What the engine writes with no declaration at all.
 ///
-/// Two kinds are engine-defined and neither is emitted yet. They are listed
-/// here, with the reason, so that a run states the whole of what a projection
-/// layer owes rather than the part that is built. Spec 4 calls the register "a
-/// projection like any other" and asks this verb to hold it to regeneration;
-/// building the rest of the verb is what showed why it cannot yet.
+/// One of the two engine-defined kinds is emitted and one is not. The register
+/// is listed here with its reason, so that a run states the whole of what a
+/// projection layer owes rather than the part that is built. Spec 4 calls the
+/// register "a projection like any other" and asks this verb to hold it to
+/// regeneration; building the rest of the verb is what showed why it cannot
+/// yet. The descriptor had the same entry until it acquired an emitter, and the
+/// difference between the two is the clock.
 fn engine_defined() -> Vec<Unwritten> {
-    vec![
-        Unwritten {
-            at: "the register".to_string(),
-            kind: Kind::CoverageReport,
-            reason: "its content is a function of the clock as well as of the corpus and the \
-                     lock, because a migration task lapses and a suppression expires on a date. \
-                     A committed copy would fail this check on a morning when nothing changed. \
-                     Spec 13 carries it"
-                .to_string(),
-        },
-        Unwritten {
-            at: ".headwater/corpus.json".to_string(),
-            kind: Kind::CorpusDescriptor,
-            reason: "nothing computes a descriptor yet. Issue #64 owns it, and it writes through \
-                     this verb when it lands"
-                .to_string(),
-        },
-    ]
+    vec![Unwritten {
+        at: "the register".to_string(),
+        kind: Kind::CoverageReport,
+        reason: "its content is a function of the clock as well as of the corpus and the lock, \
+                 because a migration task lapses and a suppression expires on a date. A committed \
+                 copy would fail this check on a morning when nothing changed. Spec 13 carries it"
+            .to_string(),
+    }]
 }
 
 /// Build the plan: what every declaration and the engine itself would write.
-pub fn plan(surface: &Surface<'_>, census: &Census, projections: &Projections) -> Plan {
+///
+/// The declarations come from the lock and the [`Identity`] from the lock and
+/// the consumer declaration. Both are inputs rather than reads, so that one
+/// plan is a function of its arguments and two plans over one tree hold the
+/// same bytes.
+pub fn plan(
+    surface: &Surface<'_>,
+    census: &Census,
+    projections: &Projections,
+    identity: &Identity,
+) -> Plan {
     let mut plan = Plan::default();
     for declaration in &projections.declared {
         match declaration.kind {
@@ -313,6 +344,7 @@ pub fn plan(surface: &Surface<'_>, census: &Census, projections: &Projections) -
             }),
         }
     }
+    descriptor::emit(surface, identity, &mut plan);
     plan.unwritten.extend(engine_defined());
     plan
 }
@@ -470,18 +502,33 @@ fn comment_for(path: &str) -> Comment {
     }
 }
 
+/// What the marker says, without the word that names it and without the syntax
+/// that carries it.
+///
+/// Held apart from [`marker`] because a format with no comment carries the same
+/// sentence in a different place, and the two places name the marker
+/// differently. A comment has one line, so [`MARKER`] has to be a word inside
+/// it. A member has a key, so [`MARKER`] is the key and a value that repeated
+/// it would say the word twice. One wording, two frames, and neither of them
+/// holds a second copy of the other's part.
+pub fn marker_text(kind: Kind) -> String {
+    format!(
+        "{}. `headwater generate` writes this file, and `headwater generate --check` holds it. \
+         Edit the corpus, not this file.",
+        kind.name()
+    )
+}
+
 /// The marker line for a kind at a path, or `None` when the format carries no
 /// comment.
 ///
-/// A caller that gets `None` has an artifact this engine will not write into the
-/// corpus, and the reason travels with the refusal rather than being discovered
-/// at the moment the file is clobbered.
+/// `None` is not a refusal. It says that the marker cannot be a line here, and
+/// the emitter for that format carries [`marker_text`] structurally instead:
+/// JSON reaches this arm, and [`descriptor`] writes the sentence into a
+/// top-level member. What matters to [`carries_marker`] is that the marker is
+/// findable, and not which syntax holds it.
 pub fn marker(kind: Kind, path: &str) -> Option<String> {
-    let body = format!(
-        "{MARKER} {}. `headwater generate` writes this file, and `headwater generate --check` \
-         holds it. Edit the corpus, not this file.",
-        kind.name()
-    );
+    let body = format!("{MARKER} {}", marker_text(kind));
     match comment_for(path) {
         Comment::Html => Some(format!("<!-- {body} -->")),
         Comment::Hash => Some(format!("# {body}")),
@@ -489,15 +536,33 @@ pub fn marker(kind: Kind, path: &str) -> Option<String> {
     }
 }
 
-/// Whether a file's first line marks it as this engine's output.
+/// Whether a file at a path marks itself as this engine's output.
 ///
-/// The first line, and not anywhere in the file. A document that quotes the
-/// marker while discussing it is an authored document, and this repository's own
-/// specification is exactly such a document.
-pub fn carries_marker(text: &str) -> bool {
-    text.lines()
-        .next()
-        .is_some_and(|line| line.contains(MARKER))
+/// Two rules, because the false positive the first one guards against exists in
+/// only one of the two formats.
+///
+/// **A commented format: the first line, and nowhere else.** A document that
+/// quotes the marker while discussing it is an authored document, and this
+/// repository's own specification is exactly such a document. Reading the first
+/// line alone is what keeps a run from overwriting it.
+///
+/// **JSON: a top-level member, wherever it sits.** A JSON file is not prose, so
+/// nothing in one discusses a marker, and the line rule would answer for the
+/// brace that opens the object rather than for the file. The member is the
+/// marker, and it is matched as a quoted key at the start of a line so that a
+/// string somewhere in the document which happens to hold the word does not
+/// count as one.
+pub fn carries_marker(path: &str, text: &str) -> bool {
+    let quoted = format!("\"{MARKER}\"");
+    match comment_for(path) {
+        Comment::None => text
+            .lines()
+            .any(|line| line.trim_start().starts_with(&quoted)),
+        _ => text
+            .lines()
+            .next()
+            .is_some_and(|line| line.contains(MARKER)),
+    }
 }
 
 /// Write the plan.
@@ -532,7 +597,7 @@ fn run(root: &Path, plan: &Plan, checking: bool) -> Report {
             // The marker decides before the difference does. A file that is
             // there and unmarked is authored, and reporting it as drift would
             // tell a reader to run the verb that destroys it.
-            (Some(text), _) if !carries_marker(text) => Verdict::Occupied,
+            (Some(text), _) if !carries_marker(&output.path, text) => Verdict::Occupied,
             (Some(_), true) => Verdict::Differs,
             (None, true) => Verdict::Missing,
             (Some(_), false) => put(&path, &output.bytes, Verdict::Rewritten),

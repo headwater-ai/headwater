@@ -385,6 +385,11 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
 /// nothing in either report would say so.
 struct Loaded {
     lock: headwater_lock::Lock,
+    /// What this repository takes and what it walks. Held because the corpus
+    /// descriptor states the root and the exclusions, and re-reading the
+    /// declaration to build one would be a second read that a later edit can
+    /// pull apart from this one.
+    consumer: headwater_resolve::package::Consumer,
     census: headwater_census::census::Census,
     graph: Graph,
     shape: Shape,
@@ -444,6 +449,7 @@ fn load(root: &Path) -> Result<Loaded, ExitCode> {
     );
     Ok(Loaded {
         lock,
+        consumer,
         census,
         graph,
         shape,
@@ -463,6 +469,21 @@ impl Loaded {
             &self.taxonomy,
             &self.relations,
         )
+    }
+
+    /// What the corpus descriptor states about this repository.
+    ///
+    /// Assembled here because this is where the lock and the consumer
+    /// declaration are both in hand, and passed to the generator as strings so
+    /// that the generator keeps no dependency on either crate.
+    fn identity(&self) -> headwater_generate::Identity {
+        headwater_generate::Identity {
+            corpus_root: self.consumer.corpus_root.clone(),
+            exclusions: self.consumer.exclusions.clone(),
+            package: self.lock.package.clone(),
+            version: self.lock.version.clone(),
+            lock: self.lock.digest.clone(),
+        }
     }
 }
 
@@ -525,7 +546,7 @@ fn generate(root: &Path, check_only: bool) -> ExitCode {
         Err(errors) => return refused("the projections", &errors),
     };
     let surface = loaded.surface();
-    let plan = headwater_generate::plan(&surface, &loaded.census, &projections);
+    let plan = headwater_generate::plan(&surface, &loaded.census, &projections, &loaded.identity());
     let report = match check_only {
         true => headwater_generate::check(root, &plan),
         false => headwater_generate::write(root, &plan),
@@ -586,6 +607,7 @@ fn check(
     };
     let Loaded {
         lock,
+        consumer: _,
         census: taken,
         graph,
         shape,

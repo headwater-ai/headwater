@@ -67,6 +67,7 @@ dependencies = [
  "headwater-census",
  "headwater-check",
  "headwater-graph",
+ "headwater-lock",
  "headwater-query",
  "headwater-resolve",
  "headwater-yaml",

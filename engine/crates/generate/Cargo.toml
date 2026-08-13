@@ -22,5 +22,8 @@ headwater-query = { path = "../query" }
 # A fixture corpus needs a taxonomy resolved from sources, in the way every
 # other crate's fixture tree does.
 headwater-resolve = { path = "../resolve" }
+# The dogfood test states this repository's own identity, and it reads the lock
+# for it rather than re-resolving, because the lock is what the binary reads.
+headwater-lock = { path = "../lock" }
 headwater-graph = { path = "../graph" }
 headwater-check = { path = "../check" }

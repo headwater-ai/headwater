@@ -22,7 +22,9 @@ use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::Shape;
-use headwater_generate::{check, plan, write, Plan, Projections, Report, Verdict};
+use headwater_generate::{
+    check, descriptor, plan, write, Identity, Plan, Projections, Report, Verdict,
+};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
@@ -119,6 +121,24 @@ fn fixture_tree() -> (Built, Mapping) {
     (Built::over(&corpus, &root), root)
 }
 
+/// The identity the fixture corpus states about itself.
+///
+/// Fixed strings, and one exclusion, because the descriptor prints all of them
+/// and a recorded fixture that read them from this repository's own lock would
+/// move every time somebody re-resolved the taxonomy.
+fn fixture_identity() -> Identity {
+    Identity {
+        corpus_root: "generate".to_string(),
+        exclusions: vec![(
+            "generate/drafts/**".to_string(),
+            "drafts, and not governed content".to_string(),
+        )],
+        package: "headwater/fixture".to_string(),
+        version: "1.0.0".to_string(),
+        lock: "sha256:0000000000000000000000000000000000000000000000000000000000000000".to_string(),
+    }
+}
+
 /// A fresh empty directory under Cargo's own temporary tree.
 ///
 /// Never the fixture tree. A test that wrote its outputs beside its inputs would
@@ -142,7 +162,7 @@ fn the_fixture_tree_generates_the_recorded_projections() {
     let (built, root) = fixture_tree();
     let surface = built.surface();
     let projections = Projections::read(&root).expect("the projections read");
-    let plan = plan(&surface, &built.census, &projections);
+    let plan = plan(&surface, &built.census, &projections, &fixture_identity());
 
     let mut out = String::new();
     out.push_str("the plan\n");
@@ -251,8 +271,8 @@ fn two_plans_over_one_tree_agree() {
     let (built, root) = fixture_tree();
     let surface = built.surface();
     let projections = Projections::read(&root).expect("the projections read");
-    let one = plan(&surface, &built.census, &projections);
-    let two = plan(&surface, &built.census, &projections);
+    let one = plan(&surface, &built.census, &projections, &fixture_identity());
+    let two = plan(&surface, &built.census, &projections, &fixture_identity());
     assert_eq!(one.outputs.len(), two.outputs.len());
     for (left, right) in one.outputs.iter().zip(&two.outputs) {
         assert_eq!(left.path, right.path);
@@ -271,29 +291,36 @@ fn every_output_carries_its_own_marker() {
     let (built, root) = fixture_tree();
     let surface = built.surface();
     let projections = Projections::read(&root).expect("the projections read");
-    let plan = plan(&surface, &built.census, &projections);
+    let plan = plan(&surface, &built.census, &projections, &fixture_identity());
     assert!(!plan.outputs.is_empty(), "the fixture generates something");
     for output in &plan.outputs {
         assert!(
-            headwater_generate::carries_marker(&output.bytes),
+            headwater_generate::carries_marker(&output.path, &output.bytes),
             "{} opens with no generated-file marker",
             output.path
         );
     }
 }
 
-/// This repository generates nothing, and it says why for every projection.
+/// This repository generates its descriptor, and it says why for everything
+/// else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
-/// is what a prose edit must not change. The package declares indexes for two
-/// shelves this tree holds no document on, so the honest output is no file and
-/// four stated reasons, and `--check` passes because nothing is claimed.
+/// is what a prose edit must not change. One file is written, the descriptor at
+/// the path Q14 fixes. The package declares indexes for two shelves this tree
+/// holds no document on, so those two produce a reason rather than a file, and
+/// the register produces a third.
+///
+/// The gate at the end is the dogfood. It reads the committed
+/// `.headwater/corpus.json` and compares bytes, so a contributor who moves a
+/// shelf and does not regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_nothing_and_accounts_for_all_of_it() {
+fn this_repository_generates_its_descriptor_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
+    let lock = headwater_lock::at(&root).expect("the lock reads");
     let corpus = Corpus::declared(
         &root,
         &resolved.consumer.corpus_root,
@@ -303,17 +330,26 @@ fn this_repository_generates_nothing_and_accounts_for_all_of_it() {
     let surface = built.surface();
     let projections =
         Projections::read(&resolved.resolution.taxonomy).expect("the projections read");
-    let plan: Plan = plan(&surface, &built.census, &projections);
+    let identity = Identity {
+        corpus_root: resolved.consumer.corpus_root.clone(),
+        exclusions: resolved.consumer.exclusions.clone(),
+        package: lock.package.clone(),
+        version: lock.version.clone(),
+        lock: lock.digest.clone(),
+    };
+    let plan: Plan = plan(&surface, &built.census, &projections, &identity);
 
-    assert!(
-        plan.outputs.is_empty(),
-        "this repository now generates a file, so the dogfood gate of #68 can be built"
+    let paths: Vec<&str> = plan.outputs.iter().map(|o| o.path.as_str()).collect();
+    assert_eq!(
+        paths,
+        vec![descriptor::PATH],
+        "this repository writes the descriptor and nothing else"
     );
-    // The two engine-defined kinds, and one entry per declared shelf. Nothing is
+    // Two declared shelves that hold no document, and the register. Nothing is
     // passed over: a projection that produced no file states a reason.
     assert_eq!(
         plan.unwritten.len(),
-        4,
+        3,
         "a projection produced neither a file nor a reason"
     );
     for unwritten in &plan.unwritten {
@@ -327,12 +363,60 @@ fn this_repository_generates_nothing_and_accounts_for_all_of_it() {
     let held = check(&root, &plan);
     assert!(
         !held.has_errors(),
-        "the gate fails over a repository that claims to generate nothing"
+        "the committed descriptor is not what this corpus and this lock produce. \
+         Run `headwater generate` and commit the result"
     );
     assert!(
         held.wrote
             .iter()
             .all(|wrote| wrote.verdict != Verdict::Occupied),
         "a declared output path is held by an authored document"
+    );
+}
+
+/// An authored file at the descriptor's path is refused, and JSON is the reason
+/// this needs its own test.
+///
+/// The marker rule reads the first line of a commented format, and the first
+/// line of a JSON object is the brace. A rule that only read lines would answer
+/// "no marker" for this engine's own descriptor and refuse to overwrite it, or
+/// answer "marker" for anything at all and destroy an authored file. Both
+/// failures are here.
+#[test]
+fn the_descriptor_path_obeys_the_marker_rule() {
+    let (built, root) = fixture_tree();
+    let surface = built.surface();
+    let projections = Projections::read(&root).expect("the projections read");
+    let plan = plan(&surface, &built.census, &projections, &fixture_identity());
+    let written = plan
+        .outputs
+        .iter()
+        .find(|output| output.path == descriptor::PATH)
+        .expect("the descriptor is planned");
+
+    // This engine's own output is recognized, so a second run overwrites it.
+    assert!(
+        headwater_generate::carries_marker(&written.path, &written.bytes),
+        "the descriptor does not carry a marker this engine can find"
+    );
+
+    // An adopter's hand-written descriptor is not, so it survives.
+    let tree = empty_tree("descriptor");
+    let authored = "{\n  \"corpora\": []\n}\n";
+    let at = tree.join(descriptor::PATH);
+    std::fs::create_dir_all(at.parent().expect("a parent")).expect("the directory");
+    std::fs::write(&at, authored).expect("the authored descriptor");
+    let refused = write(&tree, &plan);
+    assert_eq!(
+        std::fs::read_to_string(&at).expect("it is still there"),
+        authored,
+        "the engine destroyed a hand-written descriptor"
+    );
+    assert!(
+        refused
+            .wrote
+            .iter()
+            .any(|w| w.path == descriptor::PATH && w.verdict == Verdict::Occupied),
+        "a hand-written descriptor was not reported as occupied"
     );
 }

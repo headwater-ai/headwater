@@ -20,11 +20,53 @@ the plan
 - [GD-FIX-first-run](first-run.md) — what to do on a first run, and what to read when it refuses
 - [GD-FIX-recovery](recovery.md) — how to recover a corpus whose lock and sources disagree (asserted, and no human has accepted it)
 
+=== .headwater/corpus.json (corpus_descriptor) ===
+{
+  "headwater:generated": "corpus_descriptor. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
+  "descriptor_version": "1.0",
+  "corpora": [
+    {
+      "root": "generate",
+      "excluded": [
+        {
+          "path": "generate/drafts/**",
+          "reason": "drafts, and not governed content"
+        }
+      ],
+      "taxonomy": {
+        "package": "headwater/fixture",
+        "version": "1.0.0",
+        "lock": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "entry_points": [
+        {
+          "shelf": "decisions",
+          "path": "generate/decisions/0002-rebuild-the-graph.md",
+          "id": "DR-FIX-0002"
+        },
+        {
+          "shelf": "guides",
+          "path": "generate/guides/first-run.md",
+          "id": "GD-FIX-first-run"
+        }
+      ]
+    }
+  ],
+  "unstated": [
+    {
+      "field": "exports",
+      "reason": "no taxonomy can declare an export profile yet. An export profile names an audience, an emitter target, a filter and a tombstone grain, and a `projections` entry carries a kind and an output path. An empty list here would say that this corpus exports nothing, and what is true is that nothing can declare an export."
+    }
+  ]
+}
+
 --- write into an empty tree ---
 projections
   shelf_index generate/decisions/README.md
     written
   shelf_index generate/guides/README.md
+    written
+  corpus_descriptor .headwater/corpus.json
     written
 
 what this verb does not write, and why
@@ -34,8 +76,6 @@ what this verb does not write, and why
     the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
-  corpus_descriptor .headwater/corpus.json
-    nothing computes a descriptor yet. Issue #64 owns it, and it writes through this verb when it lands
 fails the run: false
 
 --- write again over the first ---
@@ -44,6 +84,8 @@ projections
     unchanged
   shelf_index generate/guides/README.md
     unchanged
+  corpus_descriptor .headwater/corpus.json
+    unchanged
 
 what this verb does not write, and why
   shelf_index generate/archive/README.md
@@ -52,8 +94,6 @@ what this verb does not write, and why
     the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
-  corpus_descriptor .headwater/corpus.json
-    nothing computes a descriptor yet. Issue #64 owns it, and it writes through this verb when it lands
 fails the run: false
 
 --- check over a hand-edited generated file ---
@@ -62,6 +102,8 @@ projections, held to regeneration
     committed, and it is not what this corpus and this lock produce
   shelf_index generate/guides/README.md
     unchanged
+  corpus_descriptor .headwater/corpus.json
+    unchanged
 
 what this verb does not write, and why
   shelf_index generate/archive/README.md
@@ -70,8 +112,6 @@ what this verb does not write, and why
     the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
-  corpus_descriptor .headwater/corpus.json
-    nothing computes a descriptor yet. Issue #64 owns it, and it writes through this verb when it lands
 fails the run: true
 
 --- write over a hand-edited generated file ---
@@ -80,6 +120,8 @@ projections
     rewritten
   shelf_index generate/guides/README.md
     unchanged
+  corpus_descriptor .headwater/corpus.json
+    unchanged
 
 what this verb does not write, and why
   shelf_index generate/archive/README.md
@@ -88,8 +130,6 @@ what this verb does not write, and why
     the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
-  corpus_descriptor .headwater/corpus.json
-    nothing computes a descriptor yet. Issue #64 owns it, and it writes through this verb when it lands
 fails the run: false
 
 --- check over what was written ---
@@ -98,6 +138,8 @@ projections, held to regeneration
     unchanged
   shelf_index generate/guides/README.md
     unchanged
+  corpus_descriptor .headwater/corpus.json
+    unchanged
 
 what this verb does not write, and why
   shelf_index generate/archive/README.md
@@ -106,8 +148,6 @@ what this verb does not write, and why
     the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
-  corpus_descriptor .headwater/corpus.json
-    nothing computes a descriptor yet. Issue #64 owns it, and it writes through this verb when it lands
 fails the run: false
 
 --- check over an empty tree ---
@@ -116,6 +156,8 @@ projections, held to regeneration
     not committed, and this run would write it
   shelf_index generate/guides/README.md
     not committed, and this run would write it
+  corpus_descriptor .headwater/corpus.json
+    not committed, and this run would write it
 
 what this verb does not write, and why
   shelf_index generate/archive/README.md
@@ -124,8 +166,6 @@ what this verb does not write, and why
     the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
-  corpus_descriptor .headwater/corpus.json
-    nothing computes a descriptor yet. Issue #64 owns it, and it writes through this verb when it lands
 fails the run: true
 
 --- write where an authored file is ---
@@ -133,6 +173,8 @@ projections
   shelf_index generate/decisions/README.md
     a file is there and it carries no generated-file marker, so this engine will not overwrite it
   shelf_index generate/guides/README.md
+    written
+  corpus_descriptor .headwater/corpus.json
     written
 
 what this verb does not write, and why
@@ -142,6 +184,4 @@ what this verb does not write, and why
     the emitters, the loss set and the projection census are issue #65, and an export that declared no loss set would be the untrusted projector spec 6 built the census to catch
   coverage_report the register
     its content is a function of the clock as well as of the corpus and the lock, because a migration task lapses and a suppression expires on a date. A committed copy would fail this check on a morning when nothing changed. Spec 13 carries it
-  corpus_descriptor .headwater/corpus.json
-    nothing computes a descriptor yet. Issue #64 owns it, and it writes through this verb when it lands
 fails the run: true
