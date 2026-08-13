@@ -1,0 +1,82 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the differential fixtures are written against. It exists beside
+# `generate.taxonomy.yml` rather than inside it, because the differential needs
+# a corpus that breaks its own rules and the generate tree must stay valid: the
+# recorded census and the recorded report both read that tree.
+#
+# Every declaration here earns its place by putting one construct of the JSON
+# Schema emitter under a document that exercises it.
+#
+# - `status` is required and enumerated, so one facet reaches both claimed
+#   check families.
+# - `status_since` is required and carries no value set, which is the emitted
+#   empty constraint that must catch nothing on its own.
+# - `audience` is enumerated and not required, so `enum` is tested apart from
+#   `required`.
+# - `note` forbids `audience`, which is the one construct whose meaning inverts.
+# - `archive` is heterogeneous and holds documents, so the `if` and `then`
+#   selection runs against front matter rather than sitting unexercised.
+
+purposes:
+  rationale:
+    intent: explain why a choice was made and what it forecloses
+    answers: ["why is it this way", "what was rejected"]
+  procedure:
+    intent: enable a reader to carry out a task correctly
+    answers: ["how do I do this", "what do I do when it fails"]
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft, role: initial}
+      - {value: current, role: live}
+      - {value: superseded, role: terminal-retained}
+  status_since:
+    role: state_entered
+    required: true
+  summary:
+    role: scent
+    required: true
+  # Enumerated and not required. A document that omits it is silent for both
+  # rules, and a document that states a value outside the set reaches exactly
+  # one of them.
+  audience:
+    values: [operator, author]
+  # The discriminator of the heterogeneous shelf below.
+  doc_type:
+    values: [decision, guide]
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status, status_since, summary]}
+  decision:
+    is_a: governed_document
+    purpose: rationale
+  guide:
+    is_a: governed_document
+    purpose: procedure
+  # A kind that forbids an enumerated facet. No check in the registry reports a
+  # document that declares a forbidden facet, so this kind is what tells the
+  # differential whether the emitter states more than the engine enforces.
+  note:
+    is_a: governed_document
+    purpose: procedure
+    facets: {forbid: [audience]}
+
+shelves:
+  decisions: {path: "differential/decisions/**", homogeneous: true, kind: decision}
+  notes:     {path: "differential/notes/**",     homogeneous: true, kind: note}
+  archive:
+    path: "differential/archive/**"
+    homogeneous: false
+    discriminator: doc_type
+    kinds: [decision, guide]
+
+projections:
+  - kind: graph_export
+    format: jsonschema
+    output: exports/front-matter.schema.json
