@@ -280,6 +280,93 @@ fn two_plans_over_one_tree_agree() {
     }
 }
 
+/// A file this verb wrote is walked by the next census, and it comes back
+/// `generated` rather than untyped.
+///
+/// The interaction this crate exists to be careful about, run for real rather
+/// than reasoned about. A shelf index lands on the shelf it indexes, so the
+/// write puts a file inside the corpus root and the next run walks it. The
+/// property is the whole of issue #121: the artifact does not become a finding
+/// against the corpus that produced it.
+///
+/// The second half is the same tree read a second way. This tree holds the
+/// generated files and none of the documents they were generated from, so no
+/// declaration produces them any more — which is exactly the state a corpus
+/// reaches when a declaration is removed or its output path is repointed. Both
+/// files are then orphaned, and the run fails. That failure is what stops the
+/// marker from being a line an author can add to any document to exempt it from
+/// every check.
+#[test]
+fn a_generated_file_is_censused_as_generated_and_orphaned_when_nothing_writes_it() {
+    let (built, root) = fixture_tree();
+    let surface = built.surface();
+    let projections = Projections::read(&root).expect("the projections read");
+    let first = plan(&surface, &built.census, &projections, &fixture_identity());
+    assert!(
+        first.orphaned.is_empty(),
+        "the fixture tree holds no marked file that nothing writes: {:?}",
+        first.orphaned
+    );
+
+    let tree = empty_tree("censused");
+    let report = write(&tree, &first);
+    assert!(!report.has_errors(), "{}", report.render());
+
+    // Which of the outputs landed inside the corpus root. The others sit
+    // outside it by construction, and the census never sees those.
+    let inside: Vec<String> = first
+        .outputs
+        .iter()
+        .filter(|output| output.path.starts_with("generate/"))
+        .map(|output| output.path.clone())
+        .collect();
+    assert!(
+        !inside.is_empty(),
+        "no output lands in the corpus root, so this test proves nothing"
+    );
+
+    let walked = Corpus::new(&tree, "generate");
+    let again = Built::over(&walked, &root);
+    for path in &inside {
+        let row = again
+            .census
+            .rows
+            .iter()
+            .find(|row| &row.path == path)
+            .unwrap_or_else(|| panic!("{path} is not in the census of the tree it was written to"));
+        assert_eq!(
+            row.outcome.class(),
+            "generated",
+            "{path} came back as `{}`: {}",
+            row.outcome.class(),
+            row.outcome.detail()
+        );
+    }
+
+    // Nothing on these shelves now, so no declaration writes an index, so every
+    // index already there is stale.
+    let surface = again.surface();
+    let stale = plan(&surface, &again.census, &projections, &fixture_identity());
+    let mut orphaned: Vec<&str> = stale
+        .orphaned
+        .iter()
+        .map(|orphaned| orphaned.path.as_str())
+        .collect();
+    orphaned.sort_unstable();
+    let mut expected: Vec<&str> = inside.iter().map(String::as_str).collect();
+    expected.sort_unstable();
+    assert_eq!(orphaned, expected);
+    assert_eq!(
+        stale.orphaned[0].kind.as_deref(),
+        Some("shelf_index"),
+        "the report names what the file claims to be"
+    );
+    assert!(
+        check(&tree, &stale).has_errors(),
+        "a marked file that no declaration writes has to fail the gate"
+    );
+}
+
 /// Every generated file opens with the marker that lets the next run overwrite
 /// it.
 ///

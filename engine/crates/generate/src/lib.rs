@@ -358,11 +358,51 @@ pub struct Unwritten {
     pub reason: String,
 }
 
+/// A file inside the corpus root that carries the marker and that no
+/// declaration writes.
+///
+/// The marker is a claim that this engine wrote the file, and the census
+/// believes it: a marked file is excused from every document check, because the
+/// content of a generated file is a function of its emitter rather than of its
+/// author. So the claim has to be tested somewhere, and this is the only place
+/// that can test it, because testing it needs the plan.
+///
+/// Two things reach here and the remedy differs. A **stale artifact** is the
+/// common one: a declaration was removed or its output path was repointed, and
+/// the file it used to write stayed behind. Nothing regenerates it, so it says
+/// whatever the corpus said on the day it was last written. A **hand-written
+/// marker** is the other, and it is the one that matters more: the line is one
+/// an author could otherwise add to any document to exempt it from every check,
+/// silently and permanently. Reported, it exempts nothing.
+#[derive(Clone, Debug)]
+pub struct Orphaned {
+    pub path: String,
+    /// The kind the marker claims, when it claims one.
+    pub kind: Option<String>,
+}
+
+impl Orphaned {
+    fn line(&self) -> String {
+        let claim = match &self.kind {
+            Some(kind) => format!("carries a `{kind}` generated-file marker"),
+            None => "carries a generated-file marker that names no kind".to_string(),
+        };
+        format!(
+            "{claim}, and no declaration writes this path. Nothing regenerates this file and no              check reads it. Delete it, or restore the declaration that wrote it"
+        )
+    }
+}
+
 /// Everything one run would write, and everything it would not.
 #[derive(Clone, Debug, Default)]
 pub struct Plan {
     pub outputs: Vec<Output>,
     pub unwritten: Vec<Unwritten>,
+    /// Marked files inside the corpus root that no output claims. Empty for a
+    /// plan that covers a subset of the declarations, because a subset cannot
+    /// tell a file it does not write from a file nobody writes: see
+    /// [`export_plan`].
+    pub orphaned: Vec<Orphaned>,
 }
 
 /// What the engine writes with no declaration at all.
@@ -411,7 +451,33 @@ pub fn plan(
     }
     descriptor::emit(surface, identity, projections, &mut plan);
     plan.unwritten.extend(engine_defined());
+    // Every declaration has had its turn, so the output set is complete and a
+    // marked file outside it is a marked file nothing writes.
+    plan.orphaned = orphaned(census, &plan.outputs);
     plan
+}
+
+/// Marked files the census found that no output in this plan claims.
+///
+/// The census is the input rather than a second walk, for the reason every
+/// phase after it reads it: two walks of one tree can disagree, and this one
+/// would disagree by reporting a file as unwritten that the other never saw.
+fn orphaned(census: &Census, outputs: &[Output]) -> Vec<Orphaned> {
+    census
+        .rows
+        .iter()
+        .filter_map(|row| match &row.outcome {
+            headwater_census::census::Outcome::Generated { kind }
+                if !outputs.iter().any(|output| output.path == row.path) =>
+            {
+                Some(Orphaned {
+                    path: row.path.clone(),
+                    kind: kind.clone(),
+                })
+            }
+            _ => None,
+        })
+        .collect()
 }
 
 /// The plan for `headwater export`: the declared exports, and nothing else.
@@ -610,13 +676,17 @@ pub struct Wrote {
 pub struct Report {
     pub wrote: Vec<Wrote>,
     pub unwritten: Vec<Unwritten>,
+    /// Marked files no declaration writes. An error in both directions of the
+    /// verb: `generate` does not delete files, so writing the plan does not
+    /// clear one.
+    pub orphaned: Vec<Orphaned>,
     /// Whether this run wrote anything, or only compared.
     pub checked: bool,
 }
 
 impl Report {
     pub fn has_errors(&self) -> bool {
-        self.wrote.iter().any(|wrote| wrote.verdict.is_error())
+        self.wrote.iter().any(|wrote| wrote.verdict.is_error()) || !self.orphaned.is_empty()
     }
 
     /// The report, which states what it did not do as well as what it did.
@@ -633,6 +703,13 @@ impl Report {
                     out.push_str(&format!("  {} {}\n", wrote.kind.name(), wrote.path));
                     out.push_str(&format!("    {}\n", wrote.verdict.line()));
                 }
+            }
+        }
+        if !self.orphaned.is_empty() {
+            out.push_str("\nmarked, and written by no declaration\n");
+            for orphaned in &self.orphaned {
+                out.push_str(&format!("  {}\n", orphaned.path));
+                out.push_str(&format!("    {}\n", orphaned.line()));
             }
         }
         if !self.unwritten.is_empty() {
@@ -668,6 +745,7 @@ fn run(root: &Path, plan: &Plan, checking: bool) -> Report {
     let mut report = Report {
         checked: checking,
         unwritten: plan.unwritten.clone(),
+        orphaned: plan.orphaned.clone(),
         ..Report::default()
     };
     for output in &plan.outputs {

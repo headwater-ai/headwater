@@ -150,6 +150,27 @@ impl Coverage {
         self.documents.iter().filter(|d| d.class == "typed").count()
     }
 
+    /// Files this engine wrote, which the census reports under its own class.
+    ///
+    /// Counted and named rather than left inside `seen() - classified()`. A
+    /// generated file is never classified and never checked, so it would
+    /// otherwise be a gap between two numbers that a reader has to guess the
+    /// composition of, and
+    /// [spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+    /// asks OB-COV-3 for the reasons as well as the counts.
+    ///
+    /// It is not an escape from OB-COV-2. That obligation is over classified
+    /// documents, a generated file is not one, and what holds it instead is
+    /// `headwater generate --check`: the file has to be the bytes its emitter
+    /// produces now, and a marked file that no declaration writes is an error
+    /// there.
+    pub fn generated(&self) -> usize {
+        self.documents
+            .iter()
+            .filter(|d| d.class == "generated")
+            .count()
+    }
+
     /// Classified documents that at least one instance ran over.
     pub fn checked(&self) -> usize {
         self.documents
@@ -225,6 +246,13 @@ impl Coverage {
             self.checked(),
             self.instances
         );
+        if self.generated() > 0 {
+            let _ = writeln!(
+                out,
+                "  {:5} generated, held to regeneration by `headwater generate --check`",
+                self.generated()
+            );
+        }
         for (reason, count) in self.skips() {
             let _ = writeln!(out, "  {count:5} skipped: {reason}");
         }
