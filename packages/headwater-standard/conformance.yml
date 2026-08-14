@@ -58,7 +58,10 @@ conformance:
         `.headwater/taxonomy.lock` is what the package, the selected bundles and
         the adopter overlay resolve to. Every check reads the lock and never the
         sources, so a stale lock is a corpus evaluated against a taxonomy that
-        nobody committed.
+        nobody committed. This rule is also how conformance reaches the
+        invariant core. `taxonomy resolve` writes a lock only when the taxonomy
+        validates, and core satisfaction is one of the things `taxonomy
+        validate` decides, so a current lock is a satisfied core.
       remediation: >-
         Run `headwater taxonomy resolve` and commit the lock beside the source
         that moved it.

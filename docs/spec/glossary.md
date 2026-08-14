@@ -179,7 +179,11 @@ The property that a set of overlays, applied in any legal order, gives the same 
 
 ### Conformance
 
-The evaluated question of whether a consumer wired the method, rather than only copied it. It checks the [core](#core), not the whole taxonomy, which is the difference between a method and a monoculture. See [spec 7](07-distribution-and-federation.md#conformance).
+The evaluated question of whether a consumer wired the method, rather than only copied it. It checks the [core](#core), not the whole taxonomy, which is the difference between a method and a monoculture. The rules ship with the package and the engine holds the reading of each one. See [spec 7](07-distribution-and-federation.md#conformance).
+
+### Conformance level
+
+A named subset of the [conformance](#conformance) rule set, which the package declares. It states what an adopter wired up and it measures nothing about a corpus. No key declares one, and the report derives it from the rules that pass. A [waiver](#waiver) moves the exit status of a `--level` run and never the level. See [spec 7](07-distribution-and-federation.md#what-a-level-means-and-what-stops-it-from-becoming-a-score).
 
 ### Consumer
 
