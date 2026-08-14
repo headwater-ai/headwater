@@ -231,31 +231,31 @@ A tool acquires a security obligation when it publishes a claim that a boundary 
 ### CLI
 
 ```
-headwater check      [--strict] [--fix] [--no-cache] [--now <date>]
-                     [--read-set <path>] [--register <path>]
-                     [--format text|json|sarif|markdown]
-headwater gate       --read-set <path> [--now <date>]
-headwater generate   [--check]
-headwater new        <kind> --title <text> [--relates <relation>=<identifier>]
-                     [--now <date>]
-headwater capture    [--format text|json]
-headwater sweep      plan [--under <path>]
-                   | report <path> [--format text|json]
-headwater route      <task description>
-headwater query      <expression>
-headwater explain    <path|identifier>
-headwater mcp        [--now <date>] [--write]
-headwater export     [--profile ...] [--format json|jsonschema|shacl|rdf|skos|okf|linkml]
-                     [--at <date>] [--check]
-headwater init       [--corpus <dir>] [--package <name>]
-headwater infer      [--owner <name>] [--until <date>] [--write]
+headwater check       [--strict] [--fix] [--no-cache] [--now <date>]
+                      [--read-set <path>] [--register <path>]
+                      [--format text|json|sarif|markdown]
+headwater gate        --read-set <path> [--now <date>]
+headwater generate    [--check]
+headwater new         <kind> --title <text> [--relates <relation>=<identifier>]
+                      [--now <date>]
+headwater capture     [--format text|json]
+headwater sweep       plan [--under <path>]
+                    | report <path> [--format text|json]
+headwater route       <task description>
+headwater query       <expression>
+headwater explain     <path|identifier>
+headwater mcp         [--now <date>] [--write]
+headwater export      [--profile ...] [--format json|jsonschema|shacl|rdf|skos|okf|linkml]
+                      [--at <date>] [--check]
+headwater init        [--corpus <dir>] [--package <name>]
+headwater infer       [--owner <name>] [--until <date>] [--write]
 headwater conformance [--level <name>] [--now <date>]
-headwater taxonomy   validate | resolve [--check] | diff | migrate
-                   | audit [--now <date>]
-                   | publish [--package <name>] --out <dir>
-                   | vendor <dir> [--expect <digest>]
-headwater coverage   [--format ...]
-headwater probe      [--tier regression|campaign] [--arm present|absent] [--category ...]
+headwater taxonomy    validate | resolve [--check] | diff | migrate
+                    | audit [--now <date>]
+                    | publish [--package <name>] --out <dir>
+                    | vendor <dir> [--expect <digest>]
+headwater coverage    [--format ...]
+headwater probe       [--tier regression|campaign] [--arm present|absent] [--category ...]
 ```
 
 **This grammar is a statement of fact about the engine, and a name it declares either runs or waits.** Every verb the engine ships is above. A name that the engine has not built stays here when something nameable would make it real. The engine then says what the name waits on when a caller types it. `query <expression>` is such a name, because no document states what an expression is. The verb ships the day one does. The same reading covers `coverage` and `probe`. It covers `taxonomy diff` and `taxonomy migrate`, and the five export targets that no consumer has asked for. Each of those two states its wait when a caller types it. `diff` waits on a second taxonomy to compare against. `migrate` waits on `diff`, because a payload names the version it came from, and no run names one without a measured comparison. A name that nothing could make real has no place here, and `--changed-only` is the one such name this grammar carried. The test between the two is not how far away the work is. It is whether any document or any consumer could turn the name into a verb that runs.
