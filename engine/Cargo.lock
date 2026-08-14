@@ -64,6 +64,7 @@ dependencies = [
  "headwater-query",
  "headwater-resolve",
  "headwater-scaffold",
+ "headwater-sweep",
  "headwater-yaml",
 ]
 
@@ -163,6 +164,16 @@ dependencies = [
  "headwater-graph",
  "headwater-hash",
  "headwater-lock",
+ "headwater-yaml",
+]
+
+[[package]]
+name = "headwater-sweep"
+version = "0.0.0"
+dependencies = [
+ "headwater-census",
+ "headwater-check",
+ "headwater-graph",
  "headwater-yaml",
 ]
 

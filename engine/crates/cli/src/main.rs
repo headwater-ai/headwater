@@ -80,6 +80,8 @@ headwater mcp                [--now <date>] [--write] [--root <path>]
 headwater new                <kind> --title <text> [--relates <relation>=<identifier>]
                              [--now <date>] [--root <path>]
 headwater capture            [--format text|json] [--root <path>]
+headwater sweep plan         [--under <path>] [--root <path>]
+headwater sweep report       <path> [--format text|json] [--root <path>]
 headwater generate           [--check] [--root <path>]
 headwater export             [--profile <name>] [--format json|jsonschema] [--at <date>]
                              [--check] [--root <path>]
@@ -136,6 +138,16 @@ headwater taxonomy resolve   [--check] [--root <path>]
                      which is what a consumer outside this repository asks for.
                      Without one it writes every declared export to the path its
                      taxonomy names, and `--check` holds those to regeneration.
+  sweep              the two deterministic halves of the coherence sweep, which
+                     is a sampler and never a check. `plan` writes the briefing
+                     an agent reads: the slice, what the graph already declares
+                     about it, and the file to write back. `report` reads that
+                     file and says what this engine could confirm about it —
+                     that every quotation is in the document it names, that
+                     every path is a classified document, and that no proposed
+                     edge is one the graph already carries. No model is reached
+                     from this binary, both halves exit 0 whatever they find,
+                     and neither writes a byte of the corpus.
   init               scaffold the consumer declaration and the overlay for a
                      repository that has neither, and print the questions that
                      no tree answers. It refuses to overwrite a binding.
@@ -241,6 +253,15 @@ headwater taxonomy resolve   [--check] [--root <path>]
                  `capture`: `text` is the report a person reads and the default,
                  and `json` is the same numbers for a program. Neither carries a
                  reading the store does not hold.
+
+                 `sweep report`: `text` is the report a person reads and the
+                 default, and `json` is the finding shape spec 4 declares with
+                 the provenance and the evidence a sweep adds.
+  --under <path> `sweep plan` only: the slice, as a path prefix under the
+                 repository root. The whole corpus by default. There is no
+                 sampling rule here: a slice this engine picked would be an
+                 unreproducible sample dressed as a reproducible one, and the
+                 plan reports its own extent instead.
   --at <date>    `export` only: the generation time the artifact states, as
                  `YYYY-MM-DD`. Absent by default, because an artifact that
                  `--check` compares by byte cannot carry a clock reading. Spec 6
@@ -269,6 +290,7 @@ fn main() -> ExitCode {
     let mut format: Option<String> = None;
     let mut generated_at: Option<String> = None;
     let mut title: Option<String> = None;
+    let mut under: Option<String> = None;
     let mut relates: Vec<(String, String)> = Vec::new();
     let mut words: Vec<String> = Vec::new();
 
@@ -303,6 +325,10 @@ fn main() -> ExitCode {
                     None => return fail("--at takes a date written `YYYY-MM-DD`"),
                 },
                 None => return fail("--at names a date and none followed it"),
+            },
+            "--under" => match arguments.next() {
+                Some(path) => under = Some(path),
+                None => return fail("--under names a path prefix and none followed it"),
             },
             "--title" => match arguments.next() {
                 Some(text) => title = Some(text),
@@ -397,6 +423,16 @@ fn main() -> ExitCode {
         ),
         ["new", kind] => new(&root, kind, title, &relates, now),
         ["capture"] => capture(&root, format),
+        ["sweep"] => fail("`sweep` takes a second word: `plan` or `report`"),
+        ["sweep", "plan"] => sweep_plan(&root, under),
+        ["sweep", "report"] => fail(
+            "`sweep report` takes the path of the file an agent wrote back. \
+             `headwater sweep plan` prints the shape of it",
+        ),
+        ["sweep", "report", path] => sweep_report(&root, Path::new(path), format),
+        ["sweep", other, ..] => fail(&format!(
+            "`sweep {other}` is not a verb this binary carries. It carries `plan` and `report`"
+        )),
         ["generate"] => generate(&root, check_only),
         ["export"] => export(&root, profile, format, generated_at, check_only),
         ["init"] => init(&root, corpus_root, package),
@@ -426,7 +462,7 @@ fn main() -> ExitCode {
         [other, ..] => fail(&format!(
             "`{other}` is not a verb this binary carries yet. \
              It carries `check`, `gate`, `route`, `explain`, `mcp`, `new`, `capture`, \
-             `generate`, `export`, `init`, `infer` and `taxonomy`"
+             `sweep`, `generate`, `export`, `init`, `infer` and `taxonomy`"
         )),
     }
 }
@@ -1319,6 +1355,91 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
         "  nothing a hook or a skill did. Spec 5 says a hook binds nothing, so a disabled hook \
          and a hook that stayed silent would be one reading"
     );
+    ExitCode::SUCCESS
+}
+
+/// `headwater sweep plan`.
+///
+/// The briefing an agent reads. It writes to standard output, reads the same
+/// lock every other verb reads, and touches nothing.
+///
+/// It is deterministic, and that is testable: two runs over one tree write the
+/// same bytes. The sweep's unreproducible part is what an agent does between
+/// this verb and the next one, and neither verb performs it.
+fn sweep_plan(root: &Path, under: Option<String>) -> ExitCode {
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let plan = headwater_sweep::Plan::over(
+        &loaded.census,
+        &loaded.graph,
+        &loaded.config,
+        &loaded.lock.digest,
+        under.as_deref().unwrap_or(""),
+    );
+    print!("{}", plan.render());
+    ExitCode::SUCCESS
+}
+
+/// `headwater sweep report <path>`.
+///
+/// # It exits 0 on every report it can produce, and that is the constraint
+///
+/// A sweep never gates
+/// ([spec 12](../../../../docs/spec/12-check-layer.md#where-the-llm-coherence-sweep-fits)).
+/// The strongest form of that promise is an exit status that no output of a
+/// model can move, so this verb exits 0 with findings, exits 0 with every
+/// finding refused, and exits 0 when it refuses the whole file. There is no
+/// `--strict`.
+///
+/// The two non-zero exits are a caller's rather than a model's: a path this
+/// process cannot read, and a `--format` that names no target. Both are true
+/// before any file is parsed.
+///
+/// # It writes nothing
+///
+/// The report prints the front matter that would declare a proposed edge and
+/// never writes it. A proposal an agent applies to itself is the same act as an
+/// agent accepting its own draft, which is what
+/// [OBL-repo-0108](../../../../docs/obligations/0108-every-agent-drafted-document-carries-an-accepted-by-the-drafting-agent-typed.md)
+/// records. So there is no `--write`, and this is the one verb of the write
+/// path that has none.
+fn sweep_report(root: &Path, path: &Path, format: Option<String>) -> ExitCode {
+    let wants_json = match format.as_deref() {
+        None | Some("text") => false,
+        Some("json") => true,
+        Some(other) => {
+            return refuse(&format!(
+                "`sweep report --format {other}` names no target. It writes `text` and `json`"
+            ))
+        }
+    };
+    let source = match std::fs::read_to_string(path) {
+        Ok(source) => source,
+        Err(error) => {
+            return fail(&format!(
+                "the sweep file at {} did not read: {error}",
+                path.display()
+            ))
+        }
+    };
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let tree = headwater_sweep::Tree {
+        root,
+        census: &loaded.census,
+        graph: &loaded.graph,
+        relations: &loaded.relations,
+        lock: &loaded.lock.digest,
+    };
+    let report = headwater_sweep::Report::read(&source, &tree);
+    match wants_json {
+        true => println!("{}", headwater_sweep::json::render(&report)),
+        false => print!("{}", report.render()),
+    }
     ExitCode::SUCCESS
 }
 

@@ -16,6 +16,7 @@ members = [
     "crates/ref",
     "crates/resolve",
     "crates/scaffold",
+    "crates/sweep",
     "crates/yaml",
 ]
 resolver = "2"

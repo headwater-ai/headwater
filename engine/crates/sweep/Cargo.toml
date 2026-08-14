@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "headwater-sweep"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+# The dependency direction is the whole argument that a sweep cannot gate.
+#
+# This crate names `headwater-check`, so `headwater-check` can never name this
+# one: the compiler refuses the cycle. A rule therefore cannot read a sweep
+# finding, a run cannot carry one, and `check --strict` cannot see one. That is
+# a structural guarantee rather than a discipline somebody keeps, and it is the
+# same argument `headwater-adapter` makes one level up.
+[dependencies]
+# The finding shape, which spec 4 fixes for every mechanism and which a sweep
+# shares with a check. It is shared rather than copied, because two shapes that
+# drift are two reports a reader has to learn separately.
+headwater-check = { path = "../check" }
+
+# The classification. A sweep reads the documents the census typed and nothing
+# else, so a path a sweep names is either a classified document of this corpus
+# or a finding this crate refuses.
+headwater-census = { path = "../census" }
+
+# The declared half. Spec 4 says a sweep never re-derives what the graph
+# declares, and this is what the refusal reads.
+headwater-graph = { path = "../graph" }
+
+# The loader for what comes back, and the JSON writer for what goes out. A
+# sweep's return file is YAML for the reason every other authored input here is:
+# one dialect, one parser, one set of spans in a refusal.
+headwater-yaml = { path = "../yaml" }
