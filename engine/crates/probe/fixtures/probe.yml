@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The envelope the fixture plans are projected against. The regression ceiling
+# clears the fixture selection and the campaign ceiling does not, so one file
+# holds both arms of the budget rule.
+
+tiers:
+  regression:
+    budget_cents: 2000
+    session_cost_cents: 25
+    repetitions: 1
+    arms: [present]
+
+  campaign:
+    budget_cents: 100
+    session_cost_cents: 25
+    repetitions: 58
+    arms: [present, absent]

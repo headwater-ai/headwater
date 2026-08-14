@@ -43,6 +43,19 @@ operations
   add.kinds.evaluation.identifier (.headwater/overlay.yml)
   add.kinds.review_prompt.identifier (.headwater/overlay.yml)
   add.kinds.review_record.identifier (.headwater/overlay.yml)
+  add.identifier_schemes.probe_id (.headwater/overlay.yml)
+  add.identifier_schemes.run_id (.headwater/overlay.yml)
+  add.facets.probe_category (.headwater/overlay.yml)
+  add.facets.expectation (.headwater/overlay.yml)
+  add.facets.tier (.headwater/overlay.yml)
+  add.facets.arm (.headwater/overlay.yml)
+  add.facets.oracle (.headwater/overlay.yml)
+  add.kinds.probe (.headwater/overlay.yml)
+  add.kinds.probe_transcript (.headwater/overlay.yml)
+  add.relations.examines (.headwater/overlay.yml)
+  add.relations.records (.headwater/overlay.yml)
+  add.shelves.probes (.headwater/overlay.yml)
+  add.shelves.probe_runs (.headwater/overlay.yml)
   add.regimes.language.ste_house (.headwater/overlay.yml)
   add.kinds.design_spec.language (.headwater/overlay.yml)
   add.kinds.decision_register.language (.headwater/overlay.yml)
@@ -55,13 +68,13 @@ declarations, by member count
   version: 1.0.0
   purposes: 4 members
   vocabularies: 1 member
-  facets: 7 members
+  facets: 12 members
   regimes: 3 members
   anchors: 1 member
-  kinds: 10 members
-  relations: 9 members
-  shelves: 6 members
-  identifier_schemes: 6 members
+  kinds: 12 members
+  relations: 11 members
+  shelves: 8 members
+  identifier_schemes: 8 members
   core: 1 member
   projections: 3 items
   obligations: 25 members

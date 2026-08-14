@@ -1,0 +1,87 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the probe fixture corpus is read against.
+#
+# It is not this repository's own overlay, and it is not the check crate's
+# fixture taxonomy either. A harness fixture has to be able to hold a probe that
+# is wrong — a `patched` probe naming a rule nobody carries, an `opened` probe
+# naming nothing — and those documents have no business in the real corpus,
+# where every check would report them and the count of this repository's
+# findings would move for a reason that is not about the corpus.
+#
+# Everything here is the smallest shape that types a probe and a transcript: two
+# shelves, two concrete kinds, the facets those kinds require, and the one
+# relation that names what an expectation is a predicate over.
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft, role: initial}
+      - {value: current, role: live}
+
+  status_since:
+    role: state_entered
+    required: true
+
+  summary:
+    role: scent
+    required: true
+
+  probe_category:
+    values: [discovery, sufficiency, navigability, consistency]
+    volatility: stable
+
+  expectation:
+    values: [opened, not_opened, cited, answered, patched]
+    volatility: stable
+
+  oracle:
+    volatility: stable
+
+  tier:
+    values: [regression, campaign]
+    volatility: stable
+
+  arm:
+    values: [present, absent]
+    volatility: stable
+
+identifier_schemes:
+  probe_id: {pattern: "PROBE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+  run_id:   {pattern: "RUN-{namespace}-{slug}",   namespace: FIX, allocation: minted-once}
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status, status_since, summary]}
+
+  probe:
+    is_a: governed_document
+    identifier: {scheme: probe_id}
+    facets: {require: [probe_category, expectation, oracle]}
+    sections: {require: [Task, Expectation]}
+
+  probe_transcript:
+    is_a: governed_document
+    identifier: {scheme: run_id}
+    facets: {require: [tier, arm]}
+    sections: {require: [Run identity, Events]}
+
+relations:
+  examines:
+    family: evidence
+    from: [probe]
+    to:   [governed_document]
+
+shelves:
+  probes:
+    path: corpus/probes/**
+    homogeneous: true
+    kind: probe
+
+  probe_runs:
+    path: corpus/probe-runs/**
+    homogeneous: true
+    kind: probe_transcript

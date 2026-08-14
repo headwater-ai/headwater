@@ -103,6 +103,25 @@ pub struct Request<'a> {
     /// `(relation as written, target identifier)`, in the order the caller
     /// named them.
     pub relates: &'a [(String, String)],
+    /// `(facet, value)` that the caller stated, in the order they named them.
+    ///
+    /// # Why a caller may state a value at all
+    ///
+    /// A required facet that declares a closed value set and carries no engine
+    /// role refuses this verb, because a prompt is not a member of a set. Two
+    /// declarations then meet and neither yields: the facet canons refuse a
+    /// facet that no kind requires as unread, and the scaffolder refuses a kind
+    /// that requires one. A kind whose category is the author's judgment — the
+    /// `probe` kind of the measurement layer is the first — falls between them
+    /// and could be written by no route this engine offers.
+    ///
+    /// So the caller supplies it. The value is validated against the set before
+    /// anything is written, and it is recorded as
+    /// [`Origin::HandEntry`]: a person typed it, the engine determined nothing,
+    /// and the assisted fraction says so. A value here that names a facet the
+    /// kind does not require, or one that a declaration already determines, is
+    /// refused rather than dropped.
+    pub given: &'a [(String, String)],
 }
 
 /// Everything the resolved taxonomy and the corpus hand a scaffolder.
@@ -326,6 +345,33 @@ pub enum Refusal {
         facet: String,
         kind: String,
         why: String,
+        /// Whether `--facet` is a route out of this one.
+        ///
+        /// It is not for a facet in an engine role. `--facet` refuses one,
+        /// because a role is a declaration that decides the value, and a
+        /// message that offered the flag there would send a caller at a second
+        /// refusal.
+        statable: bool,
+    },
+    /// The caller stated a value for a facet this kind does not require, so
+    /// nothing would have written it and the caller would not have been told.
+    FacetNotAsked {
+        facet: String,
+        kind: String,
+        required: Vec<String>,
+    },
+    /// The caller stated a value for a facet that a declaration decides.
+    FacetDetermined {
+        facet: String,
+        kind: String,
+        why: String,
+    },
+    /// The caller stated a value outside the facet's closed set. The checks
+    /// would refuse it, so this run refuses it before it is written.
+    FacetNotPermitted {
+        facet: String,
+        found: String,
+        values: Vec<String>,
     },
     /// The kind's scheme declares a pattern this engine cannot read, so it can
     /// check no identifier under it and it issues none.
@@ -430,10 +476,51 @@ impl std::fmt::Display for Refusal {
                 f,
                 "the title is empty, and the file name and the document's name both come from it"
             ),
-            Refusal::FacetUndeterminable { facet, kind, why } => write!(
+            Refusal::FacetUndeterminable {
+                facet,
+                kind,
+                why,
+                statable,
+            } => match statable {
+                true => write!(
+                    f,
+                    "`{kind}` requires the facet `{facet}`, and {why}. A prompt in that field is \
+                     a value the checks refuse, so this run writes nothing. State it yourself \
+                     with `--facet {facet}=<value>`"
+                ),
+                false => write!(
+                    f,
+                    "`{kind}` requires the facet `{facet}`, and {why}. A prompt in that field is \
+                     a value the checks refuse, so this run writes nothing. `--facet` is no route \
+                     out: the facet carries a role, and what is missing is the declaration the \
+                     role reads"
+                ),
+            },
+            Refusal::FacetNotAsked {
+                facet,
+                kind,
+                required,
+            } => write!(
                 f,
-                "`{kind}` requires the facet `{facet}`, and {why}. A prompt in that field is a \
-                 value the checks refuse, so this run writes nothing"
+                "`--facet {facet}=…` names a facet that `{kind}` does not require, so nothing \
+                 would have written it. `{kind}` requires: {}",
+                required.join(", ")
+            ),
+            Refusal::FacetDetermined { facet, kind, why } => write!(
+                f,
+                "`--facet {facet}=…` names a facet of `{kind}` that a declaration decides, and \
+                 {why}. A value stated here would be a state nobody chose, written through the \
+                 verb that exists to stop that"
+            ),
+            Refusal::FacetNotPermitted {
+                facet,
+                found,
+                values,
+            } => write!(
+                f,
+                "`--facet {facet}={found}` is outside the value set the taxonomy declares, which \
+                 the checks would refuse. The values are: {}",
+                values.join(", ")
             ),
             Refusal::SchemeUnreadable { scheme, why } => {
                 write!(f, "the scheme `{scheme}` cannot be read: {why}")
@@ -553,7 +640,7 @@ pub fn propose(sources: &Sources<'_>, request: &Request<'_>) -> Result<Plan, Ref
     let shelf = one_shelf(sources.shelves, kind)?;
     let directory = literal_directory(shelf)?;
 
-    let fields = front_matter(sources, kind, shelf, title, request.now)?;
+    let fields = front_matter(sources, kind, shelf, title, request.now, request.given)?;
 
     // The identifier is minted before the placement, because a shelf layout may
     // name the sequence the identifier carries. Nothing is written either way,
@@ -769,14 +856,29 @@ fn front_matter(
     shelf: &Shelf,
     title: &str,
     now: Date,
+    given: &[(String, String)],
 ) -> Result<Vec<Field>, Refusal> {
     let discriminator = match &shelf.body {
         ShelfBody::Heterogeneous { discriminator, .. } => Some(discriminator.as_str()),
         ShelfBody::Homogeneous { .. } => None,
     };
 
+    let required = sources.shape.required_facets(kind);
+    // Every value the caller stated is consumed below, or this run refuses.
+    // A value that named a facet nobody reads would be a field silently
+    // dropped, and a caller who thought they had set one.
+    for (facet, _) in given {
+        if !required.iter().any(|name| name == facet) {
+            return Err(Refusal::FacetNotAsked {
+                facet: facet.clone(),
+                kind: kind.to_string(),
+                required: required.clone(),
+            });
+        }
+    }
+
     let mut fields = Vec::new();
-    for name in sources.shape.required_facets(kind) {
+    for name in required.iter().cloned() {
         let facet = sources.shape.facet(&name);
         let role = facet.and_then(|facet| facet.role.as_deref());
         let values: &[String] = facet.map(|facet| facet.values.as_slice()).unwrap_or(&[]);
@@ -793,6 +895,39 @@ fn front_matter(
                     "the shelf `{}` is heterogeneous, and `{name}` is its discriminator",
                     shelf.name
                 )),
+            });
+            continue;
+        }
+
+        // What the caller stated, where the engine determines nothing. A facet
+        // in a role, and the discriminator above, are decided by a declaration,
+        // and a caller who overwrote one would be writing a state nobody chose
+        // through the verb that exists to stop that.
+        if let Some((_, value)) = given.iter().find(|(facet, _)| facet == &name) {
+            if let Some(role) = role {
+                return Err(Refusal::FacetDetermined {
+                    facet: name,
+                    kind: kind.to_string(),
+                    why: format!("it carries the `{role}` role, which decides its value"),
+                });
+            }
+            if !values.is_empty() && !values.iter().any(|permitted| permitted == value) {
+                return Err(Refusal::FacetNotPermitted {
+                    facet: name,
+                    found: value.clone(),
+                    values: values.to_vec(),
+                });
+            }
+            fields.push(Field {
+                key: name.clone(),
+                value: value.clone(),
+                // A member of a closed set is a bare token, exactly as the
+                // state facet writes one. Anything else is prose.
+                quoted: values.is_empty(),
+                origin: Origin::HandEntry(
+                    "no declaration determines it, and the caller stated it on the command line"
+                        .to_string(),
+                ),
             });
             continue;
         }
@@ -819,6 +954,7 @@ fn front_matter(
                             why: "no lifecycle regime that this kind binds declares an `initial` \
                                   state"
                                 .to_string(),
+                            statable: false,
                         }),
                     }
                 }
@@ -846,6 +982,7 @@ fn front_matter(
                         why: "it declares a closed value set and it carries no role this engine \
                           derives a value for"
                             .to_string(),
+                        statable: true,
                     })
                 }
                 // An integer the shelf writes into its file names is a position in
@@ -870,6 +1007,7 @@ fn front_matter(
                             "it is declared `type: {}`, and a prompt is not one",
                             declared_type.unwrap_or_default()
                         ),
+                        statable: true,
                     })
                 }
                 _ => Field {

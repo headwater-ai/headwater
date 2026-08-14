@@ -1,0 +1,36 @@
+A regression probe run over 2 of the 2 classified documents of this corpus.
+
+## The run identity this plan fixes
+
+```yaml
+lock: sha256:fixture
+tree: sha256:4a3c8ee07904a5a306a2c1c0753a10b1d498d8823db02dca93e6874a8d0f7163
+selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9
+seed: 0
+harness: 0.1.0
+tier: regression
+arms: [present]
+```
+
+The model, its served version, the wall-clock time and the realized cost belong to the run. The recorder writes those four into the transcript, and `headwater probe record` holds the rest of the identity to the five above.
+
+## The cost
+
+2 probes x 1 arms x 1 repetitions = 2 sessions, at a declared $0.25 each: $0.50 against a ceiling of $20.00.
+The unit cost is a number a person declared in `.headwater/probe.yml`. No run has happened, so no realized cost has been recorded against it and this is arithmetic rather than a forecast.
+
+## The selection
+
+- PROBE-FIX-answered (corpus/probes/0002-answered.md)
+    category: consistency
+    expects: answered
+- PROBE-FIX-opened (corpus/probes/0001-opened.md)
+    category: discovery
+    expects: opened
+    examines: PROBE-FIX-answered
+
+## What the recorder writes back
+
+One `probe_transcript` document on `docs/probe-runs/`, then `headwater probe record <path>`. The transcript is the ordered tool-call events of each session, and it holds no model prose: the intake refuses a key outside the closed set, which is how the omission is enforced rather than asked for.
+
+**A transcript that an agent wrote about its own session is a self-report, and spec 5 refuses one.** The events have to be observed from outside the session by the process that drove it. That process reaches the network and it is not in this repository, so no verb here writes a transcript and there is no flag that makes one.

@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# What a probe run of each tier may spend. `headwater probe plan` reads it,
+# projects the cost of a run against the ceiling, and refuses a run above it.
+#
+# It is here rather than under the corpus root because a budget is a policy of
+# the repository that runs the probes and not a fact about any document: nothing
+# classifies it, no language regime binds it and no rule reads it. It is here
+# rather than in `.headwater/taxonomy.yml` because a taxonomy does not decide
+# how much money a run may cost. Issue #87 owns the two tiers and their cadence
+# and may move this file; what it may not do is remove the number, because a
+# harness with no ceiling cannot fail closed.
+#
+# Every field is required and none has a default. A default would be this engine
+# choosing how much to spend.
+
+tiers:
+
+  # Detect that something moved. One arm, one repetition, against a recorded
+  # baseline. It establishes no effect, so no published claim rests on it, and
+  # the ceiling is set where a scheduled weekly run is affordable without
+  # anybody approving it each time.
+  regression:
+    budget_cents: 2000
+    session_cost_cents: 25
+    repetitions: 1
+    arms: [present]
+
+  # Estimate a difference for one named claim. Both arms, powered, one batch,
+  # one model version.
+  #
+  # **The ceiling is the amount somebody has actually agreed to spend, and it is
+  # below what a powered campaign over this corpus costs.** Spec 5 takes the
+  # session count from statistical power rather than from taste: 0.50 against
+  # 0.75 at 80% power and a 5% two-sided level is about 58 sessions per arm. So
+  # a campaign over the probes this corpus declares projects above this number
+  # and `headwater probe plan --tier campaign` refuses it today. That refusal is
+  # the mechanism working rather than a value to raise until it stops: a run
+  # that does not happen is the cheaper error, and the number moves when a
+  # person decides to spend more and not when a harness wants to run.
+  campaign:
+    budget_cents: 5000
+    session_cost_cents: 25
+    repetitions: 58
+    arms: [present, absent]
+
+# `session_cost_cents` is a declared number and not a measured one. No probe run
+# has happened in this repository, so no realized cost has ever been recorded
+# against it and there is nothing to fit it to. Every transcript records the
+# cost the run realized, and the two numbers become comparable on the first run
+# — which is the only route from a guess to an estimate.

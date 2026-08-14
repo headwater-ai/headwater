@@ -78,10 +78,13 @@ headwater route              <task description> [--budget <n>] [--root <path>]
 headwater explain            <path|identifier> [--root <path>]
 headwater mcp                [--now <date>] [--write] [--root <path>]
 headwater new                <kind> --title <text> [--relates <relation>=<identifier>]
-                             [--now <date>] [--root <path>]
+                             [--facet <facet>=<value>] [--now <date>] [--root <path>]
 headwater capture            [--format text|json] [--root <path>]
 headwater sweep plan         [--under <path>] [--root <path>]
 headwater sweep report       <path> [--format text|json] [--root <path>]
+headwater probe plan         [--tier regression|campaign] [--arm present|absent]
+                             [--category <name>] [--seed <n>] [--root <path>]
+headwater probe record       <path> [--root <path>]
 headwater generate           [--check] [--root <path>]
 headwater import             [<name>] [--expect <digest>] [--write] [--root <path>]
 headwater export             [--profile <name>] [--format json|jsonschema] [--at <date>]
@@ -162,6 +165,25 @@ headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
                      edge is one the graph already carries. No model is reached
                      from this binary, both halves exit 0 whatever they find,
                      and neither writes a byte of the corpus.
+  probe              the two deterministic halves of the probe harness, which
+                     is a sampler and never a check. `plan` fixes the five
+                     members of the run identity that exist before a run, and
+                     projects the sessions against the ceiling that
+                     `.headwater/probe.yml` declares for the tier. It refuses a
+                     run above it, and it refuses one whose probes name an
+                     oracle this engine does not carry or a predicate over no
+                     document. `record` reads a transcript that a recorder
+                     wrote and confirms the taxonomy, the completeness of the
+                     run identity, the membership of every probe named, that no
+                     key outside the closed set appears, and that a realized
+                     cost was recorded. Nothing here reaches a model, nothing
+                     here writes a transcript, and both halves exit 0 whatever
+                     they find. A transcript that an agent wrote about its own
+                     session is a self-report, which spec 5 refuses, so the
+                     recorder observes a session from outside it and is not in
+                     this repository. Neither half grades: a verdict is a
+                     function of the transcript, the declared expectations and a
+                     grader version, and no grader ships yet.
   init               scaffold the consumer declaration and the overlay for a
                      repository that has neither, and print the questions that
                      no tree answers. It refuses to overwrite a binding.
@@ -355,7 +377,12 @@ fn main() -> ExitCode {
     let mut title: Option<String> = None;
     let mut under: Option<String> = None;
     let mut relates: Vec<(String, String)> = Vec::new();
+    let mut facets: Vec<(String, String)> = Vec::new();
     let mut level: Option<String> = None;
+    let mut tier: Option<String> = None;
+    let mut arm: Option<String> = None;
+    let mut category: Option<String> = None;
+    let mut seed: u64 = 0;
     let mut words: Vec<String> = Vec::new();
 
     while let Some(argument) = arguments.next() {
@@ -414,6 +441,20 @@ fn main() -> ExitCode {
                     return fail("--relates names a relation and a target, and none followed it")
                 }
             },
+            "--facet" => match arguments.next() {
+                Some(pair) => match pair.split_once('=') {
+                    Some((facet, value)) if !facet.is_empty() && !value.is_empty() => {
+                        facets.push((facet.to_string(), value.to_string()))
+                    }
+                    _ => {
+                        return fail(
+                            "--facet takes `<facet>=<value>`, as in \
+                             `--facet probe_category=discovery`",
+                        )
+                    }
+                },
+                None => return fail("--facet names a facet and a value, and none followed it"),
+            },
             "--owner" => match arguments.next() {
                 Some(name) => owner = Some(name),
                 None => return fail("--owner names a person or a team and none followed it"),
@@ -450,6 +491,26 @@ fn main() -> ExitCode {
             "--read-set" => match arguments.next() {
                 Some(path) => read_set = Some(PathBuf::from(path)),
                 None => return fail("--read-set names a path and none followed it"),
+            },
+            "--tier" => match arguments.next() {
+                Some(name) => tier = Some(name),
+                None => return fail("--tier names a probe tier and none followed it"),
+            },
+            "--arm" => match arguments.next() {
+                Some(name) => arm = Some(name),
+                None => return fail("--arm names `present` or `absent` and none followed it"),
+            },
+            "--category" => match arguments.next() {
+                Some(name) => category = Some(name),
+                None => return fail("--category names a probe category and none followed it"),
+            },
+            // Zero is the default and it is a value like any other. The seed is
+            // the caller's, so a run that states none states zero, and a run
+            // that repeats a seed repeats a selection.
+            "--seed" => match arguments.next().as_deref().map(str::parse::<u64>) {
+                Some(Ok(value)) => seed = value,
+                Some(_) => return fail("--seed takes a whole number"),
+                None => return fail("--seed names a number and none followed it"),
             },
             "--root" => match arguments.next() {
                 Some(path) => root = Some(PathBuf::from(path)),
@@ -497,7 +558,7 @@ fn main() -> ExitCode {
         ["new"] => fail(
             "`new` takes a kind. Try `headwater new decision --title \"Adopt an overlay\"`",
         ),
-        ["new", kind] => new(&root, kind, title, &relates, now),
+        ["new", kind] => new(&root, kind, title, &relates, &facets, now),
         ["capture"] => capture(&root, format),
         ["sweep"] => fail("`sweep` takes a second word: `plan` or `report`"),
         ["sweep", "plan"] => sweep_plan(&root, under),
@@ -508,6 +569,23 @@ fn main() -> ExitCode {
         ["sweep", "report", path] => sweep_report(&root, Path::new(path), format),
         ["sweep", other, ..] => fail(&format!(
             "`sweep {other}` is not a verb this binary carries. It carries `plan` and `report`"
+        )),
+        ["probe"] => fail("`probe` takes a second word: `plan` or `record`"),
+        ["probe", "plan"] => probe_plan(
+            &root,
+            tier.as_deref(),
+            arm.as_deref(),
+            category.as_deref(),
+            seed,
+        ),
+        ["probe", "record"] => fail(
+            "`probe record` takes the path of a transcript a recorder wrote. \
+             `headwater probe plan` prints the shape of it",
+        ),
+        ["probe", "record", path] => probe_record(&root, Path::new(path)),
+        ["probe", other, ..] => fail(&format!(
+            "`probe {other}` is not a verb this binary carries. It carries `plan` and `record`. \
+             The verb that grades a transcript is not built"
         )),
         ["generate"] => generate(&root, check_only),
         ["import"] => import(&root, None, expect.as_deref(), write),
@@ -1140,6 +1218,7 @@ fn new(
     kind: &str,
     title: Option<String>,
     relates: &[(String, String)],
+    given: &[(String, String)],
     now: Option<Date>,
 ) -> ExitCode {
     let Some(title) = title else {
@@ -1148,7 +1227,15 @@ fn new(
              from it, and this engine invents neither",
         );
     };
-    match scaffold(root, kind, &title, relates, now, EntryPoint::Terminal) {
+    match scaffold(
+        root,
+        kind,
+        &title,
+        relates,
+        given,
+        now,
+        EntryPoint::Terminal,
+    ) {
         Err(why) => refuse(&why),
         Ok(written) => {
             print!("{}", written.artifact);
@@ -1177,6 +1264,7 @@ fn scaffold(
     kind: &str,
     title: &str,
     relates: &[(String, String)],
+    given: &[(String, String)],
     now: Option<Date>,
     surface: EntryPoint,
 ) -> Result<Written, String> {
@@ -1211,6 +1299,7 @@ fn scaffold(
         title,
         now,
         relates,
+        given,
     };
 
     // Nothing below this line has written anything yet, which is why every
@@ -1806,6 +1895,141 @@ fn sweep_report(root: &Path, path: &Path, format: Option<String>) -> ExitCode {
     ExitCode::SUCCESS
 }
 
+/// `headwater probe plan`.
+///
+/// # It exits 0 on a refusal, and that is the point rather than a leniency
+///
+/// A probe never gates
+/// ([spec 5](../../../../docs/spec/05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose)),
+/// so no exit status of this binary may carry a fact about a probe run. A plan
+/// that refuses its own run prints the refusal and exits 0, exactly as `sweep
+/// report` does with a refused file. A caller that wants the refusal reads the
+/// text, which is what a person does.
+///
+/// The non-zero exits are a caller's rather than a run's: a tier, an arm or a
+/// category that names nothing, and a budget declaration this engine cannot
+/// read. All four are true before a corpus is walked.
+///
+/// # It writes nothing, and it reaches nothing
+///
+/// The plan goes to standard output. No socket is opened here, no crate below
+/// can open one, and the run this plan describes is performed by a recorder
+/// that is not in this repository.
+fn probe_plan(
+    root: &Path,
+    tier: Option<&str>,
+    arm: Option<&str>,
+    category: Option<&str>,
+    seed: u64,
+) -> ExitCode {
+    let tier = match tier {
+        None => headwater_probe::Tier::Regression,
+        Some(name) => match headwater_probe::Tier::read(name) {
+            Some(tier) => tier,
+            None => {
+                return refuse(&format!(
+                    "`--tier {name}` names no tier. The tiers are `regression` and `campaign`"
+                ))
+            }
+        },
+    };
+    let narrowing = headwater_probe::plan::Narrowing {
+        category: match category {
+            None => None,
+            Some(name) => match headwater_probe::Category::read(name) {
+                Some(category) => Some(category),
+                None => {
+                    return refuse(&format!(
+                        "`--category {name}` names no probe category. They are: {}",
+                        headwater_probe::Category::ALL
+                            .iter()
+                            .map(|category| category.name())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    ))
+                }
+            },
+        },
+        arm: match arm {
+            None => None,
+            Some(name) => match headwater_probe::Arm::read(name) {
+                Some(arm) => Some(arm),
+                None => {
+                    return refuse(&format!(
+                        "`--arm {name}` names no arm. The arms are `present` and `absent`"
+                    ))
+                }
+            },
+        },
+        seed,
+    };
+
+    let path = root.join(headwater_probe::budget::PATH);
+    let source = match std::fs::read_to_string(&path) {
+        Ok(source) => source,
+        Err(error) => {
+            return refuse(&format!(
+                "{} did not read: {error}. A harness with no declared ceiling cannot fail closed, \
+                 so no run is planned without one",
+                headwater_probe::budget::PATH
+            ))
+        }
+    };
+    let budgets = match headwater_probe::Budgets::read(&source) {
+        Ok(budgets) => budgets,
+        Err(unreadable) => return refuse(&unreadable.to_string()),
+    };
+
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let plan = headwater_probe::Plan::over(
+        &loaded.census,
+        &loaded.graph,
+        &loaded.config,
+        &budgets,
+        &loaded.lock.digest,
+        tier,
+        &narrowing,
+    );
+    print!("{}", plan.render());
+    ExitCode::SUCCESS
+}
+
+/// `headwater probe record <path>`.
+///
+/// It reads a transcript back and reports what this engine could confirm about
+/// it. It grades nothing: a verdict is a function of the transcript, the
+/// expectations and a grader version, and no grader ships here yet.
+///
+/// It exits 0 on every record it can produce, including a transcript it refuses
+/// whole, for the reason `sweep report` does. The two non-zero exits are a
+/// caller's: no path, and a path this process cannot read.
+fn probe_record(root: &Path, path: &Path) -> ExitCode {
+    let source = match std::fs::read_to_string(path) {
+        Ok(source) => source,
+        Err(error) => {
+            return fail(&format!(
+                "the transcript at {} did not read: {error}",
+                path.display()
+            ))
+        }
+    };
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let tree = headwater_probe::intake::Tree {
+        census: &loaded.census,
+        config: &loaded.config,
+        lock: &loaded.lock.digest,
+    };
+    let record = headwater_probe::Record::read(&source, &tree);
+    print!("{}", record.render());
+    ExitCode::SUCCESS
+}
+
 /// `headwater import`, and `--write` over the documents it names.
 ///
 /// A dry run and a real one differ by one call, because the plan is what both
@@ -2127,6 +2351,13 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
             kind,
             title,
             relates,
+            // No facet values. The write tool declares a kind, a title and
+            // relations, and nothing else, so a kind that requires a facet no
+            // declaration determines is refused over the protocol and written
+            // from a terminal. Widening the tool is a change to the write
+            // class that [Q7](../../../../docs/spec/09-decisions.md#q7--scope-of-the-mcp-surface)
+            // fixed, and not a change to this call.
+            &[],
             Some(ctx.now()),
             EntryPoint::Protocol,
         )

@@ -13,7 +13,7 @@
       "taxonomy": {
         "package": "headwater/standard",
         "version": "1.0.0",
-        "lock": "sha256:8fe1a44bab367819265cd3983beab1378767aab093dc45229fd61e8bb7edf71d"
+        "lock": "sha256:73b1799b1e3b677ef70160704c1f88efa707830b64101ec974e33e51624b88da"
       },
       "entry_points": [
         {
@@ -30,6 +30,11 @@
           "shelf": "obligations",
           "path": "docs/obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md",
           "id": "OBL-repo-0001"
+        },
+        {
+          "shelf": "probes",
+          "path": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
+          "id": "PROBE-HW-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor"
         },
         {
           "shelf": "reviews",

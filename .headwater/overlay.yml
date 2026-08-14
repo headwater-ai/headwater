@@ -54,6 +54,164 @@ add:
   kinds.review_prompt.identifier:       {scheme: review_id}
   kinds.review_record.identifier:       {scheme: review_id}
 
+  # --- the measurement layer ------------------------------------------------
+  # Spec 5 (Measuring whether any of this works) says what a probe is: "a
+  # document in the corpus, with a kind, a shelf, an identifier and an
+  # acceptance", declaring a category, a task statement and an expectation from
+  # a closed set. Nothing declared either kind until this block, so `headwater
+  # probe` had no input and every efficacy claim in this corpus was unmeasured
+  # for want of a declaration rather than for want of a run.
+  #
+  # It is in this overlay and not in the base package, because
+  # [OBL-repo-0025](../docs/obligations/0025-where-the-probe-kind-ships-is-an-unsettled-clustering-question.md)
+  # holds the clustering question open and no adopter has selected anything.
+  # This repository declaring that it holds probes answers a different question
+  # from every adopter of the package getting them, and the record stays open.
+  #
+  # **The four closed value sets below are required, and getting there needed a
+  # change to `headwater new`.** Two rules of this taxonomy language meet on a
+  # facet whose value is the author's judgment, and neither yielded: the facet
+  # canons refuse a facet that no kind requires as unread, and the scaffolder
+  # refuses a kind that requires a closed value set no role determines. A probe
+  # category is exactly such a value, so the `probe` kind fell between the two
+  # and could be written by no route this engine offered. `headwater new
+  # --facet <facet>=<value>` is that route. The value is validated against the
+  # set before anything is written and recorded as hand entry, because a person
+  # typed it.
+
+  identifier_schemes.probe_id:
+    pattern: "PROBE-{namespace}-{slug}"
+    namespace: HW
+    allocation: minted-once
+
+  # The local part of a run identity is a slug and not a digest, for the reason
+  # every other scheme here mints one: a digest in an identifier is a value that
+  # dies when the thing it covers is recomputed, and the run identity that a
+  # transcript carries in its body is where the digests belong.
+  identifier_schemes.run_id:
+    pattern: "RUN-{namespace}-{slug}"
+    namespace: HW
+    allocation: minted-once
+
+  facets.probe_category:
+    values: [discovery, sufficiency, navigability, consistency]
+    required: false
+    volatility: stable
+    guidance:
+      discovery: the probe asks whether the agent finds the governing document at all
+      sufficiency: the probe asks whether the agent has enough to act correctly once it has found the document
+      navigability: the probe asks whether the agent gets from a code path to the governing document and back
+      consistency: the probe asks whether two phrasings of one question reach one answer
+
+  # The closed predicate set of spec 5. It is closed for the reason the sweep's
+  # class set is: a form nobody declared is a form no grader can evaluate and no
+  # report can total.
+  facets.expectation:
+    values: [opened, not_opened, cited, answered, patched]
+    required: false
+    volatility: stable
+    guidance:
+      opened: the transcript shows that the session read one of the documents this probe names
+      not_opened: the transcript shows that the session read none of them
+      cited: a produced artifact cites one of the identifiers this probe names
+      answered: the final answer is one named value from the closed set this probe declares
+      patched: a produced patch passes the check this probe names
+
+  facets.tier:
+    values: [regression, campaign]
+    required: false
+    volatility: stable
+    guidance:
+      regression: a fixed scenario set in one arm against a recorded baseline, which establishes no effect
+      campaign: both arms, powered, one batch and one model version, for one named claim
+
+  facets.arm:
+    values: [present, absent]
+    required: false
+    volatility: stable
+    guidance:
+      present: the session ran against the corpus
+      absent: the session ran against the declared ablation of it
+
+  # The check a `patched` expectation grades a produced patch against, which
+  # spec 5 calls the oracle route.
+  #
+  # **Every probe declares one, and four of the five expectation forms declare
+  # `none`.** That reads as a field with a sentinel in it, and it is: the
+  # taxonomy language has no way to say "required when another facet holds one
+  # value", and a facet that no kind requires is refused as unread. So the
+  # choice is a sentinel or a declaration this language cannot make.
+  # [OBL-repo-0123](../docs/obligations/0123-a-facet-that-applies-to-one-value-of-another-facet-has-nowhere-to-say-so.md)
+  # holds it. `headwater probe plan` enforces the pairing in both directions: a
+  # `patched` probe that declares `none`, and a probe of any other form that
+  # names a rule, each stop the run.
+  facets.oracle:
+    type: string
+    required: false
+    volatility: stable
+
+  kinds.probe:
+    is_a: governed_document
+    purpose: evidence
+    voice: declarative
+    lifecycle: standard
+    identifier: {scheme: probe_id}
+    facets:
+      require: [probe_category, expectation, oracle]
+    sections:
+      require: [Task, Expectation]
+
+  kinds.probe_transcript:
+    is_a: governed_document
+    purpose: evidence
+    voice: narrative
+    lifecycle: standard
+    identifier: {scheme: run_id}
+    facets:
+      require: [tier, arm]
+    sections:
+      require: [Run identity, Events]
+
+  # What an `opened`, `not_opened` or `cited` expectation names. A separate
+  # relation and not `traces_to`, because a grader has to tell the targets of
+  # the predicate apart from the provenance of the probe, and one relation
+  # carrying both would make every citation an expectation.
+  #
+  # `code_path` is the second end, and it is the end that makes one measurement
+  # possible at all. Spec 5 says the reach of a skill is a measurement rather
+  # than a property, and the `opened` expectation over a transcript is the
+  # instrument. A skill file sits outside the corpus root, so a relation that
+  # named only a governed document could not point at one and that measurement
+  # would have no probe. The anchor resolver already reaches it.
+  relations.examines:
+    family: evidence
+    from: [probe]
+    to:   [governed_document, code_path]
+    cardinality: many
+    created_by: author
+
+  # `generator`, and the word is the whole argument of this layer. A transcript
+  # that a person or an agent typed is a self-report, and spec 5 refuses one.
+  relations.records:
+    family: evidence
+    from: [probe_transcript]
+    to:   [probe]
+    cardinality: many
+    created_by: generator
+
+  shelves.probes:
+    path: docs/probes/**
+    homogeneous: true
+    kind: probe
+
+  # Disjoint from the shelf above rather than under it, because `docs/probes/**`
+  # would claim a path below it and two shelves that claim one path resolve a
+  # kind by accident.
+  shelves.probe_runs:
+    path: docs/probe-runs/**
+    homogeneous: true
+    kind: probe_transcript
+
   # --- the controlled language of this repository ---------------------------
   # The base declares `controlled: none`, and the design-spec entry declines to
   # bind a language regime because RFCs are not written in Simplified Technical
