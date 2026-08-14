@@ -4,7 +4,7 @@ title: "Nothing has been promoted out of the synthesized tier"
 status: current
 status_since: 2026-08-10
 last_verified: 2026-08-13
-summary: "Q15 claims that asserted content moves to accepted rather than accumulates, and no promotion rate exists."
+summary: "Q15 claims that asserted content moves to accepted rather than accumulates, the denominator of the rate now runs, and the numerator waits on a check that declares `needs_prior`."
 provenance:
   warrant: accepted
   agency: mixed
@@ -29,4 +29,6 @@ The promotion rate against the asserted count is the instrument.
 
 ## Discharge
 
-No document in this corpus carries the `asserted` warrant, so the denominator is zero and the rate has no value. If it never moves in a corpus that has one, the tier is a dumping ground and the honest response is to say so.
+Half of the instrument now runs. `taxonomy audit` reports the warrant of every classified document over the closed set, and it names the `asserted` count as the denominator a rate divides by. This record states no figure for that count. Run the verb and read the warrant section. A number copied into prose is a claim that no run re-derives. What changed is that the population is no longer empty. Every document in it was written on or after 2026-08-14. The measurement of this record before that date was 0, which was true of the corpus it measured.
+
+The numerator is unbuilt, and it is not zero. A promotion is a lifecycle transition, from the `asserted` warrant to `accepted`. [Spec 12](../spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version) already designs the input one needs. A check that declares `needs_prior` receives the previously committed version of each changed document. No check declares it and nothing implements it. The count is change-scoped for that reason, so it cannot live in `taxonomy audit`, which reads one working tree. This record therefore waits on a build rather than on a population. If the count never falls in a corpus that has one, the tier is a dumping ground and the honest response is to say so.

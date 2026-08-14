@@ -29,4 +29,4 @@ The corpus owes an observation of promotions against the asserted count.
 
 ## Discharge
 
-This entry and [the unmeasured claim under Q15](0011-nothing-has-been-promoted-out-of-the-synthesized-tier.md) are one debt recorded in two of the register's lists. That record carries the instrument, which is the promotion rate against the asserted count. Nothing in this corpus carries the `asserted` warrant, so neither record has anything to read.
+This entry and [the unmeasured claim under Q15](0011-nothing-has-been-promoted-out-of-the-synthesized-tier.md) are one debt recorded in two of the register's lists. That record carries the instrument, which is the promotion rate against the asserted count. The denominator now has a value. `taxonomy audit` reports it under the warrant reading on every run, and this record states no copy of the figure. The numerator is unbuilt. A promotion is a lifecycle transition, and no check declares the `needs_prior` input that spec 12 designs for one.

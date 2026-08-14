@@ -4,6 +4,10 @@ status: current
 status_since: 2025-12-01
 last_verified: 2025-12-15
 summary: a decision inside the freshness window, which declares one half of the relation whose creator does none of the work
+provenance:
+  warrant: accepted
+  agency: human
+  accepted_by: a.person
 relations:
   catalogues:
     - AUD-FIX-0004

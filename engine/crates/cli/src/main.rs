@@ -2139,26 +2139,25 @@ fn probe_grade(root: &Path, path: &Path) -> ExitCode {
     // A plan returns from inside the loop that composes its selection, so a
     // refusal leaves the probes it had read and none of the rest. Grading
     // against that part reports a rate over a denominator no document declares,
-    // and one that moves with the order the paths sort in.
-    // `headwater_probe::plan::Refusal::stops_a_grade` is the rule that names
-    // which refusals do that, and `headwater_generate::Runs::graded_against`
-    // already reads it for the projection. Testing the selection for emptiness
-    // instead let every one of those refusals through with a partial one.
-    if let Some(refusal) = plan
-        .refusal
-        .as_ref()
-        .filter(|refusal| refusal.stops_a_grade())
-    {
-        println!("Nothing was graded. `headwater probe plan` refuses this corpus: {refusal}");
-        return ExitCode::SUCCESS;
-    }
+    // and one that moves with the order the paths sort in. `Plan::gradable` is
+    // the one route to a selection that anything may grade against, and it
+    // holds `Refusal::stops_a_grade` for every caller. Testing the selection
+    // for emptiness here instead let every late refusal through with a partial
+    // one.
+    let selected = match plan.gradable() {
+        Ok(selected) => selected,
+        Err(refusal) => {
+            println!("Nothing was graded. `headwater probe plan` refuses this corpus: {refusal}");
+            return ExitCode::SUCCESS;
+        }
+    };
     let tree = headwater_probe::intake::Tree {
         census: &loaded.census,
         config: &loaded.config,
         lock: &loaded.lock.digest,
     };
     let record = headwater_probe::Record::read(&source, &tree);
-    let results = headwater_probe::Results::over(&record, &plan.selected);
+    let results = headwater_probe::Results::over(&record, selected);
     print!("{}", results.render());
     ExitCode::SUCCESS
 }
@@ -2249,14 +2248,10 @@ fn probe_stale(root: &Path) -> ExitCode {
     // A plan returns from inside the loop that composes its selection, so a
     // refusal leaves a part of one behind: the probes read before the offending
     // one and none of the rest. A read set over that part covers a population
-    // no document declares, and it moves with the order the paths sort in. This
-    // is the rule `headwater_generate::Runs::graded_against` holds for the
-    // projection, read once more here.
-    let stopped = plan
-        .refusal
-        .as_ref()
-        .filter(|refusal| refusal.stops_a_grade());
-    if let Some(refusal) = stopped {
+    // no document declares, and it moves with the order the paths sort in.
+    // `Plan::gradable` is the one route to a selection anything may grade
+    // against, and this verb answers about a grade that already happened.
+    if let Err(refusal) = plan.gradable() {
         println!(
             "No read set is composed over this corpus, so nothing here is stale or fresh: \
              {refusal}"

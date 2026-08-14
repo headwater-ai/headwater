@@ -8,7 +8,7 @@
 //! no relation declares and a rate over an empty population, and both are
 //! written out in words rather than printed as a zero.
 
-use crate::{Audit, WAITING};
+use crate::Audit;
 use std::fmt::Write;
 
 /// A count with its noun, in the number the count calls for.
@@ -23,6 +23,37 @@ fn many(count: usize, singular: &str, plural: &str) -> String {
     }
 }
 
+/// The width every hand-folded line in this report keeps to.
+const WIDTH: usize = 88;
+
+/// One run of derived prose, folded to the report width under an indent.
+///
+/// Every other line of this report is a literal that an author folded by hand.
+/// The supply lines of the waiting section are not: each states what one run
+/// found, and its length is a function of the corpus rather than of the source.
+/// So the fold is computed, and this is the only computed one.
+fn folded(text: &str, indent: &str) -> String {
+    let mut out = String::new();
+    let mut column = 0;
+    for word in text.split_whitespace() {
+        if column == 0 {
+            out.push_str(indent);
+            column = indent.len();
+        } else if column + 1 + word.len() > WIDTH {
+            out.push('\n');
+            out.push_str(indent);
+            column = indent.len();
+        } else {
+            out.push(' ');
+            column += 1;
+        }
+        out.push_str(word);
+        column += word.len();
+    }
+    out.push('\n');
+    out
+}
+
 impl Audit {
     pub fn render(&self) -> String {
         let mut out = String::new();
@@ -32,6 +63,7 @@ impl Audit {
         self.facets_section(&mut out);
         self.shelves_section(&mut out);
         self.dwell_section(&mut out);
+        self.warrants_section(&mut out);
         self.waiting_section(&mut out);
         out
     }
@@ -314,10 +346,104 @@ impl Audit {
         }
     }
 
+    /// The warrant distribution, and the promotion denominator inside it.
+    ///
+    /// The closed set is walked in full, so a value nobody wrote has a row and
+    /// a reader can tell an empty arm from an absent one. Two of the four rows
+    /// stand at zero by construction rather than for want of authoring, and
+    /// the row says so instead of leaving a reader to work it out.
+    fn warrants_section(&self, out: &mut String) {
+        let warrants = &self.warrants;
+        out.push_str("\nwarrants, over the closed set spec 3 declares\n");
+        out.push_str(
+            "  A warrant states what stands behind a document, and promotion is the act that\n  \
+             moves one from `asserted` to `accepted`. The set is closed, so every value has a\n  \
+             row whether a document of this corpus states it or not.\n",
+        );
+        for reading in &warrants.readings {
+            if !reading.closed_set {
+                continue;
+            }
+            let note = match (reading.derived, reading.stated) {
+                (true, _) => "the engine reads this off the generated-file marker",
+                (false, 0) => "no document of this corpus states it",
+                (false, _) => "",
+            };
+            let row = format!("  {:5} {:<14}{note}", reading.stated, reading.value);
+            let _ = writeln!(out, "{}", row.trim_end());
+        }
+        let _ = writeln!(
+            out,
+            "  Stated on {} of {}, and absent on {}. Spec 3 makes the value required, so the\n  second figure is a population and never a default. The census reported {} of these rows\n  as generated, and the engine reads the warrant of a generated document off the marker\n  rather than out of a declaration.",
+            warrants.stated(),
+            self.documents,
+            warrants.unstated,
+            warrants.generated
+        );
+
+        let outside = warrants.outside();
+        match outside.is_empty() {
+            true => out.push_str("  Every value in use is one the closed set holds.\n"),
+            false => {
+                out.push_str(
+                    "  Values the closed set does not hold, each with the count that states it. No\n  check of this engine reads a warrant, so this is the only line that reports one:\n",
+                );
+                for reading in outside {
+                    let _ = writeln!(out, "    {:5} `{}`", reading.stated, reading.value);
+                }
+            }
+        }
+
+        let _ = writeln!(
+            out,
+            "  The `asserted` population is {}, which is the denominator a promotion rate divides\n  by. Nothing declares how many promotions in one change is too many, so no figure here\n  carries a verdict.",
+            warrants.asserted()
+        );
+    }
+
+    /// What this verb does not measure, as this run found each prerequisite.
+    ///
+    /// The three readings were three string literals until the promotion wait
+    /// went false underneath one and nothing reported it. Each prerequisite is
+    /// now evaluated against the corpus in front of the run, and each one names
+    /// where its absence lives, because a declaration, an authoring pass and a
+    /// decision are three different things to go and do.
     fn waiting_section(&self, out: &mut String) {
         out.push_str("\nwhat this verb does not measure, and what each one waits on\n");
-        for waiting in WAITING {
-            let _ = writeln!(out, "  {} — {}", waiting.reading, waiting.waits_on);
+        out.push_str(
+            "  Every prerequisite below was evaluated against this corpus on this run, so a\n  wait that a corpus has ended says so with no edit to this engine.\n",
+        );
+        for waiting in &self.waiting {
+            match waiting.waits() {
+                true => {
+                    let _ = writeln!(out, "  {} — waits", waiting.reading);
+                }
+                false => {
+                    let _ = writeln!(
+                        out,
+                        "  {} — waits on nothing. Every prerequisite is met and the reading is\n  still not taken, which is a gap in this verb rather than a wait on a\n  corpus.",
+                        waiting.reading
+                    );
+                }
+            }
+            for need in &waiting.needs {
+                let _ = writeln!(out, "    {}", need.needs);
+                out.push_str(&folded(
+                    &format!("{} — {}", need.supply.located(), need.supply.says()),
+                    "      ",
+                ));
+            }
         }
+        let waiting = self
+            .waiting
+            .iter()
+            .filter(|reading| reading.waits())
+            .count();
+        let _ = writeln!(
+            out,
+            "  {} of {} still wait. Each one states what ends it: a declaration, an authoring\n  pass, or a build of an input this engine designs and does not supply.",
+            waiting,
+            self.waiting.len()
+        );
     }
 }

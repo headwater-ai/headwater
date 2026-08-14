@@ -1023,3 +1023,62 @@ fn a_budget_declaration_this_engine_cannot_read_names_the_path() {
     let refusal = Budgets::read("tiers: []").expect_err("a sequence is not a mapping of tiers");
     assert!(refusal.to_string().contains(budget::PATH));
 }
+
+// --- what a caller may grade a recorded run against --------------------------
+//
+// [#174](https://github.com/headwater-ai/headwater/issues/174): two components
+// have now read the wrong value out of a plan, and both defects survived a full
+// suite. `Plan::gradable` is the one route to a selection for grading, and the
+// two cases below are the two arms it separates.
+
+/// A plan that stopped partway holds a part of a selection, and no caller may
+/// grade against it.
+///
+/// The second fixture probe declares a category outside the closed set, so
+/// `Plan::over` returns after it has read the first one. The state that leaves
+/// behind is the whole point: `selected` is **not** empty. A guard that tested
+/// `selected.is_empty()` passed this plan through and graded a recorded run
+/// against the probes a planner reached before it gave up, which is a
+/// denominator no document declares and one that moves with the order the paths
+/// sort in. That is the defect #173 fixed in `headwater probe grade`, and until
+/// this test nothing failed when it was put back.
+#[test]
+fn a_plan_that_stopped_partway_is_not_gradable_and_names_the_refusal() {
+    let plan = plan_over_probe(&|source| {
+        source.replace("probe_category: sufficiency", "probe_category: vibes")
+    });
+    assert!(
+        matches!(plan.refusal, Some(Refusal::Undeclared { .. })),
+        "the wrong refusal, so this tests the wrong thing: {:?}",
+        plan.refusal
+    );
+    assert!(
+        !plan.selected.is_empty(),
+        "an empty selection makes this case indistinguishable from the one an          `is_empty` guard already caught, so it would prove nothing"
+    );
+    let refusal = plan
+        .gradable()
+        .expect_err("a partial selection is not a denominator");
+    assert!(matches!(refusal, Refusal::Undeclared { .. }), "{refusal:?}");
+}
+
+/// A ceiling the run would have exceeded leaves the plan gradable.
+///
+/// The other arm, and the one a guard that stopped on every refusal would
+/// break. `OverBudget` is decided after every probe has been read, so the
+/// selection beside it is whole, and a grade of a run that already happened
+/// spends nothing. A fix that returned `Err` here would stop grading every
+/// recorded run whose corpus later outgrew its envelope.
+#[test]
+fn a_ceiling_the_run_would_have_exceeded_leaves_the_plan_gradable() {
+    let plan = plan_at(Tier::Campaign, &Narrowing::default());
+    assert!(
+        matches!(plan.refusal, Some(Refusal::OverBudget { .. })),
+        "{:?}",
+        plan.refusal
+    );
+    let selected = plan
+        .gradable()
+        .expect("a cost is a fact about a run that has not happened");
+    assert_eq!(selected.len(), plan.selected.len());
+}

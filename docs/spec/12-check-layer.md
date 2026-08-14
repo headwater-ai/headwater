@@ -172,6 +172,8 @@ Two inputs are about time. Both are injected, never fetched.
 
 That is a deliberately reduced guarantee, stated rather than implied. Transitions are verified when they land, and they are not re-derived from history later. Git history is not a check input. Vendoring and squash merges destroy it, and a guarantee that depends on a search of repository history is not a guarantee.
 
+**A change reaches this engine as a named set of inputs, and never as a second tree.** The prior version above is the one exception, and the change that supplies it also bounds its scope. Three components enact the general rule. `headwater gate --read-set` decides a verdict by [a comparison over listed inputs](#the-read-set-and-what-a-merge-does-to-a-verdict) rather than by a diff of two trees. `headwater probe stale` decides whether a change voided a recorded result. It recomposes a digest over a named set of documents to do it. `taxonomy audit` reports the standing `asserted` population rather than the promotions per change that [spec 3](03-authoring-and-lifecycle.md#promotion-is-one-human-one-document-one-diff) once assigned to it. That verb reads one working tree, so it reaches no prior version. A count of promotions in one change belongs to a check that declares `needs_prior`. The caller names the set in each case, so the injection has an author. A verb that walked history would be the first component here to read a tree that no caller named.
+
 ## Instances, and why coverage needs them
 
 A check is a template. The engine instantiates it for each target. For example, `facet_required` is not one check but 412 instances. Findings, cache entries, and timings all attach to instances.

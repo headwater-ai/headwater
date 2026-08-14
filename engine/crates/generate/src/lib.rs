@@ -146,21 +146,27 @@ pub struct Runs {
     /// probes a planner reached before it stopped, which is a denominator no
     /// document declares and which moves with the order the paths sort in.
     /// [`Runs::graded_against`] is what keeps the two apart.
-    pub refusal: Option<headwater_probe::plan::Refusal>,
+    ///
+    /// Private, with the two below, so that [`Runs::graded_against`] is the
+    /// only writer of any of them. The defect this type was introduced to fix
+    /// was a caller assigning `plan.selected` here and dropping the refusal
+    /// beside it, and a private field is what makes that assignment
+    /// unwritable rather than merely wrong.
+    refusal: Option<headwater_probe::plan::Refusal>,
     /// The probes of this corpus, as `headwater probe plan` composed them.
     ///
     /// From the plan and never from the transcript, because a selection read
     /// out of a recorded run would let a transcript name its own denominator.
     /// It is the whole of what a plan composed or it is empty, and never a
     /// part: see [`Runs::graded_against`].
-    pub selected: Vec<headwater_probe::plan::Selected>,
+    selected: Vec<headwater_probe::plan::Selected>,
     /// The digest over the identifiers of [`Runs::selected`], as the plan
     /// computed it.
     ///
     /// Carried rather than recomputed here, because a second derivation of one
     /// value is two values that can disagree, and the one they would disagree
     /// about is the one a transcript is compared against.
-    pub selection: String,
+    selection: String,
     /// The bytes of every committed transcript.
     ///
     /// A census row carries what it parsed rather than the source it parsed,
@@ -179,17 +185,23 @@ impl Runs {
     /// planner managed before it gave up. Every caller that grades goes through
     /// here, so there is one place the rule lives.
     pub fn graded_against(&mut self, plan: &headwater_probe::Plan) {
-        match plan
-            .refusal
-            .as_ref()
-            .filter(|refusal| refusal.stops_a_grade())
-        {
-            Some(refusal) => self.refusal = Some(refusal.clone()),
-            None => {
-                self.selected = plan.selected.clone();
+        match plan.gradable() {
+            Err(refusal) => self.refusal = Some(refusal.clone()),
+            Ok(selected) => {
+                self.selected = selected.to_vec();
                 self.selection = plan.selection.clone();
             }
         }
+    }
+
+    /// Why nothing is graded here, where a plan gave a reason.
+    pub fn refusal(&self) -> Option<&headwater_probe::plan::Refusal> {
+        self.refusal.as_ref()
+    }
+
+    /// The whole selection a plan composed, or nothing at all.
+    pub fn selected(&self) -> &[headwater_probe::plan::Selected] {
+        &self.selected
     }
 }
 

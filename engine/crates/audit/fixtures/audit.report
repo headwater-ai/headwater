@@ -82,7 +82,47 @@ dwell in the current state
   superseded        1 document, 122 to 122 days, median 122
   deprecated       0 documents, and no dwell reading
 
+warrants, over the closed set spec 3 declares
+  A warrant states what stands behind a document, and promotion is the act that
+  moves one from `asserted` to `accepted`. The set is closed, so every value has a
+  row whether a document of this corpus states it or not.
+      1 accepted
+      0 regenerated   the engine reads this off the generated-file marker
+      0 transcribed   the engine reads this off the generated-file marker
+      0 asserted      no document of this corpus states it
+  Stated on 2 of 5, and absent on 3. Spec 3 makes the value required, so the
+  second figure is a population and never a default. The census reported 0 of these rows
+  as generated, and the engine reads the warrant of a generated document off the marker
+  rather than out of a declaration.
+  Values the closed set does not hold, each with the count that states it. No
+  check of this engine reads a warrant, so this is the only line that reports one:
+        1 `pending`
+  The `asserted` population is 0, which is the denominator a promotion rate divides
+  by. Nothing declares how many promotions in one change is too many, so no figure here
+  carries a verdict.
+
 what this verb does not measure, and what each one waits on
-  transition continuity — a record of a transition. A document states the state it is in and the date it entered, and nothing states the state it left, so no run can tell one entry into `current` from a second one
-  scent quality — authored cues. Q20 puts a cue on a relation instance, and OBL-repo-0023 records that no corpus has authored enough of them to grade
-  promotion rate — a population and an input. No document of this corpus carries `warrant: asserted`, and promotions per change reads a history of changes that no crate of this engine opens
+  Every prerequisite below was evaluated against this corpus on this run, so a
+  wait that a corpus has ended says so with no edit to this engine.
+  transition continuity — waits
+    a record of the state a document left
+      nothing declares it — no facet of this taxonomy takes the `state_left` role, and
+      spec 2's closed role registry holds no such role, so one entry into a state cannot
+      be told from a second
+  scent quality — waits
+    a cue authored on an edge instance
+      nothing authored one — no half of the 6 this corpus declares carries a `cue`
+      attribute, which OBL-repo-0023 records
+  promotion rate — waits
+    an `asserted` population to divide by
+      nothing authored one — no document of the 5 classified here states `warrant:
+      asserted`, so there is nothing to promote from
+    a promotion to count
+      designed and unbuilt — a promotion is a lifecycle transition, from the
+      `asserted` warrant to `accepted`, and spec 12 already designs the input one needs.
+      A check that declares `needs_prior` receives the previously committed version of
+      each changed document. No check declares it and nothing implements it. It could
+      not be read here in any case, because this verb reads one working tree and the
+      prior version is available only in change-scoped evaluation
+  3 of 3 still wait. Each one states what ends it: a declaration, an authoring
+  pass, or a build of an input this engine designs and does not supply.

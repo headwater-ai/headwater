@@ -5,6 +5,10 @@ status: current
 status_since: 2025-05-01
 last_verified: 2025-06-01
 summary: a manual that nobody has verified for two seasons, so every half it declares is past the declared window
+provenance:
+  warrant: pending
+  agency: agent
+  drafted_by: a-model
 relations:
   catalogues:
     - AUD-FIX-0001

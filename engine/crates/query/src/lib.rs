@@ -72,16 +72,6 @@ const SCENT: &str = "scent";
 /// name: `title` means something in one taxonomy and nothing in the next.
 const NAME: &str = "name";
 
-/// The provenance member that states what stands behind a document.
-///
-/// [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed):
-/// "The provenance block is the exception, and its shape belongs to the
-/// engine." So the two names below are the engine's own, like the identifier
-/// and relations facets that [`headwater_graph::Config`] holds, and no taxonomy
-/// declares them.
-const PROVENANCE: &str = "provenance";
-const WARRANT: &str = "warrant";
-
 /// The warrant value that spec 5 makes a pointer state out loud.
 const ASSERTED: &str = "asserted";
 
@@ -397,7 +387,7 @@ impl<'a> Surface<'a> {
             false => edge
                 .attributes
                 .iter()
-                .find(|entry| entry.key.value == "cue")
+                .find(|entry| entry.key.value == headwater_graph::edges::CUE)
                 .and_then(|entry| entry.value.value.as_scalar())
                 .map(|scalar| scalar.text.clone()),
         };
@@ -496,14 +486,12 @@ impl<'a> Surface<'a> {
     }
 
     /// What stands behind the document, from the provenance block.
+    ///
+    /// The block belongs to the engine rather than to a taxonomy, so the read
+    /// lives beside the parse. A second reader here would be a second answer
+    /// to the question that decides whether a pointer states its warrant.
     pub fn warrant(&self, document: &Document<'a>) -> Option<String> {
-        document
-            .facets
-            .get(PROVENANCE)
-            .and_then(|node| node.value.as_map())
-            .and_then(|map| map.get(WARRANT))
-            .and_then(|node| node.value.as_scalar())
-            .map(|scalar| scalar.text.clone())
+        headwater_doc::warrant(document.facets).map(str::to_string)
     }
 }
 
