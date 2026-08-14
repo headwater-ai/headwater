@@ -7,10 +7,15 @@
 //! participation expectation reads a declared origin date from the document and
 //! compares it against that value, with no history walk.
 //!
-//! The clock is here. The prior version is not, because it "is available
-//! **only** in change-scoped evaluation", and no check declares it. A field
-//! that nothing enforces is the comment [`crate::scope`] exists to delete, and
-//! that module states what the first check to need one has to copy.
+//! Both are here now. The clock is a date. The prior version "is available
+//! **only** in change-scoped evaluation", so it is the set of documents one
+//! change carries, and [`crate::change`] is that set. A run with no change is
+//! the ordinary full-corpus run, and every instance of a check that declares
+//! the input is reported as skipped rather than passed.
+//!
+//! The two are injected the same way and for the same reason: a check that
+//! could fetch either one would decide its verdict from something the report
+//! does not state, and no reader could reproduce the run from what it printed.
 //!
 //! # A check never reaches a [`Context`]
 //!
@@ -28,6 +33,8 @@
 //! cannot change a verdict, which is the same rule the key applies to every
 //! other component.
 
+use crate::change::Change;
+
 /// A calendar date, held as a whole number of days from 1970-01-01.
 ///
 /// No time zone and no time of day. Both would be precision this engine cannot
@@ -39,17 +46,43 @@ pub struct Date {
 }
 
 /// The values a run injects, which no check can fetch for itself.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+///
+/// Not `Copy`, because the change carries the documents it names. It is held by
+/// reference everywhere a run reads it, which is what it was before the second
+/// injected value arrived.
+#[derive(Clone, Debug)]
 pub struct Context {
     now: Date,
+    change: Option<Change>,
 }
 
 impl Context {
-    /// A run at a stated date. Every test that records a report uses this one,
-    /// because a recorded report is a function of its inputs and the clock is
-    /// one of them.
+    /// A run at a stated date, over a whole corpus. Every test that records a
+    /// report uses this one, because a recorded report is a function of its
+    /// inputs and the clock is one of them.
     pub const fn at(now: Date) -> Self {
-        Context { now }
+        Context { now, change: None }
+    }
+
+    /// A run at a stated date, scoped to one change.
+    ///
+    /// The only constructor that produces a change-scoped run, so the answer to
+    /// "is this run change-scoped" is the presence of the value rather than a
+    /// second flag beside it.
+    pub fn over(now: Date, change: Change) -> Self {
+        Context {
+            now,
+            change: Some(change),
+        }
+    }
+
+    /// The change this run is scoped to, and nothing for a full-corpus run.
+    ///
+    /// A check never reaches this. [`crate::scope`] reads it, hands one
+    /// document's prior version to a view that declared the input, and puts the
+    /// same value in the cache key.
+    pub fn change(&self) -> Option<&Change> {
+        self.change.as_ref()
     }
 
     /// A run at today's date, read from the system clock.
@@ -63,7 +96,18 @@ impl Context {
             .ok()?;
         Some(Context {
             now: Date::from_days(i64::try_from(elapsed.as_secs() / 86_400).ok()?),
+            change: None,
         })
+    }
+
+    /// The same run, scoped to a change. The clock it already holds is
+    /// unchanged, because a run is about one day whatever set of documents it
+    /// is about.
+    pub fn scoped_to(self, change: Change) -> Self {
+        Context {
+            change: Some(change),
+            ..self
+        }
     }
 
     pub fn now(&self) -> Date {

@@ -725,6 +725,12 @@ obligations:
     class: cohesion
     prevents: process.maintenance
     severity: low
+  OB-WARRANT-1:
+    statement: "A warrant that moves from `asserted` to `accepted` is counted in the change that moved it"
+    rationale: "A script that stamps forty documents writes bytes identical to forty real acceptances, and the standing `asserted` population cannot separate them because a bulk stamp lowers it by exactly what forty reviews would. A count per change is the only reading that can, and a promotion nobody counted is a review nobody can find"
+    class: cohesion
+    prevents: process.traceability
+    severity: medium
   OB-REG-1:
     statement: "Every obligation this taxonomy declares carries exactly one disposition"
     rationale: "An obligation that no control discharges and that states neither a gap nor an acceptance reads from outside like one that is met, and that silence is how an assurance model decays into a list of good intentions"
@@ -915,6 +921,16 @@ controls:
     promotion:
       permanently_advisory:
         reasoning: "Spec 3 rules that posture per voice category comes from fixability and never from precision, and that a category whose remediation is a rewrite stays advisory whatever its false-positive rate. To block on it makes a judgment about meaning into a gate, and the author who meets it at a red build reaches for the escape hatch"
+  CT-WARRANT-1:
+    mechanism: "check:warrant.promoted"
+    discharges:
+      - OB-WARRANT-1
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      permanently_advisory:
+        reasoning: "Spec 3 rules the posture directly. \"Forty in one change is a finding about the review rather than about the documents. The posture is advisory permanently, for the reason that the shift ratio is advisory permanently. A threshold teaches people to promote in smaller batches, and nothing declares one.\" A promotion is a legitimate act, so the rule reports a count and never a defect, and there is nothing for a gate to block on until a taxonomy states how many is too many"
   CT-LANG-1:
     mechanism: "check:language.controlled.not_met"
     discharges:

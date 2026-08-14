@@ -3,8 +3,8 @@ id: OBL-repo-0011
 title: "Nothing has been promoted out of the synthesized tier"
 status: current
 status_since: 2026-08-10
-last_verified: 2026-08-13
-summary: "Q15 claims that asserted content moves to accepted rather than accumulates, the denominator of the rate now runs, and the numerator waits on a check that declares `needs_prior`."
+last_verified: 2026-08-15
+summary: "Q15 claims that asserted content moves to accepted rather than accumulates, both halves of the instrument now run, and no change of this repository has moved a warrant yet."
 provenance:
   warrant: accepted
   agency: mixed
@@ -31,4 +31,6 @@ The promotion rate against the asserted count is the instrument.
 
 Half of the instrument now runs. `taxonomy audit` reports the warrant of every classified document over the closed set, and it names the `asserted` count as the denominator a rate divides by. This record states no figure for that count. Run the verb and read the warrant section. A number copied into prose is a claim that no run re-derives. What changed is that the population is no longer empty. Every document in it was written on or after 2026-08-14. The measurement of this record before that date was 0, which was true of the corpus it measured.
 
-The numerator is unbuilt, and it is not zero. A promotion is a lifecycle transition, from the `asserted` warrant to `accepted`. [Spec 12](../spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version) already designs the input one needs. A check that declares `needs_prior` receives the previously committed version of each changed document. No check declares it and nothing implements it. The count is change-scoped for that reason, so it cannot live in `taxonomy audit`, which reads one working tree. This record therefore waits on a build rather than on a population. If the count never falls in a corpus that has one, the tier is a dumping ground and the honest response is to say so.
+The numerator now runs, and it runs in another verb. A promotion is a lifecycle transition, from the `asserted` warrant to `accepted`. `warrant.promoted` declares the `needs_prior` input that [spec 12](../spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version) designs, and `headwater check --change` is where a caller supplies one. The count is change-scoped for that reason, so it cannot live in `taxonomy audit`, which reads one working tree.
+
+What this record waits on is a corpus rather than a build. No change of this repository has moved a warrant from `asserted` to `accepted`. So the count has been zero on every run of the instrument. If it stays at zero while the `asserted` population grows, the tier is a place documents go and do not leave. The honest response is to say so.

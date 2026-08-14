@@ -27,6 +27,12 @@ headwater-resolve = { path = "../resolve" }
 # A facet value is a spanned YAML value, and every reading here reads several.
 headwater-yaml = { path = "../yaml" }
 
+# The layout renderer. `headwater new` writes a file name with it, and the
+# layout reading asks whether the file a document sits in is the name it would
+# have written. A second renderer here would measure adherence to a template
+# that the scaffolder does not follow.
+headwater-scaffold = { path = "../scaffold" }
+
 # The provenance block, whose shape belongs to the engine rather than to a
 # taxonomy. The warrant reading calls the one reader of it rather than opening
 # the block by key here, because a second reader is a second answer.

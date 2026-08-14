@@ -284,6 +284,20 @@
               }
             },
             {
+              "id": "warrant.promoted",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter, and the version of it that stood before the change"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
               "id": "coverage.document_unchecked",
               "shortDescription": {
                 "text": "corpus scope, every row of the census, and it is a barrier"
@@ -848,12 +862,12 @@
         },
         {
           "ruleId": "coverage.document_unchecked",
-          "ruleIndex": 17,
+          "ruleIndex": 18,
           "level": "warning",
           "kind": "fail",
           "message": {
-            "text": "this document is classified and all 2 of its check instances were skipped",
-            "markdown": "this document is classified and all 2 of its check instances were skipped\n\n**Fix:** check that the shelf pattern claims the right files, and that the kind declares something a check reads"
+            "text": "this document is classified and all 3 of its check instances were skipped",
+            "markdown": "this document is classified and all 3 of its check instances were skipped\n\n**Fix:** check that the shelf pattern claims the right files, and that the kind declares something a check reads"
           },
           "locations": [
             {
@@ -1914,7 +1928,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 19,
+          "ruleIndex": 20,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1943,7 +1957,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 19,
+          "ruleIndex": 20,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1972,7 +1986,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 18,
+          "ruleIndex": 19,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2001,7 +2015,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 18,
+          "ruleIndex": 19,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2030,7 +2044,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 18,
+          "ruleIndex": 19,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2059,7 +2073,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 18,
+          "ruleIndex": 19,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2099,7 +2113,7 @@
             "seen": 25,
             "classified": 23,
             "checked": 22,
-            "instances": 243
+            "instances": 266
           },
           "escaped": {
             "waived": "no waiver reaches a check finding",

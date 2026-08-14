@@ -4,8 +4,9 @@ touched corpus/spec/02-the-second-part.md
 touched corpus/decisions/a-second-successor.md
 touched corpus/decisions/an-earlier-decision.md
 
-9 seen, 9 classified, 9 checked, 91 check instances
+9 seen, 9 classified, 9 checked, 100 check instances
       9 skipped: this document writes no fragment into itself
+      9 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
       4 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
 9 documents in the read set, and 1 barrier that no gate carries across a merge
       9 instances of facet.required.missing
@@ -21,6 +22,7 @@ touched corpus/decisions/an-earlier-decision.md
       7 instances of voice.forbidden_construction
       7 instances of section.required.missing
       9 instances of link.fragment.unresolved
+      9 instances of warrant.promoted
 rules, and for each the scope that binds it
   facet.required.missing
     document scope, one document and its front matter
@@ -56,6 +58,8 @@ rules, and for each the scope that binds it
     document scope, one document, its front matter and its body
   link.fragment.unresolved
     document scope, one document, its front matter and its body
+  warrant.promoted
+    document scope, one document and its front matter, and the version of it that stood before the change
   coverage.document_unchecked
     corpus scope, every row of the census, and it is a barrier
   obligation.disposition.not_one
@@ -87,6 +91,7 @@ register
   language.source_form.not_met reaches no obligation, so it names none
   section.required.missing reaches no obligation, so it names none
   link.fragment.unresolved reaches no obligation, so it names none
+  warrant.promoted reaches no obligation, so it names none
   coverage.document_unchecked reaches no obligation, so it names none
   obligation.disposition.not_one reaches no obligation, so it names none
   control.mechanism.unimplemented reaches no obligation, so it names none
@@ -276,6 +281,24 @@ instances
     skipped: this document writes no fragment into itself
   link.fragment.unresolved corpus/standards/a-standard.md
     skipped: this document writes no fragment into itself
+  warrant.promoted corpus/decisions/a-scaffolded-successor.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted corpus/decisions/a-second-successor.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted corpus/decisions/an-earlier-decision.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted corpus/exhausted/the-last-one.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted corpus/spec/01-the-first-part.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted corpus/spec/02-the-second-part.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted corpus/spec/03-the-third-part.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted corpus/spec/04-a-scaffolded-fourth-part.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted corpus/standards/a-standard.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 
 corpus/standards/a-standard.md:1:1 error
   identifier.unusable (OB-FIX-1): a typed `standard` that declares no identifier, so no edge can name it

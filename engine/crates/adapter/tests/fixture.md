@@ -10,7 +10,7 @@
 | error | `check/evaluations/gamma.md:9` | `relation.reciprocity.missing` | `EVAL-FIX-gamma` declares `cited_by: SPEC-FIX-both-halves`, and `cites_evidence` requires both ends, so check/spec/00-both-halves.md owes `cites_evidence` |
 | error | `check/spec/01-one-half.md:9` | `relation.reciprocity.missing` | `SPEC-FIX-one-half` declares `cites_evidence: EVAL-FIX-beta`, and `cites_evidence` requires both ends, so check/evaluations/beta.md owes `cited_by` |
 | warn | `check/spec/01-one-half.md:18` | `language.controlled.not_met` | `ste_house` holds prose to 25 words a sentence, and this one has 34 |
-| warn | `check/spec/03-no-instance.md` | `coverage.document_unchecked` | this document is classified and all 2 of its check instances were skipped |
+| warn | `check/spec/03-no-instance.md` | `coverage.document_unchecked` | this document is classified and all 3 of its check instances were skipped |
 | error | `check/spec/05-no-summary.md` | `facet.required.missing` | `design_spec` requires the facet `summary`, and it is not declared |
 | warn | `check/spec/05-no-summary.md:12` | `language.controlled.not_met` | `ste_house` holds prose to 25 words a sentence, and this one has 31 |
 | error | `check/spec/06-retired.md:4` | `facet.value.not_permitted` | `status` admits draft, current, superseded, and this document declares `retired` |

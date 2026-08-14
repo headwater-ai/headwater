@@ -1,6 +1,7 @@
-25 seen, 23 classified, 22 checked, 243 check instances
+25 seen, 23 classified, 22 checked, 266 check instances
       1 generated, held to regeneration by `headwater generate --check`
      21 skipped: this document writes no fragment into itself
+     23 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
      16 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: `guarded` forbids hedging, and this engine has no pattern set for it
       2 skipped: `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
@@ -24,6 +25,7 @@
      13 instances of language.source_form.not_met
       2 instances of section.required.missing
      23 instances of link.fragment.unresolved
+     23 instances of warrant.promoted
 suppressions
   2 findings hidden by 2 directives
       1 false_positive
@@ -69,6 +71,8 @@ rules, and for each the scope that binds it
     document scope, one document, its front matter and its body
   link.fragment.unresolved
     document scope, one document, its front matter and its body
+  warrant.promoted
+    document scope, one document and its front matter, and the version of it that stood before the change
   coverage.document_unchecked
     corpus scope, every row of the census, and it is a barrier
   obligation.disposition.not_one
@@ -103,6 +107,7 @@ register
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 2 suppressed
   relation.endpoint.not_permitted reaches OB-FIX-5, OB-FIX-17, and a finding names one obligation, so it names none
   identifier.claimed_twice reaches no obligation, so it names none
+  warrant.promoted reaches no obligation, so it names none
   coverage.document_unchecked reaches no obligation, so it names none
 43 findings
      25 error
@@ -595,6 +600,52 @@ instances
     skipped: this document writes no fragment into itself
   link.fragment.unresolved check/spec/17-identifier-not-a-word.md
     skipped: this document writes no fragment into itself
+  warrant.promoted check/evaluations/alpha.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/evaluations/beta.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/evaluations/delta.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/evaluations/epsilon.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/evaluations/eta.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/evaluations/gamma.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/evaluations/zeta.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/spec/00-both-halves.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/spec/01-one-half.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/spec/02-cited-only.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/spec/03-no-instance.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/spec/05-no-summary.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/spec/06-retired.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/spec/07-prose-defects.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/spec/08-contract-met.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/spec/09-contract-missing.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/spec/10-suppressed.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/spec/11-identifier-mismatch.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/spec/13-dangling.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/spec/14-relations-not-a-mapping.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/spec/15-unusable-entries.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/spec/16-no-identifier.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  warrant.promoted check/spec/17-identifier-not-a-word.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 
 check/evaluations/delta.md:8:7 error
   relation.reciprocity.missing (OB-FIX-1): `EVAL-FIX-delta` declares `cited_by: SPEC-FIX-cited-only`, and `cites_evidence` requires both ends, so check/spec/02-cited-only.md owes `cites_evidence`
@@ -618,7 +669,7 @@ check/spec/01-one-half.md:18:151 warn
   language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words a sentence, and this one has 34
   fix: split the sentence, or move a clause into its own sentence
 check/spec/03-no-instance.md warn
-  coverage.document_unchecked: this document is classified and all 2 of its check instances were skipped
+  coverage.document_unchecked: this document is classified and all 3 of its check instances were skipped
   fix: check that the shelf pattern claims the right files, and that the kind declares something a check reads
 check/spec/05-no-summary.md error
   facet.required.missing (OB-FIX-3): `design_spec` requires the facet `summary`, and it is not declared

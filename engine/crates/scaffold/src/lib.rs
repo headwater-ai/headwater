@@ -792,49 +792,35 @@ fn place(
     let Some(layout) = declared::layout(sources.resolved, &shelf.name) else {
         return Ok(format!("{directory}/{slug}.md"));
     };
-    let mut name = String::new();
-    let mut rest = layout;
-    while let Some(open) = rest.find('{') {
-        name.push_str(&rest[..open]);
-        let after = &rest[open + 1..];
-        let Some(close) = after.find('}') else {
-            name.push_str(&rest[open..]);
-            return Ok(format!("{directory}/{name}"));
-        };
-        let placeholder = &after[..close];
-        let (key, specifier) = match placeholder.split_once(':') {
-            Some((key, specifier)) => (key, Some(specifier)),
-            None => (placeholder, None),
-        };
-        let filled = match key {
-            "slug" => Some(slug.to_string()),
-            _ => match fields.iter().find(|field| field.key == key) {
-                Some(field) => Some(pad(&field.value, specifier)),
-                None => minting
-                    .filter(|_| key == "seq")
-                    .and_then(|minting| minting.sequence)
-                    .map(|value| pad(&value.to_string(), specifier)),
-            },
-        };
-        match filled {
-            Some(value) => name.push_str(&value),
-            None => {
-                return Err(Refusal::LayoutUnresolved {
-                    shelf: shelf.name.clone(),
-                    layout: layout.to_string(),
-                    placeholder: placeholder.to_string(),
-                })
-            }
-        }
-        rest = &after[close + 1..];
+    match render_layout(layout, |key| match key {
+        "slug" => Some(slug.to_string()),
+        _ => match fields.iter().find(|field| field.key == key) {
+            Some(field) => Some(field.value.clone()),
+            None => minting
+                .filter(|_| key == "seq")
+                .and_then(|minting| minting.sequence)
+                .map(|value| value.to_string()),
+        },
+    }) {
+        Ok(name) => Ok(format!("{directory}/{name}")),
+        Err(placeholder) => Err(Refusal::LayoutUnresolved {
+            shelf: shelf.name.clone(),
+            layout: layout.to_string(),
+            placeholder,
+        }),
     }
-    name.push_str(rest);
-    Ok(format!("{directory}/{name}"))
 }
 
 /// A zero-padding specifier on a value, which is the one form a layout writes.
 /// `02d` and `04d` are the two this repository declares, and the width is read
 /// rather than assumed.
+///
+/// [`render_layout`] applies it to every placeholder, where the loop it
+/// replaced applied it to a facet and to `{seq}` and never to `{slug}`. The
+/// difference is inert: this function returns its argument unchanged for a
+/// value that does not parse as a number, and a slug that parses as one is a
+/// title of digits alone. No layout of this repository writes a specifier on a
+/// slug, and the uniform rule is the one a reader can predict.
 fn pad(value: &str, specifier: Option<&str>) -> String {
     let Some(width) = specifier
         .and_then(|s| s.strip_prefix('0'))
@@ -1030,22 +1016,9 @@ fn names(sources: &Sources<'_>, shelf: &Shelf, facet: &str) -> bool {
     let Some(layout) = declared::layout(sources.resolved, &shelf.name) else {
         return false;
     };
-    let mut rest = layout;
-    while let Some(open) = rest.find('{') {
-        let after = &rest[open + 1..];
-        let Some(close) = after.find('}') else {
-            return false;
-        };
-        let placeholder = &after[..close];
-        let key = placeholder
-            .split_once(':')
-            .map_or(placeholder, |(key, _)| key);
-        if key == facet {
-            return true;
-        }
-        rest = &after[close + 1..];
-    }
-    false
+    segments(layout)
+        .iter()
+        .any(|segment| matches!(segment, Segment::Placeholder { key, .. } if *key == facet))
 }
 
 /// One past the highest value of a facet over the documents already on a shelf.
@@ -1296,6 +1269,89 @@ fn expected_relations(sources: &Sources<'_>, kind: &str, written: &[Proposed]) -
                 .to_string(),
         })
         .collect()
+}
+
+/// One piece of a shelf layout, as [`segments`] reads it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Segment<'a> {
+    /// Characters the layout writes into every file name on its shelf.
+    Literal(&'a str),
+    /// A placeholder, with the padding specifier written after the colon.
+    Placeholder {
+        key: &'a str,
+        specifier: Option<&'a str>,
+    },
+}
+
+/// A layout as its pieces, in the order it writes them.
+///
+/// One scanner, and every reader of a layout in this engine goes through it:
+/// [`render_layout`] fills the placeholders, [`names`] asks whether one of them
+/// is a facet, and `taxonomy audit` asks whether the file a document sits in
+/// carries the name its shelf's layout renders. Three scanners would be three
+/// answers to one question about one string.
+///
+/// An opening brace that nothing closes is the rest of the layout as a literal.
+/// A template somebody mistyped then renders the characters they wrote, which
+/// is what [`place`] did before this function existed.
+pub fn segments(layout: &str) -> Vec<Segment<'_>> {
+    let mut out = Vec::new();
+    let mut rest = layout;
+    while let Some(open) = rest.find('{') {
+        if open > 0 {
+            out.push(Segment::Literal(&rest[..open]));
+        }
+        let after = &rest[open + 1..];
+        let Some(close) = after.find('}') else {
+            out.push(Segment::Literal(&rest[open..]));
+            return out;
+        };
+        let placeholder = &after[..close];
+        let (key, specifier) = match placeholder.split_once(':') {
+            Some((key, specifier)) => (key, Some(specifier)),
+            None => (placeholder, None),
+        };
+        out.push(Segment::Placeholder { key, specifier });
+        rest = &after[close + 1..];
+    }
+    if !rest.is_empty() {
+        out.push(Segment::Literal(rest));
+    }
+    out
+}
+
+/// Render a layout, taking the value of each placeholder from `fill`.
+///
+/// `Err` carries the first placeholder that nothing filled, as the layout wrote
+/// it, so a message about a hole names the characters a person will search for.
+/// A layout that
+/// rendered an empty string in its place would name a file nobody asked for,
+/// which is why [`place`] refuses rather than writing one and why the audit
+/// reading reports a document as unmeasured rather than as a name that
+/// disagrees.
+///
+/// The padding is applied here rather than by the caller, so the width a layout
+/// declares is read in one place. See [`pad`].
+pub fn render_layout(
+    layout: &str,
+    fill: impl Fn(&str) -> Option<String>,
+) -> Result<String, String> {
+    let mut name = String::new();
+    for segment in segments(layout) {
+        match segment {
+            Segment::Literal(text) => name.push_str(text),
+            Segment::Placeholder { key, specifier } => match fill(key) {
+                Some(value) => name.push_str(&pad(&value, specifier)),
+                None => {
+                    return Err(match specifier {
+                        Some(specifier) => format!("{key}:{specifier}"),
+                        None => key.to_string(),
+                    })
+                }
+            },
+        }
+    }
+    Ok(name)
 }
 
 /// A title, as the token a file name and an identifier carry.

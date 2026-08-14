@@ -1,5 +1,6 @@
 ---
 id: AUD-FIX-0002
+title: Second
 status: superseded
 status_since: 2025-09-01
 last_verified: 2025-08-01

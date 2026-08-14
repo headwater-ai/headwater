@@ -19,6 +19,17 @@
 //! thing [spec 12](../../../../docs/spec/12-check-layer.md) rules out of a
 //! check.
 //!
+//! # The promotion rate is not a wait of this verb, and never was
+//!
+//! A rate is a numerator over a denominator. This verb holds the denominator:
+//! the population standing at `asserted`, which the warrant reading reports.
+//! The numerator is a count of promotions in one change, and a promotion is a
+//! lifecycle transition. Spec 12 makes the version that stood before a change
+//! available only in change-scoped evaluation, and this verb reads one working
+//! tree. So the numerator is `headwater_check::promotion`, and no build of this
+//! crate would bring it here. The warrant reading names that rule beside the
+//! population, rather than carrying a wait that nothing could end.
+//!
 //! So the split is by what is declared. `stale_after_days` on the facet in the
 //! `freshness` role is a number the taxonomy states, and it is the only one, so
 //! it is the only reading here that produces a finding. Every other reading is
@@ -53,6 +64,7 @@ use headwater_check::context::Date;
 use headwater_check::Shape;
 use headwater_graph::declarations::{Declarations, Direction, Relation};
 use headwater_graph::Graph;
+use headwater_yaml::Mapping;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub mod render;
@@ -203,6 +215,37 @@ pub struct ShelfReading {
     pub kinds: Vec<(String, usize)>,
 }
 
+/// One shelf that declares a layout, measured against the files on it.
+///
+/// [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#templates-and-scaffolding)
+/// makes a layout a convention at birth: `headwater new` writes the name and no
+/// check reads it afterwards, so a rename answers to nothing
+/// ([OBL-repo-0106](../../../../docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md)).
+/// This reading is what says how far the convention has drifted, and it is here
+/// rather than in that record because a figure a document holds is a figure
+/// nobody re-derives.
+///
+/// The name is rendered through [`headwater_scaffold::render_layout`], which is
+/// the function `headwater new` writes a file name with. A second renderer here
+/// would report adherence to a template that the scaffolder does not follow.
+#[derive(Clone, Debug)]
+pub struct LayoutReading {
+    pub shelf: String,
+    pub layout: String,
+    /// Documents the census placed on this shelf and resolved to a kind.
+    pub identified: usize,
+    /// Of those, the ones every placeholder of the layout could be filled for.
+    /// A document the layout cannot be rendered for is measured nowhere, and it
+    /// never joins the denominator below.
+    pub measured: usize,
+    /// Of the measured, the ones whose file name is the name the layout renders.
+    pub renders: usize,
+    /// What this run could make of the shelf. See [`Supply`]: an arm of this
+    /// population that cannot be measured has a location, and folding it into
+    /// the denominator would report a schema gap as an authoring failure.
+    pub adherence: Supply,
+}
+
 /// Time spent in the current state, by state.
 #[derive(Clone, Debug)]
 pub struct DwellReading {
@@ -254,8 +297,10 @@ pub struct WarrantReading {
     /// Classified documents whose provenance block states this value.
     pub stated: usize,
     /// Whether the closed set of spec 3 holds this value. A row where this is
-    /// false is a value a corpus invented, and no check reads a warrant, so
-    /// this reading is the only place one is reported.
+    /// false is a value a corpus invented, and no check reads a warrant
+    /// *value*, so this reading is the only place one is reported.
+    /// `warrant.promoted` reads a movement between two values and admits any
+    /// value at either end, which is why it reports none of this.
     pub closed_set: bool,
     /// Whether the engine derives this value from the generated-file marker
     /// rather than reading it from a declaration.
@@ -306,9 +351,20 @@ impl Warrants {
 
 /// What one prerequisite of a reading looked like on this run.
 ///
-/// The four arms are four different things to do about it, which is why they
-/// are four arms and not a boolean. A declaration ends the second, authoring
-/// ends the third, and a decision this engine has not taken ends the fourth.
+/// The three arms are three different things to do about it, which is why they
+/// are three arms and not a boolean. A declaration ends the second and an
+/// authoring pass ends the third.
+///
+/// A fourth arm stood here and is gone. `Unbuilt` said that an input this
+/// engine designs is not implemented, and one wait ever reached it: the
+/// promotion count, which needed the `needs_prior` input of
+/// [spec 12](../../../../docs/spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version).
+/// `headwater_check::promotion` declares that input now, and the reading left
+/// this verb rather than starting to run in it: a rate whose numerator is
+/// change-scoped is not a wait of a verb that reads one working tree. So the
+/// arm went with the wait. An arm that nothing constructs is the empty row this
+/// type exists to avoid, and a report that carried one would say that a wait
+/// exists which nothing could ever end.
 #[derive(Clone, Debug)]
 pub enum Supply {
     /// The corpus supplied it, and the text says what the run counted.
@@ -319,17 +375,6 @@ pub enum Supply {
     /// Declared, and no document of this corpus carries one. The location of
     /// the absence is the corpus.
     Unauthored(String),
-    /// The input is designed and nothing supplies it. A build ends this wait,
-    /// and the location is this engine rather than the schema or the corpus.
-    ///
-    /// It is not the same as an input this engine has decided not to take. The
-    /// first draft of this type carried that arm instead, and it was the wrong
-    /// one for the only wait that reached it: `needs_prior` is designed in
-    /// [spec 12](../../../../docs/spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version)
-    /// and unimplemented in [`headwater_check::scope`], which is a build rather
-    /// than a decision. No wait here reaches an arm that no work of any kind
-    /// could end, so this type declares none.
-    Unbuilt(String),
 }
 
 impl Supply {
@@ -344,17 +389,13 @@ impl Supply {
             Supply::Supplied(_) => "supplied",
             Supply::Undeclared(_) => "nothing declares it",
             Supply::Unauthored(_) => "nothing authored one",
-            Supply::Unbuilt(_) => "designed and unbuilt",
         }
     }
 
     /// What the run found, in the words the report prints.
     pub fn says(&self) -> &str {
         match self {
-            Supply::Supplied(text)
-            | Supply::Undeclared(text)
-            | Supply::Unauthored(text)
-            | Supply::Unbuilt(text) => text,
+            Supply::Supplied(text) | Supply::Undeclared(text) | Supply::Unauthored(text) => text,
         }
     }
 }
@@ -411,6 +452,10 @@ pub struct Audit {
     pub facets: Vec<FacetReading>,
     pub dependences: Vec<Dependence>,
     pub shelves: Vec<ShelfReading>,
+    /// Every shelf that declares a layout, in the taxonomy's shelf order. A
+    /// shelf that declares none is absent rather than reported at zero: nothing
+    /// names its files, so there is no name to disagree with.
+    pub layouts: Vec<LayoutReading>,
     pub dwell: Vec<DwellReading>,
     pub warrants: Warrants,
     /// The readings this verb names and does not take, as this run found their
@@ -453,6 +498,7 @@ pub fn take(
     taxonomy: &Taxonomy,
     shape: &Shape,
     relations: &Declarations,
+    resolved: &Mapping,
 ) -> Audit {
     let classified: Vec<&Row> = census
         .rows
@@ -471,7 +517,7 @@ pub fn take(
     );
 
     let warrants = warrants(&classified);
-    let waiting = waiting(&classified, graph, shape, &warrants);
+    let waiting = waiting(&classified, graph, shape);
 
     Audit {
         subject,
@@ -490,6 +536,7 @@ pub fn take(
         facets: facets(&classified, shape),
         dependences: dependences(&classified, shape),
         shelves: shelves(&classified, taxonomy),
+        layouts: layouts(&classified, graph, taxonomy, shape, resolved),
         dwell: dwell(&classified, shape, now),
         freshness,
         warrants,
@@ -527,8 +574,8 @@ fn warrants(classified: &[&Row]) -> Warrants {
             derived: DERIVED.contains(value),
         })
         .collect();
-    // Then whatever else a document stated. No check reads a warrant, so a
-    // value outside the closed set reaches no other report in this engine.
+    // Then whatever else a document stated. No check reads a warrant value, so
+    // a value outside the closed set reaches no other report in this engine.
     readings.extend(stated.into_iter().map(|(value, stated)| WarrantReading {
         value,
         stated,
@@ -564,7 +611,7 @@ fn cues(graph: &Graph) -> usize {
 }
 
 /// What each named reading waits on, derived from the corpus of this run.
-fn waiting(classified: &[&Row], graph: &Graph, shape: &Shape, warrants: &Warrants) -> Vec<Waiting> {
+fn waiting(classified: &[&Row], graph: &Graph, shape: &Shape) -> Vec<Waiting> {
     let halves = graph.edges.len();
     vec![
         Waiting {
@@ -607,38 +654,6 @@ fn waiting(classified: &[&Row], graph: &Graph, shape: &Shape, warrants: &Warrant
                     )),
                 },
             }],
-        },
-        Waiting {
-            reading: "promotion rate",
-            needs: vec![
-                Need {
-                    needs: "an `asserted` population to divide by",
-                    supply: match warrants.asserted() {
-                        0 => Supply::Unauthored(format!(
-                            "no document of the {} classified here states `warrant: asserted`, \
-                             so there is nothing to promote from",
-                            classified.len()
-                        )),
-                        n => Supply::Supplied(format!(
-                            "{n} of {} classified documents state `warrant: asserted`",
-                            classified.len()
-                        )),
-                    },
-                },
-                Need {
-                    needs: "a promotion to count",
-                    supply: Supply::Unbuilt(
-                        "a promotion is a lifecycle transition, from the `asserted` warrant to \
-                         `accepted`, and spec 12 already designs the input one needs. A check \
-                         that declares `needs_prior` receives the previously committed version \
-                         of each changed document. No check declares it and nothing implements \
-                         it. It could not be read here in any case, because this verb reads one \
-                         working tree and the prior version is available only in change-scoped \
-                         evaluation"
-                            .to_string(),
-                    ),
-                },
-            ],
         },
     ]
 }
@@ -969,6 +984,234 @@ fn shelves(classified: &[&Row], taxonomy: &Taxonomy) -> Vec<ShelfReading> {
                     .into_iter()
                     .map(|(kind, count)| (kind.to_string(), count))
                     .collect(),
+            })
+        })
+        .collect()
+}
+
+/// Why one document's file name could not be rendered, and where the absence
+/// lives.
+///
+/// The two arms are the two arms of [`Supply`] that a layout can reach. A
+/// declaration ends the first and an authoring pass ends the second, and a
+/// reading that reported one as the other would send a reader to the wrong file.
+enum Hole {
+    /// The schema states no source for the placeholder, so no document of this
+    /// kind could carry one.
+    Schema(String),
+    /// The schema states a source and this document declares no value for it.
+    Corpus(String),
+}
+
+impl Hole {
+    fn says(&self) -> &str {
+        match self {
+            Hole::Schema(text) | Hole::Corpus(text) => text,
+        }
+    }
+}
+
+/// The last segment of a corpus path, which is the part a layout names.
+fn file_name(path: &str) -> &str {
+    path.rsplit('/').next().unwrap_or(path)
+}
+
+/// One scalar facet value, as the document declares it.
+fn scalar(document: &headwater_doc::Document, facet: &str) -> Option<String> {
+    Some(document.facets.get(facet)?.value.as_scalar()?.text.clone())
+}
+
+/// The sequence the identifier of this document carries, under the scheme its
+/// kind mints from.
+///
+/// The identifier comes off the graph's node rather than out of front matter by
+/// key, because the graph already read it through the configured facet. A second
+/// reader here would be a second answer to which key holds an identifier.
+fn sequence(path: &str, kind: &str, graph: &Graph, shape: &Shape) -> Option<u64> {
+    let node = graph.index.typed.iter().find(|node| node.path == path)?;
+    let scheme = shape.identifier_scheme_of(kind)?;
+    headwater_check::identifier::Template::parse(&scheme.pattern, &scheme.namespace)
+        .ok()?
+        .sequence_of(&node.id)
+}
+
+/// Why a placeholder had no value on a document of this kind.
+fn hole(shape: &Shape, kind: &str, placeholder: &str) -> Hole {
+    let key = placeholder
+        .split_once(':')
+        .map_or(placeholder, |(key, _)| key);
+    if key == "slug" {
+        return match shape.facet_in_role("name") {
+            None => Hole::Schema(
+                "no facet of this taxonomy takes the `name` role, so `{slug}` has no source at all"
+                    .to_string(),
+            ),
+            Some(facet) if !shape.required_facets(kind).contains(&facet.name) => {
+                Hole::Schema(format!(
+                    "`{kind}` requires no facet in the `name` role, so `{{slug}}` has no declared \
+                     source"
+                ))
+            }
+            Some(facet) => Hole::Corpus(format!(
+                "a document of kind `{kind}` states no `{}`, so `{{slug}}` has no value",
+                facet.name
+            )),
+        };
+    }
+    if key == "seq" && shape.identifier_scheme_of(kind).is_none() {
+        return Hole::Schema(format!(
+            "`{kind}` mints under no identifier scheme, so `{{{placeholder}}}` has no source"
+        ));
+    }
+    if key == "seq" {
+        return Hole::Corpus(format!(
+            "the identifier of a document of kind `{kind}` carries no sequence its scheme admits, \
+             so `{{{placeholder}}}` has no value"
+        ));
+    }
+    match shape.required_facets(kind).iter().any(|facet| facet == key) {
+        true => Hole::Corpus(format!(
+            "a document of kind `{kind}` states no `{key}`, so `{{{placeholder}}}` has no value"
+        )),
+        false => Hole::Schema(format!(
+            "`{kind}` requires no facet named `{key}`, so `{{{placeholder}}}` has no declared source"
+        )),
+    }
+}
+
+/// The file name this shelf's layout renders for one document, or why it does
+/// not render one.
+///
+/// The three sources are the scaffolder's three, read in the scaffolder's own
+/// order: the slug of the facet in the `name` role, a facet the document
+/// carries, and the sequence of its identifier. A fourth source here would be a
+/// name that `headwater new` does not write.
+fn rendered(
+    row: &Row,
+    kind: &str,
+    graph: &Graph,
+    shape: &Shape,
+    layout: &str,
+) -> Result<String, Hole> {
+    let Some(document) = row.document.as_ref() else {
+        return Err(Hole::Corpus(format!(
+            "the front matter of a document of kind `{kind}` did not read, so no placeholder has a \
+             value"
+        )));
+    };
+    headwater_scaffold::render_layout(layout, |key| match key {
+        "slug" => shape
+            .facet_in_role("name")
+            .and_then(|facet| scalar(document, &facet.name))
+            .map(|title| headwater_scaffold::slugify(&title)),
+        _ => match scalar(document, key) {
+            Some(value) => Some(value),
+            None => match key {
+                "seq" => sequence(&row.path, kind, graph, shape).map(|value| value.to_string()),
+                _ => None,
+            },
+        },
+    })
+    .map_err(|placeholder| hole(shape, kind, &placeholder))
+}
+
+/// Every shelf that declares a layout, against the documents standing on it.
+///
+/// A generated document is excluded, and the exclusion is spec 6's rule at this
+/// grain rather than a second decision here: the content of a generated file is
+/// a function of its emitter, and so is its name. The projection declaration
+/// states an `output`, so holding one to a shelf layout would report the
+/// emitter as an authoring failure.
+fn layouts(
+    classified: &[&Row],
+    graph: &Graph,
+    taxonomy: &Taxonomy,
+    shape: &Shape,
+    resolved: &Mapping,
+) -> Vec<LayoutReading> {
+    taxonomy
+        .shelves
+        .iter()
+        .filter_map(|shelf| {
+            let layout = headwater_scaffold::declared::layout(resolved, &shelf.name)?;
+            let mut identified = 0;
+            let mut measured = 0;
+            let mut renders = 0;
+            let mut holes: Vec<Hole> = Vec::new();
+            for row in classified {
+                let matched = matches!(
+                    headwater_census::resolve::shelf_for(&row.path, taxonomy),
+                    ShelfMatch::Matched { shelf: found, .. } if found.name == shelf.name
+                );
+                let Outcome::Typed { kind, .. } = &row.outcome else {
+                    continue;
+                };
+                if !matched {
+                    continue;
+                }
+                identified += 1;
+                match rendered(row, kind, graph, shape, layout) {
+                    Ok(name) => {
+                        measured += 1;
+                        if file_name(&row.path) == name {
+                            renders += 1;
+                        }
+                    }
+                    Err(hole) => {
+                        if !holes.iter().any(|known| known.says() == hole.says()) {
+                            holes.push(hole);
+                        }
+                    }
+                }
+            }
+
+            let unmeasured = identified - measured;
+            let reasons: Vec<&str> = holes.iter().map(Hole::says).collect();
+            let adherence = match (identified, measured) {
+                // A declared shelf that holds nothing. The absence is the
+                // corpus's, and a zero printed here would read as a shelf whose
+                // files all disagree with their layout.
+                (0, _) => Supply::Unauthored(format!(
+                    "no document stands on `{}`, so `{layout}` names nothing yet",
+                    shelf.name
+                )),
+                (identified, 0) => {
+                    let text = format!(
+                        "not one of the {identified} documents on `{}` can be measured: {}",
+                        shelf.name,
+                        reasons.join("; ")
+                    );
+                    // Every hole is a missing declaration, so no authoring pass
+                    // over this corpus would end the wait. A hole that one
+                    // document could fill puts the absence in the corpus, and a
+                    // shelf with both is reported as the one somebody can act on.
+                    match holes.iter().all(|hole| matches!(hole, Hole::Schema(_))) {
+                        true => Supply::Undeclared(text),
+                        false => Supply::Unauthored(text),
+                    }
+                }
+                (_, measured) => Supply::Supplied(match unmeasured {
+                    0 => format!(
+                        "`{layout}` renders the name of {renders} of the {measured} documents on \
+                         `{}`",
+                        shelf.name
+                    ),
+                    _ => format!(
+                        "`{layout}` renders the name of {renders} of the {measured} measurable \
+                         documents on `{}`, and {unmeasured} could not be measured: {}",
+                        shelf.name,
+                        reasons.join("; ")
+                    ),
+                }),
+            };
+
+            Some(LayoutReading {
+                shelf: shelf.name.clone(),
+                layout: layout.to_string(),
+                identified,
+                measured,
+                renders,
+                adherence,
             })
         })
         .collect()

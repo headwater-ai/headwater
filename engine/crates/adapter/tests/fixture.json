@@ -11,7 +11,7 @@
     "seen": 25,
     "classified": 23,
     "checked": 22,
-    "instances": 243
+    "instances": 266
   },
   "rules": [
     {
@@ -150,6 +150,12 @@
       ]
     },
     {
+      "rule": "warrant.promoted",
+      "scope": "document",
+      "version": 1,
+      "obligations": []
+    },
+    {
       "rule": "coverage.document_unchecked",
       "scope": "corpus",
       "version": 1,
@@ -267,7 +273,7 @@
       "path": "check/spec/03-no-instance.md",
       "line": 0,
       "column": 0,
-      "message": "this document is classified and all 2 of its check instances were skipped",
+      "message": "this document is classified and all 3 of its check instances were skipped",
       "remediation": "check that the shelf pattern claims the right files, and that the kind declares something a check reads",
       "fixable": false,
       "escape": "none"

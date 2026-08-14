@@ -16,12 +16,12 @@
 
 lock:
   format: 2
-  digest: sha256:7f04325be6cf11ab6a1a14a018f65c0fb08ded205c5f19520cdb6140531f0d7f
+  digest: sha256:b6b8539129626a4eecee268ac7d4fc17d0563d677a43c3ab0f90bd1ec3b16da0
   package: headwater/standard
   version: 1.0.0
   sources:
     - path: packages/headwater-standard/taxonomy.yml
-      digest: sha256:85b3e35b91d4502f6a87268ae83b8204ec2370c693949b37f27ee2afb33c4db4
+      digest: sha256:122d419c498994fa98d85b0cbc9c24d906b643b5b2a2e986f5f5686a5af7ebd3
     - path: docs/taxonomies/design-spec/bundle.yml
       digest: sha256:0dd73708d7200b7b02389a7dc8811ddc80ab61ece7892efd7391cdf504d6bda0
     - path: docs/taxonomies/decision-record/bundle.yml
@@ -779,6 +779,12 @@ resolved:
       class: cohesion
       prevents: process.maintenance
       severity: low
+    OB-WARRANT-1:
+      statement: "A warrant that moves from `asserted` to `accepted` is counted in the change that moved it"
+      rationale: "A script that stamps forty documents writes bytes identical to forty real acceptances, and the standing `asserted` population cannot separate them because a bulk stamp lowers it by exactly what forty reviews would. A count per change is the only reading that can, and a promotion nobody counted is a review nobody can find"
+      class: cohesion
+      prevents: process.traceability
+      severity: medium
     OB-REG-1:
       statement: "Every obligation this taxonomy declares carries exactly one disposition"
       rationale: "An obligation that no control discharges and that states neither a gap nor an acceptance reads from outside like one that is met, and that silence is how an assurance model decays into a list of good intentions"
@@ -969,6 +975,16 @@ resolved:
       promotion:
         permanently_advisory:
           reasoning: "Spec 3 rules that posture per voice category comes from fixability and never from precision, and that a category whose remediation is a rewrite stays advisory whatever its false-positive rate. To block on it makes a judgment about meaning into a gate, and the author who meets it at a red build reaches for the escape hatch"
+    CT-WARRANT-1:
+      mechanism: "check:warrant.promoted"
+      discharges:
+        - OB-WARRANT-1
+      trigger: pull_request
+      posture: advisory
+      acts: detective
+      promotion:
+        permanently_advisory:
+          reasoning: "Spec 3 rules the posture directly. \"Forty in one change is a finding about the review rather than about the documents. The posture is advisory permanently, for the reason that the shift ratio is advisory permanently. A threshold teaches people to promote in smaller batches, and nothing declares one.\" A promotion is a legitimate act, so the rule reports a count and never a defect, and there is nothing for a gate to block on until a taxonomy states how many is too many"
     CT-LANG-1:
       mechanism: "check:language.controlled.not_met"
       discharges:

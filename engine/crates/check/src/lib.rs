@@ -129,6 +129,7 @@
 
 pub mod adoption;
 pub mod cache;
+pub mod change;
 pub mod context;
 pub mod coverage;
 pub mod declaration;
@@ -146,6 +147,7 @@ pub mod language;
 pub mod participation;
 pub mod patch;
 pub mod placement;
+pub mod promotion;
 pub mod readset;
 pub mod reciprocity;
 pub mod register;
@@ -190,7 +192,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 20] = [
+pub const RULES: [&str; 21] = [
     facet_required::RULE,
     facet_value::RULE,
     identifier::RULE,
@@ -208,6 +210,7 @@ pub const RULES: [&str; 20] = [
     source_form::RULE,
     sections::RULE,
     fragment::RULE,
+    promotion::RULE,
     coverage::RULE,
     register::DISPOSITION,
     register::MECHANISM,
@@ -291,6 +294,12 @@ pub struct Run {
     /// its health, and what escaped under each obligation. Spec 4 makes it a
     /// projection of the two declarations, generated and never authored.
     pub register: register::Projection,
+    /// The change this run was scoped to, and nothing for a full-corpus run.
+    ///
+    /// It states an input rather than a verdict, which is why it is here beside
+    /// the read set: a reader who cannot see what a run was scoped to cannot
+    /// reproduce it from what it printed. See [`Scoped`].
+    pub change: Option<Scoped>,
     /// What this run did with its cache. Deliberately outside [`Run::render`]:
     /// see [`cache`] for why a hit count is not part of a verdict.
     pub cache: cache::Report,
@@ -424,6 +433,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::document_exports::<fragment::Fragments>(),
         ),
         (
+            promotion::RULE,
+            scope::document_scope::<promotion::Promoted>(),
+            scope::document_version::<promotion::Promoted>(),
+            scope::document_exports::<promotion::Promoted>(),
+        ),
+        (
             coverage::RULE,
             coverage::SCOPE,
             coverage::VERSION,
@@ -513,6 +528,10 @@ pub fn run(
     let source_form = source_form::SourceForm::over(declared.shape);
     let sections = sections::Sections::over(declared.shape);
     let fragments = fragment::Fragments;
+    // The one rule that declares `NEEDS_PRIOR`, and it carries no declaration:
+    // the transition it reads is spec 3's act rather than a member of any
+    // taxonomy. See [`promotion`].
+    let promoted = promotion::Promoted;
 
     let digests = scope::Digests::of(census);
     let mut instances = scope::over_documents(&required, census, graph, ctx, cache);
@@ -563,6 +582,7 @@ pub fn run(
     ));
     instances.extend(scope::over_documents(&sections, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&fragments, census, graph, ctx, cache));
+    instances.extend(scope::over_documents(&promoted, census, graph, ctx, cache));
 
     let coverage = Coverage::of(census, &instances);
 
@@ -640,9 +660,22 @@ pub fn run(
             name: served.rule,
             version: served.version,
             needs_clock: served.scope.needs_clock(),
+            needs_prior: served.scope.needs_prior(),
         })
         .collect();
     let read_set = ReadSet::of(declared.lock, ctx.now(), &rules, &instances);
+
+    // What the change carried, and what the one rule that reads it made of it.
+    // The promotion count is derived from the findings rather than counted
+    // beside them, so the line and the findings under it cannot disagree.
+    let change = ctx.change().map(|change| Scoped {
+        named: change.named(),
+        unmatched: change.unmatched().into_iter().map(str::to_string).collect(),
+        promotions: findings
+            .iter()
+            .filter(|finding| finding.rule == promotion::RULE)
+            .count(),
+    });
 
     Run {
         instances,
@@ -653,7 +686,75 @@ pub fn run(
         served,
         read_set,
         register,
+        change,
         cache: cache.report(),
+    }
+}
+
+/// What one run's change carried, for the report that states its own inputs.
+///
+/// A full-corpus run has none of this, and the absence is the statement: spec 12
+/// makes the prior version available only in change-scoped evaluation, and
+/// coverage already reports every instance that skipped for want of one.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Scoped {
+    /// The documents the change named, and what became of each.
+    pub named: change::Named,
+    /// The paths the change named that this corpus holds no row at, in path
+    /// order. Nothing is checked over one, so the report is the only place one
+    /// is ever seen.
+    pub unmatched: Vec<String>,
+    /// Warrants that moved from `asserted` to `accepted` in this change.
+    ///
+    /// The count [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#promotion-is-one-human-one-document-one-diff)
+    /// asks for, and the one reading that a standing population cannot give: a
+    /// bulk stamp lowers the `asserted` count exactly as the same number of
+    /// real acceptances would, and it raises this one all at once.
+    pub promotions: usize,
+}
+
+impl Scoped {
+    /// The block a report opens with when a run was scoped to a change.
+    pub fn render(&self) -> String {
+        use std::fmt::Write;
+        let mut out = String::new();
+        let _ = writeln!(
+            out,
+            "scoped to a change: {} documents named, {} added, {} with a prior version this run \
+             read",
+            self.named.documents, self.named.added, self.named.carried
+        );
+        if self.named.unreadable > 0 {
+            let _ = writeln!(
+                out,
+                "  {:5} prior versions did not read, and every instance over one is skipped with \
+                 its reason rather than passed",
+                self.named.unreadable
+            );
+        }
+        // Above the count, because it is the line that says the count is over
+        // fewer documents than the caller named. A path that reached no row is
+        // checked by nothing, so no skipped instance carries it and this is the
+        // only report of one.
+        if !self.unmatched.is_empty() {
+            let _ = writeln!(
+                out,
+                "  {:5} named no row of this corpus, so nothing was checked over them:",
+                self.unmatched.len()
+            );
+            for path in &self.unmatched {
+                let _ = writeln!(out, "        {path}");
+            }
+        }
+        let _ = writeln!(
+            out,
+            "  {:5} promoted from `{}` to `{}`. Nothing declares how many promotions in one \
+             change is too many",
+            self.promotions,
+            promotion::FROM,
+            promotion::TO
+        );
+        out
     }
 }
 
@@ -728,6 +829,12 @@ impl Run {
     pub fn render(&self, detail: Detail) -> String {
         use std::fmt::Write;
         let mut out = String::new();
+        // The change first, because it is the input that decides which
+        // instances reached a verdict at all, and coverage below counts the
+        // ones that did not.
+        if let Some(change) = &self.change {
+            out.push_str(&change.render());
+        }
         out.push_str(&self.coverage.render());
         // Spec 7 puts the count of open pairs "beside coverage", and spec 4
         // says what it adds there: a payload that never shrinks is visible from
