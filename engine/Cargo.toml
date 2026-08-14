@@ -15,6 +15,7 @@ members = [
     "crates/lock",
     "crates/mark",
     "crates/meta",
+    "crates/probe",
     "crates/query",
     "crates/ref",
     "crates/resolve",

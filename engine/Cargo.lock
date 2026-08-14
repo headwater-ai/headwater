@@ -166,6 +166,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "headwater-probe"
+version = "0.1.0"
+dependencies = [
+ "headwater-census",
+ "headwater-check",
+ "headwater-graph",
+ "headwater-hash",
+ "headwater-yaml",
+]
+
+[[package]]
 name = "headwater-query"
 version = "0.1.0"
 dependencies = [
