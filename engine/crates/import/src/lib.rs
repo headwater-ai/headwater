@@ -10,7 +10,7 @@
 //!
 //! # Why this is a correctness root
 //!
-//! [Spec 13](../../../../docs/spec/13-open-obligations.md#the-correctness-roots)
+//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
 //! puts an importer beside the scaffolder and gives the same reason: "Edges
 //! marked `created_by: import` arrive in bulk from a system that this corpus
 //! does not govern, and nobody reads them one at a time. A wrong imported edge

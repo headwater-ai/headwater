@@ -1600,7 +1600,7 @@ fn sweep_report(root: &Path, path: &Path, format: Option<String>) -> ExitCode {
 /// print and the write is a loop over what the plan composed.
 ///
 /// It exits non-zero on any refusal, and there is no advisory posture to fall
-/// back on. [Spec 13](../../../../docs/spec/13-open-obligations.md#the-correctness-roots)
+/// back on. [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
 /// says why: a wrong imported edge produces a correct check result over a wrong
 /// graph, so a finding is what a later run cannot make. Either an import is
 /// refused here or nothing downstream is going to notice.

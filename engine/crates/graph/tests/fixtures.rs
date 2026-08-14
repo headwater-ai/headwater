@@ -374,7 +374,7 @@ fn every_node_of_the_graph_is_a_row_of_the_census_that_resolved_a_kind() {
 
 /// An imported edge and an authored one are two different things in the graph.
 ///
-/// [Spec 13](../../../../docs/spec/13-open-obligations.md#the-correctness-roots)
+/// [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
 /// names an importer a correctness root because "a wrong imported edge produces
 /// a *correct* check result over a *wrong* graph". Nothing downstream can act on
 /// that unless the graph holds the difference, so this asserts that it does.
