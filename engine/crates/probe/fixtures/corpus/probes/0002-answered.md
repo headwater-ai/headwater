@@ -2,8 +2,8 @@
 id: PROBE-FIX-answered
 status: current
 status_since: 2026-08-14
-summary: An answered probe, which names no document and is the one form that needs none.
-probe_category: consistency
+summary: An answered probe, whose closed set of values lives in the section its kind already requires.
+probe_category: sufficiency
 expectation: answered
 oracle: "none"
 ---

@@ -116,7 +116,9 @@ impl std::fmt::Display for Witness {
             } => write!(f, "event {event}, call {call}: `{tool} {argument}`"),
             Witness::NoneOf { calls, over } => write!(
                 f,
-                "{calls} recorded calls, and none of them named any of the {over} documents"
+                "{}, and none named any of the {}",
+                count(*calls, "recorded call"),
+                count(*over, "document")
             ),
             Witness::Cites {
                 event,
@@ -165,7 +167,9 @@ impl std::fmt::Display for Miss {
         match self {
             Miss::NeverRead { calls, over } => write!(
                 f,
-                "{calls} recorded calls, and none named any of the {over} documents"
+                "{}, and none named any of the {}",
+                count(*calls, "recorded call"),
+                count(*over, "document")
             ),
             Miss::Read {
                 event,
@@ -174,7 +178,9 @@ impl std::fmt::Display for Miss {
             } => write!(f, "event {event}, call {call} read `{argument}`"),
             Miss::NeverCited { artifacts, over } => write!(
                 f,
-                "{artifacts} produced artifacts, and none cites any of the {over} identifiers"
+                "{}, and none cites any of the {}",
+                count(*artifacts, "produced artifact"),
+                count(*over, "identifier")
             ),
             Miss::NoAnswerGiven => write!(f, "the session ended with no answer"),
             Miss::Outside { event, value } => write!(
@@ -183,7 +189,8 @@ impl std::fmt::Display for Miss {
             ),
             Miss::OracleReported { artifacts, oracle } => write!(
                 f,
-                "`{oracle}` reported over each of the {artifacts} produced artifacts"
+                "`{oracle}` reported over each of the {}",
+                count(*artifacts, "produced artifact")
             ),
         }
     }
@@ -243,8 +250,9 @@ impl std::fmt::Display for Refusal {
             ),
             Refusal::NothingCitable { over } => write!(
                 f,
-                "it expects `cited` and none of the {over} targets it examines carries an \
-                 identifier. A produced artifact cites an identifier, and nothing cites a path"
+                "it expects `cited` and none of the {} it examines carries an identifier. A \
+                 produced artifact cites an identifier, and nothing cites a path",
+                count(*over, "target")
             ),
             Refusal::Unrecorded { what } => write!(
                 f,
@@ -501,9 +509,9 @@ impl Results {
             None => {
                 let _ = writeln!(
                     out,
-                    "No session reached a verdict, so this run reports no rate. {} sessions were \
-                     refused, and a rate over none of them would be a number about nothing.",
-                    self.refused()
+                    "No session reached a verdict, so this run reports no rate. {} were refused, \
+                     and a rate over none of them would be a number about nothing.",
+                    count(self.refused(), "session")
                 );
             }
             Some(interval) => {
@@ -520,18 +528,20 @@ impl Results {
                 let _ = writeln!(
                     out,
                     "The denominator is the graded sessions and never the selected probes. {} \
-                     sessions reached no verdict and are outside both halves of that fraction.",
-                    self.refused()
+                     reached no verdict and are outside both halves of that fraction.",
+                    count(self.refused(), "session")
                 );
             }
         }
-        let _ = writeln!(out);
-        let _ = writeln!(
-            out,
-            "An interval that overlaps the previous run's is variance and one that does not is \
-             drift. This is one arm, so it estimates no effect: an efficacy claim is a comparison \
-             of two results, and the arm each one recorded is on it."
-        );
+        if self.rate().is_some() {
+            let _ = writeln!(out);
+            let _ = writeln!(
+                out,
+                "An interval that overlaps the previous run's is variance and one that does not \
+                 is drift. This is one arm, so it estimates no effect: an efficacy claim is a \
+                 comparison of two results, and the arm each one recorded is on it."
+            );
+        }
         out
     }
 }
@@ -539,6 +549,16 @@ impl Results {
 /// A proportion, as a reader reads it.
 fn percent(value: f64) -> String {
     format!("{:.1}%", value * 100.0)
+}
+
+/// A count and its noun. A verdict that says "1 documents" reads as a report
+/// nobody proofread, and every number here is small enough for a reader to
+/// check by hand.
+fn count(how_many: usize, noun: &str) -> String {
+    match how_many {
+        1 => format!("1 {noun}"),
+        other => format!("{other} {noun}s"),
+    }
 }
 
 /// The events of one probe, grouped by session, in the order the sessions first

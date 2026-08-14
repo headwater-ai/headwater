@@ -8,10 +8,16 @@
 //! `fixtures/transcript.md` is written by hand and stands for what a recorder
 //! writes.
 //!
-//! What a suite holds is the two deterministic halves. The plan is a function of
-//! the tree and the declared envelope. The record is a function of the
-//! transcript and the tree. Both are recorded whole, so a change to either
-//! reaches a diff.
+//! What a suite holds is the three deterministic parts. The plan is a function
+//! of the tree and the declared envelope. The record is a function of the
+//! transcript and the tree. The grade is a function of the record, the
+//! selection and the grader version. All three are recorded whole, so a change
+//! to any of them reaches a diff.
+//!
+//! The grade is recorded three times over, and that is the point of it. One
+//! transcript satisfies every predicate form, one refutes every form, and one
+//! refuses every form. A grader that returned a single verdict for everything
+//! passes exactly one of the three, and nothing else in this file would notice.
 //!
 //!     HEADWATER_BLESS=1 cargo test -p headwater-probe --test fixtures
 //!
@@ -34,9 +40,10 @@ use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
 use headwater_probe::budget::{self, Budgets};
+use headwater_probe::grade::{Miss, Refusal as NoVerdict, Verdict, Witness};
 use headwater_probe::intake::Tree;
-use headwater_probe::plan::{Narrowing, Refusal};
-use headwater_probe::{Arm, Category, Plan, Record, Tier};
+use headwater_probe::plan::{Examined, Narrowing, Refusal, Selected};
+use headwater_probe::{Arm, Category, Expectation, Plan, Record, Results, Tier};
 use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};
 
@@ -144,7 +151,11 @@ fn transcript(name: &str) -> String {
     std::fs::read_to_string(fixtures_dir().join(name)).expect("the transcript")
 }
 
-// --- the two recorded artifacts ---------------------------------------------
+fn results_over(source: &str) -> Results {
+    Results::over(&record_of(source), &regression().selected)
+}
+
+// --- the recorded artifacts --------------------------------------------------
 
 #[test]
 fn the_regression_plan_over_the_fixture_corpus_is_recorded() {
@@ -159,16 +170,234 @@ fn the_record_over_the_transcript_is_recorded() {
     );
 }
 
+/// Three recorded results, and the three are the fixture set that spec 12 asks
+/// a correctness root for. The first satisfies every predicate form, the second
+/// refutes every one, and the third refuses every one. A grader that returned
+/// one verdict for everything passes exactly one of the three.
+#[test]
+fn every_predicate_form_is_recorded_satisfied_refuted_and_refused() {
+    for (transcript_name, recorded) in [
+        ("transcript.md", "grade.txt"),
+        ("transcript-missed.md", "grade-missed.txt"),
+        ("transcript-refused.md", "grade-refused.txt"),
+    ] {
+        compare(
+            &fixtures_dir().join(recorded),
+            &results_over(&transcript(transcript_name)).render(),
+        );
+    }
+}
+
 // --- determinism, which is the only reproducibility a probe claims -----------
 
 /// The claim the whole layer rests on: a probe result is a function of the
-/// transcript, the expectations and the grader version. The first two halves of
+/// transcript, the expectations and the grader version. All three halves of
 /// that are here, and each is the same bytes twice.
+///
+/// It is necessary and it is not sufficient. A grader that answered
+/// `satisfied` to everything writes the same bytes twice as well, which is why
+/// the recorded fixtures above exist and why this test is not the instrument.
 #[test]
-fn a_plan_and_a_record_are_each_the_same_bytes_twice() {
+fn a_plan_a_record_and_a_grade_are_each_the_same_bytes_twice() {
     assert_eq!(regression().render(), regression().render());
     let source = transcript("transcript.md");
     assert_eq!(record_of(&source).render(), record_of(&source).render());
+    assert_eq!(results_over(&source).render(), results_over(&source).render());
+}
+
+// --- the verdicts, by variant, so a message may be reworded ------------------
+
+/// Every satisfied verdict names the thing in the transcript that satisfied
+/// it. This is the property that earns the grader the right to grade, and it
+/// is asserted over the witness rather than over the rendered sentence.
+#[test]
+fn every_satisfied_verdict_carries_a_witness_a_reader_can_check() {
+    let results = results_over(&transcript("transcript.md"));
+    assert_eq!(results.graded(), 5, "five forms, one session each");
+    assert_eq!(results.satisfied(), 5);
+    assert_eq!(results.refused(), 0);
+
+    let witnesses: Vec<&Witness> = results
+        .rows
+        .iter()
+        .flat_map(|row| &row.sessions)
+        .filter_map(|graded| match &graded.verdict {
+            Verdict::Satisfied(witness) => Some(witness),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(witnesses.len(), 5);
+    for witness in witnesses {
+        match witness {
+            Witness::Read { event, call, .. } => assert!(*event > 0 && *call > 0),
+            Witness::NoneOf { calls, over } => assert!(*calls > 0 && *over > 0),
+            Witness::Cites { event, .. } | Witness::Answered { event, .. } => assert!(*event > 0),
+            Witness::Clean { event, .. } => assert!(*event > 0),
+        }
+    }
+}
+
+/// The absolute argument and the boundary, in the transcript rather than in a
+/// unit test: a session driven from another working directory names the same
+/// document, and a copy of it is a different document.
+#[test]
+fn an_opened_verdict_cites_the_call_that_named_the_document() {
+    let results = results_over(&transcript("transcript.md"));
+    let row = row_of(&results, "PROBE-FIX-opened");
+    match &row.sessions[0].verdict {
+        Verdict::Satisfied(Witness::Read { call, argument, .. }) => {
+            assert_eq!(*call, 2, "the first call named a copy and not the document");
+            assert!(argument.starts_with('/'), "{argument}");
+        }
+        other => panic!("{other:?}"),
+    }
+}
+
+#[test]
+fn every_predicate_form_has_a_transcript_that_refutes_it() {
+    let results = results_over(&transcript("transcript-missed.md"));
+    assert_eq!(results.graded(), 5);
+    assert_eq!(results.satisfied(), 0, "not one of the five is satisfied");
+    for (probe, expected) in [
+        ("PROBE-FIX-opened", "NeverRead"),
+        ("PROBE-FIX-answered", "Outside"),
+        ("PROBE-FIX-not-opened", "Read"),
+        ("PROBE-FIX-cited", "NeverCited"),
+        ("PROBE-FIX-patched", "OracleReported"),
+    ] {
+        let row = row_of(&results, probe);
+        let Verdict::NotSatisfied(miss) = &row.sessions[0].verdict else {
+            panic!("{probe}: {:?}", row.sessions[0].verdict);
+        };
+        let named = match miss {
+            Miss::NeverRead { .. } => "NeverRead",
+            Miss::Read { .. } => "Read",
+            Miss::NeverCited { .. } => "NeverCited",
+            Miss::NoAnswerGiven => "NoAnswerGiven",
+            Miss::Outside { .. } => "Outside",
+            Miss::OracleReported { .. } => "OracleReported",
+        };
+        assert_eq!(named, expected, "{probe}");
+    }
+}
+
+/// The six refusals, which are the six places a grader that wanted a number
+/// could have returned a green one.
+#[test]
+fn a_key_the_recorder_never_wrote_reaches_a_refusal_and_never_a_pass() {
+    let source = transcript("transcript-refused.md");
+    let results = results_over(&source);
+    assert_eq!(results.graded(), 0, "not one session reached a verdict");
+    assert_eq!(results.satisfied(), 0);
+    assert!(
+        results.rate().is_none(),
+        "a rate over nothing is a number about nothing"
+    );
+
+    for (probe, expected) in [
+        ("PROBE-FIX-opened", NoVerdict::Unrecorded { what: "calls" }),
+        ("PROBE-FIX-answered", NoVerdict::Unrecorded { what: "answer" }),
+        ("PROBE-FIX-not-opened", NoVerdict::NothingObserved),
+        ("PROBE-FIX-cited", NoVerdict::Unrecorded { what: "produced" }),
+        (
+            "PROBE-FIX-patched",
+            NoVerdict::NotChecked {
+                artifact: "out/patch.md".into(),
+            },
+        ),
+    ] {
+        let row = row_of(&results, probe);
+        assert_eq!(
+            row.sessions[0].verdict,
+            Verdict::Refused(expected),
+            "{probe}"
+        );
+    }
+
+    // The sixth: a probe the selection carries and the transcript never names.
+    let without = source.replace(
+        "- probe: PROBE-FIX-answered\n  session: 1\n  calls: []\n  produced: []\n",
+        "",
+    );
+    let results = results_over(&without);
+    let row = row_of(&results, "PROBE-FIX-answered");
+    assert_eq!(row.sessions[0].verdict, Verdict::Refused(NoVerdict::NotRun));
+}
+
+/// A transcript the intake refused reaches no grader, which is the input
+/// contract this component inherited rather than restated.
+#[test]
+fn a_refused_transcript_produces_no_verdict_at_all() {
+    let results = results_over(&transcript("transcript-with-prose.md"));
+    assert!(results.unusable.is_some());
+    assert!(results.rows.is_empty());
+    assert!(results.render().contains("reached no grader"));
+}
+
+/// Three refusals that no transcript can provoke, because `headwater probe
+/// plan` stops the run before one is recorded. The grader holds them anyway: a
+/// caller that assembled a selection by hand is a caller the plan never saw,
+/// and a component that trusted its caller for the `patched` sentinel would
+/// pass the one case [OBL-repo-0123] says must be refused.
+#[test]
+fn the_grader_refuses_a_selection_the_plan_would_not_have_produced() {
+    let one = |expectation: Expectation, oracle: Option<&str>, answers: Vec<String>| Selected {
+        path: "corpus/probes/0001-opened.md".into(),
+        id: "PROBE-FIX-opened".into(),
+        category: Category::Discovery,
+        expectation,
+        examines: vec![Examined {
+            id: None,
+            path: "corpus/probes/0002-answered.md".into(),
+        }],
+        oracle: oracle.map(str::to_string),
+        answers,
+    };
+    let record = record_of(&transcript("transcript.md"));
+
+    for (selected, expected) in [
+        (
+            one(Expectation::Patched, None, Vec::new()),
+            NoVerdict::OracleUndeclared,
+        ),
+        (
+            one(Expectation::Answered, None, Vec::new()),
+            NoVerdict::AnswersUndeclared,
+        ),
+        (
+            one(Expectation::Cited, None, Vec::new()),
+            NoVerdict::NothingCitable { over: 1 },
+        ),
+    ] {
+        let results = Results::over(&record, std::slice::from_ref(&selected));
+        assert_eq!(
+            results.rows[0].sessions[0].verdict,
+            Verdict::Refused(expected)
+        );
+    }
+}
+
+/// The denominator, stated where a reader of the report sees it. A refused
+/// session is outside both halves of the fraction, so a run that refused four
+/// of five sessions reports a rate over one and says so.
+#[test]
+fn the_rate_is_over_the_graded_sessions_and_names_what_it_left_out() {
+    let results = results_over(&transcript("transcript.md"));
+    let rendered = results.render();
+    assert!(rendered.contains("5 of 5 graded sessions"), "{rendered}");
+    assert!(rendered.contains("95% interval"), "{rendered}");
+    assert!(
+        rendered.contains("The denominator is the graded sessions"),
+        "{rendered}"
+    );
+}
+
+fn row_of<'a>(results: &'a Results, probe: &str) -> &'a headwater_probe::grade::Row {
+    results
+        .rows
+        .iter()
+        .find(|row| row.probe == probe)
+        .unwrap_or_else(|| panic!("{probe} is not in the results"))
 }
 
 // --- the budget, which is the reason the harness exists ----------------------
@@ -177,15 +406,15 @@ fn a_plan_and_a_record_are_each_the_same_bytes_twice() {
 fn the_regression_tier_clears_its_ceiling_and_the_campaign_tier_does_not() {
     let plan = regression();
     assert!(plan.runs(), "{:?}", plan.refusal);
-    assert_eq!(plan.sessions, 2, "two probes, one arm, one repetition");
-    assert_eq!(plan.projected, 50);
+    assert_eq!(plan.sessions, 5, "five probes, one arm, one repetition");
+    assert_eq!(plan.projected, 125);
 
     let campaign = plan_at(Tier::Campaign, &Narrowing::default());
     assert_eq!(
         campaign.refusal,
         Some(Refusal::OverBudget {
-            sessions: 232,
-            projected: 5800,
+            sessions: 580,
+            projected: 14500,
             budget: 100,
         }),
         "a run that does not happen is the cheaper error"
@@ -209,14 +438,14 @@ fn a_category_that_no_probe_declares_refuses_rather_than_planning_nothing() {
     let plan = plan_at(
         Tier::Regression,
         &Narrowing {
-            category: Some(Category::Sufficiency),
+            category: Some(Category::Consistency),
             ..Narrowing::default()
         },
     );
     assert_eq!(
         plan.refusal,
         Some(Refusal::SelectionEmpty {
-            category: Some(Category::Sufficiency)
+            category: Some(Category::Consistency)
         }),
         "an empty selection is a run over a denominator nobody declared"
     );
@@ -395,6 +624,26 @@ fn a_key_outside_the_closed_set_refuses_the_transcript() {
     );
 }
 
+/// The same rule, in the third place a key can appear. The closed-key test ran
+/// over an event and over a tool call and never over a produced artifact, so a
+/// transcript could carry the model's account of itself in the one field the
+/// grader was about to read. Only a component that read `produced` could find
+/// it, which is why this case arrives with the grader.
+#[test]
+fn a_key_outside_the_closed_set_of_a_produced_artifact_refuses_the_transcript() {
+    let source = transcript("transcript.md").replace(
+        "    - path: out/report.md\n",
+        "    - path: out/report.md\n      note: I cited it because the descriptor named it.\n",
+    );
+    let record = record_of(&source);
+    match record.refusal {
+        Some(headwater_probe::intake::Refusal::KeyNotPermitted { ref key, .. }) => {
+            assert_eq!(key, "note")
+        }
+        other => panic!("{other:?}"),
+    }
+}
+
 #[test]
 fn a_transcript_planned_against_another_taxonomy_is_refused_whole() {
     let source = transcript("transcript.md").replace("lock: sha256:fixture", "lock: sha256:other");
@@ -431,11 +680,11 @@ fn a_run_that_recorded_no_cost_is_refused() {
 fn an_event_naming_a_probe_this_corpus_does_not_declare_does_not_count() {
     let record = record_of(&transcript("transcript.md"));
     assert!(record.refusal.is_none(), "{:?}", record.refusal);
-    assert_eq!(record.read, 3);
+    assert_eq!(record.read, 6);
     assert_eq!(record.rejected.len(), 1);
-    assert_eq!(record.probes.len(), 2);
+    assert_eq!(record.probes.len(), 5);
     assert_eq!(
-        record.declared, 2,
+        record.declared, 5,
         "the denominator is what the corpus declares and never what the run named"
     );
 }
