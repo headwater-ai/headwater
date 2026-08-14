@@ -231,6 +231,18 @@ pub fn find_version(root: &Path, name: &str) -> Option<String> {
     text(&manifest, "version")
 }
 
+/// The directory a package sits in, and the manifest it declares.
+///
+/// [`sources`] reads the manifest for the taxonomy and the bundles, and it is
+/// not the only reader any more. A conformance rule set is package content that
+/// no taxonomy source names, so a caller that reads one needs the directory and
+/// the `contents` block without resolving anything. It answers `None` on the
+/// same terms [`find_version`] does: a repository with no package installed is
+/// the ordinary state of a repository that nothing has bound yet.
+pub fn located(root: &Path, name: &str) -> Option<(PathBuf, Mapping)> {
+    find(root, name).ok()
+}
+
 fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>> {
     let packages = root.join(PACKAGES);
     let mut entries: Vec<PathBuf> = std::fs::read_dir(&packages)

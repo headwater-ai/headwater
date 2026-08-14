@@ -70,6 +70,7 @@ dependencies = [
  "headwater-audit",
  "headwater-census",
  "headwater-check",
+ "headwater-conformance",
  "headwater-generate",
  "headwater-graph",
  "headwater-hash",
@@ -79,6 +80,18 @@ dependencies = [
  "headwater-resolve",
  "headwater-scaffold",
  "headwater-sweep",
+ "headwater-yaml",
+]
+
+[[package]]
+name = "headwater-conformance"
+version = "0.1.0"
+dependencies = [
+ "headwater-census",
+ "headwater-check",
+ "headwater-generate",
+ "headwater-lock",
+ "headwater-resolve",
  "headwater-yaml",
 ]
 

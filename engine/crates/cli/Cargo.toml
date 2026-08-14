@@ -28,6 +28,12 @@ headwater-audit = { path = "../audit" }
 
 headwater-census = { path = "../census" }
 headwater-check = { path = "../check" }
+
+# `headwater conformance`. The rule set reader, the waiver reader and every
+# reading sit in the library, so the verb is a shell over them and a test reads
+# a repository without starting a process.
+headwater-conformance = { path = "../conformance" }
+
 headwater-generate = { path = "../generate" }
 headwater-graph = { path = "../graph" }
 

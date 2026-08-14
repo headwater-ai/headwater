@@ -89,6 +89,7 @@ headwater export             [--profile <name>] [--format json|jsonschema] [--at
 headwater init               [--corpus <dir>] [--package <name>] [--root <path>]
 headwater infer              [--owner <name>] [--until <date>] [--write]
                              [--now <date>] [--root <path>]
+headwater conformance        [--level <name>] [--now <date>] [--root <path>]
 headwater taxonomy validate  [--root <path>]
 headwater taxonomy resolve   [--check] [--root <path>]
 headwater taxonomy audit     [--now <date>] [--root <path>]
@@ -168,6 +169,14 @@ headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
                      an adoption payload: `(document, rule)` pairs under tasks
                      that each carry an owner and an expiry. It prints the
                      payload and writes nothing without `--write`.
+  conformance        evaluate this repository against the conformance rules the
+                     taxonomy package ships, and report the level that the
+                     passing rules reach. A level states what this repository
+                     wired up: it measures nothing about the corpus, no key
+                     declares one, and a waiver moves the exit status and never
+                     the level. A rule this engine holds no reading for ends the
+                     run rather than being skipped. Without `--level` it exits 0
+                     whatever it finds.
   taxonomy validate  resolve the sources and report every rule of spec 2's
                      list, and what each one did not decide. Writes nothing.
   taxonomy resolve   write `.headwater/taxonomy.lock`. It is written only when
@@ -209,7 +218,8 @@ headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
                  instance. This run and a cached one write the same bytes to
                  standard output, and a difference between them is a defect in
                  the cache rather than a result.
-  --now <date>   `check`, `gate`, `new`, `mcp` and `taxonomy audit`: the date to
+  --now <date>   `check`, `gate`, `new`, `mcp`, `conformance` and
+                 `taxonomy audit`: the date to
                  evaluate against, as `YYYY-MM-DD`. Defaults to today. On
                  `taxonomy audit` it is what a staleness reading and a dwell
                  reading are taken at, so two audits of one tree at one date
@@ -248,6 +258,10 @@ headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
                  debt above a suppression and this engine will not invent one.
   --until <date> `infer` only: the last day the tasks it proposes hold, as
                  `YYYY-MM-DD`. Ninety days out by default.
+  --level <name> `conformance` only: the rung to ask about, by the name the
+                 package declares. It exits non-zero on a gap under that rung
+                 that no live waiver covers. It never moves the level the report
+                 states, which is computed from met rules alone.
   --write        `infer`: put the payload in the lock, which is committed and
                  reviewed. Without it nothing is written. `mcp`: register the
                  working-tree write class, which is `new` and `fix`. Spec 5
@@ -341,6 +355,7 @@ fn main() -> ExitCode {
     let mut title: Option<String> = None;
     let mut under: Option<String> = None;
     let mut relates: Vec<(String, String)> = Vec::new();
+    let mut level: Option<String> = None;
     let mut words: Vec<String> = Vec::new();
 
     while let Some(argument) = arguments.next() {
@@ -410,6 +425,10 @@ fn main() -> ExitCode {
             "--package" => match arguments.next() {
                 Some(name) => package = Some(name),
                 None => return fail("--package names a package and none followed it"),
+            },
+            "--level" => match arguments.next() {
+                Some(name) => level = Some(name),
+                None => return fail("--level names a level and none followed it"),
             },
             "--out" => match arguments.next() {
                 Some(path) => out = Some(PathBuf::from(path)),
@@ -496,6 +515,7 @@ fn main() -> ExitCode {
         ["export"] => export(&root, profile, format, generated_at, check_only),
         ["init"] => init(&root, corpus_root, package),
         ["infer"] => infer(&root, owner, until, write, now),
+        ["conformance"] => conformance(&root, level.as_deref(), now),
         // Spec 6 lists this verb and no document of the specification states
         // what an expression is. The engine names the gap rather than invent a
         // form, which is the posture the resolver takes over a `$package`
@@ -547,7 +567,8 @@ fn main() -> ExitCode {
         [other, ..] => fail(&format!(
             "`{other}` is not a verb this binary carries yet. \
              It carries `check`, `gate`, `route`, `explain`, `mcp`, `new`, `capture`, \
-             `sweep`, `generate`, `import`, `export`, `init`, `infer` and `taxonomy`"
+             `sweep`, `generate`, `import`, `export`, `init`, `infer`, `conformance` and \
+             `taxonomy`"
         )),
     }
 }
@@ -706,6 +727,102 @@ fn audit(root: &Path, now: Option<Date>) -> ExitCode {
     );
     print!("{}", audit.render());
     ExitCode::SUCCESS
+}
+
+/// `headwater conformance`.
+///
+/// Whether this repository wired the method, rather than only copied it. The
+/// rules come from the package and the readings come from this engine, and
+/// [spec 7](../../../../docs/spec/07-distribution-and-federation.md#conformance)
+/// argues both halves.
+///
+/// **Three refusals, and each one keeps a report from claiming more than it
+/// measured.** A rule this engine holds no reading for ends the run, on the
+/// `requires_engine` precedent. A waiver naming a rule the package does not
+/// declare ends it, because no report could list that deviation. A waiver
+/// missing any of its four fields ends it, because a deviation with no owner or
+/// no expiry is one nobody closes.
+///
+/// **`--level` is the one thing that moves the exit status, and it moves only
+/// that.** Without it the verb exits 0 whatever it finds, on the terms
+/// `taxonomy audit` exits 0: it measures an adoption and it gates nothing. With
+/// it the verb asks one question — is this repository at that rung — and a live
+/// waiver answers for the rule it covers. The level the report states is
+/// computed from met rules alone and no waiver reaches it.
+fn conformance(root: &Path, level: Option<&str>, now: Option<Date>) -> ExitCode {
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let Some(context) = now.map(Context::at).or_else(Context::from_system_clock) else {
+        eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
+        return ExitCode::FAILURE;
+    };
+
+    let set = match headwater_conformance::at(root, &loaded.consumer) {
+        Ok(set) => set,
+        Err(error) => return fail(&error.to_string()),
+    };
+    let waivers = match headwater_conformance::waivers(root) {
+        Ok(waivers) => waivers,
+        Err(refusals) => {
+            eprintln!("headwater: a waiver in the consumer declaration did not read");
+            for refusal in &refusals {
+                eprintln!("  {refusal}");
+            }
+            return ExitCode::FAILURE;
+        }
+    };
+
+    // The projection plan, built the one way `generate` builds one. A second
+    // builder here would be a second answer to the question that rule asks.
+    let projections = match headwater_generate::Projections::read(&loaded.lock.taxonomy) {
+        Ok(projections) => projections,
+        Err(errors) => return refused("the projections", &errors),
+    };
+    let surface = loaded.surface();
+    let plan = headwater_generate::plan(&surface, &loaded.census, &projections, &loaded.identity());
+
+    let report = match headwater_conformance::evaluate(
+        &set,
+        &waivers,
+        &headwater_conformance::Subject {
+            root,
+            consumer: &loaded.consumer,
+            lock: &loaded.lock,
+            census: &loaded.census,
+            plan: &plan,
+            now: context.now(),
+        },
+    ) {
+        Ok(report) => report,
+        Err(refusals) => {
+            eprintln!("headwater: a waiver names no rule this package declares");
+            for refusal in &refusals {
+                eprintln!("  {refusal}");
+            }
+            return ExitCode::FAILURE;
+        }
+    };
+    print!("{}", report.render());
+
+    let Some(level) = level else {
+        return ExitCode::SUCCESS;
+    };
+    match report.gate(level) {
+        Err(why) => fail(&why),
+        Ok(true) => {
+            println!("\n{level} passes, with every gap under it covered by a live waiver or met");
+            ExitCode::SUCCESS
+        }
+        Ok(false) => {
+            eprintln!(
+                "headwater: {level} is not passed. Each gap above states the remediation the \
+                 package wrote for it"
+            );
+            ExitCode::FAILURE
+        }
+    }
 }
 
 /// `headwater taxonomy publish`.

@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "headwater-conformance"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+# The rule set is package content, so it is read with the loader that reads the
+# manifest beside it. `Consumer` also carries the pin that `pin.current` reads,
+# and `release` is what a pinned digest is compared against.
+headwater-resolve = { path = "../resolve" }
+
+# The lock, and the source digests that say whether it is current. A second
+# reading of that would be a second answer to a question the CLI already prints.
+headwater-lock = { path = "../lock" }
+
+# The classified rows that `corpus.classified` reads.
+headwater-census = { path = "../census" }
+
+# The projection plan that `projections.current` holds against the tree. The
+# comparison is `generate --check`, and this crate calls it rather than
+# repeating it.
+headwater-generate = { path = "../generate" }
+
+# `Date`, which a waiver expiry is read against. The clock is injected on the
+# same terms a check injects one.
+headwater-check = { path = "../check" }
+
+# Both the rule set and the waiver block are spanned YAML.
+headwater-yaml = { path = "../yaml" }
