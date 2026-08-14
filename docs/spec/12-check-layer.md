@@ -299,6 +299,28 @@ The sweep ([spec 4](04-assurance-model.md#discharging-coherence-obligations-the-
 
 That keeps "no LLM in the validation path" literally true, because the validation path is the one that produces verdicts. Coherence findings still flow through the same tooling that a human already reads.
 
+### Four things stop a sweep from gating, and none of them is a rule that somebody keeps
+
+A promise that a mechanism never blocks is worth what enforces it. Four things enforce this one, in the order of how hard each is to undo.
+
+**The compiler.** The sampler is its own crate, and that crate names `headwater-check` for the finding shape. So `headwater-check` can never name the sampler: the dependency would be a cycle and the build would refuse it. No rule can read a sweep finding, no run can carry one, and `check --strict` cannot see one. This is the argument that the adapter boundary already makes one level up, applied where the cost of an error is highest.
+
+**The exit status.** `headwater sweep report` exits zero with findings, exits zero with every finding refused, and exits zero when it refuses the whole file. There is no `--strict`. A refusal is a verdict about the sampler rather than about the corpus, and it is tempting to exit non-zero on one. That would put a model's output on an exit status, which is the property this section exists to deny. The two non-zero exits are the caller's: a path that the process cannot read, and a `--format` that names no target. Both are decided before any file is parsed.
+
+**The absence of a caller.** [The commit gate](../../CLAUDE.md) runs `headwater check --strict` and nothing else, and the CI job runs the verbs that spec 6 lists. Neither names this verb. A sweep runs when a person or a schedule asks for one.
+
+**No socket.** No crate of this engine depends on an HTTP client, and the sweep verbs open no connection. A model that nobody can reach means that nobody wrote a return file, and a verb with no file to read says so and stops. So an unreachable model can never fail a build, because no build ever waits for one.
+
+The engine also writes nothing. `sweep report` prints the front matter that would declare a proposed edge, and it has no `--write`. A proposal that an agent applies to itself is the same act as an agent that accepts its own draft. [OBL-repo-0108](../obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md) records that act at the scale of a whole corpus.
+
+### What a suite over a sampler can hold
+
+A check without a failing fixture does not ship, and a sampler has no such fixture, because the output under test is a model's. The suite therefore covers the two deterministic halves and states that it covers nothing else.
+
+The plan is a function of the tree. The report is a function of a return file and the tree. Both are recorded whole and both are asserted to write one set of bytes over two runs. A return file that stands for what a model returns is written by hand, and it carries one refusal per test that the intake runs. A regression in any test then shows up as a finding that reached a reader and should not have.
+
+One test in that suite asserts a silence. The fixture corpus holds the document of [OBL-repo-0113](../obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md), the whole check layer runs over it, and no finding names it. The sweep intake then runs and one finding does. A green run is no evidence that a constraint is enforced, and this pair of assertions is the standing statement of that.
+
 ## The correctness roots
 
 Fixture discipline (below) covers checks. It does not cover the components that every check silently trusts. A defect in any of these produces systematically green or misdirected results, which is the silent-pass failure one level up. Each component therefore owes its own conformance fixtures, in the same spirit as "a check without a failing fixture does not ship":
