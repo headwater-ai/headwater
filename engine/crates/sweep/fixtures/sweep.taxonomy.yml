@@ -1,0 +1,101 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the sweep fixture corpus is read against.
+#
+# It is deliberately not the check crate's fixture taxonomy, and the reason is
+# one relation. A sweep refuses a finding that restates an edge the graph
+# already declares, so the corpus under it has to be able to declare
+# `conflicts_with` and `supersedes` — the two relations spec 4 names as the
+# outcome a sweep is for. Neither is in a taxonomy written to exercise the
+# check layer, and adding them there would move that crate's recorded report
+# for a reason that has nothing to do with a check.
+#
+# Everything else here is the smallest shape that types a document: one shelf,
+# one concrete kind with a section contract, and the three facets that kind
+# requires.
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft, role: initial}
+      - {value: current, role: live}
+      - {value: superseded, role: terminal-retained}
+
+  status_since:
+    role: state_entered
+    required: true
+
+  summary:
+    role: scent
+    required: true
+
+  doc_type:
+    volatility: stable
+
+regimes:
+  voice:
+    guarded: {forbid: [hedging]}
+  language:
+    # A profile this engine does not implement, so the language instances skip
+    # by name rather than reporting prose in a fixture that is about something
+    # else. What this corpus is a fixture for is a sweep, and a sweep is the
+    # mechanism for what no lexical rule reads.
+    ste_strict: {tag: en-US, controlled: ASD-STE100, profile: strict}
+
+identifier_schemes:
+  decision_id: {pattern: "DR-{namespace}-{seq:04d}", namespace: SWP, allocation: reconcile-first}
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status, status_since, summary]}
+
+  decision_record:
+    is_a: governed_document
+    identifier: {scheme: decision_id}
+    voice: guarded
+    language: ste_strict
+    sections: {require: [Context, Decision]}
+
+shelves:
+  decisions:
+    path: corpus/**
+    homogeneous: true
+    kind: decision_record
+
+relations:
+  # No reciprocity and no inverse. A declared conflict is a deterministic check
+  # in the real taxonomy, and what this fixture needs from it is one thing: an
+  # edge the graph carries, so that a sweep finding restating it is refused.
+  conflicts_with:
+    family: decision
+    from: [governed_document]
+    to:   [governed_document]
+
+  supersedes:
+    family: decision
+    from: [governed_document]
+    to:   [governed_document]
+
+obligations:
+  OB-SWP-1:
+    statement: Two current documents do not contradict each other in silence
+    rationale: A contradiction nobody declared is one every reader has to rediscover
+    class: coherence
+    prevents: content.inconsistent
+    severity: medium
+
+# One control, and it is here to be measured rather than to be copied. Its
+# mechanism carries a prefix this engine does not read, so the register calls it
+# external and the obligation above reads `verified` with nothing having run.
+# `tests/fixtures.rs` asserts exactly that, and
+# `docs/obligations/0114-…` is the record of it.
+controls:
+  CT-SWP-1:
+    mechanism: sweep:undeclared_conflict
+    discharges: [OB-SWP-1]
+    trigger: scheduled
+    posture: advisory
+    acts: detective

@@ -13,6 +13,11 @@ path = "src/main.rs"
 # library that an editor, the MCP server or a CI adapter consumes directly, and
 # none of them starts this binary and parses its text.
 [dependencies]
+# The sampler, which is not a check and is a separate crate for that reason.
+# Nothing in `headwater-check` names it, so no rule can read a sweep finding
+# and `--strict` can never see one.
+headwater-sweep = { path = "../sweep" }
+
 # The CI adapters. `check --format` is the one caller, and the dependency
 # points this way so that nothing in the engine below can reach a forge.
 headwater-adapter = { path = "../adapter" }

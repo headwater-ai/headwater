@@ -268,6 +268,9 @@ To name a coherence class is easy. To discharge it is the hard part, and structu
 - claims that a newer source quietly superseded
 - concepts that are referenced throughout and defined nowhere
 - documents whose declared audience cannot actually use them
+- a heading that a kind requires, over prose that says nothing about it
+
+The fifth entry arrived from a measurement. [OBL-repo-0113](../obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md) records a decision record whose two required sections each held the scaffolder's own prompt. Every check passed it and the strict run exited zero. The remedy is a rewrite, so no rule can ever block on it. A sweep is the only surface that reads what is under a heading. The class is `unwritten_section`.
 
 Four constraints keep this inside the rules that the rest of the system obeys:
 
@@ -279,6 +282,28 @@ Four constraints keep this inside the rules that the rest of the system obeys:
 So the best outcome of a sweep is not a finding but an **edge**. The correct end state for a contradiction that the sweep surfaces is a declared `conflicts_with`. After that, the engine owns it permanently, and the sweep never needs to find it again. A coherence control whose findings never convert into declarations does the same work every cycle. That is the accumulation failure that [spec 5](05-ai-integration.md#what-we-do-not-do) rejects RAG for, now in our own assurance layer.
 
 This is the same division that the system draws everywhere. Deterministic tooling handles what is decidable, and judgment handles what is not. There is no pretense that either does the other's job.
+
+#### The output is a proposal, and the engine confirms the half of it that is checkable
+
+A sweep has three parts and the engine performs two of them. `headwater sweep plan` writes the briefing: the slice, every edge the graph already declares inside it, and the shape of the file that comes back. An agent then reads the documents and writes that file. `headwater sweep report` reads the file and states what the engine can confirm about it. The middle part needs a model, and no engine code reaches one.
+
+Two properties of a returned finding are confirmable, and the claim itself is not. The engine confirms the **citation**. Every quoted passage is in the document that the finding attributes it to, and every path is a classified document of this corpus. The engine confirms the **novelty**. The graph does not already carry the edge that the finding proposes. That is constraint 4 above, applied by the machine rather than by the agent it asks. A finding that fails either test is refused, and the report names the test that it failed.
+
+What no engine confirms is whether the two passages contradict each other. That reading stays the model's, and the report says so on the line that carries it.
+
+Nor does any engine confirm that the agent opened the slice. The extent that a plan and a report both state is the slice a caller named, and never the set of documents that somebody read. So a report over 12 of 169 documents is an upper bound on what was read. That is one more reason why the absence of a finding carries nothing.
+
+That split is what makes a sweep worth an hour of a model and unfit for a gate. A quotation that no document holds is the failure mode of a prose judgment, and the citation test refuses one before a reader meets it. The set of findings is still a sample. A second run returns a different set, and a model that nobody ran returns none. So absence carries no information, and no exit status may read the output. [Spec 12](12-check-layer.md#where-the-llm-coherence-sweep-fits) states what enforces that.
+
+The verification is reproducible and the sample is not. A sweep is therefore a reproducible reading of an unreproducible sample. An adopter may cite what the engine confirmed, and never the count of what a model returned.
+
+#### This register declares no coherence obligation, so a sweep discharges none today
+
+Every obligation of the base package carries `class: cohesion`. The class that this section exists to serve has no member, so the sweep that discharges it discharges nothing yet.
+
+A control could bind one. It would name the mechanism `sweep:<class>` beside the `check:` and `phase:` prefixes that the engine reads. [OBL-repo-0114](../obligations/0114-a-control-that-names-a-sweep-marks-its-obligation-verified-with-nothing-run.md) measures what that costs today. A prefix that the engine does not read is external, and an external control counts toward discharge. The obligation then reports `verified` from the declaration alone. A sweep is opt-in and network-bound, so no run of the checks can observe that one happened.
+
+So a sweep finding carries no obligation, and the report says `None` rather than an identifier that no register would recognize. That is the same answer the check layer gives for a rule that no control names. A derived state has to be derived from what runs.
 
 ## Measuring coherence where we can: continuity across links
 

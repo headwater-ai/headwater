@@ -159,7 +159,7 @@ The reader's experience that the corpus adds up to one account of the system. It
 
 ### Coherence sweep
 
-A periodic LLM-assisted pass over the *undeclared* half of the corpus. It reports findings, never verdicts, and it is not a [check](#check). Its best outcome is a declared edge, after which the engine owns the problem permanently. See [spec 4](04-assurance-model.md#discharging-coherence-obligations-the-assisted-sweep).
+A periodic LLM-assisted pass over the *undeclared* half of the corpus. It reports findings, never verdicts, and it is not a [check](#check). Its best outcome is a declared edge, after which the engine owns the problem permanently. Its output is a proposal, and the engine confirms only the citation and the novelty of one. See [spec 4](04-assurance-model.md#discharging-coherence-obligations-the-assisted-sweep).
 
 ### Cohesion
 
@@ -595,7 +595,7 @@ What a probe run records about itself. It holds the served model version, the co
 
 ### Sampler
 
-The non-deterministic path that carries the [coherence sweep](#coherence-sweep) and the [probe suite](#probe-suite). It shares the finding shape and the reporting pipeline, and it never enters the cached, reproducible path. See [spec 12](12-check-layer.md#where-the-llm-coherence-sweep-fits).
+The non-deterministic path that carries the [coherence sweep](#coherence-sweep) and the [probe suite](#probe-suite). It shares the finding shape and the reporting pipeline, and it never enters the cached, reproducible path. Four things hold it there: a crate boundary, an exit status that no output moves, no caller in any gate, and no socket. See [spec 12](12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps).
 
 ### Satellite
 

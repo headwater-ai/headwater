@@ -61,13 +61,16 @@ The second hatch is for debt rather than for an exception. The `adoption` block 
 
 **Writing spec prose.** Invoke the `ste-editor` skill before you rewrite a document under `docs/spec/`, and run `headwater check` on the result. The skill carries the rules that no check reads: consistent terms, multi-word nouns kept to three words, and the judgment calls that a lexical rule cannot make.
 
-**The three skills, and when each one loads.** Nothing makes a skill load. A harness reads a description and a model picks, which [spec 5](docs/spec/05-ai-integration.md#how-a-skill-reaches-an-agent-and-what-nothing-does) states as a measurement rather than a property. This paragraph is the one mechanism stronger than a description, and it costs context on every session.
+**The four skills, and when each one loads.** Nothing makes a skill load. A harness reads a description and a model picks, which [spec 5](docs/spec/05-ai-integration.md#how-a-skill-reaches-an-agent-and-what-nothing-does) states as a measurement rather than a property. This paragraph is the one mechanism stronger than a description, and it costs context on every session.
 
 | skill | invoke it before |
 |---|---|
 | `headwater-authoring` | you add or revise any document under `docs/`, and whenever `headwater new` refuses |
 | `headwater-taxonomy` | you touch `packages/`, `docs/taxonomies/` or `.headwater/overlay.yml` |
 | `ste-editor` | you rewrite prose under `docs/spec/` |
+| `headwater-sweep` | you are asked to read a slice of the corpus for what no check can see |
+
+The last one is the only mechanism here that no engine performs. `headwater sweep plan` writes the briefing, you read the documents, and `headwater sweep report` says what the engine could confirm about what you wrote back. Nothing gates on it: the verb exits 0 whatever it finds, no gate and no CI job runs it, and no crate of this engine opens a socket.
 
 `.claude/agents/headwater-maintainer.md` is the maintainer subagent: hand it a change and it reports what the change touched, what is now stale, what the corpus is owed, and what it could not decide. It proposes and never accepts.
 

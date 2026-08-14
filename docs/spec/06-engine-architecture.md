@@ -239,6 +239,8 @@ headwater generate   [--check]
 headwater new        <kind> --title <text> [--relates <relation>=<identifier>]
                      [--now <date>]
 headwater capture    [--format text|json]
+headwater sweep      plan [--under <path>]
+                   | report <path> [--format text|json]
 headwater route      <task description>
 headwater query      <expression>
 headwater explain    <path|identifier>
@@ -259,6 +261,8 @@ headwater probe      [--tier regression|campaign] [--arm present|absent] [--cate
 **`new` is the one verb that writes a document, and each of its three flags carries a rule.** `--title` is required, because the file name and the facet in the `name` role both come from it and the engine invents neither. `--now` injects the clock that the two date facets take, on the terms [spec 12](12-check-layer.md#determinism-concretely) fixes for a check. `--relates` names a relation and the identifier at the other end, and it is repeatable. The verb refuses a relation that the taxonomy assigns to another creator, an end that the relation forbids, and a target that resolves to nothing. Where reciprocity is required, it writes the far half into the target document. [Spec 3](03-authoring-and-lifecycle.md#templates-and-scaffolding) states what it derives and what it leaves to a person.
 
 **`new` also writes one line that is not a document, and `capture` is its only reader.** The capture-cost reading of a run goes to `.headwater/capture-cost.jsonl`, which is outside the corpus root and which no rule reads. [Spec 3](03-authoring-and-lifecycle.md#what-the-capture-cost-store-records-and-what-it-refuses-to) states what the line holds and what it deliberately does not. A run whose document landed and whose reading did not exits non-zero. That is the one place this verb reports over two artifacts at once. `capture` reads the store and the census together, and it writes nothing at all.
+
+**`sweep` is two verbs and neither one reaches a model.** `plan` writes the briefing an agent reads, and `report` reads back the file the agent wrote. The part between them needs a model and no engine code performs it, so no build ever waits for one. Both exit 0 whatever they find, neither writes into the corpus, and the sampler is a crate that `headwater-check` cannot name. [Spec 12](12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) states what each of those four facts enforces.
 
 `probe` is the one verb that reaches the network, so it never runs inside `check` and never gates ([spec 5](05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose)). It projects the cost of a run against the tier's declared budget and refuses a run that exceeds it. Every run writes its transcript and reports the run identity, the realized cost, and the interval around each rate.
 
