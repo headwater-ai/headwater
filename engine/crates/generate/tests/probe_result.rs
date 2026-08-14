@@ -645,3 +645,37 @@ fn a_probe_that_sorts_last_and_stops_the_plan_writes_no_result() {
 fn a_probe_that_sorts_first_and_stops_the_plan_writes_no_result() {
     a_refused_plan_grades_nothing("refused-first", "0000-malformed.md");
 }
+
+/// The one type a grading caller may build a selection into refuses one that a
+/// plan did not finish composing.
+///
+/// The end-to-end cases above assert this through the bytes a projection wrote,
+/// which is the right grain for the projection and the wrong grain for the
+/// rule. This asserts the rule where it lives, so a regression names
+/// `Runs::graded_against` rather than a missing file.
+///
+/// It is the second half of a fix that is otherwise structural. `Runs` keeps
+/// its selection, its digest and its refusal private, so `graded_against` is
+/// the only writer of any of them and the defect this replaced — a caller
+/// assigning `plan.selected` and dropping the refusal beside it — is now
+/// unwritable outside this crate rather than merely wrong
+/// ([#174](https://github.com/headwater-ai/headwater/issues/174)).
+#[test]
+fn a_plan_that_stopped_partway_hands_a_grading_caller_no_selection() {
+    let at = copied("partial-selection");
+    std::fs::write(at.join("runs/probes/0003-malformed.md"), MALFORMED).expect("the probe lands");
+    let built = Built::over(&at);
+    let runs = runs_over(&built, &at, ENVELOPE);
+    assert!(
+        runs.selected().is_empty(),
+        "a caller was handed the probes a planner reached before it gave up: {:?}",
+        runs.selected()
+            .iter()
+            .map(|selected| &selected.id)
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        runs.refusal().is_some(),
+        "the refusal beside the selection was dropped, so nothing can say why"
+    );
+}

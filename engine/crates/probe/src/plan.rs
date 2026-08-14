@@ -719,6 +719,33 @@ impl Plan {
         self.refusal.is_none()
     }
 
+    /// The selection anything may grade a recorded run against, or the refusal
+    /// that stops one.
+    ///
+    /// This is the only route to a selection for grading, and it exists because
+    /// two components read the wrong value out of a plan before it did.
+    /// [`Plan::over`] returns from inside the loop that composes the selection,
+    /// so a refusal usually leaves a **part** of one behind: the probes read
+    /// before the offending one, and none of the rest. A caller that tested
+    /// `selected.is_empty()` therefore let through every refusal that stopped
+    /// late, and graded over a denominator that no document declares and that
+    /// moves with the order the paths sort in.
+    ///
+    /// [`Refusal::stops_a_grade`] is the rule and this is where every grading
+    /// caller reads it. `selected` stays public because `headwater probe plan`
+    /// reports the selection a plan composed, refusal and all, which is a
+    /// different question and the right answer to it.
+    pub fn gradable(&self) -> Result<&[Selected], &Refusal> {
+        match self
+            .refusal
+            .as_ref()
+            .filter(|refusal| refusal.stops_a_grade())
+        {
+            Some(refusal) => Err(refusal),
+            None => Ok(&self.selected),
+        }
+    }
+
     /// The briefing, for the recorder rather than for a model.
     ///
     /// One format, and it is prose, for the reason the sweep's plan is prose.
