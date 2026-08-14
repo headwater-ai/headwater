@@ -880,7 +880,11 @@ mod tests {
             declared: 1,
         };
         let results = Results::over(&record, std::slice::from_ref(&selected));
-        assert_eq!(results.graded(), 1, "the refused session left the denominator");
+        assert_eq!(
+            results.graded(),
+            1,
+            "the refused session left the denominator"
+        );
         assert_eq!(results.satisfied(), 0);
         assert_eq!(results.refused(), 1);
         assert_eq!(

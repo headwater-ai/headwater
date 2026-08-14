@@ -71,8 +71,20 @@
 //!    `headwater-check`, so `headwater-check` cannot name it.
 //! 2. **An exit status no probe moves.** [`plan::Plan`] carries its refusal as
 //!    a value a reader sees. The verb over it exits zero whatever it holds.
-//! 3. **No caller in any gate.** No hook, no CI step and no other verb calls
-//!    it. `.claude/skills/fixtures.sh` asserts that.
+//! 3. **No gate runs a probe.** No hook, no CI step and no other verb invokes
+//!    `probe plan`, `probe record` or `probe grade`, and
+//!    `.claude/skills/fixtures.sh` asserts that.
+//!
+//!    One gate reaches [`grade`] and it does not reach a run.
+//!    [`headwater_generate`](../../generate/probe_result/index.html) writes a
+//!    probe result as a projection over a committed transcript, so
+//!    `generate --check` grades in continuous integration. A run in which the
+//!    model answered every question wrongly writes a result that reports a low
+//!    rate, and the gate passes over it: the comparison is bytes against a
+//!    derivation of committed inputs. What fails it is a result that no longer
+//!    agrees with its own transcript, which spec 5 calls a defect in the
+//!    grader, the parser or the committed inputs. No exit status of this engine
+//!    carries a model's behavior, which is what the four enforcements are for.
 //! 4. **No socket.** No crate of this engine depends on the network, and
 //!    nothing here opens one.
 //!

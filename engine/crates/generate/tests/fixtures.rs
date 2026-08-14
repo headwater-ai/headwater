@@ -644,7 +644,9 @@ fn this_repository_generates_its_four_artifacts_and_accounts_for_the_rest() {
         .find(|unwritten| unwritten.kind == headwater_generate::Kind::ProbeResult)
         .expect("the probe-result declaration reports itself");
     assert!(
-        result.reason.contains("holds no `probe_transcript` document"),
+        result
+            .reason
+            .contains("holds no `probe_transcript` document"),
         "the reason does not name the missing input: {}",
         result.reason
     );

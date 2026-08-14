@@ -395,7 +395,9 @@ fn a_corpus_with_no_transcript_reports_the_reason_rather_than_writing_nothing() 
         .find(|unwritten| unwritten.kind == headwater_generate::Kind::ProbeResult)
         .expect("the declaration reports itself");
     assert!(
-        declined.reason.contains("holds no `probe_transcript` document"),
+        declined
+            .reason
+            .contains("holds no `probe_transcript` document"),
         "the reason does not name what is missing: {}",
         declined.reason
     );
