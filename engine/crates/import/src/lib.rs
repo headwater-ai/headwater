@@ -291,6 +291,17 @@ impl std::fmt::Display for Refusal {
     }
 }
 
+/// A count and the noun it counts, so that a report of one edge says "1 edge".
+///
+/// Both forms are given rather than an `s` appended, because the noun a report
+/// of this verb counts most is an edge half.
+pub fn plural(count: usize, one: &str, many: &str) -> String {
+    match count {
+        1 => format!("1 {one}"),
+        other => format!("{other} {many}"),
+    }
+}
+
 /// Render a refusal set the way a caller prints it.
 pub fn render(refusals: &[Refusal]) -> String {
     let mut out = String::new();
@@ -403,8 +414,21 @@ pub fn plan(
     }
 
     let dir = root.join(&declaration.at);
-    let release = release::verify(&dir, &pinned)
-        .map_err(|error| vec![Refusal::Artifact(error.to_string())])?;
+    // The release layer's own words for every case except the absent record.
+    // That one names the verb that writes a package record, and nothing writes
+    // a snapshot's: whatever fetched it is what leaves one behind.
+    let release = release::verify(&dir, &pinned).map_err(|error| {
+        vec![Refusal::Artifact(match error {
+            release::ReleaseError::Absent(_) => format!(
+                "{} carries no {}, so nothing pins what is in it. The record is written by \
+                 whatever fetched the snapshot, and it names every file with the digest of its \
+                 bytes",
+                dir.display(),
+                release::RECORD
+            ),
+            other => other.to_string(),
+        })]
+    })?;
     let snapshot = snapshot::at(&dir).map_err(|error| vec![Refusal::Payload(error.to_string())])?;
 
     let mut refusals = Vec::new();
@@ -558,9 +582,9 @@ impl Plan {
             self.declaration.channel.as_deref().unwrap_or_default()
         ));
         out.push_str(&format!(
-            "  {} items, {} links\n",
-            self.snapshot.items.len(),
-            self.snapshot.links.len()
+            "  {}, {}\n",
+            plural(self.snapshot.items.len(), "item", "items"),
+            plural(self.snapshot.links.len(), "link", "links")
         ));
         for edge in &self.edges {
             out.push_str(&format!(

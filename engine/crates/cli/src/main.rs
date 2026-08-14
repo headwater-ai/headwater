@@ -1626,14 +1626,25 @@ fn import(root: &Path, name: Option<&str>, expect: Option<&str>, writing: bool) 
         },
     };
     let Some(declaration) = declaration else {
-        let asked = name.unwrap_or("").to_string();
-        return refuse(
-            &headwater_import::Refusal::Undeclared {
-                name: asked,
-                declared: names,
-            }
-            .to_string(),
-        );
+        return match name {
+            Some(name) => refuse(
+                &headwater_import::Refusal::Undeclared {
+                    name: name.to_string(),
+                    declared: names,
+                }
+                .to_string(),
+            ),
+            None if names.is_empty() => refuse(
+                "this repository declares no import. An import is a block under `imports` in \
+                 `.headwater/taxonomy.yml` naming where a committed snapshot sits, the digest it \
+                 is pinned to, and the channel that digest arrived on",
+            ),
+            None => fail(&format!(
+                "this repository declares {} imports, so `import` takes the name of one: {}",
+                names.len(),
+                names.join(", ")
+            )),
+        };
     };
 
     let loaded = match load(root) {
@@ -1658,8 +1669,8 @@ fn import(root: &Path, name: Option<&str>, expect: Option<&str>, writing: bool) 
     let pending = plan.to_write();
     if !writing {
         println!(
-            "\n{} edge halves to write, and nothing was written. Run it again with `--write`.",
-            pending.len()
+            "\n{} to write, and nothing was written. Run it again with `--write`.",
+            headwater_import::plural(pending.len(), "edge half", "edge halves")
         );
         return ExitCode::SUCCESS;
     }
@@ -1678,9 +1689,9 @@ fn import(root: &Path, name: Option<&str>, expect: Option<&str>, writing: bool) 
         return ExitCode::FAILURE;
     }
     println!(
-        "\nwrote {} edge halves into {} documents",
-        pending.len(),
-        composed.len()
+        "\nwrote {} into {}",
+        headwater_import::plural(pending.len(), "edge half", "edge halves"),
+        headwater_import::plural(composed.len(), "document", "documents")
     );
     println!(
         "The digest says these are the bytes the pin was written for. What stands behind them is \
