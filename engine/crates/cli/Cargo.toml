@@ -18,6 +18,11 @@ path = "src/main.rs"
 # and `--strict` can never see one.
 headwater-sweep = { path = "../sweep" }
 
+# The probe harness, on the same side of the same line and for the same reason.
+# It names `headwater-check`, so nothing in the check layer can name it, and
+# this binary is its only caller: no hook, no gate and no CI step runs it.
+headwater-probe = { path = "../probe" }
+
 # The CI adapters. `check --format` is the one caller, and the dependency
 # points this way so that nothing in the engine below can reach a forge.
 headwater-adapter = { path = "../adapter" }

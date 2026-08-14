@@ -446,28 +446,34 @@ impl Plan {
         );
         let _ = writeln!(out);
 
-        let _ = writeln!(out, "## The cost");
-        let _ = writeln!(out);
-        let _ = writeln!(
-            out,
-            "{} probes x {} arms x {} repetitions = {} sessions, at a declared {} each: {} \
-             against a ceiling of {}.",
-            self.selected.len(),
-            self.arms.len(),
-            self.repetitions,
-            self.sessions,
-            dollars(self.session_cost),
-            dollars(self.projected),
-            dollars(self.budget)
-        );
-        let _ = writeln!(
-            out,
-            "The unit cost is a number a person declared in `{}`. No run has happened, so no \
-             realized cost has been recorded against it and this is arithmetic rather than a \
-             forecast.",
-            crate::budget::PATH
-        );
-        let _ = writeln!(out);
+        // The cost section is printed only where a cost was computed. A run
+        // refused before the envelope was read has no projection, and a table
+        // of zeros beside a refusal reads as a run that costs nothing rather
+        // than as a run that was never priced.
+        if self.budget > 0 {
+            let _ = writeln!(out, "## The cost");
+            let _ = writeln!(out);
+            let _ = writeln!(
+                out,
+                "{} probes x {} arms x {} repetitions = {} sessions, at a declared {} each: {} \
+                 against a ceiling of {}.",
+                self.selected.len(),
+                self.arms.len(),
+                self.repetitions,
+                self.sessions,
+                dollars(self.session_cost),
+                dollars(self.projected),
+                dollars(self.budget)
+            );
+            let _ = writeln!(
+                out,
+                "The unit cost is a number a person declared in `{}`. No run has happened, so no \
+                 realized cost has been recorded against it and this is arithmetic rather than a \
+                 forecast.",
+                crate::budget::PATH
+            );
+            let _ = writeln!(out);
+        }
 
         if let Some(refusal) = &self.refusal {
             let _ = writeln!(out, "## This run does not start");

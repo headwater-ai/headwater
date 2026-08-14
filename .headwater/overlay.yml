@@ -129,6 +129,18 @@ add:
       present: the session ran against the corpus
       absent: the session ran against the declared ablation of it
 
+  # The check a `patched` expectation grades a produced patch against, which
+  # spec 5 calls the oracle route. It is optional here and required by the
+  # harness, because the taxonomy language has no way to say "required when
+  # another facet holds one value" and a facet required of every probe would be
+  # a field four expectation forms leave empty. `headwater probe plan` refuses a
+  # `patched` probe that names no oracle, and refuses one that names a rule this
+  # engine does not carry.
+  facets.oracle:
+    type: string
+    required: false
+    volatility: stable
+
   kinds.probe:
     is_a: governed_document
     purpose: evidence

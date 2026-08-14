@@ -76,6 +76,7 @@ dependencies = [
  "headwater-hash",
  "headwater-import",
  "headwater-lock",
+ "headwater-probe",
  "headwater-query",
  "headwater-resolve",
  "headwater-scaffold",
