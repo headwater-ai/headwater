@@ -261,7 +261,14 @@ pub fn render() -> String {
 
 /// The default nuclearity of each relation family, from spec 2's own table. A
 /// family with no default has a blank cell there, and it is absent here.
-const FAMILY_NUCLEARITY: [(&str, &str); 4] = [
+///
+/// It is public because `taxonomy audit` reports every relation that
+/// contradicts the default its family gives ([spec
+/// 2](../../../../docs/spec/02-taxonomy-model.md#nuclearity)), and that
+/// reading is the same table read from the other side. A second copy of it in
+/// the audit crate could disagree with the one a validator runs, and the two
+/// would then name different relations as overrides.
+pub const FAMILY_NUCLEARITY: [(&str, &str); 4] = [
     ("succession", "multinuclear"),
     ("derivation", "nucleus-satellite"),
     ("composition", "nucleus-satellite"),

@@ -68,14 +68,21 @@ A rule is declared in the taxonomy and implemented in `engine/crates/check/`. Tw
 
 Every rule reaches an obligation, and `headwater check` reports the rule that reaches none.
 
-## The audit that nothing runs
+## The sweep that nothing runs
 
-`headwater new <kind>` over every concrete kind is a taxonomy audit, and it finds defects that no check reaches: a kind on no shelf, a kind on two, a required facet nothing determines, a scheme whose pattern cannot be read, a shelf layout with a hole in it. The check layer reads documents, so a kind with no document of it is invisible to every rule. Run the constructor after a change that touches a kind, a shelf or a scheme.
+`headwater new <kind>` over every concrete kind finds defects that no check reaches: a kind on no shelf, a kind on two, a required facet nothing determines, a scheme whose pattern cannot be read, a shelf layout with a hole in it. The check layer reads documents, so a kind with no document of it is invisible to every rule. Run the constructor after a change that touches a kind, a shelf or a scheme.
+
+## What the audit tells you that no rule does
+
+`headwater taxonomy audit` measures the taxonomy against the corpus, and it answers the question this skill cannot: whether a declaration you added earns its place. A facet whose documents all share one value separates nothing. A relation captured by 1% of its eligible documents receives no maintenance. A creator that no relation declares is an arm that a comparison over this corpus cannot fill.
+
+It gates nothing and it exits 0 whatever it finds, because nothing declares what any of those numbers would have to cross. So read it and decide; no run of it will decide for you.
 
 ## Finish with the engine
 
     headwater taxonomy validate
     headwater taxonomy resolve
+    headwater taxonomy audit
     headwater check
     cargo test --workspace --manifest-path engine/Cargo.toml
 

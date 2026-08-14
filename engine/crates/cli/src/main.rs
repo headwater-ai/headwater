@@ -91,6 +91,7 @@ headwater infer              [--owner <name>] [--until <date>] [--write]
                              [--now <date>] [--root <path>]
 headwater taxonomy validate  [--root <path>]
 headwater taxonomy resolve   [--check] [--root <path>]
+headwater taxonomy audit     [--now <date>] [--root <path>]
 headwater taxonomy publish   [--package <name>] --out <dir> [--root <path>]
 headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
 
@@ -171,6 +172,14 @@ headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
                      list, and what each one did not decide. Writes nothing.
   taxonomy resolve   write `.headwater/taxonomy.lock`. It is written only when
                      the taxonomy validates, so a lock is a validated taxonomy.
+  taxonomy audit     measure the taxonomy against the corpus: edge counts and
+                     staleness by the creator each relation declares, relation
+                     drift by family, facet differentiation, the discriminator
+                     distribution of a heterogeneous shelf, and state dwell. It
+                     reports findings about the schema and never about a
+                     document, it gates nothing, and it always exits 0. One bar
+                     is declared and the rest of the readings are distributions
+                     with no verdict beside them.
   taxonomy publish   write the artifact of a package into a directory, with a
                      release record over it: every file, the digest of its
                      bytes, and one digest over that list. It prints the digest,
@@ -200,8 +209,11 @@ headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
                  instance. This run and a cached one write the same bytes to
                  standard output, and a difference between them is a defect in
                  the cache rather than a result.
-  --now <date>   `check`, `gate`, `new` and `mcp`: the date to evaluate
-                 against, as `YYYY-MM-DD`. Defaults to today. Spec 12 makes the
+  --now <date>   `check`, `gate`, `new`, `mcp` and `taxonomy audit`: the date to
+                 evaluate against, as `YYYY-MM-DD`. Defaults to today. On
+                 `taxonomy audit` it is what a staleness reading and a dwell
+                 reading are taken at, so two audits of one tree at one date
+                 write the same bytes. Spec 12 makes the
                  clock an injected value rather than a syscall inside a check,
                  and this flag is where it is injected: same corpus, same lock,
                  same date, same bytes. On `gate` it is the day the question is
@@ -495,6 +507,7 @@ fn main() -> ExitCode {
         ),
         ["taxonomy", "validate"] => validate(&root),
         ["taxonomy", "resolve"] => resolve(&root, check_only),
+        ["taxonomy", "audit"] => audit(&root, now),
         ["taxonomy", "publish"] => publish(&root, package.as_deref(), out.as_deref()),
         ["taxonomy", "vendor"] => fail(
             "`taxonomy vendor` takes the path of a package somebody already fetched. \
@@ -504,11 +517,26 @@ fn main() -> ExitCode {
             vendor(&root, Path::new(fetched), expect.as_deref())
         }
         ["taxonomy"] => fail(
-            "`taxonomy` takes a second word: `validate`, `resolve`, `publish` or `vendor`",
+            "`taxonomy` takes a second word: `validate`, `resolve`, `audit`, `publish` or \
+             `vendor`",
+        ),
+        // `diff` and `migrate` are named in spec 6's grammar and neither one
+        // runs. The grammar holds a declared name to running or to a named
+        // wait, so each one says what it waits on rather than reading as a
+        // verb this binary forgot.
+        ["taxonomy", "diff", ..] => fail(
+            "`taxonomy diff` waits on a second taxonomy to compare against. A release record \
+             names every file of a published artifact and its digest, and nothing yet reads two \
+             of them as one comparison. See `docs/spec/07-distribution-and-federation.md`",
+        ),
+        ["taxonomy", "migrate", ..] => fail(
+            "`taxonomy migrate` waits on `taxonomy diff`. A migration payload names the version \
+             it came from, and no run can name one without a measured comparison against it. \
+             See `docs/spec/07-distribution-and-federation.md`",
         ),
         ["taxonomy", other, ..] => fail(&format!(
             "`taxonomy {other}` is not a verb this binary carries yet. \
-             It carries `validate`, `resolve`, `publish` and `vendor`"
+             It carries `validate`, `resolve`, `audit`, `publish` and `vendor`"
         )),
         [] => fail("no verb. Try `headwater check`"),
         // The list below is hand-maintained beside the arms above, and nothing
@@ -632,6 +660,51 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
     for source in &repository.resolution.sources {
         println!("  from {source}");
     }
+    ExitCode::SUCCESS
+}
+
+/// `headwater taxonomy audit`.
+///
+/// The ABox half of the pair `taxonomy validate` opens. It reads the same lock
+/// and walks the same corpus every other verb does, and it decides nothing: it
+/// exits 0 with findings, and no gate and no hook runs it.
+///
+/// **It exits 0 whatever it finds, and that is the constraint rather than a
+/// default.** [Spec 6](../../../../docs/spec/06-engine-architecture.md#taxonomy-validate-versus-taxonomy-audit)
+/// makes these findings "advisory by construction, because a young or small
+/// corpus fails differentiation for reasons that are not defects". The
+/// strongest form of that promise is an exit status that no reading can move,
+/// which is the shape `sweep` already has for its own reason. There is no
+/// `--strict`.
+///
+/// **The clock is injected here for the reason it is injected into a check.** A
+/// staleness reading and a dwell reading are both taken against a date, so two
+/// runs over one tree agree only when the date is the same value. `--now` is
+/// where a caller fixes it, and the report states the date it used.
+fn audit(root: &Path, now: Option<Date>) -> ExitCode {
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let Some(context) = now.map(Context::at).or_else(Context::from_system_clock) else {
+        eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
+        return ExitCode::FAILURE;
+    };
+
+    let audit = headwater_audit::take(
+        headwater_audit::Subject {
+            package: loaded.lock.package.clone(),
+            version: loaded.lock.version.clone(),
+            lock: loaded.lock.digest.clone(),
+            now: context.now(),
+        },
+        &loaded.census,
+        &loaded.graph,
+        &loaded.taxonomy,
+        &loaded.shape,
+        &loaded.relations,
+    );
+    print!("{}", audit.render());
     ExitCode::SUCCESS
 }
 

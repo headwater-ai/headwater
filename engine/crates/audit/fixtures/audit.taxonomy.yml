@@ -1,0 +1,128 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the audit fixtures are measured against. It is not a resolved
+# package, for the reason the query tree's is not: a fixture that depended on
+# the base package would be re-blessed whenever the base moved, and none of the
+# readings below is about the base.
+#
+# It is the smallest shape in which every reading has something to say, and each
+# piece of it is here for one of them:
+#
+#   * Four of spec 2's six creators are declared and two are not, so the report
+#     has both an arm it can fill and an arm it cannot. `import` is one of the
+#     two, which is the arm Q19's comparison needs.
+#   * `annotates` declares `multinuclear` against a `derivation` family whose
+#     default is `nucleus-satellite`, so the override reading has one row. Every
+#     other relation either restates its family's default or declares nothing.
+#   * `catalogues` is eligible on every document and captured by one, which is
+#     the case spec 2 names: "a relation declared `created_by: author` but
+#     present on 4% of eligible documents visibly receives no maintenance".
+#   * `notes` has a declared creator and no edge at all.
+#   * The freshness window is short, so a fixture document can sit past it
+#     without a date that reads as a typo.
+#   * `library` is heterogeneous over three kinds and one of them is empty.
+#   * The lifecycle has four states and the tree puts a document in three of
+#     them, so the dwell reading has a row that stands at zero.
+
+purposes:
+  rationale:
+    intent: explain why a choice was made and what it forecloses
+    answers: ["why is it this way"]
+  behavior:
+    intent: state what the system does, as it is now
+    answers: ["what does this component do"]
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft, role: initial}
+      - {value: current, role: live}
+      - {value: superseded, role: terminal-retained}
+      - {value: deprecated, role: terminal-retained}
+  status_since:
+    role: state_entered
+    required: true
+  last_verified:
+    role: freshness
+    stale_after_days: 90
+  summary:
+    role: scent
+    required: true
+  doc_type:
+    values: [note, manual, catalog]
+  tier:
+    values: [inner, outer]
+
+anchors:
+  code_path: {resolver: source-tree}
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status, status_since, summary]}
+  decision:
+    is_a: governed_document
+    purpose: rationale
+  note:
+    is_a: governed_document
+    purpose: behavior
+  manual:
+    is_a: governed_document
+    purpose: behavior
+  catalog:
+    is_a: governed_document
+    purpose: behavior
+
+shelves:
+  decisions:
+    path: audit/decisions/**
+    homogeneous: true
+    kind: decision
+  library:
+    path: audit/library/**
+    homogeneous: false
+    discriminator: doc_type
+    kinds: [note, manual, catalog]
+
+relations:
+  # Succession, declaring the nuclearity its family already gives.
+  supersedes:
+    family: succession
+    from: [governed_document]
+    to:   [governed_document]
+    inverse: superseded_by
+    nuclearity: multinuclear
+    reciprocal: required
+    created_by: scaffold
+
+  # The override: a derivation family gives nucleus-satellite, and this
+  # contradicts it.
+  annotates:
+    family: derivation
+    from: [note]
+    to:   [manual]
+    nuclearity: multinuclear
+    created_by: agent
+
+  # Eligible on every document, captured by one. The relation whose declared
+  # creator is doing none of the work.
+  catalogues:
+    family: evidence
+    from: [governed_document]
+    to:   [governed_document]
+    created_by: author
+
+  # Declared and never used, which is the row that has to stay in the report.
+  notes:
+    family: association
+    from: [decision]
+    to:   [decision]
+    created_by: hook
+
+  governs:
+    family: governance
+    from: [governed_document]
+    to:   [code_path]
+    created_by: author

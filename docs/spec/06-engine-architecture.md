@@ -249,14 +249,15 @@ headwater export     [--profile ...] [--format json|jsonschema|shacl|rdf|skos|ok
                      [--at <date>] [--check]
 headwater init       [--corpus <dir>] [--package <name>]
 headwater infer      [--owner <name>] [--until <date>] [--write]
-headwater taxonomy   validate | resolve | diff | migrate | audit
+headwater taxonomy   validate | resolve [--check] | diff | migrate
+                   | audit [--now <date>]
                    | publish [--package <name>] --out <dir>
                    | vendor <dir> [--expect <digest>]
 headwater coverage   [--format ...]
 headwater probe      [--tier regression|campaign] [--arm present|absent] [--category ...]
 ```
 
-**This grammar is a statement of fact about the engine, and a name it declares either runs or waits.** Every verb the engine ships is above. A name that the engine has not built stays here when something nameable would make it real. The engine then says what the name waits on when a caller types it. `query <expression>` is such a name, because no document states what an expression is. The verb ships the day one does. The same reading covers `coverage` and `probe`. It covers `taxonomy diff`, `taxonomy migrate` and `taxonomy audit`, and the five export targets that no consumer has asked for. A name that nothing could make real has no place here, and `--changed-only` is the one such name this grammar carried. The test between the two is not how far away the work is. It is whether any document or any consumer could turn the name into a verb that runs.
+**This grammar is a statement of fact about the engine, and a name it declares either runs or waits.** Every verb the engine ships is above. A name that the engine has not built stays here when something nameable would make it real. The engine then says what the name waits on when a caller types it. `query <expression>` is such a name, because no document states what an expression is. The verb ships the day one does. The same reading covers `coverage` and `probe`. It covers `taxonomy diff` and `taxonomy migrate`, and the five export targets that no consumer has asked for. Each of those two states its wait when a caller types it. `diff` waits on a second taxonomy to compare against. `migrate` waits on `diff`, because a payload names the version it came from, and no run names one without a measured comparison. A name that nothing could make real has no place here, and `--changed-only` is the one such name this grammar carried. The test between the two is not how far away the work is. It is whether any document or any consumer could turn the name into a verb that runs.
 
 **`--fix` writes the patch that rides with a finding, and the report a caller reads is the run after the write.** A finding carries a patch only under the [fixability bar](12-check-layer.md#fixability). So the flag decides no verdict, and it reaches no finding that carries no patch. It reaches no suppressed finding either, because the runner filters before a reader or a writer sees the list. Every patch is held against the bytes it names, and every result is read back. A document whose shape the engine guessed wrong is refused with nothing written. A refusal is not a finding and no flag softens one: the verb was asked to write and did not. The account of what was written goes to standard error, because `--format` puts one artifact on standard output.
 
@@ -288,9 +289,15 @@ There are two commands because there are two kinds of question. The distinction 
 
 **`validate`** decides the schema alone: referential integrity, determinism, purpose completeness, kind rigidity, edge provenance, overlay confluence, core satisfiability. It needs no documents, always terminates in a verdict, and gates everything.
 
-**`audit`** measures the schema *against a corpus*. It measures facet differentiation and orthogonality, edge counts and staleness by `created_by`, and relation-choice drift by family. It also measures discriminator distribution on heterogeneous shelves, state-dwell distribution, transition-continuity distribution, and scent quality. Its findings are advisory by construction, because a young or small corpus fails differentiation for reasons that are not defects. The findings are about the taxonomy, not the documents. A facet that nothing distinguishes is a schema problem that only documents can show.
+**`audit`** measures the schema *against a corpus*. Six readings run. It measures facet differentiation and orthogonality, edge counts and staleness by `created_by`, and relation drift by family. It also measures the discriminator distribution of a heterogeneous shelf, and the state-dwell distribution. Its findings are advisory by construction, because a young or small corpus fails differentiation for reasons that are not defects. The findings are about the taxonomy, not the documents. A facet that nothing distinguishes is a schema problem that only documents can show.
 
-The separation matters. `validate` must stay fast and total because it gates, while `audit` is a periodic design review with a tool attached.
+Three of the readings this section named do not run, and each one states its wait in the report. Transition continuity waits on a record of a transition. A document states the state it is in and never the state it left. Scent quality waits on authored cues ([OBL-repo-0023](../obligations/0023-no-corpus-has-authored-enough-cues-to-grade.md)). The promotion rate of [Q15](09-decisions.md#q15--a-synthesized-content-tier) waits on a population and on an input. No document here carries `warrant: asserted`, and promotions per change read a history of changes that no crate opens.
+
+**One bar is declared, and it is what separates a finding from a distribution.** `stale_after_days` on the freshness facet is the one number a taxonomy states about these readings. So the one finding this verb produces is a relation with a half on a document past that window. Nothing states how narrow a facet may get before it separates nothing. Nothing states how low a capture rate may fall before a relation is unmaintained. A bar the engine invented would be a verdict derived from nothing a corpus declared. Every other reading therefore prints its population and carries no verdict, and [OBL-repo-0119](../obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md) holds the gap.
+
+**The grain of the creator reading is a relation, and never an edge.** [Q4](09-decisions.md#q4--relation-storage) keeps `created_by` on the relation type, so a scaffolded `supersedes` and a hand-typed one are one string on disk. A row presented per edge would state a provenance that nothing records. The reading walks the closed set of six creators rather than the values in use. A creator that no relation declares is the arm a comparison needs, and a report of the values in use omits exactly that.
+
+The separation matters. `validate` must stay fast and total because it gates, while `audit` is a periodic design review with a tool attached. `audit` exits 0 whatever it finds, and no gate, no hook and no CI job runs it.
 
 ### Library
 

@@ -22,6 +22,10 @@ headwater-sweep = { path = "../sweep" }
 # points this way so that nothing in the engine below can reach a forge.
 headwater-adapter = { path = "../adapter" }
 
+# `taxonomy audit`. Every reading is taken in the library and the verb prints
+# it, so a test reads the audit of a tree without starting a process.
+headwater-audit = { path = "../audit" }
+
 headwater-census = { path = "../census" }
 headwater-check = { path = "../check" }
 headwater-generate = { path = "../generate" }

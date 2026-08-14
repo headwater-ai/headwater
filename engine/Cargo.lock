@@ -26,6 +26,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "headwater-audit"
+version = "0.1.0"
+dependencies = [
+ "headwater-census",
+ "headwater-check",
+ "headwater-graph",
+ "headwater-lock",
+ "headwater-resolve",
+ "headwater-yaml",
+]
+
+[[package]]
 name = "headwater-census"
 version = "0.1.0"
 dependencies = [
@@ -55,6 +67,7 @@ name = "headwater-cli"
 version = "0.1.0"
 dependencies = [
  "headwater-adapter",
+ "headwater-audit",
  "headwater-census",
  "headwater-check",
  "headwater-generate",

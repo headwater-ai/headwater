@@ -1,5 +1,5 @@
-218 files under the corpus root
-    175 typed
+219 files under the corpus root
+    176 typed
       3 generated
       2 untyped
      36 excluded
@@ -8,7 +8,7 @@
       1 typed decision_register
      13 typed design_spec
      14 typed evaluation
-    118 typed obligation_record
+    119 typed obligation_record
       1 typed obligation_register
       1 typed review_prompt
       5 typed review_record
