@@ -374,7 +374,7 @@ A number that no reader can recompute is the failure this table prevents. A resu
 
 The [coherence sweep](04-assurance-model.md#discharging-coherence-obligations-the-assisted-sweep) reaches a model in three parts. The engine writes a briefing, an agent reads it, and the engine reads back the file the agent wrote. **A probe cannot take that shape, and the reason is a rule this section states.** A file that an agent writes about the documents it opened is the agent's account of its own process, and no probe accepts one.
 
-So the middle part of a probe run is a **recorder**: a process that drives a session and writes what it observes, event by event. It is the one component of this layer that reaches the network. No verb of the engine writes a transcript, and the engine plans a run and reads a recorded transcript back.
+So the middle part of a probe run is a **recorder**: a process that drives a session and writes what it observes, event by event. It is the one component of this layer that reaches the network. No verb of the engine writes a transcript, and the engine plans a run and reads a recorded transcript back. [Spec 15](15-the-recorder-contract.md) states everything a recorder writes, and the four closed key sets that refuse a transcript whole.
 
 The omission of model prose is enforced rather than asked for. Every key of a transcript is a member of a closed set, and one key outside it refuses the file. An omission that nothing tests is a claim. A transcript with a `reasoning` key beside the tool calls returns the self-report through the field the rule forbids.
 

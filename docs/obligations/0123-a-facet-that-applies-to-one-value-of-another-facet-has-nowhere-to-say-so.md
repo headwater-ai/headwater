@@ -40,6 +40,8 @@ The corpus owes a way to state that a facet is required when another facet holds
 
 Nothing discharges this today, and the harness pays the cost meanwhile. `headwater probe plan` refuses a `patched` probe that declares the sentinel. It also refuses a probe of any other form that names a rule. Both directions are enforced, and no check enforces either: the harness never gates. A probe with the wrong pairing reaches a commit and stops a run rather than a merge.
 
+**That measurement holds while `docs/probe-runs/` holds nothing, and the day a transcript lands it stops holding.** A `probe_result` projection is graded against the selection the plan composes. A plan the wrong pairing refuses composes none, so the projection writes no result. `generate --check` then reports the committed result as one this corpus no longer derives. The merge stops and the reason names the probe. The gate is then the projection layer and never a check, and it reaches the pairing only through a corpus that holds a recorded run.
+
 That is the measurement this record holds. The rule that would catch it at commit time cannot be declared, and the count is one facet of five in one repository. A second corpus with a conditional facet is what turns one instance into evidence that the shape is general.
 
 ## What the grader added, which is a second instance and a third shape

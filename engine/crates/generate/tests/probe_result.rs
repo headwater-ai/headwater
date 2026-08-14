@@ -52,6 +52,19 @@ use headwater_query::Surface;
 use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};
 
+/// An envelope no run of this selection fits inside.
+///
+/// Two probes at 25 cents against a ceiling of 1 is `Refusal::OverBudget`, and
+/// it is decided after every probe has been read.
+const UNAFFORDABLE: &str = "\
+tiers:
+  regression:
+    budget_cents: 1
+    session_cost_cents: 25
+    repetitions: 1
+    arms: [present]
+";
+
 /// The corpus root of the fixture tree, and the output path's first segment.
 const ROOT: &str = "runs";
 
@@ -76,6 +89,13 @@ tiers:
 
 /// The lock digest the fixture transcript names, which the intake holds it to.
 const LOCK: &str = "sha256:fixture";
+
+/// The selection digest the fixture transcript names.
+///
+/// A real digest of the two fixture identifiers and not a placeholder, because
+/// the value is compared now. A placeholder here would make the recorded pair
+/// look self-consistent while one half of it was never read.
+const SELECTION: &str = "sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9";
 
 fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
@@ -152,8 +172,11 @@ fn identity() -> Identity {
 /// The two inputs the caller supplies, read the way the binary reads them.
 ///
 /// The selection comes from `headwater probe plan` and never from the
-/// transcript, so a recorded run cannot name its own denominator.
-fn runs_over(built: &Built, at: &Path) -> Runs {
+/// transcript, so a recorded run cannot name its own denominator. It goes
+/// through `Runs::graded_against` for the reason the binary does: a plan that
+/// stopped partway holds a part of a selection, and reading `.selected` off it
+/// grades against the probes the planner reached before it gave up.
+fn runs_over(built: &Built, at: &Path, envelope: &str) -> Runs {
     let mut runs = Runs::default();
     for row in &built.census.rows {
         let Outcome::Typed { kind, .. } = &row.outcome else {
@@ -167,8 +190,8 @@ fn runs_over(built: &Built, at: &Path) -> Runs {
             source: std::fs::read_to_string(at.join(&row.path)).expect("the transcript reads"),
         });
     }
-    let budgets = Budgets::read(ENVELOPE).expect("the envelope reads");
-    runs.selected = headwater_probe::Plan::over(
+    let budgets = Budgets::read(envelope).expect("the envelope reads");
+    runs.graded_against(&headwater_probe::Plan::over(
         &built.census,
         &built.graph,
         &built.config,
@@ -176,24 +199,33 @@ fn runs_over(built: &Built, at: &Path) -> Runs {
         LOCK,
         Tier::Regression,
         &Narrowing::default(),
-    )
-    .selected;
+    ));
     runs
 }
 
-/// The plan over a tree, and the result output it produced.
-fn result_bytes(at: &Path) -> (headwater_generate::Plan, String) {
+/// Everything one run over the tree would write, and everything it would not.
+fn plan_over(at: &Path) -> headwater_generate::Plan {
+    plan_priced(at, ENVELOPE)
+}
+
+/// The same, against a stated envelope, which is what a run would have cost.
+fn plan_priced(at: &Path, envelope: &str) -> headwater_generate::Plan {
     let built = Built::over(at);
     let surface = built.surface();
     let root = load_map(&fixtures_dir().join("runs.taxonomy.yml"));
     let projections = Projections::read(&root).expect("the projections read");
-    let plan = plan(
+    plan(
         &surface,
         &built.census,
         &projections,
         &identity(),
-        &runs_over(&built, at),
-    );
+        &runs_over(&built, at, envelope),
+    )
+}
+
+/// The plan over a tree, and the result output it produced.
+fn result_bytes(at: &Path) -> (headwater_generate::Plan, String) {
+    let plan = plan_over(at);
     let bytes = plan
         .outputs
         .iter()
@@ -359,6 +391,84 @@ fn a_result_goes_stale_when_its_transcript_changes() {
     assert!(drifted.has_errors());
 }
 
+/// A third probe, well formed, which moves the selection digest and nothing else.
+const THIRD: &str = "\
+---
+id: PROBE-FIX-third
+status: current
+status_since: 2026-08-14
+summary: A third probe, added after the run was recorded, which the run never met.
+probe_category: consistency
+expectation: answered
+oracle: \"none\"
+---
+
+# A probe the recorded run never met
+
+## Task
+
+Say whether this probe was in the selection. Answer `yes` or `no`.
+
+## Expectation
+
+```yaml
+answers: [yes, no]
+```
+";
+
+/// The sentence the result carries when the two selections agree.
+const AGREES: &str = "The selection this transcript names is the selection this corpus composes";
+
+/// The comparison a result reports about the selection it was recorded over.
+///
+/// Three directions, because a comparison that never moves and one that always
+/// moves are both useless and both look identical from a green run.
+///
+/// The `selection` digest is the one member of the pre-run identity that a
+/// result can compare and still be a file somebody can leave committed. The
+/// `tree` digest is the alternative and it is why the second direction is here:
+/// a tree digest covers every classified document, so a result that tracked it
+/// would move on the edit below and `generate --check` would ask for a fresh
+/// commit of every result after every prose change.
+#[test]
+fn a_result_reports_whether_the_selection_it_recorded_is_the_one_this_corpus_composes() {
+    let at = copied("selection");
+
+    // Direction 1: the recorded pair agrees, and the result says so.
+    let (_, agreeing) = result_bytes(&at);
+    assert!(
+        agreeing.contains(AGREES),
+        "the result does not report the selection it agrees with:\n{agreeing}"
+    );
+
+    // Direction 2: a probe's prose moves, and the selection does not. This is
+    // the direction that rules out comparing the corpus tree instead.
+    edit(
+        &at,
+        "runs/probes/0002-answered.md",
+        "Say whether the cache may change a verdict.",
+        "Say whether a cache may change any verdict at all.",
+    );
+    let (_, edited) = result_bytes(&at);
+    assert!(
+        edited.contains(AGREES),
+        "an edit to a probe's prose moved the selection this result compares:\n{edited}"
+    );
+
+    // Direction 3: a probe is added, so the population moved, and the result
+    // says which digest it recorded and which one this corpus composes.
+    std::fs::write(at.join("runs/probes/0003-third.md"), THIRD).expect("the probe lands");
+    let (_, moved) = result_bytes(&at);
+    assert!(
+        moved.contains("is not the selection this corpus composes"),
+        "a probe was added and the result did not report the moved selection:\n{moved}"
+    );
+    assert!(
+        moved.contains(SELECTION),
+        "the result does not name the digest the transcript recorded:\n{moved}"
+    );
+}
+
 /// A corpus with no transcript writes no result, and the plan says why.
 ///
 /// This is the state of this repository, and the reason the reason is a
@@ -378,7 +488,7 @@ fn a_corpus_with_no_transcript_reports_the_reason_rather_than_writing_nothing() 
         &built.census,
         &projections,
         &identity(),
-        &runs_over(&built, &at),
+        &runs_over(&built, &at, ENVELOPE),
     );
 
     assert!(
@@ -401,4 +511,137 @@ fn a_corpus_with_no_transcript_reports_the_reason_rather_than_writing_nothing() 
         "the reason does not name what is missing: {}",
         declined.reason
     );
+}
+
+/// The malformed probe the two orderings below drop into the fixture tree.
+///
+/// It declares an identifier, so `Plan::over` gets past `Unnameable` and stops
+/// on the category, which is the refusal a reader has to be told about by name.
+const MALFORMED: &str = "\
+---
+id: PROBE-FIX-malformed
+status: current
+status_since: 2026-08-14
+summary: A probe that declares no category, so no run starts over this corpus.
+expectation: opened
+oracle: \"none\"
+---
+
+# The probe that stops the plan
+
+## Task
+
+Nothing runs over this probe. The planner returns before it reads this section.
+
+## Expectation
+
+None is reachable.
+";
+
+/// A plan that did not compose grades nothing, and the reason names the probe.
+///
+/// `Plan::over` returns from inside its composition loop, so the state it
+/// leaves behind depends on where the offending probe sorts. The defect this
+/// was written against read `.selected` and dropped `.refusal`, and the two
+/// orderings therefore returned opposite verdicts over one broken corpus: a
+/// probe sorting last left a partial selection and published a rate over a
+/// silently reduced denominator, and one sorting first left an empty selection
+/// and advised deleting the committed result. Neither named the probe.
+fn a_refused_plan_grades_nothing(scratch: &str, probe: &str) {
+    let at = copied(scratch);
+
+    // The healthy pair, committed. A refusal has to be visible over a corpus
+    // that was green a moment ago, because that is the corpus a reader has.
+    let first = plan_over(&at);
+    assert_eq!(
+        verdict_over_the_result(&write(&at, &first)),
+        &Verdict::Written
+    );
+
+    std::fs::write(at.join("runs/probes").join(probe), MALFORMED).expect("the probe lands");
+
+    let refused = plan_over(&at);
+    assert!(
+        !refused
+            .outputs
+            .iter()
+            .any(|output| output.kind == headwater_generate::Kind::ProbeResult),
+        "a corpus whose plan is refused still wrote {:?}",
+        refused
+            .outputs
+            .iter()
+            .filter(|output| output.kind == headwater_generate::Kind::ProbeResult)
+            .map(|output| &output.path)
+            .collect::<Vec<_>>()
+    );
+    let declined = refused
+        .unwritten
+        .iter()
+        .find(|unwritten| unwritten.kind == headwater_generate::Kind::ProbeResult)
+        .expect("the declaration reports itself");
+    assert!(
+        declined.reason.contains(probe) && declined.reason.contains("probe_category"),
+        "the reason does not name the probe that stopped the plan: {}",
+        declined.reason
+    );
+
+    // And the gate does not go green over it. `generate` is the remedy the
+    // failing run prints, so the run after that remedy is the one that would
+    // hide this.
+    let held = check(&at, &refused);
+    assert!(
+        held.has_errors(),
+        "a refused plan left the gate green:\n{}",
+        held.render()
+    );
+    write(&at, &refused);
+    let after = check(&at, &plan_over(&at));
+    assert!(
+        after.has_errors(),
+        "running the printed remedy made the gate green over a refused plan:\n{}",
+        after.render()
+    );
+}
+
+/// A run this corpus could not have afforded still grades, and grades the same.
+///
+/// The other arm of [`headwater_probe::plan::Refusal::stops_a_grade`], and the
+/// arm a fix that stopped on every refusal would break in silence: the result
+/// would simply stop being written, and every assertion about a refused plan
+/// would still pass. The bytes are compared against the ones the affordable
+/// envelope produces, because a ceiling is a fact about a run that has not
+/// happened and this one has.
+#[test]
+fn a_ceiling_the_run_would_have_exceeded_leaves_the_grade_alone() {
+    let at = copied("unaffordable");
+    let priced = plan_priced(&at, UNAFFORDABLE);
+    let over = priced
+        .outputs
+        .iter()
+        .find(|output| output.path == RESULT)
+        .unwrap_or_else(|| {
+            panic!(
+                "a run that was too expensive to take stopped a grade of one already taken: {:?}",
+                priced
+                    .unwritten
+                    .iter()
+                    .map(|unwritten| format!("{}: {}", unwritten.at, unwritten.reason))
+                    .collect::<Vec<_>>()
+            )
+        });
+    let (_, affordable) = result_bytes(&at);
+    assert_eq!(
+        over.bytes, affordable,
+        "the declared ceiling moved the bytes of a result over a run that already happened"
+    );
+}
+
+#[test]
+fn a_probe_that_sorts_last_and_stops_the_plan_writes_no_result() {
+    a_refused_plan_grades_nothing("refused-last", "0003-malformed.md");
+}
+
+#[test]
+fn a_probe_that_sorts_first_and_stops_the_plan_writes_no_result() {
+    a_refused_plan_grades_nothing("refused-first", "0000-malformed.md");
 }

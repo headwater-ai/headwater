@@ -10,12 +10,14 @@ A probe result is a function of three committed inputs and of nothing else: the 
 ## The run this transcript recorded
 
 A regression run in the present arm, on a-model at 2026-08-14.
-served version a-model-20260701, tree sha256:fixture-tree, selection sha256:fixture-selection, seed 0, harness 0.1.0.
+served version a-model-20260701, tree sha256:fixture-tree, selection sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9, seed 0, harness 0.1.0.
 realized cost $0.41, which the adaptive layer reads as the cost of its own instrument.
 
 4 events over 2 of the 2 probes this corpus declares, in 4 sessions and 1 tool call.
 
-The engine confirmed the taxonomy, the completeness of the run identity, the membership of every probe named, that no key outside the closed set appears, and that a realized cost was recorded. It graded nothing: a verdict is a function of this transcript, the expectations these probes declare and a grader version, and `headwater probe grade` is the verb that holds all three.
+The engine confirmed the taxonomy, that every member of the run identity is present, the membership of every probe named, that no key outside the closed set appears, and that a realized cost was recorded. Present is not confirmed: of the five members a plan fixes before a run, the lock is the one compared here, and it refuses the file. It graded nothing: a verdict is a function of this transcript, the expectations these probes declare and a grader version, and `headwater probe grade` is the verb that holds all three.
+
+The selection this transcript names is the selection this corpus composes, so the probes graded below are the probes this run was planned over. The tree, the seed and the harness above are provenance: nothing compares them, and the tree in particular is not compared because a result that tracked it would need rewriting after an edit to any document of this corpus.
 
 Graded by grader 0.1.0.
 A regression run in the present arm, on a-model at served version a-model-20260701.

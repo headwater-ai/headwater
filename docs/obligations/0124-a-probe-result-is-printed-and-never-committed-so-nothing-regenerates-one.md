@@ -30,7 +30,7 @@ relations:
 
 So the artifact that spec 5 calls a probe result exists as terminal output and as nothing else.
 
-**The second and the third of those three are no longer true, and the first still is.** `probe_result` is a kind of this taxonomy, `docs/probe-results/**` is a shelf that holds it, and `probe_result` is the ninth declarable projection kind. The generator reads every committed transcript, grades it against the selection that `headwater probe plan` composes, and writes one document for each. A recorded fixture tree holds the pair and asserts the three directions of the gate. The committed pair is green. An unrelated edit leaves it green, and an edit to one event of the transcript turns it red.
+**The second and the third of those three are no longer true, and the first still is.** `probe_result` is a kind of this taxonomy, `docs/probe-results/**` is a shelf that holds it, and `probe_result` is the ninth declarable projection kind. The generator reads every committed transcript, grades it against the selection that `headwater probe plan` composes, and writes one document for each. It writes nothing at all when the plan refuses. A plan that gives up part way through holds the probes it read and none of the rest. A result over that part would report a rate over a denominator no document declares. The run names the probe that stopped the plan in the place a result would be. A recorded fixture tree holds the pair and asserts the three directions of the gate. The committed pair is green. An unrelated edit leaves it green, and an edit to one event of the transcript turns it red.
 
 This corpus writes no result, because the first fact holds. `headwater generate` prints the reason on every run rather than passing the declaration over, so the missing input has a location that a run states.
 
@@ -49,6 +49,8 @@ Two consequences follow while the chain is unbuilt, and each is a claim this cor
 The issue that lands a recorder and a committed transcript discharges the first link. The issue that declares a `probe_result` kind and a generator over it discharges the rest. It cannot start earlier, because a projection whose source does not exist is a projection of nothing.
 
 **The second of those two issues landed, and it did not have to wait.** A projection whose source does not exist writes no file, and it states the reason for a reader of the run. What the work needed was a source to test against. A fixture tree supplies one that no reader can mistake for evidence about this corpus. So the remaining debt is the first link alone: a recorder, and the transcript it commits.
+
+**The contract that link satisfies is a document of this corpus.** [Spec 15](../spec/15-the-recorder-contract.md) states the eleven identity keys, the five event keys, the three tool-call keys, the four produced-artifact keys and the five confirmations. A test derives its four tables from the arrays the intake enforces. So a key this engine starts to refuse fails a test, rather than reaching a recorder as a refusal nobody wrote down. What is missing is the process, and no longer the specification of it.
 
 One thing is settled here and needs no further work. The grader is a pure function of its three inputs, and two runs over one transcript write one set of bytes. That is what makes the projection possible when the source arrives, and it is tested in the crate and again over the verb. What is missing is the source rather than the function.
 

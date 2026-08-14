@@ -2,7 +2,7 @@
 
 # spec_series
 
-16 documents on this shelf, in the reading order this corpus derives.
+17 documents on this shelf, in the reading order this corpus derives.
 
 - [SPEC-HW-vision-and-scope](00-vision-and-scope.md) — What Headwater is for, the three qualities it aims at, the eleven design principles, and what it refuses to build.
 - [SPEC-HW-conceptual-model](01-conceptual-model.md) — The vocabulary that the rest of the specification uses, from corpus and shelf to warrant, projection, and the TBox and ABox split.
@@ -19,4 +19,5 @@
 - [SPEC-HW-theoretical-foundations](10-theoretical-foundations.md) — Where the research literature confirms, sharpens, or contradicts the design, and what changed in the specification as a result.
 - [SPEC-HW-adjacent-work](11-adjacent-work.md) — Practitioner tools and standards that solve adjacent problems, and what this design specifies that somebody already built.
 - [SPEC-HW-check-layer](12-check-layer.md) — What a check is, how a scope constrains it, where it comes from, and what the check layer owes the engine.
+- [SPEC-HW-the-recorder-contract](15-the-recorder-contract.md) — Everything an external recorder writes into a transcript, the closed key sets that refuse a file, and the one member of the run identity this engine compares. (asserted, and no human has accepted it)
 - [SPEC-HW-glossary](glossary.md) — One line for every named concept in the specification, with a link to the section that defines it.

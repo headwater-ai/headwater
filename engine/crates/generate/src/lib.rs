@@ -137,18 +137,60 @@ pub struct Identity {
 /// rather than being dropped.
 #[derive(Clone, Debug, Default)]
 pub struct Runs {
+    /// Why nothing composed a selection to grade against, where a plan gave a
+    /// reason.
+    ///
+    /// A plan that refuses returns from inside the loop that composes its
+    /// selection, so it holds the probes it had read and none of the rest. A
+    /// caller that read that list and dropped this one would grade over the
+    /// probes a planner reached before it stopped, which is a denominator no
+    /// document declares and which moves with the order the paths sort in.
+    /// [`Runs::graded_against`] is what keeps the two apart.
+    pub refusal: Option<headwater_probe::plan::Refusal>,
     /// The probes of this corpus, as `headwater probe plan` composed them.
     ///
-    /// From the plan and never from the transcript. A result is held to the
-    /// probes this tree declares, and a selection read out of a recorded run
-    /// would let a transcript name its own denominator.
+    /// From the plan and never from the transcript, because a selection read
+    /// out of a recorded run would let a transcript name its own denominator.
+    /// It is the whole of what a plan composed or it is empty, and never a
+    /// part: see [`Runs::graded_against`].
     pub selected: Vec<headwater_probe::plan::Selected>,
+    /// The digest over the identifiers of [`Runs::selected`], as the plan
+    /// computed it.
+    ///
+    /// Carried rather than recomputed here, because a second derivation of one
+    /// value is two values that can disagree, and the one they would disagree
+    /// about is the one a transcript is compared against.
+    pub selection: String,
     /// The bytes of every committed transcript.
     ///
     /// A census row carries what it parsed rather than the source it parsed,
     /// and the intake reads fenced blocks out of the source. So the caller that
     /// walked the tree supplies them.
     pub transcripts: Vec<Transcript>,
+}
+
+impl Runs {
+    /// Hold these transcripts to the selection one plan composed.
+    ///
+    /// The plan carries a selection and a refusal at once, and this is where
+    /// the two stop being carried at once. A refusal that
+    /// [`headwater_probe::plan::Refusal::stops_a_grade`] names takes the
+    /// selection with it, so this type never holds the part of a selection a
+    /// planner managed before it gave up. Every caller that grades goes through
+    /// here, so there is one place the rule lives.
+    pub fn graded_against(&mut self, plan: &headwater_probe::Plan) {
+        match plan
+            .refusal
+            .as_ref()
+            .filter(|refusal| refusal.stops_a_grade())
+        {
+            Some(refusal) => self.refusal = Some(refusal.clone()),
+            None => {
+                self.selected = plan.selected.clone();
+                self.selection = plan.selection.clone();
+            }
+        }
+    }
 }
 
 /// One committed transcript: where it is, and the bytes the caller read.
@@ -450,6 +492,14 @@ pub struct Orphaned {
     pub path: String,
     /// The kind the marker claims, when it claims one.
     pub kind: Option<String>,
+    /// Why the declaration that writes this path produced nothing on this run,
+    /// where one names the path and declined it.
+    ///
+    /// The two states need two remedies and printing one of them for both is
+    /// how a reader is told to destroy evidence. A file no declaration writes
+    /// is deleted. A file a declaration declined to rewrite is the last thing
+    /// an earlier run derived, and the remedy is whatever the reason names.
+    pub declined: Option<String>,
 }
 
 impl Orphaned {
@@ -458,10 +508,17 @@ impl Orphaned {
             Some(kind) => format!("carries a `{kind}` generated-file marker"),
             None => "carries a generated-file marker that names no kind".to_string(),
         };
-        format!(
-            "{claim}, and no declaration writes this path. Nothing regenerates this file and no \
-             check reads it. Delete it, or restore the declaration that wrote it"
-        )
+        match &self.declined {
+            Some(reason) => format!(
+                "{claim}, and the declaration that writes it produced nothing on this run: \
+                 {reason}. So these bytes are what an earlier run derived and this corpus no \
+                 longer derives them. Fix what the reason names rather than delete the file"
+            ),
+            None => format!(
+                "{claim}, and no declaration writes this path. Nothing regenerates this file and \
+                 no check reads it. Delete it, or restore the declaration that wrote it"
+            ),
+        }
     }
 }
 
@@ -530,7 +587,7 @@ pub fn plan(
     plan.unwritten.extend(engine_defined());
     // Every declaration has had its turn, so the output set is complete and a
     // marked file outside it is a marked file nothing writes.
-    plan.orphaned = orphaned(census, &plan.outputs);
+    plan.orphaned = orphaned(census, &plan.outputs, &plan.unwritten);
     plan
 }
 
@@ -539,7 +596,7 @@ pub fn plan(
 /// The census is the input rather than a second walk, for the reason every
 /// phase after it reads it: two walks of one tree can disagree, and this one
 /// would disagree by reporting a file as unwritten that the other never saw.
-fn orphaned(census: &Census, outputs: &[Output]) -> Vec<Orphaned> {
+fn orphaned(census: &Census, outputs: &[Output], unwritten: &[Unwritten]) -> Vec<Orphaned> {
     census
         .rows
         .iter()
@@ -550,6 +607,10 @@ fn orphaned(census: &Census, outputs: &[Output]) -> Vec<Orphaned> {
                 Some(Orphaned {
                     path: row.path.clone(),
                     kind: projection.clone(),
+                    declined: unwritten
+                        .iter()
+                        .find(|unwritten| unwritten.at == row.path)
+                        .map(|unwritten| unwritten.reason.clone()),
                 })
             }
             _ => None,

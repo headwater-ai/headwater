@@ -1168,6 +1168,19 @@ impl Loaded {
     /// graded against is the one the plan composed. A transcript this walk
     /// cannot read supplies no source. A corpus that holds no transcript
     /// supplies nothing at all, which is this repository today.
+    ///
+    /// # The tier below prices a run that already happened, so it reaches
+    /// nothing
+    ///
+    /// `Plan::over` takes a tier and this one is fixed. The tier decides the
+    /// arms, the repetitions and the ceiling, and it never filters the
+    /// selection, so the probes composed under `regression` are the probes
+    /// composed under `campaign`. What a tier can change is a refusal, and the
+    /// three refusals it reaches are the three about cost — which
+    /// [`headwater_probe::plan::Refusal::stops_a_grade`] drops, because a grade
+    /// of a recorded run spends nothing. So a transcript that recorded a
+    /// campaign run is graded against the same probes as one that recorded a
+    /// regression run, and the fixed tier here states no fact about either.
     fn runs(&self, root: &Path) -> headwater_generate::Runs {
         let mut runs = headwater_generate::Runs::default();
         for row in &self.census.rows {
@@ -1191,7 +1204,7 @@ impl Loaded {
         let Ok(budgets) = headwater_probe::Budgets::read(&declaration) else {
             return runs;
         };
-        runs.selected = headwater_probe::Plan::over(
+        runs.graded_against(&headwater_probe::Plan::over(
             &self.census,
             &self.graph,
             &self.config,
@@ -1199,8 +1212,7 @@ impl Loaded {
             &self.lock.digest,
             headwater_probe::Tier::Regression,
             &headwater_probe::plan::Narrowing::default(),
-        )
-        .selected;
+        ));
         runs
     }
 
@@ -2307,12 +2319,20 @@ fn generate(root: &Path, check_only: bool) -> ExitCode {
     };
     print!("{}", report.render());
     if report.has_errors() {
-        match check_only {
-            true => eprintln!(
+        // A projection that drifted and a marked file this run did not write
+        // are two failures with two remedies, and printing the first remedy
+        // for the second tells a reader to run the verb that cannot help.
+        let drifted = report.wrote.iter().any(|wrote| wrote.verdict.is_error());
+        match (check_only, drifted) {
+            (true, true) => eprintln!(
                 "headwater: a projection is not what this corpus and this lock produce. \
                  Run `headwater generate` and commit the result"
             ),
-            false => eprintln!("headwater: a projection did not write"),
+            (true, false) => eprintln!(
+                "headwater: a marked file is committed that this run does not write. Running \
+                 this verb again writes it no more, and the line under it above says why"
+            ),
+            (false, _) => eprintln!("headwater: a projection did not write"),
         }
         return ExitCode::FAILURE;
     }

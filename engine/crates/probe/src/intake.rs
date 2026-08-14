@@ -567,11 +567,13 @@ impl Record {
         let _ = writeln!(out);
         let _ = writeln!(
             out,
-            "The engine confirmed the taxonomy, the completeness of the run identity, the \
-             membership of every probe named, that no key outside the closed set appears, and \
-             that a realized cost was recorded. It graded nothing: a verdict is a function of \
-             this transcript, the expectations these probes declare and a grader version, and \
-             `headwater probe grade` is the verb that holds all three."
+            "The engine confirmed the taxonomy, that every member of the run identity is \
+             present, the membership of every probe named, that no key outside the closed set \
+             appears, and that a realized cost was recorded. Present is not confirmed: of the \
+             five members a plan fixes before a run, the lock is the one compared here, and it \
+             refuses the file. It graded nothing: a verdict is a function of this transcript, \
+             the expectations these probes declare and a grader version, and `headwater probe \
+             grade` is the verb that holds all three."
         );
         out
     }
