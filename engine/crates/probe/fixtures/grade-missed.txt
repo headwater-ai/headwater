@@ -17,6 +17,6 @@ A regression run in the absent arm, on a-model at served version a-model-2026070
 ## The rate, and the denominator it is over
 
 0 of 5 graded sessions satisfied their expectation: 0.0%, in a 95% interval of 0.0% to 43.4%.
-The denominator is the graded sessions and never the selected probes. 0 sessions reached no verdict and are outside both halves of that fraction.
+The denominator is the graded sessions and never the selected probes. 0 sessions reached no verdict, and a session with no verdict is outside both halves of that fraction.
 
 An interval that overlaps the previous run's is variance and one that does not is drift. This is one arm, so it estimates no effect: an efficacy claim is a comparison of two results, and the arm each one recorded is on it.

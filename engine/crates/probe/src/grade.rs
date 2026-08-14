@@ -528,7 +528,8 @@ impl Results {
                 let _ = writeln!(
                     out,
                     "The denominator is the graded sessions and never the selected probes. {} \
-                     reached no verdict and are outside both halves of that fraction.",
+                     reached no verdict, and a session with no verdict is outside both halves of \
+                     that fraction.",
                     count(self.refused(), "session")
                 );
             }
@@ -680,13 +681,19 @@ fn not_opened(selected: &Selected, session: &[&Event]) -> Verdict {
         return Verdict::Refused(Refusal::NothingObserved);
     }
     match read(&selected.examines, session) {
-        Some((Witness::Read { event, call, argument, .. }, _)) => {
-            Verdict::NotSatisfied(Miss::Read {
+        Some((
+            Witness::Read {
                 event,
                 call,
                 argument,
-            })
-        }
+                ..
+            },
+            _,
+        )) => Verdict::NotSatisfied(Miss::Read {
+            event,
+            call,
+            argument,
+        }),
         // `read` returns the `Read` witness or nothing at all.
         Some(_) => unreachable!("read returns one witness form"),
         None => Verdict::Satisfied(Witness::NoneOf {
@@ -712,7 +719,7 @@ fn cited(selected: &Selected, session: &[&Event]) -> Verdict {
     };
     for (at, artifact) in &artifacts {
         for identifier in &artifact.cites {
-            if wanted.iter().any(|want| *want == identifier) {
+            if wanted.contains(&identifier) {
                 return Verdict::Satisfied(Witness::Cites {
                     event: *at,
                     artifact: artifact.path.clone(),

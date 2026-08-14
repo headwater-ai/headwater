@@ -34,11 +34,11 @@
 //! # What is not confirmed here, and by whom
 //!
 //! Every verdict. This module counts events and refuses malformed ones, and it
-//! evaluates no expectation against anything. The grader is
-//! [#85](https://github.com/headwater-ai/headwater/issues/85): a pure function
-//! of the transcript, the expectations and its own version. The seam is exactly
-//! this type — a `Record` that carried an expectation's verdict would be a
-//! grader written where nobody is looking for one.
+//! evaluates no expectation against anything. [`crate::grade`] is a pure
+//! function of the transcript, the expectations and its own version, and it is
+//! the only component here that returns one. The seam is exactly this type — a
+//! `Record` that carried an expectation's verdict would be a grader written
+//! where nobody is looking for one.
 
 use crate::{Arm, Cents, Tier};
 use headwater_census::census::{Census, Outcome};
@@ -571,8 +571,8 @@ impl Record {
             "The engine confirmed the taxonomy, the completeness of the run identity, the \
              membership of every probe named, that no key outside the closed set appears, and \
              that a realized cost was recorded. It graded nothing: a verdict is a function of \
-             this transcript, the expectations these probes declare and a grader version, and no \
-             grader ships in this engine yet."
+             this transcript, the expectations these probes declare and a grader version, and \
+             `headwater probe grade` is the verb that holds all three."
         );
         out
     }

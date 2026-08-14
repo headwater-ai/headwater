@@ -202,7 +202,10 @@ fn a_plan_a_record_and_a_grade_are_each_the_same_bytes_twice() {
     assert_eq!(regression().render(), regression().render());
     let source = transcript("transcript.md");
     assert_eq!(record_of(&source).render(), record_of(&source).render());
-    assert_eq!(results_over(&source).render(), results_over(&source).render());
+    assert_eq!(
+        results_over(&source).render(),
+        results_over(&source).render()
+    );
 }
 
 // --- the verdicts, by variant, so a message may be reworded ------------------
@@ -296,9 +299,15 @@ fn a_key_the_recorder_never_wrote_reaches_a_refusal_and_never_a_pass() {
 
     for (probe, expected) in [
         ("PROBE-FIX-opened", NoVerdict::Unrecorded { what: "calls" }),
-        ("PROBE-FIX-answered", NoVerdict::Unrecorded { what: "answer" }),
+        (
+            "PROBE-FIX-answered",
+            NoVerdict::Unrecorded { what: "answer" },
+        ),
         ("PROBE-FIX-not-opened", NoVerdict::NothingObserved),
-        ("PROBE-FIX-cited", NoVerdict::Unrecorded { what: "produced" }),
+        (
+            "PROBE-FIX-cited",
+            NoVerdict::Unrecorded { what: "produced" },
+        ),
         (
             "PROBE-FIX-patched",
             NoVerdict::NotChecked {

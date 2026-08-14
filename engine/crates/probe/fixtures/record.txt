@@ -7,4 +7,4 @@ realized cost $0.41, which the adaptive layer reads as the cost of its own instr
 1 of 6 events did not count:
   event 6: `PROBE-FIX-not-declared` is not a classified probe of this corpus, so nothing declares what a session against it was expected to do
 
-The engine confirmed the taxonomy, the completeness of the run identity, the membership of every probe named, that no key outside the closed set appears, and that a realized cost was recorded. It graded nothing: a verdict is a function of this transcript, the expectations these probes declare and a grader version, and no grader ships in this engine yet.
+The engine confirmed the taxonomy, the completeness of the run identity, the membership of every probe named, that no key outside the closed set appears, and that a realized cost was recorded. It graded nothing: a verdict is a function of this transcript, the expectations these probes declare and a grader version, and `headwater probe grade` is the verb that holds all three.

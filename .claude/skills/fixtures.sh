@@ -431,7 +431,7 @@ $out" ;;
     for file in "$root/.githooks/pre-commit" "$root/.github/workflows/ci.yml" \
         "$root/.claude/hooks/review.sh" "$root/.claude/hooks/write.sh" \
         "$root/.claude/hooks/intent.sh"; do
-        grep -q 'headwater probe\|probe plan\|probe record' "$file" 2>/dev/null &&
+        grep -q 'headwater probe\|probe plan\|probe record\|probe grade' "$file" 2>/dev/null &&
             callers="$callers $(basename "$file")"
     done
     if [ -z "$callers" ]; then
@@ -466,6 +466,7 @@ $out" ;;
     before=$(ls "$root/docs/probe-runs" 2>/dev/null | wc -l)
     "$engine" probe plan --root "$root" > /dev/null 2>&1
     "$engine" probe record "$scratch/prose.md" --root "$root" > /dev/null 2>&1
+    "$engine" probe grade "$scratch/prose.md" --root "$root" > /dev/null 2>&1
     after=$(ls "$root/docs/probe-runs" 2>/dev/null | wc -l)
     if [ "$before" = "$after" ]; then
         pass "$name"
@@ -473,9 +474,28 @@ $out" ;;
         fail "$name" "the shelf held $before documents and now holds $after"
     fi
 
-    # The plan is deterministic, which is the whole of what "a probe result is a
-    # function of the transcript, the expectations and the grader version" can
-    # be tested against before a grader exists.
+    # A transcript this engine refused reaches no grader. The input contract of
+    # the one component that returns a verdict, asserted on the verb rather than
+    # described in a doc comment.
+    claim 'a refused transcript reaches no grader' \
+        ../../docs/spec/05-ai-integration.md \
+        'It evaluates no expectation' \
+        0 'reached no grader' \
+        "$engine" probe grade "$scratch/prose.md" --root "$root"
+
+    # The plan is deterministic, and so is the grade. That is what "a probe
+    # result is a function of the transcript, the expectations and the grader
+    # version" is testable as, and it is necessary rather than sufficient: the
+    # recorded fixtures of the probe crate are what hold the verdicts.
+    name='the grade over one transcript is the same bytes twice'
+    "$engine" probe grade "$scratch/prose.md" --root "$root" > "$scratch/grade-a.txt" 2>/dev/null
+    "$engine" probe grade "$scratch/prose.md" --root "$root" > "$scratch/grade-b.txt" 2>/dev/null
+    if cmp -s "$scratch/grade-a.txt" "$scratch/grade-b.txt"; then
+        pass "$name"
+    else
+        fail "$name" 'two runs over one transcript wrote different bytes'
+    fi
+
     name='the run plan is the same bytes twice'
     "$engine" probe plan --root "$root" > "$scratch/probe-a.txt" 2>/dev/null
     "$engine" probe plan --root "$root" > "$scratch/probe-b.txt" 2>/dev/null

@@ -85,6 +85,7 @@ headwater sweep report       <path> [--format text|json] [--root <path>]
 headwater probe plan         [--tier regression|campaign] [--arm present|absent]
                              [--category <name>] [--seed <n>] [--root <path>]
 headwater probe record       <path> [--root <path>]
+headwater probe grade        <path> [--root <path>]
 headwater generate           [--check] [--root <path>]
 headwater import             [<name>] [--expect <digest>] [--write] [--root <path>]
 headwater export             [--profile <name>] [--format json|jsonschema] [--at <date>]
@@ -165,7 +166,7 @@ headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
                      edge is one the graph already carries. No model is reached
                      from this binary, both halves exit 0 whatever they find,
                      and neither writes a byte of the corpus.
-  probe              the two deterministic halves of the probe harness, which
+  probe              the three deterministic parts of the probe harness, which
                      is a sampler and never a check. `plan` fixes the five
                      members of the run identity that exist before a run, and
                      projects the sessions against the ceiling that
@@ -181,9 +182,14 @@ headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
                      they find. A transcript that an agent wrote about its own
                      session is a self-report, which spec 5 refuses, so the
                      recorder observes a session from outside it and is not in
-                     this repository. Neither half grades: a verdict is a
-                     function of the transcript, the declared expectations and a
-                     grader version, and no grader ships yet.
+                     this repository. Neither of those two grades. `grade` is
+                     the one component of this engine that returns a verdict,
+                     and three properties are why it may: its inputs carry no
+                     prose, every satisfied verdict names the event that
+                     satisfied it, and six conditions return no verdict where a
+                     green one would be free. It reports a rate over the
+                     sessions that reached a verdict, with the count that did
+                     not beside it.
   init               scaffold the consumer declaration and the overlay for a
                      repository that has neither, and print the questions that
                      no tree answers. It refuses to overwrite a binding.
@@ -570,7 +576,7 @@ fn main() -> ExitCode {
         ["sweep", other, ..] => fail(&format!(
             "`sweep {other}` is not a verb this binary carries. It carries `plan` and `report`"
         )),
-        ["probe"] => fail("`probe` takes a second word: `plan` or `record`"),
+        ["probe"] => fail("`probe` takes a second word: `plan`, `record` or `grade`"),
         ["probe", "plan"] => probe_plan(
             &root,
             tier.as_deref(),
@@ -583,9 +589,14 @@ fn main() -> ExitCode {
              `headwater probe plan` prints the shape of it",
         ),
         ["probe", "record", path] => probe_record(&root, Path::new(path)),
+        ["probe", "grade"] => fail(
+            "`probe grade` takes the path of a transcript a recorder wrote. It grades that \
+             transcript against the probes this corpus declares",
+        ),
+        ["probe", "grade", path] => probe_grade(&root, Path::new(path)),
         ["probe", other, ..] => fail(&format!(
-            "`probe {other}` is not a verb this binary carries. It carries `plan` and `record`. \
-             The verb that grades a transcript is not built"
+            "`probe {other}` is not a verb this binary carries. It carries `plan`, `record` and \
+             `grade`"
         )),
         ["generate"] => generate(&root, check_only),
         ["import"] => import(&root, None, expect.as_deref(), write),
@@ -1997,11 +2008,86 @@ fn probe_plan(
     ExitCode::SUCCESS
 }
 
+/// `headwater probe grade <path>`.
+///
+/// The one verb of this binary that returns a verdict, and the exit status
+/// still carries none. A probe never gates
+/// ([spec 5](../../../../docs/spec/05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose)),
+/// so a run where every expectation was refuted exits 0 exactly as a run where
+/// every one was satisfied does. A caller that wants the rate reads the text,
+/// which is what a person does.
+///
+/// It reads the budget declaration for the same reason `plan` does: the
+/// selection a transcript is graded against is the selection the plan composed,
+/// and re-deriving it here from the corpus rather than trusting the transcript
+/// is what holds a result to the probes this tree declares.
+///
+/// It writes nothing and it reaches nothing. No socket is opened here, no crate
+/// below can open one, and no gate, hook or CI step calls this verb.
+fn probe_grade(root: &Path, path: &Path) -> ExitCode {
+    let source = match std::fs::read_to_string(path) {
+        Ok(source) => source,
+        Err(error) => {
+            return fail(&format!(
+                "the transcript at {} did not read: {error}",
+                path.display()
+            ))
+        }
+    };
+    let declaration = root.join(headwater_probe::budget::PATH);
+    let budgets = match std::fs::read_to_string(&declaration) {
+        Ok(source) => match headwater_probe::Budgets::read(&source) {
+            Ok(budgets) => budgets,
+            Err(unreadable) => return refuse(&unreadable.to_string()),
+        },
+        Err(error) => {
+            return fail(&format!(
+                "`{}` did not read: {error}. A grade names the selection it was taken over, and \
+                 the selection comes from the plan",
+                headwater_probe::budget::PATH
+            ))
+        }
+    };
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let plan = headwater_probe::Plan::over(
+        &loaded.census,
+        &loaded.graph,
+        &loaded.config,
+        &budgets,
+        &loaded.lock.digest,
+        headwater_probe::Tier::Regression,
+        &headwater_probe::plan::Narrowing::default(),
+    );
+    if let Some(refusal) = &plan.refusal {
+        // A plan that refuses its own run still composed a selection, unless
+        // the refusal is why it composed none. Grading against a selection the
+        // plan refused would report a rate over a denominator the harness had
+        // already rejected, so the verb says which refusal it met and stops.
+        if plan.selected.is_empty() {
+            println!("Nothing was graded. `headwater probe plan` refuses this corpus: {refusal}");
+            return ExitCode::SUCCESS;
+        }
+    }
+    let tree = headwater_probe::intake::Tree {
+        census: &loaded.census,
+        config: &loaded.config,
+        lock: &loaded.lock.digest,
+    };
+    let record = headwater_probe::Record::read(&source, &tree);
+    let results = headwater_probe::Results::over(&record, &plan.selected);
+    print!("{}", results.render());
+    ExitCode::SUCCESS
+}
+
 /// `headwater probe record <path>`.
 ///
 /// It reads a transcript back and reports what this engine could confirm about
 /// it. It grades nothing: a verdict is a function of the transcript, the
-/// expectations and a grader version, and no grader ships here yet.
+/// expectations and a grader version, and `headwater probe grade` is where that
+/// version lives.
 ///
 /// It exits 0 on every record it can produce, including a transcript it refuses
 /// whole, for the reason `sweep report` does. The two non-zero exits are a

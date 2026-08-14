@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The probe harness: the halves of it that are deterministic.
+//! The probe harness: the parts of it that are deterministic.
 //!
 //! [Spec 5](../../../../docs/spec/05-ai-integration.md#measuring-whether-any-of-this-works)
 //! declares the probe suite and
@@ -18,7 +18,7 @@
 //! |---|---|---|
 //! | the transcript | a `probe_transcript` document on `docs/probe-runs/` | the recorder, mechanically |
 //! | the expectations | a `probe` document on `docs/probes/` | a person |
-//! | the grader version | the version of the crate that evaluates them | [#85](https://github.com/headwater-ai/headwater/issues/85) |
+//! | the grader version | the version of the crate that evaluates them | [`grade::VERSION`] |
 //!
 //! A number is citable when a reader can fetch every input it came from and get
 //! the number again. That is why the transcript is corpus content and the
@@ -49,9 +49,18 @@
 //! of this layer that reaches the network, and it is not in this repository.
 //!
 //! The consequence is a smaller harness than the issue assumed and an honest
-//! one. This crate plans a run and reads a recorded transcript back. Nothing
-//! here writes a transcript, and there is no `--write` for one, for the same
-//! reason the sweep has no `--write` for an edge.
+//! one. This crate plans a run, reads a recorded transcript back, and grades
+//! it. Nothing here writes a transcript, and there is no `--write` for one, for
+//! the same reason the sweep has no `--write` for an edge.
+//!
+//! # One component here grades, and [`grade`] says what earns it that
+//!
+//! The sweep verifies citations and returns findings that a person accepts.
+//! The [`intake`] confirms five things about a transcript and evaluates no
+//! expectation. [`grade`] returns verdicts, and three properties are why it
+//! may: its inputs carry no prose, a satisfied verdict holds the event that
+//! satisfied it by type, and six conditions return no verdict where a green one
+//! would be free. Determinism is necessary to all of that and is none of it.
 //!
 //! # Four things keep this out of every gate, and none of them is a promise
 //!
@@ -70,14 +79,17 @@
 //! # The harness fails closed, and a refusal is the cheaper error
 //!
 //! Spec 5: "The harness projects the cost of a run before it starts, and it
-//! refuses to start a run that exceeds the budget." Three things stop a run
+//! refuses to start a run that exceeds the budget." Five things stop a run
 //! here, and every one of them stops the whole run rather than dropping the
 //! probe that caused it:
 //!
 //! - the projected cost is over the tier's declared budget;
 //! - a probe declares `patched` and names an oracle that is not one of the
 //!   [`headwater_check::RULES`] this engine carries;
-//! - a probe declares an expectation over documents and names none.
+//! - a probe declares an expectation over documents and names none;
+//! - a probe declares `answered` and no closed set of answers;
+//! - a probe of another form declares a rule or a closed set that its
+//!   expectation never reads.
 //!
 //! The second and the third are the shape `headwater conformance` already uses:
 //! a rule this engine holds no reading for ends the run rather than being
