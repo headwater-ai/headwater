@@ -354,6 +354,42 @@ A run emits a **transcript**. It holds the ordered tool-call events with their a
 
 A transcript is a committed snapshot that a `probe_run` anchor resolver reads. A probe run is an external system of record, and [Q19](09-decisions.md#q19--inbound-integration-an-external-system-of-record) built that machinery already. So nothing new arrives here, and the declaration count stays at thirteen. The **probe result** is a document, generated from the transcript, the expectations and the grader version. It carries the `regenerated` [warrant](01-conceptual-model.md#warrant), and `generate --check` proves it.
 
+##### A probe result is citable because each of its three inputs is a committed artifact
+
+The sentence above names three inputs, and a rate is citable when a reader can fetch every one of them and get the rate again. This repository declares where each one lives.
+
+| input | where it is | who writes it |
+|---|---|---|
+| the transcript | a `probe_transcript` document on `docs/probe-runs/` | the recorder, mechanically |
+| the expectations | a `probe` document on `docs/probes/` | a person |
+| the grader version | the version of the code that evaluated them | the engine |
+
+That placement separates a probe result from the [capture-cost store](03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric), which sits outside the corpus root. The test is whether anything regenerates the artifact from a committed source. A capture-cost reading is a fact about a run that ended, and nothing recomputes it. A probe result is recomputed on every run of `generate --check`. So a result is corpus content, and the transcript under it is too.
+
+A number that no reader can recompute is the failure this table prevents. A result with an uncommitted transcript carries the `asserted` warrant. An asserted document discharges no evidence obligation, so the measurement layer would produce content that this corpus refuses as evidence.
+
+##### A transcript is recorded from outside the session, and never written back by the agent
+
+The [coherence sweep](04-assurance-model.md#discharging-coherence-obligations-the-assisted-sweep) reaches a model in three parts. The engine writes a briefing, an agent reads it, and the engine reads back the file the agent wrote. **A probe cannot take that shape, and the reason is a rule this section states.** A file that an agent writes about the documents it opened is the agent's account of its own process, and no probe accepts one.
+
+So the middle part of a probe run is a **recorder**: a process that drives a session and writes what it observes, event by event. It is the one component of this layer that reaches the network. No verb of the engine writes a transcript, and the engine plans a run and reads a recorded transcript back.
+
+The omission of model prose is enforced rather than asked for. Every key of a transcript is a member of a closed set, and one key outside it refuses the file. An omission that nothing tests is a claim. A transcript with a `reasoning` key beside the tool calls returns the self-report through the field the rule forbids.
+
+##### The harness confirms five things and grades none of them
+
+`headwater probe plan` fixes the five members of the run identity that exist before a run. They are the lock, the corpus tree, the selection, the seed and the harness version. It projects the sessions against the tier's declared budget and refuses a run above it. Three other conditions stop a run, and each stops the whole run rather than the probe that raised it:
+
+- a `patched` probe that names a rule this engine does not carry
+- a probe of another form that names a rule
+- a probe over documents that names none
+
+A selection that dropped what it could not read reports a rate over a denominator nobody declared.
+
+`headwater probe record` reads a transcript back. It confirms the taxonomy, the run identity, the membership of every probe named, and a recorded cost. It confirms that no key outside the closed set appears. It evaluates no expectation, because a verdict is the grader's, and a grader inside the intake is a grader nobody reviewed.
+
+**The seed is the caller's number.** A seed derived from the corpus moves the rotation whenever the corpus moves. A difference between two runs then carries a change in the phrasing and a change in the corpus at once. A run that repeats a seed repeats a selection.
+
 The transcript is not optional, and the reason is the evidence rules. A result with no committed transcript has nothing inside the repository behind it, so its warrant is `asserted`. An asserted document discharges no evidence obligation ([spec 3](03-authoring-and-lifecycle.md#evidence-has-three-honest-states-not-two)). The measurement layer would then produce content that the corpus refuses as evidence.
 
 **A model name is not a pin.** Two snapshots of one named model, three months apart, moved from 84% to 51% on a single task. The same pair moved in opposite directions on other tasks ([spec 11 §R](11-adjacent-work.md#r--measuring-whether-the-corpus-works)). So a run records the served version where the provider exposes one, and records the name as a name where it does not.
