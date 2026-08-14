@@ -531,6 +531,18 @@ conformance:
     assert_eq!(report.reached, None);
     assert_eq!(report.levels[0].undecided, 1);
     assert_eq!(report.levels[0].met, 0);
+
+    // The rung says what it waits on, and the rule says it is neither met nor
+    // missing. A rung reported only as "not reached" would read as a gap
+    // somebody can close, and this one nobody can.
+    let rendered = report.render();
+    assert!(rendered.contains("L4 Gated — not reached, 0 of 1 rules met"));
+    assert!(rendered.contains("waits on an attestation record"));
+    assert!(rendered.contains("It is neither met nor missing"));
+    assert!(
+        !rendered.contains("gap"),
+        "an undecidable rule was reported as a gap"
+    );
 }
 
 /// A `--level` run that names a rung the package does not declare is an error
