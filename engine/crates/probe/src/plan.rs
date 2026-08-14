@@ -110,6 +110,48 @@ impl Examined {
     }
 }
 
+/// Why a document is in the read set of a run.
+///
+/// Both arms are declarations rather than observations. A probe document is in
+/// the set because its prose is the task a session was given, and an examined
+/// document is in it because a probe of the selection points a session at it.
+/// What a session then opened is in the transcript and never in a plan.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Because {
+    /// The document is a probe of the selection.
+    Probe,
+    /// A probe of the selection examines it.
+    Examined,
+}
+
+impl Because {
+    pub fn name(self) -> &'static str {
+        match self {
+            Because::Probe => "probe",
+            Because::Examined => "examined",
+        }
+    }
+}
+
+/// One document the read set of this run covers.
+///
+/// # This is the narrowing that the corpus tree digest cannot make
+///
+/// The `tree` digest covers every classified document, so it moves on every
+/// commit, and a result held to it is stale the moment anybody edits anything.
+/// The read set covers the documents the selection points a session at and
+/// nothing else. An edit elsewhere leaves it alone, and that is what makes an
+/// answer over it worth reading.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Read {
+    pub path: String,
+    /// The content digest the census carried for it, and `None` where the
+    /// census carried none. An unhashed member is written into the digest the
+    /// way the tree digest writes one, so the two constructions agree.
+    pub digest: Option<String>,
+    pub because: Because,
+}
+
 /// One probe, as the harness meets it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Selected {
@@ -336,6 +378,25 @@ pub struct Plan {
     pub tree: String,
     /// The digest over the identifiers selected, in order.
     pub selection: String,
+    /// The digest over the read set of this run, by path and content.
+    ///
+    /// It is the third narrow member of the identity and it is the one that
+    /// moves on a prose edit. The `selection` digest holds still when a probe's
+    /// text changes, which is what makes it a statement about the population
+    /// rather than about the corpus. This one moves, and only for a document
+    /// that the selection points a session at.
+    pub read_set: String,
+    /// The documents the read-set digest covers, in path order.
+    pub reads: Vec<Read>,
+    /// Targets an `examines` edge names that are not documents of this corpus,
+    /// in the text the resolver normalized.
+    ///
+    /// [Spec 12](../../../../docs/spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
+    /// rules that "an external anchor is in no read set", because a read set is
+    /// a list of corpus paths and an anchor names a target that is not one.
+    /// They are listed here so that the exclusion has a location rather than
+    /// being a silence.
+    pub anchors: Vec<String>,
     /// The rotation seed, as the caller stated it.
     pub seed: u64,
     /// The version of this engine, which is the harness version.
@@ -381,6 +442,9 @@ impl Plan {
             lock: lock.to_string(),
             tree: String::new(),
             selection: String::new(),
+            read_set: String::new(),
+            reads: Vec::new(),
+            anchors: Vec::new(),
             seed: narrowing.seed,
             harness: headwater_resolve_version(),
             selected: Vec::new(),
@@ -394,11 +458,18 @@ impl Plan {
 
         let mut tree = String::new();
         let mut probes = Vec::new();
+        // The digest of every classified document, by path, which is what a
+        // read-set member is looked up in. It comes from the same walk the tree
+        // digest comes from, because two passes over one corpus can disagree
+        // and a read set that disagreed with the tree would report a state that
+        // no plan fixed.
+        let mut digests: Vec<(&str, Option<&str>)> = Vec::new();
         for row in &census.rows {
             let Outcome::Typed { kind, .. } = &row.outcome else {
                 continue;
             };
             plan.corpus += 1;
+            digests.push((row.path.as_str(), row.digest.as_deref()));
             tree.push_str(&row.path);
             tree.push('\t');
             tree.push_str(row.digest.as_deref().unwrap_or("-"));
@@ -560,6 +631,60 @@ impl Plan {
             .collect();
         plan.selection = headwater_hash::digest(names.join("\n").as_bytes());
 
+        // The read set: every probe of the selection, and every document any of
+        // them examines. A path that is both is one member, and the probe is
+        // the reason a reader is given, because a probe document is in the set
+        // whether or not anything examines it.
+        let mut reads: Vec<Read> = Vec::new();
+        let mut anchors: Vec<String> = Vec::new();
+        for selected in &plan.selected {
+            let mut add = |path: &str, because: Because| {
+                if let Some(known) = reads.iter_mut().find(|read| read.path == path) {
+                    // A probe that another probe examines is in the set for
+                    // both reasons, and the reader is told the stronger one: it
+                    // is in the set whether or not anything examines it.
+                    if because == Because::Probe {
+                        known.because = Because::Probe;
+                    }
+                    return;
+                }
+                let digest = digests
+                    .iter()
+                    .find(|(known, _)| *known == path)
+                    .and_then(|(_, digest)| digest.map(|text| text.to_string()));
+                reads.push(Read {
+                    path: path.to_string(),
+                    digest,
+                    because,
+                });
+            };
+            add(&selected.path, Because::Probe);
+            for examined in &selected.examines {
+                match examined.id {
+                    // A document of this corpus, which the census hashes.
+                    Some(_) => add(&examined.path, Because::Examined),
+                    // An external anchor. Spec 12: it is in no read set.
+                    None => {
+                        if !anchors.contains(&examined.path) {
+                            anchors.push(examined.path.clone());
+                        }
+                    }
+                }
+            }
+        }
+        reads.sort_by(|a, b| a.path.cmp(&b.path));
+        anchors.sort();
+        let mut listing = String::new();
+        for read in &reads {
+            listing.push_str(&read.path);
+            listing.push('\t');
+            listing.push_str(read.digest.as_deref().unwrap_or("-"));
+            listing.push('\n');
+        }
+        plan.read_set = headwater_hash::digest(listing.as_bytes());
+        plan.reads = reads;
+        plan.anchors = anchors;
+
         let Some(envelope) = budgets.of(tier) else {
             plan.refusal = Some(Refusal::TierUndeclared(tier));
             return plan;
@@ -619,6 +744,7 @@ impl Plan {
         let _ = writeln!(out, "lock: {}", self.lock);
         let _ = writeln!(out, "tree: {}", self.tree);
         let _ = writeln!(out, "selection: {}", self.selection);
+        let _ = writeln!(out, "read_set: {}", self.read_set);
         let _ = writeln!(out, "seed: {}", self.seed);
         let _ = writeln!(out, "harness: {}", self.harness);
         let _ = writeln!(out, "tier: {}", self.tier.name());
@@ -637,7 +763,7 @@ impl Plan {
             out,
             "The model, its served version, the wall-clock time and the realized cost belong to \
              the run. The recorder writes those four into the transcript, and `headwater probe \
-             record` holds the rest of the identity to the five above."
+             record` holds the rest of the identity to the six above."
         );
         let _ = writeln!(out);
 
@@ -701,6 +827,43 @@ impl Plan {
             if !selected.answers.is_empty() {
                 let _ = writeln!(out, "    answers: {}", selected.answers.join(", "));
             }
+        }
+        let _ = writeln!(out);
+
+        let _ = writeln!(out, "## The read set");
+        let _ = writeln!(out);
+        let _ = writeln!(
+            out,
+            "{} the `read_set` digest above covers, which is every probe of the selection and \
+             every document one of them examines:",
+            crate::plural(self.reads.len(), "document")
+        );
+        let _ = writeln!(out);
+        for read in &self.reads {
+            let _ = writeln!(
+                out,
+                "- {} ({}) {}",
+                read.path,
+                read.because.name(),
+                read.digest.as_deref().unwrap_or("-")
+            );
+        }
+        let _ = writeln!(out);
+        let _ = writeln!(
+            out,
+            "A recorded result is stale when a document of this list moves, and it is not stale \
+             when any other document of this corpus moves. That is the whole of what the digest \
+             buys over the `tree` digest beside it, which moves on every commit."
+        );
+        if !self.anchors.is_empty() {
+            let _ = writeln!(out);
+            let _ = writeln!(
+                out,
+                "{} an `examines` edge names is outside this corpus, so it is in no read set and \
+                 no comparison over one decides anything about it: {}.",
+                crate::plural(self.anchors.len(), "target"),
+                self.anchors.join(", ")
+            );
         }
         let _ = writeln!(out);
 

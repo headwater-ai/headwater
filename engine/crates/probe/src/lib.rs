@@ -112,6 +112,7 @@ pub mod budget;
 pub mod grade;
 pub mod intake;
 pub mod plan;
+pub mod read_set;
 
 pub use budget::{Budgets, Envelope};
 pub use grade::Results;
@@ -283,4 +284,17 @@ pub type Cents = u64;
 /// Cents as a reader reads them.
 pub fn dollars(cents: Cents) -> String {
     format!("${}.{:02}", cents / 100, cents % 100)
+}
+
+/// A count and its noun.
+///
+/// It is one function rather than one per module because a `probe_result`
+/// projection commits these sentences to the corpus, and "1 tool calls" in a
+/// committed document is a line every later reader has to decide whether to
+/// trust. Three copies of the rule are three places for that line to come back.
+pub fn plural(how_many: usize, noun: &str) -> String {
+    match how_many {
+        1 => format!("1 {noun}"),
+        other => format!("{other} {noun}s"),
+    }
 }

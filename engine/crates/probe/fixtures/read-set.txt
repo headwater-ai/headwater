@@ -1,0 +1,16 @@
+Nothing this run read has moved. The read set covers 5 documents, and the digest the transcript recorded is the digest this corpus composes.
+recorded sha256:9cd0571c32a18081b2fd2f031a69d16f7260bd9a9c77e157884ec0d5ea6968fb
+now      sha256:9cd0571c32a18081b2fd2f031a69d16f7260bd9a9c77e157884ec0d5ea6968fb
+
+- corpus/probes/0001-opened.md (probe) sha256:d096faf5e06e2dc870c3bf0fdb47fa2dd9c8c7883fd1f81d8fabaff7b36ccd9a
+    no recorded call named it, so no witness of this transcript says whether it moved
+- corpus/probes/0002-answered.md (probe) sha256:ab543ee59d5a46fd2fa8f4e1ce81e2de3a68926e0cdb53eacacf2a8b3a4adf76
+    event 1 call 1 observed the same identity, so this document stands
+- corpus/probes/0003-not-opened.md (probe) sha256:37cd08fc8245b8761ba676d7b5c8e7f400c114cfe6f2a2a84c46e5ac4bb7b569
+    no recorded call named it, so no witness of this transcript says whether it moved
+- corpus/probes/0004-cited.md (probe) sha256:331da3480aa9db35b12bd8987fc5cfcda0068010c4969fffbb064f4ac90b347e
+    no recorded call named it, so no witness of this transcript says whether it moved
+- corpus/probes/0005-patched.md (probe) sha256:7913d3261207265c4c9c430a4c89edf0746f3a610abee8230680c5057031454d
+    no recorded call named it, so no witness of this transcript says whether it moved
+
+1 session recorded no `calls` key, so nothing observed what it opened: PROBE-FIX-not-opened / 1. The read set still covers what the plan pointed it at. What no list covers is a document such a session opened that no probe of the selection names.

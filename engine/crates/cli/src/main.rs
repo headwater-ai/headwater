@@ -86,6 +86,7 @@ headwater probe plan         [--tier regression|campaign] [--arm present|absent]
                              [--category <name>] [--seed <n>] [--root <path>]
 headwater probe record       <path> [--root <path>]
 headwater probe grade        <path> [--root <path>]
+headwater probe stale        [--root <path>]
 headwater generate           [--check] [--root <path>]
 headwater import             [<name>] [--expect <digest>] [--write] [--root <path>]
 headwater export             [--profile <name>] [--format json|jsonschema] [--at <date>]
@@ -166,8 +167,8 @@ headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
                      edge is one the graph already carries. No model is reached
                      from this binary, both halves exit 0 whatever they find,
                      and neither writes a byte of the corpus.
-  probe              the three deterministic parts of the probe harness, which
-                     is a sampler and never a check. `plan` fixes the five
+  probe              the four deterministic parts of the probe harness, which
+                     is a sampler and never a check. `plan` fixes the six
                      members of the run identity that exist before a run, and
                      projects the sessions against the ceiling that
                      `.headwater/probe.yml` declares for the tier. It refuses a
@@ -189,7 +190,14 @@ headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
                      satisfied it, and six conditions return no verdict where a
                      green one would be free. It reports a rate over the
                      sessions that reached a verdict, with the count that did
-                     not beside it.
+                     not beside it. `stale` holds the read set of every
+                     committed transcript against the tree in front of it and
+                     reports which recorded results a change voided. A read set
+                     is the probes of the selection, the documents they examine
+                     and the documents a session was observed to open, so an
+                     edit anywhere else voids nothing. It exits 0 on every
+                     answer, because a result going stale is a fact about a
+                     measurement rather than a status a build reads.
   init               scaffold the consumer declaration and the overlay for a
                      repository that has neither, and print the questions that
                      no tree answers. It refuses to overwrite a binding.
@@ -576,7 +584,7 @@ fn main() -> ExitCode {
         ["sweep", other, ..] => fail(&format!(
             "`sweep {other}` is not a verb this binary carries. It carries `plan` and `report`"
         )),
-        ["probe"] => fail("`probe` takes a second word: `plan`, `record` or `grade`"),
+        ["probe"] => fail("`probe` takes a second word: `plan`, `record`, `grade` or `stale`"),
         ["probe", "plan"] => probe_plan(
             &root,
             tier.as_deref(),
@@ -594,9 +602,10 @@ fn main() -> ExitCode {
              transcript against the probes this corpus declares",
         ),
         ["probe", "grade", path] => probe_grade(&root, Path::new(path)),
+        ["probe", "stale"] => probe_stale(&root),
         ["probe", other, ..] => fail(&format!(
             "`probe {other}` is not a verb this binary carries. It carries `plan`, `record` and \
-             `grade`"
+             `grade` and `stale`"
         )),
         ["generate"] => generate(&root, check_only),
         ["import"] => import(&root, None, expect.as_deref(), write),
@@ -2127,15 +2136,21 @@ fn probe_grade(root: &Path, path: &Path) -> ExitCode {
         headwater_probe::Tier::Regression,
         &headwater_probe::plan::Narrowing::default(),
     );
-    if let Some(refusal) = &plan.refusal {
-        // A plan that refuses its own run still composed a selection, unless
-        // the refusal is why it composed none. Grading against a selection the
-        // plan refused would report a rate over a denominator the harness had
-        // already rejected, so the verb says which refusal it met and stops.
-        if plan.selected.is_empty() {
-            println!("Nothing was graded. `headwater probe plan` refuses this corpus: {refusal}");
-            return ExitCode::SUCCESS;
-        }
+    // A plan returns from inside the loop that composes its selection, so a
+    // refusal leaves the probes it had read and none of the rest. Grading
+    // against that part reports a rate over a denominator no document declares,
+    // and one that moves with the order the paths sort in.
+    // `headwater_probe::plan::Refusal::stops_a_grade` is the rule that names
+    // which refusals do that, and `headwater_generate::Runs::graded_against`
+    // already reads it for the projection. Testing the selection for emptiness
+    // instead let every one of those refusals through with a partial one.
+    if let Some(refusal) = plan
+        .refusal
+        .as_ref()
+        .filter(|refusal| refusal.stops_a_grade())
+    {
+        println!("Nothing was graded. `headwater probe plan` refuses this corpus: {refusal}");
+        return ExitCode::SUCCESS;
     }
     let tree = headwater_probe::intake::Tree {
         census: &loaded.census,
@@ -2179,6 +2194,126 @@ fn probe_record(root: &Path, path: &Path) -> ExitCode {
     };
     let record = headwater_probe::Record::read(&source, &tree);
     print!("{}", record.render());
+    ExitCode::SUCCESS
+}
+
+/// `headwater probe stale`.
+///
+/// # It reads transcripts, and a transcript is what the committed result is
+///
+/// The question is which committed results a change voided, and this walk reads
+/// transcripts rather than result documents. The two are one artifact: a probe
+/// result is a projection of the transcript, the expectations and the grader
+/// version, and `generate --check` holds every committed result to that
+/// derivation on every pull request. So a transcript names the read set of the
+/// result derived from it, and reading the transcript avoids parsing prose that
+/// this engine wrote.
+///
+/// # No exit status of this verb carries an answer
+///
+/// [`headwater_probe::read_set::Staleness::render`] returns a string, and this
+/// function returns [`ExitCode::SUCCESS`] after every answer it can produce.
+/// The two non-zero exits are a caller's and both are true before a read set is
+/// composed: a corpus this binary cannot load, and a budget declaration it
+/// cannot read. A probe never gates
+/// ([spec 5](../../../../docs/spec/05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose)),
+/// and a result going stale is the fact a gate over this verb would carry.
+fn probe_stale(root: &Path) -> ExitCode {
+    let declaration = root.join(headwater_probe::budget::PATH);
+    let budgets = match std::fs::read_to_string(&declaration) {
+        Ok(source) => match headwater_probe::Budgets::read(&source) {
+            Ok(budgets) => budgets,
+            Err(unreadable) => return refuse(&unreadable.to_string()),
+        },
+        Err(error) => {
+            return fail(&format!(
+                "`{}` did not read: {error}. A read set covers the probes of a selection, and the \
+                 selection comes from the plan",
+                headwater_probe::budget::PATH
+            ))
+        }
+    };
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let plan = headwater_probe::Plan::over(
+        &loaded.census,
+        &loaded.graph,
+        &loaded.config,
+        &budgets,
+        &loaded.lock.digest,
+        headwater_probe::Tier::Regression,
+        &headwater_probe::plan::Narrowing::default(),
+    );
+    // A plan returns from inside the loop that composes its selection, so a
+    // refusal leaves a part of one behind: the probes read before the offending
+    // one and none of the rest. A read set over that part covers a population
+    // no document declares, and it moves with the order the paths sort in. This
+    // is the rule `headwater_generate::Runs::graded_against` holds for the
+    // projection, read once more here.
+    let stopped = plan
+        .refusal
+        .as_ref()
+        .filter(|refusal| refusal.stops_a_grade());
+    if let Some(refusal) = stopped {
+        println!(
+            "No read set is composed over this corpus, so nothing here is stale or fresh: \
+             {refusal}"
+        );
+        return ExitCode::SUCCESS;
+    }
+
+    let tree = headwater_probe::intake::Tree {
+        census: &loaded.census,
+        config: &loaded.config,
+        lock: &loaded.lock.digest,
+    };
+    let mut seen = 0usize;
+    let mut stale = 0usize;
+    for row in &loaded.census.rows {
+        let headwater_census::census::Outcome::Typed { kind, .. } = &row.outcome else {
+            continue;
+        };
+        if kind != headwater_probe::intake::KIND {
+            continue;
+        }
+        seen += 1;
+        println!("## The result of {}", row.path);
+        println!();
+        let source = match std::fs::read_to_string(root.join(&row.path)) {
+            Ok(source) => source,
+            Err(error) => {
+                println!(
+                    "The transcript did not read, so nothing here decides whether it is stale: \
+                     {error}"
+                );
+                println!();
+                continue;
+            }
+        };
+        let record = headwater_probe::Record::read(&source, &tree);
+        let staleness = headwater_probe::read_set::Staleness::over(&record, &plan, &loaded.census);
+        if !staleness.verdict().stands() {
+            stale += 1;
+        }
+        print!("{}", staleness.render());
+        println!();
+    }
+
+    match seen {
+        0 => println!(
+            "This corpus holds no `{}` document, so no result has been recorded and a change \
+             voids nothing. A transcript is written by a recorder that observes a session from \
+             outside it, and no verb of this engine writes one.",
+            headwater_probe::intake::KIND
+        ),
+        seen => println!(
+            "Of {}, this tree moved the read set of {}.",
+            headwater_probe::plural(seen, "committed transcript"),
+            stale
+        ),
+    }
     ExitCode::SUCCESS
 }
 

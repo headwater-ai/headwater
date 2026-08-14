@@ -43,6 +43,7 @@ use headwater_probe::budget::{self, Budgets};
 use headwater_probe::grade::{Miss, Refusal as NoVerdict, Verdict, Witness};
 use headwater_probe::intake::Tree;
 use headwater_probe::plan::{Examined, Narrowing, Refusal, Selected};
+use headwater_probe::read_set::{Provenance, Staleness, Verdict as Stale};
 use headwater_probe::{Arm, Category, Expectation, Plan, Record, Results, Tier};
 use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};
@@ -56,8 +57,11 @@ fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
 }
 
-fn corpus() -> Corpus {
-    Corpus::new(fixtures_dir(), "corpus")
+/// The fixture corpus, rooted anywhere. The read-set tests below edit
+/// documents, so they run over a copy of the fixture tree rather than over the
+/// tree this repository commits.
+fn corpus_at(dir: &Path) -> Corpus {
+    Corpus::new(dir.to_path_buf(), "corpus")
 }
 
 fn load_map(path: &Path) -> Mapping {
@@ -76,17 +80,25 @@ fn taxonomy_map() -> Mapping {
 }
 
 fn fixture_census(root: &Mapping) -> Census {
+    census_at(root, &fixtures_dir())
+}
+
+fn census_at(root: &Mapping, dir: &Path) -> Census {
     let taxonomy = Taxonomy::read(root).expect("the taxonomy reads");
-    census::take(&corpus(), &taxonomy)
+    census::take(&corpus_at(dir), &taxonomy)
 }
 
 fn fixture_graph(root: &Mapping, taken: &Census) -> Graph {
+    graph_at(root, taken, &fixtures_dir())
+}
+
+fn graph_at(root: &Mapping, taken: &Census, dir: &Path) -> Graph {
     let declarations = Declarations::read(root).expect("the declarations read");
     Graph::build(
         taken,
         &declarations,
-        &Resolvers::over(&corpus()),
-        &corpus(),
+        &Resolvers::over(&corpus_at(dir)),
+        &corpus_at(dir),
         &Config::default(),
     )
 }
@@ -153,6 +165,259 @@ fn transcript(name: &str) -> String {
 
 fn results_over(source: &str) -> Results {
     Results::over(&record_of(source), &regression().selected)
+}
+
+// --- the read set of a recorded result ---------------------------------------
+//
+// The question is which recorded results a change voided, and the whole of the
+// design is in the negative direction. A report that fires on every commit is
+// indistinguishable from one that does not work, and the blunt whole-tree
+// comparison passes every positive test anybody writes. So the fixture corpus
+// carries one classified document that no probe examines, and the tests below
+// assert that the tree digest moves over it while the read set holds still.
+
+/// The transcript this corpus commits, which is the run the tests below ask
+/// about.
+const COMMITTED: &str = "corpus/probe-runs/committed.md";
+
+/// The sentence a report opens with when a change voided a result. Asserted as
+/// the whole sentence rather than as the word `stale`, which every report of
+/// this module carries somewhere.
+const VOIDED: &str = "**This result is stale.**";
+
+/// The instrument, before any subject. A fixture corpus whose read set is its
+/// corpus tree cannot tell a narrowing from a whole-tree comparison, and every
+/// test below would pass under the blunt one.
+#[test]
+fn the_read_set_of_the_fixture_selection_is_not_the_corpus_tree() {
+    let plan = regression();
+    assert_ne!(
+        plan.read_set, plan.tree,
+        "the read set and the tree agree, so this corpus proves no narrowing"
+    );
+    assert!(
+        plan.reads.len() < plan.corpus,
+        "every classified document is in the read set: {} of {}",
+        plan.reads.len(),
+        plan.corpus
+    );
+}
+
+fn plan_over(dir: &Path) -> Plan {
+    let root = taxonomy_map();
+    let taken = census_at(&root, dir);
+    let graph = graph_at(&root, &taken, dir);
+    Plan::over(
+        &taken,
+        &graph,
+        &Config::default(),
+        &budgets(),
+        LOCK,
+        Tier::Regression,
+        &Narrowing::default(),
+    )
+}
+
+fn staleness_at(dir: &Path) -> Staleness {
+    let root = taxonomy_map();
+    let taken = census_at(&root, dir);
+    let graph = graph_at(&root, &taken, dir);
+    let config = Config::default();
+    let plan = Plan::over(
+        &taken,
+        &graph,
+        &config,
+        &budgets(),
+        LOCK,
+        Tier::Regression,
+        &Narrowing::default(),
+    );
+    let tree = Tree {
+        census: &taken,
+        config: &config,
+        lock: LOCK,
+    };
+    let source = std::fs::read_to_string(dir.join(COMMITTED)).expect("the committed transcript");
+    let record = Record::read(&source, &tree);
+    Staleness::over(&record, &plan, &taken)
+}
+
+/// A copy of the fixture corpus under Cargo's own temporary tree, because these
+/// tests edit documents and the edits belong to the run rather than to the
+/// repository.
+fn copied(name: &str) -> PathBuf {
+    let at = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
+    let _ = std::fs::remove_dir_all(&at);
+    copy_into(&fixtures_dir().join("corpus"), &at.join("corpus"));
+    at
+}
+
+fn copy_into(from: &Path, to: &Path) {
+    std::fs::create_dir_all(to).expect("a directory");
+    for entry in std::fs::read_dir(from).expect("the fixture tree") {
+        let entry = entry.expect("an entry");
+        let target = to.join(entry.file_name());
+        match entry.file_type().expect("a file type").is_dir() {
+            true => copy_into(&entry.path(), &target),
+            false => {
+                std::fs::copy(entry.path(), &target).expect("a copy");
+            }
+        }
+    }
+}
+
+fn edit(at: &Path, relative: &str, from: &str, to: &str) {
+    let path = at.join(relative);
+    let source = std::fs::read_to_string(&path).expect("it reads");
+    assert_eq!(
+        source.matches(from).count(),
+        1,
+        "{relative} does not hold exactly one `{from}`"
+    );
+    std::fs::write(&path, source.replace(from, to)).expect("it writes");
+}
+
+#[test]
+fn the_read_set_over_the_committed_run_is_recorded() {
+    compare(
+        &fixtures_dir().join("read-set.txt"),
+        &staleness_at(&fixtures_dir()).render(),
+    );
+}
+
+/// The negative direction, which is the whole test.
+///
+/// The edit is to a classified document that no probe examines and that no
+/// recorded call named. The corpus tree digest moves over it, so a comparison
+/// over the tree would report this result as voided, and the read set holds
+/// still. The assertion on the tree digest is what makes the assertion on the
+/// read set mean anything: without it, a read set that never moved at all would
+/// pass this test.
+#[test]
+fn an_edit_the_read_set_does_not_cover_voids_no_result() {
+    let at = copied("read-set-outside");
+    let before = plan_over(&at);
+    edit(
+        &at,
+        COMMITTED,
+        "An edit to the prose here",
+        "One edit to the prose here",
+    );
+    let after = plan_over(&at);
+    assert_ne!(
+        before.tree, after.tree,
+        "the blunt instrument did not fire, so this edit proves nothing about the sharp one"
+    );
+    assert_eq!(
+        before.read_set, after.read_set,
+        "an edit to a document no probe examines moved the read set"
+    );
+
+    let staleness = staleness_at(&at);
+    assert_eq!(staleness.verdict(), Stale::Stands);
+    assert!(
+        staleness.moved().is_empty(),
+        "a member is reported as moved: {:?}",
+        staleness.moved()
+    );
+    let report = staleness.render();
+    assert!(
+        !report.contains(VOIDED),
+        "the report calls this result stale:\n{report}"
+    );
+}
+
+/// The positive direction over a member a call witnessed, which is the case
+/// that names the offender.
+#[test]
+fn an_edit_to_an_examined_document_voids_the_result_and_names_it() {
+    let at = copied("read-set-witnessed");
+    edit(
+        &at,
+        "corpus/probes/0002-answered.md",
+        "# The session answers",
+        "# The session answers the question",
+    );
+    let staleness = staleness_at(&at);
+    assert_eq!(staleness.verdict(), Stale::SetMoved);
+    let moved: Vec<&str> = staleness
+        .moved()
+        .iter()
+        .map(|member| member.path.as_str())
+        .collect();
+    assert_eq!(moved, vec!["corpus/probes/0002-answered.md"]);
+    let report = staleness.render();
+    assert!(report.contains("corpus/probes/0002-answered.md"));
+    assert!(report.contains("so this document moved"), "{report}");
+}
+
+/// The positive direction over a member no call witnessed.
+///
+/// The digest decides and the transcript names no offender, so the report says
+/// the result is stale and says which documents it cannot single out. A design
+/// that only compared recorded calls would report this result as standing.
+#[test]
+fn an_edit_to_a_probe_no_call_witnessed_still_voids_the_result() {
+    let at = copied("read-set-unwitnessed");
+    edit(
+        &at,
+        "corpus/probes/0005-patched.md",
+        "# The produced patch passes",
+        "# The produced patch survives",
+    );
+    let staleness = staleness_at(&at);
+    assert_eq!(staleness.verdict(), Stale::SetMoved);
+    assert!(
+        staleness.moved().is_empty(),
+        "no call witnessed this document, so nothing can name it as the mover"
+    );
+    let report = staleness.render();
+    assert!(report.contains("corpus/probes/0005-patched.md"));
+    assert!(
+        report.contains("no recorded call named it"),
+        "the report does not say what it cannot decide:\n{report}"
+    );
+}
+
+/// An event with no `calls` key recorded nothing, and a read set that read it as
+/// an empty list would report that the session opened no document.
+///
+/// The direction of that error is why it is here. Such a session would then be
+/// voided by no change at all, and the result with the least evidence behind it
+/// would be the one that never went stale.
+#[test]
+fn an_absent_calls_key_is_not_a_session_that_opened_nothing() {
+    let staleness = staleness_at(&fixtures_dir());
+    assert_eq!(
+        staleness.unwatched,
+        vec![("PROBE-FIX-not-opened".to_string(), "1".to_string())],
+        "the session that recorded no `calls` key is not named"
+    );
+    let witnessed = staleness
+        .members
+        .iter()
+        .find(|member| member.path == "corpus/probes/0001-opened.md")
+        .expect("the document the unwatched session was pointed at is a member");
+    assert!(
+        witnessed.witness.is_none(),
+        "an unwatched session produced a witness"
+    );
+    assert!(staleness.render().contains("recorded no `calls` key"));
+}
+
+/// A path a call named that this corpus classifies no document at is on no read
+/// set, and the report says so rather than dropping it.
+#[test]
+fn a_call_that_named_no_document_of_this_corpus_is_reported_apart() {
+    let staleness = staleness_at(&fixtures_dir());
+    assert!(
+        staleness
+            .members
+            .iter()
+            .all(|member| member.because != Provenance::Opened),
+        "every call of this transcript names a document the plan already covers"
+    );
+    assert!(staleness.outside.is_empty());
 }
 
 // --- the recorded artifacts --------------------------------------------------
@@ -573,6 +838,40 @@ fn an_opened_probe_that_names_no_document_stops_the_run() {
         "`opened` over an empty set is never satisfied, so the rate would report \
          the declaration: {:?}",
         plan.refusal
+    );
+}
+
+/// A plan that refused composed no read set, and an empty digest is not a read
+/// set that covers nothing.
+///
+/// `Plan::over` returns from inside the loop that composes the selection, so a
+/// refusal leaves the read set empty. A comparison against an empty digest
+/// reports every committed result as voided by a refusal that has nothing to do
+/// with the tree, which is what a hand run of `headwater probe stale` over a
+/// half-copied corpus printed before this guard existed.
+#[test]
+fn a_plan_that_composed_no_read_set_decides_nothing_about_a_result() {
+    let plan = plan_over_probe(&|source| {
+        source
+            .replace("expectation: answered", "expectation: opened")
+            .replace("expectation: not_opened", "expectation: opened")
+    });
+    assert!(
+        plan.read_set.is_empty(),
+        "this refusal composed a read set, so it tests the wrong thing: {:?}",
+        plan.refusal
+    );
+    let root = taxonomy_map();
+    let taken = census_at(&root, &fixtures_dir());
+    let source =
+        std::fs::read_to_string(fixtures_dir().join(COMMITTED)).expect("the committed transcript");
+    let staleness = Staleness::over(&record_of(&source), &plan, &taken);
+    assert_eq!(staleness.verdict(), Stale::Unusable);
+    let report = staleness.render();
+    assert!(report.contains("composed no read set"), "{report}");
+    assert!(
+        !report.contains(VOIDED),
+        "a refused plan reports a result as stale:\n{report}"
     );
 }
 

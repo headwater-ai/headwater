@@ -1,5 +1,5 @@
 A regression run in the present arm, on a-model at 2026-08-14.
-served version a-model-20260701, tree sha256:fixture-tree, selection sha256:fixture-selection, seed 0, harness 0.1.0.
+served version a-model-20260701, tree sha256:fixture-tree, selection sha256:fixture-selection, read set sha256:9cd0571c32a18081b2fd2f031a69d16f7260bd9a9c77e157884ec0d5ea6968fb, seed 0, harness 0.1.0.
 realized cost $0.41, which the adaptive layer reads as the cost of its own instrument.
 
 6 events over 5 of the 5 probes this corpus declares, in 5 sessions and 4 tool calls.
@@ -7,4 +7,4 @@ realized cost $0.41, which the adaptive layer reads as the cost of its own instr
 1 of 6 events did not count:
   event 6: `PROBE-FIX-not-declared` is not a classified probe of this corpus, so nothing declares what a session against it was expected to do
 
-The engine confirmed the taxonomy, that every member of the run identity is present, the membership of every probe named, that no key outside the closed set appears, and that a realized cost was recorded. Present is not confirmed: of the five members a plan fixes before a run, the lock is the one compared here, and it refuses the file. It graded nothing: a verdict is a function of this transcript, the expectations these probes declare and a grader version, and `headwater probe grade` is the verb that holds all three.
+The engine confirmed the taxonomy, that every member of the run identity is present, the membership of every probe named, that no key outside the closed set appears, and that a realized cost was recorded. Present is not confirmed: of the six members a plan fixes before a run, the lock is the one compared here, and it refuses the file. `headwater probe stale` compares the read set against the tree in front of it. It graded nothing: a verdict is a function of this transcript, the expectations these probes declare and a grader version, and `headwater probe grade` is the verb that holds all three.

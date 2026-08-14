@@ -48,14 +48,15 @@ use headwater_yaml::value::{Mapping, Value};
 /// The kind a transcript document is.
 pub const KIND: &str = "probe_transcript";
 
-/// Every key a run identity may carry. Spec 5's nine members, plus the two the
-/// harness needs to hold a run to the plan that fixed it.
-pub const IDENTITY_KEYS: [&str; 11] = [
+/// Every key a run identity may carry. Spec 5's nine members, plus the three
+/// the harness needs to hold a run to the plan that fixed it.
+pub const IDENTITY_KEYS: [&str; 12] = [
     "model",
     "served_version",
     "tree",
     "lock",
     "selection",
+    "read_set",
     "seed",
     "harness",
     "tier",
@@ -104,6 +105,9 @@ pub struct Identity {
     pub tree: String,
     pub lock: String,
     pub selection: String,
+    /// The digest over the documents the selection points a session at, which
+    /// is the read set of this run. See [`crate::plan::Plan::read_set`].
+    pub read_set: String,
     pub seed: String,
     pub harness: String,
     pub tier: Tier,
@@ -527,10 +531,11 @@ impl Record {
         );
         let _ = writeln!(
             out,
-            "served version {}, tree {}, selection {}, seed {}, harness {}.",
+            "served version {}, tree {}, selection {}, read set {}, seed {}, harness {}.",
             identity.served_version,
             identity.tree,
             identity.selection,
+            identity.read_set,
             identity.seed,
             identity.harness
         );
@@ -544,11 +549,11 @@ impl Record {
         let _ = writeln!(
             out,
             "{} over {} of the {} this corpus declares, in {} and {}.",
-            count(self.read, "event"),
+            crate::plural(self.read, "event"),
             self.probes.len(),
-            count(self.declared, "probe"),
-            count(self.sessions, "session"),
-            count(self.calls, "tool call")
+            crate::plural(self.declared, "probe"),
+            crate::plural(self.sessions, "session"),
+            crate::plural(self.calls, "tool call")
         );
 
         if !self.rejected.is_empty() {
@@ -570,26 +575,13 @@ impl Record {
             "The engine confirmed the taxonomy, that every member of the run identity is \
              present, the membership of every probe named, that no key outside the closed set \
              appears, and that a realized cost was recorded. Present is not confirmed: of the \
-             five members a plan fixes before a run, the lock is the one compared here, and it \
-             refuses the file. It graded nothing: a verdict is a function of this transcript, \
-             the expectations these probes declare and a grader version, and `headwater probe \
-             grade` is the verb that holds all three."
+             six members a plan fixes before a run, the lock is the one compared here, and it \
+             refuses the file. `headwater probe stale` compares the read set against the tree in \
+             front of it. It graded nothing: a verdict is a function of this transcript, the \
+             expectations these probes declare and a grader version, and `headwater probe grade` \
+             is the verb that holds all three."
         );
         out
-    }
-}
-
-/// A count and its noun.
-///
-/// The same helper the grader keeps, and it is here now because this report is
-/// no longer only something a person reads on a terminal. A `probe_result`
-/// projection commits these sentences to the corpus, and "1 tool calls" in a
-/// committed document is a line every later reader has to decide whether to
-/// trust.
-fn count(how_many: usize, noun: &str) -> String {
-    match how_many {
-        1 => format!("1 {noun}"),
-        other => format!("{other} {noun}s"),
     }
 }
 
@@ -636,6 +628,7 @@ fn identity(source: &str, tree: &Tree<'_>) -> Result<Identity, Refusal> {
         tree: need("tree")?,
         lock,
         selection: need("selection")?,
+        read_set: need("read_set")?,
         seed: need("seed")?,
         harness: need("harness")?,
         tier,
