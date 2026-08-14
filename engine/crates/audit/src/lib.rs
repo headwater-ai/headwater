@@ -319,9 +319,17 @@ pub enum Supply {
     /// Declared, and no document of this corpus carries one. The location of
     /// the absence is the corpus.
     Unauthored(String),
-    /// This engine takes no input of the class. The location is neither the
-    /// schema nor the corpus, and no amount of authoring ends it.
-    NoInput(String),
+    /// The input is designed and nothing supplies it. A build ends this wait,
+    /// and the location is this engine rather than the schema or the corpus.
+    ///
+    /// It is not the same as an input this engine has decided not to take. The
+    /// first draft of this type carried that arm instead, and it was the wrong
+    /// one for the only wait that reached it: `needs_prior` is designed in
+    /// [spec 12](../../../../docs/spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version)
+    /// and unimplemented in [`headwater_check::scope`], which is a build rather
+    /// than a decision. No wait here reaches an arm that no work of any kind
+    /// could end, so this type declares none.
+    Unbuilt(String),
 }
 
 impl Supply {
@@ -336,7 +344,7 @@ impl Supply {
             Supply::Supplied(_) => "supplied",
             Supply::Undeclared(_) => "nothing declares it",
             Supply::Unauthored(_) => "nothing authored one",
-            Supply::NoInput(_) => "no input of the class",
+            Supply::Unbuilt(_) => "designed and unbuilt",
         }
     }
 
@@ -346,7 +354,7 @@ impl Supply {
             Supply::Supplied(text)
             | Supply::Undeclared(text)
             | Supply::Unauthored(text)
-            | Supply::NoInput(text) => text,
+            | Supply::Unbuilt(text) => text,
         }
     }
 }
@@ -619,12 +627,14 @@ fn waiting(classified: &[&Row], graph: &Graph, shape: &Shape, warrants: &Warrant
                 },
                 Need {
                     needs: "a promotion to count",
-                    supply: Supply::NoInput(
-                        "nothing records a warrant moving. A promotion is one person editing one \
-                         document, so the only witness is the change that carries it, and a \
-                         change reaches this engine as a named set of documents rather than as a \
-                         second tree. A read set states what a run read and never what a value \
-                         was before it"
+                    supply: Supply::Unbuilt(
+                        "a promotion is a lifecycle transition, from the `asserted` warrant to \
+                         `accepted`, and spec 12 already designs the input one needs. A check \
+                         that declares `needs_prior` receives the previously committed version \
+                         of each changed document. No check declares it and nothing implements \
+                         it. It could not be read here in any case, because this verb reads one \
+                         working tree and the prior version is available only in change-scoped \
+                         evaluation"
                             .to_string(),
                     ),
                 },

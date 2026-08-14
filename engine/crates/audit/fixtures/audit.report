@@ -118,11 +118,11 @@ what this verb does not measure, and what each one waits on
       nothing authored one — no document of the 5 classified here states `warrant:
       asserted`, so there is nothing to promote from
     a promotion to count
-      no input of the class — nothing records a warrant moving. A promotion is one
-      person editing one document, so the only witness is the change that carries it,
-      and a change reaches this engine as a named set of documents rather than as a
-      second tree. A read set states what a run read and never what a value was before
-      it
-  3 of 3 still wait. A prerequisite that nothing declares ends with a declaration,
-  one that nothing authored ends with authoring, and one this engine takes no input of
-  ends with neither.
+      designed and unbuilt — a promotion is a lifecycle transition, from the
+      `asserted` warrant to `accepted`, and spec 12 already designs the input one needs.
+      A check that declares `needs_prior` receives the previously committed version of
+      each changed document. No check declares it and nothing implements it. It could
+      not be read here in any case, because this verb reads one working tree and the
+      prior version is available only in change-scoped evaluation
+  3 of 3 still wait. Each one states what ends it: a declaration, an authoring
+  pass, or a build of an input this engine designs and does not supply.

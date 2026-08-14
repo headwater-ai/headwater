@@ -466,10 +466,17 @@ fn a_wait_ends_when_the_corpus_supplies_what_it_waits_on() {
         reading_of(&after, "promotion rate").waits(),
         "the numerator arrived from nowhere"
     );
-    assert!(matches!(
-        supply_of(&after, "promotion rate", "a promotion to count"),
-        Supply::NoInput(_)
-    ));
+    let numerator = supply_of(&after, "promotion rate", "a promotion to count");
+    assert!(
+        matches!(numerator, Supply::Unbuilt(_)),
+        "{}",
+        numerator.says()
+    );
+    assert!(
+        numerator.says().contains("needs_prior"),
+        "the wait does not name the input that ends it: {}",
+        numerator.says()
+    );
 
     std::fs::remove_file(&landing).expect("the document leaves");
     let restored = tree_at(&at).audit(AT);
@@ -516,7 +523,7 @@ fn a_reading_that_still_waits_says_where_the_absence_lives() {
     let report = audit.render();
     assert!(report.contains("nothing declares it —"), "{report}");
     assert!(report.contains("nothing authored one —"), "{report}");
-    assert!(report.contains("no input of the class —"), "{report}");
+    assert!(report.contains("designed and unbuilt —"), "{report}");
     assert!(report.contains("3 of 3 still wait"), "{report}");
 }
 

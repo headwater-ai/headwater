@@ -441,7 +441,7 @@ impl Audit {
             .count();
         let _ = writeln!(
             out,
-            "  {} of {} still wait. A prerequisite that nothing declares ends with a declaration,\n  one that nothing authored ends with authoring, and one this engine takes no input of\n  ends with neither.",
+            "  {} of {} still wait. Each one states what ends it: a declaration, an authoring\n  pass, or a build of an input this engine designs and does not supply.",
             waiting,
             self.waiting.len()
         );
