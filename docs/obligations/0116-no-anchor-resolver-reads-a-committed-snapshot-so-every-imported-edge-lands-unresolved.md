@@ -38,10 +38,20 @@ So the corpus owes a resolver that binds an item of a committed snapshot, and on
 
 ## Discharge
 
-Nothing discharges this yet. The record states what was true on 2026-08-14, so that no later reader mistakes an importer that writes for an import that resolves.
+**This record is discharged, and a resolver reads the committed snapshot.** `headwater_import::anchors` is the second resolver [spec 2](../spec/02-taxonomy-model.md#behavior-at-the-limits) names. It binds an item identity that the pin holds, and it refuses one the pin does not hold.
 
-**What runs.** `headwater import` refuses every wrong link and writes the right ones, and `engine/crates/import/tests/fixtures.rs` provokes each refusal. The edge it writes carries the upstream revision of the item it was checked against.
+**The resolver set is built from a corpus and from what a caller adds to it.** `Resolvers::over` still takes a corpus, and `Resolvers::with` takes one resolver that the graph crate cannot build. The `load` function of the command line is the one place that call sits, so every verb that builds a graph has the resolver. `headwater-import` depends on `headwater-graph`, so the graph crate cannot name a snapshot resolver at all. The dependency order decided the shape, rather than a preference between two designs.
 
-**What no test here shows.** No fixture of the importer can fail on this, because the importer is right. The edge it wrote names the anchor kind the relation declares, and the taxonomy declares the resolver. The gap is one component further on, and it appears only when a check runs over the result. That is why the measurement above is a hand run of four verbs rather than a case in a suite.
+**It looks an identity up and it never normalizes one.** The whole of the normalization is a trim, and everything after it is a lookup in the pinned item list. An upstream identity has no equality rules that this repository can know. A resolver that guessed would bind a typo to a real item, which is a correct check result over a wrong graph.
 
-**Who this reaches.** No adopter has imported anything. Until one does, an edge that reports as unresolved costs a finding rather than a wrong graph. That is the cheaper of the two failures, and it is why this is a record rather than a hold on the importer.
+**The measurement is the hand run above, repeated on the branch on 2026-08-14.** The same four verbs over the same shape of repository now report the edge as bound:
+
+    docs/specifications/00-first.md
+      to 12345 audited_by
+    1 ado_work_item `12345` via ado-snapshot
+
+The check layer reports no instance of `relation.target.unresolved` against the document the import wrote. A second document that names `12346` by hand, which the snapshot does not hold, is reported rather than bound.
+
+**A declaration that supplies no resolver is refused.** `imports.<name>.resolver` names the resolver the snapshot serves, and `headwater import` refuses a declaration that leaves it out. An import with no resolver writes edges that nothing can bind, which is the state this record measured. The refusal is what stops that state from being reachable by omission.
+
+**What the fixture set gained.** `engine/crates/import/tests/resolution.rs` runs the whole chain in a suite. It plans the import, writes it, walks the result, and holds both the graph and the check layer to the outcome. The case that carries the weight is an identity the snapshot does not hold, reported rather than bound. Each case was proved able to fail by regressing the code it holds.
