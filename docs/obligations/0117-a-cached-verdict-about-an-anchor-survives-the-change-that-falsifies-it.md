@@ -48,10 +48,19 @@ Both resolvers are reached, so this is a property of the read set rather than of
 
 ## Discharge
 
-Nothing discharges this yet. Two answers are open and they are different sizes.
+**This record is discharged, and the key of an edge instance names what a resolver said about its target.** `Target::resolution` is the binding in full, and `Cache::key` writes it on a line of its own beside the identity of the edge.
 
-**The narrow answer is to refuse the key.** An instance whose target is an anchor is not keyable, on the branch that already exists for an input with no digest. It costs the evaluation of one instance per anchor edge on every run, and it is exact.
+**The two answers were weighed and the wider one won at a narrower grain.** The record proposed a digest over what a resolver resolved *against*. It rejected that for the source tree, because a digest over every path an anchor could name is a walk of the repository. What an instance read is smaller. It read the answer a resolver gave about one string, and the resolvers run in phase A on every run. So that answer is in hand when the key is computed, and the measured cost of naming it is nothing.
 
-**The wider answer is to put the anchor state into the key.** Each resolver states a digest over what it resolved against. That is the bytes of a file for the source tree, and the pin for a snapshot. A snapshot supplies one already, because a pin is a digest over the artifact. The source tree supplies none. A digest over every path an anchor could name is a walk of the repository rather than of the corpus.
+**The refusal was the other candidate, and the difference between them is a number no gate reports.** `Cache::key` returns nothing for an input with no digest, and an anchor edge could join that branch. It reaches the same verdicts. It also makes every anchor instance permanently unkeyed. Neither the byte-identity differential nor the instance count can see that. The first compares verdicts, and the second counts instances that ran either way, so the cache counters are what separate the two. Over the fixture tree the refusal moves the unkeyed count from 64 to 67. It evaluates the moved anchor by dropping its key, where the component that ships evaluates it by changing one.
 
-**What no fixture here shows.** The cache suite holds the invariant that a cached run and an uncached run agree. It holds it over the fixture corpus, which declares no anchor edge whose target moves between two runs. So the suite passes and the property does not hold. The measurement above is therefore a hand run rather than a case in a suite. A fixture that moves an anchor target between two runs is what would have caught it.
+**The measurement, repeated on the branch on 2026-08-14.** The same hand run over this repository, which declares thirteen anchor edges, reports the finding on the cached run:
+
+    $ headwater check          # the file a `governs` edge names is removed
+      relation.target.unresolved (OB-REL-4): `SPEC-HW-ai-integration` declares
+        `governs: .claude/hooks/lib.sh`, and that target `code_path`: no
+        `.claude/hooks/lib.sh` in the source tree
+
+**No number of this corpus moves, and the cache accounting moves by one instance.** A warm run serves 2520 of 2703 instances before the change and 2520 after it, and 27 findings are reported either way. The run over the tree that lost the file serves 2519 and evaluates 1. So the invalidation is exact rather than broad, which is what a refusal could not have been.
+
+**What the fixture set gained.** `a_moved_anchor_target_is_not_served_from_the_entry_before_it` writes one edge onto a path outside the corpus, runs, removes the path, and runs again. It was written before the fix and it failed on the assertion named for it, with every other case in that file passing. It also fails on the refusal, on the assertion that no instance lost its key. The fixture taxonomy declares the anchor kind and the relation. The tree under `fixtures/check/` declares no edge onto either, so the recorded reports hold what they held.
