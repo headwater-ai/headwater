@@ -59,7 +59,7 @@
 //! So the risk that a dependency would answer is an implementation defect, and
 //! that risk is answerable by evidence. `headwater_hash` carries the published
 //! FIPS 180-4 vectors and every length around a block boundary, and
-//! `.claude/skills/fixtures.sh` holds the digest of a published package against
+//! `headwater_hash`'s `tests/oracle.rs` holds sixteen further subjects against
 //! `sha256sum`, which is an implementation nobody here wrote. A cross-check
 //! against a second implementation measures the property a vetted crate would
 //! only assert.

@@ -51,6 +51,13 @@ jobs:
       - name: Lint
         run: cargo clippy --all-targets -- -D warnings
         working-directory: engine
+      - name: The second implementation of SHA-256 the cross-check runs against
+        # `crates/hash/tests/oracle.rs` holds this engine's SHA-256 against
+        # `sha256sum`. The package digest of a fetched artifact is computed with
+        # that function, and Q22 argued the reuse on the grounds that an
+        # implementation defect is answerable by evidence. This is the evidence,
+        # so its absence has to be a failure rather than a skip.
+        run: sha256sum --version
       - name: The stock validators the two differentials run against
         # Two suites hold an emitter to an implementation nobody here wrote.
         # `engine/crates/generate/tests/differential.rs` compares the emitted
@@ -67,6 +74,7 @@ jobs:
         env:
           HEADWATER_STOCK_VALIDATOR: required
           HEADWATER_SARIF_VALIDATOR: required
+          HEADWATER_SHA256_ORACLE: required
 
   headwater:
     name: headwater check (advisory)
