@@ -64,6 +64,17 @@ pub struct Relation {
     /// `nuclearity`, and `nucleus` beside it: which end stands alone.
     pub nuclearity: Option<String>,
     pub nucleus: Option<String>,
+    /// The actor the taxonomy expects to pay for edges of this type, from spec
+    /// 2's closed set: `author`, `scaffold`, `generator`, `hook`, `agent`,
+    /// `import`. The meta-schema requires it and closes the set, so a relation
+    /// that reaches here with none is a relation `taxonomy validate` already
+    /// refused. It is read as written, and nothing here supplies a default.
+    ///
+    /// [Q4](../../../../docs/decisions/0004-relation-storage.md) keeps this on
+    /// the relation type rather than on an edge instance. So it states an intent
+    /// about a whole relation, and it is the only thing the graph holds that
+    /// separates an imported edge from an authored one.
+    pub created_by: Option<String>,
     /// The span of the relation's name, which a finding about the
     /// *declaration* points at.
     pub span: Span,
@@ -279,6 +290,7 @@ fn read_relation(name: &str, value: &Value, span: Span) -> Result<Relation, Decl
         family: scalar("family"),
         nuclearity: scalar("nuclearity"),
         nucleus: scalar("nucleus"),
+        created_by: scalar("created_by"),
         inverse: map
             .get("inverse")
             .and_then(|value| value.value.as_scalar())
