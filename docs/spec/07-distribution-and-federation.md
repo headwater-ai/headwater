@@ -58,7 +58,13 @@ interview: interview.yml     # the questions init asks, and the bundle each answ
 migrations: migrations/
 ```
 
-Publishing is a release: a semantic version, a changelog, an integrity digest, and a migration payload for any major bump. Distribution is over the registry or repository that the organization already uses. The engine requires only that it can fetch a version and check its digest.
+Publishing is a release: a semantic version, a changelog, an integrity digest, and a migration payload for any major bump. Distribution is over the registry or repository that the organization already uses. The engine requires only that it can check the digest of a version that somebody fetched.
+
+`headwater taxonomy publish` writes the artifact. It is a directory, because the engine carries no archive format and needs none: whatever moves a directory in the organization moves this one. Beside the manifest it writes a **release record**. The record names every file in the artifact with the digest of its bytes, and it carries one digest over that list. The record does not cover itself, so the digest is over what the artifact holds rather than over the file that states it.
+
+**Publication is where a `contents` path stops leaving the package.** A manifest may point `contents.bundles` outside the package directory while the package and its bundle library sit in one repository. `publish` copies the bundles into the artifact and rewrites that one scalar. So the escape is a property of a source layout, and no published artifact carries one.
+
+**`requires_engine` is read, and a package outside the range is refused before a source is loaded.** The range is a list of comparators over the engine version, written as `">=1.4 <2"`. A range that the engine cannot read is refused rather than ignored. An unreadable range that reads as no range is a claim that the publisher made and the consumer dropped. An engine that resolved a package built for a later one would produce a lock that nobody can reproduce.
 
 **A package imposes nothing on a derived taxonomy, and that is a constraint rather than a courtesy.** An overlay is a patch, so a consumer's resolved taxonomy and lock contain the base content of the package. Terms on the package that a derived work inherits therefore reach an artifact that [spec 0](00-vision-and-scope.md#who-this-is-for) promises is the adopter's own. So the terms of a `taxonomy`, `bundles` or `profiles` path may not condition what a consumer does with the resolved result. The `doctrine` path is prose that a consumer vendors, and it takes its own terms. Headwater checks none of this, and [spec 6](06-engine-architecture.md#what-a-filtered-export-claims-and-what-it-does-not) already states that it checks nothing about a license. What the specification states is the requirement that a publisher must meet ([Q11](09-decisions.md#q11--license-and-distribution-posture)).
 
@@ -70,11 +76,22 @@ A consumer declares what it takes and how it differs:
 taxonomy:
   package: acme/headwater-taxonomy
   version: 3.2.0
+  digest: sha256:6c2f…
   profile: service-repo
   overlay: .headwater/overlay.yml
 ```
 
-`headwater taxonomy resolve` fetches, verifies, merges the overlay, validates, and writes the lock. The lock is committed. Thus the corpus is checked against a resolved, reviewable, reproducible taxonomy, and CI needs no network to check anything.
+Consuming is two steps, and the split is what keeps the network out of the engine. The caller fetches the artifact, by whatever the organization already uses. `headwater taxonomy vendor` then checks the fetched directory against the `digest` above and installs it. `headwater taxonomy resolve` merges the overlay, validates, and writes the lock. The lock is committed. Thus the corpus is checked against a resolved, reviewable, reproducible taxonomy, and CI needs no network to check anything.
+
+### What a package digest proves, and what it does not
+
+**It proves that the artifact is the one the consumer pinned.** `vendor` recomputes the digest from the bytes on disk and refuses an artifact that does not match. The message names three kinds of divergence. A file that moved, a file the record names that is absent, and a file present that the record names no member for. The third is the one that a comparison over the record alone would miss. A record cannot report a file that it never named.
+
+**The pin is authored, and no verb writes it.** A digest that the engine recorded from whatever it had just received would be a pin against itself. So `vendor` refuses to run when no pin exists, and it names the field to write. The publisher states the digest where a consumer reads it, and the artifact and the digest travel apart.
+
+**It does not prove who published the artifact.** Nothing here is a signature, so the first fetch rests on the channel that carried the digest. A signature needs a key, a route that distributes the key to an adopter who has never met the publisher, and a rule for revocation. None of the three is decided ([Q22](09-decisions.md#q22--the-integrity-posture-of-a-published-package)), and [OBL-repo-0115](../obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md) holds the question rather than a manifest key that would read as an answer.
+
+**A vendored package is not a maintained one.** `vendor` replaces a directory that carries a release record, and it refuses a directory that carries none. A package that a person maintains is a publisher's source, and a consumer command that overwrote one would delete the thing being published. Spec 2 requires customization by overlay and never by fork, so a vendored directory has nothing in it that an adopter should have edited.
 
 ### Profiles are publisher overlays
 

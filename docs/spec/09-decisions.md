@@ -3,7 +3,7 @@ id: REG-HW-decisions
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-13
-summary: An index of all twenty-one design decisions, where the record of each one lives, and the evaluation that closed it.
+summary: An index of the twenty-one design decisions and the one that the build raised, where the record of each one lives, and the evidence that closed it.
 doc_type: decision_register
 sequence: 9
 provenance:
@@ -37,6 +37,8 @@ relations:
 This file began as a list of decisions that the design phase deferred, with the options and a leaning for each one. Every entry is now argued, and all twenty-one are closed. The last one to close was [Q11](#q11--license-and-distribution-posture). No argument from the design could close it, because a license states what the owner intends for the project. The owner ratified it on 2026-08-11.
 
 **This file is now an index, and it stopped being the place a decision lives.** Each decision is a document on [the decisions shelf](../decisions/README.md), of the base `decision` kind, and it carries the argument that settled it. Every one of the twenty-one is `current`, with a `status_since` of 2026-08-11. The evidence for each closure lives beside it in [`docs/evaluations/`](../evaluations/).
+
+**A twenty-second entry sits below them, and it came from the build rather than from the design phase.** A question that a build raises belongs on this list, because the alternative is a ruling that lives only in a module comment. Its evidence is a measurement in the engine rather than an evaluation, and [Q22](#q22--the-integrity-posture-of-a-published-package) states which one.
 
 A decision was a heading in a register. Nothing could carry its state, its dates, its acceptance or its edges. A reader who cited one cited a position in a file. Now a citation names a document with an identifier, and a check reads the document that a citation reaches.
 
@@ -135,3 +137,9 @@ An optional source-owned cue sits on a relation instance, graded against the alt
 ## Q21 — Terminological succession, and validity under merge
 
 A retired-term lexicon sits in the language regime, and a verdict reports the read set that a merge may void. The record is [DR-repo-0021](../decisions/0021-terminological-succession-and-validity-under-merge.md).
+
+## Q22 — The integrity posture of a published package
+
+A package digest checks a fetched artifact against a pin that a person committed, and it is never a signature. The in-house SHA-256 is held against a second implementation rather than replaced by a dependency. The record is [DR-repo-0022](../decisions/0022-q22-the-integrity-posture-of-a-published-package.md).
+
+**This question arrived after the twenty-one above closed, and it did not come from the design phase.** [#77](https://github.com/headwater-ai/headwater/issues/77) built the publishing half of [spec 7](07-distribution-and-federation.md#publishing) and found a choice that would otherwise have been made by reflex. The engine already carried a SHA-256, and reaching for it would have settled what a fetched artifact is checked against without anybody stating it.

@@ -1,5 +1,5 @@
 → {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}
-← {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05","capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"headwater","version":"0.0.0"}}}
+← {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05","capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"headwater","version":"0.1.0"}}}
 → {"jsonrpc":"2.0","method":"notifications/initialized"}
 ← (a notification takes no response)
 → {"jsonrpc":"2.0","id":2,"method":"tools/list"}

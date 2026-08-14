@@ -250,6 +250,8 @@ headwater export     [--profile ...] [--format json|jsonschema|shacl|rdf|skos|ok
 headwater init       [--corpus <dir>] [--package <name>]
 headwater infer      [--owner <name>] [--until <date>] [--write]
 headwater taxonomy   validate | resolve | diff | migrate | audit
+                   | publish [--package <name>] --out <dir>
+                   | vendor <dir> [--expect <digest>]
 headwater coverage   [--format ...]
 headwater probe      [--tier regression|campaign] [--arm present|absent] [--category ...]
 ```
@@ -263,6 +265,8 @@ headwater probe      [--tier regression|campaign] [--arm present|absent] [--cate
 **`new` also writes one line that is not a document, and `capture` is its only reader.** The capture-cost reading of a run goes to `.headwater/capture-cost.jsonl`, which is outside the corpus root and which no rule reads. [Spec 3](03-authoring-and-lifecycle.md#what-the-capture-cost-store-records-and-what-it-refuses-to) states what the line holds and what it deliberately does not. A run whose document landed and whose reading did not exits non-zero. That is the one place this verb reports over two artifacts at once. `capture` reads the store and the census together, and it writes nothing at all.
 
 **`sweep` is two verbs and neither one reaches a model.** `plan` writes the briefing an agent reads, and `report` reads back the file the agent wrote. The part between them needs a model and no engine code performs it, so no build ever waits for one. Both exit 0 whatever they find, neither writes into the corpus, and the sampler is a crate that `headwater-check` cannot name. [Spec 12](12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) states what each of those four facts enforces.
+
+**`taxonomy vendor` takes a path, and that is what keeps the network out of the engine.** [Spec 7](07-distribution-and-federation.md#consuming) says a consumer fetches a package and checks its digest. The fetch is the caller's, by whatever moves a directory in the organization that runs it, and the verb checks the bytes it is handed. A verb that took a location would need a client, and a client is a crate that opens a socket. So the [non-negotiable](00-vision-and-scope.md#non-negotiables) is a property of the argument rather than a rule that somebody keeps. `publish` is the other half, and it writes the artifact that `vendor` reads.
 
 `probe` is the one verb that reaches the network, so it never runs inside `check` and never gates ([spec 5](05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose)). It projects the cost of a run against the tier's declared budget and refuses a run that exceeds it. Every run writes its transcript and reports the run identity, the realized cost, and the interval around each rate.
 
