@@ -90,6 +90,13 @@ tiers:
 /// The lock digest the fixture transcript names, which the intake holds it to.
 const LOCK: &str = "sha256:fixture";
 
+/// The selection digest the fixture transcript names.
+///
+/// A real digest of the two fixture identifiers and not a placeholder, because
+/// the value is compared now. A placeholder here would make the recorded pair
+/// look self-consistent while one half of it was never read.
+const SELECTION: &str = "sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9";
+
 fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
 }
@@ -382,6 +389,84 @@ fn a_result_goes_stale_when_its_transcript_changes() {
         drifted.render()
     );
     assert!(drifted.has_errors());
+}
+
+/// A third probe, well formed, which moves the selection digest and nothing else.
+const THIRD: &str = "\
+---
+id: PROBE-FIX-third
+status: current
+status_since: 2026-08-14
+summary: A third probe, added after the run was recorded, which the run never met.
+probe_category: consistency
+expectation: answered
+oracle: \"none\"
+---
+
+# A probe the recorded run never met
+
+## Task
+
+Say whether this probe was in the selection. Answer `yes` or `no`.
+
+## Expectation
+
+```yaml
+answers: [yes, no]
+```
+";
+
+/// The sentence the result carries when the two selections agree.
+const AGREES: &str = "The selection this transcript names is the selection this corpus composes";
+
+/// The comparison a result reports about the selection it was recorded over.
+///
+/// Three directions, because a comparison that never moves and one that always
+/// moves are both useless and both look identical from a green run.
+///
+/// The `selection` digest is the one member of the pre-run identity that a
+/// result can compare and still be a file somebody can leave committed. The
+/// `tree` digest is the alternative and it is why the second direction is here:
+/// a tree digest covers every classified document, so a result that tracked it
+/// would move on the edit below and `generate --check` would ask for a fresh
+/// commit of every result after every prose change.
+#[test]
+fn a_result_reports_whether_the_selection_it_recorded_is_the_one_this_corpus_composes() {
+    let at = copied("selection");
+
+    // Direction 1: the recorded pair agrees, and the result says so.
+    let (_, agreeing) = result_bytes(&at);
+    assert!(
+        agreeing.contains(AGREES),
+        "the result does not report the selection it agrees with:\n{agreeing}"
+    );
+
+    // Direction 2: a probe's prose moves, and the selection does not. This is
+    // the direction that rules out comparing the corpus tree instead.
+    edit(
+        &at,
+        "runs/probes/0002-answered.md",
+        "Say whether the cache may change a verdict.",
+        "Say whether a cache may change any verdict at all.",
+    );
+    let (_, edited) = result_bytes(&at);
+    assert!(
+        edited.contains(AGREES),
+        "an edit to a probe's prose moved the selection this result compares:\n{edited}"
+    );
+
+    // Direction 3: a probe is added, so the population moved, and the result
+    // says which digest it recorded and which one this corpus composes.
+    std::fs::write(at.join("runs/probes/0003-third.md"), THIRD).expect("the probe lands");
+    let (_, moved) = result_bytes(&at);
+    assert!(
+        moved.contains("is not the selection this corpus composes"),
+        "a probe was added and the result did not report the moved selection:\n{moved}"
+    );
+    assert!(
+        moved.contains(SELECTION),
+        "the result does not name the digest the transcript recorded:\n{moved}"
+    );
 }
 
 /// A corpus with no transcript writes no result, and the plan says why.

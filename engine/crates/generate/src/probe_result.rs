@@ -216,14 +216,20 @@ pub(crate) fn emit(
         plan.outputs.push(Output {
             path: output,
             kind: Kind::ProbeResult,
-            bytes: body(&front, path, &record, &results),
+            bytes: body(&front, path, &record, &results, &runs.selection),
         });
     }
 }
 
 /// The whole file: the front matter, the marker where there is no front matter,
 /// and the report.
-fn body(front: &str, transcript: &str, record: &Record, results: &Results) -> String {
+fn body(
+    front: &str,
+    transcript: &str,
+    record: &Record,
+    results: &Results,
+    selection: &str,
+) -> String {
     use std::fmt::Write;
     let mut out = String::new();
     match front.is_empty() {
@@ -250,10 +256,62 @@ fn body(front: &str, transcript: &str, record: &Record, results: &Results) -> St
     let _ = writeln!(out, "## The run this transcript recorded");
     let _ = writeln!(out);
     out.push_str(&record.render());
+    if let Some(identity) = &record.identity {
+        let _ = writeln!(out);
+        out.push_str(&provenance(&identity.selection, selection));
+    }
     let _ = writeln!(out);
 
     out.push_str(&results.render());
     out
+}
+
+/// What the four unconfirmed members of the run identity are worth, and the
+/// one of them this corpus can answer.
+///
+/// # The selection is compared and the tree is not, and the difference is what
+/// a gate would do about it
+///
+/// A transcript names five members that a plan fixed before the run. The intake
+/// compares the lock and refuses the file when it moved. That leaves four, and
+/// the reason none of them was compared is that the obvious comparison is worse
+/// than the gap. The `tree` digest covers every classified document, so a result
+/// that reported whether it still agreed would change its own bytes on the first
+/// edit to any document of the corpus, and `generate --check` would ask for a
+/// regeneration of every committed result on every pull request. A statement
+/// nobody can leave standing is not a statement.
+///
+/// The `selection` digest is different, and it is different in the way that
+/// matters: it is taken over the identifiers of the probes selected and over
+/// nothing else. It does not move when a probe's prose is edited, and it does
+/// move when a probe is added, removed or renamed — which is the one change that
+/// makes a recorded run cover a population this corpus no longer declares. So it
+/// is compared, and the comparison is reported here rather than refused, because
+/// a refusal would replace a graded rate with a notice at the moment somebody
+/// added a probe.
+///
+/// The `seed` and the `harness` are provenance and stay provenance. A seed is a
+/// number the caller stated and this corpus holds nothing to compare it against.
+/// A harness version is the version of the engine that planned the run, and
+/// holding a recorded run to the version reading it would refuse every
+/// transcript on the first release.
+fn provenance(recorded: &str, composed: &str) -> String {
+    match recorded == composed {
+        true => "The selection this transcript names is the selection this corpus composes, so \
+                 the probes graded below are the probes this run was planned over. The tree, the \
+                 seed and the harness above are provenance: nothing compares them, and the tree \
+                 in particular is not compared because a result that tracked it would need \
+                 rewriting after an edit to any document of this corpus.\n"
+            .to_string(),
+        false => format!(
+            "**The selection this transcript names is not the selection this corpus composes.** \
+             The transcript names `{recorded}` and this corpus composes `{composed}`, so a probe \
+             was added, removed or renamed after this run was recorded. Every verdict below is \
+             over the probes as they stand now, and the rate is over a population this session \
+             did not meet. The tree, the seed and the harness above are provenance and nothing \
+             compares them.\n"
+        ),
+    }
 }
 
 /// The file stem of a path, which is what `{run}` stands for.

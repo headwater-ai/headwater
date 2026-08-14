@@ -154,6 +154,13 @@ pub struct Runs {
     /// It is the whole of what a plan composed or it is empty, and never a
     /// part: see [`Runs::graded_against`].
     pub selected: Vec<headwater_probe::plan::Selected>,
+    /// The digest over the identifiers of [`Runs::selected`], as the plan
+    /// computed it.
+    ///
+    /// Carried rather than recomputed here, because a second derivation of one
+    /// value is two values that can disagree, and the one they would disagree
+    /// about is the one a transcript is compared against.
+    pub selection: String,
     /// The bytes of every committed transcript.
     ///
     /// A census row carries what it parsed rather than the source it parsed,
@@ -178,7 +185,10 @@ impl Runs {
             .filter(|refusal| refusal.stops_a_grade())
         {
             Some(refusal) => self.refusal = Some(refusal.clone()),
-            None => self.selected = plan.selected.clone(),
+            None => {
+                self.selected = plan.selected.clone();
+                self.selection = plan.selection.clone();
+            }
         }
     }
 }
