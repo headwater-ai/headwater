@@ -1119,6 +1119,32 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
                             .collect()
                     )
                 ),
+                (
+                    "by_surface",
+                    Json::Array(
+                        headwater_scaffold::reading::by_surface(&readings)
+                            .into_iter()
+                            .map(|(surface, taken, assisted)| {
+                                Json::object([
+                                    (
+                                        "surface",
+                                        match surface {
+                                            Some(surface) => Json::string(surface.name()),
+                                            // Absent rather than a name, on the
+                                            // rule the store itself follows: a
+                                            // reading that states no surface is
+                                            // not one of the two arms.
+                                            None => Json::Array(vec![]),
+                                        },
+                                    ),
+                                    ("readings", count(taken)),
+                                    ("supplied", count(assisted.supplied())),
+                                    ("denominator", count(assisted.total())),
+                                ])
+                            })
+                            .collect()
+                    )
+                ),
                 ("reached", count(reach.reached.len())),
                 ("classified", count(classified.paths.len())),
                 (
@@ -1207,6 +1233,35 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
                 assisted.total()
             );
         }
+
+        // The two arms of OBL-repo-0004, as a grouping and never as a
+        // comparison. Q7 claims that a write tool raises the fraction, and a
+        // claim of that shape needs a powered comparison rather than two rows
+        // that differ.
+        println!("\nby surface");
+        for (surface, taken, assisted) in headwater_scaffold::reading::by_surface(&readings) {
+            println!(
+                "  {} — {}, {} of {}",
+                match surface {
+                    Some(surface) => surface.name(),
+                    None => "no surface stated",
+                },
+                readings_of(taken),
+                assisted.supplied(),
+                assisted.total()
+            );
+        }
+        if readings.iter().any(|reading| reading.surface.is_none()) {
+            println!(
+                "  a reading that states no surface was taken before the term existed. It is not \
+                 the terminal arm under another name, and this report counts it as neither"
+            );
+        }
+        println!(
+            "  the surface is the entry point a run was made at, and never who drove it. A person \
+             at a client and an agent at the same client are one reading, which OBL-repo-0111 \
+             records"
+        );
     }
 
     println!("\nreach of the authoring verb");

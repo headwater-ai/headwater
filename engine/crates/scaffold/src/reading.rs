@@ -50,8 +50,12 @@
 //! ran at, and the entry point is a fact about the run. Who or what drove that
 //! entry point is not: a person who types a tool call into a client and an
 //! agent that emits one produce the same message on the same wire.
-//! [OBL-repo-0111](../../../../docs/obligations/0111-the-surface-term-names-an-entry-point-and-never-the-caller.md)
-//! holds what that costs a reader of the two arms.
+//! [OBL-repo-0111](../../../../docs/obligations/0111-the-capture-cost-surface-names-an-entry-point-and-never-the-caller.md)
+//! holds what that costs a reader of the two arms. **And the surface cannot
+//! move the four counts either.** They are derived from the plan, and a plan
+//! takes a kind, a title, a date and the relations. What a surface can move is
+//! the count of runs, which is
+//! [OBL-repo-0112](../../../../docs/obligations/0112-a-surface-cannot-move-the-assisted-fraction-of-a-run.md).
 //!
 //! **No run that refused.** A refusal wrote no document, so there is nothing to
 //! attribute a reading to. A count of refusals would be a measure of the

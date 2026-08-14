@@ -29,6 +29,10 @@ That metric is the instrument, and a comparison needs a baseline and a treatment
 
 ## Discharge
 
-The unassisted baseline that such a comparison needs is the typing pass that [Q4's entry](0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) records. The treatment is absent, because no write tool has authored anything in this repository. `headwater mcp` registers no tool that writes at all, and [#71](https://github.com/headwater-ai/headwater/issues/71) is the issue that would register one.
+The unassisted baseline that such a comparison needs is the typing pass that [Q4's entry](0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) records.
 
-**A store for the metric now exists, and it cannot separate the two arms.** `.headwater/capture-cost.jsonl` holds one reading per run of `headwater new`, and every reading looks the same whatever called the verb. That is deliberate: a field with one value tests nothing, and this engine has one surface. So the day a write tool ships, the store owes a term that names the surface of a run. Without it a reading from a terminal and a reading from a protocol are one population. The comparison this record asks for would then read its own baseline as its treatment.
+**The treatment arm exists and it holds one reading.** `headwater mcp --write` registers the `new` tool, and the run that wrote [OBL-repo-0111](0111-the-capture-cost-surface-names-an-entry-point-and-never-the-caller.md) on 2026-08-14 is the first authoring this repository has done over a protocol. The store names the arm of every reading it takes: `.headwater/capture-cost.jsonl` carries a `surface` term, and `headwater capture` groups by it. A line the store took before that day names no arm, and the report counts such a line under neither.
+
+**The instrument is not the one this record assumed.** The four counts of a reading are derived from the plan, and a plan is the same plan whatever asked for it. So the per-run fraction cannot separate the arms at all. [OBL-repo-0112](0112-a-surface-cannot-move-the-assisted-fraction-of-a-run.md) measures that: two readings of one kind, one from each arm, carry the same four pairs. What a surface can move is the count of runs and the mix of kinds those runs chose. This corpus holds four readings, so the comparison is still unmade.
+
+**And a reading of the arms says less than the two names suggest.** The term records an entry point rather than a caller, and one agent produced every reading in both arms on the day the term arrived. OBL-repo-0111 holds that.

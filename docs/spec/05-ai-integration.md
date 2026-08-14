@@ -170,12 +170,12 @@ Beyond files, there are three richer surfaces:
 | Class | Tools | Ships | Why |
 |---|---|---|---|
 | **Query** | `route`, `governing_docs_for_path`, `resolve_identifier`, `related`, `explain`, `check` | first release | It changes nothing |
-| **Working-tree write** | `new`, `fix` | first release, and off by default per server | The human reviews at commit, and the [fixability bar](12-check-layer.md#fixability) forbids a judgment-bearing patch |
+| **Working-tree write** | `new`, `fix` | first release, and off by default per server ([what the switch registers](#what-the-working-tree-write-class-registers-and-what-a-session-looks-like-after-a-write)) | The human reviews at commit, and the [fixability bar](12-check-layer.md#fixability) forbids a judgment-bearing patch |
 | **Landed write** | a commit, a push, a merge, a server that writes to a repository | never | Acceptance is a human act ([spec 3](03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed)), and no forge is privileged in the core |
 
 The third row is a refusal and not a deferral. A server-side commit produces a document with no `accepted_by`, or with an invented one. The provenance model forbids it before any judgment about trust arrives. Headwater instead emits what a change proposal needs: findings, patches, and a task list. An adapter opens the proposal, with the credential that its operator granted it. That is the same boundary that keeps the engine out of the merge-queue business ([Q21](09-decisions.md#q21--terminological-succession-and-validity-under-merge)).
 
-Working-tree writes stay off by default, because a client may connect to a checkout that the user did not intend to change. The opt-in is per server.
+Working-tree writes stay off by default, because a client may connect to a checkout that the user did not intend to change. The opt-in is per server, and `headwater mcp --write` is it.
 
 **The annotation is not the enforcement.** The protocol lets a server declare that a tool only reads. It also states that a client must not treat that declaration from an untrusted server as a guarantee. Headwater annotates its tools correctly and relies on something else. Where a class of tool is off, the server does not register it, so no handler exists to call. A property that a caller reads off a tool list is a hint. A property with no code path behind it is a guarantee.
 
@@ -201,7 +201,30 @@ What that changes is where the effort belongs. A hook earns its cost by reaching
 
 **The one argument is the output format, and it has no default.** [Spec 6](06-engine-architecture.md#cli) closes that set at four. One dispatcher writes all four, for the CLI and for this tool alike. So the answer is `headwater check --format <name>` byte for byte. The argument is required, because a default chosen inside the tool is a decision taken at a call site. That also settles the question a richer argument would have opened: one string is enough, and no second tool is needed.
 
-**`fix` is this tool and a write, which is why it waits.** A working-tree write tool of the second row is the read above, with a patch applied. To register it before the read settles the clock, the cache and the walk inside the write path, where a reader finds them last.
+#### What the working-tree write class registers, and what a session looks like after a write
+
+The second row ships as `new` and `fix`, off by default. The switch is `headwater mcp --write`. A working-tree write tool is the read above with a verb behind it. Every decision that verb needs is taken where the terminal takes it. The tool holds the two verbs as functions rather than as parts. So a call runs the verb that ships, and never a second composition of a scaffolder.
+
+**The opt-in is a word somebody typed.** Two other shapes were available and both are worse. A setting in the checkout would grant the class to every client that opens the repository. The person who started the server would then have said nothing, and the consent would be a fact about somebody else's commit. A second verb would be a second server to hold in step with this one, and [spec 6](06-engine-architecture.md#cli)'s grammar names verbs rather than modes. So the switch sits beside `--now`. Those are the two inputs a caller is answerable for.
+
+**A tool takes the arguments its verb takes.** One string was enough for every read. It is not enough for `new`, which takes a kind, a title and a repeatable relation. A relation is written `<relation>=<identifier>`, which is the form the terminal takes. `fix` takes a format and nothing else. Neither takes a clock, because the server holds one for its life. Neither takes a root, because the checkout is the one the server started over. Neither takes a path, for the reason `check` takes none.
+
+**A call that moves a byte of the checkout ends the server.** The corpus is walked once, before the server accepts a message, so a write ends the tree that walk described. [OBL-repo-0028](../obligations/0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md) measures what a stale walk costs. A server that wrote and then kept answering would be that measurement, with the server as its own cause. So every later call is refused, and the refusal names the tool that ended the session. "A caller that wants another tree starts another server" is what this section already says about the clock. Here it is a code path rather than advice.
+
+Two halves of that rule matter equally. **The seal follows the bytes and never the call**, so a `fix` that found no patch leaves the session open. A scaffolder that refused leaves it open for the same reason. **The writing call itself answers from a fresh walk**, because the verb re-reads the tree it wrote before it reports. So the one answer that could be stale is the answer such a server never gives from the old walk.
+
+**A tool result carries the two streams the verb wrote.** Standard output is the artifact and standard error is the account, which is the [hook contract](#the-hook-contract-and-what-a-hook-cannot-bind)'s term at this position. A protocol call has one result. So the two arrive as two content blocks, and the artifact block is the bytes a terminal reads.
+
+#### What replaced "the server registers no tool that writes"
+
+That sentence was a property of the code, and four narrower ones stand in its place. Each is a code path, and each is asserted in the suite rather than promised here.
+
+- **A server with no switch is the server that was here before.** The tool table holds the six reads, and no handler that writes exists to reach. That is the shape a client meets when it connects to a checkout that nobody meant to change.
+- **The landed-write class is reachable by no argument.** The third row is a refusal rather than a deferral, and no flag turns it into anything. That is the row the disclosure argument rests on. An injected instruction needs an actuator, and a server that cannot land a change lends it none.
+- **Every write leaves a record in the tree a human commits.** `new` appends a capture-cost reading that names the protocol as the surface of the run. The reading and the document then arrive in one diff. `fix` writes only what a finding derived under the [fixability bar](12-check-layer.md#fixability), and it answers with the run after the write. So a patch that produced a document the checks reject reports it in the same answer.
+- **No write tool accepts a document.** `headwater new` writes no `accepted_by` and no `accepted` warrant, so neither does the tool. [Stop rule 5](#the-stop-rules) forbids an agent from stamping its own output. [OBL-repo-0108](../obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md) measures how often an agent does it anyway. This surface adds nothing to that count, because the verb behind it has no field for the stamp.
+
+What none of the four does is stop an agent from writing a bad document. A scaffolded document is an authored document from the moment it lands, and every check reads it. The commit gate and the CI job hold it from below. That is the position the [hook contract](#the-hook-contract-and-what-a-hook-cannot-bind) ends on, and the axis at the head of this section is why it is enough. The result passes through a human's diff.
 
 **Authoring skills.** Packaged procedures for the work that bears judgment: to draft a decision record, to run a corpus-wide sweep, to propose a taxonomy change. Skills carry the doctrine that an agent needs, and they call the deterministic engine for everything mechanical. Thus the LLM does the reasoning and never the arithmetic. This repository ships two of them, in `.claude/skills/`. `headwater-authoring` owns a document and `headwater-taxonomy` owns a declaration, which is the same boundary that [stop rule 3](#the-stop-rules) draws.
 

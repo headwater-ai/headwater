@@ -25,8 +25,10 @@ A fragment with no path names a heading of the document that wrote it, and `link
 
 ## Obligation
 
-The grain that reaches this is one document and the documents that its prose links reach. This corpus writes 1595 fragments on a path against 208 that carry no path, so the unreached half is the larger one. Both numbers move with every prose edit, and the pair recorded here before was 1519 against 277.
+The grain that reaches this is one document and the documents that its prose links reach. This corpus writes 1605 fragments on a path against 208 that carry no path, so the unreached half is the larger one. Both numbers move with every prose edit, and the pair recorded here before was 1595 against 208.
 
 ## Discharge
 
 The gap has been priced as well as counted. A script that resolves every fragment on a path by hand found two that reach no heading, and both had stood on `main` unreported. They are repaired, and the instrument that found them is twenty lines, so the cost of this entry is the scope and not the rule.
+
+**A third one was caught before it landed, by running that script rather than by a check.** The MCP write tools added a section to [spec 5](../spec/05-ai-integration.md#what-the-working-tree-write-class-registers-and-what-a-session-looks-like-after-a-write), and a record cited it under a shorter slug than the heading makes. `headwater check` reported nothing, and the run was green with the link dead. All 1605 fragments on a path resolve today, and no rule of this engine states that.
