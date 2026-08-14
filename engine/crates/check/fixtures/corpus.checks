@@ -90,5 +90,5 @@ register
       6 with criteria
       2 permanently advisory
       2 producing facts rather than findings
-  escaped findings, in the precedence spec 4 fixes: no waiver mechanism exists, 1 migration-pending, 4 suppressed
+  escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 1 migration-pending, 4 suppressed
   every rule this engine carries reaches one obligation

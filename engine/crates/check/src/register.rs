@@ -878,9 +878,18 @@ impl Projection {
 
         // Spec 4 fixes a precedence over three inventories "so the three
         // inventories partition the escaped findings, and no finding is counted
-        // three times". Two of the three exist now. The one that does not is
-        // printed as absent rather than left out, because a partition with a
+        // three times". Two of the three reach a finding. The one that does not
+        // is printed as absent rather than left out, because a partition with a
         // silent member is one a reader cannot check.
+        //
+        // The waiver mechanism itself ships: `headwater conformance` reads the
+        // waivers a consumer declares and honors a live one. What no reader has
+        // is the other population. Spec 7 gives one mechanism two populations —
+        // a waiver may name a conformance rule or a check rule — and only the
+        // first reader exists. So the line names the reader rather than the
+        // mechanism, because "no waiver mechanism exists" stopped being true the
+        // day `conformance` shipped and this account would have gone on saying
+        // it.
         //
         // The two numbers come from two counters that no code adds together,
         // which is what makes this line a partition a reader can audit rather
@@ -889,8 +898,8 @@ impl Projection {
         let pending: usize = self.obligations.iter().map(|o| o.pending).sum();
         let _ = writeln!(
             out,
-            "  escaped findings, in the precedence spec 4 fixes: no waiver mechanism exists, \
-             {pending} migration-pending, {escaped} suppressed"
+            "  escaped findings, in the precedence spec 4 fixes: no waiver reaches a check \
+             finding, {pending} migration-pending, {escaped} suppressed"
         );
 
         // A rule that reaches no obligation. The line is printed when there are

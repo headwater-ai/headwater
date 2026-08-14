@@ -70,7 +70,7 @@ register
       1 acts detective
       1 name a rule this engine carries
       1 with no promotion record, so nothing states what would promote them
-  escaped findings, in the precedence spec 4 fixes: no waiver mechanism exists, 0 migration-pending, 0 suppressed
+  escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 0 suppressed
   facet.required.missing reaches no obligation, so it names none
   facet.value.not_permitted reaches no obligation, so it names none
   identifier.pattern.not_met reaches no obligation, so it names none
