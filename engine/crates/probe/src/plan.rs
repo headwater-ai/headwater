@@ -43,6 +43,14 @@ pub const KIND: &str = "probe";
 /// is a predicate over.
 pub const EXAMINES: &str = "examines";
 
+/// What a probe writes in `oracle` when its expectation is not `patched`.
+///
+/// A sentinel, and the taxonomy has nowhere else to put it: a facet that no
+/// kind requires is refused as unread, and the language cannot say "required
+/// when `expectation` is `patched`". The value is enforced in both directions
+/// below, so it is a declared absence rather than an empty field.
+pub const NO_ORACLE: &str = "none";
+
 /// One probe, as the harness meets it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Selected {
@@ -81,8 +89,15 @@ pub enum Refusal {
         facet: &'static str,
         found: Option<String>,
     },
-    /// A `patched` probe that names no oracle.
+    /// A `patched` probe that declares the sentinel instead of a rule.
     OracleUnnamed { probe: String },
+    /// A probe of another form that names a rule. Its expectation is not the
+    /// oracle route, so the rule would be declared and never read.
+    OracleNotUsed {
+        probe: String,
+        expectation: Expectation,
+        rule: String,
+    },
     /// A `patched` probe naming a rule this engine does not carry. The grader
     /// would have nothing to run, and a probe that grades against nothing
     /// returns a verdict about the harness.
@@ -147,9 +162,19 @@ impl std::fmt::Display for Refusal {
             },
             Refusal::OracleUnnamed { probe } => write!(
                 f,
-                "{probe} expects `patched` and names no oracle. The `patched` form grades a \
-                 produced patch against a named check, so a probe without one declares a \
+                "{probe} expects `patched` and declares `oracle: {NO_ORACLE}`. The `patched` form \
+                 grades a produced patch against a named check, so a probe without one declares a \
                  predicate nothing can evaluate"
+            ),
+            Refusal::OracleNotUsed {
+                probe,
+                expectation,
+                rule,
+            } => write!(
+                f,
+                "{probe} expects `{}` and declares `oracle: {rule}`. Only `patched` grades against \
+                 a check, so that rule is declared and never read. Write `oracle: {NO_ORACLE}`",
+                expectation.name()
             ),
             Refusal::OracleUnknown { probe, rule } => write!(
                 f,
@@ -309,24 +334,48 @@ impl Plan {
                 .edges
                 .iter()
                 .filter(|edge| edge.source.path == row.path && edge.declared == EXAMINES)
+                // A document by its identifier, and an anchor by the string the
+                // resolver normalized. A grader reads a transcript for what the
+                // session opened, and a session opens a file rather than an
+                // identifier, so the normalized path is the name that matches.
                 .filter_map(|edge| match &edge.target {
                     Target::Document { id, .. } => Some(id.clone()),
+                    Target::Anchor { normalized, .. } => Some(normalized.clone()),
+                    Target::Withheld { .. } => None,
                     _ => None,
                 })
                 .collect();
             examines.sort();
             examines.dedup();
 
-            let oracle = read("oracle");
-            if expectation == Expectation::Patched {
-                let Some(rule) = oracle.clone() else {
+            let declared = read("oracle").unwrap_or_else(|| NO_ORACLE.to_string());
+            let oracle = match declared.as_str() {
+                NO_ORACLE => None,
+                rule => Some(rule.to_string()),
+            };
+            match (expectation, &oracle) {
+                (Expectation::Patched, None) => {
                     plan.refusal = Some(Refusal::OracleUnnamed { probe: id });
                     return plan;
-                };
-                if !headwater_check::RULES.contains(&rule.as_str()) {
-                    plan.refusal = Some(Refusal::OracleUnknown { probe: id, rule });
+                }
+                (Expectation::Patched, Some(rule))
+                    if !headwater_check::RULES.contains(&rule.as_str()) =>
+                {
+                    plan.refusal = Some(Refusal::OracleUnknown {
+                        probe: id,
+                        rule: rule.clone(),
+                    });
                     return plan;
                 }
+                (other, Some(rule)) if other != Expectation::Patched => {
+                    plan.refusal = Some(Refusal::OracleNotUsed {
+                        probe: id,
+                        expectation: other,
+                        rule: rule.clone(),
+                    });
+                    return plan;
+                }
+                _ => {}
             }
             if expectation.names_documents() && examines.is_empty() {
                 plan.refusal = Some(Refusal::ExpectationNamesNothing {

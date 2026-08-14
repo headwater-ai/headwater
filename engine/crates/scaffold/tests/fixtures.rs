@@ -229,6 +229,7 @@ fn every_case_over_the_fixture_corpus_matches_the_recorded_transcript() {
             title: case.title,
             now: pinned(),
             relates: &case.relates,
+            given: &[],
         };
         match propose(&sources, &request) {
             Err(refusal) => {
@@ -426,6 +427,7 @@ fn every_refusal_branch_has_a_case() {
             title: case.title,
             now: pinned(),
             relates: &case.relates,
+            given: &[],
         };
         if let Err(refusal) = propose(&sources, &request) {
             reached.push(variant(&refusal));

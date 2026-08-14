@@ -78,7 +78,7 @@ headwater route              <task description> [--budget <n>] [--root <path>]
 headwater explain            <path|identifier> [--root <path>]
 headwater mcp                [--now <date>] [--write] [--root <path>]
 headwater new                <kind> --title <text> [--relates <relation>=<identifier>]
-                             [--now <date>] [--root <path>]
+                             [--facet <facet>=<value>] [--now <date>] [--root <path>]
 headwater capture            [--format text|json] [--root <path>]
 headwater sweep plan         [--under <path>] [--root <path>]
 headwater sweep report       <path> [--format text|json] [--root <path>]
@@ -377,6 +377,7 @@ fn main() -> ExitCode {
     let mut title: Option<String> = None;
     let mut under: Option<String> = None;
     let mut relates: Vec<(String, String)> = Vec::new();
+    let mut facets: Vec<(String, String)> = Vec::new();
     let mut level: Option<String> = None;
     let mut tier: Option<String> = None;
     let mut arm: Option<String> = None;
@@ -439,6 +440,20 @@ fn main() -> ExitCode {
                 None => {
                     return fail("--relates names a relation and a target, and none followed it")
                 }
+            },
+            "--facet" => match arguments.next() {
+                Some(pair) => match pair.split_once('=') {
+                    Some((facet, value)) if !facet.is_empty() && !value.is_empty() => {
+                        facets.push((facet.to_string(), value.to_string()))
+                    }
+                    _ => {
+                        return fail(
+                            "--facet takes `<facet>=<value>`, as in \
+                             `--facet probe_category=discovery`",
+                        )
+                    }
+                },
+                None => return fail("--facet names a facet and a value, and none followed it"),
             },
             "--owner" => match arguments.next() {
                 Some(name) => owner = Some(name),
@@ -543,7 +558,7 @@ fn main() -> ExitCode {
         ["new"] => fail(
             "`new` takes a kind. Try `headwater new decision --title \"Adopt an overlay\"`",
         ),
-        ["new", kind] => new(&root, kind, title, &relates, now),
+        ["new", kind] => new(&root, kind, title, &relates, &facets, now),
         ["capture"] => capture(&root, format),
         ["sweep"] => fail("`sweep` takes a second word: `plan` or `report`"),
         ["sweep", "plan"] => sweep_plan(&root, under),
@@ -1203,6 +1218,7 @@ fn new(
     kind: &str,
     title: Option<String>,
     relates: &[(String, String)],
+    given: &[(String, String)],
     now: Option<Date>,
 ) -> ExitCode {
     let Some(title) = title else {
@@ -1211,7 +1227,7 @@ fn new(
              from it, and this engine invents neither",
         );
     };
-    match scaffold(root, kind, &title, relates, now, EntryPoint::Terminal) {
+    match scaffold(root, kind, &title, relates, given, now, EntryPoint::Terminal) {
         Err(why) => refuse(&why),
         Ok(written) => {
             print!("{}", written.artifact);
@@ -1240,6 +1256,7 @@ fn scaffold(
     kind: &str,
     title: &str,
     relates: &[(String, String)],
+    given: &[(String, String)],
     now: Option<Date>,
     surface: EntryPoint,
 ) -> Result<Written, String> {
@@ -1274,6 +1291,7 @@ fn scaffold(
         title,
         now,
         relates,
+        given,
     };
 
     // Nothing below this line has written anything yet, which is why every
@@ -2325,6 +2343,13 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
             kind,
             title,
             relates,
+            // No facet values. The write tool declares a kind, a title and
+            // relations, and nothing else, so a kind that requires a facet no
+            // declaration determines is refused over the protocol and written
+            // from a terminal. Widening the tool is a change to the write
+            // class that [Q7](../../../../docs/spec/09-decisions.md#q7--scope-of-the-mcp-surface)
+            // fixed, and not a change to this call.
+            &[],
             Some(ctx.now()),
             EntryPoint::Protocol,
         )

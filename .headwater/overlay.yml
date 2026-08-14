@@ -68,12 +68,16 @@ add:
   # This repository declaring that it holds probes answers a different question
   # from every adopter of the package getting them, and the record stays open.
   #
-  # Both kinds are kinds `headwater new` refuses, and the two refusals do not
-  # mean the same thing. A category and an expectation are the author's
-  # judgment, so a required closed value set with no role that determines it is
-  # the cost this block accepts, and the check layer still reports a probe that
-  # omits either. A transcript is written by the harness rather than by a
-  # person, so a scaffolder that refuses to write one is right.
+  # **The four closed value sets below are required, and getting there needed a
+  # change to `headwater new`.** Two rules of this taxonomy language meet on a
+  # facet whose value is the author's judgment, and neither yielded: the facet
+  # canons refuse a facet that no kind requires as unread, and the scaffolder
+  # refuses a kind that requires a closed value set no role determines. A probe
+  # category is exactly such a value, so the `probe` kind fell between the two
+  # and could be written by no route this engine offered. `headwater new
+  # --facet <facet>=<value>` is that route. The value is validated against the
+  # set before anything is written and recorded as hand entry, because a person
+  # typed it.
 
   identifier_schemes.probe_id:
     pattern: "PROBE-{namespace}-{slug}"
@@ -130,12 +134,17 @@ add:
       absent: the session ran against the declared ablation of it
 
   # The check a `patched` expectation grades a produced patch against, which
-  # spec 5 calls the oracle route. It is optional here and required by the
-  # harness, because the taxonomy language has no way to say "required when
-  # another facet holds one value" and a facet required of every probe would be
-  # a field four expectation forms leave empty. `headwater probe plan` refuses a
-  # `patched` probe that names no oracle, and refuses one that names a rule this
-  # engine does not carry.
+  # spec 5 calls the oracle route.
+  #
+  # **Every probe declares one, and four of the five expectation forms declare
+  # `none`.** That reads as a field with a sentinel in it, and it is: the
+  # taxonomy language has no way to say "required when another facet holds one
+  # value", and a facet that no kind requires is refused as unread. So the
+  # choice is a sentinel or a declaration this language cannot make.
+  # [OBL-repo-0123](../docs/obligations/0123-a-facet-that-applies-to-one-value-of-another-facet-has-nowhere-to-say-so.md)
+  # holds it. `headwater probe plan` enforces the pairing in both directions: a
+  # `patched` probe that declares `none`, and a probe of any other form that
+  # names a rule, each stop the run.
   facets.oracle:
     type: string
     required: false
@@ -148,7 +157,7 @@ add:
     lifecycle: standard
     identifier: {scheme: probe_id}
     facets:
-      require: [probe_category, expectation]
+      require: [probe_category, expectation, oracle]
     sections:
       require: [Task, Expectation]
 
@@ -163,14 +172,21 @@ add:
     sections:
       require: [Run identity, Events]
 
-  # The documents an `opened`, `not_opened` or `cited` expectation names. A
-  # separate relation and not `traces_to`, because a grader has to tell the
-  # targets of the predicate apart from the provenance of the probe, and one
-  # relation carrying both would make every citation an expectation.
+  # What an `opened`, `not_opened` or `cited` expectation names. A separate
+  # relation and not `traces_to`, because a grader has to tell the targets of
+  # the predicate apart from the provenance of the probe, and one relation
+  # carrying both would make every citation an expectation.
+  #
+  # `code_path` is the second end, and it is the end that makes one measurement
+  # possible at all. Spec 5 says the reach of a skill is a measurement rather
+  # than a property, and the `opened` expectation over a transcript is the
+  # instrument. A skill file sits outside the corpus root, so a relation that
+  # named only a governed document could not point at one and that measurement
+  # would have no probe. The anchor resolver already reaches it.
   relations.examines:
     family: evidence
     from: [probe]
-    to:   [governed_document]
+    to:   [governed_document, code_path]
     cardinality: many
     created_by: author
 
