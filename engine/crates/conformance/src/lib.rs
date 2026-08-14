@@ -154,13 +154,21 @@ pub enum SetError {
     Undeclared(String),
     Unreadable(String),
     Malformed(String),
-    Format { found: String },
+    Format {
+        found: String,
+    },
     /// A tree rule whose reading this engine does not hold.
-    NoReading { rule: String, package: String },
+    NoReading {
+        rule: String,
+        package: String,
+    },
     /// A rung that names no rule.
     EmptyLevel(String),
     /// A rung that names a rule the set does not declare.
-    UnknownInLevel { level: String, rule: String },
+    UnknownInLevel {
+        level: String,
+        rule: String,
+    },
 }
 
 impl std::fmt::Display for SetError {
@@ -171,7 +179,9 @@ impl std::fmt::Display for SetError {
                 "{package} declares no `contents.{CONTENTS_KEY}`, so it states no conformance \
                  rule and there is nothing to evaluate this repository against"
             ),
-            SetError::Unreadable(why) => write!(f, "the conformance rule set cannot be read: {why}"),
+            SetError::Unreadable(why) => {
+                write!(f, "the conformance rule set cannot be read: {why}")
+            }
             SetError::Malformed(what) => write!(f, "the conformance rule set is malformed: {what}"),
             SetError::Format { found } => write!(
                 f,
@@ -224,8 +234,10 @@ pub fn read(text: &str, package: &str) -> Result<RuleSet, SetError> {
             .ok_or_else(|| SetError::Malformed("a rule names itself".to_string()))?
             .to_string();
         let decided = text_of(entry, "decided_by").ok_or_else(|| {
-            SetError::Malformed(format!("`{name}` states no `decided_by`, so nothing says \
-                 whether a tree decides it"))
+            SetError::Malformed(format!(
+                "`{name}` states no `decided_by`, so nothing says \
+                 whether a tree decides it"
+            ))
         })?;
         let decided_by = DecidedBy::parse(decided).ok_or_else(|| {
             SetError::Malformed(format!(
@@ -289,8 +301,7 @@ pub fn read(text: &str, package: &str) -> Result<RuleSet, SetError> {
 
 /// The rule set of the package a repository takes.
 pub fn at(root: &Path, consumer: &Consumer) -> Result<RuleSet, SetError> {
-    let Some((directory, manifest)) =
-        headwater_resolve::package::located(root, &consumer.package)
+    let Some((directory, manifest)) = headwater_resolve::package::located(root, &consumer.package)
     else {
         return Err(SetError::Unreadable(format!(
             "no package under `{}/` declares `{}`",
@@ -425,7 +436,9 @@ pub fn waivers(root: &Path) -> Result<Vec<Waiver>, Vec<String>> {
             continue;
         };
         let Some(until) = Date::parse(until) else {
-            refusals.push(format!("{named} states `until: {until}`, which is not a date"));
+            refusals.push(format!(
+                "{named} states `until: {until}`, which is not a date"
+            ));
             continue;
         };
         out.push(Waiver {
@@ -561,15 +574,67 @@ pub struct Subject<'a> {
     pub now: Date,
 }
 
+/// The package identity a report prints beside every rung.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Identity {
+    pub package: String,
+    pub version: String,
+    pub digest: Option<String>,
+}
+
+impl Identity {
+    pub fn of(consumer: &Consumer) -> Self {
+        Identity {
+            package: consumer.package.clone(),
+            version: consumer.version.clone(),
+            digest: consumer.digest.clone(),
+        }
+    }
+}
+
 /// Evaluate a repository against a rule set.
-///
-/// A waiver that names a rule the set does not declare ends the run, and the
-/// error names each one. A deviation the report cannot list is one nobody
-/// reviews away.
 pub fn evaluate(
     set: &RuleSet,
     waivers: &[Waiver],
     subject: &Subject<'_>,
+) -> Result<Report, Vec<String>> {
+    let taken: Vec<(String, Verdict)> = set
+        .rules
+        .iter()
+        .map(|rule| {
+            let verdict = match rule.decided_by {
+                DecidedBy::Tree => reading(&rule.name, subject),
+                DecidedBy::Attestation => Verdict::NotDecided(rule.remediation.clone()),
+            };
+            (rule.name.clone(), verdict)
+        })
+        .collect();
+    assemble(
+        set,
+        waivers,
+        &Identity::of(subject.consumer),
+        &taken,
+        subject.now,
+    )
+}
+
+/// Assemble a report from verdicts already taken.
+///
+/// This is where the ladder is computed, and it is a separate function because
+/// **the claim that a waiver cannot buy a rung has to be testable without a
+/// tree.** A test that had to build a corpus to ask the question would measure
+/// the readings and the ladder at once, and a defect in either would read as a
+/// defect in the other.
+///
+/// A waiver that names a rule the set does not declare ends the run, and the
+/// error names each one. A deviation that no report can list is one that nobody
+/// reviews away.
+pub fn assemble(
+    set: &RuleSet,
+    waivers: &[Waiver],
+    identity: &Identity,
+    taken: &[(String, Verdict)],
+    now: Date,
 ) -> Result<Report, Vec<String>> {
     let orphans: Vec<String> = waivers
         .iter()
@@ -578,7 +643,7 @@ pub fn evaluate(
             format!(
                 "the waiver on `{}` names a rule that {} does not declare, so no report can \
                  list it and nobody reviews it away",
-                waiver.rule, subject.consumer.package
+                waiver.rule, identity.package
             )
         })
         .collect();
@@ -590,13 +655,16 @@ pub fn evaluate(
         .rules
         .iter()
         .map(|rule| {
-            let verdict = match rule.decided_by {
-                DecidedBy::Tree => reading(&rule.name, subject),
-                DecidedBy::Attestation => Verdict::NotDecided(rule.remediation.clone()),
-            };
+            let verdict = taken
+                .iter()
+                .find(|(name, _)| name == &rule.name)
+                .map(|(_, verdict)| verdict.clone())
+                .unwrap_or_else(|| {
+                    Verdict::Gap(format!("no verdict was taken for `{}`", rule.name))
+                });
             let cover = match waivers.iter().find(|waiver| waiver.rule == rule.name) {
                 None => Cover::None,
-                Some(waiver) if waiver.live(subject.now) => Cover::Live(waiver.clone()),
+                Some(waiver) if waiver.live(now) => Cover::Live(waiver.clone()),
                 Some(waiver) => Cover::Expired(waiver.clone()),
             };
             Reading {
@@ -654,10 +722,10 @@ pub fn evaluate(
     }
 
     Ok(Report {
-        package: subject.consumer.package.clone(),
-        version: subject.consumer.version.clone(),
-        digest: subject.consumer.digest.clone(),
-        now: subject.now,
+        package: identity.package.clone(),
+        version: identity.version.clone(),
+        digest: identity.digest.clone(),
+        now,
         readings,
         levels,
         reached,
@@ -665,12 +733,17 @@ pub fn evaluate(
 }
 
 /// The reading this engine holds for one rule name.
-fn reading(name: &str, subject: &Subject<'_>) -> Verdict {
+///
+/// **Each reading below takes exactly what it reads, and this function is the
+/// only thing that binds a name to one.** A reading that took the whole
+/// [`Subject`] would be a reading a test could not drive without building a
+/// corpus, and three of the four read nothing that looks like one.
+pub fn reading(name: &str, subject: &Subject<'_>) -> Verdict {
     match name {
-        "pin.current" => pin_current(subject),
-        "lock.current" => lock_current(subject),
-        "corpus.classified" => corpus_classified(subject),
-        "projections.current" => projections_current(subject),
+        "pin.current" => pin_current(subject.root, subject.consumer),
+        "lock.current" => lock_current(subject.root, subject.lock),
+        "corpus.classified" => corpus_classified(subject.census),
+        "projections.current" => projections_current(subject.root, subject.plan),
         // Unreachable for a set that [`read`] accepted, which refuses a tree
         // rule outside `READINGS` before anything is evaluated. It is here
         // rather than a panic because a refusal in a report is a worse outcome
@@ -682,9 +755,8 @@ fn reading(name: &str, subject: &Subject<'_>) -> Verdict {
 /// **The pin is two numbers.** A published artifact is a digest over every file
 /// in it, so a rule that read the version alone would pass a repository whose
 /// pinned digest names an artifact nobody publishes any more.
-fn pin_current(subject: &Subject<'_>) -> Verdict {
-    let consumer = subject.consumer;
-    let installed = headwater_resolve::package::find_version(subject.root, &consumer.package);
+pub fn pin_current(root: &Path, consumer: &Consumer) -> Verdict {
+    let installed = headwater_resolve::package::find_version(root, &consumer.package);
     let version = match installed {
         None => {
             return Verdict::Gap(format!(
@@ -702,9 +774,7 @@ fn pin_current(subject: &Subject<'_>) -> Verdict {
         Some(found) => found,
     };
 
-    let Some((directory, _)) =
-        headwater_resolve::package::located(subject.root, &consumer.package)
-    else {
+    let Some((directory, _)) = headwater_resolve::package::located(root, &consumer.package) else {
         return Verdict::Gap(format!("`{}` is not on disk", consumer.package));
     };
 
@@ -737,8 +807,8 @@ fn pin_current(subject: &Subject<'_>) -> Verdict {
 /// The reading is the source digests the lock itself carries, which is what
 /// `taxonomy resolve --check` prints when it fails. A second comparison here
 /// would be a second answer to one question.
-fn lock_current(subject: &Subject<'_>) -> Verdict {
-    let moved = subject.lock.moved(subject.root);
+pub fn lock_current(root: &Path, lock: &Lock) -> Verdict {
+    let moved = lock.moved(root);
     match moved.is_empty() {
         true => Verdict::Met,
         false => Verdict::Gap(format!(
@@ -759,9 +829,8 @@ fn lock_current(subject: &Subject<'_>) -> Verdict {
 /// stated reason. An excluded file states a reason, a generated file names its
 /// projection, and a file that is not Markdown is not a document. Each of those
 /// is an account, and this rule reads the rows that carry none.
-fn corpus_classified(subject: &Subject<'_>) -> Verdict {
-    let loose: Vec<&str> = subject
-        .census
+pub fn corpus_classified(census: &Census) -> Verdict {
+    let loose: Vec<&str> = census
         .rows
         .iter()
         .filter(|row| matches!(row.outcome, Outcome::Untyped(_) | Outcome::Unreadable(_)))
@@ -788,8 +857,8 @@ fn corpus_classified(subject: &Subject<'_>) -> Verdict {
 /// Every declared projection is what this corpus and this lock produce.
 ///
 /// The comparison is `generate --check`, called rather than repeated.
-fn projections_current(subject: &Subject<'_>) -> Verdict {
-    let report = headwater_generate::check(subject.root, subject.plan);
+pub fn projections_current(root: &Path, plan: &headwater_generate::Plan) -> Verdict {
+    let report = headwater_generate::check(root, plan);
     if !report.has_errors() {
         return Verdict::Met;
     }
@@ -820,7 +889,12 @@ fn text_of<'a>(map: &'a Mapping, key: &str) -> Option<&'a str> {
 fn seq_of<'a>(map: &'a Mapping, key: &str) -> Vec<&'a Mapping> {
     map.get(key)
         .and_then(|node| node.value.as_seq())
-        .map(|items| items.iter().filter_map(|item| item.value.as_map()).collect())
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| item.value.as_map())
+                .collect()
+        })
         .unwrap_or_default()
 }
 

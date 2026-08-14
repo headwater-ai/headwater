@@ -29,3 +29,9 @@ headwater-check = { path = "../check" }
 
 # Both the rule set and the waiver block are spanned YAML.
 headwater-yaml = { path = "../yaml" }
+
+[dev-dependencies]
+# Two tests run over this repository's own package and its own waivers, because
+# a rule set that its own publisher's engine refuses is a rule set nobody can
+# evaluate against.
+headwater-lock = { path = "../lock" }
