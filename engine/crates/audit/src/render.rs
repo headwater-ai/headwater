@@ -439,7 +439,7 @@ impl Audit {
             true => out.push_str("  Every value in use is one the closed set holds.\n"),
             false => {
                 out.push_str(
-                    "  Values the closed set does not hold, each with the count that states it. No\n  check of this engine reads a warrant, so this is the only line that reports one:\n",
+                    "  Values the closed set does not hold, each with the count that states it. No\n  check of this engine reads a warrant value, so this is the only line that reports one:\n",
                 );
                 for reading in outside {
                     let _ = writeln!(out, "    {:5} `{}`", reading.stated, reading.value);
@@ -449,7 +449,7 @@ impl Audit {
 
         let _ = writeln!(
             out,
-            "  The `asserted` population is {}, which is the denominator a promotion rate divides\n  by. Nothing declares how many promotions in one change is too many, so no figure here\n  carries a verdict.",
+            "  The `asserted` population is {}, which is the denominator a promotion rate divides\n  by. The numerator is a count per change, which `headwater check --change` reports under\n  `warrant.promoted`: this verb reads one working tree, so it holds one half of that rate\n  and can never reach the other. Nothing declares how many promotions in one change is too\n  many, so no figure here carries a verdict.",
             warrants.asserted()
         );
     }
@@ -494,7 +494,7 @@ impl Audit {
             .count();
         let _ = writeln!(
             out,
-            "  {} of {} still wait. Each one states what ends it: a declaration, an authoring\n  pass, or a build of an input this engine designs and does not supply.",
+            "  {} of {} still wait. Each one states what ends it: a declaration, or an\n  authoring pass over a corpus.",
             waiting,
             self.waiting.len()
         );

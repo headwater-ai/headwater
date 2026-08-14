@@ -19,6 +19,17 @@
 //! thing [spec 12](../../../../docs/spec/12-check-layer.md) rules out of a
 //! check.
 //!
+//! # The promotion rate is not a wait of this verb, and never was
+//!
+//! A rate is a numerator over a denominator. This verb holds the denominator:
+//! the population standing at `asserted`, which the warrant reading reports.
+//! The numerator is a count of promotions in one change, and a promotion is a
+//! lifecycle transition. Spec 12 makes the version that stood before a change
+//! available only in change-scoped evaluation, and this verb reads one working
+//! tree. So the numerator is `headwater_check::promotion`, and no build of this
+//! crate would bring it here. The warrant reading names that rule beside the
+//! population, rather than carrying a wait that nothing could end.
+//!
 //! So the split is by what is declared. `stale_after_days` on the facet in the
 //! `freshness` role is a number the taxonomy states, and it is the only one, so
 //! it is the only reading here that produces a finding. Every other reading is
@@ -286,8 +297,10 @@ pub struct WarrantReading {
     /// Classified documents whose provenance block states this value.
     pub stated: usize,
     /// Whether the closed set of spec 3 holds this value. A row where this is
-    /// false is a value a corpus invented, and no check reads a warrant, so
-    /// this reading is the only place one is reported.
+    /// false is a value a corpus invented, and no check reads a warrant
+    /// *value*, so this reading is the only place one is reported.
+    /// `warrant.promoted` reads a movement between two values and admits any
+    /// value at either end, which is why it reports none of this.
     pub closed_set: bool,
     /// Whether the engine derives this value from the generated-file marker
     /// rather than reading it from a declaration.
@@ -338,9 +351,20 @@ impl Warrants {
 
 /// What one prerequisite of a reading looked like on this run.
 ///
-/// The four arms are four different things to do about it, which is why they
-/// are four arms and not a boolean. A declaration ends the second, authoring
-/// ends the third, and a decision this engine has not taken ends the fourth.
+/// The three arms are three different things to do about it, which is why they
+/// are three arms and not a boolean. A declaration ends the second and an
+/// authoring pass ends the third.
+///
+/// A fourth arm stood here and is gone. `Unbuilt` said that an input this
+/// engine designs is not implemented, and one wait ever reached it: the
+/// promotion count, which needed the `needs_prior` input of
+/// [spec 12](../../../../docs/spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version).
+/// `headwater_check::promotion` declares that input now, and the reading left
+/// this verb rather than starting to run in it: a rate whose numerator is
+/// change-scoped is not a wait of a verb that reads one working tree. So the
+/// arm went with the wait. An arm that nothing constructs is the empty row this
+/// type exists to avoid, and a report that carried one would say that a wait
+/// exists which nothing could ever end.
 #[derive(Clone, Debug)]
 pub enum Supply {
     /// The corpus supplied it, and the text says what the run counted.
@@ -351,17 +375,6 @@ pub enum Supply {
     /// Declared, and no document of this corpus carries one. The location of
     /// the absence is the corpus.
     Unauthored(String),
-    /// The input is designed and nothing supplies it. A build ends this wait,
-    /// and the location is this engine rather than the schema or the corpus.
-    ///
-    /// It is not the same as an input this engine has decided not to take. The
-    /// first draft of this type carried that arm instead, and it was the wrong
-    /// one for the only wait that reached it: `needs_prior` is designed in
-    /// [spec 12](../../../../docs/spec/12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version)
-    /// and unimplemented in [`headwater_check::scope`], which is a build rather
-    /// than a decision. No wait here reaches an arm that no work of any kind
-    /// could end, so this type declares none.
-    Unbuilt(String),
 }
 
 impl Supply {
@@ -376,17 +389,13 @@ impl Supply {
             Supply::Supplied(_) => "supplied",
             Supply::Undeclared(_) => "nothing declares it",
             Supply::Unauthored(_) => "nothing authored one",
-            Supply::Unbuilt(_) => "designed and unbuilt",
         }
     }
 
     /// What the run found, in the words the report prints.
     pub fn says(&self) -> &str {
         match self {
-            Supply::Supplied(text)
-            | Supply::Undeclared(text)
-            | Supply::Unauthored(text)
-            | Supply::Unbuilt(text) => text,
+            Supply::Supplied(text) | Supply::Undeclared(text) | Supply::Unauthored(text) => text,
         }
     }
 }
@@ -508,7 +517,7 @@ pub fn take(
     );
 
     let warrants = warrants(&classified);
-    let waiting = waiting(&classified, graph, shape, &warrants);
+    let waiting = waiting(&classified, graph, shape);
 
     Audit {
         subject,
@@ -565,8 +574,8 @@ fn warrants(classified: &[&Row]) -> Warrants {
             derived: DERIVED.contains(value),
         })
         .collect();
-    // Then whatever else a document stated. No check reads a warrant, so a
-    // value outside the closed set reaches no other report in this engine.
+    // Then whatever else a document stated. No check reads a warrant value, so
+    // a value outside the closed set reaches no other report in this engine.
     readings.extend(stated.into_iter().map(|(value, stated)| WarrantReading {
         value,
         stated,
@@ -602,7 +611,7 @@ fn cues(graph: &Graph) -> usize {
 }
 
 /// What each named reading waits on, derived from the corpus of this run.
-fn waiting(classified: &[&Row], graph: &Graph, shape: &Shape, warrants: &Warrants) -> Vec<Waiting> {
+fn waiting(classified: &[&Row], graph: &Graph, shape: &Shape) -> Vec<Waiting> {
     let halves = graph.edges.len();
     vec![
         Waiting {
@@ -645,38 +654,6 @@ fn waiting(classified: &[&Row], graph: &Graph, shape: &Shape, warrants: &Warrant
                     )),
                 },
             }],
-        },
-        Waiting {
-            reading: "promotion rate",
-            needs: vec![
-                Need {
-                    needs: "an `asserted` population to divide by",
-                    supply: match warrants.asserted() {
-                        0 => Supply::Unauthored(format!(
-                            "no document of the {} classified here states `warrant: asserted`, \
-                             so there is nothing to promote from",
-                            classified.len()
-                        )),
-                        n => Supply::Supplied(format!(
-                            "{n} of {} classified documents state `warrant: asserted`",
-                            classified.len()
-                        )),
-                    },
-                },
-                Need {
-                    needs: "a promotion to count",
-                    supply: Supply::Unbuilt(
-                        "a promotion is a lifecycle transition, from the `asserted` warrant to \
-                         `accepted`, and spec 12 already designs the input one needs. A check \
-                         that declares `needs_prior` receives the previously committed version \
-                         of each changed document. No check declares it and nothing implements \
-                         it. It could not be read here in any case, because this verb reads one \
-                         working tree and the prior version is available only in change-scoped \
-                         evaluation"
-                            .to_string(),
-                    ),
-                },
-            ],
         },
     ]
 }

@@ -71,6 +71,7 @@ use std::process::ExitCode;
 
 const USAGE: &str = "\
 headwater check              [--strict] [--fix] [--no-cache] [--now <date>]
+                             [--change <manifest>]
                              [--read-set <path>] [--register <path>]
                              [--format text|json|sarif|markdown] [--root <path>]
 headwater gate               --read-set <path> [--now <date>] [--root <path>]
@@ -272,6 +273,18 @@ headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
                  the flag is required there. The artifact is what decides
                  whether a verdict survives a merge without running the checks
                  again.
+  --change <path>
+                 `check` only: the manifest of the change this run is scoped
+                 to. Each line names one document the change carries, as
+                 `added\t<path>` or `prior\t<path>\t<file>`, and the second
+                 form names a file holding the bytes that stood before the
+                 change. A document the manifest does not name did not change.
+                 It is what a rule that reads a transition needs, and without
+                 it, every instance of such a rule is reported as skipped rather
+                 than passed. This engine walks no history: the caller anchors
+                 the prior version to the state on the branch where the change
+                 lands, which spec 12 fixes as the merge base of a proposed
+                 change and the committed `HEAD` of a working-tree hook.
   --register <path>
                  `check` only: write the register of this run to a file as well
                  as to the report. Spec 4 makes it a projection of the
@@ -375,6 +388,7 @@ fn main() -> ExitCode {
     let mut cached = true;
     let mut now: Option<Date> = None;
     let mut read_set: Option<PathBuf> = None;
+    let mut change: Option<PathBuf> = None;
     let mut register_out: Option<PathBuf> = None;
     let mut root: Option<PathBuf> = None;
     let mut budget: Option<usize> = None;
@@ -506,6 +520,10 @@ fn main() -> ExitCode {
                 Some(path) => read_set = Some(PathBuf::from(path)),
                 None => return fail("--read-set names a path and none followed it"),
             },
+            "--change" => match arguments.next() {
+                Some(path) => change = Some(PathBuf::from(path)),
+                None => return fail("--change names a manifest and none followed it"),
+            },
             "--tier" => match arguments.next() {
                 Some(name) => tier = Some(name),
                 None => return fail("--tier names a probe tier and none followed it"),
@@ -561,6 +579,7 @@ fn main() -> ExitCode {
                 read_set,
                 register_out,
                 format,
+                change,
             },
         ),
         ["gate"] => gate(&root, read_set, now),
@@ -2644,6 +2663,10 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
     // The two verbs of the write class, as this file runs them. Each closure
     // takes the arguments its tool declares and nothing else: the root and the
     // clock are the server's, and no tool may name either.
+    // The clock alone, because the two closures below outlive the borrow of
+    // the context and a context is no longer a `Copy` value: it may carry the
+    // change a run is scoped to. No tool of this server names either one.
+    let now = ctx.now();
     let scaffolding = move |kind: &str, title: &str, relates: &[(String, String)]| {
         scaffold(
             root,
@@ -2657,11 +2680,11 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
             // class that [Q7](../../../../docs/spec/09-decisions.md#q7--scope-of-the-mcp-surface)
             // fixed, and not a change to this call.
             &[],
-            Some(ctx.now()),
+            Some(now),
             EntryPoint::Protocol,
         )
     };
-    let fixing = move |format: Format| fix_over(root, &ctx, format);
+    let fixing = move |format: Format| fix_over(root, &Context::at(now), format);
     // The corpus is read once, at startup, and every tool answers from it.
     // That is the same posture every other verb takes, and it is what makes two
     // reads in one session answer the same bytes. A write ends the session,
@@ -2924,6 +2947,9 @@ struct Asked {
     read_set: Option<PathBuf>,
     register_out: Option<PathBuf>,
     format: Option<String>,
+    /// The manifest of the change this run is scoped to, where a caller named
+    /// one. See `headwater_check::change`.
+    change: Option<PathBuf>,
 }
 
 fn check(root: &Path, asked: Asked) -> ExitCode {
@@ -2935,6 +2961,7 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
         read_set,
         register_out,
         format,
+        change,
     } = asked;
     // The vocabulary is decided before anything is read, so a run that would
     // refuse the flag refuses it before it walks a corpus. `export --format`
@@ -2963,6 +2990,21 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
             eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
             return ExitCode::FAILURE;
         }
+    };
+    // The second injected value, and the only way a run becomes change-scoped.
+    // A manifest this engine cannot read is a refusal rather than a shorter
+    // change: a line that was dropped reads as a document that did not move,
+    // which is a transition nothing reports.
+    let ctx = match change {
+        None => ctx,
+        Some(path) => match headwater_check::change::Change::at(&path) {
+            Ok(change) => ctx.scoped_to(change),
+            Err(why) => {
+                eprintln!("headwater: the change manifest did not read");
+                eprintln!("{}", indent(&why));
+                return ExitCode::FAILURE;
+            }
+        },
     };
     // The write, and then the read. See `fix` above: the report below is the
     // state after the patches landed, so a fix that produced a document these

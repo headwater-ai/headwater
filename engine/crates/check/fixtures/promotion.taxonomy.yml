@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the promotion tree is checked against. It is the smallest shape a
+# warrant transition needs: one shelf, one kind, and the three facets every
+# governed document carries. Nothing here declares a warrant, and nothing can:
+# the provenance block belongs to the engine, which is why `warrant.promoted`
+# reads it through `headwater_doc::warrant` and not through a declaration.
+#
+# It is a tree of its own rather than two more documents in `fixtures/check/`,
+# because the corpus that separates a promotion from an acceptance has to be
+# read twice — once with the change and once without — and the recorded report
+# of that tree holds one run.
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft, role: initial}
+      - {value: current, role: live}
+  status_since:
+    role: state_entered
+    required: true
+  summary:
+    role: scent
+    required: true
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+kinds:
+  record:
+    identifier: {scheme: note_id}
+    facets: {require: [status, status_since, summary]}
+
+shelves:
+  records:
+    path: promotion/**
+    homogeneous: true
+    kind: record

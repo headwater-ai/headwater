@@ -104,7 +104,7 @@ The creator is a hook for the reason the design-spec entry gave for `cites_evide
 
 Spec 4 makes an obligation data, and it gives every obligation exactly one disposition. An obligation that no control discharges states a gap with an owner, or states that no mechanism can exist. This entry declares three, and not one of them has a check.
 
-**`OB-DR-1`, immutability after acceptance.** The tradition's central rule, and a check class that nothing else in this library needs. It reads a content change against a lifecycle state, so it needs the prior version of the document. [Spec 12](../../spec/12-check-layer.md) already supplies that input as `needs_prior`, which is what makes this a gap with a named target rather than a wish.
+**`OB-DR-1`, immutability after acceptance.** The tradition's central rule, and a check class that nothing else in this library needs. It reads a content change against a lifecycle state, so it needs the prior version of the document. [Spec 12](../../spec/12-check-layer.md) supplies that input as `needs_prior`, and `warrant.promoted` is the first rule to declare one. So this is a gap with a named target and a worked precedent rather than a wish.
 
 **`OB-DR-2`, a proposal reaches a ruling.** The reported failure of ADR practice is a log that fills with proposals. The rule is over state dwell time, which `taxonomy audit` already measures and no check reads.
 

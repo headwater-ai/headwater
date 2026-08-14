@@ -440,23 +440,31 @@ fn a_rate_over_an_empty_population_is_no_rate_at_all() {
 /// It is written into a scratch copy rather than committed, because the whole
 /// claim under test is that the report changes when a corpus does. A committed
 /// one would make both arms of the comparison the same tree.
-const ASSERTED: &str = "\
+///
+/// It declares one half of `catalogues` with a `cue` attribute on it. Q20 puts
+/// the cue on the relation instance, so this is the one authoring act that ends
+/// the scent-quality wait, and no source of this engine moves when it lands.
+const CUED: &str = "\
 ---
 id: AUD-FIX-0006
+title: The cued decision
 status: draft
 status_since: 2025-12-22
-summary: a decision that nobody has accepted, which is the population a promotion rate divides by
+summary: a decision that declares a half carrying the cue attribute the scent reading waits on
 provenance:
   warrant: asserted
   agency: agent
   drafted_by: a-model
   activity: draft
+relations:
+  catalogues:
+    - to: AUD-FIX-0001
+      cue: the freshness window, and not the succession pair
 ---
 
-# The unaccepted decision
+# The cued decision
 
-Nothing here is accepted. It states the warrant that a promotion moves away
-from, and it names no acceptor, which is what that warrant forbids.
+It carries the one attribute that no document of the recorded tree carries.
 ";
 
 /// A scratch copy of the fixture tree, which a test may write into.
@@ -508,92 +516,69 @@ fn supply_of<'a>(audit: &'a Audit, reading: &str, needs: &str) -> &'a Supply {
 ///
 /// One document lands in a scratch copy of the fixture tree and nothing else
 /// changes: not this engine, not the taxonomy, and not the recorded report.
-/// Before it the promotion reading says that no document states the warrant,
-/// and after it the same run says how many do. Removing the document brings the
-/// wait back, so the reading is a function of the corpus in both directions.
+/// Before it the scent reading says that no half carries a cue, and after it
+/// the same run says how many do. Removing the document brings the wait back,
+/// so the reading is a function of the corpus in both directions.
 ///
-/// This is the case that the array of string literals could not have passed.
+/// This is the case that the array of string literals could not have passed. It
+/// stood on the promotion reading until `warrant.promoted` was built, and that
+/// reading left this verb: a rate whose numerator is change-scoped is not a
+/// wait of a verb that reads one working tree.
 #[test]
 fn a_wait_ends_when_the_corpus_supplies_what_it_waits_on() {
-    const POPULATION: &str = "an `asserted` population to divide by";
-    let at = copied("asserted-population");
-    let landing = at.join("audit/decisions/unaccepted.md");
+    const CUE: &str = "a cue authored on an edge instance";
+    let at = copied("authored-cue");
+    let landing = at.join("audit/decisions/cued.md");
 
     let before = tree_at(&at).audit(AT);
     assert!(
-        matches!(
-            supply_of(&before, "promotion rate", POPULATION),
-            Supply::Unauthored(_)
-        ),
-        "the fixture tree already has an asserted population, so this proves nothing: {}",
-        supply_of(&before, "promotion rate", POPULATION).says()
+        matches!(supply_of(&before, "scent quality", CUE), Supply::Unauthored(_)),
+        "the fixture tree already carries a cue, so this proves nothing: {}",
+        supply_of(&before, "scent quality", CUE).says()
     );
     // Deliberately loose. The decisive assertion is the one after the document
     // lands, and a strict comparison here would fail first on wording and
     // report a rewording where the defect is a wait that never ends.
     assert!(
-        supply_of(&before, "promotion rate", POPULATION)
+        supply_of(&before, "scent quality", CUE)
             .says()
-            .contains("`warrant: asserted`"),
+            .contains("`cue` attribute"),
         "the wait does not name what would end it"
     );
-    let report = before.render();
-    assert!(
-        report.contains("The `asserted` population is 0"),
-        "{report}"
-    );
 
-    std::fs::write(&landing, ASSERTED).expect("the document lands");
+    std::fs::write(&landing, CUED).expect("the document lands");
 
     let after = tree_at(&at).audit(AT);
-    let supplied = supply_of(&after, "promotion rate", POPULATION);
+    let supplied = supply_of(&after, "scent quality", CUE);
     assert!(
         matches!(supplied, Supply::Supplied(_)),
-        "a corpus with an asserted population still reports one it does not have: {}",
+        "a corpus with an authored cue still reports one it does not have: {}",
         supplied.says()
     );
-    assert_eq!(
-        supplied.says(),
-        "1 of 6 classified documents state `warrant: asserted`"
-    );
+    assert_eq!(supplied.says(), "1 of 7 halves carry a `cue` attribute");
     let report = after.render();
-    assert!(!report.contains("nothing to promote from"), "{report}");
+    assert!(!report.contains("no half of the"), "{report}");
     assert!(
-        report.contains("The `asserted` population is 1"),
-        "{report}"
-    );
-    assert!(
-        report.contains("      supplied — 1 of 6 classified"),
+        report.contains("      supplied — 1 of 7 halves"),
         "{report}"
     );
 
-    // The reading still waits, and on the other half of what it needs. A change
-    // that made every wait disappear would pass the assertions above and be
-    // worse than the array it replaced.
+    // The other reading still waits, and on a declaration rather than on an
+    // authoring pass. A change that made every wait disappear would pass the
+    // assertions above and be worse than the array it replaced.
     assert!(
-        reading_of(&after, "promotion rate").waits(),
-        "the numerator arrived from nowhere"
-    );
-    let numerator = supply_of(&after, "promotion rate", "a promotion to count");
-    assert!(
-        matches!(numerator, Supply::Unbuilt(_)),
-        "{}",
-        numerator.says()
-    );
-    assert!(
-        numerator.says().contains("needs_prior"),
-        "the wait does not name the input that ends it: {}",
-        numerator.says()
+        reading_of(&after, "transition continuity").waits(),
+        "a facet role arrived from nowhere"
     );
 
     std::fs::remove_file(&landing).expect("the document leaves");
     let restored = tree_at(&at).audit(AT);
     assert!(
         matches!(
-            supply_of(&restored, "promotion rate", POPULATION),
+            supply_of(&restored, "scent quality", CUE),
             Supply::Unauthored(_)
         ),
-        "the wait did not come back when the population left"
+        "the wait did not come back when the cue left"
     );
 }
 
@@ -631,8 +616,7 @@ fn a_reading_that_still_waits_says_where_the_absence_lives() {
     let report = audit.render();
     assert!(report.contains("nothing declares it —"), "{report}");
     assert!(report.contains("nothing authored one —"), "{report}");
-    assert!(report.contains("designed and unbuilt —"), "{report}");
-    assert!(report.contains("3 of 3 still wait"), "{report}");
+    assert!(report.contains("2 of 2 still wait"), "{report}");
 }
 
 /// The closed warrant set is walked in full, whatever a corpus states.

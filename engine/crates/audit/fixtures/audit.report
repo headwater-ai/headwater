@@ -114,11 +114,13 @@ warrants, over the closed set spec 3 declares
   as generated, and the engine reads the warrant of a generated document off the marker
   rather than out of a declaration.
   Values the closed set does not hold, each with the count that states it. No
-  check of this engine reads a warrant, so this is the only line that reports one:
+  check of this engine reads a warrant value, so this is the only line that reports one:
         1 `pending`
   The `asserted` population is 0, which is the denominator a promotion rate divides
-  by. Nothing declares how many promotions in one change is too many, so no figure here
-  carries a verdict.
+  by. The numerator is a count per change, which `headwater check --change` reports under
+  `warrant.promoted`: this verb reads one working tree, so it holds one half of that rate
+  and can never reach the other. Nothing declares how many promotions in one change is too
+  many, so no figure here carries a verdict.
 
 what this verb does not measure, and what each one waits on
   Every prerequisite below was evaluated against this corpus on this run, so a
@@ -132,16 +134,5 @@ what this verb does not measure, and what each one waits on
     a cue authored on an edge instance
       nothing authored one — no half of the 6 this corpus declares carries a `cue`
       attribute, which OBL-repo-0023 records
-  promotion rate — waits
-    an `asserted` population to divide by
-      nothing authored one — no document of the 5 classified here states `warrant:
-      asserted`, so there is nothing to promote from
-    a promotion to count
-      designed and unbuilt — a promotion is a lifecycle transition, from the
-      `asserted` warrant to `accepted`, and spec 12 already designs the input one needs.
-      A check that declares `needs_prior` receives the previously committed version of
-      each changed document. No check declares it and nothing implements it. It could
-      not be read here in any case, because this verb reads one working tree and the
-      prior version is available only in change-scoped evaluation
-  3 of 3 still wait. Each one states what ends it: a declaration, an authoring
-  pass, or a build of an input this engine designs and does not supply.
+  2 of 2 still wait. Each one states what ends it: a declaration, or an
+  authoring pass over a corpus.

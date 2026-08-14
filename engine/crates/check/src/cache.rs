@@ -61,6 +61,15 @@
 //! reaches this function without one is not keyed at all, on the rule the rest
 //! of this module follows: fail toward re-running.
 //!
+//! **The prior version is the second injected value**, and it arrives on the
+//! same terms. Spec 12: "the content hash of that version joins the cache key
+//! like any other input." A key without it would serve the verdict of a run
+//! whose change carried a different version of the document, and the
+//! `--no-cache` differential cannot see that either, because both sides of that
+//! comparison hold one change. The three states of the input write three
+//! different lines, so an added document, an unchanged one and a modified one
+//! never share an entry.
+//!
 //! Two further components are in the key that spec 12's sentence does not
 //! name, and both are identity rather than input. The **rule** and the
 //! **target** tell two instances apart that read the same documents: one pair
@@ -109,6 +118,7 @@
 //! cannot read is a miss. A cache file that will not parse is an empty cache.
 //! None of them is an error, and none of them can change a verdict.
 
+use crate::change::Prior;
 use crate::context::Date;
 use crate::finding::{Finding, Severity};
 use crate::instance::{Input, Outcome};
@@ -237,6 +247,19 @@ impl Cache {
         let _ = std::fs::write(path, text);
     }
 
+    /// An instance the runner decided without asking a check.
+    ///
+    /// A skip is never stored, so there is nothing here to key and nothing to
+    /// serve. It is accounted anyway, because `hits + misses + unkeyed` is the
+    /// instance count of a run, and an instance in none of the three is one
+    /// that a reader who checks the arithmetic cannot find. The two callers are
+    /// the two skips [`crate::scope`] decides before a view exists: a typed row
+    /// that carries no document, and a prior-reading rule in a run with no
+    /// change.
+    pub(crate) fn undecided(&mut self) {
+        self.report.unkeyed += 1;
+    }
+
     /// The outcome of one instance, from this cache or from the check.
     ///
     /// The closure is what runs when the cache cannot answer, and it is the
@@ -253,13 +276,16 @@ impl Cache {
         target: &str,
         reads: &[Input],
         clock: Option<Date>,
+        prior: Option<Prior<'_>>,
         resolution: Option<&str>,
         evaluate: F,
     ) -> Outcome
     where
         F: FnOnce() -> Outcome,
     {
-        let Some(key) = self.key(rule, version, scope, target, reads, clock, resolution) else {
+        let Some(key) = self.key(
+            rule, version, scope, target, reads, clock, prior, resolution,
+        ) else {
             self.report.unkeyed += 1;
             return evaluate();
         };
@@ -299,6 +325,7 @@ impl Cache {
         target: &str,
         reads: &[Input],
         clock: Option<Date>,
+        prior: Option<Prior<'_>>,
         resolution: Option<&str>,
     ) -> Option<String> {
         let lock = self.lock.as_ref()?;
@@ -307,11 +334,12 @@ impl Cache {
         text.push_str(&format!("rule {rule}\n"));
         text.push_str(&format!("version {version}\n"));
         text.push_str(&format!(
-            "scope {} body={} phase_a={} clock={}\n",
+            "scope {} body={} phase_a={} clock={} prior={}\n",
             scope.grain().name(),
             scope.needs_body(),
             scope.needs_phase_a(),
-            scope.needs_clock()
+            scope.needs_clock(),
+            scope.needs_prior()
         ));
         // The one injected value, and it is written exactly when the scope
         // admits it to the view. A scope that declares the clock and was handed
@@ -319,6 +347,14 @@ impl Cache {
         // instance did read and that nothing in the key names.
         if scope.needs_clock() {
             text.push_str(&format!("clock {}\n", clock?.render()));
+        }
+        // The second injected value, on the first one's terms. Spec 12: "the
+        // content hash of that version joins the cache key like any other
+        // input". The three states of the input write three different lines,
+        // and a scope that declares the input and was handed nothing is not
+        // keyed at all, which is the same refusal the clock takes one line up.
+        if scope.needs_prior() {
+            text.push_str(&format!("prior {}\n", prior?.key()));
         }
         // Escaped for the reason a record is: a target or a path is corpus
         // content, and a newline inside one would otherwise let a document
@@ -357,7 +393,7 @@ impl Cache {
         reads: &[Input],
         clock: Option<Date>,
     ) -> Option<String> {
-        self.key(rule, version, scope, target, reads, clock, None)
+        self.key(rule, version, scope, target, reads, clock, None, None)
     }
 }
 
@@ -547,6 +583,7 @@ mod tests {
     use super::*;
     use crate::context::Date;
     use crate::scope::Scope;
+    use headwater_yaml::Mapping;
 
     fn finding() -> Finding {
         Finding {
@@ -660,7 +697,7 @@ mod tests {
     /// the cache incapable of changing a verdict.
     #[test]
     fn every_component_of_the_key_moves_it() {
-        let scope = Scope::document(false, false, false);
+        let scope = Scope::document(false, false, false, false);
         let base = cache()
             .plain_key("r", 1, scope, "a.md", &inputs(Some("sha256:one")), None)
             .expect("a key");
@@ -671,7 +708,7 @@ mod tests {
             cache().plain_key(
                 "r",
                 1,
-                Scope::document(true, false, false),
+                Scope::document(true, false, false, false),
                 "a.md",
                 &inputs(Some("sha256:one")),
                 None,
@@ -679,7 +716,7 @@ mod tests {
             cache().plain_key(
                 "r",
                 1,
-                Scope::document(false, true, false),
+                Scope::document(false, true, false, false),
                 "a.md",
                 &inputs(Some("sha256:one")),
                 None,
@@ -713,7 +750,7 @@ mod tests {
             cache().plain_key(
                 "r",
                 1,
-                Scope::document(false, false, true),
+                Scope::document(false, false, true, false),
                 "a.md",
                 &inputs(Some("sha256:one")),
                 day("2026-08-12"),
@@ -745,7 +782,7 @@ mod tests {
     /// the clock on both sides.
     #[test]
     fn two_days_are_two_keys_for_a_check_that_reads_the_clock() {
-        let scope = Scope::document(false, false, true);
+        let scope = Scope::document(false, false, true, false);
         let monday = cache()
             .plain_key(
                 "r",
@@ -776,7 +813,7 @@ mod tests {
     /// can move stays served from a cache when the date turns over.
     #[test]
     fn a_check_that_does_not_read_the_clock_keys_the_same_on_every_day() {
-        let scope = Scope::document(false, false, false);
+        let scope = Scope::document(false, false, false, false);
         let monday = cache().plain_key(
             "r",
             1,
@@ -797,6 +834,90 @@ mod tests {
         assert!(monday.is_some());
     }
 
+    /// Two prior versions of one document are two keys.
+    ///
+    /// The sharpest form of the question this whole module answers: can two
+    /// states that must differ produce one key? A transition check reads the
+    /// version that stood before the change, so a run whose change carries a
+    /// different prior version reached a different verdict about the same
+    /// current bytes. Every input the read set names is equal on both sides
+    /// here, so nothing else in the key could tell them apart.
+    #[test]
+    fn two_prior_versions_are_two_keys_for_a_check_that_reads_one() {
+        let scope = Scope::document(false, false, false, true);
+        let key = |prior: Prior<'_>| {
+            cache().key(
+                "warrant.promoted",
+                1,
+                scope,
+                "a.md",
+                &inputs(Some("sha256:one")),
+                None,
+                Some(prior),
+                None,
+            )
+        };
+        let facets = Mapping::default();
+        let states = [
+            key(Prior::Unchanged),
+            key(Prior::Added),
+            key(Prior::Committed {
+                digest: "sha256:before",
+                facets: &facets,
+            }),
+            key(Prior::Committed {
+                digest: "sha256:another",
+                facets: &facets,
+            }),
+        ];
+        for (index, state) in states.iter().enumerate() {
+            assert!(state.is_some(), "state {index} lost its key");
+            for other in &states[index + 1..] {
+                assert_ne!(state, other, "two states of the prior version share a key");
+            }
+        }
+    }
+
+    /// A scope that declares the prior version and was handed none is not
+    /// keyed, and one that declares nothing keys as it did before the input
+    /// existed.
+    #[test]
+    fn a_prior_reading_scope_with_no_prior_is_not_keyed() {
+        assert_eq!(
+            cache().key(
+                "warrant.promoted",
+                1,
+                Scope::document(false, false, false, true),
+                "a.md",
+                &inputs(Some("sha256:one")),
+                None,
+                None,
+                None,
+            ),
+            None
+        );
+        // And the declaration divides the key, so a rule that reads no prior
+        // version cannot be served an entry that one wrote.
+        assert_ne!(
+            cache().plain_key(
+                "r",
+                1,
+                Scope::document(false, false, false, true),
+                "a.md",
+                &inputs(Some("sha256:one")),
+                None
+            ),
+            cache().plain_key(
+                "r",
+                1,
+                Scope::document(false, false, false, false),
+                "a.md",
+                &inputs(Some("sha256:one")),
+                None
+            )
+        );
+    }
+
     /// A scope that declares the clock and was handed none is not keyed.
     ///
     /// The same answer as an input with no digest, for the same reason: the
@@ -807,7 +928,7 @@ mod tests {
             cache().plain_key(
                 "r",
                 1,
-                Scope::document(false, false, true),
+                Scope::document(false, false, true, false),
                 "a.md",
                 &inputs(Some("sha256:one")),
                 None
@@ -825,7 +946,7 @@ mod tests {
             cache().plain_key(
                 "r",
                 1,
-                Scope::document(false, false, false),
+                Scope::document(false, false, false, false),
                 "a.md",
                 &inputs(None),
                 None
@@ -859,6 +980,7 @@ mod tests {
                 scope,
                 target,
                 &inputs(Some("sha256:one")),
+                None,
                 None,
                 resolution,
             )
@@ -894,7 +1016,7 @@ mod tests {
             Cache::disabled().plain_key(
                 "r",
                 1,
-                Scope::document(false, false, false),
+                Scope::document(false, false, false, false),
                 "a.md",
                 &inputs(Some("d")),
                 None

@@ -70,13 +70,26 @@
 //! verdict today, and the `--no-cache` differential cannot see it, because both
 //! sides of that comparison hold one value of the clock.
 //!
-//! `needs_prior` is still absent, and it stays absent for the reason this
-//! module exists. Spec 12 makes the prior version available only in
-//! change-scoped evaluation, and no check declares it, so the field would be a
-//! declaration that nothing enforces and nothing reads. The first transition
-//! legality check is what brings it, and it copies the shape of the clock: one
-//! binding, read by the view and by the key, so that no second statement of one
-//! property can drift from the first.
+//! # The prior version is the second declaration of that shape
+//!
+//! `NEEDS_PRIOR` decides the same two things through one value of [`Scope`],
+//! and [`prior_for`] is the second half of [`clock_for`]: one call per
+//! instantiation, and its result goes to the view and to the cache key. So a
+//! run where the prior version differs keys differently, and a cached verdict
+//! cannot survive a change to the version it was about.
+//!
+//! Spec 12 makes the prior version available **only in change-scoped
+//! evaluation**, and that is where the two declarations part. A run with no
+//! change cannot hand one over. It does not pass the instance either: every
+//! instance of such a check is created and reported as skipped, with the reason
+//! [`CHANGE_SCOPED_ONLY`], because a check that quietly contributes nothing in
+//! the mode a repository actually runs is the silent pass
+//! [spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+//! exists to prevent.
+//!
+//! The view carries the front matter of the same document at an earlier state,
+//! so no scope widens: a document-scoped check still reads one document and
+//! still cannot reach a sibling.
 //!
 //! # Where the instance set comes from
 //!
@@ -92,6 +105,7 @@
 //! it.
 
 use crate::cache::Cache;
+use crate::change::Prior;
 use crate::context::{Context, Date};
 use crate::instance::{Input, Instance, Outcome};
 use headwater_census::census::{Census, Outcome as Classification};
@@ -192,15 +206,22 @@ pub struct Scope {
     needs_body: bool,
     needs_phase_a: bool,
     needs_clock: bool,
+    needs_prior: bool,
 }
 
 impl Scope {
-    pub(crate) const fn document(needs_body: bool, needs_phase_a: bool, needs_clock: bool) -> Self {
+    pub(crate) const fn document(
+        needs_body: bool,
+        needs_phase_a: bool,
+        needs_clock: bool,
+        needs_prior: bool,
+    ) -> Self {
         Scope {
             grain: Grain::Document,
             needs_body,
             needs_phase_a,
             needs_clock,
+            needs_prior,
         }
     }
 
@@ -210,6 +231,7 @@ impl Scope {
             needs_body: false,
             needs_phase_a: false,
             needs_clock,
+            needs_prior: false,
         }
     }
 
@@ -219,6 +241,7 @@ impl Scope {
             needs_body: false,
             needs_phase_a: false,
             needs_clock,
+            needs_prior: false,
         }
     }
 
@@ -228,6 +251,7 @@ impl Scope {
             needs_body: false,
             needs_phase_a,
             needs_clock: false,
+            needs_prior: false,
         }
     }
 
@@ -237,6 +261,7 @@ impl Scope {
             needs_body: false,
             needs_phase_a: false,
             needs_clock: false,
+            needs_prior: false,
         }
     }
 
@@ -261,6 +286,16 @@ impl Scope {
     /// whether its cache key carries one. One fact, both uses.
     pub fn needs_clock(&self) -> bool {
         self.needs_clock
+    }
+
+    /// Whether an instance of this scope receives the version of its document
+    /// that stood before the change, and so whether its cache key carries the
+    /// hash of that version. One fact, both uses, as the clock is.
+    ///
+    /// It is also what makes an instance of this scope skip in a full-corpus
+    /// run, because that is the run that has no change to take one from.
+    pub fn needs_prior(&self) -> bool {
+        self.needs_prior
     }
 
     /// The scope as one line of a report, in spec 12's own words for the
@@ -295,6 +330,13 @@ impl Scope {
             true => ", and the injected clock",
             false => "",
         };
+        // The other temporal input, named on the same terms. A reader who asks
+        // why every instance of one rule skipped over a whole corpus reads the
+        // answer here: this scope is available only in change-scoped evaluation.
+        let prior = match self.needs_prior {
+            true => ", and the version of it that stood before the change",
+            false => "",
+        };
         // Spec 12 calls the corpus-scoped checks the barriers, and the word is
         // last so that it reads as a statement about the scope rather than
         // about the inputs listed before it.
@@ -303,7 +345,7 @@ impl Scope {
             _ => "",
         };
         format!(
-            "{} scope, {carries}{phase_a}{clock}{barrier}",
+            "{} scope, {carries}{phase_a}{clock}{prior}{barrier}",
             self.grain.name()
         )
     }
@@ -353,6 +395,15 @@ pub trait DocumentCheck {
     /// Whether the view carries the injected clock, on the same terms and with
     /// one more consequence: it joins the cache key.
     const NEEDS_CLOCK: bool = false;
+    /// Whether the view carries the version of this document that stood before
+    /// the change, on the clock's terms and with one more consequence again:
+    /// spec 12 makes the input available only in change-scoped evaluation, so
+    /// every instance of this check in a full-corpus run is reported as skipped.
+    ///
+    /// It is the input transition legality needs. One value of a facet cannot
+    /// say how it was reached, so a rule about a movement reads the state the
+    /// document moved from.
+    const NEEDS_PRIOR: bool = false;
 
     /// The generation step: whether this template has an instance over a
     /// document of this kind. It reads the taxonomy and never the corpus.
@@ -474,7 +525,12 @@ pub trait NeighbourhoodCheck {
 
 /// The scope of a document-scoped check, derived from its trait.
 pub fn document_scope<C: DocumentCheck>() -> Scope {
-    Scope::document(C::NEEDS_BODY, C::NEEDS_PHASE_A, C::NEEDS_CLOCK)
+    Scope::document(
+        C::NEEDS_BODY,
+        C::NEEDS_PHASE_A,
+        C::NEEDS_CLOCK,
+        C::NEEDS_PRIOR,
+    )
 }
 
 /// The scope of an edge-scoped check, derived from its trait.
@@ -549,6 +605,47 @@ fn clock_for(scope: Scope, ctx: &Context) -> Option<Date> {
     }
 }
 
+/// The prior version of one document, for a scope that declared the input.
+///
+/// [`clock_for`]'s second half, and the same rule: called once per instance, and
+/// the value it returns goes to the view and to the cache key.
+///
+/// Three answers rather than two, because a run that cannot supply the input is
+/// not the same as an input a document has no value for.
+enum PriorFor<'a> {
+    /// A scope that did not declare the input. The view carries nothing.
+    NotDeclared,
+    /// The version this instance is held against.
+    Bound(Prior<'a>),
+    /// No verdict is possible, and the text is the reason a report prints. The
+    /// run has no change, or the caller named a version this engine could not
+    /// read.
+    Skip(String),
+}
+
+/// The reason spec 12 fixes for an instance of a prior-reading check in a run
+/// that carries no change.
+///
+/// The words are the specification's own, and a reader who greps a report for
+/// them lands on the sentence that rules them.
+pub const CHANGE_SCOPED_ONLY: &str = "change-scoped-only";
+
+fn prior_for<'a>(scope: Scope, ctx: &'a Context, path: &str) -> PriorFor<'a> {
+    if !scope.needs_prior() {
+        return PriorFor::NotDeclared;
+    }
+    let Some(change) = ctx.change() else {
+        return PriorFor::Skip(format!(
+            "{CHANGE_SCOPED_ONLY}: the prior version is available only in change-scoped \
+             evaluation, and this run carries no change"
+        ));
+    };
+    match change.prior_of(path) {
+        Ok(prior) => PriorFor::Bound(prior),
+        Err(why) => PriorFor::Skip(why.to_string()),
+    }
+}
+
 /// One document, and nothing else.
 ///
 /// There is no accessor for a second document, for the taxonomy, or for the
@@ -563,6 +660,7 @@ pub struct DocumentView<'a> {
     body: Option<&'a Body>,
     phase_a: Option<Trouble<'a>>,
     clock: Option<Date>,
+    prior: Option<Prior<'a>>,
 }
 
 impl<'a> DocumentView<'a> {
@@ -606,6 +704,16 @@ impl<'a> DocumentView<'a> {
     /// The injected date, and only for a check that declared `NEEDS_CLOCK`.
     pub fn now(&self) -> Option<Date> {
         self.clock
+    }
+
+    /// The version of this document that stood before the change, and only for
+    /// a check that declared `NEEDS_PRIOR`.
+    ///
+    /// A check that declared it is never handed `None`: an instance with no
+    /// prior version to bind is skipped before a view exists. The option is the
+    /// declaration, on the same terms as [`DocumentView::body`].
+    pub fn prior(&self) -> Option<Prior<'a>> {
+        self.prior
     }
 
     /// What this view lets a check read: one document, and the hash of it.
@@ -895,7 +1003,26 @@ pub fn over_documents<C: DocumentCheck>(
         if !check.instantiates(kind) {
             continue;
         }
+        // Bound once, before anything else about this row is read. A run with
+        // no change reaches this arm for every instance of the rule, so the
+        // skipped count of a full-corpus run is the instance count exactly, and
+        // a reader can hold the two numbers against each other.
+        let prior = match prior_for(scope, ctx, &row.path) {
+            PriorFor::NotDeclared => None,
+            PriorFor::Bound(prior) => Some(prior),
+            PriorFor::Skip(why) => {
+                cache.undecided();
+                instances.push(Instance::skipped(
+                    C::RULE,
+                    Grain::Document,
+                    vec![Input::new(&row.path, row.digest.as_deref())],
+                    &why,
+                ));
+                continue;
+            }
+        };
         let Some(document) = &row.document else {
+            cache.undecided();
             instances.push(Instance::skipped(
                 C::RULE,
                 Grain::Document,
@@ -925,12 +1052,16 @@ pub fn over_documents<C: DocumentCheck>(
                 false => None,
             },
             clock,
+            prior,
         };
         // The target of a document-scoped instance is the document, so the
         // path is its identity as well as its one input.
         let reads = view.reads();
         // No resolution: a document-scoped instance reads one document, and a
         // document is a corpus path that the read set above already names.
+        // The prior version is the same binding the view holds, which is what
+        // stops a cached verdict from surviving a change to the version it was
+        // about.
         let outcome = cache.outcome(
             C::RULE,
             C::VERSION,
@@ -938,6 +1069,7 @@ pub fn over_documents<C: DocumentCheck>(
             &row.path,
             &reads,
             clock,
+            prior,
             None,
             || check.evaluate(&view),
         );
@@ -1021,6 +1153,10 @@ pub fn over_edges<C: EdgeCheck>(
             triple,
             &reads,
             clock,
+            // No prior version. Only `DocumentCheck` declares the input, for
+            // the reason spec 12 gives it: a change names documents, and an
+            // edge is not one.
+            None,
             Some(view.resolution()),
             || check.evaluate(&view),
         );
@@ -1055,6 +1191,7 @@ pub fn over_neighbourhoods<C: NeighbourhoodCheck>(
             continue;
         }
         let Some(document) = &row.document else {
+            cache.undecided();
             instances.push(Instance::skipped(
                 C::RULE,
                 Grain::Neighbourhood { depth: 1 },
@@ -1090,6 +1227,7 @@ pub fn over_neighbourhoods<C: NeighbourhoodCheck>(
             &row.path,
             &reads,
             clock,
+            None,
             None,
             || check.evaluate(&view),
         );
@@ -1147,6 +1285,7 @@ pub fn over_corpus<C: CorpusCheck>(
         scope,
         CORPUS,
         &reads,
+        None,
         None,
         None,
         || check.evaluate(&view),

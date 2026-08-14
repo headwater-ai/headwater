@@ -1,6 +1,7 @@
-229 seen, 186 classified, 186 checked, 2866 check instances
+229 seen, 186 classified, 186 checked, 3052 check instances
       3 generated, held to regeneration by `headwater generate --check`
     174 skipped: this document writes no fragment into itself
+    186 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
 adoption
   1 pairs open, 0 closed, holding 1 finding, in 1 task
@@ -24,6 +25,7 @@ adoption
     141 instances of language.source_form.not_met
     150 instances of section.required.missing
     186 instances of link.fragment.unresolved
+    186 instances of warrant.promoted
 suppressions
   4 findings hidden by 4 directives
       4 false_positive
@@ -65,6 +67,8 @@ rules, and for each the scope that binds it
     document scope, one document, its front matter and its body
   link.fragment.unresolved
     document scope, one document, its front matter and its body
+  warrant.promoted
+    document scope, one document and its front matter, and the version of it that stood before the change
   coverage.document_unchecked
     corpus scope, every row of the census, and it is a barrier
   obligation.disposition.not_one
@@ -72,23 +76,23 @@ rules, and for each the scope that binds it
   control.mechanism.unimplemented
     taxonomy scope, the resolved taxonomy, and no document
 register
-  25 obligations: 22 verified, 2 gap, 1 unverifiable, 0 with no disposition
+  26 obligations: 23 verified, 2 gap, 1 unverifiable, 0 with no disposition
      12 high, 11 verified
-      8 medium, 6 verified
+      9 medium, 7 verified
       5 low, 5 verified
   OB-LANG-1 verified, 3 findings escaped under it
   OB-LANG-3 verified, 1 finding escaped under it, 1 finding is migration-pending under it
   OB-DR-1 gap, owner the decision-record entry, target a change-scoped rule that reads the prior version, which spec 12 already supplies as `needs_prior`
   OB-DR-2 gap, owner the decision-record entry, target a rule over state dwell time, which `taxonomy audit` already measures and no check reads
   OB-DR-3 unverifiable, To count the decisions in a document is to reason about what the prose asserts, which spec 1 forswears. The shelf is homogeneous and the section contract requires one `Decision` heading, and a second decision under that heading is invisible to both
-  22 controls
-     22 posture advisory
-     22 acts detective
-     20 name a rule this engine carries
+  23 controls
+     23 posture advisory
+     23 acts detective
+     21 name a rule this engine carries
       2 name a phase this engine runs
      12 with no promotion record, so nothing states what would promote them
       6 with criteria
-      2 permanently advisory
+      3 permanently advisory
       2 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 1 migration-pending, 4 suppressed
   every rule this engine carries reaches one obligation

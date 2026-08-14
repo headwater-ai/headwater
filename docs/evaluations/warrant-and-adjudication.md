@@ -302,7 +302,7 @@ The `transcribed` case takes one addition, and CrossMark is where it comes from.
 | Claim | Instrument | Status |
 |---|---|---|
 | A visible warrant stops a reader treating asserted content as vouched | a probe whose only answer sits in an `asserted` document, graded on whether the transcript reports the warrant ([spec 5](../spec/05-ai-integration.md#measuring-whether-any-of-this-works)) | unmeasured |
-| Asserted content is promoted rather than accumulated | the promotion rate per quarter in `taxonomy audit`, against the count of asserted documents | half measured. The denominator runs, and `taxonomy audit` reports the count under its warrant reading. The numerator needs a change-scoped check that declares `needs_prior`, and none does |
+| Asserted content is promoted rather than accumulated | the promotion rate per quarter in `taxonomy audit`, against the count of asserted documents | half measured. The denominator runs, and `taxonomy audit` reports the count under its warrant reading. The numerator is `warrant.promoted`, a change-scoped check that declares `needs_prior` |
 | An adjudicating document reaches an agent that meets the losing document first | a probe over a settled conflicting pair, graded on which document the transcript cites | unmeasured |
 | Imported edges do not decay faster than scaffolded ones | staleness by `created_by` in `taxonomy audit`, comparing `import` against `scaffold` | unmeasured, and no importer exists |
 | Admitting the asserted tier does not lower routing precision | routing precision and abandonment ([spec 5](../spec/05-ai-integration.md#scent-is-the-thing-being-engineered)), split by warrant | unmeasured |
