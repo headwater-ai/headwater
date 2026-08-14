@@ -49,6 +49,38 @@
 //! a dropped line is the opposite: a document the manifest named and this reader
 //! skipped reads as a document that did not change, which is a promotion that
 //! nothing counts. A caller that cannot be parsed gets an error and no run.
+//!
+//! # A path that binds to nothing is the same defect, and syntax cannot see it
+//!
+//! The sentence above is about a line this reader drops. A line it keeps and
+//! that names a path no census row holds costs exactly the same thing: the
+//! document it meant to name reads as one that did not change, and the count
+//! comes back zero over a run that reported success. One character in a path is
+//! enough, and so is a leading `./`.
+//!
+//! So a manifest is read in two steps and only the second one produces a value
+//! this engine will run against. [`Unbound::read`] decides the syntax and reads
+//! the bytes. [`Unbound::bind`] holds every path it names against the corpus the
+//! run walked, and a path that matches nothing there is carried as
+//! [`Held::Unmatched`], counted, and named in the report. It is not a refusal,
+//! because a real change carries files that are not corpus documents at all: a
+//! caller who writes `git diff --name-only` into a manifest names source files,
+//! and refusing those would make the honest wrapper the one thing this engine
+//! declines to accept.
+//!
+//! **No path is normalized.** `./docs/a.md` matches no census row and is
+//! reported as one that matched nothing. A normalizer here would be one form
+//! silently accepted and an invitation to the next one, and the duplicate guard
+//! below would then have two spellings of one path to reconcile.
+//!
+//! # What a caller may state, and what this engine cannot check
+//!
+//! A manifest that names `added` for a document that already stood, or that
+//! omits a document the change carried, is a manifest that lies. Neither is
+//! detectable without the history that spec 12 rules out as an input. That is
+//! the trust boundary rather than a defect: the caller names the change, this
+//! engine reads what the names reach, and every reading here is worth what the
+//! caller's statement is worth.
 
 use headwater_doc::Document;
 use headwater_yaml::Mapping;
@@ -71,6 +103,10 @@ enum Held {
     /// The caller named a prior version that this engine could not read. See
     /// the module comment: it never reaches a check.
     Unreadable { why: String },
+    /// The caller named a path that the corpus of this run does not hold. No
+    /// instance exists over it, so nothing about it is checked, and the report
+    /// names it rather than absorbing it.
+    Unmatched,
 }
 
 /// The version of one document that stood before the change, as a check reads
@@ -114,7 +150,19 @@ impl Prior<'_> {
     }
 }
 
-/// The documents one change carries.
+/// A manifest that has been read and not yet held against a corpus.
+///
+/// It is a type of its own so that the binding step cannot be forgotten. A
+/// [`Change`] is the only value [`crate::Context::over`] accepts, and
+/// [`Unbound::bind`] is the only way to make one, so no run can be scoped to a
+/// set of paths that nothing checked against the corpus in front of it.
+#[derive(Clone, Debug)]
+pub struct Unbound {
+    entries: Vec<(String, Held)>,
+}
+
+/// The documents one change carries, each held against the corpus this run
+/// walked.
 #[derive(Clone, Debug, Default)]
 pub struct Change {
     /// In path order, so a lookup is a binary search and a report is a function
@@ -129,14 +177,24 @@ pub struct Named {
     pub documents: usize,
     /// Of those, the ones the change adds.
     pub added: usize,
-    /// Of those, the ones whose prior version this run read.
+    /// Of those, the ones that bound to a document of this corpus and whose
+    /// prior version this run read.
+    ///
+    /// It counts bindings rather than file opens. An entry whose prior version
+    /// opened and whose path reached no census row is counted below, because a
+    /// line that said otherwise would tell a caller the injection worked when it
+    /// reached nothing.
     pub carried: usize,
     /// Of those, the ones whose prior version this run could not read. Each one
     /// is a skipped instance with a reason rather than a pass.
     pub unreadable: usize,
+    /// Of those, the ones whose path no row of this corpus holds. Nothing is
+    /// checked over one, so none of them is a skipped instance either, and this
+    /// count is the only place one is reported.
+    pub unmatched: usize,
 }
 
-impl Change {
+impl Unbound {
     /// Read a manifest, and the prior version each line names.
     ///
     /// `open` is how a named file becomes bytes, so a test supplies a tree that
@@ -144,7 +202,7 @@ impl Change {
     pub fn read(
         manifest: &str,
         open: impl Fn(&Path) -> std::io::Result<Vec<u8>>,
-    ) -> Result<Change, String> {
+    ) -> Result<Unbound, String> {
         let mut lines = manifest.lines();
         match lines.next() {
             Some(FORMAT) => {}
@@ -188,18 +246,52 @@ impl Change {
         }
 
         entries.sort_by(|(a, _), (b, _)| a.cmp(b));
-        Ok(Change { entries })
+        Ok(Unbound { entries })
     }
 
     /// Read a manifest from a file, which is what `headwater check --change`
     /// does. A path inside the manifest is resolved as written, because the
     /// caller wrote it and the prior versions sit outside the corpus.
-    pub fn at(manifest: &Path) -> Result<Change, String> {
+    pub fn at(manifest: &Path) -> Result<Unbound, String> {
         let text = std::fs::read_to_string(manifest)
             .map_err(|error| format!("{}: {error}", manifest.display()))?;
-        Change::read(&text, |path| std::fs::read(path))
+        Unbound::read(&text, |path| std::fs::read(path))
     }
 
+    /// Hold every path this manifest names against the corpus the run walked.
+    ///
+    /// `holds` answers whether the walk read a file at that path. It is the
+    /// census's own set rather than the set of documents an instance exists
+    /// over, so a caller who names a file the corpus holds and no check reads
+    /// gets no warning about a path they wrote correctly.
+    ///
+    /// The corpus is the argument rather than something this module reaches,
+    /// for the reason the check layer takes a census: two walks of one tree can
+    /// disagree, and the pair that would disagree here is the set a run checks
+    /// and the set a manifest is measured against.
+    pub fn bind(self, holds: impl Fn(&str) -> bool) -> Change {
+        Change {
+            entries: self
+                .entries
+                .into_iter()
+                .map(|(path, held)| match holds(&path) {
+                    true => (path, held),
+                    false => (path, Held::Unmatched),
+                })
+                .collect(),
+        }
+    }
+
+    /// The paths this manifest names, in path order.
+    ///
+    /// A caller reads it to say what it named, before anything binds. Nothing
+    /// in a run uses it: a run reads [`Change`] and never this.
+    pub fn paths(&self) -> Vec<&str> {
+        self.entries.iter().map(|(path, _)| path.as_str()).collect()
+    }
+}
+
+impl Change {
     /// What this change named, for the report that states its own inputs.
     pub fn named(&self) -> Named {
         let mut named = Named {
@@ -211,9 +303,24 @@ impl Change {
                 Held::Added => named.added += 1,
                 Held::Committed { .. } => named.carried += 1,
                 Held::Unreadable { .. } => named.unreadable += 1,
+                Held::Unmatched => named.unmatched += 1,
             }
         }
         named
+    }
+
+    /// The paths this change named that no row of the corpus holds, in path
+    /// order.
+    ///
+    /// Named rather than counted alone, because a caller who mistyped one
+    /// character needs to see which path, and a count sends them to read their
+    /// own manifest against a census by hand.
+    pub fn unmatched(&self) -> Vec<&str> {
+        self.entries
+            .iter()
+            .filter(|(_, held)| matches!(held, Held::Unmatched))
+            .map(|(path, _)| path.as_str())
+            .collect()
     }
 
     /// The prior version of one document, or the reason no check may be handed
@@ -235,9 +342,18 @@ impl Change {
                 facets: &document.facets,
             }),
             Held::Unreadable { why } => Err(why),
+            // Unreachable: the census holds no row at this path, so no instance
+            // exists to ask. It is an arm rather than a fallthrough because the
+            // day an instance does exist over an unmatched path, the answer has
+            // to be the one below and never a silent `Unchanged`.
+            Held::Unmatched => Err(UNMATCHED),
         }
     }
 }
+
+/// The reason an instance over an unmatched path would carry. See
+/// [`Change::prior_of`]: no instance exists over one today.
+const UNMATCHED: &str = "the change manifest names this path and this corpus holds no row at it";
 
 /// One prior version, read and parsed, or the reason it was neither.
 fn read_prior(source: &str, open: impl Fn(&Path) -> std::io::Result<Vec<u8>>) -> Held {
@@ -287,6 +403,12 @@ mod tests {
 
     const ASSERTED: &str = "---\nid: A\nprovenance:\n  warrant: asserted\n---\n\n# A\n";
 
+    /// A corpus that holds every path these manifests name. The one test about
+    /// binding supplies its own.
+    fn every(_: &str) -> bool {
+        true
+    }
+
     fn manifest() -> String {
         format!("{FORMAT}\nadded\tdocs/b.md\nprior\tdocs/a.md\tprior/a.md\n")
     }
@@ -295,8 +417,9 @@ mod tests {
     /// check never reaches.
     #[test]
     fn a_change_holds_three_states_and_refuses_to_hand_over_the_fourth() {
-        let change =
-            Change::read(&manifest(), tree(&[("prior/a.md", ASSERTED)])).expect("a change");
+        let change = Unbound::read(&manifest(), tree(&[("prior/a.md", ASSERTED)]))
+            .expect("a change")
+            .bind(every);
         assert!(matches!(
             change.prior_of("docs/a.md"),
             Ok(Prior::Committed { .. })
@@ -305,7 +428,9 @@ mod tests {
         // Named by nothing, so it stands as it stood.
         assert_eq!(change.prior_of("docs/c.md"), Ok(Prior::Unchanged));
 
-        let missing = Change::read(&manifest(), tree(&[])).expect("a change");
+        let missing = Unbound::read(&manifest(), tree(&[]))
+            .expect("a change")
+            .bind(every);
         let why = missing.prior_of("docs/a.md").expect_err("a reason");
         assert!(why.contains("prior/a.md"), "{why}");
     }
@@ -356,7 +481,7 @@ mod tests {
             &format!("{FORMAT}\nadded\tdocs/a.md\nadded\tdocs/a.md\n"),
         ] {
             assert!(
-                Change::read(manifest, tree(&[("prior/a.md", ASSERTED)])).is_err(),
+                Unbound::read(manifest, tree(&[("prior/a.md", ASSERTED)])).is_err(),
                 "read as a change: {manifest:?}"
             );
         }
@@ -368,7 +493,9 @@ mod tests {
         let manifest = format!(
             "{FORMAT}\nadded\tdocs/b.md\nprior\tdocs/a.md\tprior/a.md\nprior\tdocs/c.md\tgone.md\n"
         );
-        let change = Change::read(&manifest, tree(&[("prior/a.md", ASSERTED)])).expect("a change");
+        let change = Unbound::read(&manifest, tree(&[("prior/a.md", ASSERTED)]))
+            .expect("a change")
+            .bind(every);
         assert_eq!(
             change.named(),
             Named {
@@ -376,7 +503,41 @@ mod tests {
                 added: 1,
                 carried: 1,
                 unreadable: 1,
+                unmatched: 0,
             }
         );
+    }
+
+    /// A path the corpus holds no row at is carried as unmatched, and it never
+    /// answers as a document that did not change.
+    ///
+    /// The count is what the report reads, and `carried` is the field that was
+    /// wrong before this arm existed: the prior version of `docs/a.md` opens
+    /// either way, so a count of file opens says one document was read over a
+    /// manifest that reached none.
+    #[test]
+    fn a_path_no_row_holds_binds_to_nothing_and_says_so() {
+        let unbound =
+            || Unbound::read(&manifest(), tree(&[("prior/a.md", ASSERTED)])).expect("a change");
+        assert_eq!(unbound().paths(), vec!["docs/a.md", "docs/b.md"]);
+
+        let bound = unbound().bind(|path| path == "docs/b.md");
+        assert_eq!(
+            bound.named(),
+            Named {
+                documents: 2,
+                added: 1,
+                carried: 0,
+                unreadable: 0,
+                unmatched: 1,
+            }
+        );
+        assert_eq!(bound.unmatched(), vec!["docs/a.md"]);
+
+        // And it is never answered as a document that stood where it stands. An
+        // instance cannot reach this today, because the corpus holds no row to
+        // create one over, and the answer is the reason rather than a state.
+        assert!(bound.prior_of("docs/a.md").is_err());
+        assert_eq!(bound.prior_of("docs/b.md"), Ok(Prior::Added));
     }
 }

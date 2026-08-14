@@ -285,6 +285,14 @@ headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
                  the prior version to the state on the branch where the change
                  lands, which spec 12 fixes as the merge base of a proposed
                  change and the committed `HEAD` of a working-tree hook.
+                 Every path is held against the corpus this run walks, and one
+                 that reaches no row of it is counted and named in the report
+                 rather than absorbed. No path is normalized, so `./docs/a.md`
+                 reaches no row. What this engine cannot check is whether the
+                 manifest tells the truth: a line that says `added` for a
+                 document that already stood, and a document the change carried
+                 and the manifest omits, are both invisible without the history
+                 that spec 12 rules out as an input.
   --register <path>
                  `check` only: write the register of this run to a file as well
                  as to the report. Spec 4 makes it a projection of the
@@ -2991,14 +2999,14 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
-    // The second injected value, and the only way a run becomes change-scoped.
-    // A manifest this engine cannot read is a refusal rather than a shorter
+    // The second injected value, read here and bound after the walk below. A
+    // manifest this engine cannot read is a refusal rather than a shorter
     // change: a line that was dropped reads as a document that did not move,
     // which is a transition nothing reports.
-    let ctx = match change {
-        None => ctx,
-        Some(path) => match headwater_check::change::Change::at(&path) {
-            Ok(change) => ctx.scoped_to(change),
+    let unbound = match &change {
+        None => None,
+        Some(path) => match headwater_check::change::Unbound::at(path) {
+            Ok(unbound) => Some(unbound),
             Err(why) => {
                 eprintln!("headwater: the change manifest did not read");
                 eprintln!("{}", indent(&why));
@@ -3031,6 +3039,17 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
         graph,
         ..
     } = &loaded;
+
+    // The manifest, held against the corpus this run walked. A path that
+    // reaches no row of it binds to nothing, and the report names it: a caller
+    // who mistyped one character would otherwise read a run that counted
+    // nothing and said it succeeded.
+    let ctx = match unbound {
+        None => ctx,
+        Some(unbound) => {
+            ctx.scoped_to(unbound.bind(|path| taken.rows.iter().any(|row| row.path == path)))
+        }
+    };
 
     // Phase B. The cache is keyed on the lock digest among other things, so a
     // taxonomy that moved invalidates every entry without anyone clearing a

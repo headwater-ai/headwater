@@ -814,6 +814,13 @@ fn place(
 /// A zero-padding specifier on a value, which is the one form a layout writes.
 /// `02d` and `04d` are the two this repository declares, and the width is read
 /// rather than assumed.
+///
+/// [`render_layout`] applies it to every placeholder, where the loop it
+/// replaced applied it to a facet and to `{seq}` and never to `{slug}`. The
+/// difference is inert: this function returns its argument unchanged for a
+/// value that does not parse as a number, and a slug that parses as one is a
+/// title of digits alone. No layout of this repository writes a specifier on a
+/// slug, and the uniform rule is the one a reader can predict.
 fn pad(value: &str, specifier: Option<&str>) -> String {
     let Some(width) = specifier
         .and_then(|s| s.strip_prefix('0'))

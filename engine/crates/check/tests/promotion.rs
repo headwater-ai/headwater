@@ -15,7 +15,7 @@
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
-use headwater_check::change::Change;
+use headwater_check::change::{Change, Unbound};
 use headwater_check::{Cache, Context, Date, Declared, Outcome, Register, Run, Shape};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -39,8 +39,25 @@ fn manifest(prior: &str) -> String {
     )
 }
 
+/// The corpus paths the fixture tree holds, which is what a manifest is bound
+/// against. Written out rather than walked, because a test that took the census
+/// from the same walk the run takes would bind every path a manifest could name.
+const HELD: [&str; 3] = [
+    "promotion/drafted.md",
+    "promotion/promoted.md",
+    "promotion/untouched.md",
+];
+
+fn bind(unbound: Unbound) -> Change {
+    unbound.bind(|path| HELD.contains(&path))
+}
+
 fn change(prior: &str) -> Change {
-    Change::read(&manifest(prior), |path| std::fs::read(path)).expect("the manifest reads")
+    bind(read(&manifest(prior)))
+}
+
+fn read(manifest: &str) -> Unbound {
+    Unbound::read(manifest, |path| std::fs::read(path)).expect("the manifest reads")
 }
 
 fn run_with(ctx: &Context, cache: &mut Cache) -> Run {
@@ -195,11 +212,9 @@ fn a_full_corpus_run_reports_every_instance_as_skipped() {
 /// saw.
 #[test]
 fn a_prior_version_that_did_not_read_is_skipped_rather_than_passed() {
-    let change = Change::read(
+    let change = bind(read(
         "headwater change 1\nprior\tpromotion/promoted.md\t/nonexistent/before.md\n",
-        |path| std::fs::read(path),
-    )
-    .expect("the manifest reads");
+    ));
     let ctx = Context::over(Date::parse(PINNED).expect("a date"), change);
     let run = run_with(&ctx, &mut Cache::disabled());
     assert_eq!(promotions(&run), Vec::<&str>::new());
@@ -266,4 +281,60 @@ fn a_warm_run_does_not_serve_a_verdict_across_a_change_to_the_prior_version() {
     );
 
     let _ = std::fs::remove_dir_all(&directory);
+}
+
+/// A path the corpus holds no row at is reported, and never absorbed.
+///
+/// The manifest below is the honest one with a single character appended to a
+/// path. Every other input is equal: the same prior bytes, the same tree, the
+/// same clock. Before this test the run counted 0 promotions, reported `1 with
+/// a prior version this run read`, and exited 0 with no other line about it. A
+/// caller was told the injection worked over a manifest that reached nothing.
+///
+/// The second arm is the same defect in the form a person actually writes. A
+/// leading `./` is a path no census row holds, and this engine normalizes
+/// nothing: one accepted spelling invites the next, and the duplicate guard
+/// would then have two spellings of one path to reconcile.
+#[test]
+fn a_path_that_binds_to_no_row_is_reported_rather_than_absorbed() {
+    let prior = fixtures_dir().join("before").join("promoted.md");
+    let at = |path: &str| format!("headwater change 1\nprior\t{path}\t{}\n", prior.display());
+
+    // The honest manifest, which is the control arm.
+    let honest = run_with(
+        &Context::over(Date::parse(PINNED).expect("a date"), change("promoted.md")),
+        &mut Cache::disabled(),
+    );
+    assert_eq!(honest.change.expect("a change").promotions, 1);
+
+    for path in [
+        "promotion/promoted.mdx",
+        "./promotion/promoted.md",
+        "docs/promotion/promoted.md",
+    ] {
+        let ctx = Context::over(Date::parse(PINNED).expect("a date"), bind(read(&at(path))));
+        let run = run_with(&ctx, &mut Cache::disabled());
+        let scoped = run
+            .change
+            .clone()
+            .expect("a change-scoped run states its change");
+
+        assert_eq!(
+            promotions(&run),
+            Vec::<&str>::new(),
+            "`{path}` bound to a document"
+        );
+        assert_eq!(scoped.named.unmatched, 1, "`{path}` was absorbed");
+        assert_eq!(
+            scoped.named.carried, 0,
+            "`{path}` opened a prior version and bound to nothing, and the report called that a \
+             document this run read"
+        );
+        assert_eq!(scoped.unmatched, vec![path.to_string()]);
+        let report = scoped.render();
+        assert!(
+            report.contains("named no row of this corpus") && report.contains(path),
+            "the report does not name the path that reached nothing:\n{report}"
+        );
+    }
 }

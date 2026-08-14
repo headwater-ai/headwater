@@ -670,6 +670,7 @@ pub fn run(
     // beside them, so the line and the findings under it cannot disagree.
     let change = ctx.change().map(|change| Scoped {
         named: change.named(),
+        unmatched: change.unmatched().into_iter().map(str::to_string).collect(),
         promotions: findings
             .iter()
             .filter(|finding| finding.rule == promotion::RULE)
@@ -695,10 +696,14 @@ pub fn run(
 /// A full-corpus run has none of this, and the absence is the statement: spec 12
 /// makes the prior version available only in change-scoped evaluation, and
 /// coverage already reports every instance that skipped for want of one.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Scoped {
     /// The documents the change named, and what became of each.
     pub named: change::Named,
+    /// The paths the change named that this corpus holds no row at, in path
+    /// order. Nothing is checked over one, so the report is the only place one
+    /// is ever seen.
+    pub unmatched: Vec<String>,
     /// Warrants that moved from `asserted` to `accepted` in this change.
     ///
     /// The count [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#promotion-is-one-human-one-document-one-diff)
@@ -726,6 +731,20 @@ impl Scoped {
                  its reason rather than passed",
                 self.named.unreadable
             );
+        }
+        // Above the count, because it is the line that says the count is over
+        // fewer documents than the caller named. A path that reached no row is
+        // checked by nothing, so no skipped instance carries it and this is the
+        // only report of one.
+        if !self.unmatched.is_empty() {
+            let _ = writeln!(
+                out,
+                "  {:5} named no row of this corpus, so nothing was checked over them:",
+                self.unmatched.len()
+            );
+            for path in &self.unmatched {
+                let _ = writeln!(out, "        {path}");
+            }
         }
         let _ = writeln!(
             out,
