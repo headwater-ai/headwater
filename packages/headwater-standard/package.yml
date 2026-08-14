@@ -13,17 +13,23 @@
 # The manifest keeps `package:`. The taxonomy source beside it opens `taxonomy:`
 # and never carries a `package` block. See 13 — Open obligations.
 #
-# `requires_engine` is absent on purpose. Spec 7 puts it in the manifest, and
-# nothing reads it until package publish and consume (#77). A version range
-# committed now would be a claim that no test can fail.
+# `requires_engine` states which engines this package is for.
+# `headwater_resolve::package::sources` reads it before it loads a single
+# source, and an engine outside the range is refused with both numbers in the
+# message. The floor is 0.1 because that is the release in which anything read
+# it at all. The ceiling is the next major, on the ordinary reading of a
+# breaking change.
 
 package: headwater/standard
 version: 1.0.0
+requires_engine: ">=0.1 <2"
 
 contents:
   taxonomy: taxonomy.yml
   # The bundles this package ships. They live in the library entry directory
   # for as long as the package and the library are one repository, and the
-  # resolver reads `<bundles>/<name>/bundle.yml`. #77 replaces this path with a
-  # fetch, and the directory moves inside the package then.
+  # resolver reads `<bundles>/<name>/bundle.yml`. `headwater taxonomy publish`
+  # copies them into `bundles/` inside the artifact and rewrites this one
+  # scalar, so the `..` is a property of this tree and no published package
+  # carries it.
   bundles: ../../docs/taxonomies

@@ -90,6 +90,8 @@ headwater infer              [--owner <name>] [--until <date>] [--write]
                              [--now <date>] [--root <path>]
 headwater taxonomy validate  [--root <path>]
 headwater taxonomy resolve   [--check] [--root <path>]
+headwater taxonomy publish   [--package <name>] --out <dir> [--root <path>]
+headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
 
   check              run the pipeline over the corpus, against the taxonomy in
                      the committed lock.
@@ -159,6 +161,18 @@ headwater taxonomy resolve   [--check] [--root <path>]
                      list, and what each one did not decide. Writes nothing.
   taxonomy resolve   write `.headwater/taxonomy.lock`. It is written only when
                      the taxonomy validates, so a lock is a validated taxonomy.
+  taxonomy publish   write the artifact of a package into a directory, with a
+                     release record over it: every file, the digest of its
+                     bytes, and one digest over that list. It prints the digest,
+                     which is the number the release notes state and a consumer
+                     pins.
+  taxonomy vendor    check an artifact that somebody already fetched against the
+                     digest this repository pinned, and install it under
+                     `packages/`. It refuses an artifact that is not the pinned
+                     one, and it names every file that moved. Nothing here
+                     fetches: no crate of this engine depends on the network, so
+                     the verb takes the path of a directory and never a
+                     location.
 
   --strict       `check` only: exit non-zero when a finding is an error. Without
                  it the run is advisory and always exits 0, which is the default
@@ -225,8 +239,10 @@ headwater taxonomy resolve   [--check] [--root <path>]
   --corpus <dir> `init` only: the corpus root to declare. Proposed from the
                  tree by default.
   --package <name>
-                 `init` only: the package to take. `headwater/standard` by
-                 default.
+                 `init`: the package to take. `headwater/standard` by default.
+                 `taxonomy publish`: the package to publish. The one this
+                 repository's own declaration takes, by default, because a
+                 publisher usually publishes what it also consumes.
   --check        `taxonomy resolve` and `generate`: write nothing and exit
                  non-zero when what is committed is not what a run produces. The
                  two read different things. `taxonomy resolve --check` reads the
@@ -267,6 +283,15 @@ headwater taxonomy resolve   [--check] [--root <path>]
                  `--check` compares by byte cannot carry a clock reading. Spec 6
                  asks a filtered export that leaves the repository to state one,
                  and this is where it is injected.
+  --out <dir>    `taxonomy publish` only: where to write the artifact. The
+                 directory must be empty or absent, because a published artifact
+                 is every file under its root and a stray one would be a member
+                 the publisher never shipped.
+  --expect <d>   `taxonomy vendor` only: the digest to check the artifact
+                 against. It defaults to `taxonomy.digest` in
+                 `.headwater/taxonomy.yml`, and the verb refuses when neither is
+                 there. A pin the engine took from the artifact in front of it
+                 would be a pin against itself.
   --root <path>  the repository to read. Defaults to the working directory.
 ";
 
@@ -286,6 +311,8 @@ fn main() -> ExitCode {
     let mut until: Option<Date> = None;
     let mut corpus_root: Option<String> = None;
     let mut package: Option<String> = None;
+    let mut out: Option<PathBuf> = None;
+    let mut expect: Option<String> = None;
     let mut profile: Option<String> = None;
     let mut format: Option<String> = None;
     let mut generated_at: Option<String> = None;
@@ -361,6 +388,14 @@ fn main() -> ExitCode {
             "--package" => match arguments.next() {
                 Some(name) => package = Some(name),
                 None => return fail("--package names a package and none followed it"),
+            },
+            "--out" => match arguments.next() {
+                Some(path) => out = Some(PathBuf::from(path)),
+                None => return fail("--out names a directory and none followed it"),
+            },
+            "--expect" => match arguments.next() {
+                Some(text) => expect = Some(text),
+                None => return fail("--expect names a digest and none followed it"),
             },
             "--until" => match arguments.next().as_deref().map(Date::parse) {
                 Some(Some(date)) => until = Some(date),
@@ -448,10 +483,20 @@ fn main() -> ExitCode {
         ),
         ["taxonomy", "validate"] => validate(&root),
         ["taxonomy", "resolve"] => resolve(&root, check_only),
-        ["taxonomy"] => fail("`taxonomy` takes a second word: `validate` or `resolve`"),
-        ["taxonomy", other] => fail(&format!(
+        ["taxonomy", "publish"] => publish(&root, package.as_deref(), out.as_deref()),
+        ["taxonomy", "vendor"] => fail(
+            "`taxonomy vendor` takes the path of a package somebody already fetched. \
+             This engine opens no socket, so it checks a directory it is handed",
+        ),
+        ["taxonomy", "vendor", fetched] => {
+            vendor(&root, Path::new(fetched), expect.as_deref())
+        }
+        ["taxonomy"] => fail(
+            "`taxonomy` takes a second word: `validate`, `resolve`, `publish` or `vendor`",
+        ),
+        ["taxonomy", other, ..] => fail(&format!(
             "`taxonomy {other}` is not a verb this binary carries yet. \
-             It carries `validate` and `resolve`"
+             It carries `validate`, `resolve`, `publish` and `vendor`"
         )),
         [] => fail("no verb. Try `headwater check`"),
         // The list below is hand-maintained beside the arms above, and nothing
@@ -575,6 +620,100 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
     for source in &repository.resolution.sources {
         println!("  from {source}");
     }
+    ExitCode::SUCCESS
+}
+
+/// `headwater taxonomy publish`.
+///
+/// The publisher's half. It writes the artifact and prints the digest, which is
+/// what the release notes carry and what a consumer writes into its own
+/// declaration. The number is printed rather than filed anywhere, because a
+/// digest that travels inside the artifact it describes checks nothing.
+fn publish(root: &Path, package: Option<&str>, out: Option<&Path>) -> ExitCode {
+    let Some(out) = out else {
+        return fail("`taxonomy publish` writes into a directory. Name it with `--out <dir>`");
+    };
+    let name = match package {
+        Some(name) => name.to_string(),
+        // The package this repository takes, where no flag names one. A
+        // publisher usually publishes the package it also consumes.
+        None => match headwater_resolve::package::consumer(root) {
+            Ok(consumer) => consumer.package,
+            Err(errors) => {
+                eprintln!(
+                    "headwater: no `--package` and this repository's declaration does not read, \
+                     so nothing says what to publish"
+                );
+                eprint!("{}", indent(&render_errors(&errors)));
+                return ExitCode::FAILURE;
+            }
+        },
+    };
+
+    let record = match headwater_resolve::package::publish(root, &name, out) {
+        Ok(record) => record,
+        Err(errors) => {
+            eprintln!("headwater: nothing was published");
+            eprint!("{}", indent(&render_errors(&errors)));
+            return ExitCode::FAILURE;
+        }
+    };
+
+    println!("published {} {}", record.package, record.version);
+    println!("  into {}", out.display());
+    println!("  {} files", record.members.len());
+    if let Some(range) = &record.requires_engine {
+        println!("  for an engine in {range}");
+    }
+    println!("  digest {}", record.digest);
+    println!(
+        "\nState that digest where a consumer reads it, and never only inside the artifact. \
+         A consumer pins it as `taxonomy.digest` in `.headwater/taxonomy.yml`, and \
+         `headwater taxonomy vendor` checks a fetched copy against the pin."
+    );
+    ExitCode::SUCCESS
+}
+
+/// `headwater taxonomy vendor`.
+///
+/// The consumer's half, and the reason it takes a path is the guarantee it
+/// keeps. Spec 0 forbids a network dependency and no crate of this engine
+/// carries one. So the fetch is the caller's, by whatever the organization uses,
+/// and this checks the bytes that arrived.
+fn vendor(root: &Path, fetched: &Path, expect: Option<&str>) -> ExitCode {
+    let declared = headwater_resolve::package::consumer(root)
+        .ok()
+        .and_then(|consumer| consumer.digest);
+    let Some(pinned) = expect.map(str::to_string).or(declared) else {
+        return fail(
+            "nothing pins this artifact. A digest the engine took from the artifact in front of \
+             it is a pin against itself, so this refuses rather than records what it received. \
+             Write the publisher's digest as `taxonomy.digest` in `.headwater/taxonomy.yml`, or \
+             pass it with `--expect`",
+        );
+    };
+
+    let record = match headwater_resolve::package::vendor(root, fetched, &pinned) {
+        Ok(record) => record,
+        Err(errors) => {
+            eprintln!("headwater: nothing was vendored");
+            eprint!("{}", indent(&render_errors(&errors)));
+            return ExitCode::FAILURE;
+        }
+    };
+
+    println!("vendored {} {}", record.package, record.version);
+    println!("  from {}", fetched.display());
+    println!(
+        "  {} files, all of them the pinned bytes",
+        record.members.len()
+    );
+    println!("  digest {}", record.digest);
+    println!(
+        "\nThe digest says these are the bytes the pin was written for. It is not a signature, \
+         so it says nothing about who published them. Run `headwater taxonomy resolve` to write \
+         the lock this package produces."
+    );
     ExitCode::SUCCESS
 }
 

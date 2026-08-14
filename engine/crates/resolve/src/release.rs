@@ -112,12 +112,20 @@ pub enum ReleaseError {
     Unreadable(String),
     Malformed(String),
     /// A later format than this engine knows.
-    Format { found: String },
+    Format {
+        found: String,
+    },
     /// The record's own digest does not cover the member list beside it, so the
     /// record was edited.
-    RecordMoved { declared: String, actual: String },
+    RecordMoved {
+        declared: String,
+        actual: String,
+    },
     /// The artifact is not the one the consumer pinned.
-    NotPinned { pinned: String, actual: String },
+    NotPinned {
+        pinned: String,
+        actual: String,
+    },
     /// The artifact does not match its own record. Each entry names one file.
     Diverged(Vec<Divergence>),
     /// The package declares an engine range this engine is outside of.
@@ -127,7 +135,10 @@ pub enum ReleaseError {
         engine: String,
     },
     /// A range that this engine cannot read at all.
-    Range { range: String, why: String },
+    Range {
+        range: String,
+        why: String,
+    },
 }
 
 /// One way an artifact fails to be what its record says it is.
@@ -157,10 +168,16 @@ impl std::fmt::Display for Divergence {
                 "{path} was published as {published} and these bytes are {actual}"
             ),
             Divergence::Missing(path) => {
-                write!(f, "{path} is named by the record and is not in the artifact")
+                write!(
+                    f,
+                    "{path} is named by the record and is not in the artifact"
+                )
             }
             Divergence::Unnamed(path) => {
-                write!(f, "{path} is in the artifact and the record names no such member")
+                write!(
+                    f,
+                    "{path} is in the artifact and the record names no such member"
+                )
             }
         }
     }
