@@ -26,24 +26,31 @@
 //!
 //! # What stops a wrong import
 //!
-//! Six refusals, in the order they fire, and the order is what makes each one
+//! Seven refusals, in the order they fire, and the order is what makes each one
 //! say the right thing.
 //!
 //! 1. **Nothing pins the snapshot.** A digest the engine took out of the
 //!    directory in front of it is a pin against itself. `taxonomy vendor`
 //!    refuses to self-certify for this reason and so does this.
 //! 2. **Nothing names the channel.** The paragraph below is the whole argument.
-//! 3. **The artifact is not the pinned one.** This is
+//! 3. **Nothing names the resolver.** An import writes an edge onto an anchor
+//!    kind, and [`anchors`] is what binds one. A declaration that supplies no
+//!    resolver therefore writes edges that the next `headwater check` reports as
+//!    resolving to nothing, which is the whole of
+//!    [OBL-repo-0116](../../../../docs/obligations/0116-no-anchor-resolver-reads-a-committed-snapshot-so-every-imported-edge-lands-unresolved.md).
+//!    Refusing here is what stops that state from being reachable by leaving one
+//!    line out.
+//! 4. **The artifact is not the pinned one.** This is
 //!    [`headwater_resolve::release::verify`] unchanged, so a changed byte, a
 //!    file the record does not name, a file the artifact lost and a whole
 //!    consistent re-publication are all refused with the file named.
-//! 4. **The relation is not one an importer may write.** A relation this
+//! 5. **The relation is not one an importer may write.** A relation this
 //!    taxonomy does not declare, and a relation whose `created_by` is anything
 //!    other than `import`.
-//! 5. **An endpoint does not exist.** A `from` that names no document of this
+//! 6. **An endpoint does not exist.** A `from` that names no document of this
 //!    corpus, a `from` whose kind the relation does not admit, a relation whose
 //!    far end admits no anchor at all, and a `to` the snapshot does not name.
-//! 6. **The link is a repeat.** Q4 identifies an edge by its source, relation
+//! 7. **The link is a repeat.** Q4 identifies an edge by its source, relation
 //!    and target, so one snapshot naming a triple twice is a snapshot the
 //!    importer refuses rather than a document with the line in it twice.
 //!
@@ -81,6 +88,7 @@
 //! verb that takes a path opens no socket, and there is no code path here that
 //! could.
 
+pub mod anchors;
 pub mod snapshot;
 pub mod write;
 
@@ -113,6 +121,10 @@ pub struct Declaration {
     /// How the digest reached this repository, in the words of the person who
     /// wrote it down.
     pub channel: Option<String>,
+    /// The anchor resolver this snapshot supplies, by the name the taxonomy's
+    /// `anchors` block gives it. [`anchors`] is what it becomes, and
+    /// [`Refusal::NoResolver`] argues why it is not optional.
+    pub resolver: Option<String>,
 }
 
 /// What one import would put into the corpus, composed and not yet written.
@@ -152,6 +164,9 @@ pub enum Refusal {
     Unpinned { name: String },
     /// Nothing says how the digest arrived.
     NoChannel { name: String },
+    /// Nothing says which anchor resolver the snapshot supplies, so every edge
+    /// this import wrote would report that it resolves to nothing.
+    NoResolver { name: String },
     /// The artifact is not the pinned one. The message is the release layer's,
     /// verbatim, because it is the one that names what moved.
     Artifact(String),
@@ -228,6 +243,14 @@ impl std::fmt::Display for Refusal {
                  digest to this repository rather than the weight of the digest. Write that in \
                  `imports.{name}.channel` in `.headwater/taxonomy.yml`, in the words of the \
                  person who wrote the digest down"
+            ),
+            Refusal::NoResolver { name } => write!(
+                f,
+                "`imports.{name}` names no resolver, so nothing binds the items it pins. Every \
+                 edge this import wrote would end on an anchor kind whose resolver this run does \
+                 not have, and the check layer would report each one as resolving to nothing. \
+                 Write the name the `anchors` block of the taxonomy gives the resolver as \
+                 `imports.{name}.resolver` in `.headwater/taxonomy.yml`"
             ),
             Refusal::Artifact(why) | Refusal::Payload(why) => write!(f, "{why}"),
             Refusal::UnknownRelation { relation, from, to } => write!(
@@ -361,6 +384,7 @@ pub fn declared(root: &Path) -> Result<Vec<Declaration>, String> {
             at,
             digest: text_of("digest"),
             channel: text_of("channel"),
+            resolver: text_of("resolver"),
         });
     }
     Ok(out)
@@ -409,6 +433,21 @@ pub fn plan(
         .is_empty()
     {
         return Err(vec![Refusal::NoChannel {
+            name: declaration.name.clone(),
+        }]);
+    }
+    // The third field of the declaration, and the last thing that is the
+    // caller's own word. An import with no resolver writes edges that nothing
+    // can bind, which is the state OBL-repo-0116 recorded, so it is refused
+    // here rather than left to be discovered by the next `headwater check`.
+    if declaration
+        .resolver
+        .as_deref()
+        .map(str::trim)
+        .unwrap_or_default()
+        .is_empty()
+    {
+        return Err(vec![Refusal::NoResolver {
             name: declaration.name.clone(),
         }]);
     }
