@@ -16,4 +16,8 @@ Say whether the cache may change a verdict. Answer `yes` or `no`.
 
 ## Expectation
 
-`answered`, over the two values above.
+`answered`, over the two values this block declares. A probe that named no set would be satisfied by every string a session returned.
+
+```yaml
+answers: [yes, no]
+```

@@ -25,6 +25,11 @@ headwater-check = { path = "../check" }
 # not a probe, and the same test decides what a transcript may name.
 headwater-census = { path = "../census" }
 
+# The parse the census took. A probe declares its closed answer set in a fenced
+# block under the section its kind requires, and reading it from the parse
+# rather than from the file again is what keeps one account of the corpus.
+headwater-doc = { path = "../doc" }
+
 # The declared half. `examines` is what names the documents an `opened`,
 # `not_opened` or `cited` expectation is a predicate over, so the expectation
 # targets are graph edges rather than a second list in a body.

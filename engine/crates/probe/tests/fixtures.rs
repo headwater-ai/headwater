@@ -339,6 +339,31 @@ fn an_opened_probe_that_names_no_document_stops_the_run() {
 }
 
 #[test]
+fn an_answered_probe_that_declares_no_closed_set_stops_the_run() {
+    let plan = plan_over_probe(&|source| source.replace("answers: [yes, no]", "answers: []"));
+    assert!(
+        matches!(plan.refusal, Some(Refusal::AnswersUndeclared { .. })),
+        "a probe with no declared set is satisfied by every string a session returns: {:?}",
+        plan.refusal
+    );
+}
+
+#[test]
+fn a_probe_that_reads_no_answer_may_not_declare_a_closed_set() {
+    let plan = plan_over_probe(&|source| {
+        source.replace(
+            "`opened` over the document it names.",
+            "`opened` over the document it names.\n\n```yaml\nanswers: [yes, no]\n```",
+        )
+    });
+    assert!(
+        matches!(plan.refusal, Some(Refusal::AnswersNotUsed { .. })),
+        "a set declared and never read is a key nobody audits: {:?}",
+        plan.refusal
+    );
+}
+
+#[test]
 fn a_category_outside_the_closed_set_stops_the_run() {
     let plan = plan_over_probe(&|source| {
         source.replace("probe_category: discovery", "probe_category: vibes")

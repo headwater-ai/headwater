@@ -4,7 +4,7 @@ A regression probe run over 2 of the 2 classified documents of this corpus.
 
 ```yaml
 lock: sha256:fixture
-tree: sha256:4a3c8ee07904a5a306a2c1c0753a10b1d498d8823db02dca93e6874a8d0f7163
+tree: sha256:017413963bbea695d3bb3ce66f49610e2e76e47e43270bc2ede627b0aecc7980
 selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9
 seed: 0
 harness: 0.1.0
@@ -24,10 +24,11 @@ The unit cost is a number a person declared in `.headwater/probe.yml`. No run ha
 - PROBE-FIX-answered (corpus/probes/0002-answered.md)
     category: consistency
     expects: answered
+    answers: no, yes
 - PROBE-FIX-opened (corpus/probes/0001-opened.md)
     category: discovery
     expects: opened
-    examines: PROBE-FIX-answered
+    examines: PROBE-FIX-answered at corpus/probes/0002-answered.md
 
 ## What the recorder writes back
 

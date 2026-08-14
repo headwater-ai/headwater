@@ -85,10 +85,12 @@
 //! denominator nobody declared.
 
 pub mod budget;
+pub mod grade;
 pub mod intake;
 pub mod plan;
 
 pub use budget::{Budgets, Envelope};
+pub use grade::Results;
 pub use intake::Record;
 pub use plan::Plan;
 
