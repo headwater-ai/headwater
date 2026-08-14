@@ -24,7 +24,7 @@
 //! it is the only reading here that produces a finding. Every other reading is
 //! a distribution printed with its population beside it, and the report says
 //! that no declaration turns it into a verdict.
-//! [OBL-repo-0119](../../../../docs/obligations/0119-an-audit-reading-has-no-declared-bar-so-a-distribution-cannot-become-a-finding.md)
+//! [OBL-repo-0119](../../../../docs/obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md)
 //! holds the gap.
 //!
 //! # The grain of a creator reading is a relation
