@@ -713,7 +713,10 @@ mod tests {
         let mut seen = vec![bound().resolution()];
         for other in others {
             let text = other.resolution();
-            assert!(!seen.contains(&text), "two bindings share one value: {text}");
+            assert!(
+                !seen.contains(&text),
+                "two bindings share one value: {text}"
+            );
             seen.push(text);
         }
     }

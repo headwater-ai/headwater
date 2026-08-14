@@ -314,6 +314,115 @@ fn a_duplicate_settled_in_the_other_file_is_not_served_stale() {
     assert!(settled.cache.hits > 0, "{:?}", settled.cache);
 }
 
+/// The document `a_moved_anchor_target_is_not_served_from_the_entry_before_it`
+/// writes, and the only edge in this crate's fixtures onto an external anchor.
+///
+/// It lives here rather than under `fixtures/check/` because the case is a
+/// target that **moves** between two runs, and a recorded fixture holds one
+/// state of a tree. The taxonomy declares the anchor kind and the relation, so
+/// the declaration is shared and only the edge is private to this test.
+const GOVERNING: &str = "---
+id: SPEC-FIX-governing
+doc_type: design_spec
+status: current
+status_since: 2026-01-05
+summary: One edge onto a path of the repository, which is a target outside the corpus.
+relations:
+  governs:
+    - src/service.rs
+---
+
+# Governing
+
+The `governs` entry names a path rather than an identifier, so its target is an
+external anchor and the source tree is what decides whether it binds.
+";
+
+/// The anchor's target: a path of the repository that holds the corpus, and
+/// deliberately not one under the corpus root, which would be a document.
+const GOVERNED: &str = "src/service.rs";
+
+/// Where the document above is written, relative to the corpus root.
+const GOVERNING_PATH: &str = "check/spec/18-governing.md";
+
+/// An anchor whose target left the tree is not served from the entry written
+/// before it.
+///
+/// This is [#160](https://github.com/headwater-ai/headwater/issues/160), and it
+/// is the failure that no other test in this file can reach. The read set of an
+/// edge instance is a list of corpus paths, and an anchor names something that
+/// is not one, so removing the file below moves no hash in any key. The
+/// identity does not move either: a path anchor normalizes to the text its
+/// author wrote, and an unbound target falls back to that same text, so the
+/// target component of the key is one string on both sides.
+///
+/// The `--no-cache` differential cannot catch it, for the reason the clock test
+/// beside this one gives about the clock: both sides of that comparison run
+/// over one tree.
+#[test]
+fn a_moved_anchor_target_is_not_served_from_the_entry_before_it() {
+    let root = corpus_for("anchor");
+    let governed = root.join(GOVERNED);
+    std::fs::create_dir_all(governed.parent().expect("the anchor has a directory"))
+        .expect("the anchor's directory");
+    std::fs::write(&governed, "// the file a `governs` edge names\n").expect("the anchor writes");
+    std::fs::write(root.join(GOVERNING_PATH), GOVERNING).expect("the document writes");
+
+    // Against the document this test wrote, and never against the tree. The
+    // fixture corpus already holds two unbound *document* targets, and this
+    // case is about neither of them.
+    fn unresolved(run: &Run) -> Vec<&headwater_check::Finding> {
+        run.findings
+            .iter()
+            .filter(|finding| {
+                finding.rule == headwater_check::target::RULE && finding.path == GOVERNING_PATH
+            })
+            .collect()
+    }
+
+    let mut cold = Cache::at(&root, LOCK);
+    let bound = run_over(&root, &mut cold);
+    cold.write(&root);
+    assert_eq!(
+        unresolved(&bound).len(),
+        0,
+        "the anchor did not bind on the first run, so this test proves nothing: {:#?}",
+        unresolved(&bound)
+    );
+
+    // The one edit, and it is outside the corpus. No census row moves, no
+    // digest moves, and no document is added or removed.
+    std::fs::remove_file(&governed).expect("the anchor's target goes");
+
+    let mut warm = Cache::at(&root, LOCK);
+    let gone = run_over(&root, &mut warm);
+
+    assert_eq!(
+        unresolved(&gone).len(),
+        1,
+        "the cache served a verdict about an anchor whose target is no longer there"
+    );
+    assert_eq!(
+        gone.render(Detail::EveryInstance),
+        run_over(&root, &mut Cache::disabled()).render(Detail::EveryInstance),
+        "the cached run reported a verdict over the tree as it was"
+    );
+
+    // And exactly the instance about the anchor was evaluated again. The other
+    // shape this defect admits is to refuse the key of an anchor edge, which
+    // would satisfy every assertion above and leave every such instance
+    // unkeyed and re-evaluated on every run forever. Neither the byte-identity
+    // differential nor the instance count can see that difference, so it is
+    // asserted here: the resolution divides a key, and it withholds none.
+    assert!(gone.cache.hits > 0, "{:?}", gone.cache);
+    assert_eq!(gone.cache.misses, 1, "{:?}", gone.cache);
+    assert_eq!(
+        gone.cache.unkeyed, bound.cache.unkeyed,
+        "an instance lost its key rather than changing it: {:?}",
+        gone.cache
+    );
+}
+
 /// One line of one fixture, rewritten in the private copy of the tree.
 fn rewrite(path: &Path, from: &str, to: &str) {
     let source = std::fs::read_to_string(path).expect("the fixture reads");

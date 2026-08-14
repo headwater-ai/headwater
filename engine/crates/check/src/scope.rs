@@ -1141,9 +1141,16 @@ pub fn over_corpus<C: CorpusCheck>(
     // to bind and the key would carry nothing about a day. The first
     // corpus-scoped rule that reads a date brings the declaration with it, on
     // the terms the other three traits already state.
-    let outcome = cache.outcome(C::RULE, C::VERSION, scope, CORPUS, &reads, None, None, || {
-        check.evaluate(&view)
-    });
+    let outcome = cache.outcome(
+        C::RULE,
+        C::VERSION,
+        scope,
+        CORPUS,
+        &reads,
+        None,
+        None,
+        || check.evaluate(&view),
+    );
     vec![Instance::of(C::RULE, Grain::Corpus, reads, outcome)]
 }
 
