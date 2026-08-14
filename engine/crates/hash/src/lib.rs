@@ -8,19 +8,30 @@
 //! function of about eighty lines with published test vectors, and the vetted
 //! Rust implementation of it arrives with six transitive crates behind it.
 //!
-//! The other half of the argument is what the digest is for. Every digest this
-//! engine writes is an integrity mark inside a repository that already holds
-//! the bytes it was computed from. None of them is a signature, and none
-//! authenticates anything that arrived over a network. The digest that *does* —
-//! the package digest that
-//! [spec 7](../../../../docs/spec/07-distribution-and-federation.md#publishing)
-//! puts on a release, which is
-//! [#77](https://github.com/headwater-ai/headwater/issues/77) — is a
-//! supply-chain check on a fetched artifact, and that one should reach for a
-//! vetted implementation and say why.
+//! The other half of the argument is what the digest is for. Most digests this
+//! engine writes are an integrity mark inside a repository that already holds
+//! the bytes they were computed from. None of them is a signature.
 //!
-//! The test vectors below are the published ones, so a defect here fails a test
-//! rather than producing a lock that nobody can reproduce.
+//! One is not like the others. The package digest that
+//! [spec 7](../../../../docs/spec/07-distribution-and-federation.md#publishing)
+//! puts on a release is a check on an artifact fetched from elsewhere, and
+//! `headwater_resolve::release` computes it with this function.
+//! [Q22](../../../../docs/spec/09-decisions.md#q22--the-integrity-posture-of-a-published-package)
+//! decided that rather than inheriting it, and the argument is what the two
+//! options buy. A vetted implementation buys a correct SHA-256 and no
+//! authentication at all: the check is strong because a person committed the
+//! pin, not because of who wrote the compression function. So the risk a
+//! dependency answers is an implementation defect.
+//!
+//! That risk is answered by evidence here. The test vectors below are the
+//! published ones, so a defect fails a test rather than producing a lock that
+//! nobody can reproduce. `tests/oracle.rs` holds sixteen further subjects
+//! against `sha256sum`, which is an implementation nobody here wrote, and
+//! continuous integration makes its absence a failure rather than a skip.
+//!
+//! What no implementation of this function buys is a statement about who
+//! published an artifact. That gap is
+//! [OBL-repo-0115](../../../../docs/obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md).
 //!
 //! # Why it is a crate of its own
 //!

@@ -25,7 +25,7 @@ relations:
 
 Every decision in [9 — The decision register](09-decisions.md) is closed, and each one left work behind. This file gathers that work in one place. Nothing here blocks a decision. Most items wait on an engine that nobody has built, on a corpus that nobody has adopted, or on a measurement that nobody has run. An item whose measurement has since run stays here, with the number, until the claim it was filed against is settled.
 
-**This file is an index, and it stopped being the place an obligation lives.** Each of the 111 items below is a document on [the obligations shelf](../obligations/), of the `obligation_record` kind. It carries an identifier, a state, two dates, and an edge to the decision or the specification that produced it. It states its context, what the corpus owes, and what would discharge it, under the three headings that the kind requires. The shelf holds 113 records, every one of them `current`, and `status_since` on each one is the day this register first recorded it. A record that a ruling discharges stays on the shelf and leaves the list, and [the last section](#a-human-maintains-this-list-by-hand) states what that costs.
+**This file is an index, and it stopped being the place an obligation lives.** Each of the 112 items below is a document on [the obligations shelf](../obligations/), of the `obligation_record` kind. It carries an identifier, a state, two dates, and an edge to the decision or the specification that produced it. It states its context, what the corpus owes, and what would discharge it, under the three headings that the kind requires. The shelf holds 115 records, every one of them `current`, and `status_since` on each one is the day this register first recorded it. A record that a ruling discharges stays on the shelf and leaves the list, and [the last section](#a-human-maintains-this-list-by-hand) states what that costs.
 
 An obligation was a paragraph in a list. Nothing could carry its state, its dates or its edges, and a reader who cited one cited a position in a file. Now a citation names a document with an identifier, and a check reads the document that a citation reaches.
 
@@ -59,7 +59,7 @@ Seventeen decisions carry a claim that no run supports. They are OBL-repo-0001 t
 
 ## What waits on a first adopter
 
-Nine items, OBL-repo-0018 through OBL-repo-0026, and each one is data or a deferred component. So the first real adopter is the evidence, rather than a further argument.
+Ten items: OBL-repo-0018 through OBL-repo-0026, and OBL-repo-0115. Each one is data or a deferred component. So the first real adopter is the evidence, rather than a further argument. The last of them arrived from the publishing verbs. Those are the first code here to write an artifact for somebody outside this repository, and to check one that arrived from outside it.
 
 - [OBL-repo-0018](../obligations/0018-the-bundle-set-is-a-guess-about-how-adopters-cluster.md) — The bundle set is a guess about how adopters cluster
 - [OBL-repo-0019](../obligations/0019-whether-any-corpus-needs-a-second-export-profile.md) — Whether any corpus needs a second export profile
@@ -70,6 +70,7 @@ Nine items, OBL-repo-0018 through OBL-repo-0026, and each one is data or a defer
 - [OBL-repo-0024](../obligations/0024-whether-any-corpus-other-than-this-one-needs-a-retired-term.md) — Whether any corpus other than this one needs a retired-term lexicon
 - [OBL-repo-0025](../obligations/0025-where-the-probe-kind-ships-is-an-unsettled-clustering-question.md) — Where the probe kind ships is an unsettled clustering question
 - [OBL-repo-0026](../obligations/0026-the-operational-shape-of-a-hosted-server-is-unstated.md) — The operational shape of a hosted server is unstated
+- [OBL-repo-0115](../obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md) — A pinned digest authenticates the pin and never the publisher
 
 ## Design work that nothing blocks
 

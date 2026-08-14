@@ -21,16 +21,21 @@
 //! source, and [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
 //! carries the ruling.
 //!
-//! # Finding a package by name is a placeholder, and it says so
+//! # Finding a package by name, and where it came from
 //!
 //! A package is a directory under `packages/` whose manifest declares the name
-//! the consumer asked for. That is a registry with one repository in it.
-//! Fetching a version, checking a digest and pinning it is
-//! [#77](https://github.com/headwater-ai/headwater/issues/77), and the one
-//! thing this lookup does that survives it is refusing a version the consumer
-//! did not ask for.
+//! the consumer asked for, and the lookup refuses a version the consumer did not
+//! pin. How the directory got there is [`publish`] and [`vendor`]: a publisher
+//! writes an artifact with a digest over every file in it, a caller moves that
+//! artifact by whatever the organization already uses, and `vendor` checks it
+//! against the digest this repository pinned before anything is installed. The
+//! engine opens no socket at any point, which is why the verb takes a path
+//! rather than a location.
+//!
+//! [`crate::release`] holds the record and argues what its digest proves.
 
 use crate::error::{ResolveError, ResolveErrorKind};
+use crate::release::{self, Release, ReleaseError};
 use crate::source::{Role, Source};
 use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};
@@ -38,12 +43,32 @@ use std::path::{Path, PathBuf};
 /// The directory a package is looked up in, relative to the repository root.
 pub const PACKAGES: &str = "packages";
 
+/// The file that carries a package manifest, inside the package directory.
+pub const MANIFEST: &str = "package.yml";
+
+/// The manifest key that states which engines the package is for.
+///
+/// [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#publishing)
+/// puts it in the manifest and until this module nothing read it, so the base
+/// package left it out rather than commit a claim no test could fail.
+/// [`sources`] reads it now, and a package outside the range is refused before
+/// any source is loaded.
+pub const REQUIRES_ENGINE: &str = "requires_engine";
+
 /// The consumer declaration: what this repository takes, and what it walks.
 #[derive(Clone, Debug)]
 pub struct Consumer {
     pub package: String,
     pub version: String,
     pub bundles: Vec<String>,
+    /// The digest of the published artifact this repository takes, where it
+    /// declares one.
+    ///
+    /// The pin is authored and it is never written by a verb. A digest that the
+    /// engine recorded from whatever it had just fetched would be a pin against
+    /// itself, so `vendor` refuses to run without one rather than trusting the
+    /// first artifact it meets. See [`crate::release`].
+    pub digest: Option<String>,
     pub overlay: Option<String>,
     /// The corpus root, as written, relative to the repository root.
     pub corpus_root: String,
@@ -113,6 +138,7 @@ pub fn consumer(root: &Path) -> Result<Consumer, Vec<ResolveError>> {
         package,
         version,
         bundles,
+        digest: text(taxonomy, "digest"),
         overlay: text(taxonomy, "overlay"),
         corpus_root,
         exclusions,
@@ -135,6 +161,20 @@ pub fn sources(root: &Path, consumer: &Consumer) -> Result<Vec<Source>, Vec<Reso
                 "this takes {} {}, and the package here is {declared}",
                 consumer.package, consumer.version
             ),
+        ));
+    }
+
+    // The engine range the package declares, checked before a single source is
+    // read. A package that needs a later engine resolves into a taxonomy this
+    // engine reads with whatever it does not understand dropped, and that is a
+    // lock nobody can reproduce. The refusal names both numbers.
+    if let Err(refused) = release::engine_range(
+        &consumer.package,
+        text(&manifest, REQUIRES_ENGINE).as_deref(),
+    ) {
+        return Err(release::as_error(
+            &manifest_name(root, &directory),
+            &refused,
         ));
     }
 
@@ -205,7 +245,7 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
     entries.sort();
 
     for directory in entries {
-        let manifest = directory.join("package.yml");
+        let manifest = directory.join(MANIFEST);
         if !manifest.is_file() {
             continue;
         }
@@ -222,6 +262,167 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
         PACKAGES,
         &format!("no package under `{PACKAGES}/` declares `{name}`"),
     ))
+}
+
+/// Write the published artifact of a package into `out`.
+///
+/// The artifact is a directory, because this engine carries no archive format
+/// and needs none: whatever the organization already uses to move a directory
+/// moves this one, and an archive would be a second thing to check the digest of.
+///
+/// Two things happen that a copy alone would not do.
+///
+/// **The bundles come inside.** A manifest may point `contents.bundles` outside
+/// the package, and this repository's does: the package and the library entry
+/// that ships its bundles live in one tree, so the path climbs out with `../..`.
+/// That works only while a package is found rather than fetched. Publishing
+/// copies the bundles into `bundles/` beside the manifest and rewrites the one
+/// scalar, so the published manifest names a path inside the artifact. The
+/// escape is therefore a property of the source layout, and no artifact carries
+/// it.
+///
+/// **A record is written.** [`release::compute`] takes the digest of every file
+/// in the artifact, and the digest over that list is the number the publisher
+/// states in its release notes and the consumer pins.
+pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<ResolveError>> {
+    let (directory, manifest) = find(root, name)?;
+
+    let occupied = std::fs::read_dir(out).map(|mut entries| entries.next().is_some());
+    if occupied.unwrap_or(false) {
+        return Err(refusal(
+            &display(root, out),
+            "the output directory holds files already, and a published artifact is every file \
+             under its root. Publish into a directory that does not exist yet",
+        ));
+    }
+    copy_tree(&directory, out).map_err(|why| refusal(&display(root, &directory), &why))?;
+
+    // The bundles path, where the manifest states one that leaves the package.
+    // A path that stays inside was copied with everything else.
+    if let Some(bundles) = manifest
+        .get("contents")
+        .and_then(|node| node.value.as_map())
+        .and_then(|contents| contents.get("bundles"))
+    {
+        let Some(scalar) = bundles.value.as_scalar() else {
+            return Err(refusal(
+                &display(root, &directory.join(MANIFEST)),
+                "`contents.bundles` is not a path",
+            ));
+        };
+        if leaves(&scalar.text) {
+            copy_tree(&directory.join(&scalar.text), &out.join(BUNDLES))
+                .map_err(|why| refusal(&display(root, &directory), &why))?;
+            let source = std::fs::read_to_string(directory.join(MANIFEST))
+                .map_err(|error| refusal(MANIFEST, &format!("cannot read it: {error}")))?;
+            let rewritten = splice(&source, bundles.span, BUNDLES).ok_or_else(|| {
+                refusal(
+                    &display(root, &directory.join(MANIFEST)),
+                    "`contents.bundles` does not lie inside the manifest it was read from",
+                )
+            })?;
+            std::fs::write(out.join(MANIFEST), rewritten)
+                .map_err(|error| refusal(MANIFEST, &format!("cannot write it: {error}")))?;
+        }
+    }
+
+    let record = release::compute(out, &manifest)
+        .map_err(|error| release::as_error(&display(root, out), &error))?;
+    std::fs::write(out.join(release::RECORD), release::render(&record))
+        .map_err(|error| refusal(release::RECORD, &format!("cannot write it: {error}")))?;
+    Ok(record)
+}
+
+/// Where a published package keeps the bundles it ships.
+pub const BUNDLES: &str = "bundles";
+
+/// Check a fetched artifact against the digest this repository pinned, and
+/// install it under `packages/`.
+///
+/// The caller fetched it. This engine has no idea where from and cannot ask:
+/// no crate of it depends on the network, and a verb that took a location
+/// rather than a path is the one change that would end that guarantee.
+///
+/// The pin is the argument of the check and it is never derived from the
+/// artifact. A `vendor` with no pin is a fetch nobody checked, so it refuses and
+/// names the field to write, rather than recording what it happened to receive.
+///
+/// An existing directory is replaced only when it is itself a vendored artifact.
+/// A package directory that a person maintains is a publisher's source, and
+/// overwriting one on a consumer command would delete the thing being published.
+pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<ResolveError>> {
+    let name = display(root, fetched);
+    let record =
+        release::verify(fetched, pinned).map_err(|error| release::as_error(&name, &error))?;
+
+    let target = root.join(PACKAGES).join(record.package.replace('/', "-"));
+    if target.exists() {
+        match release::at(&target) {
+            Ok(_) => {
+                std::fs::remove_dir_all(&target).map_err(|error| {
+                    refusal(
+                        &display(root, &target),
+                        &format!("cannot replace it: {error}"),
+                    )
+                })?;
+            }
+            Err(ReleaseError::Absent(_)) => {
+                return Err(refusal(
+                    &display(root, &target),
+                    "a directory is there and it carries no release record, so it is a package \
+                     somebody maintains rather than one that was vendored. Move it before \
+                     vendoring over it",
+                ))
+            }
+            Err(error) => return Err(release::as_error(&display(root, &target), &error)),
+        }
+    }
+    copy_tree(fetched, &target).map_err(|why| refusal(&name, &why))?;
+    Ok(record)
+}
+
+/// Whether a path written in a manifest leaves the package that carries it.
+fn leaves(path: &str) -> bool {
+    Path::new(path)
+        .components()
+        .any(|part| part == std::path::Component::ParentDir)
+        || Path::new(path).is_absolute()
+}
+
+/// Replace the text a span covers, where the span lies inside the source.
+fn splice(source: &str, span: headwater_yaml::Span, with: &str) -> Option<String> {
+    let before = source.get(..span.start.offset)?;
+    let after = source.get(span.end.offset..)?;
+    Some(format!("{before}{with}{after}"))
+}
+
+/// Copy a directory tree, creating what it needs.
+fn copy_tree(from: &Path, to: &Path) -> Result<(), String> {
+    std::fs::create_dir_all(to)
+        .map_err(|error| format!("cannot create {}: {error}", to.display()))?;
+    let mut entries: Vec<PathBuf> = std::fs::read_dir(from)
+        .map_err(|error| format!("cannot read {}: {error}", from.display()))?
+        .filter_map(|entry| entry.ok().map(|entry| entry.path()))
+        .collect();
+    entries.sort();
+    for entry in entries {
+        let Some(name) = entry.file_name() else {
+            continue;
+        };
+        let destination = to.join(name);
+        if entry.is_dir() {
+            copy_tree(&entry, &destination)?;
+        } else {
+            std::fs::copy(&entry, &destination)
+                .map_err(|error| format!("cannot copy {}: {error}", entry.display()))?;
+        }
+    }
+    Ok(())
+}
+
+/// The manifest of a package, as a reader of the repository would name it.
+fn manifest_name(root: &Path, directory: &Path) -> String {
+    display(root, &directory.join(MANIFEST))
 }
 
 /// A path as a reader of the repository would write it.
