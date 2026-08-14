@@ -62,6 +62,7 @@ impl Audit {
         self.families_section(&mut out);
         self.facets_section(&mut out);
         self.shelves_section(&mut out);
+        self.layouts_section(&mut out);
         self.dwell_section(&mut out);
         self.warrants_section(&mut out);
         self.waiting_section(&mut out);
@@ -305,6 +306,58 @@ impl Audit {
                 let _ = writeln!(out, "    {count:5} {kind}");
             }
         }
+    }
+
+    /// How far the file names on each shelf have drifted from the layout that
+    /// named them at birth.
+    ///
+    /// The denominator is the measurable population and never the shelf, which
+    /// is the whole reason this reading carries a [`Supply`] per row. A shelf
+    /// whose kind declares no source for a placeholder cannot be measured at
+    /// all, and a report that counted those documents as disagreeing would
+    /// state an authoring failure where a declaration is missing.
+    ///
+    /// [`Supply`]: crate::Supply
+    fn layouts_section(&self, out: &mut String) {
+        out.push_str("\nfile names, against the layout each shelf declares\n");
+        if self.layouts.is_empty() {
+            out.push_str(
+                "  none. No shelf of this taxonomy declares a layout, so nothing names a\n  \
+                          file and no name can disagree.\n",
+            );
+            return;
+        }
+        out.push_str(
+            "  A layout names a file at birth and no check reads one afterwards, so this is a\n  \
+             convention rather than a rule. A generated document is excluded: its name is the\n  \
+             emitter's, as its content is.\n",
+        );
+        for reading in &self.layouts {
+            let _ = writeln!(
+                out,
+                "  {} — `{}`, {}",
+                reading.shelf,
+                reading.layout,
+                many(reading.identified, "document", "documents")
+            );
+            out.push_str(&folded(
+                &format!(
+                    "{} — {}",
+                    reading.adherence.located(),
+                    reading.adherence.says()
+                ),
+                "      ",
+            ));
+        }
+        let measured: usize = self.layouts.iter().map(|reading| reading.measured).sum();
+        let renders: usize = self.layouts.iter().map(|reading| reading.renders).sum();
+        let identified: usize = self.layouts.iter().map(|reading| reading.identified).sum();
+        let _ = writeln!(
+            out,
+            "  A layout renders the name of {renders} of the {measured} measurable documents, over\n  \
+             {identified} standing on a shelf that declares one. Nothing states how far a shelf may\n  \
+             drift, so the figure carries no verdict."
+        );
     }
 
     fn dwell_section(&self, out: &mut String) {

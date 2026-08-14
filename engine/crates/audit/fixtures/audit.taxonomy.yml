@@ -23,6 +23,11 @@
 #   * `library` is heterogeneous over three kinds and one of them is empty.
 #   * The lifecycle has four states and the tree puts a document in three of
 #     them, so the dwell reading has a row that stands at zero.
+#   * Three shelves declare a layout and each one reaches a different arm of the
+#     adherence reading. `decisions` is measurable and one of its three files
+#     disagrees. `library` cannot be measured at all, because none of its kinds
+#     requires the facet in the `name` role. `archive` holds no document, so the
+#     absence is the corpus rather than the schema.
 
 purposes:
   rationale:
@@ -50,6 +55,8 @@ facets:
   summary:
     role: scent
     required: true
+  title:
+    role: name
   doc_type:
     values: [note, manual, catalog]
   tier:
@@ -65,6 +72,7 @@ kinds:
   decision:
     is_a: governed_document
     purpose: rationale
+    facets: {require: [title]}
   note:
     is_a: governed_document
     purpose: behavior
@@ -80,11 +88,18 @@ shelves:
     path: audit/decisions/**
     homogeneous: true
     kind: decision
+    layout: "{slug}.md"
   library:
     path: audit/library/**
     homogeneous: false
     discriminator: doc_type
     kinds: [note, manual, catalog]
+    layout: "{doc_type}-{slug}.md"
+  archive:
+    path: audit/archive/**
+    homogeneous: true
+    kind: note
+    layout: "{slug}.md"
 
 relations:
   # Succession, declaring the nuclearity its family already gives.

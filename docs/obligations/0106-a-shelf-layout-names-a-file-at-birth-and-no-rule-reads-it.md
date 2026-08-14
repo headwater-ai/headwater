@@ -3,8 +3,8 @@ id: OBL-repo-0106
 title: "A shelf layout names a file at birth and no rule reads it"
 status: current
 status_since: 2026-08-14
-last_verified: 2026-08-14
-summary: "A shelf layout is read by the scaffolder and by nothing else, and a rule that read it would report 86 of the 142 identified documents on the three shelves that declare one."
+last_verified: 2026-08-15
+summary: "A shelf layout is read by the scaffolder and by nothing else, and a rule that read it would report every document that a person renamed or typed by hand."
 provenance:
   warrant: accepted
   agency: mixed
@@ -32,21 +32,15 @@ Both shelves now declare `{seq:04d}-{slug}.md`. `{seq}` reads the sequence of th
 
 The declaration fixes a name at the moment of birth, and nothing holds the name after that. A file that a person renames answers to no rule, and neither does a file that a person typed by hand.
 
-The measurement over this repository, at the three shelves that declare a layout:
+`taxonomy audit` takes the measurement, one row for each shelf that declares a layout. It renders each name again through the function that `headwater new` writes one with, and it reports how many files carry the name that comes back. A shelf that no declaration lets it measure is held apart from the count, and the row states where the absence lives. This record holds no figure, because a figure here is one that nothing re-derives.
 
-| shelf | layout | identified documents | names the layout renders |
-|---|---|---|---|
-| `spec_series` | `{sequence:02d}-{slug}.md` | 16 | 0 |
-| `obligations` | `{seq:04d}-{slug}.md` | 105 | 56 |
-| `decisions` | `{seq:04d}-{slug}.md` | 21 | 0 |
+Three causes hold the three shelves apart, and each one blocks a rule for a different reason.
 
-Three causes hold the three rows apart, and each one blocks a rule for a different reason.
+No kind on the specification shelf requires a facet in the `name` role. So a check has no source for `{slug}` there, and that shelf is the arm the reading holds apart.
 
-`design_spec` requires no facet in the `name` role, so 15 of the 16 spec documents give a check no source for `{slug}`. The sixteenth declares no `sequence` either.
+Every obligation record that disagrees carries a name truncated from its title, and no declaration states a width.
 
-Every one of the 49 obligation records that disagrees carries a name truncated from its title, and no declaration states a width.
-
-Every decision title opens with the token `Q<n>`, which the file name drops. `Q4 — Relation storage` renders `0004-q4-relation-storage.md`, and the file is `0004-relation-storage.md`.
+A decision title opens with the token `Q<n>`, and a file name that a person typed drops it. `Q4 — Relation storage` renders `0004-q4-relation-storage.md`, and the file is `0004-relation-storage.md`. The one decision that the scaffolder named keeps the token.
 
 ## Discharge
 
@@ -54,4 +48,4 @@ A rule that reads a layout needs three declarations that this taxonomy does not 
 
 The other answer is the ruling that a layout binds the scaffolder alone. [Spec 3](../spec/03-authoring-and-lifecycle.md#templates-and-scaffolding) states that answer, and a rename after birth is then a fact outside the declaration.
 
-This record holds the measurement under either answer, because a rule of this shape reports 86 of 142 documents today and repairs none of them. [Spec 12](../spec/12-check-layer.md#fixability) puts a rename below the fixability bar, since a rename breaks every inbound link that names the old path.
+The verb takes the measurement under either answer. A rule of this shape reports every document that a person renamed or typed by hand, and it repairs none of them. [Spec 12](../spec/12-check-layer.md#fixability) puts a rename below the fixability bar, since a rename breaks every inbound link that names the old path.

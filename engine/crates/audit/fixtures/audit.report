@@ -58,6 +58,8 @@ facets, and what each one separates
                  4 distinct values in use, and no two documents share one
   summary        role scent, no declared set, 5 of 5 documents carry it
                  5 distinct values in use, and no two documents share one
+  title          role name, no declared set, 3 of 5 documents carry it
+                 3 distinct values in use, and no two documents share one
   doc_type       no role, 3 declared, 2 of 5 documents carry it
                  2 distinct values in use, and no two documents share one
   tier           no role, 2 declared, 0 of 5 documents carry it
@@ -74,6 +76,23 @@ shelves that hold several kinds
         0 catalog
         1 manual
         1 note
+
+file names, against the layout each shelf declares
+  A layout names a file at birth and no check reads one afterwards, so this is a
+  convention rather than a rule. A generated document is excluded: its name is the
+  emitter's, as its content is.
+  decisions — `{slug}.md`, 3 documents
+      supplied — `{slug}.md` renders the name of 2 of the 3 documents on `decisions`
+  library — `{doc_type}-{slug}.md`, 2 documents
+      nothing declares it — not one of the 2 documents on `library` can be measured:
+      `manual` requires no facet in the `name` role, so `{slug}` has no declared source;
+      `note` requires no facet in the `name` role, so `{slug}` has no declared source
+  archive — `{slug}.md`, 0 documents
+      nothing authored one — no document stands on `archive`, so `{slug}.md` names
+      nothing yet
+  A layout renders the name of 2 of the 3 measurable documents, over
+  5 standing on a shelf that declares one. Nothing states how far a shelf may
+  drift, so the figure carries no verdict.
 
 dwell in the current state
   Observed and never policed. A state nothing sits in has a row too.

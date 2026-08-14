@@ -74,6 +74,9 @@ struct Built {
     shape: Shape,
     taxonomy: Taxonomy,
     relations: Declarations,
+    /// The resolved taxonomy, for the one shelf member that no typed reader
+    /// carries: `layout`.
+    resolved: Mapping,
 }
 
 impl Built {
@@ -95,6 +98,7 @@ impl Built {
             shape,
             taxonomy,
             relations,
+            resolved: root.clone(),
         }
     }
 
@@ -111,6 +115,7 @@ impl Built {
             &self.taxonomy,
             &self.shape,
             &self.relations,
+            &self.resolved,
         )
     }
 }
@@ -151,6 +156,109 @@ fn the_fixture_tree_produces_the_recorded_audit() {
         &fixtures_dir().join("audit.report"),
         &built.audit(AT).render(),
     );
+}
+
+/// An arm that cannot be measured has a location, and it is never a zero.
+///
+/// This is the defect that the figure in spec 3 carried before this reading
+/// existed. That sentence read `56 of 142`, and the denominator held 16
+/// documents of a kind that requires no facet in the `name` role. A rule of the
+/// shape it was arguing about could not have measured one of them, so counting
+/// them as documents that disagree reported a missing declaration as an
+/// authoring failure. The three shelves below are the three answers a shelf can
+/// produce, and a run that folded any of them into the others fails here.
+#[test]
+fn a_shelf_that_cannot_be_measured_is_located_rather_than_counted_at_zero() {
+    let audit = fixture_tree().audit(AT);
+    let reading = |shelf: &str| {
+        audit
+            .layouts
+            .iter()
+            .find(|reading| reading.shelf == shelf)
+            .unwrap_or_else(|| panic!("no layout reading for `{shelf}`"))
+    };
+
+    // Measurable, and one of the three files disagrees. A reading that compared
+    // the path rather than the file name, or that slugged something other than
+    // the facet in the `name` role, moves this number.
+    let decisions = reading("decisions");
+    assert_eq!(
+        (decisions.identified, decisions.measured, decisions.renders),
+        (3, 3, 2)
+    );
+    assert!(matches!(decisions.adherence, Supply::Supplied(_)));
+
+    // Not measurable, and the absence is in the schema. No kind of this shelf
+    // requires the facet in the `name` role, so `{slug}` has no source and
+    // neither document can be held to the layout.
+    let library = reading("library");
+    assert_eq!(
+        (library.identified, library.measured, library.renders),
+        (2, 0, 0)
+    );
+    assert!(
+        matches!(library.adherence, Supply::Undeclared(_)),
+        "an unmeasurable shelf reported as {}",
+        library.adherence.located()
+    );
+    assert!(
+        library.adherence.says().contains("`name` role"),
+        "the reason names no declaration: {}",
+        library.adherence.says()
+    );
+
+    // Declared and empty. The absence is the corpus's, and the row exists so
+    // that a shelf nobody writes to is told apart from a shelf that drifted.
+    let archive = reading("archive");
+    assert_eq!(
+        (archive.identified, archive.measured, archive.renders),
+        (0, 0, 0)
+    );
+    assert!(
+        matches!(archive.adherence, Supply::Unauthored(_)),
+        "an empty shelf reported as {}",
+        archive.adherence.located()
+    );
+}
+
+/// Every shelf that declares a layout reports a population it could measure.
+///
+/// Over this repository rather than over the tree written for it, and it is the
+/// arithmetic that spec 3 now cites: a document that was not measured is in no
+/// numerator and in no denominator. A reading whose measured count exceeded its
+/// identified count would be counting a document twice, and one whose renders
+/// exceeded its measured count would be reporting a name it never rendered.
+#[test]
+fn no_layout_reading_counts_more_than_it_measured() {
+    let audit = repository_audit(&this_repository(), AT);
+    assert!(
+        !audit.layouts.is_empty(),
+        "this repository declares a shelf layout and the reading found none"
+    );
+    for reading in &audit.layouts {
+        assert!(
+            reading.renders <= reading.measured,
+            "`{}` renders {} of {} measured",
+            reading.shelf,
+            reading.renders,
+            reading.measured
+        );
+        assert!(
+            reading.measured <= reading.identified,
+            "`{}` measured {} of {} identified",
+            reading.shelf,
+            reading.measured,
+            reading.identified
+        );
+        assert_eq!(
+            reading.measured == 0 || reading.identified == 0,
+            !reading.adherence.met(),
+            "`{}` reports `{}` over {} measured",
+            reading.shelf,
+            reading.adherence.located(),
+            reading.measured
+        );
+    }
 }
 
 /// The one finding class exists, and the declaration is what produces it.
