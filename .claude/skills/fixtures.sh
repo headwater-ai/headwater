@@ -347,6 +347,76 @@ $out" ;;
         esac
     fi
 
+    printf '\n# headwater-sweep, against the promise that nothing gates on it\n'
+
+    # The sweep is the one mechanism here whose output no engine produces, and
+    # the promise it rests on is that no exit status ever reads that output.
+    # Four cases hold it, one per thing that enforces it in spec 12. Three of
+    # them read no skill sentence, because what they assert is a property of
+    # this tree rather than a claim a skill makes.
+
+    # A file the intake cannot use at all. It still exits 0: a non-zero status
+    # here would be a build that a model's output can fail.
+    printf 'this is not a mapping\n' > "$scratch/refused.yml"
+    claim 'a return file this engine cannot use still exits 0' \
+        headwater-sweep/SKILL.md \
+        'exits 0 whatever it finds' \
+        0 'reported nothing' \
+        "$engine" sweep report "$scratch/refused.yml" --root "$root"
+
+    # And a well-formed one that carries a finding, which exits with the same
+    # status. The quotation is read out of the document rather than listed here,
+    # so ordinary prose edits never rewrite this case.
+    lock=$("$engine" sweep plan --under docs/spec --root "$root" |
+        sed -n 's/^taxonomy: //p' | head -1)
+    quote=$(sed -n 's/^# //p' "$root/docs/spec/12-check-layer.md" | head -1)
+    printf 'taxonomy: %s\nslice: docs/spec\nfindings:\n  - class: undefined_concept\n    documents:\n      - docs/spec/12-check-layer.md\n    evidence:\n      - path: docs/spec/12-check-layer.md\n        quote: "%s"\n    message: A term of this document is defined nowhere in the slice.\n' \
+        "$lock" "$quote" > "$scratch/carried.yml"
+    claim 'a return file that carries a finding exits with the status of one that carries none' \
+        headwater-sweep/SKILL.md \
+        'Nothing gates on your output' \
+        0 '1 carried, 0 refused' \
+        "$engine" sweep report "$scratch/carried.yml" --root "$root"
+
+    # The absence of a caller. A sweep runs when a person or a schedule asks,
+    # and a grep is the whole of what says so.
+    name='no gate and no CI job names the sweep'
+    callers=''
+    for file in "$root/.githooks/pre-commit" "$root/.github/workflows/ci.yml" \
+        "$root/.claude/hooks/review.sh" "$root/.claude/hooks/write.sh" \
+        "$root/.claude/hooks/intent.sh"; do
+        grep -q 'headwater sweep\|sweep report\|sweep plan' "$file" 2>/dev/null &&
+            callers="$callers $(basename "$file")"
+    done
+    if [ -z "$callers" ]; then
+        pass "$name"
+    else
+        fail "$name" "these run it:$callers"
+    fi
+
+    # No socket. The middle part of a sweep needs a model and no crate of this
+    # engine can reach one, so an unreachable model is an absent file rather
+    # than a failed build.
+    name='no crate of this engine depends on a network client'
+    reached=$(grep -lE '^(reqwest|hyper|ureq|curl|isahc|surf|attohttpc|tungstenite|native-tls|rustls|openssl) *=' \
+        "$root"/engine/crates/*/Cargo.toml 2>/dev/null)
+    if [ -z "$reached" ]; then
+        pass "$name"
+    else
+        fail "$name" "these manifests do: $reached"
+    fi
+
+    # The plan is deterministic, which is the only reproducibility a sweep
+    # claims for itself. Two runs, over the tree as it stands.
+    name='the briefing is the same bytes twice'
+    "$engine" sweep plan --under docs/obligations --root "$root" > "$scratch/plan-a.txt" 2>/dev/null
+    "$engine" sweep plan --under docs/obligations --root "$root" > "$scratch/plan-b.txt" 2>/dev/null
+    if cmp -s "$scratch/plan-a.txt" "$scratch/plan-b.txt"; then
+        pass "$name"
+    else
+        fail "$name" 'two runs over one tree wrote different bytes'
+    fi
+
     rm -rf "$scratch"
     trap - EXIT INT TERM
 else
