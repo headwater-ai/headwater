@@ -598,23 +598,31 @@ fn verdict(selected: &Selected, session: &[&Event]) -> Verdict {
     }
 }
 
+/// One tool call, located.
+struct Found<'a> {
+    /// The event, one-based in the order the block lists them.
+    event: usize,
+    /// The call, one-based within that event.
+    call: usize,
+    made: &'a crate::intake::Call,
+}
+
 /// The first recorded call that named an examined document, where there is one.
-fn read(examines: &[Examined], session: &[&Event]) -> Option<(Witness, usize)> {
-    let mut seen = 0;
+///
+/// It returns the call rather than a verdict, because `opened` and `not_opened`
+/// read the same fact and draw opposite conclusions from it. A helper that
+/// returned one of their verdicts would leave the other with a case it cannot
+/// reach, and an unreachable case in a correctness root is a case nobody tests.
+fn read<'a>(examines: &[Examined], session: &[&'a Event]) -> Option<Found<'a>> {
     for event in session {
         let Some(calls) = &event.calls else { continue };
         for (index, call) in calls.iter().enumerate() {
-            seen += 1;
             if examines.iter().any(|target| names(&call.argument, target)) {
-                return Some((
-                    Witness::Read {
-                        event: event.at,
-                        call: index + 1,
-                        tool: call.tool.clone(),
-                        argument: call.argument.clone(),
-                    },
-                    seen,
-                ));
+                return Some(Found {
+                    event: event.at,
+                    call: index + 1,
+                    made: call,
+                });
             }
         }
     }
@@ -665,7 +673,12 @@ fn opened(selected: &Selected, session: &[&Event]) -> Verdict {
         return Verdict::Refused(Refusal::Unrecorded { what: "calls" });
     };
     match read(&selected.examines, session) {
-        Some((witness, _)) => Verdict::Satisfied(witness),
+        Some(found) => Verdict::Satisfied(Witness::Read {
+            event: found.event,
+            call: found.call,
+            tool: found.made.tool.clone(),
+            argument: found.made.argument.clone(),
+        }),
         None => Verdict::NotSatisfied(Miss::NeverRead {
             calls,
             over: selected.examines.len(),
@@ -681,21 +694,11 @@ fn not_opened(selected: &Selected, session: &[&Event]) -> Verdict {
         return Verdict::Refused(Refusal::NothingObserved);
     }
     match read(&selected.examines, session) {
-        Some((
-            Witness::Read {
-                event,
-                call,
-                argument,
-                ..
-            },
-            _,
-        )) => Verdict::NotSatisfied(Miss::Read {
-            event,
-            call,
-            argument,
+        Some(found) => Verdict::NotSatisfied(Miss::Read {
+            event: found.event,
+            call: found.call,
+            argument: found.made.argument.clone(),
         }),
-        // `read` returns the `Read` witness or nothing at all.
-        Some(_) => unreachable!("read returns one witness form"),
         None => Verdict::Satisfied(Witness::NoneOf {
             calls,
             over: selected.examines.len(),
