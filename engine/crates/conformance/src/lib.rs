@@ -28,10 +28,12 @@
 //! adopter wired up. It is not a measurement of a corpus, and this crate takes
 //! no measurement of one.
 //!
-//! **Nothing declares a level.** [`Waivers`] is the only conformance key the
-//! consumer declaration carries, and no key of it holds a level. [`Report`]
+//! **Nothing declares a level, and a key that tried to would end the run.**
+//! `waivers` is the only key the `conformance` block of the consumer
+//! declaration takes, and [`waivers`] refuses any other one by name. [`Report`]
 //! derives the level from the rules that passed, so there is no field an adopter
-//! can write a larger number into.
+//! can write a larger number into, and a `level` key read and dropped would
+//! leave an adopter holding a claim that nothing evaluated.
 //!
 //! **A level with no rule is refused.** [`SetError::EmptyLevel`]. A rung that
 //! names no rule is a rung every repository already stands on.
