@@ -115,7 +115,7 @@ impl Budgets {
 fn envelope(tier: Tier, fields: &Mapping) -> Result<Envelope, Unreadable> {
     let name = tier.name();
     let cents = |key: &'static str| -> Result<Cents, Unreadable> {
-        let text = text(fields, key).ok_or_else(|| Unreadable::Missing {
+        let text = text(fields, key).ok_or(Unreadable::Missing {
             tier: name,
             field: key,
         })?;
@@ -213,11 +213,9 @@ pub enum Unreadable {
 impl std::fmt::Display for Unreadable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Unreadable::Unparsed(errors) => write!(
-                f,
-                "{PATH} did not parse as YAML: {}",
-                errors.join("; ")
-            ),
+            Unreadable::Unparsed(errors) => {
+                write!(f, "{PATH} did not parse as YAML: {}", errors.join("; "))
+            }
             Unreadable::Malformed(what) => write!(f, "{what}"),
             Unreadable::UnknownTier(name) => write!(
                 f,
@@ -233,11 +231,7 @@ impl std::fmt::Display for Unreadable {
                 "the `{tier}` tier declares no `{field}`, and every field is required because a \
                  default would be this engine choosing how much to spend"
             ),
-            Unreadable::NotACount {
-                tier,
-                field,
-                found,
-            } => write!(
+            Unreadable::NotACount { tier, field, found } => write!(
                 f,
                 "`{field}` of the `{tier}` tier is `{found}`, and it has to be a whole number \
                  above zero"

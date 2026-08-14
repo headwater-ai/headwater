@@ -68,6 +68,15 @@ facets:
     type: string
     required: true
     volatility: mutable
+  arm:
+    guidance:
+      absent: "the session ran against the declared ablation of it"
+      present: "the session ran against the corpus"
+    required: false
+    values:
+      - present
+      - absent
+    volatility: stable
   doc_type:
     guidance:
       decision_register: "the one document that records settled decisions and the argument that settled each"
@@ -83,9 +92,50 @@ facets:
       - review_prompt
       - review_record
     volatility: stable
+  expectation:
+    guidance:
+      answered: "the final answer is one named value from the closed set this probe declares"
+      cited: "a produced artifact cites one of the identifiers this probe names"
+      not_opened: "the transcript shows that the session read none of them"
+      opened: "the transcript shows that the session read one of the documents this probe names"
+      patched: "a produced patch passes the check this probe names"
+    required: false
+    values:
+      - opened
+      - not_opened
+      - cited
+      - answered
+      - patched
+    volatility: stable
+  oracle:
+    required: false
+    type: string
+    volatility: stable
+  probe_category:
+    guidance:
+      consistency: "the probe asks whether two phrasings of one question reach one answer"
+      discovery: "the probe asks whether the agent finds the governing document at all"
+      navigability: "the probe asks whether the agent gets from a code path to the governing document and back"
+      sufficiency: "the probe asks whether the agent has enough to act correctly once it has found the document"
+    required: false
+    values:
+      - discovery
+      - sufficiency
+      - navigability
+      - consistency
+    volatility: stable
   sequence:
     required: false
     type: integer
+    volatility: stable
+  tier:
+    guidance:
+      campaign: "both arms, powered, one batch and one model version, for one named claim"
+      regression: "a fixed scenario set in one arm against a recorded baseline, which establishes no effect"
+    required: false
+    values:
+      - regression
+      - campaign
     volatility: stable
   title:
     required: false
@@ -266,6 +316,37 @@ kinds:
     lifecycle: standard
     purpose: obligation
     voice: declarative
+  probe:
+    facets:
+      require:
+        - probe_category
+        - expectation
+        - oracle
+    identifier:
+      scheme: probe_id
+    is_a: governed_document
+    lifecycle: standard
+    purpose: evidence
+    sections:
+      require:
+        - Task
+        - Expectation
+    voice: declarative
+  probe_transcript:
+    facets:
+      require:
+        - tier
+        - arm
+    identifier:
+      scheme: run_id
+    is_a: governed_document
+    lifecycle: standard
+    purpose: evidence
+    sections:
+      require:
+        - "Run identity"
+        - Events
+    voice: narrative
   review_prompt:
     facets:
       require:
@@ -384,6 +465,23 @@ relations:
     reciprocal: required
     to:
       - obligation_record
+  examines:
+    cardinality: many
+    created_by: author
+    family: evidence
+    from:
+      - probe
+    to:
+      - governed_document
+      - code_path
+  records:
+    cardinality: many
+    created_by: generator
+    family: evidence
+    from:
+      - probe_transcript
+    to:
+      - probe
 shelves:
   decisions:
     path: "docs/decisions/**"
@@ -403,6 +501,14 @@ shelves:
     kind: obligation_record
     layout: "{seq:04d}-{slug}.md"
     path: "docs/obligations/**"
+  probe_runs:
+    homogeneous: true
+    kind: probe_transcript
+    path: "docs/probe-runs/**"
+  probes:
+    homogeneous: true
+    kind: probe
+    path: "docs/probes/**"
   reviews:
     discriminator: doc_type
     homogeneous: false
@@ -432,6 +538,10 @@ identifier_schemes:
     allocation: reconcile-first
     namespace: repo
     pattern: "OBL-{namespace}-{seq:04d}"
+  probe_id:
+    allocation: minted-once
+    namespace: HW
+    pattern: "PROBE-{namespace}-{slug}"
   register_id:
     allocation: minted-once
     namespace: HW
@@ -440,6 +550,10 @@ identifier_schemes:
     allocation: minted-once
     namespace: HW
     pattern: "REV-{namespace}-{slug}"
+  run_id:
+    allocation: minted-once
+    namespace: HW
+    pattern: "RUN-{namespace}-{slug}"
   spec_id:
     allocation: minted-once
     namespace: HW

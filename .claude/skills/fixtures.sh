@@ -417,6 +417,74 @@ $out" ;;
         fail "$name" 'two runs over one tree wrote different bytes'
     fi
 
+    printf '\n# headwater probe, against the same promise and one more\n'
+
+    # The probe harness sits on the sweep's side of the line that keeps a model
+    # out of every gate, and the four enforcements are the same four. Two of
+    # them are already held above for the whole workspace — the grep for a
+    # network client covers every manifest, and the crate cycle is the
+    # compiler's. What is left is the caller and the exit status, plus the one
+    # promise a sweep does not make: that no verb here writes a transcript.
+
+    name='no gate and no CI job names the probe harness'
+    callers=''
+    for file in "$root/.githooks/pre-commit" "$root/.github/workflows/ci.yml" \
+        "$root/.claude/hooks/review.sh" "$root/.claude/hooks/write.sh" \
+        "$root/.claude/hooks/intent.sh"; do
+        grep -q 'headwater probe\|probe plan\|probe record' "$file" 2>/dev/null &&
+            callers="$callers $(basename "$file")"
+    done
+    if [ -z "$callers" ]; then
+        pass "$name"
+    else
+        fail "$name" "these run it:$callers"
+    fi
+
+    # A run this repository refuses to pay for. It exits 0, because an exit
+    # status that carried a budget verdict would be a build a price list moves.
+    claim 'a run over its ceiling is refused and still exits 0' \
+        ../../.headwater/probe.yml \
+        'is the cheaper error' \
+        0 'does not start' \
+        "$engine" probe plan --tier campaign --root "$root"
+
+    # A transcript with a key outside the closed set. Spec 5 says the transcript
+    # holds no model prose and that the omission is the enforcement, so the
+    # failing arm is a file that carries some.
+    printf '# A run\n\n## Run identity\n\n```yaml\nmodel: a\nreasoning: I read the governing document first.\n```\n\n## Events\n\n```yaml\n- probe: PROBE-HW-nothing\n```\n' \
+        > "$scratch/prose.md"
+    claim 'a transcript that carries model prose is refused, and the refusal exits 0' \
+        ../../docs/spec/05-ai-integration.md \
+        'The transcript holds no model prose' \
+        0 'not one of its keys' \
+        "$engine" probe record "$scratch/prose.md" --root "$root"
+
+    # No verb writes a transcript. A recorder observes a session from outside
+    # it, and a file this engine wrote would be a self-report with the engine's
+    # name on it.
+    name='no verb of this engine writes a transcript'
+    before=$(ls "$root/docs/probe-runs" 2>/dev/null | wc -l)
+    "$engine" probe plan --root "$root" > /dev/null 2>&1
+    "$engine" probe record "$scratch/prose.md" --root "$root" > /dev/null 2>&1
+    after=$(ls "$root/docs/probe-runs" 2>/dev/null | wc -l)
+    if [ "$before" = "$after" ]; then
+        pass "$name"
+    else
+        fail "$name" "the shelf held $before documents and now holds $after"
+    fi
+
+    # The plan is deterministic, which is the whole of what "a probe result is a
+    # function of the transcript, the expectations and the grader version" can
+    # be tested against before a grader exists.
+    name='the run plan is the same bytes twice'
+    "$engine" probe plan --root "$root" > "$scratch/probe-a.txt" 2>/dev/null
+    "$engine" probe plan --root "$root" > "$scratch/probe-b.txt" 2>/dev/null
+    if cmp -s "$scratch/probe-a.txt" "$scratch/probe-b.txt"; then
+        pass "$name"
+    else
+        fail "$name" 'two runs over one tree wrote different bytes'
+    fi
+
     rm -rf "$scratch"
     trap - EXIT INT TERM
 else

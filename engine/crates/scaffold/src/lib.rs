@@ -345,6 +345,13 @@ pub enum Refusal {
         facet: String,
         kind: String,
         why: String,
+        /// Whether `--facet` is a route out of this one.
+        ///
+        /// It is not for a facet in an engine role. `--facet` refuses one,
+        /// because a role is a declaration that decides the value, and a
+        /// message that offered the flag there would send a caller at a second
+        /// refusal.
+        statable: bool,
     },
     /// The caller stated a value for a facet this kind does not require, so
     /// nothing would have written it and the caller would not have been told.
@@ -469,12 +476,26 @@ impl std::fmt::Display for Refusal {
                 f,
                 "the title is empty, and the file name and the document's name both come from it"
             ),
-            Refusal::FacetUndeterminable { facet, kind, why } => write!(
-                f,
-                "`{kind}` requires the facet `{facet}`, and {why}. A prompt in that field is a \
-                 value the checks refuse, so this run writes nothing. State it yourself with \
-                 `--facet {facet}=<value>`"
-            ),
+            Refusal::FacetUndeterminable {
+                facet,
+                kind,
+                why,
+                statable,
+            } => match statable {
+                true => write!(
+                    f,
+                    "`{kind}` requires the facet `{facet}`, and {why}. A prompt in that field is \
+                     a value the checks refuse, so this run writes nothing. State it yourself \
+                     with `--facet {facet}=<value>`"
+                ),
+                false => write!(
+                    f,
+                    "`{kind}` requires the facet `{facet}`, and {why}. A prompt in that field is \
+                     a value the checks refuse, so this run writes nothing. `--facet` is no route \
+                     out: the facet carries a role, and what is missing is the declaration the \
+                     role reads"
+                ),
+            },
             Refusal::FacetNotAsked {
                 facet,
                 kind,
@@ -933,6 +954,7 @@ fn front_matter(
                             why: "no lifecycle regime that this kind binds declares an `initial` \
                                   state"
                                 .to_string(),
+                            statable: false,
                         }),
                     }
                 }
@@ -960,6 +982,7 @@ fn front_matter(
                         why: "it declares a closed value set and it carries no role this engine \
                           derives a value for"
                             .to_string(),
+                        statable: true,
                     })
                 }
                 // An integer the shelf writes into its file names is a position in
@@ -984,6 +1007,7 @@ fn front_matter(
                             "it is declared `type: {}`, and a prompt is not one",
                             declared_type.unwrap_or_default()
                         ),
+                        statable: true,
                     })
                 }
                 _ => Field {

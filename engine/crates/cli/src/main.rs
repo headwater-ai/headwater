@@ -1227,7 +1227,15 @@ fn new(
              from it, and this engine invents neither",
         );
     };
-    match scaffold(root, kind, &title, relates, given, now, EntryPoint::Terminal) {
+    match scaffold(
+        root,
+        kind,
+        &title,
+        relates,
+        given,
+        now,
+        EntryPoint::Terminal,
+    ) {
         Err(why) => refuse(&why),
         Ok(written) => {
             print!("{}", written.artifact);

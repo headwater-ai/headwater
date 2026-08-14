@@ -104,7 +104,10 @@ pub struct Identity {
 pub enum Refusal {
     /// The document carries no fenced block under the heading named.
     NoBlock(&'static str),
-    Unparsed { block: &'static str, why: String },
+    Unparsed {
+        block: &'static str,
+        why: String,
+    },
     Malformed(String),
     /// A key outside the closed set. This is the enforcement of "the transcript
     /// holds no model prose".
@@ -114,7 +117,10 @@ pub enum Refusal {
         permitted: &'static [&'static str],
     },
     Missing(&'static str),
-    TaxonomyMoved { claimed: String, tree: String },
+    TaxonomyMoved {
+        claimed: String,
+        tree: String,
+    },
     UnknownTier(String),
     UnknownArm(String),
     CostNotACount(String),
@@ -478,7 +484,11 @@ fn identity(source: &str, tree: &Tree<'_>) -> Result<Identity, Refusal> {
 }
 
 /// The closed-key test, which is how "no model prose" is enforced.
-fn closed(map: &Mapping, block: &'static str, permitted: &'static [&'static str]) -> Option<Refusal> {
+fn closed(
+    map: &Mapping,
+    block: &'static str,
+    permitted: &'static [&'static str],
+) -> Option<Refusal> {
     for entry in map.iter() {
         if !permitted.contains(&entry.key.value.as_str()) {
             return Some(Refusal::KeyNotPermitted {

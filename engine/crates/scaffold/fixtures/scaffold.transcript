@@ -322,17 +322,17 @@ refused, TitleEmpty
 === new unopened_record --title "A regime with no initial state"
 
 refused, FacetUndeterminable
-  `unopened_record` requires the facet `status`, and no lifecycle regime that this kind binds declares an `initial` state. A prompt in that field is a value the checks refuse, so this run writes nothing
+  `unopened_record` requires the facet `status`, and no lifecycle regime that this kind binds declares an `initial` state. A prompt in that field is a value the checks refuse, so this run writes nothing. `--facet` is no route out: the facet carries a role, and what is missing is the declaration the role reads
 
 === new chaptered --title "An integer nothing derives"
 
 refused, FacetUndeterminable
-  `chaptered` requires the facet `chapter`, and it is declared `type: integer`, and a prompt is not one. A prompt in that field is a value the checks refuse, so this run writes nothing
+  `chaptered` requires the facet `chapter`, and it is declared `type: integer`, and a prompt is not one. A prompt in that field is a value the checks refuse, so this run writes nothing. State it yourself with `--facet chapter=<value>`
 
 === new addressed --title "A closed set nothing derives"
 
 refused, FacetUndeterminable
-  `addressed` requires the facet `audience`, and it declares a closed value set and it carries no role this engine derives a value for. A prompt in that field is a value the checks refuse, so this run writes nothing
+  `addressed` requires the facet `audience`, and it declares a closed value set and it carries no role this engine derives a value for. A prompt in that field is a value the checks refuse, so this run writes nothing. State it yourself with `--facet audience=<value>`
 
 === new unmintable --title "A pattern that cannot be read"
 
