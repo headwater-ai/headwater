@@ -23,7 +23,7 @@ use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::Shape;
 use headwater_generate::{
-    check, descriptor, plan, write, Emitter, Identity, Plan, Projections, Report, Verdict,
+    check, descriptor, plan, write, Emitter, Identity, Plan, Projections, Report, Runs, Verdict,
 };
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -165,7 +165,13 @@ fn the_fixture_tree_generates_the_recorded_projections() {
     let (built, root) = fixture_tree();
     let surface = built.surface();
     let projections = Projections::read(&root).expect("the projections read");
-    let plan = plan(&surface, &built.census, &projections, &fixture_identity());
+    let plan = plan(
+        &surface,
+        &built.census,
+        &projections,
+        &fixture_identity(),
+        &Runs::default(),
+    );
 
     let mut out = String::new();
     out.push_str("the plan\n");
@@ -274,8 +280,20 @@ fn two_plans_over_one_tree_agree() {
     let (built, root) = fixture_tree();
     let surface = built.surface();
     let projections = Projections::read(&root).expect("the projections read");
-    let one = plan(&surface, &built.census, &projections, &fixture_identity());
-    let two = plan(&surface, &built.census, &projections, &fixture_identity());
+    let one = plan(
+        &surface,
+        &built.census,
+        &projections,
+        &fixture_identity(),
+        &Runs::default(),
+    );
+    let two = plan(
+        &surface,
+        &built.census,
+        &projections,
+        &fixture_identity(),
+        &Runs::default(),
+    );
     assert_eq!(one.outputs.len(), two.outputs.len());
     for (left, right) in one.outputs.iter().zip(&two.outputs) {
         assert_eq!(left.path, right.path);
@@ -304,7 +322,13 @@ fn a_generated_file_is_censused_as_generated_and_orphaned_when_nothing_writes_it
     let (built, root) = fixture_tree();
     let surface = built.surface();
     let projections = Projections::read(&root).expect("the projections read");
-    let first = plan(&surface, &built.census, &projections, &fixture_identity());
+    let first = plan(
+        &surface,
+        &built.census,
+        &projections,
+        &fixture_identity(),
+        &Runs::default(),
+    );
     assert!(
         first.orphaned.is_empty(),
         "the fixture tree holds no marked file that nothing writes: {:?}",
@@ -349,7 +373,13 @@ fn a_generated_file_is_censused_as_generated_and_orphaned_when_nothing_writes_it
     // Nothing on these shelves now, so no declaration writes an index, so every
     // index already there is stale.
     let surface = again.surface();
-    let stale = plan(&surface, &again.census, &projections, &fixture_identity());
+    let stale = plan(
+        &surface,
+        &again.census,
+        &projections,
+        &fixture_identity(),
+        &Runs::default(),
+    );
     let mut orphaned: Vec<&str> = stale
         .orphaned
         .iter()
@@ -421,6 +451,7 @@ fn a_generated_document_is_a_document_of_its_shelf() {
         &before.census,
         &projections,
         &fixture_identity(),
+        &Runs::default(),
     );
     let report = write(&tree, &first);
     assert!(!report.has_errors(), "{}", report.render());
@@ -460,7 +491,13 @@ fn a_generated_document_is_a_document_of_its_shelf() {
     // Three: the index of the shelf it sits on names it. On the reading this
     // test replaces, the `archive` shelf held no document, so the declaration
     // produced the reason below instead of a file.
-    let second = plan(&surface, &after.census, &projections, &fixture_identity());
+    let second = plan(
+        &surface,
+        &after.census,
+        &projections,
+        &fixture_identity(),
+        &Runs::default(),
+    );
     let index = second
         .outputs
         .iter()
@@ -508,7 +545,13 @@ fn every_output_carries_its_own_marker() {
     let (built, root) = fixture_tree();
     let surface = built.surface();
     let projections = Projections::read(&root).expect("the projections read");
-    let plan = plan(&surface, &built.census, &projections, &fixture_identity());
+    let plan = plan(
+        &surface,
+        &built.census,
+        &projections,
+        &fixture_identity(),
+        &Runs::default(),
+    );
     assert!(!plan.outputs.is_empty(), "the fixture generates something");
     for output in &plan.outputs {
         assert!(
@@ -563,7 +606,13 @@ fn this_repository_generates_its_four_artifacts_and_accounts_for_the_rest() {
         version: lock.version.clone(),
         lock: lock.digest.clone(),
     };
-    let plan: Plan = plan(&surface, &built.census, &projections, &identity);
+    let plan: Plan = plan(
+        &surface,
+        &built.census,
+        &projections,
+        &identity,
+        &Runs::default(),
+    );
 
     let paths: Vec<&str> = plan.outputs.iter().map(|o| o.path.as_str()).collect();
     assert_eq!(
@@ -577,12 +626,29 @@ fn this_repository_generates_its_four_artifacts_and_accounts_for_the_rest() {
         "this repository writes the decisions index, the specification index, the \
          redirect map and the descriptor, in that order"
     );
-    // One declared shelf that holds no document, and the register. Nothing is
-    // passed over: a projection that produced no file states a reason.
+    // One declared shelf that holds no document, one declared projection whose
+    // source this corpus does not hold, and the register. Nothing is passed
+    // over: a projection that produced no file states a reason.
     assert_eq!(
         plan.unwritten.len(),
-        2,
+        3,
         "a projection produced neither a file nor a reason"
+    );
+    // The empty arm, and where it is stated. `docs/probe-runs/` holds no file,
+    // so no result is written and the run prints the reason. This assertion is
+    // what makes that a measurement rather than a silence, and it is the one
+    // that has to be deleted on the day a transcript is committed.
+    let result = plan
+        .unwritten
+        .iter()
+        .find(|unwritten| unwritten.kind == headwater_generate::Kind::ProbeResult)
+        .expect("the probe-result declaration reports itself");
+    assert!(
+        result
+            .reason
+            .contains("holds no `probe_transcript` document"),
+        "the reason does not name the missing input: {}",
+        result.reason
     );
     for unwritten in &plan.unwritten {
         assert!(
@@ -650,6 +716,7 @@ fn the_redirect_map_keeps_every_anchor_that_this_corpus_cites_into_it() {
         &built.census,
         &projections,
         &Identity::default(),
+        &Runs::default(),
     );
     let map = plan
         .outputs
@@ -773,7 +840,13 @@ fn the_descriptor_path_obeys_the_marker_rule() {
     let (built, root) = fixture_tree();
     let surface = built.surface();
     let projections = Projections::read(&root).expect("the projections read");
-    let plan = plan(&surface, &built.census, &projections, &fixture_identity());
+    let plan = plan(
+        &surface,
+        &built.census,
+        &projections,
+        &fixture_identity(),
+        &Runs::default(),
+    );
     let written = plan
         .outputs
         .iter()

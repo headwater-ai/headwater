@@ -599,7 +599,7 @@ What a probe run records about itself. It holds the served model version, the co
 
 ### Sampler
 
-The non-deterministic path that carries the [coherence sweep](#coherence-sweep) and the [probe suite](#probe-suite). It shares the finding shape and the reporting pipeline, and it never enters the cached, reproducible path. Four things hold it there: a crate boundary, an exit status that no output moves, no caller in any gate, and no socket. See [spec 12](12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps).
+The non-deterministic path that carries the [coherence sweep](#coherence-sweep) and the [probe suite](#probe-suite). It shares the finding shape and the reporting pipeline, and it never enters the cached, reproducible path. Four things hold it there: a crate boundary, an exit status that no output moves, no gate that runs one, and no socket. One gate reaches the grader, because a probe result is a projection, and it compares committed bytes rather than a model's behavior. See [spec 12](12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps).
 
 ### Satellite
 

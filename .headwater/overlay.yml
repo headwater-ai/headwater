@@ -93,6 +93,15 @@ add:
     namespace: HW
     allocation: minted-once
 
+  # A result is minted from the transcript it grades, so the slug of one is the
+  # slug of the other. A separate scheme and not `run_id` again, because the two
+  # are two nodes: an edge that named `RUN-HW-first` reaches the transcript, and
+  # a citation of a rate has to reach the document that reports the rate.
+  identifier_schemes.result_id:
+    pattern: "RESULT-{namespace}-{slug}"
+    namespace: HW
+    allocation: minted-once
+
   facets.probe_category:
     values: [discovery, sufficiency, navigability, consistency]
     required: false
@@ -172,6 +181,23 @@ add:
     sections:
       require: [Run identity, Events]
 
+  # What `headwater generate` writes over one transcript. Spec 5: "The probe
+  # result is a document, generated from the transcript, the expectations and the
+  # grader version. It carries the `regenerated` warrant, and `generate --check`
+  # proves it."
+  #
+  # It requires no section and no facet of its own, and the reason is the one
+  # spec 6 gives for every projection: a generated file is excused from the
+  # document checks, because its content is a function of the emitter rather than
+  # of an author. A required section here would be a rule that nothing reads, and
+  # the emitter is what holds the shape.
+  kinds.probe_result:
+    is_a: governed_document
+    purpose: evidence
+    voice: declarative
+    lifecycle: standard
+    identifier: {scheme: result_id}
+
   # What an `opened`, `not_opened` or `cited` expectation names. A separate
   # relation and not `traces_to`, because a grader has to tell the targets of
   # the predicate apart from the provenance of the probe, and one relation
@@ -211,6 +237,15 @@ add:
     path: docs/probe-runs/**
     homogeneous: true
     kind: probe_transcript
+
+  # A third shelf and not a second kind on the one above it, because a
+  # homogeneous shelf is what keeps the front matter of a generated document
+  # short. The shelf states the kind, spec 2 forbids a facet that restates it,
+  # and the block the emitter writes is then an identifier and nothing else.
+  shelves.probe_results:
+    path: docs/probe-results/**
+    homogeneous: true
+    kind: probe_result
 
   # --- the controlled language of this repository ---------------------------
   # The base declares `controlled: none`, and the design-spec entry declines to
@@ -320,3 +355,20 @@ add_to:
       identity:
         id: REG-HW-open-questions
         kind: decision_register
+
+    # The standing test of the grader, which spec 12 asks a correctness root for
+    # and which nothing could run while a result was something a verb printed.
+    # One transcript is one run and one result, so `{run}` is the transcript's
+    # file stem and one declaration writes as many files as this corpus holds
+    # transcripts.
+    #
+    # It writes none today. `docs/probe-runs/` holds no file, a transcript is
+    # written by a recorder that observes a session from outside it, and no verb
+    # of this engine writes one. `headwater generate` prints that reason on every
+    # run, which is where an empty arm belongs rather than in a register a reader
+    # has to go and look up.
+    - kind: probe_result
+      output: "docs/probe-results/{run}.md"
+      identity:
+        id: "RESULT-HW-{run}"
+        kind: probe_result

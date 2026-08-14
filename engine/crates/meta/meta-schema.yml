@@ -370,7 +370,7 @@ definitions:
       # descriptor of Q14. Neither takes its output path from a declaration, and
       # a taxonomy that named either here would put a second copy of one
       # artifact at a path the engine did not fix. So the enum below is the
-      # declarable eight, and `headwater generate` writes the other two whether
+      # declarable nine, and `headwater generate` writes the other two whether
       # or not any taxonomy mentions a projection at all.
       kind:
         enum:
@@ -382,6 +382,7 @@ definitions:
           - graph_export
           - template
           - transcription
+          - probe_result
         required: true
       for: {seq: {scalar: string}}
       output: {scalar: string, required: true}

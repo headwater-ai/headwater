@@ -425,8 +425,16 @@ $out" ;;
     # network client covers every manifest, and the crate cycle is the
     # compiler's. What is left is the caller and the exit status, plus the one
     # promise a sweep does not make: that no verb here writes a transcript.
+    #
+    # The third enforcement reads differently here than it does for the sweep,
+    # and the assertion below says which half of it holds. No gate runs a probe.
+    # One gate does reach the grader: a probe result is a projection over a
+    # committed transcript, so `generate --check` grades in continuous
+    # integration. What that gate compares is bytes against a derivation of
+    # committed inputs, so a run in which the model answered every question
+    # wrongly passes it. No exit status carries a model's behavior either way.
 
-    name='no gate and no CI job names the probe harness'
+    name='no gate and no CI job runs a probe'
     callers=''
     for file in "$root/.githooks/pre-commit" "$root/.github/workflows/ci.yml" \
         "$root/.claude/hooks/review.sh" "$root/.claude/hooks/write.sh" \
@@ -438,6 +446,19 @@ $out" ;;
         pass "$name"
     else
         fail "$name" "these run it:$callers"
+    fi
+
+    # The one gate that reaches the grader, and what it says over a corpus that
+    # holds no transcript. The declaration is not passed over and the run is not
+    # silent about it: the reason names the missing input, which is where an
+    # empty arm belongs rather than in a register a reader has to look up.
+    name='the probe-result projection states the input this corpus does not hold'
+    "$engine" generate --check --root "$root" > "$scratch/generate.txt" 2>&1
+    if grep -q 'probe_result' "$scratch/generate.txt" &&
+        grep -q 'holds no `probe_transcript` document' "$scratch/generate.txt"; then
+        pass "$name"
+    else
+        fail "$name" 'the run does not name the transcript it wants'
     fi
 
     # A run this repository refuses to pay for. It exits 0, because an exit

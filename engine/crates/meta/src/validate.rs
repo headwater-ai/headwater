@@ -22,7 +22,7 @@ use headwater_yaml::{core_schema, Mapping, Span, Spanned, Value};
 pub const SKIPPED: [(&str, &str); 17] = [
     ("referential integrity", "a reference resolves over the merged tree, so a name that an overlay supplies is not there yet"),
     ("anchor integrity", "a resolver namespace collides across the base and every bundle, and one source holds only its own"),
-    ("identifier integrity", "two schemes collide across sources, and this repository's overlay mints four against a base that has one"),
+    ("identifier integrity", "two schemes collide across sources, and this repository's overlay mints several against a base that has one"),
     ("coverage", "a shelf reaches a kind that a bundle may declare"),
     ("kind inheritance", "`is_a` names a kind that the base declares and the bundle extends"),
     ("purpose completeness", "a purpose is declared in one source and served by a kind in another"),
