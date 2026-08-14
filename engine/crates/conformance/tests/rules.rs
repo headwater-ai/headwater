@@ -269,6 +269,76 @@ conformance:
     let _ = std::fs::remove_dir_all(&tmp);
 }
 
+/// **The probe an adopter is most likely to try, and it has to fail loudly.**
+/// `waivers` is the only key the `conformance` block takes. A `level:` key reads
+/// as a declaration and is not one, so an engine that ignored it would leave an
+/// adopter holding a claim that nothing evaluated and nothing contradicted.
+///
+/// A silent drop here is the same defect as an engine that skipped a rule it
+/// could not read, from the consumer's side rather than the publisher's.
+#[test]
+fn a_key_this_engine_does_not_read_ends_the_run_and_a_level_is_the_one_to_expect() {
+    let tmp = std::env::temp_dir().join(format!("headwater-unknown-key-{}", std::process::id()));
+    let dir = tmp.join(".headwater");
+    std::fs::create_dir_all(&dir).expect("a scratch directory");
+    let write = |text: &str| std::fs::write(dir.join("taxonomy.yml"), text).expect("write");
+
+    // The declaration an adopter would reach for to claim a rung.
+    write(
+        "\
+taxonomy:
+  package: acme/taxonomy
+  version: 1.0.0
+corpus:
+  root: docs
+conformance:
+  level: L2
+",
+    );
+    let refused = waivers(&tmp).expect_err("a level is not a thing an adopter declares");
+    assert_eq!(refused.len(), 1);
+    assert!(refused[0].contains("conformance.level"));
+    assert!(
+        refused[0].contains("derives the level from the rules that pass"),
+        "the message has to say what does decide a level, or an adopter learns nothing"
+    );
+
+    // Any other unread key, so the refusal is about the closed set rather than
+    // about the one word `level`.
+    write(
+        "\
+taxonomy:
+  package: acme/taxonomy
+  version: 1.0.0
+corpus:
+  root: docs
+conformance:
+  target_rung: L2
+",
+    );
+    assert!(waivers(&tmp).is_err(), "an unread key was taken silently");
+
+    // And the block with only the key it does take still reads.
+    write(
+        "\
+taxonomy:
+  package: acme/taxonomy
+  version: 1.0.0
+corpus:
+  root: docs
+conformance:
+  waivers:
+    - rule: pin.current
+      reason: accepted_deviation
+      owner: a team
+      until: 2027-01-01
+",
+    );
+    assert_eq!(waivers(&tmp).expect("waivers alone reads").len(), 1);
+
+    let _ = std::fs::remove_dir_all(&tmp);
+}
+
 /// A waiver naming a rule the package does not declare ends the run. The report
 /// that would list it has nothing to list it under.
 #[test]

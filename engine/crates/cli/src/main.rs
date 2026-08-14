@@ -766,7 +766,9 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>) -> ExitCode 
     let waivers = match headwater_conformance::waivers(root) {
         Ok(waivers) => waivers,
         Err(refusals) => {
-            eprintln!("headwater: a waiver in the consumer declaration did not read");
+            eprintln!(
+                "headwater: the `conformance` block of the consumer declaration did not read"
+            );
             for refusal in &refusals {
                 eprintln!("  {refusal}");
             }

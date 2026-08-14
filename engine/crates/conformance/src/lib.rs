@@ -398,6 +398,26 @@ pub fn waivers(root: &Path) -> Result<Vec<Waiver>, Vec<String>> {
 
     let mut out = Vec::new();
     let mut refusals = Vec::new();
+
+    // `waivers` is the only key this block takes, and any other one ends the
+    // run. **A key that was read and dropped is the failure this whole design
+    // refuses one level up**, where a rule the engine cannot read ends the run
+    // rather than being skipped. The refusal an adopter is most likely to meet
+    // is `level`, which reads as a declaration and is not one: the report
+    // derives a level from the rules that pass, so a level an adopter typed
+    // would be a claim that nothing evaluated and nothing contradicted.
+    for entry in block.iter() {
+        if entry.key.value == "waivers" {
+            continue;
+        }
+        refusals.push(format!(
+            "`conformance.{}` is not a key this engine reads, and `waivers` is the only one it \
+             takes. No key declares a level: `headwater conformance` derives the level from the \
+             rules that pass, and `--level <name>` asks about a rung without recording an answer",
+            entry.key.value
+        ));
+    }
+
     for entry in seq_of(block, "waivers") {
         let rule = text_of(entry, "rule").unwrap_or_default().to_string();
         let named = match rule.is_empty() {

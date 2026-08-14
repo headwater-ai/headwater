@@ -236,7 +236,7 @@ A level is a named subset of the conformance rule set, and the package declares 
 
 Three properties keep the number honest.
 
-**Nothing declares a level.** No key of the consumer declaration holds one. The report derives the level from the rules that pass, so there is no field for an adopter to write a larger number into. An adopter who wants a different rule set forks the package. A fork moves the package name and the digest that the report prints beside the level. A level with no package identity beside it means nothing, so the report never prints one alone.
+**Nothing declares a level, and a key that tried to would end the run.** The report derives the level from the rules that pass, so there is no field for an adopter to write a larger number into. `waivers` is the only key the `conformance` block of the consumer declaration takes, and any other one is refused by name. A `level` key read and dropped would leave an adopter holding a claim that nothing evaluated. That is the same defect as an engine which skipped a rule it could not read, from the other side. An adopter who wants a different rule set forks the package. A fork moves the package name and the digest that the report prints beside the level. A level with no package identity beside it means nothing, so the report never prints one alone.
 
 **A level with no rule is refused.** The reader rejects a package that declares an empty level, because a rung that names no rule is a rung every repository already stands on. A rung arrives with the rules that earn it or it does not arrive.
 
