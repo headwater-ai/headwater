@@ -16,7 +16,7 @@
 
 lock:
   format: 2
-  digest: sha256:8fe1a44bab367819265cd3983beab1378767aab093dc45229fd61e8bb7edf71d
+  digest: sha256:d47e00e2102d70a02ddd11a0289758f1bee1ec33cbfd17229a358d27785e418e
   package: headwater/standard
   version: 1.0.0
   sources:
@@ -27,7 +27,7 @@ lock:
     - path: docs/taxonomies/decision-record/bundle.yml
       digest: sha256:f1cb23a8958c3a2046b05c042cd5681d47543ba22c6a9f44972446aeafdd31a6
     - path: .headwater/overlay.yml
-      digest: sha256:c2708d45cb97bf3479dda275de2041af379422c0f4cdc937be72da71c41867e0
+      digest: sha256:1c5945c87fb6074749e452aebce83eb2cc7c160c52a90e067643fa1682f41993
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -122,6 +122,15 @@ resolved:
       type: string
       required: true
       volatility: mutable
+    arm:
+      guidance:
+        absent: "the session ran against the declared ablation of it"
+        present: "the session ran against the corpus"
+      required: false
+      values:
+        - present
+        - absent
+      volatility: stable
     doc_type:
       guidance:
         decision_register: "the one document that records settled decisions and the argument that settled each"
@@ -137,9 +146,46 @@ resolved:
         - review_prompt
         - review_record
       volatility: stable
+    expectation:
+      guidance:
+        answered: "the final answer is one named value from the closed set this probe declares"
+        cited: "a produced artifact cites one of the identifiers this probe names"
+        not_opened: "the transcript shows that the session read none of them"
+        opened: "the transcript shows that the session read one of the documents this probe names"
+        patched: "a produced patch passes the check this probe names"
+      required: false
+      values:
+        - opened
+        - not_opened
+        - cited
+        - answered
+        - patched
+      volatility: stable
+    probe_category:
+      guidance:
+        consistency: "the probe asks whether two phrasings of one question reach one answer"
+        discovery: "the probe asks whether the agent finds the governing document at all"
+        navigability: "the probe asks whether the agent gets from a code path to the governing document and back"
+        sufficiency: "the probe asks whether the agent has enough to act correctly once it has found the document"
+      required: false
+      values:
+        - discovery
+        - sufficiency
+        - navigability
+        - consistency
+      volatility: stable
     sequence:
       required: false
       type: integer
+      volatility: stable
+    tier:
+      guidance:
+        campaign: "both arms, powered, one batch and one model version, for one named claim"
+        regression: "a fixed scenario set in one arm against a recorded baseline, which establishes no effect"
+      required: false
+      values:
+        - regression
+        - campaign
       volatility: stable
     title:
       required: false
@@ -320,6 +366,36 @@ resolved:
       lifecycle: standard
       purpose: obligation
       voice: declarative
+    probe:
+      facets:
+        require:
+          - probe_category
+          - expectation
+      identifier:
+        scheme: probe_id
+      is_a: governed_document
+      lifecycle: standard
+      purpose: evidence
+      sections:
+        require:
+          - Task
+          - Expectation
+      voice: declarative
+    probe_transcript:
+      facets:
+        require:
+          - tier
+          - arm
+      identifier:
+        scheme: run_id
+      is_a: governed_document
+      lifecycle: standard
+      purpose: evidence
+      sections:
+        require:
+          - "Run identity"
+          - Events
+      voice: narrative
     review_prompt:
       facets:
         require:
@@ -438,6 +514,22 @@ resolved:
       reciprocal: required
       to:
         - obligation_record
+    examines:
+      cardinality: many
+      created_by: author
+      family: evidence
+      from:
+        - probe
+      to:
+        - governed_document
+    records:
+      cardinality: many
+      created_by: generator
+      family: evidence
+      from:
+        - probe_transcript
+      to:
+        - probe
   shelves:
     decisions:
       path: "docs/decisions/**"
@@ -457,6 +549,14 @@ resolved:
       kind: obligation_record
       layout: "{seq:04d}-{slug}.md"
       path: "docs/obligations/**"
+    probe_runs:
+      homogeneous: true
+      kind: probe_transcript
+      path: "docs/probe-runs/**"
+    probes:
+      homogeneous: true
+      kind: probe
+      path: "docs/probes/**"
     reviews:
       discriminator: doc_type
       homogeneous: false
@@ -486,6 +586,10 @@ resolved:
       allocation: reconcile-first
       namespace: repo
       pattern: "OBL-{namespace}-{seq:04d}"
+    probe_id:
+      allocation: minted-once
+      namespace: HW
+      pattern: "PROBE-{namespace}-{slug}"
     register_id:
       allocation: minted-once
       namespace: HW
@@ -494,6 +598,10 @@ resolved:
       allocation: minted-once
       namespace: HW
       pattern: "REV-{namespace}-{slug}"
+    run_id:
+      allocation: minted-once
+      namespace: HW
+      pattern: "RUN-{namespace}-{slug}"
     spec_id:
       allocation: minted-once
       namespace: HW
