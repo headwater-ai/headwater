@@ -76,6 +76,7 @@ pub mod merge;
 pub mod operation;
 pub mod package;
 pub mod references;
+pub mod release;
 pub mod render;
 pub mod rules;
 pub mod source;

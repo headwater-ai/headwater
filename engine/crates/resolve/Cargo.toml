@@ -18,3 +18,9 @@ headwater-ref = { path = "../ref" }
 # also what says which positions admit a reference and where an address may not
 # reach.
 headwater-meta = { path = "../meta" }
+
+# The digest of a published package, member by member. One implementation of
+# SHA-256 serves the lock, the census, the check cache and a release record, so
+# a number this crate writes and a number a verifier recomputes cannot come from
+# two readings. `release.rs` argues why a fetched artifact is checked with it.
+headwater-hash = { path = "../hash" }
