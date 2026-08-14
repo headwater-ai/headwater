@@ -311,10 +311,11 @@ const READ_SET: &str = "The `read_set` digest above covers every probe of the se
 /// # The selection is compared and the tree is not, and the difference is what
 /// a gate would do about it
 ///
-/// A transcript names five members that a plan fixed before the run. The intake
-/// compares the lock and refuses the file when it moved. That leaves four, and
-/// the reason none of them was compared is that the obvious comparison is worse
-/// than the gap. The `tree` digest covers every classified document, so a result
+/// A transcript names six members that a plan fixed before the run. The intake
+/// compares the lock and refuses the file when it moved. `headwater probe
+/// stale` compares the read set, outside this file and for the reason
+/// [`READ_SET`] gives. That leaves three, and the reason none of the three is
+/// compared is that the obvious comparison is worse than the gap. The `tree` digest covers every classified document, so a result
 /// that reported whether it still agreed would change its own bytes on the first
 /// edit to any document of the corpus, and `generate --check` would ask for a
 /// regeneration of every committed result on every pull request. A statement

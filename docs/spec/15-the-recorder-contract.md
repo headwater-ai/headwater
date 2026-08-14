@@ -110,7 +110,7 @@ A recorder that reads the probe is a grader with no fixture set and no version. 
 `headwater probe record` confirms five things and evaluates no expectation.
 
 1. **The taxonomy.** The `lock` the transcript names is compared against the lock of this tree, and a transcript planned against another one is refused whole.
-2. **The identity is complete.** Every one of the eleven keys is present.
+2. **The identity is complete.** Every one of the twelve keys is present.
 3. **Membership.** Every probe an event names is a classified probe of this corpus.
 4. **No prose.** Every key of every block is a member of one of the four sets above.
 5. **A realized cost.** `cost_cents` is a whole number of cents.

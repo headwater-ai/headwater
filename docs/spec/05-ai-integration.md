@@ -380,7 +380,7 @@ The omission of model prose is enforced rather than asked for. Every key of a tr
 
 ##### The harness confirms five things, and one component after it grades
 
-`headwater probe plan` fixes the five members of the run identity that exist before a run. They are the lock, the corpus tree, the selection, the seed and the harness version. It projects the sessions against the tier's declared budget and refuses a run above it. Five other conditions stop a run, and each stops the whole run rather than the probe that raised it:
+`headwater probe plan` fixes the six members of the run identity that exist before a run. They are the lock, the corpus tree, the selection, the read set, the seed and the harness version. It projects the sessions against the tier's declared budget and refuses a run above it. Five other conditions stop a run, and each stops the whole run rather than the probe that raised it:
 
 - a `patched` probe that names a rule this engine does not carry
 - a probe of another form that names a rule

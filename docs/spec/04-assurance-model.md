@@ -376,7 +376,7 @@ Three consequences, and the machinery for all three exists.
 
 **The test fails toward re-running.** A verdict declared void that would have held costs one run. A verdict carried that should have been void ships an invalid corpus and reports it green. That is [principle 7](00-vision-and-scope.md#design-principles) read the way that an exporter reads it: degrade toward the cheaper error, and say which one that is.
 
-**A probe result is a verdict too, and the same rule governs it.** An efficacy result describes one state of the corpus, under one model and one probe selection ([spec 5](05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose)). It therefore carries a read set, and a change reports which recorded results it voided. The finding is advisory, because a stale measurement misleads a reader and breaks nothing. Nobody re-runs a probe on a proposed change, and a trend that does not mark its stale points is a line through incomparable numbers.
+**A probe result is a verdict too, and the same rule governs it.** An efficacy result describes one state of the corpus, under one model and one probe selection ([spec 5](05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose)). It therefore carries a read set, and `headwater probe stale` reports which recorded results a change voided. Nothing gates on that report, because a stale measurement misleads a reader and breaks nothing. An exit status that carried the answer would put the behavior of a model on a build. Nobody re-runs a probe on a proposed change, and a trend that does not mark its stale points is a line through incomparable numbers.
 
 ## Findings
 
