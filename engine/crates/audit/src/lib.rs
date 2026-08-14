@@ -320,7 +320,14 @@ pub fn take(
         .collect();
     let freshness = freshness_window(shape);
     let now = subject.now;
-    let creators = creators(&classified, graph, shape, relations, freshness.as_ref(), now);
+    let creators = creators(
+        &classified,
+        graph,
+        shape,
+        relations,
+        freshness.as_ref(),
+        now,
+    );
 
     Audit {
         subject,
@@ -500,7 +507,10 @@ fn families(graph: &Graph, relations: &Declarations) -> Vec<FamilyReading> {
     let mut by_family: BTreeMap<String, FamilyReading> = BTreeMap::new();
 
     for relation in &relations.relations {
-        let family = relation.family.clone().unwrap_or_else(|| "none".to_string());
+        let family = relation
+            .family
+            .clone()
+            .unwrap_or_else(|| "none".to_string());
         let halves = graph
             .edges
             .iter()
@@ -517,9 +527,10 @@ fn families(graph: &Graph, relations: &Declarations) -> Vec<FamilyReading> {
             });
         entry.relations += 1;
         entry.halves += halves;
-        if let (Some(declared), Some(default)) =
-            (relation.nuclearity.as_deref(), defaults.get(family.as_str()))
-        {
+        if let (Some(declared), Some(default)) = (
+            relation.nuclearity.as_deref(),
+            defaults.get(family.as_str()),
+        ) {
             if declared == *default {
                 entry.restatements.push(relation.name.clone());
             } else {

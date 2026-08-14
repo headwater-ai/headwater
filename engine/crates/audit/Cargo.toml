@@ -28,5 +28,6 @@ headwater-resolve = { path = "../resolve" }
 headwater-yaml = { path = "../yaml" }
 
 [dev-dependencies]
-# The fixture test resolves this repository's own taxonomy and reads its lock.
+# The property test runs over this repository's own corpus, which needs its
+# committed lock and the consumer declaration that says what to walk.
 headwater-lock = { path = "../lock" }
