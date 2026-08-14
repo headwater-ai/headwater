@@ -105,6 +105,31 @@ jobs:
         # what lets it sit above the step that fixes the date for the three runs
         # after it.
         run: ./engine/target/release/headwater generate --check
+      - name: This repository is at the rung it claims
+        # `headwater conformance` measures the adoption rather than the corpus,
+        # and with no flag it exits 0 whatever it finds. `--level L0` is the one
+        # thing that moves its status, and this step is where this repository
+        # submits to its own rule set.
+        #
+        # It blocks, and it blocks on a state that today is waived rather than
+        # met. `pin.current` is a gap here: this repository consumes the package
+        # it publishes, from source, so no release record stands behind it. The
+        # waiver in `.headwater/taxonomy.yml` carries an owner and an expiry of
+        # 2027-02-28, and this step is what gives that date teeth. On the first
+        # of March 2027 the waiver covers nothing, the rule under it is
+        # evaluated as though no waiver stood there, and this job goes red with
+        # no file edited. That is the anti-parking device working rather than a
+        # step that will need disabling.
+        #
+        # The level the report states is unmoved by any of this. A waiver buys
+        # the exit status of this step and never a rung, so the report goes on
+        # saying that no level is reached until somebody publishes the package.
+        #
+        # It needs no `--now`. The clock a waiver expiry is read against
+        # defaults to today, and this step sits above the line that fixes a date
+        # for the three runs after it, which share one value for a different
+        # reason.
+        run: ./engine/target/release/headwater conformance --level L0
       - name: The date this job evaluates at
         # A windowed participation expectation compares a declared origin date
         # against `ctx.now`, so the clock is an input to the verdict and the
