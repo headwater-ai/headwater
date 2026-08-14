@@ -57,4 +57,6 @@ Propose it and stop there. `headwater sweep report` prints the front matter that
 
 It confirms the citation and the novelty. Every quotation is really in the document you named, every path is really a classified document, and the graph does not already carry the edge you proposed.
 
+It confirms nothing about whether you opened the slice. The extent the report states is the slice that was asked for, not the set you read, and nothing can tell the two apart. That is on you.
+
 It confirms nothing about whether you are right. Whether two passages contradict each other is your reading, the report says so on the line that carries it, and a second sweep may not return the same set at all. That is why absence means nothing here: a slice you did not sweep and a slice with no problem produce the same silence.

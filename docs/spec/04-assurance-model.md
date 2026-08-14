@@ -291,6 +291,8 @@ Two properties of a returned finding are confirmable, and the claim itself is no
 
 What no engine confirms is whether the two passages contradict each other. That reading stays the model's, and the report says so on the line that carries it.
 
+Nor does any engine confirm that the agent opened the slice. The extent that a plan and a report both state is the slice a caller named, and never the set of documents that somebody read. So a report over 12 of 169 documents is an upper bound on what was read. That is one more reason why the absence of a finding carries nothing.
+
 That split is what makes a sweep worth an hour of a model and unfit for a gate. A quotation that no document holds is the failure mode of a prose judgment, and the citation test refuses one before a reader meets it. The set of findings is still a sample. A second run returns a different set, and a model that nobody ran returns none. So absence carries no information, and no exit status may read the output. [Spec 12](12-check-layer.md#where-the-llm-coherence-sweep-fits) states what enforces that.
 
 The verification is reproducible and the sample is not. A sweep is therefore a reproducible reading of an unreproducible sample. An adopter may cite what the engine confirmed, and never the count of what a model returned.
