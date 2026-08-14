@@ -122,7 +122,7 @@ When a budget binds, the engine **drops satellites before nuclei**. A generated 
 
 The same engine runs, and it reads the whole corpus. [Spec 6](06-engine-architecture.md#performance-targets) refuses a flag that takes a caller's list of changed documents. Such a flag puts a second input into a verdict that no reviewer sees. The content-addressed cache pays for the position instead, and [OBL-repo-0080](../obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md) is the record that measures it.
 
-The measurement over this repository, at 165 checked documents and a warm cache, is 53 ms for `headwater check --strict`. Spec 6 allows 200 ms at this position. A cold run costs 233 ms, and `headwater route` costs 34 ms. So the budget holds at this corpus size, and the cache does the work that no flag has to.
+The measurement over this repository, at 166 checked documents and a warm cache, is 54 ms for `headwater check --strict`. Spec 6 allows 200 ms at this position. A cold run costs 234 ms, and `headwater route` costs 35 ms. So the budget holds at this corpus size, and the cache does the work that no flag has to.
 
 Findings reach a reviewer in the vocabulary the reviewer reads. `--format sarif` is what a forge ingests as a check run, and `--format markdown` is a job summary or a review comment. Each finding carries its remediation, and the [fixability](12-check-layer.md#fixability) bar decides which ones carry a patch as well.
 
@@ -195,7 +195,7 @@ What that changes is where the effort belongs. A hook earns its cost by reaching
 
 **The tool uses no cache, because a cache write is a write.** The cache is a store in the checkout, and a run that used it would put bytes back. [Q7](09-decisions.md#q7--scope-of-the-mcp-surface) rules that a class of tool that is off is not registered. So the property that no tool of this server writes is a code path rather than a promise. A cached read tool would end it. A cache that read and never wrote is a third mode no other caller of this engine has. That is the same second set of defaults, reached by another road. What makes the refusal free of consequence is the invariant [spec 12](12-check-layer.md#determinism-concretely) already carries. A cached run and an uncached run write the same bytes, so the cost is time and never an answer.
 
-**The corpus is walked once, before the server accepts a message.** Every tool answers from that walk, so `check` costs no walk that `route` does not. The measurement over this repository is 200 ms for one call. It is flat across the four formats and across repeated calls. The warm CLI run costs 53 ms and the cold one costs 233 ms. So one call costs a cold run, which is what an uncached run is.
+**The corpus is walked once, before the server accepts a message.** Every tool answers from that walk, so `check` costs no walk that `route` does not. The measurement over this repository is 199 to 222 ms for one call. It is flat across the four formats and across repeated calls. The warm CLI run costs 54 ms and the cold one costs 234 ms. So one call costs a cold run, which is what an uncached run is.
 
 **The answer is about the whole corpus, and the tool takes no path.** Coverage is computed against the census as its denominator. A report filtered to a path carries one of two denominators. It carries the whole census with fewer findings under it, or a smaller count that no run evaluated. Both are a second answer about one corpus.
 
