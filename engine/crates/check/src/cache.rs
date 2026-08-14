@@ -67,6 +67,33 @@
 //! of documents can carry two relations, so their read sets are equal and
 //! their results are not.
 //!
+//! # The sixth component: what a resolver said, for an instance that asked one
+//!
+//! A read set is a list of corpus paths and their hashes. An **external
+//! anchor** names something that is not a corpus path, so no entry of that list
+//! moves when the thing an anchor points at moves. The identity does not move
+//! either, and that is the part that is easy to miss: a path anchor normalizes
+//! to the text its author wrote, an unbound target falls back to that same
+//! text, so the file's deletion leaves every component of the key where it was.
+//! A cached run then reports zero unresolved targets over a tree that an
+//! uncached run reports two on, which is
+//! [OBL-repo-0117](../../../../docs/obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md).
+//!
+//! So an instance whose subject is a resolved target keys on
+//! [`headwater_graph::Target::resolution`] beside the identity. The two
+//! candidate shapes were **refuse the key** and **let the resolver state a
+//! digest**, and this is the second one at the grain of one anchor: what the
+//! run read is the answer a resolver gave about *this* string, rather than the
+//! state of a tree that string could have named. The resolvers run in phase A
+//! on every run and phase A is never cached, so that answer is already in hand
+//! when the key is computed and it costs nothing to name.
+//!
+//! **Nothing loses a key over this, and that distinction matters.** Refusing
+//! the key is the branch below for an input with no digest, and it makes an
+//! instance permanently unkeyed and permanently re-evaluated. This component
+//! only ever *divides* a key, so a rule stays as keyed as it was: what changes
+//! is that two states of one anchor stop sharing an entry.
+//!
 //! # Why a skipped instance is never stored
 //!
 //! A cache holds verdicts. [`Outcome::Skipped`] is the statement that no
@@ -226,12 +253,13 @@ impl Cache {
         target: &str,
         reads: &[Input],
         clock: Option<Date>,
+        resolution: Option<&str>,
         evaluate: F,
     ) -> Outcome
     where
         F: FnOnce() -> Outcome,
     {
-        let Some(key) = self.key(rule, version, scope, target, reads, clock) else {
+        let Some(key) = self.key(rule, version, scope, target, reads, clock, resolution) else {
             self.report.unkeyed += 1;
             return evaluate();
         };
@@ -262,6 +290,7 @@ impl Cache {
     /// The text below is what is hashed, and it is written out in full rather
     /// than folded into one string, so that a reader can see every component
     /// spec 12 names and check that none is missing.
+    #[allow(clippy::too_many_arguments)]
     fn key(
         &self,
         rule: &'static str,
@@ -270,6 +299,7 @@ impl Cache {
         target: &str,
         reads: &[Input],
         clock: Option<Date>,
+        resolution: Option<&str>,
     ) -> Option<String> {
         let lock = self.lock.as_ref()?;
         let mut text = String::from("headwater check key 1\n");
@@ -294,6 +324,14 @@ impl Cache {
         // content, and a newline inside one would otherwise let a document
         // write a line of this text and claim another instance's key.
         text.push_str(&format!("target {}\n", escape(target)));
+        // What something outside the corpus told this run. See the module
+        // comment: an anchor target is in no read set, because a read set is a
+        // list of corpus paths and an anchor names something that is not one.
+        // The line is absent for an instance that read no such thing, so a
+        // scope that reaches no resolver keys exactly as it did.
+        if let Some(resolution) = resolution {
+            text.push_str(&format!("resolution {}\n", escape(resolution)));
+        }
         for input in reads {
             // An input the walk never read. The result cannot be keyed on a
             // hash that does not exist, and inventing one is the correctness
@@ -302,6 +340,24 @@ impl Cache {
             text.push_str(&format!("input {} {digest}\n", escape(&input.path)));
         }
         Some(headwater_hash::hex(text.as_bytes()))
+    }
+
+    /// The key of an instance that read nothing outside the corpus, which is
+    /// every scope but the edge.
+    ///
+    /// A shorthand for the tests below, so that the one component a resolver
+    /// decides is written out only where it is the subject of the test.
+    #[cfg(test)]
+    fn plain_key(
+        &self,
+        rule: &'static str,
+        version: u32,
+        scope: Scope,
+        target: &str,
+        reads: &[Input],
+        clock: Option<Date>,
+    ) -> Option<String> {
+        self.key(rule, version, scope, target, reads, clock, None)
     }
 }
 
@@ -606,13 +662,13 @@ mod tests {
     fn every_component_of_the_key_moves_it() {
         let scope = Scope::document(false, false, false);
         let base = cache()
-            .key("r", 1, scope, "a.md", &inputs(Some("sha256:one")), None)
+            .plain_key("r", 1, scope, "a.md", &inputs(Some("sha256:one")), None)
             .expect("a key");
 
         let others = [
-            cache().key("other", 1, scope, "a.md", &inputs(Some("sha256:one")), None),
-            cache().key("r", 2, scope, "a.md", &inputs(Some("sha256:one")), None),
-            cache().key(
+            cache().plain_key("other", 1, scope, "a.md", &inputs(Some("sha256:one")), None),
+            cache().plain_key("r", 2, scope, "a.md", &inputs(Some("sha256:one")), None),
+            cache().plain_key(
                 "r",
                 1,
                 Scope::document(true, false, false),
@@ -620,7 +676,7 @@ mod tests {
                 &inputs(Some("sha256:one")),
                 None,
             ),
-            cache().key(
+            cache().plain_key(
                 "r",
                 1,
                 Scope::document(false, true, false),
@@ -628,7 +684,7 @@ mod tests {
                 &inputs(Some("sha256:one")),
                 None,
             ),
-            cache().key(
+            cache().plain_key(
                 "r",
                 1,
                 Scope::edge(false),
@@ -636,7 +692,7 @@ mod tests {
                 &inputs(Some("sha256:one")),
                 None,
             ),
-            cache().key(
+            cache().plain_key(
                 "r",
                 1,
                 Scope::neighbourhood(false),
@@ -644,9 +700,9 @@ mod tests {
                 &inputs(Some("sha256:one")),
                 None,
             ),
-            cache().key("r", 1, scope, "b.md", &inputs(Some("sha256:one")), None),
-            cache().key("r", 1, scope, "a.md", &inputs(Some("sha256:two")), None),
-            cache().key(
+            cache().plain_key("r", 1, scope, "b.md", &inputs(Some("sha256:one")), None),
+            cache().plain_key("r", 1, scope, "a.md", &inputs(Some("sha256:two")), None),
+            cache().plain_key(
                 "r",
                 1,
                 scope,
@@ -654,7 +710,7 @@ mod tests {
                 &[Input::new("b.md", Some("sha256:one"))],
                 None,
             ),
-            cache().key(
+            cache().plain_key(
                 "r",
                 1,
                 Scope::document(false, false, true),
@@ -662,7 +718,7 @@ mod tests {
                 &inputs(Some("sha256:one")),
                 day("2026-08-12"),
             ),
-            Cache::at(Path::new("/nonexistent"), "sha256:other").key(
+            Cache::at(Path::new("/nonexistent"), "sha256:other").plain_key(
                 "r",
                 1,
                 scope,
@@ -691,7 +747,7 @@ mod tests {
     fn two_days_are_two_keys_for_a_check_that_reads_the_clock() {
         let scope = Scope::document(false, false, true);
         let monday = cache()
-            .key(
+            .plain_key(
                 "r",
                 1,
                 scope,
@@ -701,7 +757,7 @@ mod tests {
             )
             .expect("a key");
         let tuesday = cache()
-            .key(
+            .plain_key(
                 "r",
                 1,
                 scope,
@@ -721,7 +777,7 @@ mod tests {
     #[test]
     fn a_check_that_does_not_read_the_clock_keys_the_same_on_every_day() {
         let scope = Scope::document(false, false, false);
-        let monday = cache().key(
+        let monday = cache().plain_key(
             "r",
             1,
             scope,
@@ -729,7 +785,7 @@ mod tests {
             &inputs(Some("sha256:one")),
             day("2026-08-12"),
         );
-        let tuesday = cache().key(
+        let tuesday = cache().plain_key(
             "r",
             1,
             scope,
@@ -748,7 +804,7 @@ mod tests {
     #[test]
     fn a_clock_reading_scope_with_no_clock_is_not_keyed() {
         assert_eq!(
-            cache().key(
+            cache().plain_key(
                 "r",
                 1,
                 Scope::document(false, false, true),
@@ -766,7 +822,7 @@ mod tests {
     #[test]
     fn an_input_with_no_digest_is_not_keyed() {
         assert_eq!(
-            cache().key(
+            cache().plain_key(
                 "r",
                 1,
                 Scope::document(false, false, false),
@@ -778,12 +834,64 @@ mod tests {
         );
     }
 
+    /// Two bindings of one anchor are two keys, and the instance keeps a key.
+    ///
+    /// This is the component [OBL-repo-0117] is about. The identity of the
+    /// instance is unchanged across the change that falsifies the verdict — the
+    /// target string below is the same on both sides, because a path anchor
+    /// normalizes to the text an author wrote and an unbound target falls back
+    /// to it. Only the resolution moves.
+    ///
+    /// The second assertion is the half that the byte-identity differential
+    /// cannot see and that no gate reports. Refusing a key would also separate
+    /// the two verdicts, and it would leave every anchor edge evaluated on
+    /// every run forever. This component divides a key and never withholds one.
+    ///
+    /// [OBL-repo-0117]: ../../../../docs/obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md
+    #[test]
+    fn two_bindings_of_one_anchor_are_two_keys_and_neither_is_unkeyed() {
+        let scope = Scope::edge(false);
+        let target = "SPEC-HW-ai-integration\u{1f}governs\u{1f}.claude/hooks/lib.sh";
+        let key = |resolution: Option<&str>| {
+            cache().key(
+                "relation.target.unresolved",
+                1,
+                scope,
+                target,
+                &inputs(Some("sha256:one")),
+                None,
+                resolution,
+            )
+        };
+
+        let bound = key(Some("Anchor { normalized: \".claude/hooks/lib.sh\" }"));
+        let gone = key(Some("Unbound(AnchorUnresolved { .. })"));
+        assert_ne!(bound, gone, "the two states of one anchor share a key");
+        assert!(bound.is_some(), "a resolved anchor lost its key");
+        assert!(gone.is_some(), "an unresolved anchor lost its key");
+
+        // And an instance that read no resolver keys as it did before this
+        // component existed, which is what stops it from touching a scope that
+        // reaches no anchor.
+        assert_eq!(
+            key(None),
+            cache().plain_key(
+                "relation.target.unresolved",
+                1,
+                scope,
+                target,
+                &inputs(Some("sha256:one")),
+                None
+            )
+        );
+    }
+
     /// A disabled cache computes no key at all, so `--no-cache` is a path that
     /// cannot read or write an entry rather than one that ignores what it read.
     #[test]
     fn a_disabled_cache_keys_nothing() {
         assert_eq!(
-            Cache::disabled().key(
+            Cache::disabled().plain_key(
                 "r",
                 1,
                 Scope::document(false, false, false),
