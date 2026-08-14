@@ -190,6 +190,41 @@ pub enum Refusal {
     },
 }
 
+impl Refusal {
+    /// Whether this refusal also stops a grade of a run that already happened.
+    ///
+    /// [`Plan::over`] returns from inside the loop that composes the selection,
+    /// so most refusals leave a part of it behind: the probes read before the
+    /// offending one, and none of the rest. A component that graded against
+    /// that part would report a rate over a denominator no document declares,
+    /// so every one of those refusals stops a grade.
+    ///
+    /// Three do not, and the three are the ones decided after every probe has
+    /// been read. They are about what a run would **cost** rather than about
+    /// what the probes say, and the selection beside them is whole. A grade of
+    /// a recorded run spends nothing, so a ceiling the run would have exceeded
+    /// and a tier that declares no envelope change no verdict.
+    ///
+    /// This is an exhaustive match and not a `matches!`, so that a refusal
+    /// added later has to answer the question rather than inherit an answer.
+    pub fn stops_a_grade(&self) -> bool {
+        match self {
+            Refusal::TierUndeclared(_) | Refusal::CampaignNarrowed => false,
+            Refusal::OverBudget { .. } => false,
+            Refusal::NoProbes
+            | Refusal::SelectionEmpty { .. }
+            | Refusal::Unnameable { .. }
+            | Refusal::Undeclared { .. }
+            | Refusal::OracleUnnamed { .. }
+            | Refusal::OracleNotUsed { .. }
+            | Refusal::OracleUnknown { .. }
+            | Refusal::AnswersUndeclared { .. }
+            | Refusal::AnswersNotUsed { .. }
+            | Refusal::ExpectationNamesNothing { .. } => true,
+        }
+    }
+}
+
 impl std::fmt::Display for Refusal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

@@ -110,16 +110,40 @@ pub(crate) fn emit(
     }
 
     // A selection is the second input, and it comes from the caller for the
-    // reason the identity does. An empty one grades nothing, and a result over
-    // no probe would report a rate whose denominator nobody declared.
+    // reason the identity does. A plan that refused to compose one says why,
+    // and the reason is reported against each file the declaration would have
+    // written rather than against the pattern, so that the run names the file
+    // whose bytes are now what an earlier corpus derived.
+    if let Some(refusal) = &runs.refusal {
+        for path in &committed {
+            plan.unwritten.push(Unwritten {
+                at: declaration.output.replace(RUN, &stem(path)),
+                kind: Kind::ProbeResult,
+                reason: format!(
+                    "`headwater probe plan` composes the probes a transcript is graded against, \
+                     and it does not compose them over this corpus: {refusal}. A plan that stops \
+                     partway has read some of the probes of this corpus and none of the rest, so \
+                     grading `{path}` against what it managed would report a rate over a \
+                     denominator no document declares"
+                ),
+            });
+        }
+        return;
+    }
+
+    // An empty one grades nothing, and a result over no probe would report a
+    // rate whose denominator nobody declared. No plan reached this, or the
+    // refusal above would name it: this is the caller that composed nothing at
+    // all.
     if runs.selected.is_empty() {
         plan.unwritten.push(Unwritten {
             at: declaration.output.clone(),
             kind: Kind::ProbeResult,
             reason: format!(
-                "the caller composed no probe selection, so there is nothing to grade {} against. \
-                 `headwater probe plan` composes one, and it reads `{}` for the budget it is held \
-                 to",
+                "nothing composed a probe selection and nothing said why, so there is nothing to \
+                 grade {} against. `headwater probe plan` composes one over the probes this \
+                 corpus classifies, and it reads `{}` to do it. A grade of a run that already \
+                 happened spends nothing, so no ceiling in that file is enforced here",
                 count(committed.len(), "transcript"),
                 headwater_probe::budget::PATH
             ),
