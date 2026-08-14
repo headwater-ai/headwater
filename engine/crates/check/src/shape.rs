@@ -138,6 +138,13 @@ pub struct Facet {
     /// A vocabulary reference is already resolved in the lock, so both spellings
     /// arrive here as a list.
     pub values: Vec<String>,
+    /// How many days a value of this facet stands for before it is stale.
+    ///
+    /// The one bar a taxonomy declares about time that is not a participation
+    /// window. `taxonomy audit` is its only reader: it is the number that makes
+    /// a staleness reading a finding rather than a distribution, and no check
+    /// reads it, so nothing here turns it into a verdict about a document.
+    pub stale_after_days: Option<i64>,
     pub span: Span,
 }
 
@@ -534,6 +541,9 @@ fn read_facet(name: &str, value: &Value, span: Span) -> Result<Facet, Declaratio
             .and_then(headwater_yaml::core_schema::as_bool)
             .unwrap_or(false),
         values: read_values(map),
+        stale_after_days: scalar(map, "stale_after_days")
+            .as_deref()
+            .and_then(|text| text.trim().parse().ok()),
         span,
     })
 }

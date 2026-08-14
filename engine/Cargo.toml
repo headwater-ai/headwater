@@ -2,6 +2,7 @@
 [workspace]
 members = [
     "crates/adapter",
+    "crates/audit",
     "crates/census",
     "crates/check",
     "crates/cli",

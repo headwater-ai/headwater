@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "headwater-audit"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+# The classified rows and the document each one read. The audit is an ABox
+# reading, so the corpus is half of every number here.
+headwater-census = { path = "../census" }
+
+# The edges, and the `created_by` each one carries from its relation type.
+headwater-graph = { path = "../graph" }
+
+# `Shape` reads the facet, kind and purpose declarations, and `Context` carries
+# the injected clock. A second reader of either would be the drift that spec 4
+# names, so this crate depends on the one that exists.
+headwater-check = { path = "../check" }
+
+# The default nuclearity of each relation family, which `taxonomy validate`
+# already applies. The override reading compares a declaration against that
+# table, and a second copy of it here would be a table that could disagree with
+# the one a validator runs.
+headwater-resolve = { path = "../resolve" }
+
+# A facet value is a spanned YAML value, and every reading here reads several.
+headwater-yaml = { path = "../yaml" }
+
+[dev-dependencies]
+# The fixture test resolves this repository's own taxonomy and reads its lock.
+headwater-lock = { path = "../lock" }
