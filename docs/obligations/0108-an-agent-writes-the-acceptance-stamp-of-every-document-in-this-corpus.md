@@ -57,3 +57,9 @@ A ruling on which reading holds, in the decision register, because the two answe
 Under the second reading, the block owes a form that separates a proposed stamp from a merged one. A warrant of `asserted` at draft time and a promotion at merge is one shape. It needs an actor that this engine does not have. [OBL-repo-0105](0105-nothing-plays-the-hook-role-that-two-relations-name.md) already records that the `hook` actor plays no part anywhere.
 
 Under either reading, the block owes a declaration before a rule can read it, which is `OBL-repo-0030`.
+
+## The practice moved before the ruling arrived, and this is the count
+
+Re-measured on 2026-08-14 over every Markdown document under `docs/`, outside `docs/taxonomies/**`. 182 carry `drafted_by`. 179 carry `accepted_by`. **Six carry `warrant: asserted` and no `accepted_by` at all**, and every one of the six was written on 2026-08-14. They are the three probes, `OBL-repo-0123`, `OBL-repo-0124` and `SPEC-HW-the-recorder-contract`.
+
+So a second practice runs beside the one this record measures, and nothing declared it. An agent drafts, states the warrant it can state, and leaves the stamp to the reader of the proposal. That is what stop rule 5 asks for, and it is a shape rather than a ruling. The ruling this record waits on decides whether the six are the right answer or the start of a second gap.
