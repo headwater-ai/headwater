@@ -223,33 +223,162 @@ impl DwellReading {
     }
 }
 
-/// One reading that this verb does not take, and what it waits on.
-#[derive(Clone, Copy, Debug)]
-pub struct Waiting {
-    pub reading: &'static str,
-    pub waits_on: &'static str,
+/// The closed warrant set of [spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#the-warrant-and-what-each-value-requires),
+/// in the order that document's table lists it.
+///
+/// Written out here rather than derived from the values in use, for the reason
+/// [`CREATORS`] is written out. A warrant that no document of a corpus carries
+/// is an arm of the promotion reading that this corpus cannot fill, and a
+/// report built from the values in use omits exactly the arm a reader needs.
+pub const WARRANTS: [&str; 4] = ["accepted", "regenerated", "transcribed", "asserted"];
+
+/// The two warrants the engine derives from the generated-file marker.
+///
+/// Spec 3: "The engine derives `regenerated` from the marker, and never from a
+/// declaration." A generated document that declares one would state a fact a
+/// hand edit can falsify. So a zero on either row is a property of this engine
+/// rather than of the authoring, and the report says which.
+pub const DERIVED: [&str; 2] = ["regenerated", "transcribed"];
+
+/// The role a facet would take to record the state a document left.
+///
+/// No taxonomy declares it, because spec 2's closed role registry holds no such
+/// role. The name is here so that the transition-continuity wait names what
+/// would end it, rather than describing an absence.
+pub const STATE_LEFT: &str = "state_left";
+
+/// One warrant value, and the documents that state it.
+#[derive(Clone, Debug)]
+pub struct WarrantReading {
+    pub value: String,
+    /// Classified documents whose provenance block states this value.
+    pub stated: usize,
+    /// Whether the closed set of spec 3 holds this value. A row where this is
+    /// false is a value a corpus invented, and no check reads a warrant, so
+    /// this reading is the only place one is reported.
+    pub closed_set: bool,
+    /// Whether the engine derives this value from the generated-file marker
+    /// rather than reading it from a declaration.
+    pub derived: bool,
 }
 
-/// Every measurement spec 6 names that this verb does not take.
+/// The warrant distribution: the closed set in full, and what a corpus wrote.
+#[derive(Clone, Debug)]
+pub struct Warrants {
+    /// Every value of the closed set in spec 3's order, then every value a
+    /// document stated that the set does not hold.
+    pub readings: Vec<WarrantReading>,
+    /// Classified documents that state no warrant at all. Spec 3 makes the
+    /// value required, so this is a population and never a default.
+    pub unstated: usize,
+    /// Rows the census reported as generated, whose warrant the engine reads
+    /// off the marker rather than out of a declaration.
+    pub generated: usize,
+}
+
+impl Warrants {
+    /// The `asserted` population, which is what a promotion rate divides by.
+    pub fn asserted(&self) -> usize {
+        self.of("asserted")
+    }
+
+    /// The documents that state one named value.
+    pub fn of(&self, value: &str) -> usize {
+        self.readings
+            .iter()
+            .find(|reading| reading.value == value)
+            .map_or(0, |reading| reading.stated)
+    }
+
+    /// Values a document stated that the closed set does not hold.
+    pub fn outside(&self) -> Vec<&WarrantReading> {
+        self.readings
+            .iter()
+            .filter(|reading| !reading.closed_set)
+            .collect()
+    }
+
+    /// Classified documents that state a warrant, whatever it is.
+    pub fn stated(&self) -> usize {
+        self.readings.iter().map(|reading| reading.stated).sum()
+    }
+}
+
+/// What one prerequisite of a reading looked like on this run.
 ///
-/// The list is here rather than in the CLI because it is a statement about what
-/// the readings above cover, and a reader of the crate needs it beside them.
-/// Spec 6's grammar rule holds a declared name to running or to a named wait,
-/// and a measurement inside a verb answers to the same rule.
-pub const WAITING: [Waiting; 3] = [
-    Waiting {
-        reading: "transition continuity",
-        waits_on: "a record of a transition. A document states the state it is in and the date it entered, and nothing states the state it left, so no run can tell one entry into `current` from a second one",
-    },
-    Waiting {
-        reading: "scent quality",
-        waits_on: "authored cues. Q20 puts a cue on a relation instance, and OBL-repo-0023 records that no corpus has authored enough of them to grade",
-    },
-    Waiting {
-        reading: "promotion rate",
-        waits_on: "a population and an input. No document of this corpus carries `warrant: asserted`, and promotions per change reads a history of changes that no crate of this engine opens",
-    },
-];
+/// The four arms are four different things to do about it, which is why they
+/// are four arms and not a boolean. A declaration ends the second, authoring
+/// ends the third, and a decision this engine has not taken ends the fourth.
+#[derive(Clone, Debug)]
+pub enum Supply {
+    /// The corpus supplied it, and the text says what the run counted.
+    Supplied(String),
+    /// Nothing declares it, so no document of this corpus could carry one. The
+    /// location of the absence is the schema.
+    Undeclared(String),
+    /// Declared, and no document of this corpus carries one. The location of
+    /// the absence is the corpus.
+    Unauthored(String),
+    /// This engine takes no input of the class. The location is neither the
+    /// schema nor the corpus, and no amount of authoring ends it.
+    NoInput(String),
+}
+
+impl Supply {
+    /// Whether this run found what the reading needs.
+    pub fn met(&self) -> bool {
+        matches!(self, Supply::Supplied(_))
+    }
+
+    /// Where the absence lives, in two words, or that it does not.
+    pub fn located(&self) -> &'static str {
+        match self {
+            Supply::Supplied(_) => "supplied",
+            Supply::Undeclared(_) => "nothing declares it",
+            Supply::Unauthored(_) => "nothing authored one",
+            Supply::NoInput(_) => "no input of the class",
+        }
+    }
+
+    /// What the run found, in the words the report prints.
+    pub fn says(&self) -> &str {
+        match self {
+            Supply::Supplied(text)
+            | Supply::Undeclared(text)
+            | Supply::Unauthored(text)
+            | Supply::NoInput(text) => text,
+        }
+    }
+}
+
+/// One thing a reading needs before it can be taken.
+#[derive(Clone, Debug)]
+pub struct Need {
+    pub needs: &'static str,
+    pub supply: Supply,
+}
+
+/// One reading that spec 6 names and this verb does not take.
+///
+/// Every prerequisite is evaluated against the corpus of the run that prints
+/// it. The array this replaced was three string literals, so the verb asserted
+/// facts about corpus content at compile time and never measured them. One of
+/// the three went false while the corpus moved underneath it and nothing
+/// reported that, which is the defect this type exists to make impossible: a
+/// wait ends when a corpus supplies what it waits on, and never when somebody
+/// edits a string.
+#[derive(Clone, Debug)]
+pub struct Waiting {
+    pub reading: &'static str,
+    pub needs: Vec<Need>,
+}
+
+impl Waiting {
+    /// Whether this reading still waits on anything.
+    pub fn waits(&self) -> bool {
+        self.needs.iter().any(|need| !need.supply.met())
+    }
+}
 
 /// Everything one run of the audit measured.
 #[derive(Clone, Debug)]
@@ -275,6 +404,10 @@ pub struct Audit {
     pub dependences: Vec<Dependence>,
     pub shelves: Vec<ShelfReading>,
     pub dwell: Vec<DwellReading>,
+    pub warrants: Warrants,
+    /// The readings this verb names and does not take, as this run found their
+    /// prerequisites. Never a constant: see [`Waiting`].
+    pub waiting: Vec<Waiting>,
 }
 
 impl Audit {
@@ -329,6 +462,9 @@ pub fn take(
         now,
     );
 
+    let warrants = warrants(&classified);
+    let waiting = waiting(&classified, graph, shape, &warrants);
+
     Audit {
         subject,
         documents: classified.len(),
@@ -348,7 +484,153 @@ pub fn take(
         shelves: shelves(&classified, taxonomy),
         dwell: dwell(&classified, shape, now),
         freshness,
+        warrants,
+        waiting,
     }
+}
+
+/// The warrant every classified document states, over the closed set in full.
+///
+/// The provenance block belongs to the engine, so the value is read through
+/// [`headwater_doc::warrant`] rather than by opening the block here. A second
+/// reader of it would be a second answer to the question that decides whether a
+/// pointer states its warrant out loud.
+fn warrants(classified: &[&Row]) -> Warrants {
+    let mut stated: BTreeMap<String, usize> = BTreeMap::new();
+    let mut unstated = 0;
+    for row in classified {
+        match row
+            .document
+            .as_ref()
+            .and_then(|document| headwater_doc::warrant(&document.facets))
+        {
+            Some(value) => *stated.entry(value.to_string()).or_default() += 1,
+            None => unstated += 1,
+        }
+    }
+
+    // The closed set first and whole, so a value nobody wrote still has a row.
+    let mut readings: Vec<WarrantReading> = WARRANTS
+        .iter()
+        .map(|value| WarrantReading {
+            value: (*value).to_string(),
+            stated: stated.remove(*value).unwrap_or(0),
+            closed_set: true,
+            derived: DERIVED.contains(value),
+        })
+        .collect();
+    // Then whatever else a document stated. No check reads a warrant, so a
+    // value outside the closed set reaches no other report in this engine.
+    readings.extend(stated.into_iter().map(|(value, stated)| WarrantReading {
+        value,
+        stated,
+        closed_set: false,
+        derived: false,
+    }));
+
+    Warrants {
+        readings,
+        unstated,
+        generated: classified
+            .iter()
+            .filter(|row| matches!(row.outcome, Outcome::Generated { .. }))
+            .count(),
+    }
+}
+
+/// Edge halves that carry an authored cue.
+///
+/// [Q20](../../../../docs/decisions/0020-where-scent-lives.md) puts the cue on
+/// the relation instance, so it is an attribute of the half rather than a facet
+/// of either end.
+fn cues(graph: &Graph) -> usize {
+    graph
+        .edges
+        .iter()
+        .filter(|edge| {
+            edge.attributes
+                .iter()
+                .any(|entry| entry.key.value == headwater_graph::edges::CUE)
+        })
+        .count()
+}
+
+/// What each named reading waits on, derived from the corpus of this run.
+fn waiting(classified: &[&Row], graph: &Graph, shape: &Shape, warrants: &Warrants) -> Vec<Waiting> {
+    let halves = graph.edges.len();
+    vec![
+        Waiting {
+            reading: "transition continuity",
+            needs: vec![Need {
+                needs: "a record of the state a document left",
+                supply: match shape.facet_in_role(STATE_LEFT) {
+                    None => Supply::Undeclared(format!(
+                        "no facet of this taxonomy takes the `{STATE_LEFT}` role, and spec 2's \
+                         closed role registry holds no such role, so one entry into a state \
+                         cannot be told from a second"
+                    )),
+                    Some(facet) => match values(classified, &facet.name).len() {
+                        0 => Supply::Unauthored(format!(
+                            "`{}` is declared in the `{STATE_LEFT}` role and no document states it",
+                            facet.name
+                        )),
+                        n => Supply::Supplied(format!(
+                            "{n} of {} documents state `{}`",
+                            classified.len(),
+                            facet.name
+                        )),
+                    },
+                },
+            }],
+        },
+        Waiting {
+            reading: "scent quality",
+            needs: vec![Need {
+                needs: "a cue authored on an edge instance",
+                supply: match cues(graph) {
+                    0 => Supply::Unauthored(format!(
+                        "no half of the {halves} this corpus declares carries a `{}` attribute, \
+                         which OBL-repo-0023 records",
+                        headwater_graph::edges::CUE
+                    )),
+                    n => Supply::Supplied(format!(
+                        "{n} of {halves} halves carry a `{}` attribute",
+                        headwater_graph::edges::CUE
+                    )),
+                },
+            }],
+        },
+        Waiting {
+            reading: "promotion rate",
+            needs: vec![
+                Need {
+                    needs: "an `asserted` population to divide by",
+                    supply: match warrants.asserted() {
+                        0 => Supply::Unauthored(format!(
+                            "no document of the {} classified here states `warrant: asserted`, \
+                             so there is nothing to promote from",
+                            classified.len()
+                        )),
+                        n => Supply::Supplied(format!(
+                            "{n} of {} classified documents state `warrant: asserted`",
+                            classified.len()
+                        )),
+                    },
+                },
+                Need {
+                    needs: "a promotion to count",
+                    supply: Supply::NoInput(
+                        "nothing records a warrant moving. A promotion is one person editing one \
+                         document, so the only witness is the change that carries it, and a \
+                         change reaches this engine as a named set of documents rather than as a \
+                         second tree. A read set states what a run read and never what a value \
+                         was before it"
+                            .to_string(),
+                    ),
+                },
+            ],
+        },
+    ]
 }
 
 fn freshness_window(shape: &Shape) -> Option<(String, i64)> {

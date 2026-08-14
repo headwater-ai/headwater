@@ -25,6 +25,10 @@ headwater-adapter = { path = "../adapter" }
 
 # A facet value is a spanned YAML value, and this reads several of them.
 headwater-yaml = { path = "../yaml" }
+# The provenance block, whose shape belongs to the engine rather than to a
+# taxonomy. The warrant reader lives beside the parse, so this crate and the
+# audit read one definition of it.
+headwater-doc = { path = "../doc" }
 
 [dev-dependencies]
 # The reads run over this repository's own corpus in the fixture test, which

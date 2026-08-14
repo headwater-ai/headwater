@@ -18,7 +18,7 @@
 //!
 //! Read the diff before committing it. A blessed fixture is the change.
 
-use headwater_audit::{Audit, Subject, CREATORS};
+use headwater_audit::{Audit, Subject, Supply, Waiting, CREATORS, WARRANTS};
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
@@ -317,4 +317,243 @@ fn a_rate_over_an_empty_population_is_no_rate_at_all() {
             _ => assert!(reading.capture().is_some(), "{}", reading.name),
         }
     }
+}
+
+// --- a wait that a corpus can end -------------------------------------------
+//
+// The three readings this verb names and does not take were three string
+// literals, so the verb asserted facts about corpus content at compile time.
+// One of them said that no document carried `warrant: asserted` and it went
+// false while the corpus moved underneath it, and nothing reported that. The
+// cases below are the property that replaces it.
+
+/// A decision that states the warrant a promotion moves away from.
+///
+/// It is written into a scratch copy rather than committed, because the whole
+/// claim under test is that the report changes when a corpus does. A committed
+/// one would make both arms of the comparison the same tree.
+const ASSERTED: &str = "\
+---
+id: AUD-FIX-0006
+status: draft
+status_since: 2025-12-22
+summary: a decision that nobody has accepted, which is the population a promotion rate divides by
+provenance:
+  warrant: asserted
+  agency: agent
+  drafted_by: a-model
+  activity: draft
+---
+
+# The unaccepted decision
+
+Nothing here is accepted. It states the warrant that a promotion moves away
+from, and it names no acceptor, which is what that warrant forbids.
+";
+
+/// A scratch copy of the fixture tree, which a test may write into.
+fn copied(name: &str) -> PathBuf {
+    let at = Path::new(env!("CARGO_TARGET_TMPDIR")).join(name);
+    let _ = std::fs::remove_dir_all(&at);
+    copy_into(&fixtures_dir().join("audit"), &at.join("audit"));
+    at
+}
+
+fn copy_into(from: &Path, to: &Path) {
+    std::fs::create_dir_all(to).expect("a directory");
+    for entry in std::fs::read_dir(from).expect("the fixture tree") {
+        let entry = entry.expect("an entry");
+        let target = to.join(entry.file_name());
+        match entry.file_type().expect("a file type").is_dir() {
+            true => copy_into(&entry.path(), &target),
+            false => {
+                std::fs::copy(entry.path(), &target).expect("a file");
+            }
+        }
+    }
+}
+
+fn tree_at(at: &Path) -> Built {
+    let corpus = Corpus::new(at.to_path_buf(), "audit");
+    let root = load_map(&fixtures_dir().join("audit.taxonomy.yml"));
+    Built::over(&corpus, &root)
+}
+
+fn reading_of<'a>(audit: &'a Audit, reading: &str) -> &'a Waiting {
+    audit
+        .waiting
+        .iter()
+        .find(|waiting| waiting.reading == reading)
+        .unwrap_or_else(|| panic!("`{reading}` is not a reading this verb names"))
+}
+
+fn supply_of<'a>(audit: &'a Audit, reading: &str, needs: &str) -> &'a Supply {
+    &reading_of(audit, reading)
+        .needs
+        .iter()
+        .find(|need| need.needs == needs)
+        .unwrap_or_else(|| panic!("`{reading}` does not need `{needs}`"))
+        .supply
+}
+
+/// A wait ends when the corpus supplies what it waits on, and no source moves.
+///
+/// One document lands in a scratch copy of the fixture tree and nothing else
+/// changes: not this engine, not the taxonomy, and not the recorded report.
+/// Before it the promotion reading says that no document states the warrant,
+/// and after it the same run says how many do. Removing the document brings the
+/// wait back, so the reading is a function of the corpus in both directions.
+///
+/// This is the case that the array of string literals could not have passed.
+#[test]
+fn a_wait_ends_when_the_corpus_supplies_what_it_waits_on() {
+    const POPULATION: &str = "an `asserted` population to divide by";
+    let at = copied("asserted-population");
+    let landing = at.join("audit/decisions/unaccepted.md");
+
+    let before = tree_at(&at).audit(AT);
+    assert!(
+        matches!(
+            supply_of(&before, "promotion rate", POPULATION),
+            Supply::Unauthored(_)
+        ),
+        "the fixture tree already has an asserted population, so this proves nothing: {}",
+        supply_of(&before, "promotion rate", POPULATION).says()
+    );
+    // Deliberately loose. The decisive assertion is the one after the document
+    // lands, and a strict comparison here would fail first on wording and
+    // report a rewording where the defect is a wait that never ends.
+    assert!(
+        supply_of(&before, "promotion rate", POPULATION)
+            .says()
+            .contains("`warrant: asserted`"),
+        "the wait does not name what would end it"
+    );
+    let report = before.render();
+    assert!(
+        report.contains("The `asserted` population is 0"),
+        "{report}"
+    );
+
+    std::fs::write(&landing, ASSERTED).expect("the document lands");
+
+    let after = tree_at(&at).audit(AT);
+    let supplied = supply_of(&after, "promotion rate", POPULATION);
+    assert!(
+        matches!(supplied, Supply::Supplied(_)),
+        "a corpus with an asserted population still reports one it does not have: {}",
+        supplied.says()
+    );
+    assert_eq!(
+        supplied.says(),
+        "1 of 6 classified documents state `warrant: asserted`"
+    );
+    let report = after.render();
+    assert!(!report.contains("nothing to promote from"), "{report}");
+    assert!(
+        report.contains("The `asserted` population is 1"),
+        "{report}"
+    );
+    assert!(
+        report.contains("      supplied — 1 of 6 classified"),
+        "{report}"
+    );
+
+    // The reading still waits, and on the other half of what it needs. A change
+    // that made every wait disappear would pass the assertions above and be
+    // worse than the array it replaced.
+    assert!(
+        reading_of(&after, "promotion rate").waits(),
+        "the numerator arrived from nowhere"
+    );
+    assert!(matches!(
+        supply_of(&after, "promotion rate", "a promotion to count"),
+        Supply::NoInput(_)
+    ));
+
+    std::fs::remove_file(&landing).expect("the document leaves");
+    let restored = tree_at(&at).audit(AT);
+    assert!(
+        matches!(
+            supply_of(&restored, "promotion rate", POPULATION),
+            Supply::Unauthored(_)
+        ),
+        "the wait did not come back when the population left"
+    );
+}
+
+/// A reading that still waits says so, and says where the absence lives.
+///
+/// The other direction of the same property. Two of the three readings wait on
+/// this fixture corpus for two different reasons, and the difference is what a
+/// reader acts on: a role that no registry declares closes with a declaration,
+/// and a cue that nobody wrote closes with authoring. A report that flattened
+/// the two into "waits" would be no better than the string it replaced.
+#[test]
+fn a_reading_that_still_waits_says_where_the_absence_lives() {
+    let audit = fixture_tree().audit(AT);
+
+    let state = supply_of(
+        &audit,
+        "transition continuity",
+        "a record of the state a document left",
+    );
+    assert!(matches!(state, Supply::Undeclared(_)), "{}", state.says());
+    assert!(state.says().contains("state_left"), "{}", state.says());
+
+    let cue = supply_of(
+        &audit,
+        "scent quality",
+        "a cue authored on an edge instance",
+    );
+    assert!(matches!(cue, Supply::Unauthored(_)), "{}", cue.says());
+    assert!(
+        cue.says().contains("6"),
+        "the population is named: {}",
+        cue.says()
+    );
+
+    let report = audit.render();
+    assert!(report.contains("nothing declares it —"), "{report}");
+    assert!(report.contains("nothing authored one —"), "{report}");
+    assert!(report.contains("no input of the class —"), "{report}");
+    assert!(report.contains("3 of 3 still wait"), "{report}");
+}
+
+/// The closed warrant set is walked in full, whatever a corpus states.
+///
+/// The same property the creator reading holds, one layer out. A promotion rate
+/// over the values in use would report `accepted` and `asserted` on a corpus
+/// that has both and say nothing at all about a corpus that has neither, which
+/// is the shape of a comparison that looks complete and is not.
+#[test]
+fn every_warrant_of_the_closed_set_has_a_row_and_a_value_outside_it_is_reported() {
+    let audit = fixture_tree().audit(AT);
+    let rows: Vec<&str> = audit
+        .warrants
+        .readings
+        .iter()
+        .filter(|reading| reading.closed_set)
+        .map(|reading| reading.value.as_str())
+        .collect();
+    assert_eq!(rows, WARRANTS);
+
+    let outside = audit.warrants.outside();
+    assert_eq!(outside.len(), 1);
+    assert_eq!(outside[0].value, "pending");
+    assert_eq!(outside[0].stated, 1);
+
+    // Every classified document is either in a row or in the unstated count,
+    // so no document falls out of this reading in silence.
+    assert_eq!(
+        audit.warrants.stated() + audit.warrants.unstated,
+        audit.documents
+    );
+
+    let report = audit.render();
+    assert!(report.contains("`pending`"), "{report}");
+    assert!(
+        report.contains("No\n  check of this engine reads a warrant"),
+        "{report}"
+    );
 }

@@ -27,6 +27,11 @@ headwater-resolve = { path = "../resolve" }
 # A facet value is a spanned YAML value, and every reading here reads several.
 headwater-yaml = { path = "../yaml" }
 
+# The provenance block, whose shape belongs to the engine rather than to a
+# taxonomy. The warrant reading calls the one reader of it rather than opening
+# the block by key here, because a second reader is a second answer.
+headwater-doc = { path = "../doc" }
+
 [dev-dependencies]
 # The property test runs over this repository's own corpus, which needs its
 # committed lock and the consumer declaration that says what to walk.

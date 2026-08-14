@@ -82,6 +82,15 @@ pub struct Edge {
     pub span: Span,
 }
 
+/// The instance attribute that carries the routing cue of an edge.
+///
+/// [Q20](../../../../docs/decisions/0020-where-scent-lives.md) puts a cue on
+/// the relation instance rather than on the relation type, so it is a key of
+/// [`Edge::attributes`] and never a facet. The name is here because two
+/// components read it: a traversal serves the cue where one exists, and
+/// `taxonomy audit` counts the halves that carry one.
+pub const CUE: &str = "cue";
+
 /// The declaring end of an edge.
 #[derive(Clone, Debug)]
 pub struct Source {

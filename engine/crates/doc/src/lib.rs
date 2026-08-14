@@ -54,6 +54,32 @@ pub struct Document {
     pub body: Body,
 }
 
+/// The front-matter block that states what stands behind a document.
+///
+/// [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed):
+/// "The provenance block is the exception, and its shape belongs to the
+/// engine." So the two names below are this crate's, like the split of front
+/// matter from body, and no taxonomy declares either.
+pub const PROVENANCE: &str = "provenance";
+
+/// The member of that block that states what stands behind the document.
+pub const WARRANT: &str = "warrant";
+
+/// What stands behind a document, from the provenance block of its front
+/// matter.
+///
+/// One reader, because two would be two answers to a question that decides
+/// whether a pointer states a warrant out loud and whether a corpus has a
+/// population to promote from.
+pub fn warrant(facets: &Mapping) -> Option<&str> {
+    facets
+        .get(PROVENANCE)
+        .and_then(|node| node.value.as_map())
+        .and_then(|map| map.get(WARRANT))
+        .and_then(|node| node.value.as_scalar())
+        .map(|scalar| scalar.text.as_str())
+}
+
 /// Parse a document.
 ///
 /// The errors come back in source order, and the list is empty only when the
