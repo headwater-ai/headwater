@@ -32,3 +32,9 @@ headwater-scaffold = { path = "../scaffold" }
 
 # Front matter, to read a document back after a splice wrote into it.
 headwater-doc = { path = "../doc" }
+
+[dev-dependencies]
+# The fixture set builds a corpus and walks it, so that the index an import is
+# held against is the index a run would build rather than one written by hand.
+headwater-census = { path = "../census" }
+headwater-yaml = { path = "../yaml" }

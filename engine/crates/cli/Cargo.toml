@@ -27,6 +27,10 @@ headwater-check = { path = "../check" }
 headwater-generate = { path = "../generate" }
 headwater-graph = { path = "../graph" }
 
+# `headwater import`. Every refusal is decided in the library, so the verb is a
+# shell and the fixture set that proves the correctness root runs without it.
+headwater-import = { path = "../import" }
+
 # The one implementation of the digest function. `gate` re-hashes each input a
 # read set lists, and a gate that hashed by another rule than the census would
 # report that every file in the tree had moved.
