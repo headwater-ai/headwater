@@ -179,15 +179,20 @@ fn record(scratch: &Scratch) -> String {
     release.digest
 }
 
-/// The declaration a person authors, with both of the fields an import rests on.
+/// The declaration a person authors, with the three fields an import rests on.
 fn declaration(digest: Option<&str>, channel: Option<&str>) -> Declaration {
     Declaration {
         name: "ado".to_string(),
         at: "imports/ado".to_string(),
         digest: digest.map(str::to_string),
         channel: channel.map(str::to_string),
+        resolver: Some(RESOLVER.to_string()),
     }
 }
+
+/// The name the fixture taxonomy's `anchors` block gives the resolver, and so
+/// the name the import declaration has to supply for anything it writes to bind.
+const RESOLVER: &str = "ado-snapshot";
 
 fn channel() -> Option<&'static str> {
     Some("the platform team's fetch job, digest read from the ADO project release feed")
@@ -339,6 +344,41 @@ fn a_digest_with_no_channel_beside_it_is_refused() {
             name: "ado".to_string()
         }]
     );
+}
+
+/// A declaration that names no resolver is refused.
+///
+/// An import writes an edge onto an anchor kind, and only a resolver binds one.
+/// A declaration with no resolver therefore writes edges that the next
+/// `headwater check` reports as resolving to nothing, which is the whole of
+/// [OBL-repo-0116](../../../../docs/obligations/0116-no-anchor-resolver-reads-a-committed-snapshot-so-every-imported-edge-lands-unresolved.md).
+/// This refusal is what stops that state from being reachable by omission.
+#[test]
+fn a_declaration_that_names_no_resolver_is_refused() {
+    let scratch = Scratch::new("no-resolver");
+    let digest = tree(&scratch, PAYLOAD);
+    let without = |resolver: Option<&str>| Declaration {
+        resolver: resolver.map(str::to_string),
+        ..declaration(Some(&digest), channel())
+    };
+    assert_eq!(
+        plan(&scratch, &without(None)).expect_err("nothing names a resolver"),
+        vec![Refusal::NoResolver {
+            name: "ado".to_string()
+        }]
+    );
+    // A resolver that is present and empty names nothing, on the terms the
+    // channel refusal beside it takes.
+    assert_eq!(
+        plan(&scratch, &without(Some("  "))).expect_err("it is blank"),
+        vec![Refusal::NoResolver {
+            name: "ado".to_string()
+        }]
+    );
+    let rendered = headwater_import::render(&[Refusal::NoResolver {
+        name: "ado".to_string(),
+    }]);
+    assert!(rendered.contains("imports.ado.resolver"), "{rendered}");
 }
 
 /// A changed byte inside the snapshot is refused, and the file is named.
@@ -674,6 +714,7 @@ imports:
     at: imports/ado
     digest: sha256:0
     channel: the platform team's fetch job
+    resolver: ado-snapshot
 ",
     );
     assert_eq!(
@@ -683,6 +724,7 @@ imports:
             at: "imports/ado".to_string(),
             digest: Some("sha256:0".to_string()),
             channel: Some("the platform team's fetch job".to_string()),
+            resolver: Some("ado-snapshot".to_string()),
         }]
     );
 

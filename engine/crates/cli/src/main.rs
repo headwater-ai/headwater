@@ -794,15 +794,35 @@ fn load(root: &Path) -> Result<Loaded, ExitCode> {
         Err(errors) => return Err(refused("the facet and kind declarations", &errors)),
     };
 
+    // The resolver set, in the one place every verb that builds a graph reaches
+    // it. `Resolvers::over` builds what a corpus supplies, and `with` adds what
+    // it cannot: `headwater-import` reads a committed snapshot and depends on
+    // `headwater-graph`, so the graph crate cannot name the resolver and this is
+    // where the two meet. A repository that declares no import adds nothing and
+    // the set is what it was.
+    let mut resolvers = Resolvers::over(&corpus);
+    let imports = match headwater_import::declared(root) {
+        Ok(imports) => imports,
+        Err(why) => {
+            eprintln!("headwater: the import declarations did not read");
+            eprintln!("{}", indent(&why));
+            return Err(ExitCode::FAILURE);
+        }
+    };
+    for items in headwater_import::anchors::over(root, &imports) {
+        resolvers = match resolvers.with(Box::new(items)) {
+            Ok(resolvers) => resolvers,
+            Err(why) => {
+                eprintln!("headwater: the resolver set is ambiguous");
+                eprintln!("{}", indent(&why));
+                return Err(ExitCode::FAILURE);
+            }
+        };
+    }
+
     let census = census::take(&corpus, &taxonomy);
     let config = Config::default();
-    let graph = Graph::build(
-        &census,
-        &relations,
-        &Resolvers::over(&corpus),
-        &corpus,
-        &config,
-    );
+    let graph = Graph::build(&census, &relations, &resolvers, &corpus, &config);
     Ok(Loaded {
         lock,
         consumer,

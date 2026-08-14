@@ -26,9 +26,20 @@
 //!
 //! Spec 2 states the rule and gives both reasons: check time stays offline, and
 //! a resolution result stays reproducible. [`SourceTree`] reads the working
-//! tree under the corpus base. The other two resolvers this specification names
-//! — a committed snapshot of an external system of record, and a pinned corpus
-//! export — read committed files by the same rule, and neither exists yet.
+//! tree under the corpus base. The second resolver this specification names, a
+//! committed snapshot of an external system of record, reads committed files by
+//! the same rule and lives in `headwater_import::anchors`. The third, a pinned
+//! corpus export at the federation tier, does not exist yet.
+//!
+//! # Why the snapshot resolver is not in this file
+//!
+//! A snapshot resolver reads a snapshot, and the crate that reads one is
+//! `headwater-import`, which already depends on this crate for
+//! [`crate::declarations::Declarations`] and [`crate::index::Index`]. So this
+//! crate cannot name it, and [`Resolvers::with`] is how a caller that has both
+//! puts them together. That is a property of the dependency order rather than a
+//! preference: the alternative moves the snapshot format into the graph crate,
+//! and Q19 rules that the shape of a snapshot is a property of its resolver.
 
 use headwater_census::walk::{Corpus, Exclusion};
 use std::path::PathBuf;
@@ -80,6 +91,27 @@ impl Resolvers {
     /// no resolver claims it, which is the finding spec 2 asks for.
     pub fn over(corpus: &Corpus) -> Self {
         Self::new(vec![Box::new(SourceTree::over(corpus))])
+    }
+
+    /// Add one resolver that this crate cannot build, and refuse a second of
+    /// one name.
+    ///
+    /// Spec 2 rules that "every anchor kind names exactly one resolver, and no
+    /// two anchor kinds claim the same resolver namespace". Two entries of one
+    /// name would leave [`Resolvers::get`] answering with whichever was pushed
+    /// first, so one of the two would own an identity in silence. That is the
+    /// same failure the module comment opens with, one level up, so it is a
+    /// refusal the caller has to handle rather than a value this returns.
+    pub fn with(mut self, resolver: Box<dyn Resolver>) -> Result<Self, String> {
+        if let Some(held) = self.get(resolver.name()) {
+            return Err(format!(
+                "two resolvers are both named `{}`, and exactly one component owns each anchor \
+                 identity",
+                held.name()
+            ));
+        }
+        self.entries.push(resolver);
+        Ok(self)
     }
 
     pub fn get(&self, name: &str) -> Option<&dyn Resolver> {
@@ -241,6 +273,42 @@ mod tests {
             panic!("a path that is not there resolved");
         };
         assert!(why.contains("src/invented.rs"), "{why}");
+    }
+
+    /// A resolver that answers whatever it was built to answer, so that the set
+    /// can be tested without a corpus and without a snapshot.
+    struct Fixed(&'static str);
+
+    impl Resolver for Fixed {
+        fn name(&self) -> &str {
+            self.0
+        }
+
+        fn resolve(&self, _raw: &str) -> Binding {
+            Binding::Unresolved("a fixture resolver binds nothing".to_string())
+        }
+    }
+
+    #[test]
+    fn a_resolver_the_caller_supplies_joins_the_set_and_is_found_by_name() {
+        let resolvers = Resolvers::default()
+            .with(Box::new(Fixed("ado-snapshot")))
+            .expect("the set had no resolver of that name");
+        assert!(resolvers.get("ado-snapshot").is_some());
+        assert!(resolvers.get("source-tree").is_none());
+    }
+
+    /// Spec 2: exactly one component owns each anchor identity. A second entry
+    /// of one name is refused rather than shadowed, because `get` would answer
+    /// with the first one and nothing would say the second was ignored.
+    #[test]
+    fn a_second_resolver_of_one_name_is_refused_rather_than_shadowed() {
+        let why = Resolvers::default()
+            .with(Box::new(Fixed("ado-snapshot")))
+            .expect("the first one lands")
+            .with(Box::new(Fixed("ado-snapshot")))
+            .expect_err("the second one is refused");
+        assert!(why.contains("ado-snapshot"), "{why}");
     }
 
     #[test]
