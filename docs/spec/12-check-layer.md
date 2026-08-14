@@ -139,6 +139,8 @@ That statement is the whole test, and it decides three things.
 
 **2. The clock voids a verdict, and a tree is not the whole subject of one.** A verdict is about one state of the corpus **and one day**. A rule that reads the injected clock is named on a `windowed` line of the artifact. A gate asked about another day voids those rules, and no tree change is needed for that. A run that reads no clock is about a tree alone, so the day decides nothing about it.
 
+**A change voids a verdict too, and no line of the artifact names one.** A rule that reads the version a document stood at before a change decides about a tree, a day and a change. The artifact lists corpus paths, and a change is not one. So each such rule is named on a `change-scoped` line, and a gate refuses its verdict the way it refuses a barrier. A full-corpus run skips every instance of such a rule, so it publishes no line of that kind at all.
+
 **3. Membership of the census is an input, and a list of members carries no membership.** A read set is a list of paths and hashes, and a hash is a fact about one member. The list records what a run read. It never records that those were all the documents there were. A document that a merge adds is therefore on no list, it moves no hash, and the comparison cannot see it. Two consequences follow and they are different sizes.
 
 The small one is that a verdict about a listed document is worth what it looks worth. The bytes are there to compare, and the gate decides it.

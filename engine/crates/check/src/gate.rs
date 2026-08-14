@@ -69,6 +69,10 @@ pub struct Recorded {
     pub lock: String,
     pub clock: Date,
     pub barriers: Vec<String>,
+    /// The rules whose verdict rests on the change a run was scoped to. See
+    /// [`crate::readset::ReadSet::scoped`]: a change is not a corpus path, so
+    /// no line here names one and no comparison over listed hashes reaches it.
+    pub scoped: Vec<String>,
     pub windowed: Vec<String>,
     pub versions: Vec<(String, u32)>,
     pub inputs: Vec<Input>,
@@ -102,6 +106,7 @@ impl Recorded {
         let mut lock: Option<String> = None;
         let mut clock: Option<Date> = None;
         let mut barriers = Vec::new();
+        let mut scoped = Vec::new();
         let mut windowed = Vec::new();
         let mut versions = Vec::new();
         let mut inputs = Vec::new();
@@ -123,6 +128,7 @@ impl Recorded {
                     None => return Err(refuse("the clock is not a date of the form YYYY-MM-DD")),
                 },
                 ["barrier", rule] => barriers.push((*rule).to_string()),
+                ["change-scoped", rule] => scoped.push((*rule).to_string()),
                 ["windowed", rule] => windowed.push((*rule).to_string()),
                 ["version", rule, edition] => match edition.parse::<u32>() {
                     Ok(edition) => versions.push(((*rule).to_string(), edition)),
@@ -141,6 +147,7 @@ impl Recorded {
                 lock,
                 clock,
                 barriers,
+                scoped,
                 windowed,
                 versions,
                 inputs,
@@ -164,6 +171,9 @@ pub enum Reason {
     LockMoved { recorded: String, found: String },
     /// A corpus-grained rule ran. See the module comment.
     Barrier { rule: String },
+    /// A rule read the version a document stood at before a change, and this
+    /// artifact names no change.
+    ChangeScoped { rule: String },
     /// A rule read the clock, and the day the gate was asked about is not the
     /// day the run evaluated.
     DayMoved {
@@ -193,6 +203,10 @@ impl Reason {
             Reason::Barrier { rule } => format!(
                 "{rule} is a barrier: its verdict is a predicate over the extent of the census, \
                  and a list of members states no extent"
+            ),
+            Reason::ChangeScoped { rule } => format!(
+                "{rule} read the version each document stood at before a change, and a read set \
+                 lists corpus paths rather than changes"
             ),
             Reason::DayMoved {
                 rule,
@@ -298,6 +312,14 @@ pub fn decide(
         reasons.push(Reason::Barrier { rule: rule.clone() });
     }
 
+    // Unconditional, as a barrier is, and for a reason of the same shape. A day
+    // moved or it did not, and a gate is told which. A change is named nowhere
+    // in this artifact, so there is no comparison to make and the verdict of
+    // such a rule never carries.
+    for rule in &recorded.scoped {
+        reasons.push(Reason::ChangeScoped { rule: rule.clone() });
+    }
+
     if asked != recorded.clock {
         for rule in &recorded.windowed {
             reasons.push(Reason::DayMoved {
@@ -371,11 +393,13 @@ mod tests {
                     name: "wide.rule",
                     version: 2,
                     needs_clock: false,
+                    needs_prior: false,
                 },
                 Rule {
                     name: "dated.rule",
                     version: 1,
                     needs_clock: true,
+                    needs_prior: false,
                 },
             ],
             &[
@@ -572,5 +596,36 @@ mod tests {
     fn an_artifact_with_no_lock_is_refused() {
         let refusal = Recorded::parse("clock 2026-08-13\n").expect_err("no lock");
         assert!(refusal.render().contains("states no lock"));
+    }
+
+    /// A change-scoped verdict never carries, whatever the listed hashes did.
+    ///
+    /// The barrier's rule, one input further out. A barrier rests on the extent
+    /// of the census and a list of members states no extent. This rests on the
+    /// change a run was scoped to, and a list of corpus paths names no change.
+    /// The tree below is the tree the run read, hash for hash, which is what
+    /// makes the refusal a property of the input rather than of the bytes.
+    #[test]
+    fn a_change_scoped_verdict_never_carries_even_when_every_listed_hash_stands() {
+        let held = recorded(
+            "lock sha256:lock\nclock 2026-08-13\nchange-scoped warrant.promoted\n\
+             version warrant.promoted 1\ninput docs/a.md sha256:a\n",
+        );
+        assert_eq!(held.scoped, vec!["warrant.promoted".to_string()]);
+
+        let verdict = decide(
+            &held,
+            "sha256:lock",
+            day("2026-08-13"),
+            tree(&[("docs/a.md", "sha256:a")]),
+        );
+        assert!(!verdict.carries(), "{:?}", verdict.reasons);
+        assert!(matches!(
+            verdict.reasons.first(),
+            Some(Reason::ChangeScoped { .. })
+        ));
+        assert!(verdict
+            .render()
+            .contains("lists corpus paths rather than changes"));
     }
 }

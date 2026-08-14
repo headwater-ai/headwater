@@ -532,7 +532,10 @@ fn a_wait_ends_when_the_corpus_supplies_what_it_waits_on() {
 
     let before = tree_at(&at).audit(AT);
     assert!(
-        matches!(supply_of(&before, "scent quality", CUE), Supply::Unauthored(_)),
+        matches!(
+            supply_of(&before, "scent quality", CUE),
+            Supply::Unauthored(_)
+        ),
         "the fixture tree already carries a cue, so this proves nothing: {}",
         supply_of(&before, "scent quality", CUE).says()
     );

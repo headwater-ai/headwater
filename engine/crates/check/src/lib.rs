@@ -660,6 +660,7 @@ pub fn run(
             name: served.rule,
             version: served.version,
             needs_clock: served.scope.needs_clock(),
+            needs_prior: served.scope.needs_prior(),
         })
         .collect();
     let read_set = ReadSet::of(declared.lock, ctx.now(), &rules, &instances);

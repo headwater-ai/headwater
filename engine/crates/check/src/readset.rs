@@ -80,7 +80,7 @@
 //! and this is not one.
 
 use crate::context::Date;
-use crate::instance::{Input, Instance};
+use crate::instance::{Input, Instance, Outcome};
 use crate::scope::Grain;
 
 /// One rule as a run served it: which edition ran, and whether it read the
@@ -93,6 +93,9 @@ pub struct Rule {
     pub name: &'static str,
     pub version: u32,
     pub needs_clock: bool,
+    /// Whether this rule read the version its document stood at before the
+    /// change. See [`ReadSet::scoped`].
+    pub needs_prior: bool,
 }
 
 /// The union of what one run read, with the components that are about the run
@@ -117,6 +120,21 @@ pub struct ReadSet {
     /// The rules that read the injected clock and put an instance in this run,
     /// in [`crate::RULES`] order. Same derivation, and the same reason.
     pub windowed: Vec<&'static str>,
+    /// The rules that read the version a document stood at before the change,
+    /// and reached a verdict in this run.
+    ///
+    /// The third reason a comparison over listed inputs cannot decide, and it
+    /// arrives for the clock's reason one input further out. A verdict of such
+    /// a rule is about a tree, a day **and a change**. The change is not a
+    /// corpus path, so no line of this artifact names it, and two runs over one
+    /// tree under two changes reach two verdicts that every listed hash agrees
+    /// with.
+    ///
+    /// The derivation is a verdict rather than an instance, which is what keeps
+    /// this list empty in every full-corpus run: every instance of such a rule
+    /// skips there, and an artifact of a run that decided nothing has nothing
+    /// for a gate to refuse.
+    pub scoped: Vec<&'static str>,
     /// Every input any instance read, once each, in path order.
     pub inputs: Vec<Input>,
 }
@@ -144,6 +162,11 @@ impl ReadSet {
                 .any(|instance| instance.rule == rule.name && instance.grain == Grain::Corpus)
         };
         let ran = |rule: &Rule| instances.iter().any(|instance| instance.rule == rule.name);
+        let decided = |rule: &Rule| {
+            instances.iter().any(|instance| {
+                instance.rule == rule.name && !matches!(instance.outcome, Outcome::Skipped(_))
+            })
+        };
         ReadSet {
             lock: lock.to_string(),
             clock,
@@ -156,6 +179,11 @@ impl ReadSet {
             windowed: rules
                 .iter()
                 .filter(|rule| rule.needs_clock && ran(rule))
+                .map(|rule| rule.name)
+                .collect(),
+            scoped: rules
+                .iter()
+                .filter(|rule| rule.needs_prior && decided(rule))
                 .map(|rule| rule.name)
                 .collect(),
             inputs,
@@ -218,6 +246,9 @@ impl ReadSet {
         for rule in &self.windowed {
             let _ = writeln!(out, "windowed {rule}");
         }
+        for rule in &self.scoped {
+            let _ = writeln!(out, "change-scoped {rule}");
+        }
         for (rule, version) in &self.versions {
             let _ = writeln!(out, "version {rule} {version}");
         }
@@ -248,7 +279,27 @@ mod tests {
             name,
             version: 1,
             needs_clock,
+            needs_prior: false,
         }
+    }
+
+    /// A rule that reads the version a document stood at before the change.
+    fn prior_reading(name: &'static str) -> Rule {
+        Rule {
+            name,
+            version: 1,
+            needs_clock: false,
+            needs_prior: true,
+        }
+    }
+
+    fn skipped(rule: &'static str, reads: Vec<Input>) -> Instance {
+        Instance::skipped(
+            rule,
+            Grain::Document,
+            reads,
+            crate::scope::CHANGE_SCOPED_ONLY,
+        )
     }
 
     fn instance(rule: &'static str, reads: Vec<Input>) -> Instance {
@@ -360,5 +411,41 @@ mod tests {
         assert!(set.barriers.is_empty());
         assert!(!set.render().contains("barrier"));
         assert_eq!(set.summary(), "1 documents in the read set");
+    }
+
+    /// A run that reached a verdict from a prior version says so, and a run
+    /// that skipped every such instance says nothing.
+    ///
+    /// The second half is what keeps every artifact of this repository the
+    /// bytes it was: a full-corpus run skips every instance of a prior-reading
+    /// rule, so the line is absent and a gate reads what it read before. The
+    /// first half is the one a change-scoped run publishes, and a gate refuses
+    /// it for the reason it refuses a barrier: a change is not a corpus path,
+    /// so no listed hash decides anything about one.
+    #[test]
+    fn a_verdict_that_rests_on_a_change_is_named_and_a_skipped_one_is_not() {
+        let inputs = vec![Input::new("a.md", Some("sha256:one"))];
+        let decided = ReadSet::of(
+            "sha256:lock",
+            date(),
+            &[prior_reading("warrant.promoted")],
+            &[instance("warrant.promoted", inputs.clone())],
+        );
+        assert_eq!(decided.scoped, vec!["warrant.promoted"]);
+        assert!(decided
+            .render()
+            .contains("change-scoped warrant.promoted\n"));
+
+        let skipped_only = ReadSet::of(
+            "sha256:lock",
+            date(),
+            &[prior_reading("warrant.promoted")],
+            &[skipped("warrant.promoted", inputs)],
+        );
+        assert!(
+            skipped_only.scoped.is_empty(),
+            "a run that decided nothing published a verdict a gate has to refuse"
+        );
+        assert!(!skipped_only.render().contains("change-scoped"));
     }
 }
