@@ -121,13 +121,20 @@ pub(crate) fn read(
 
 /// Whether a kind writes a Markdown document into the corpus.
 ///
-/// The two that do are the two shelf emitters. `graph_export` writes JSON, which
-/// is not a document of this corpus whatever its front matter would say. The
-/// unbuilt kinds are refused for the same reason the generator gives for not
-/// emitting them: no document states the artifact's form, so nothing states
-/// whether it is a document.
+/// The three that do are the two shelf emitters and the probe result.
+/// `graph_export` writes JSON, which is not a document of this corpus whatever
+/// its front matter would say. The unbuilt kinds are refused for the same reason
+/// the generator gives for not emitting them: no document states the artifact's
+/// form, so nothing states whether it is a document.
+///
+/// A probe result is the case that makes the block earn its keep a second time.
+/// Spec 5 asks a result to be citable, and a rate that no document can name is a
+/// number a reader reaches only by opening the file it happens to sit in.
 fn writes_a_document(kind: Kind) -> bool {
-    matches!(kind, Kind::ShelfIndex | Kind::ShelfSections)
+    matches!(
+        kind,
+        Kind::ShelfIndex | Kind::ShelfSections | Kind::ProbeResult
+    )
 }
 
 fn scalar(

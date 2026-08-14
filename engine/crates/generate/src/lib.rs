@@ -9,10 +9,12 @@
 //!
 //! # The kinds are two value sets, not one
 //!
-//! Spec 6 names the kinds the engine implements, and
-//! [Q19](../../../../docs/spec/09-decisions.md) adds `transcription`. Collecting
-//! them for the meta-schema showed that they do not form one set. Eight are
-//! declarable: a taxonomy names the kind and the output path, and
+//! Spec 6 names the kinds the engine implements,
+//! [Q19](../../../../docs/spec/09-decisions.md) adds `transcription`, and
+//! [spec 5](../../../../docs/spec/05-ai-integration.md#a-run-produces-a-snapshot-and-a-document)
+//! adds `probe_result`. Collecting them for the meta-schema showed that they do
+//! not form one set. Nine are declarable: a taxonomy names the kind and the
+//! output path, and
 //! [principle 1](../../../../docs/spec/00-vision-and-scope.md#design-principles)
 //! makes the path a schema decision. Two are engine-defined. Spec 4 makes the
 //! register "engine-defined and non-optional", and
@@ -22,8 +24,8 @@
 //! the artifact would tell them. A declaration of either would put a second copy
 //! of one artifact at a path the engine did not fix.
 //!
-//! So [`Kind`] carries all ten and [`Kind::declarable`] separates them. The
-//! meta-schema's enum holds the eight.
+//! So [`Kind`] carries all eleven and [`Kind::declarable`] separates them. The
+//! meta-schema's enum holds the nine.
 //!
 //! # The marker is the record of the previous run
 //!
@@ -94,6 +96,7 @@ use std::path::Path;
 pub mod descriptor;
 pub mod export;
 pub mod identity;
+mod probe_result;
 pub mod profile;
 mod shelf_index;
 mod shelf_sections;
@@ -121,10 +124,45 @@ pub struct Identity {
     pub lock: String,
 }
 
+/// What a probe result is generated from, supplied by the caller for the reason
+/// [`Identity`] is supplied: this module opens no file of its own.
+///
+/// The two members are two of the three inputs
+/// [spec 5](../../../../docs/spec/05-ai-integration.md#a-probe-result-is-citable-because-each-of-its-three-inputs-is-a-committed-artifact)
+/// makes a result a function of. The third is the grader version, which is the
+/// version of the crate that evaluates them and is nothing a caller passes.
+///
+/// A caller that supplies neither gets a plan that says so. That is the whole
+/// posture of [`Unwritten`]: a declaration that produced no file states why,
+/// rather than being dropped.
+#[derive(Clone, Debug, Default)]
+pub struct Runs {
+    /// The probes of this corpus, as `headwater probe plan` composed them.
+    ///
+    /// From the plan and never from the transcript. A result is held to the
+    /// probes this tree declares, and a selection read out of a recorded run
+    /// would let a transcript name its own denominator.
+    pub selected: Vec<headwater_probe::plan::Selected>,
+    /// The bytes of every committed transcript.
+    ///
+    /// A census row carries what it parsed rather than the source it parsed,
+    /// and the intake reads fenced blocks out of the source. So the caller that
+    /// walked the tree supplies them.
+    pub transcripts: Vec<Transcript>,
+}
+
+/// One committed transcript: where it is, and the bytes the caller read.
+#[derive(Clone, Debug)]
+pub struct Transcript {
+    /// Relative to the repository root, in the form the census wrote it.
+    pub path: String,
+    pub source: String,
+}
+
 /// A projection kind.
 ///
-/// Ten of them. Eight a taxonomy declares, and two the engine defines. See the
-/// module header for why that split exists.
+/// Eleven of them. Nine a taxonomy declares, and two the engine defines. See
+/// the module header for why that split exists.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kind {
     ShelfIndex,
@@ -136,6 +174,9 @@ pub enum Kind {
     GraphExport,
     Template,
     Transcription,
+    /// Spec 5: the verdicts the grader returned over one committed transcript,
+    /// written as a document of the corpus.
+    ProbeResult,
     /// Spec 4: the register, engine-defined and non-optional.
     CoverageReport,
     /// Q14: `.headwater/corpus.json`, engine-defined and non-optional.
@@ -154,6 +195,7 @@ impl Kind {
             Kind::GraphExport => "graph_export",
             Kind::Template => "template",
             Kind::Transcription => "transcription",
+            Kind::ProbeResult => "probe_result",
             Kind::CoverageReport => "coverage_report",
             Kind::CorpusDescriptor => "corpus_descriptor",
         }
@@ -167,7 +209,7 @@ impl Kind {
     }
 
     /// The declarable kinds, in the order the meta-schema lists them.
-    pub const DECLARABLE: [Kind; 8] = [
+    pub const DECLARABLE: [Kind; 9] = [
         Kind::ShelfIndex,
         Kind::ShelfSections,
         Kind::RelationView,
@@ -176,6 +218,7 @@ impl Kind {
         Kind::GraphExport,
         Kind::Template,
         Kind::Transcription,
+        Kind::ProbeResult,
     ];
 
     fn parse(text: &str) -> Option<Kind> {
@@ -465,6 +508,7 @@ pub fn plan(
     census: &Census,
     projections: &Projections,
     identity: &Identity,
+    runs: &Runs,
 ) -> Plan {
     let mut plan = Plan::default();
     for declaration in &projections.declared {
@@ -472,6 +516,9 @@ pub fn plan(
             Kind::ShelfIndex => shelf_index::emit(surface, census, declaration, &mut plan),
             Kind::ShelfSections => shelf_sections::emit(surface, census, declaration, &mut plan),
             Kind::GraphExport => graph_export(surface, projections, declaration, &mut plan),
+            Kind::ProbeResult => {
+                probe_result::emit(surface, census, declaration, runs, identity, &mut plan)
+            }
             other => plan.unwritten.push(Unwritten {
                 at: declaration.output.clone(),
                 kind: other,
@@ -638,6 +685,7 @@ fn unbuilt(kind: Kind) -> &'static str {
         Kind::ShelfIndex
         | Kind::ShelfSections
         | Kind::GraphExport
+        | Kind::ProbeResult
         | Kind::CoverageReport
         | Kind::CorpusDescriptor => "this engine emits it",
     }

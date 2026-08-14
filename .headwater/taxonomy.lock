@@ -16,7 +16,7 @@
 
 lock:
   format: 2
-  digest: sha256:73b1799b1e3b677ef70160704c1f88efa707830b64101ec974e33e51624b88da
+  digest: sha256:7f04325be6cf11ab6a1a14a018f65c0fb08ded205c5f19520cdb6140531f0d7f
   package: headwater/standard
   version: 1.0.0
   sources:
@@ -27,7 +27,7 @@ lock:
     - path: docs/taxonomies/decision-record/bundle.yml
       digest: sha256:f1cb23a8958c3a2046b05c042cd5681d47543ba22c6a9f44972446aeafdd31a6
     - path: .headwater/overlay.yml
-      digest: sha256:0738cea6e1663c59c69dd5f516357f569c7db9984371981a4ed2ea8f63eb4c28
+      digest: sha256:921612dcb9416931f01de618b8e672555b9d188267a0e4a45902db51ff8b9b25
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -386,6 +386,13 @@ resolved:
           - Task
           - Expectation
       voice: declarative
+    probe_result:
+      identifier:
+        scheme: result_id
+      is_a: governed_document
+      lifecycle: standard
+      purpose: evidence
+      voice: declarative
     probe_transcript:
       facets:
         require:
@@ -555,6 +562,10 @@ resolved:
       kind: obligation_record
       layout: "{seq:04d}-{slug}.md"
       path: "docs/obligations/**"
+    probe_results:
+      homogeneous: true
+      kind: probe_result
+      path: "docs/probe-results/**"
     probe_runs:
       homogeneous: true
       kind: probe_transcript
@@ -600,6 +611,10 @@ resolved:
       allocation: minted-once
       namespace: HW
       pattern: "REG-{namespace}-{slug}"
+    result_id:
+      allocation: minted-once
+      namespace: HW
+      pattern: "RESULT-{namespace}-{slug}"
     review_id:
       allocation: minted-once
       namespace: HW
@@ -638,6 +653,11 @@ resolved:
       identity:
         id: REG-HW-open-questions
         kind: decision_register
+    - kind: probe_result
+      output: "docs/probe-results/{run}.md"
+      identity:
+        id: "RESULT-HW-{run}"
+        kind: probe_result
   obligations:
     OB-COV-1:
       statement: "Every file under the corpus root is classified, or reported as unclassifiable"

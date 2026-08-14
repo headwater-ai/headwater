@@ -872,7 +872,13 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>) -> ExitCode 
         Err(errors) => return refused("the projections", &errors),
     };
     let surface = loaded.surface();
-    let plan = headwater_generate::plan(&surface, &loaded.census, &projections, &loaded.identity());
+    let plan = headwater_generate::plan(
+        &surface,
+        &loaded.census,
+        &projections,
+        &loaded.identity(),
+        &loaded.runs(root),
+    );
 
     let report = match headwater_conformance::evaluate(
         &set,
@@ -1150,6 +1156,54 @@ impl Loaded {
     /// Assembled here because this is where the lock and the consumer
     /// declaration are both in hand, and passed to the generator as strings so
     /// that the generator keeps no dependency on either crate.
+    /// The two inputs a `probe_result` projection is generated from.
+    ///
+    /// Read here and not inside the generator, because that crate opens no file
+    /// of its own: one plan over one tree holds one set of bytes, and a
+    /// generator that read the disk could not promise that.
+    ///
+    /// Each of the three ways this returns less than everything is a state the
+    /// projection reports rather than works around. A corpus with no budget
+    /// declaration composes no selection, because the selection a transcript is
+    /// graded against is the one the plan composed. A transcript this walk
+    /// cannot read supplies no source. A corpus that holds no transcript
+    /// supplies nothing at all, which is this repository today.
+    fn runs(&self, root: &Path) -> headwater_generate::Runs {
+        let mut runs = headwater_generate::Runs::default();
+        for row in &self.census.rows {
+            let headwater_census::census::Outcome::Typed { kind, .. } = &row.outcome else {
+                continue;
+            };
+            if kind != headwater_probe::intake::KIND {
+                continue;
+            }
+            if let Ok(source) = std::fs::read_to_string(root.join(&row.path)) {
+                runs.transcripts.push(headwater_generate::Transcript {
+                    path: row.path.clone(),
+                    source,
+                });
+            }
+        }
+        let Ok(declaration) = std::fs::read_to_string(root.join(headwater_probe::budget::PATH))
+        else {
+            return runs;
+        };
+        let Ok(budgets) = headwater_probe::Budgets::read(&declaration) else {
+            return runs;
+        };
+        runs.selected = headwater_probe::Plan::over(
+            &self.census,
+            &self.graph,
+            &self.config,
+            &budgets,
+            &self.lock.digest,
+            headwater_probe::Tier::Regression,
+            &headwater_probe::plan::Narrowing::default(),
+        )
+        .selected;
+        runs
+    }
+
     fn identity(&self) -> headwater_generate::Identity {
         headwater_generate::Identity {
             corpus_root: self.consumer.corpus_root.clone(),
@@ -2240,7 +2294,13 @@ fn generate(root: &Path, check_only: bool) -> ExitCode {
         Err(errors) => return refused("the projections", &errors),
     };
     let surface = loaded.surface();
-    let plan = headwater_generate::plan(&surface, &loaded.census, &projections, &loaded.identity());
+    let plan = headwater_generate::plan(
+        &surface,
+        &loaded.census,
+        &projections,
+        &loaded.identity(),
+        &loaded.runs(root),
+    );
     let report = match check_only {
         true => headwater_generate::check(root, &plan),
         false => headwater_generate::write(root, &plan),

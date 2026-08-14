@@ -1,0 +1,37 @@
+---
+"headwater:generated": "probe_result. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file."
+id: RESULT-FIX-first-regression
+---
+
+# The result of runs/probe-runs/first-regression.md
+
+A probe result is a function of three committed inputs and of nothing else: the transcript at `runs/probe-runs/first-regression.md`, the expectations the probes of this corpus declare, and the version of the grader that evaluated them. Fetch the three and this file comes back.
+
+## The run this transcript recorded
+
+A regression run in the present arm, on a-model at 2026-08-14.
+served version a-model-20260701, tree sha256:fixture-tree, selection sha256:fixture-selection, seed 0, harness 0.1.0.
+realized cost $0.41, which the adaptive layer reads as the cost of its own instrument.
+
+4 events over 2 of the 2 probes this corpus declares, in 4 sessions and 1 tool calls.
+
+The engine confirmed the taxonomy, the completeness of the run identity, the membership of every probe named, that no key outside the closed set appears, and that a realized cost was recorded. It graded nothing: a verdict is a function of this transcript, the expectations these probes declare and a grader version, and `headwater probe grade` is the verb that holds all three.
+
+Graded by grader 0.1.0.
+A regression run in the present arm, on a-model at served version a-model-20260701.
+
+## The verdicts
+
+- PROBE-FIX-answered (sufficiency, expects answered)
+    session watched: satisfied — event 4: answered `no`
+- PROBE-FIX-opened (discovery, expects opened)
+    session watched: satisfied — event 1, call 1: `read /home/runner/repo/runs/probes/0002-answered.md`
+    session watched-and-saw-nothing: not satisfied — 0 recorded calls, and none named any of the 1 document
+    session nothing-watched: no verdict — the event carries no `calls` key, so nothing recorded what this form reads. An empty list is a recorded absence and a missing key is not one
+
+## The rate, and the denominator it is over
+
+2 of 3 graded sessions satisfied their expectation: 66.7%, in a 95% interval of 20.8% to 93.9%.
+The denominator is the graded sessions and never the selected probes. 1 session reached no verdict, and a session with no verdict is outside both halves of that fraction.
+
+An interval that overlaps the previous run's is variance and one that does not is drift. This is one arm, so it estimates no effect: an efficacy claim is a comparison of two results, and the arm each one recorded is on it.

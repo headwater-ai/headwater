@@ -113,6 +113,7 @@ dependencies = [
  "headwater-graph",
  "headwater-lock",
  "headwater-mark",
+ "headwater-probe",
  "headwater-query",
  "headwater-resolve",
  "headwater-yaml",

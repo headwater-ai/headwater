@@ -32,6 +32,13 @@ headwater-graph = { path = "../graph" }
 # checks read, so the two cannot drift.
 headwater-check = { path = "../check" }
 
+# The grader, and the intake that reads a transcript back. A probe result is
+# a projection whose source is a committed transcript, so this crate reaches the
+# one component of the measurement layer that returns a verdict. The direction
+# is safe in both senses that matter: `headwater-probe` names `headwater-check`
+# and never this crate, and no crate in this workspace opens a socket.
+headwater-probe = { path = "../probe" }
+
 [dev-dependencies]
 # A fixture corpus needs a taxonomy resolved from sources, in the way every
 # other crate's fixture tree does.

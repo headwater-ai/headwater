@@ -1,0 +1,105 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the probe-result fixtures are read against.
+#
+# A tree of its own, and not the `generate` tree, for the reason
+# `differential.taxonomy.yml` is a tree of its own. The recorded file beside a
+# fixture tree is what a reader diffs, and a tree that answers two questions
+# rewrites its recording whenever either one moves. This tree answers one: does a
+# projection over a committed transcript go stale when the transcript changes.
+#
+# It is also the smallest shape that types the three documents that question
+# needs. Two probes, so that a selection has something in it and one probe has a
+# document to examine. One transcript. One note on a shelf that no probe and no
+# projection reads, which is the unrelated file an edit has to leave alone.
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft, role: initial}
+      - {value: current, role: live}
+
+  status_since:
+    role: state_entered
+    required: true
+
+  summary:
+    role: scent
+    required: true
+
+  probe_category:
+    values: [discovery, sufficiency, navigability, consistency]
+    volatility: stable
+
+  expectation:
+    values: [opened, not_opened, cited, answered, patched]
+    volatility: stable
+
+  oracle:
+    volatility: stable
+
+  tier:
+    values: [regression, campaign]
+    volatility: stable
+
+  arm:
+    values: [present, absent]
+    volatility: stable
+
+identifier_schemes:
+  probe_id:  {pattern: "PROBE-{namespace}-{slug}",  namespace: FIX, allocation: minted-once}
+  run_id:    {pattern: "RUN-{namespace}-{slug}",    namespace: FIX, allocation: minted-once}
+  result_id: {pattern: "RESULT-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+  note_id:   {pattern: "NOTE-{namespace}-{slug}",   namespace: FIX, allocation: minted-once}
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status, status_since, summary]}
+
+  probe:
+    is_a: governed_document
+    identifier: {scheme: probe_id}
+    facets: {require: [probe_category, expectation, oracle]}
+    sections: {require: [Task, Expectation]}
+
+  probe_transcript:
+    is_a: governed_document
+    identifier: {scheme: run_id}
+    facets: {require: [tier, arm]}
+    sections: {require: [Run identity, Events]}
+
+  # No required section and no facet of its own. The emitter writes every byte
+  # of a result, and a requirement here would be a rule that no check reads,
+  # because a generated file is excused from the document checks.
+  probe_result:
+    is_a: governed_document
+    identifier: {scheme: result_id}
+
+  note:
+    is_a: governed_document
+    identifier: {scheme: note_id}
+
+relations:
+  examines:
+    family: evidence
+    from: [probe]
+    to:   [governed_document]
+
+shelves:
+  probes:        {path: "runs/probes/**",        homogeneous: true, kind: probe}
+  probe_runs:    {path: "runs/probe-runs/**",    homogeneous: true, kind: probe_transcript}
+  probe_results: {path: "runs/probe-results/**", homogeneous: true, kind: probe_result}
+  notes:         {path: "runs/notes/**",         homogeneous: true, kind: note}
+
+projections:
+  # One entry, so that the recorded file holds the result and nothing else. The
+  # output lands inside the corpus root, which is the interaction that matters:
+  # the next census walks the file this run wrote.
+  - kind: probe_result
+    output: "runs/probe-results/{run}.md"
+    identity:
+      id: "RESULT-FIX-{run}"
+      kind: probe_result
