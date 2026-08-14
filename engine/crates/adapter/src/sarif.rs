@@ -504,10 +504,13 @@ fn run_properties(run: &Run, subject: &Subject<'_>) -> Json {
                 "escaped",
                 Json::object([
                     // In the precedence spec 4 fixes. The first is absent
-                    // because this engine has no waiver mechanism, and a
-                    // reader who meets two counts should not have to work out
-                    // whether the third is zero or missing.
-                    ("waived", Json::string("no waiver mechanism exists")),
+                    // because no waiver reaches a check finding, and a reader
+                    // who meets two counts should not have to work out whether
+                    // the third is zero or missing. The mechanism does ship —
+                    // `headwater conformance` reads a waiver over a conformance
+                    // rule — and spec 7 states that the reader for the other
+                    // population is what has not landed.
+                    ("waived", Json::string("no waiver reaches a check finding")),
                     (
                         "migration_pending",
                         number(escaped(Escape::MigrationPending)),

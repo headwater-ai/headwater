@@ -1,29 +1,29 @@
-219 seen, 176 classified, 176 checked, 2731 check instances
+222 seen, 179 classified, 179 checked, 2773 check instances
       3 generated, held to regeneration by `headwater generate --check`
-    164 skipped: this document writes no fragment into itself
+    167 skipped: this document writes no fragment into itself
      21 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
 adoption
   1 pairs open, 0 closed, holding 1 finding, in 1 task
   AD-1 1 open, 0 closed, holding 1 finding, owner the specification authors, until 2027-06-30
     The one entry of `.ste-lint-baseline.json` that this corpus still owes. The baseline held two when the linter retired. The other named a semicolon inside a block quotation, which the engine does not report at all, because the parser hands a quoted block to no lexical rule
-177 documents in the read set, and 1 barrier that no gate carries across a merge
-    176 instances of facet.required.missing
-    176 instances of facet.value.not_permitted
-    176 instances of identifier.pattern.not_met
-    176 instances of shelf.placement_is_primary
-    398 instances of relation.target.unresolved
+180 documents in the read set, and 1 barrier that no gate carries across a merge
+    179 instances of facet.required.missing
+    179 instances of facet.value.not_permitted
+    179 instances of identifier.pattern.not_met
+    179 instances of shelf.placement_is_primary
+    401 instances of relation.target.unresolved
      86 instances of relation.reciprocity.missing
-    299 instances of relation.endpoint.not_permitted
+    302 instances of relation.endpoint.not_permitted
      15 instances of relation.participation.overdue
-    176 instances of relation.declaration.unusable
-    176 instances of identifier.unusable
+    179 instances of relation.declaration.unusable
+    179 instances of identifier.unusable
       1 instances of identifier.claimed_twice
-    157 instances of voice.forbidden_construction
-    134 instances of language.controlled.not_met
-    134 instances of language.retired_term.used
-    134 instances of language.source_form.not_met
-    141 instances of section.required.missing
-    176 instances of link.fragment.unresolved
+    160 instances of voice.forbidden_construction
+    137 instances of language.controlled.not_met
+    137 instances of language.retired_term.used
+    137 instances of language.source_form.not_met
+    144 instances of section.required.missing
+    179 instances of link.fragment.unresolved
 suppressions
   4 findings hidden by 4 directives
       4 false_positive
@@ -90,5 +90,5 @@ register
       6 with criteria
       2 permanently advisory
       2 producing facts rather than findings
-  escaped findings, in the precedence spec 4 fixes: no waiver mechanism exists, 1 migration-pending, 4 suppressed
+  escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 1 migration-pending, 4 suppressed
   every rule this engine carries reaches one obligation

@@ -231,30 +231,31 @@ A tool acquires a security obligation when it publishes a claim that a boundary 
 ### CLI
 
 ```
-headwater check      [--strict] [--fix] [--no-cache] [--now <date>]
-                     [--read-set <path>] [--register <path>]
-                     [--format text|json|sarif|markdown]
-headwater gate       --read-set <path> [--now <date>]
-headwater generate   [--check]
-headwater new        <kind> --title <text> [--relates <relation>=<identifier>]
-                     [--now <date>]
-headwater capture    [--format text|json]
-headwater sweep      plan [--under <path>]
-                   | report <path> [--format text|json]
-headwater route      <task description>
-headwater query      <expression>
-headwater explain    <path|identifier>
-headwater mcp        [--now <date>] [--write]
-headwater export     [--profile ...] [--format json|jsonschema|shacl|rdf|skos|okf|linkml]
-                     [--at <date>] [--check]
-headwater init       [--corpus <dir>] [--package <name>]
-headwater infer      [--owner <name>] [--until <date>] [--write]
-headwater taxonomy   validate | resolve [--check] | diff | migrate
-                   | audit [--now <date>]
-                   | publish [--package <name>] --out <dir>
-                   | vendor <dir> [--expect <digest>]
-headwater coverage   [--format ...]
-headwater probe      [--tier regression|campaign] [--arm present|absent] [--category ...]
+headwater check       [--strict] [--fix] [--no-cache] [--now <date>]
+                      [--read-set <path>] [--register <path>]
+                      [--format text|json|sarif|markdown]
+headwater gate        --read-set <path> [--now <date>]
+headwater generate    [--check]
+headwater new         <kind> --title <text> [--relates <relation>=<identifier>]
+                      [--now <date>]
+headwater capture     [--format text|json]
+headwater sweep       plan [--under <path>]
+                    | report <path> [--format text|json]
+headwater route       <task description>
+headwater query       <expression>
+headwater explain     <path|identifier>
+headwater mcp         [--now <date>] [--write]
+headwater export      [--profile ...] [--format json|jsonschema|shacl|rdf|skos|okf|linkml]
+                      [--at <date>] [--check]
+headwater init        [--corpus <dir>] [--package <name>]
+headwater infer       [--owner <name>] [--until <date>] [--write]
+headwater conformance [--level <name>] [--now <date>]
+headwater taxonomy    validate | resolve [--check] | diff | migrate
+                    | audit [--now <date>]
+                    | publish [--package <name>] --out <dir>
+                    | vendor <dir> [--expect <digest>]
+headwater coverage    [--format ...]
+headwater probe       [--tier regression|campaign] [--arm present|absent] [--category ...]
 ```
 
 **This grammar is a statement of fact about the engine, and a name it declares either runs or waits.** Every verb the engine ships is above. A name that the engine has not built stays here when something nameable would make it real. The engine then says what the name waits on when a caller types it. `query <expression>` is such a name, because no document states what an expression is. The verb ships the day one does. The same reading covers `coverage` and `probe`. It covers `taxonomy diff` and `taxonomy migrate`, and the five export targets that no consumer has asked for. Each of those two states its wait when a caller types it. `diff` waits on a second taxonomy to compare against. `migrate` waits on `diff`, because a payload names the version it came from, and no run names one without a measured comparison. A name that nothing could make real has no place here, and `--changed-only` is the one such name this grammar carried. The test between the two is not how far away the work is. It is whether any document or any consumer could turn the name into a verb that runs.
@@ -268,6 +269,8 @@ headwater probe      [--tier regression|campaign] [--arm present|absent] [--cate
 **`sweep` is two verbs and neither one reaches a model.** `plan` writes the briefing an agent reads, and `report` reads back the file the agent wrote. The part between them needs a model and no engine code performs it, so no build ever waits for one. Both exit 0 whatever they find, neither writes into the corpus, and the sampler is a crate that `headwater-check` cannot name. [Spec 12](12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) states what each of those four facts enforces.
 
 **`taxonomy vendor` takes a path, and that is what keeps the network out of the engine.** [Spec 7](07-distribution-and-federation.md#consuming) says a consumer fetches a package and checks its digest. The fetch is the caller's, by whatever moves a directory in the organization that runs it, and the verb checks the bytes it is handed. A verb that took a location would need a client, and a client is a crate that opens a socket. So the [non-negotiable](00-vision-and-scope.md#non-negotiables) is a property of the argument rather than a rule that somebody keeps. `publish` is the other half, and it writes the artifact that `vendor` reads.
+
+**`conformance` reads a rule set the package ships, and both of its flags carry a rule.** The verb evaluates the repository against those rules and reports the level that the passing ones reach ([spec 7](07-distribution-and-federation.md#conformance)). With no flag it exits 0, on the terms `audit` exits 0: it measures an adoption and it gates nothing. `--level <name>` asks one question — is this repository at that rung — and it exits non-zero on a gap that no waiver covers. `--now` injects the clock that a waiver expiry is read against, so two runs over one tree at one date agree. The verb writes text and no other format, because the reader is a person closing a gap rather than a program.
 
 `probe` is the one verb that reaches the network, so it never runs inside `check` and never gates ([spec 5](05-ai-integration.md#two-tiers-and-the-cadence-follows-the-purpose)). It projects the cost of a run against the tier's declared budget and refuses a run that exceeds it. Every run writes its transcript and reports the run identity, the realized cost, and the interval around each rate.
 

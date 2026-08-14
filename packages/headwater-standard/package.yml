@@ -26,6 +26,12 @@ requires_engine: ">=0.1 <2"
 
 contents:
   taxonomy: taxonomy.yml
+  # The conformance rule set and the levels over it. `headwater conformance`
+  # reads it from here and no other verb reads it at all. It is not a taxonomy
+  # source: it declares no kind, facet, shelf or check, and it never reaches the
+  # lock. What holds it is the release digest, which covers every file in the
+  # artifact including this one.
+  conformance: conformance.yml
   # The bundles this package ships. They live in the library entry directory
   # for as long as the package and the library are one repository, and the
   # resolver reads `<bundles>/<name>/bundle.yml`. `headwater taxonomy publish`

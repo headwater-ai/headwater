@@ -17,7 +17,26 @@ An adopter turns four dials. Three of them already have mechanisms, and the ladd
 
 The third dial already carries the ratchet that a maturity model would otherwise have to build. Conformance rules ship with the package, so a pin advance brings newly added requirements into force on every consumer at once. Improve the method, and the next upgrade surfaces the new gap. A ladder is the ordering over those rules that tells an adopter which gap to close first.
 
-`headwater conformance --level 3` reports the distance between here and there. Nothing else is added.
+`headwater conformance --level L2` reports the distance between here and there. Nothing else is added.
+
+## Where the ladder actually lives, and which rungs ship
+
+This file is the argument. `packages/headwater-standard/conformance.yml` is the ladder, and where the two disagree the package is right.
+
+**Three rungs ship, and they are L0, L1 and L2.** Each one names rules that the engine holds a reading for: `pin.current` and `lock.current` at L0, `corpus.classified` at L1, `projections.current` at L2. A rung arrives with the rules that earn it or it does not arrive, and a level naming no rule is refused at read time.
+
+The four rungs above ship nothing yet, and each waits on a different thing.
+
+| Rung | What it waits on |
+|---|---|
+| L3 Linked | A reading of relation participation and of installed hooks. The second is per-clone configuration, so it waits on the attestation record below |
+| L4 Gated | An attestation record. Branch protection lives in the administration surface of a forge, and no reading of a tree decides it |
+| L5 Publishing | A reading of whether the local overlay is itself a published package |
+| L6 Measured | The measurement layer, which is [OBL-repo-0023](../obligations/0023-no-corpus-has-authored-enough-cues-to-grade.md) and the probe tiers |
+
+**Three rules ship with no rung at all.** `checks.wired`, `gates.required` and `hooks.installed` each declare an attestation in place of a reading. `headwater conformance` names each one, states what would decide it, and counts it as neither met nor missing. No rung names one of them, because a rung that names a rule nothing can meet is a rung nobody reaches, and a ladder with an unreachable rung is worse than a ladder that stops.
+
+**A level is never claimed, and there is no key to claim one in.** The third open question below asked whether an adopter declares a target level. The answer the engine gives is narrower than either option: an adopter may ask about a rung with `--level <name>` and no file records an answer. The report derives the level from the rules that pass. A [waiver](../spec/07-distribution-and-federation.md#waivers) moves the exit status of a `--level` run and never the level the report states, so an adopter who accepts a deviation gets a green gate and the same rung as before.
 
 ## A level never sets posture
 
@@ -124,5 +143,5 @@ The **rung contents are a guess**, and this file says so rather than waiting to 
 Three questions are open and none of them blocks the rest:
 
 - **Whether the levels are a chain or a partial order.** L2 and L3 are independent in principle. An adopter who wants routing before regeneration is not doing anything wrong, and the chain above is a claim about the common case rather than about necessity.
-- **Whether an adopter declares a target level.** A declared target would let a run report the distance on every invocation, in the way that the adoption payload reports its open-pair count. It would also be one more thing to hold in step with the taxonomy.
+- **Whether an adopter declares a target level.** Closed by the shape of the verb rather than by an argument. `--level <name>` asks about a rung and writes nothing, so a run reports the distance when somebody asks and no file holds an answer that could fall out of step. A key that recorded a target would also be a key that an adopter could write a level into, and the section above states why no such key exists.
 - **Whether a rung ever removes a rule.** Every rung above adds. If a real ladder needs a level that relaxes a requirement of the level below, the ordering is wrong, and the same argument applies that makes a bundle add-only.

@@ -2102,7 +2102,7 @@
             "instances": 243
           },
           "escaped": {
-            "waived": "no waiver mechanism exists",
+            "waived": "no waiver reaches a check finding",
             "migration_pending": 1,
             "suppressed": 2
           },
