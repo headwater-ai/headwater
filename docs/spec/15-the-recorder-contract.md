@@ -23,9 +23,9 @@ relations:
 
 A person who writes a recorder reads this part. Everything below is a contract that `engine/crates/probe/src/intake.rs` enforces, and `engine/crates/probe/tests/contract.rs` holds this text to the constants that carry the four closed key sets. A key added to the engine and not to the table below fails that test.
 
-## The engine fixes five members of the identity, and the recorder supplies the rest
+## The engine fixes six members of the identity, and the recorder supplies the rest
 
-`headwater probe plan` composes a selection and prints the five members of the run identity that exist before any session starts. They are the lock, the corpus tree, the selection, the seed and the harness version. The plan also prints the probes selected, the task of each one, and the documents each one examines.
+`headwater probe plan` composes a selection and prints the six members of the run identity that exist before any session starts. They are the lock, the corpus tree, the selection, the read set, the seed and the harness version. The plan also prints the probes selected, the task of each one, and the documents each one examines. It prints the read set that the digest covers, one line for each document.
 
 The recorder copies those five into the transcript without change. It supplies the four that belong to the run: the model, the served version, the wall-clock time and the realized cost. It supplies the tier and the arm, which the plan states and which a reader of the transcript alone would otherwise have to guess.
 
@@ -37,7 +37,7 @@ The `probe_transcript` kind requires a `Run identity` section and an `Events` se
 
 The blocks carry four closed key sets. A key outside a set refuses the whole file. That refusal enforces the rule that a transcript holds no model prose. An omission that nothing tests is a request rather than a rule. A transcript with a `reasoning` key beside the tool calls returns the self-report through the field the rule forbids.
 
-### The run identity, which carries eleven keys
+### The run identity, which carries twelve keys
 
 | key | what the recorder writes |
 |---|---|
@@ -46,6 +46,7 @@ The blocks carry four closed key sets. A key outside a set refuses the whole fil
 | `tree` | the corpus tree digest the plan printed |
 | `lock` | the taxonomy lock digest the plan printed |
 | `selection` | the selection digest the plan printed |
+| `read_set` | the read-set digest the plan printed |
 | `seed` | the rotation seed the caller stated |
 | `harness` | the harness version the plan printed |
 | `tier` | `regression` or `campaign` |
@@ -53,7 +54,7 @@ The blocks carry four closed key sets. A key outside a set refuses the whole fil
 | `at` | the wall-clock time of the run |
 | `cost_cents` | the realized cost, as a whole number of cents |
 
-Every one of the eleven is required. An identity with a member missing is a measurement that nobody can locate again. A run that recorded no cost leaves the cost of the instrument to a guess.
+Every one of the twelve is required. An identity with a member missing is a measurement that nobody can locate again. A run that recorded no cost leaves the cost of the instrument to a guess.
 
 ### One event, which carries five keys
 
@@ -73,9 +74,11 @@ Every one of the eleven is required. An identity with a member missing is a meas
 |---|---|
 | `tool` | the name of the tool the session called |
 | `argument` | the argument, which for a read is the path |
-| `result` | the identity of what the call returned |
+| `result` | the identity of what the call returned, which for a read is the content digest of the document |
 
 A result identity and never a result. The bytes a tool returned are the corpus. A transcript that held them is a second copy of the tree it already names by digest.
+
+The identity of a read is the content digest of the document, in the form that `headwater probe plan` prints. `headwater probe stale` compares that identity against the digest this corpus holds, so an identity of another form decides nothing.
 
 ### One produced artifact, which carries four keys
 
@@ -112,17 +115,21 @@ A recorder that reads the probe is a grader with no fixture set and no version. 
 4. **No prose.** Every key of every block is a member of one of the four sets above.
 5. **A realized cost.** `cost_cents` is a whole number of cents.
 
-Present is not confirmed, and the difference is what the rest of this section states. Of the five members the plan fixed, one is compared here and four are not. Each of the four has a reason, and the reasons are not the same reason.
+Present is not confirmed, and the difference is what the rest of this section states. Of the six members the plan fixed, this verb compares one. `headwater generate` compares a second and `headwater probe stale` compares a third. The other three are not compared at all, and each of the three has a reason of its own.
 
 **The `selection` digest is compared, and the comparison is reported rather than refused.** `headwater generate` writes the comparison into the probe result. The digest covers the identifiers of the probes selected and nothing else. So it holds still when the prose of a probe is edited. It moves when a probe is added, removed or renamed. That is the one change that makes a recorded run cover a population this corpus no longer declares. A refusal there replaces a graded rate with a notice on the day somebody adds a probe. So the result names both digests, and the reader decides.
 
-**The `tree` digest is recorded and never compared.** It covers every classified document of the corpus, so it moves on any edit to any document. A result that reported it would need a fresh commit after every prose change, and `generate --check` would ask for one on every pull request. A statement that nobody can leave standing is not a statement.
+**The `read_set` digest is compared by a verb, and no exit status carries the answer.** The digest covers every probe of the selection and every document one of them examines, by path and content. So it moves when a document a session was pointed at changes. It holds still when any other document of this corpus changes. `headwater probe stale` recomposes it over the tree in front of the reader and reports which recorded results the change voided. That verb exits 0 on every answer it reaches. A probe result that goes stale is a fact about a measurement. An exit status that carried it would put the behavior of a model on a build.
+
+**A comparison against the tree in front of a reader does not go into a probe result.** `generate --check` holds every committed projection to its own bytes. A result that compared a recorded digest against the current tree would change its own bytes. It would change them on every edit to a document the selection points at. The gate would then ask for a regeneration, and the staleness of a measurement would stop a merge through a derived document. A regeneration would also write something false, because it would claim the run was taken over a state that the run never met. So the result names the recorded digest, and `headwater probe stale` compares it. The `selection` digest is the one comparison a result carries. It earns the place because it moves only when somebody adds, removes or renames a probe.
+
+**The `tree` digest is recorded and never compared.** It covers every classified document of the corpus, so it moves on any edit to any document. A result that reported it would need a fresh commit after every prose change, and `generate --check` would ask for one on every pull request. A statement that nobody can leave standing is not a statement. The read set above is the narrow instrument that this reasoning defers to, and it covers the documents that a whole-tree digest cannot separate from the rest of the corpus.
 
 **The `seed` and the `harness` are provenance.** A seed is a number the caller stated, and this corpus holds nothing to compare it against. A harness version is the version of the engine that planned the run. A comparison against the version that reads the run refuses every transcript on the first release.
 
 ## Nothing here separates a recorded transcript from a typed one
 
-Every value in a transcript is a value that a person can type. The lock digest is printed by `headwater probe plan`. So is the selection digest. The events are lines of YAML. No signature, no key and no witness is part of this contract. An integrity artifact that travels with the file it describes states internal consistency rather than identity.
+Every value in a transcript is a value that a person can type. The lock digest is printed by `headwater probe plan`. So is the selection digest, and so is the read-set digest. The events are lines of YAML. No signature, no key and no witness is part of this contract. An integrity artifact that travels with the file it describes states internal consistency rather than identity.
 
 The distinction between a recorded artifact and a written one lives in `provenance.warrant`. No taxonomy declares that block and no check reads it. A shelf index prints the warrant of every document it covers, and the shelf that holds a transcript has no index. [OBL-repo-0030](../obligations/0030-the-provenance-block-belongs-to-the-engine-and-nothing-states.md) holds that gap. This contract is the sharpest instance of it. The warrant is the only field that separates the two artifacts, and it is the field with no shape.
 

@@ -117,8 +117,8 @@ impl std::fmt::Display for Witness {
             Witness::NoneOf { calls, over } => write!(
                 f,
                 "{}, and none named any of the {}",
-                count(*calls, "recorded call"),
-                count(*over, "document")
+                crate::plural(*calls, "recorded call"),
+                crate::plural(*over, "document")
             ),
             Witness::Cites {
                 event,
@@ -168,8 +168,8 @@ impl std::fmt::Display for Miss {
             Miss::NeverRead { calls, over } => write!(
                 f,
                 "{}, and none named any of the {}",
-                count(*calls, "recorded call"),
-                count(*over, "document")
+                crate::plural(*calls, "recorded call"),
+                crate::plural(*over, "document")
             ),
             Miss::Read {
                 event,
@@ -179,8 +179,8 @@ impl std::fmt::Display for Miss {
             Miss::NeverCited { artifacts, over } => write!(
                 f,
                 "{}, and none cites any of the {}",
-                count(*artifacts, "produced artifact"),
-                count(*over, "identifier")
+                crate::plural(*artifacts, "produced artifact"),
+                crate::plural(*over, "identifier")
             ),
             Miss::NoAnswerGiven => write!(f, "the session ended with no answer"),
             Miss::Outside { event, value } => write!(
@@ -190,7 +190,7 @@ impl std::fmt::Display for Miss {
             Miss::OracleReported { artifacts, oracle } => write!(
                 f,
                 "`{oracle}` reported over each of the {}",
-                count(*artifacts, "produced artifact")
+                crate::plural(*artifacts, "produced artifact")
             ),
         }
     }
@@ -252,7 +252,7 @@ impl std::fmt::Display for Refusal {
                 f,
                 "it expects `cited` and none of the {} it examines carries an identifier. A \
                  produced artifact cites an identifier, and nothing cites a path",
-                count(*over, "target")
+                crate::plural(*over, "target")
             ),
             Refusal::Unrecorded { what } => write!(
                 f,
@@ -511,7 +511,7 @@ impl Results {
                     out,
                     "No session reached a verdict, so this run reports no rate. {} were refused, \
                      and a rate over none of them would be a number about nothing.",
-                    count(self.refused(), "session")
+                    crate::plural(self.refused(), "session")
                 );
             }
             Some(interval) => {
@@ -530,7 +530,7 @@ impl Results {
                     "The denominator is the graded sessions and never the selected probes. {} \
                      reached no verdict, and a session with no verdict is outside both halves of \
                      that fraction.",
-                    count(self.refused(), "session")
+                    crate::plural(self.refused(), "session")
                 );
             }
         }
@@ -550,16 +550,6 @@ impl Results {
 /// A proportion, as a reader reads it.
 fn percent(value: f64) -> String {
     format!("{:.1}%", value * 100.0)
-}
-
-/// A count and its noun. A verdict that says "1 documents" reads as a report
-/// nobody proofread, and every number here is small enough for a reader to
-/// check by hand.
-fn count(how_many: usize, noun: &str) -> String {
-    match how_many {
-        1 => format!("1 {noun}"),
-        other => format!("{other} {noun}s"),
-    }
 }
 
 /// The events of one probe, grouped by session, in the order the sessions first
@@ -637,11 +627,21 @@ fn read<'a>(examines: &[Examined], session: &[&'a Event]) -> Option<Found<'a>> {
 /// so that `…/05-ai-integration.md.bak` does not match the document it was
 /// copied from.
 fn names(argument: &str, target: &Examined) -> bool {
+    names_path(argument, &target.path)
+}
+
+/// The same rule, over a path rather than over an examined target.
+///
+/// [`crate::read_set`] compares a recorded argument against the path of a
+/// census row, which is the same comparison against a different source of the
+/// path. It reads this function rather than a copy of it, because two copies of
+/// a boundary rule are two places for the boundary to go missing.
+pub(crate) fn names_path(argument: &str, path: &str) -> bool {
     let argument = argument.replace('\\', "/");
-    argument == target.path
-        || (argument.len() > target.path.len()
-            && argument.ends_with(&target.path)
-            && argument[..argument.len() - target.path.len()].ends_with('/'))
+    argument == path
+        || (argument.len() > path.len()
+            && argument.ends_with(path)
+            && argument[..argument.len() - path.len()].ends_with('/'))
 }
 
 /// Every recorded call of the session, and `None` where no event recorded any.

@@ -259,12 +259,51 @@ fn body(
     if let Some(identity) = &record.identity {
         let _ = writeln!(out);
         out.push_str(&provenance(&identity.selection, selection));
+        let _ = writeln!(out);
+        out.push_str(READ_SET);
     }
     let _ = writeln!(out);
 
     out.push_str(&results.render());
     out
 }
+
+/// The read set, named here and compared somewhere else.
+///
+/// # A comparison against the tree in front of a reader cannot live in a
+/// derived document
+///
+/// This is the rule the `selection` comparison below looks like an exception
+/// to, and it is worth stating in the file that carries both.
+///
+/// `generate --check` holds every committed projection to its own bytes. So a
+/// sentence in this file that compares a recorded value against the tree in
+/// front of the reader changes these bytes whenever that tree moves, and the
+/// gate then asks for a regeneration. The read-set digest moves on any edit to
+/// any probe of the selection or to any document one of them examines, which is
+/// a prose edit somebody makes most weeks. Writing that comparison here would
+/// put the staleness of a measurement on a build, through the bytes of a
+/// derived document rather than through a rule, and
+/// [#171](https://github.com/headwater-ai/headwater/issues/171) rules that it
+/// may not.
+///
+/// Worse than the gate is what a regeneration would write. A result is a
+/// statement about the corpus a session met. Refreshing a digest in it would
+/// claim the run was taken over a state it was never taken over, so the honest
+/// value here is the recorded one and nothing else.
+///
+/// The `selection` comparison stays because the value it compares against moves
+/// only when somebody adds, removes or renames a probe. That is a deliberate
+/// act, it is rare, and a regeneration after it states something true.
+///
+/// `headwater probe stale` is where the read set meets the tree, and no exit
+/// status of that verb carries the answer.
+const READ_SET: &str = "The `read_set` digest above covers every probe of the selection and every \
+     document one of them examines, by path and content. It is recorded here and compared nowhere \
+     in this file. A comparison against the tree in front of a reader would move these bytes on \
+     every edit to a document the selection points at, and `generate --check` holds this file to \
+     its bytes, so the staleness of a measurement would stop a merge. `headwater probe stale` \
+     takes the digest and reports which recorded results a change voided.\n";
 
 /// What the four unconfirmed members of the run identity are worth, and the
 /// one of them this corpus can answer.
