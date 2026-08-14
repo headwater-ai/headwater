@@ -59,8 +59,13 @@ use headwater_check::{Cache, Context, Date, Declared, Register, Shape};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
+use headwater_query::mcp::Written;
 use headwater_query::{Budget, Surface};
 use headwater_resolve::render_errors;
+// The graph reads have a `Surface` of their own, and this one is the entry
+// point a run of the authoring verb was made at. Two different subjects, so the
+// name that is more precise here is the one this file uses.
+use headwater_scaffold::reading::Surface as EntryPoint;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
@@ -71,7 +76,7 @@ headwater check              [--strict] [--fix] [--no-cache] [--now <date>]
 headwater gate               --read-set <path> [--now <date>] [--root <path>]
 headwater route              <task description> [--budget <n>] [--root <path>]
 headwater explain            <path|identifier> [--root <path>]
-headwater mcp                [--now <date>] [--root <path>]
+headwater mcp                [--now <date>] [--write] [--root <path>]
 headwater new                <kind> --title <text> [--relates <relation>=<identifier>]
                              [--now <date>] [--root <path>]
 headwater capture            [--format text|json] [--root <path>]
@@ -98,11 +103,14 @@ headwater taxonomy resolve   [--check] [--root <path>]
                      is consequently required of it.
   mcp                serve the reads above, and one run of the checks, to an
                      agent over the Model Context Protocol, on standard input
-                     and output. It registers spec 5's query class and no tool
-                     that writes. The corpus is walked once before it starts and
-                     the clock is read once, so every call answers about the
-                     same tree at the same date, and the `check` tool returns
-                     the bytes `check --format` returns.
+                     and output. It registers spec 5's query class, and with
+                     `--write` the working-tree write class beside it. The
+                     corpus is walked once before it starts and the clock is
+                     read once, so every call answers about the same tree at the
+                     same date, and the `check` tool returns the bytes `check
+                     --format` returns. A call that moves a byte of that tree
+                     ends the server rather than answering from a walk it made
+                     stale.
   new                scaffold a document of a kind: the placement its shelf
                      dictates, the front matter its facets require, the sections
                      its contract requires, an identifier under its scheme, and
@@ -192,8 +200,16 @@ headwater taxonomy resolve   [--check] [--root <path>]
                  debt above a suppression and this engine will not invent one.
   --until <date> `infer` only: the last day the tasks it proposes hold, as
                  `YYYY-MM-DD`. Ninety days out by default.
-  --write        `infer` only: put the payload in the lock, which is committed
-                 and reviewed. Without it nothing is written.
+  --write        `infer`: put the payload in the lock, which is committed and
+                 reviewed. Without it nothing is written. `mcp`: register the
+                 working-tree write class, which is `new` and `fix`. Spec 5
+                 keeps it off by default, because a client may connect to a
+                 checkout that the user did not intend to change, so the
+                 consent is a word somebody typed rather than a setting a tree
+                 carries. A tool that lands a change is registered by no
+                 switch. The first call that moves a byte ends the server: it
+                 walked the corpus once, so every later answer would be about a
+                 tree that is gone.
   --corpus <dir> `init` only: the corpus root to declare. Proposed from the
                  tree by default.
   --package <name>
@@ -375,7 +391,7 @@ fn main() -> ExitCode {
         ["route", task @ ..] => route(&root, &task.join(" "), budget),
         ["explain"] => fail("`explain` takes a path or an identifier"),
         ["explain", target] => explain(&root, target),
-        ["mcp"] => mcp(&root, now),
+        ["mcp"] => mcp(&root, now, write),
         ["new"] => fail(
             "`new` takes a kind. Try `headwater new decision --title \"Adopt an overlay\"`",
         ),
@@ -727,23 +743,55 @@ fn new(
     relates: &[(String, String)],
     now: Option<Date>,
 ) -> ExitCode {
-    let loaded = match load(root) {
-        Ok(loaded) => loaded,
-        Err(code) => return code,
-    };
     let Some(title) = title else {
         return fail(
             "`new` takes `--title <text>`. The file name and the document's own name both come \
              from it, and this engine invents neither",
         );
     };
+    match scaffold(root, kind, &title, relates, now, EntryPoint::Terminal) {
+        Err(why) => refuse(&why),
+        Ok(written) => {
+            print!("{}", written.artifact);
+            eprint!("{}", written.account);
+            match written.ok {
+                true => ExitCode::SUCCESS,
+                false => ExitCode::FAILURE,
+            }
+        }
+    }
+}
+
+/// One run of the scaffolder, held rather than printed.
+///
+/// The verb above is the shell that prints it, and the `new` tool of the MCP
+/// server is the second caller. Two callers and one function, because a
+/// scaffolded document that differed by the surface that asked for it would be
+/// the second authoring path this repository rules against.
+///
+/// **The surface is an argument here and a decision at each boundary.** It is
+/// the term [OBL-repo-0004](../../../../docs/obligations/0004-working-tree-write-tools-have-no-measured-effect.md)
+/// asks the capture-cost store for, and it is the one input that is a fact
+/// about the caller rather than about the corpus.
+fn scaffold(
+    root: &Path,
+    kind: &str,
+    title: &str,
+    relates: &[(String, String)],
+    now: Option<Date>,
+    surface: EntryPoint,
+) -> Result<Written, String> {
+    // `load` writes its own account to standard error, which is where a
+    // terminal reads it and where the process serving a protocol call keeps it.
+    let loaded = load(root).map_err(|_| "the corpus did not load".to_string())?;
     let now = match now {
         Some(now) => now,
         None => match Context::from_system_clock() {
             Some(context) => context.now(),
             None => {
-                return fail(
-                    "the host clock is before the epoch, and this engine will not guess a date",
+                return Err(
+                    "the host clock is before the epoch, and this engine will not guess a date"
+                        .to_string(),
                 )
             }
         },
@@ -761,44 +809,42 @@ fn new(
     };
     let request = headwater_scaffold::Request {
         kind,
-        title: &title,
+        title,
         now,
         relates,
     };
 
-    let plan = match headwater_scaffold::propose(&sources, &request) {
-        Ok(plan) => plan,
-        Err(refusal) => return refuse(&refusal.to_string()),
-    };
-    let composed = match headwater_scaffold::write::compose(root, &plan) {
-        Ok(composed) => composed,
-        Err(refusal) => return refuse(&refusal.to_string()),
-    };
-    if let Err(refusal) = headwater_scaffold::write::apply(root, &composed) {
-        return refuse(&refusal.to_string());
-    }
+    // Nothing below this line has written anything yet, which is why every
+    // refusal here is a refusal with an unchanged tree behind it.
+    let plan = headwater_scaffold::propose(&sources, &request).map_err(|why| why.to_string())?;
+    let composed =
+        headwater_scaffold::write::compose(root, &plan).map_err(|why| why.to_string())?;
+    headwater_scaffold::write::apply(root, &composed).map_err(|why| why.to_string())?;
 
-    let reading = headwater_scaffold::reading::Reading::of(&plan, &loaded.lock.digest, now);
+    let reading =
+        headwater_scaffold::reading::Reading::of(&plan, &loaded.lock.digest, now, surface);
     let recorded = headwater_scaffold::reading::append(root, &reading);
-    print!("{}", scaffold_report(&plan, &composed, recorded.is_ok()));
-    match recorded {
-        Ok(()) => ExitCode::SUCCESS,
+    Ok(Written {
+        artifact: scaffold_report(&plan, &composed, recorded.is_ok()),
         // The document landed and its reading did not, which is the one outcome
         // a store of this shape cannot report later: a run with no reading and a
         // corpus that never ran the verb are the same file. So the run says so
-        // and exits non-zero, rather than leaving a silent hole in a denominator
-        // that `headwater capture` would then report as reach.
-        Err(why) => {
-            eprintln!(
+        // and fails, rather than leaving a silent hole in a denominator that
+        // `headwater capture` would then report as reach.
+        account: match &recorded {
+            Ok(()) => String::new(),
+            Err(why) => format!(
                 "headwater: the document landed and its capture-cost reading did not. {why}. \
                  Append this line to `{}` by hand, or the run is invisible to `headwater \
-                 capture`:\n{}",
+                 capture`:\n{}\n",
                 headwater_scaffold::reading::STORE,
                 reading.render()
-            );
-            ExitCode::FAILURE
-        }
-    }
+            ),
+        },
+        // The document is on disk either way, and that is what the seal reads.
+        landed: true,
+        ok: recorded.is_ok(),
+    })
 }
 
 /// What `headwater new` writes to standard output.
@@ -1388,7 +1434,30 @@ fn export(
 /// `check` takes it at, and handed over. A protocol call has no boundary of its
 /// own, so a tool that read a clock or opened a cache would be this file's
 /// defaults written a second time behind a wire.
-fn mcp(root: &Path, now: Option<Date>) -> ExitCode {
+///
+/// # `--write` is an argument somebody typed, and that is the whole of the
+/// reason it is a flag
+///
+/// [Spec 5](../../../../docs/spec/05-ai-integration.md#what-the-server-may-do-and-the-axis-that-decides-it)
+/// puts the working-tree write class off by default and makes the opt-in per
+/// server, "because a client may connect to a checkout that the user did not
+/// intend to change". Two other shapes were available and both are worse.
+///
+/// A setting in the checkout would let a repository grant the write class to
+/// every client that ever opens it, and the person who started the server would
+/// not have said anything. The consent would then be a fact about a file that
+/// somebody else committed. A second verb would be a second server to hold in
+/// step with this one, and spec 6's grammar names verbs rather than modes.
+///
+/// So the switch is a word in the command line that started the process, which
+/// is the same place `--now` is: the two inputs a caller is answerable for, at
+/// the boundary where a caller speaks.
+///
+/// The write class is [`headwater_query::mcp::Writing`], and it holds the two
+/// verbs as functions rather than as parts. A tool call therefore runs the verb
+/// this file runs, and there is no second composition of a scaffolder or a
+/// fixer behind the protocol.
+fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
     // The clock, read once for the life of the server, by the two lines
     // `check` reads it with. A server that guessed the date would answer a
     // windowed expectation wrong for as long as it ran, so a host that cannot
@@ -1404,9 +1473,24 @@ fn mcp(root: &Path, now: Option<Date>) -> ExitCode {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
+    // The two verbs of the write class, as this file runs them. Each closure
+    // takes the arguments its tool declares and nothing else: the root and the
+    // clock are the server's, and no tool may name either.
+    let scaffolding = move |kind: &str, title: &str, relates: &[(String, String)]| {
+        scaffold(
+            root,
+            kind,
+            title,
+            relates,
+            Some(ctx.now()),
+            EntryPoint::Protocol,
+        )
+    };
+    let fixing = move |format: Format| fix_over(root, &ctx, format);
     // The corpus is read once, at startup, and every tool answers from it.
     // That is the same posture every other verb takes, and it is what makes two
-    // calls in one session answer the same bytes.
+    // reads in one session answer the same bytes. A write ends the session,
+    // because it ends the tree that walk described.
     let server = headwater_query::mcp::Server {
         surface: loaded.surface(),
         census: &loaded.census,
@@ -1415,6 +1499,13 @@ fn mcp(root: &Path, now: Option<Date>) -> ExitCode {
         package: &loaded.lock.package,
         version: &loaded.lock.version,
         now: ctx,
+        writing: match writing {
+            false => None,
+            true => Some(headwater_query::mcp::Writing {
+                scaffold: &scaffolding,
+                fix: &fixing,
+            }),
+        },
     };
     headwater_query::mcp::serve(&server, std::io::stdin().lock(), std::io::stdout().lock());
     ExitCode::SUCCESS
@@ -1502,11 +1593,7 @@ fn gate(root: &Path, read_set: Option<PathBuf>, now: Option<Date>) -> ExitCode {
 ///
 /// It writes to standard error. `--format` puts one artifact on standard
 /// output, and a line about a file this run wrote is not part of that artifact.
-fn fix(
-    root: &Path,
-    ctx: &Context,
-    cached: bool,
-) -> Result<Vec<headwater_scaffold::fix::Refused>, ExitCode> {
+fn fix(root: &Path, ctx: &Context, cached: bool) -> Result<Fixed, ExitCode> {
     let loaded = load(root)?;
     let mut cache = match cached {
         true => Cache::at(root, &loaded.lock.digest),
@@ -1534,8 +1621,11 @@ fn fix(
         eprintln!("headwater: {refusal}");
         return Err(ExitCode::FAILURE);
     }
+    let mut account = String::new();
     for file in &composed.files {
-        eprintln!(
+        use std::fmt::Write;
+        let _ = writeln!(
+            account,
             "headwater: fixed {} ({} patch{})",
             file.path,
             file.applied,
@@ -1546,9 +1636,104 @@ fn fix(
         );
     }
     if composed.is_empty() {
-        eprintln!("headwater: no finding of this run carries a patch");
+        account.push_str("headwater: no finding of this run carries a patch\n");
     }
-    Ok(composed.refused)
+    Ok(Fixed {
+        account,
+        // The seal of a writing MCP server reads this, and so does nothing
+        // else. A run that composed no file left the tree as it found it.
+        landed: !composed.files.is_empty(),
+        refused: composed.refused,
+    })
+}
+
+/// What one run of the fixer did, held rather than printed.
+///
+/// The account is what a terminal reads on standard error, and the write tool
+/// of the MCP server puts the same bytes in its first content block. One
+/// composition, because a client and a terminal reading different accounts of
+/// one write is the drift this repository spends its comments on.
+struct Fixed {
+    account: String,
+    landed: bool,
+    refused: Vec<headwater_scaffold::fix::Refused>,
+}
+
+/// The account of every file that refused the patch it was offered.
+///
+/// A refusal is not a finding, so no `--strict` softens it. It says this verb
+/// was asked to write and did not, and a run that swallowed that would leave a
+/// caller believing a corpus was fixed.
+fn refusal_account(refused: &[headwater_scaffold::fix::Refused]) -> String {
+    use std::fmt::Write;
+    if refused.is_empty() {
+        return String::new();
+    }
+    let mut out = String::new();
+    let _ = writeln!(
+        out,
+        "headwater: {} file{} refused the patch it was offered, and nothing was written to any \
+         of them:",
+        refused.len(),
+        match refused.len() {
+            1 => "",
+            _ => "s",
+        }
+    );
+    for refusal in refused {
+        let _ = writeln!(out, "  {refusal}");
+    }
+    out
+}
+
+/// One run of `headwater check --fix --format <format>`, held rather than
+/// printed.
+///
+/// This is the `fix` tool of the MCP server, and it is the terminal's verb with
+/// the two streams captured. The artifact is what
+/// [`headwater_adapter::render`] wrote, so it is byte for byte what a terminal
+/// reads on standard output. No cache, on the rule the whole server follows.
+fn fix_over(root: &Path, ctx: &Context, format: Format) -> Result<Written, String> {
+    let fixed = fix(root, ctx, false).map_err(|_| {
+        "the fixer refused a file, and the account is on the standard error of the process \
+         serving this"
+            .to_string()
+    })?;
+    let loaded = load(root).map_err(|_| "the corpus did not load".to_string())?;
+    let mut cache = Cache::disabled();
+    let run = headwater_check::run(
+        &loaded.census,
+        &loaded.graph,
+        &loaded.declared(),
+        ctx,
+        &mut cache,
+    );
+    let subject = Subject {
+        package: &loaded.lock.package,
+        version: &loaded.lock.version,
+        lock: &loaded.lock.digest,
+        now: &ctx.now().render(),
+    };
+    let artifact = headwater_adapter::render(&run, &loaded.census, &loaded.graph, &subject, format);
+    // The same audit the verb fails a run on. A caller here holds one artifact
+    // rather than a terminal, so a finding that reached no output is invisible
+    // to it.
+    let audited = headwater_adapter::census(&run, &artifact);
+    if audited.is_defective() {
+        return Err(format!(
+            "the {} adapter dropped {} of {} findings with no declared loss reason: {}",
+            format.name(),
+            audited.unaccounted.len(),
+            audited.findings,
+            audited.unaccounted.join(", ")
+        ));
+    }
+    Ok(Written {
+        account: format!("{}{}", fixed.account, refusal_account(&fixed.refused)),
+        artifact,
+        landed: fixed.landed,
+        ok: fixed.refused.is_empty(),
+    })
 }
 
 /// What one invocation of `check` was asked for.
@@ -1610,7 +1795,10 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
     let refused = match fixing {
         false => Vec::new(),
         true => match fix(root, &ctx, cached) {
-            Ok(refused) => refused,
+            Ok(fixed) => {
+                eprint!("{}", fixed.account);
+                fixed.refused
+            }
             Err(code) => return code,
         },
     };
@@ -1698,22 +1886,8 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
     // and a line here would be the one thing that made them differ.
     eprint!("{}", run.cache.render());
 
-    // A refusal is not a finding, so no `--strict` softens it. It says this
-    // verb was asked to write and did not, and a run that swallowed that would
-    // leave a caller believing a corpus was fixed.
     if !refused.is_empty() {
-        eprintln!(
-            "headwater: {} file{} refused the patch it was offered, and nothing was written to \
-             any of them:",
-            refused.len(),
-            match refused.len() {
-                1 => "",
-                _ => "s",
-            }
-        );
-        for refusal in &refused {
-            eprintln!("  {refusal}");
-        }
+        eprint!("{}", refusal_account(&refused));
         return ExitCode::FAILURE;
     }
 

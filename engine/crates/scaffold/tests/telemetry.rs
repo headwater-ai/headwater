@@ -27,7 +27,7 @@ use headwater_check::Date;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::index::Index;
 use headwater_graph::Config;
-use headwater_scaffold::reading::{self, Classified, Reach, Reading, STORE};
+use headwater_scaffold::reading::{self, Classified, Reach, Reading, Surface, STORE};
 use headwater_scaffold::{propose, write, Assisted, Request, Sources};
 use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};
@@ -135,7 +135,12 @@ fn the_reading_on_disk_is_the_fraction_the_plan_derives() {
     let first = scaffold(root, "design_spec", "A scaffolded fourth part");
     let second = scaffold(root, "decision_record", "A scaffolded decision");
     for plan in [&first, &second] {
-        let reading = Reading::of(plan, "sha256:fixture", Date::parse(PINNED).expect("a date"));
+        let reading = Reading::of(
+            plan,
+            "sha256:fixture",
+            Date::parse(PINNED).expect("a date"),
+            Surface::Terminal,
+        );
         reading::append(root, &reading).expect("the reading appends");
     }
 
@@ -176,6 +181,7 @@ fn the_store_lands_outside_the_tree_the_census_walks() {
         &plan,
         "sha256:fixture",
         Date::parse(PINNED).expect("a date"),
+        Surface::Terminal,
     );
     reading::append(root, &reading).expect("the reading appends");
     assert!(root.join(STORE).is_file(), "the store is on the tree");
@@ -221,6 +227,7 @@ fn a_reading(kind: &str, document: &str, id: Option<&str>) -> Reading {
     Reading {
         lock: "sha256:fixture".to_string(),
         date: Date::parse(PINNED).expect("a date"),
+        surface: Some(Surface::Terminal),
         kind: kind.to_string(),
         document: document.to_string(),
         id: id.map(str::to_string),

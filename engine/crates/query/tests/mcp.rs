@@ -2,13 +2,22 @@
 //! The MCP surface, over the same fixture tree the reads are recorded on.
 //!
 //! The recorded file is `fixtures/query.mcp`: a session, request by response.
-//! Three properties are asserted rather than recorded, because a recording
-//! cannot carry any of them — that no registered tool writes, that a call to a
-//! tool outside the query class reaches no handler at all, and that the `check`
-//! tool answers the bytes the CLI answers over the same corpus at the same
-//! date.
+//! Everything a recording cannot carry is asserted instead — that a server with
+//! no switch registers no tool that writes, that the landed-write class reaches
+//! no handler under any switch, that the `check` tool answers the bytes the CLI
+//! answers over the same corpus at the same date, and that a call which moved a
+//! byte ends the session.
 //!
 //!     HEADWATER_BLESS=1 cargo test -p headwater-query --test mcp
+//!
+//! # The write class is a pair of functions here, as it is in the CLI
+//!
+//! [`headwater_query::mcp::Writing`] holds the two verbs rather than the parts
+//! of them, so this suite states what a verb did rather than running a
+//! scaffolder. That is the point of the shape: a test can hand the server a
+//! verb that writes a stated file and a verb that writes nothing, and then
+//! assert the one rule the server itself owns — that the seal follows the bytes
+//! and never the call.
 
 use headwater_adapter::{Format, Subject};
 use headwater_census::census::{self, Census};
@@ -19,7 +28,7 @@ use headwater_check::{Cache, Context, Date, Declared, Shape};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
-use headwater_query::mcp::{self, Server, TOOLS};
+use headwater_query::mcp::{self, Server, Session, Writing, Written, QUERY_CLASS, WRITE_CLASS};
 use headwater_query::Surface;
 use std::path::{Path, PathBuf};
 
@@ -138,6 +147,9 @@ impl Built {
     /// A server at a stated date, which is the only way one is built here: the
     /// clock is fixed before a message arrives, and a test that read the system
     /// clock would record a different report every day.
+    ///
+    /// The write class is off, which is the default shape and the one the
+    /// recorded session runs over.
     fn server(&self, at: &str) -> Server<'_> {
         Server {
             surface: self.surface(),
@@ -147,17 +159,77 @@ impl Built {
             package: "query-fixture",
             version: "0.0.0",
             now: Context::at(Date::parse(at).expect("a date")),
+            writing: None,
+        }
+    }
+
+    /// The same server with the working-tree write class registered, over the
+    /// two verbs a caller supplied.
+    fn writing<'a>(&'a self, at: &str, writing: Writing<'a>) -> Server<'a> {
+        Server {
+            writing: Some(writing),
+            ..self.server(at)
         }
     }
 }
 
+/// The two verbs of the write class, as a caller supplies them.
+struct Verbs {
+    #[allow(clippy::type_complexity)]
+    scaffold: Box<dyn Fn(&str, &str, &[(String, String)]) -> Result<Written, String>>,
+    fix: Box<dyn Fn(Format) -> Result<Written, String>>,
+}
+
+impl Verbs {
+    fn writing(&self) -> Writing<'_> {
+        Writing {
+            scaffold: &*self.scaffold,
+            fix: &*self.fix,
+        }
+    }
+}
+
+/// A `Writing` whose two verbs state what they did rather than doing it.
+///
+/// The server owns one rule about a write and it is the seal, so what the
+/// suite needs is control over the one fact the seal reads.
+fn verbs(landed: bool) -> Verbs {
+    let scaffold = move |kind: &str, title: &str, relates: &[(String, String)]| {
+        Ok(Written {
+            account: String::new(),
+            artifact: format!(
+                "wrote a {kind} called {title}, with {} edge(s)\n",
+                relates.len()
+            ),
+            landed,
+            ok: true,
+        })
+    };
+    let fix = move |format: Format| {
+        Ok(Written {
+            account: match landed {
+                true => "headwater: fixed one file (1 patch)\n".to_string(),
+                false => "headwater: no finding of this run carries a patch\n".to_string(),
+            },
+            artifact: format!("the report, in {}\n", format.name()),
+            landed,
+            ok: true,
+        })
+    };
+    Verbs {
+        scaffold: Box::new(scaffold),
+        fix: Box::new(fix),
+    }
+}
+
 fn session(server: &Server<'_>) -> String {
+    let mut held = Session::default();
     let mut out = String::new();
     for request in SESSION {
         out.push_str("→ ");
         out.push_str(request);
         out.push('\n');
-        match mcp::respond(server, request) {
+        match mcp::respond(server, &mut held, request) {
             Some(response) => {
                 out.push_str("← ");
                 out.push_str(&response);
@@ -169,12 +241,24 @@ fn session(server: &Server<'_>) -> String {
     out
 }
 
-/// The text a `check` call returned, out of the JSON-RPC envelope.
+/// One request, answered by a session nobody else is holding.
+fn once(server: &Server<'_>, request: &str) -> String {
+    mcp::respond(server, &mut Session::default(), request).expect("a request takes a response")
+}
+
+/// The request that calls one tool with the arguments given.
+fn calling(tool: &str, arguments: &str) -> String {
+    format!(
+        r#"{{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{{"name":"{tool}","arguments":{arguments}}}}}"#
+    )
+}
+
+/// Every content block a call returned, out of the JSON-RPC envelope.
 ///
 /// The envelope is JSON, and the text inside it is a report with newlines in
 /// it, so this reads the payload back through the loader rather than by cutting
 /// the string.
-fn tool_text(response: &str) -> String {
+fn content(response: &str) -> Vec<String> {
     headwater_yaml::load(response)
         .expect("a response is JSON")
         .value
@@ -190,25 +274,35 @@ fn tool_text(response: &str) -> String {
         .value
         .as_seq()
         .expect("a list")
-        .first()
-        .expect("one block")
-        .value
-        .as_map()
-        .expect("an object")
-        .get("text")
-        .expect("text")
-        .value
-        .as_scalar()
-        .expect("a scalar")
-        .text
-        .clone()
+        .iter()
+        .map(|block| {
+            block
+                .value
+                .as_map()
+                .expect("an object")
+                .get("text")
+                .expect("text")
+                .value
+                .as_scalar()
+                .expect("a scalar")
+                .text
+                .clone()
+        })
+        .collect()
+}
+
+/// The one block a read answers with.
+fn tool_text(response: &str) -> String {
+    let blocks = content(response);
+    assert_eq!(blocks.len(), 1, "a read answers with one block");
+    blocks.into_iter().next().expect("one block")
 }
 
 fn call_check(server: &Server<'_>, format: &str) -> String {
-    let request = format!(
-        r#"{{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{{"name":"check","arguments":{{"format":"{format}"}}}}}}"#
-    );
-    tool_text(&mcp::respond(server, &request).expect("a request takes a response"))
+    tool_text(&once(
+        server,
+        &calling("check", &format!(r#"{{"format":"{format}"}}"#)),
+    ))
 }
 
 #[test]
@@ -225,15 +319,16 @@ fn the_session_runs_to_the_recorded_transcript() {
     assert_eq!(expected, actual);
 }
 
-/// The server registers the query class and nothing else.
+/// A server with no switch registers the query class and nothing else.
 ///
-/// Spec 5 fixes the mechanism: "Where a class of tool is off, the server does
-/// not register it, so no handler exists to call." So this asserts the closed
-/// list, and then asserts that each write tool spec 5 names reaches an error
-/// that says the server registers no tool that writes.
+/// This is the whole of the property the write class replaced, held for the
+/// default shape. Spec 5 fixes the mechanism: "Where a class of tool is off,
+/// the server does not register it, so no handler exists to call." So this
+/// asserts the closed list, and then asserts that each write tool spec 5 names
+/// reaches an error that says the server registers no tool that writes.
 #[test]
-fn no_tool_outside_the_query_class_is_registered() {
-    let names: Vec<&str> = TOOLS.iter().map(|tool| tool.name).collect();
+fn no_tool_outside_the_query_class_is_registered_without_the_switch() {
+    let names: Vec<&str> = QUERY_CLASS.iter().map(|tool| tool.name).collect();
     assert_eq!(
         names,
         vec![
@@ -248,14 +343,12 @@ fn no_tool_outside_the_query_class_is_registered() {
 
     let built = fixture_tree();
     let server = built.server(RECORDED_AT);
+    assert!(mcp::registered(&server).iter().all(|tool| !tool.writes));
     // The working-tree write class of spec 5, and the landed write class it
-    // refuses outright. `fix` is the one that has to stay refused now that
-    // `check` is registered, because a fix tool is this check tool and a write.
+    // refuses outright. `fix` is the one that has to stay refused, because a
+    // fix tool is the check tool and a write.
     for tool in ["new", "fix", "commit", "push", "merge"] {
-        let request = format!(
-            r#"{{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{{"name":"{tool}","arguments":{{}}}}}}"#
-        );
-        let response = mcp::respond(&server, &request).expect("a request takes a response");
+        let response = once(&server, &calling(tool, "{}"));
         assert!(
             response.contains("is not a tool this server registers"),
             "{tool}: {response}"
@@ -264,7 +357,81 @@ fn no_tool_outside_the_query_class_is_registered() {
             response.contains("it registers no tool that writes"),
             "{tool}: {response}"
         );
+        // The refusal names the switch, because a client that asked for a write
+        // tool is owed the reason rather than a bare no.
+        assert!(
+            response.contains("headwater mcp --write"),
+            "{tool}: {response}"
+        );
     }
+}
+
+/// The switch registers the working-tree write class and reaches no further.
+///
+/// Spec 5's third row is a refusal rather than a deferral, and no argument of
+/// this engine turns it into anything. So a commit, a push and a merge are
+/// refused by the server that can write, on a different sentence from the one
+/// the server that cannot write gives.
+#[test]
+fn the_switch_registers_two_tools_and_no_landed_write() {
+    let names: Vec<&str> = WRITE_CLASS.iter().map(|tool| tool.name).collect();
+    assert_eq!(names, vec!["new", "fix"]);
+
+    let built = fixture_tree();
+    let supplied = verbs(false);
+    let server = built.writing(RECORDED_AT, supplied.writing());
+    let registered: Vec<&str> = mcp::registered(&server)
+        .iter()
+        .map(|tool| tool.name)
+        .collect();
+    assert_eq!(
+        registered,
+        vec![
+            "route",
+            "explain",
+            "related",
+            "resolve_identifier",
+            "governing_docs_for_path",
+            "check",
+            "new",
+            "fix"
+        ]
+    );
+    for tool in ["commit", "push", "merge", "branch", "propose"] {
+        let response = once(&server, &calling(tool, "{}"));
+        assert!(
+            response.contains("is not a tool this server registers"),
+            "{tool}: {response}"
+        );
+        assert!(
+            response.contains("acceptance is a human act"),
+            "{tool}: {response}"
+        );
+    }
+}
+
+/// A tool that writes says so in the annotation, and a read says the opposite.
+///
+/// The annotation is not what carries the property, and it is still a fact
+/// about the tool. A server that registered a write tool and annotated it
+/// `readOnlyHint: true` would be telling a client something false about itself.
+#[test]
+fn every_tool_annotates_what_it_does() {
+    let built = fixture_tree();
+    let supplied = verbs(false);
+    let server = built.writing(RECORDED_AT, supplied.writing());
+    let listed = once(&server, r#"{"jsonrpc":"2.0","id":1,"method":"tools/list"}"#);
+    for tool in QUERY_CLASS.iter() {
+        assert!(!tool.writes, "{}", tool.name);
+    }
+    for tool in WRITE_CLASS.iter() {
+        assert!(tool.writes, "{}", tool.name);
+    }
+    // Six reads and two writes, and the two annotations are the two values.
+    assert_eq!(listed.matches(r#""readOnlyHint":true"#).count(), 6);
+    assert_eq!(listed.matches(r#""readOnlyHint":false"#).count(), 2);
+    assert_eq!(listed.matches(r#""destructiveHint":true"#).count(), 2);
+    assert_eq!(listed.matches(r#""destructiveHint":false"#).count(), 6);
 }
 
 /// A read answers the same bytes twice, which is what an agent depends on.
@@ -272,13 +439,182 @@ fn no_tool_outside_the_query_class_is_registered() {
 fn one_request_answers_the_same_bytes_twice() {
     let built = fixture_tree();
     let server = built.server(RECORDED_AT);
+    let mut held = Session::default();
     for request in SESSION {
         assert_eq!(
-            mcp::respond(&server, request),
-            mcp::respond(&server, request),
+            mcp::respond(&server, &mut held, request),
+            mcp::respond(&server, &mut held, request),
             "{request}"
         );
     }
+}
+
+/// A call that moved a byte ends the session, and a call that moved none does
+/// not.
+///
+/// This is the answer to what a session looks like after a write, and it is a
+/// code path rather than a sentence in a specification. The server walked the
+/// corpus once, so an answer after a write would be about a tree that is gone —
+/// which OBL-repo-0028 measured at two findings over this repository. The seal
+/// follows the bytes: a `fix` that found no patch, and a scaffolder that
+/// refused, leave the tree as the walk described it.
+#[test]
+fn a_call_that_moved_a_byte_ends_the_session() {
+    let built = fixture_tree();
+
+    // Nothing landed: every later call is answered, including a second write.
+    let supplied = verbs(false);
+    let quiet = built.writing(RECORDED_AT, supplied.writing());
+    let mut held = Session::default();
+    for request in [
+        calling("fix", r#"{"format":"text"}"#),
+        calling("fix", r#"{"format":"text"}"#),
+        calling("route", r#"{"task":"throttling"}"#),
+    ] {
+        let response = mcp::respond(&quiet, &mut held, &request).expect("a response");
+        assert!(!response.contains(r#""error""#), "{request}: {response}");
+    }
+    assert_eq!(held.spent(), None);
+
+    // A byte landed: the writing call is answered in full, and every call after
+    // it is refused by name with the reason.
+    let supplied = verbs(true);
+    let writing = built.writing(RECORDED_AT, supplied.writing());
+    let mut held = Session::default();
+    let first = mcp::respond(&writing, &mut held, &calling("fix", r#"{"format":"text"}"#))
+        .expect("a response");
+    assert!(!first.contains(r#""error""#), "{first}");
+    assert!(first.contains("the report, in text"), "{first}");
+    assert_eq!(held.spent(), Some("fix"));
+
+    for request in [
+        calling("fix", r#"{"format":"text"}"#),
+        calling("new", r#"{"kind":"decision","title":"A decision"}"#),
+        calling("route", r#"{"task":"throttling"}"#),
+        calling("check", r#"{"format":"text"}"#),
+    ] {
+        let response = mcp::respond(&writing, &mut held, &request).expect("a response");
+        assert!(response.contains("-32000"), "{request}: {response}");
+        assert!(
+            response.contains("`fix` then moved a byte of that tree"),
+            "{request}: {response}"
+        );
+        assert!(
+            response.contains("Start another server"),
+            "{request}: {response}"
+        );
+    }
+    // The table is a fact about the registration rather than about the tree, so
+    // a spent server still answers what it has.
+    let listed = mcp::respond(
+        &writing,
+        &mut held,
+        r#"{"jsonrpc":"2.0","id":1,"method":"tools/list"}"#,
+    )
+    .expect("a response");
+    assert!(!listed.contains(r#""error""#), "{listed}");
+}
+
+/// A write tool answers with two content blocks, and the second is the
+/// artifact.
+///
+/// Spec 5 fixes two streams for every verb of this engine. A protocol call has
+/// one result, so the account and the artifact arrive as two blocks and keep
+/// their separation. A client that read only the last block reads what a
+/// terminal reads on standard output.
+#[test]
+fn a_write_answers_with_the_account_and_then_the_artifact() {
+    let built = fixture_tree();
+    let supplied = verbs(true);
+    let server = built.writing(RECORDED_AT, supplied.writing());
+    let response = once(&server, &calling("fix", r#"{"format":"markdown"}"#));
+    let blocks = content(&response);
+    assert_eq!(
+        blocks,
+        vec![
+            "headwater: fixed one file (1 patch)\n".to_string(),
+            "the report, in markdown\n".to_string()
+        ]
+    );
+
+    // A verb with nothing to say on the account leaves one block, which is what
+    // every read answers with.
+    let supplied = verbs(false);
+    let quiet = built.writing(RECORDED_AT, supplied.writing());
+    let response = once(
+        &quiet,
+        &calling(
+            "new",
+            r#"{"kind":"decision","title":"A decision","relates":["supersedes=DR-FIX-0031"]}"#,
+        ),
+    );
+    assert_eq!(
+        content(&response),
+        vec!["wrote a decision called A decision, with 1 edge(s)\n".to_string()]
+    );
+}
+
+/// `new` takes three arguments, and each one is refused in its own words.
+///
+/// One string was enough for every read and it is not enough here. A required
+/// argument that is absent is named, and a repeatable one that arrived as a
+/// bare string is refused with the shape stated rather than read as a single
+/// item.
+#[test]
+fn the_write_tools_take_the_arguments_their_verbs_take() {
+    let built = fixture_tree();
+    let supplied = verbs(false);
+    let server = built.writing(RECORDED_AT, supplied.writing());
+
+    let response = once(&server, &calling("new", r#"{"title":"A decision"}"#));
+    assert!(response.contains("`new` takes `kind`"), "{response}");
+    let response = once(&server, &calling("new", r#"{"kind":"decision"}"#));
+    assert!(response.contains("`new` takes `title`"), "{response}");
+    // `relates` is optional, so a call without one runs.
+    let response = once(
+        &server,
+        &calling("new", r#"{"kind":"decision","title":"A decision"}"#),
+    );
+    assert!(!response.contains(r#""error""#), "{response}");
+    assert!(response.contains("with 0 edge(s)"), "{response}");
+
+    let response = once(
+        &server,
+        &calling(
+            "new",
+            r#"{"kind":"decision","title":"A decision","relates":"supersedes=DR-FIX-0031"}"#,
+        ),
+    );
+    assert!(response.contains("as a list of strings"), "{response}");
+    let response = once(
+        &server,
+        &calling(
+            "new",
+            r#"{"kind":"decision","title":"A decision","relates":["supersedes"]}"#,
+        ),
+    );
+    assert!(
+        response.contains("is not `<relation>=<identifier>`"),
+        "{response}"
+    );
+
+    // `fix` takes a format and nothing else: no clock, no root, no path.
+    assert_eq!(
+        WRITE_CLASS
+            .iter()
+            .find(|tool| tool.name == "fix")
+            .expect("the fix tool")
+            .arguments
+            .iter()
+            .map(|argument| argument.name)
+            .collect::<Vec<&str>>(),
+        vec!["format"]
+    );
+    let response = once(&server, &calling("fix", r#"{"format":"yaml"}"#));
+    assert!(
+        response.contains("`fix` takes a format, one of text, json, sarif, markdown"),
+        "{response}"
+    );
 }
 
 /// The tool answers what the CLI answers, in all four formats.
@@ -392,7 +728,7 @@ fn the_check_tool_takes_a_format_and_defaults_to_none() {
         r#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"check","arguments":{"format":"yaml"}}}"#,
         r#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"check","arguments":{"format":""}}}"#,
     ] {
-        let response = mcp::respond(&server, request).expect("a request takes a response");
+        let response = once(&server, request);
         assert!(response.contains("error"), "{request}: {response}");
         assert!(
             response.contains("text, json, sarif, markdown") || response.contains("takes `format`"),
@@ -452,14 +788,16 @@ fn a_session_writes_nothing_to_the_corpus_it_reads() {
     let before = snapshot(&fixtures_dir());
     let built = fixture_tree();
     let server = built.server(RECORDED_AT);
-    for tool in TOOLS.iter() {
-        let request = format!(
-            r#"{{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{{"name":"{}","arguments":{{"{}":"{}"}}}}}}"#,
+    for tool in QUERY_CLASS.iter() {
+        let request = calling(
             tool.name,
-            tool.argument,
-            an_argument_for(tool.name)
+            &format!(
+                r#"{{"{}":"{}"}}"#,
+                tool.only().name,
+                an_argument_for(tool.name)
+            ),
         );
-        let response = mcp::respond(&server, &request).expect("a response");
+        let response = once(&server, &request);
         // A refused call reads nothing and therefore writes nothing, which
         // would make this test pass for the wrong reason.
         assert!(
