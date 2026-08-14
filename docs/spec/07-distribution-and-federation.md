@@ -49,6 +49,7 @@ version: 3.2.0
 requires_engine: ">=1.4 <2"
 contents:
   taxonomy: taxonomy/
+  conformance: conformance.yml # the rules an adopter is evaluated against, and the levels over them
   doctrine: doctrine/          # prose explaining the method, vendored to consumers
   templates: templates/
   plugins: plugins/            # organization-specific checks
@@ -204,16 +205,64 @@ The adopter thus gets a green build on the first run. Every document that does n
 Vendoring content is not adoption. A consumer can hold a perfect copy of the taxonomy and wire none of it. Conformance is a separate, evaluated question:
 
 ```
-headwater conformance
+headwater conformance [--level <name>] [--now <date>]
 ```
 
 evaluates the repository against rules that the taxonomy package ships — checks wired in CI, gates required on the default branch, projections regenerated, hooks installed, pin current. It reports gaps with remediation. The rules ship *with the package*. Thus a pin advance brings newly-added requirements into force automatically. Improve the method, and the next upgrade of every consumer surfaces the new gap. That loop is what turns a published method into an adopted one.
 
-Some rules cannot be decided from the repository tree (for instance, a permission granted in the admin console of a platform). These rules degrade to a recorded attestation with an owner and a date. They are not silently dropped.
+The verb reports and it gates nothing by itself. `--level <name>` is the one thing that moves its exit status. The section on levels below says what a level is before it says what that flag does.
+
+### The package names a rule, and the engine holds the reading
+
+A conformance rule is two halves in two places. The package declares the name, the text an adopter reads, and the remediation. The engine holds the code that decides the rule against a tree. Neither half is any use alone, and the split is the same one that `requires_engine` already makes one level down.
+
+**A rule this engine cannot read ends the run.** The precedent is exact. A publisher declares `requires_engine`, `headwater_resolve::package::sources` reads it, and an engine outside the declared range is refused before one source loads. A rule name that this engine holds no reading for is refused on the same grounds, and the message names the rule and the package. A publisher who adds a rule that needs a new reading raises the engine floor of the package. That mechanism exists already.
+
+The alternative fails quietly, which is worse. An engine that skipped a rule it could not read would report a level over the wrong rule set. The publisher and the consumer would then disagree about what that level covers. The consumer would hold a green report about a requirement that nothing evaluated, and no line of it would say so.
+
+**Some rules no tree decides.** A permission granted in the admin console of a platform is the standing example, and so is a hook that each clone installs for itself. Such a rule declares an attestation in place of a reading. The report names it, states what would decide it, and counts it as neither met nor missing. No level names such a rule until an attestation record exists, and [13 — Open obligations](13-open-obligations.md) holds that wait. This is what "not silently dropped" means in a report that a person reads.
+
+### The pin is two numbers
+
+"Pin current" was one number while a package was a version. A published artifact is now a digest over every file in it, and `.headwater/taxonomy.yml` carries `taxonomy.digest` beside `taxonomy.version`. A rule that read the version alone would pass a repository whose pinned digest names an artifact that nobody publishes any more.
+
+So the reading compares both and reports each half. A repository whose package directory carries no release record pins nothing, because no published artifact stands behind that directory. The reading calls that a gap with a remediation, rather than a state it looks away from.
+
+### What a level means, and what stops it from becoming a score
+
+A level is a named subset of the conformance rule set, and the package declares it. [The maturity ladder](../doctrine/maturity-model.md) is the ordering over those subsets. **A level states what the adopter wired up. It is not a measurement of how good a corpus is, and this specification does not dress it as one.** A publisher asserts the ordering. The engine measures which rules pass, and it asserts nothing else.
+
+Three properties keep the number honest.
+
+**Nothing declares a level.** No key of the consumer declaration holds one. The report derives the level from the rules that pass, so there is no field for an adopter to write a larger number into. An adopter who wants a different rule set forks the package. A fork moves the package name and the digest that the report prints beside the level. A level with no package identity beside it means nothing, so the report never prints one alone.
+
+**A level with no rule is refused.** The reader rejects a package that declares an empty level, because a rung that names no rule is a rung every repository already stands on. A rung arrives with the rules that earn it or it does not arrive.
+
+**A waiver moves the exit status and never the level.** The next section states what that costs and what it buys.
 
 ### Waivers
 
 A consumer may deviate deliberately. A waiver names the rule, the reason, the owner, and an expiry. Waivers appear in the coverage report of the consumer, and they are visible to the publisher in aggregate. Deviation is fine. Invisible deviation is not.
+
+**A waiver lives in the files of the consumer, and the reason is structural.** `headwater taxonomy vendor` replaces a vendored package directory whole, and it refuses to overwrite a directory that carries no release record. A shipped rule is therefore never edited locally, and a waiver written beside the rule it waives would not survive the next upgrade. The consumer declaration holds waivers instead, in a `conformance` block beside the pin. That file is authored, committed and read in a diff, which is where a deviation belongs.
+
+```yaml
+conformance:
+  waivers:
+    - rule: pin.current
+      reason: accepted_deviation
+      owner: j.baxter
+      until: 2027-02-28
+      note: this repository consumes the package it publishes, from source
+```
+
+**The expiry is required, on the terms the local escape hatch already takes.** [Spec 4](04-assurance-model.md#suppression) makes the expiry of a suppression mandatory because the expiry of a waiver was mandatory first. An expired waiver is reported as expired, and the rule under it is then evaluated as though no waiver stood there. A waiver thus fails toward the rule rather than toward the deviation, and the day it expires is the day the gate goes red.
+
+**A waiver against no rule ends the run.** A waiver that names a rule the package does not declare is a deviation that nobody reviews away. The report that would list it has nothing to list it under. The refusal is the same shape as the one above, from the other direction.
+
+**A waived gap is still a gap.** The report states the level that the passing rules reach, and a waived rule does not pass. `--level <name>` exits non-zero on a gap that no waiver covers, so a waiver buys a green gate and never a higher rung. That separates an adopter who accepted a deviation from an adopter who closed it, and it is the whole reason a level cannot be bought.
+
+**A waiver reaches a conformance rule, and [spec 4](04-assurance-model.md#suppression) counts one against a check finding.** One mechanism carries both populations, because the four fields and the mandatory expiry are the same in each. What differs is which rule a waiver may name. `headwater conformance` reads the waivers that name a conformance rule. The coverage account of `headwater check` reads the waivers that name a check rule. That second reader is why the paragraph below needs its exclusion. It does not exist yet, so every waiver in this repository today names a conformance rule, and the coverage line says so.
 
 One rule class is outside the mechanism. A [withholding rule](06-engine-architecture.md#an-export-profile-carries-a-filter) is not waivable. A waiver buys time against an error that a later run corrects, and no later run undoes a disclosure.
 
