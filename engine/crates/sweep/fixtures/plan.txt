@@ -1,0 +1,58 @@
+A coherence sweep over corpus, 5 of the 5 classified documents of this corpus.
+taxonomy: sha256:fixture
+
+Read every document below. Report only what no linter can see, in one of the 5 classes named at the end. Your output is a proposal a person reads and accepts, and it is never a verdict: nothing in this repository gates on it.
+
+## The slice
+
+- corpus/0001-an-operator-may-disable-the-cache.md (decision_record)
+    id: DR-SWP-0001
+    summary: An operator may turn the cache off for one run, and the run reports that it did.
+- corpus/0002-the-cache-is-not-an-operator-setting.md (decision_record)
+    id: DR-SWP-0002
+    summary: The cache is an implementation detail, so no operator setting reaches it and no run may skip it.
+- corpus/0003-every-check-may-be-disabled-by-an-operator.md (decision_record)
+    id: DR-SWP-0003
+    summary: TODO one sentence: what a reader learns here, which is what routing reads
+- corpus/0004-a-read-set-is-recorded-for-every-run.md (decision_record)
+    id: DR-SWP-0004
+    summary: Every run records what it read, so a later tree can be held against the verdicts of an earlier one.
+- corpus/0005-a-run-records-nothing-about-what-it-read.md (decision_record)
+    id: DR-SWP-0005
+    summary: A run reports findings and keeps no account of its inputs, so no later tree can be held against it.
+
+## What the graph already declares
+
+These 1 edges are already known. A finding that restates one is a defect in the sweep rather than a fact about the corpus, and the intake refuses it.
+
+- corpus/0004-a-read-set-is-recorded-for-every-run.md conflicts_with corpus/0005-a-run-records-nothing-about-what-it-read.md
+
+## What to write back
+
+One YAML file, then `headwater sweep report <path>`. The intake verifies every quotation against the file it names and refuses a finding it cannot find, so quote and never paraphrase.
+
+```yaml
+taxonomy: sha256:fixture
+slice: corpus
+findings:
+  - class: undeclared_conflict
+    documents:
+      - <a path from the slice above>
+      - <a second path, where the class compares two>
+    evidence:
+      - path: <one of the paths above>
+        quote: <the passage, copied>
+    message: <what you believe, in one sentence>
+    proposal:            # optional, and the best outcome
+      relation: conflicts_with
+      from: <identifier>
+      to: <identifier>
+```
+
+## The classes
+
+- `undeclared_conflict`: two documents contradict each other, both are current, and neither says so
+- `quiet_supersession`: a newer document has quietly overtaken an older claim
+- `undefined_concept`: a term is used across the slice and defined in none of it
+- `audience_mismatch`: the audience the document declares could not act on what it says
+- `unwritten_section`: a heading the kind requires, over prose that says nothing about it

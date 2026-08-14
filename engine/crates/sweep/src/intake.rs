@@ -651,9 +651,12 @@ impl Report {
             .count();
         let _ = writeln!(
             out,
-            "{proposals} of them propose an edge, which is the outcome spec 4 asks a sweep for. \
-             Nothing here writes one: a person accepts a proposal, and the engine never accepts \
-             its own."
+            "{} an edge, which is the outcome spec 4 asks a sweep for. Nothing here writes one: a \
+             person accepts a proposal, and the engine never accepts its own.",
+            match proposals {
+                1 => "One carried finding proposes".to_string(),
+                other => format!("{other} carried findings propose"),
+            }
         );
         out
     }

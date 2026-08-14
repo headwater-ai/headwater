@@ -1,0 +1,29 @@
+A coherence sweep over corpus, 5 of the 5 classified documents of this corpus.
+Every finding below was written by an agent. Provenance: agent. Nothing here is a verdict, and no exit status reads it.
+
+corpus/0001-an-operator-may-disable-the-cache.md:17:1 info
+  sweep.undeclared_conflict: One document gives an operator a setting that the other says does not exist, and both are current.
+  fix: read both passages. Declare `conflicts_with` between the two documents, or record why they do not conflict
+  quoted: "An operator may disable the cache for one run." at corpus/0001-an-operator-may-disable-the-cache.md:17
+  quoted: "No operator setting reaches the cache." at corpus/0002-the-cache-is-not-an-operator-setting.md:17
+  compared: corpus/0001-an-operator-may-disable-the-cache.md, corpus/0002-the-cache-is-not-an-operator-setting.md
+  proposes: DR-SWP-0001 conflicts_with DR-SWP-0002, which the graph does not declare today
+  to declare it, in the front matter of corpus/0001-an-operator-may-disable-the-cache.md:
+      relations:
+        conflicts_with:
+          - DR-SWP-0002
+
+corpus/0003-every-check-may-be-disabled-by-an-operator.md:13:1 info
+  sweep.unwritten_section: Both sections this kind requires still hold the scaffolder's prompt, and so does the summary that routing serves.
+  fix: write the section, or drop the heading if the kind does not require it
+  quoted: "TODO write this section." at corpus/0003-every-check-may-be-disabled-by-an-operator.md:13
+  quoted: "TODO one sentence: what a reader learns here, which is what …" at corpus/0003-every-check-may-be-disabled-by-an-operator.md:6
+
+4 of 6 findings did not reach you, and each one is a defect in the sweep rather than a fact about the corpus:
+  finding 3 (line 51): `corpus/0001-an-operator-may-disable-the-cache.md` does not hold the quotation "The cache is written to a database that survives the run."
+  finding 4 (line 60): `DR-SWP-0004 conflicts_with DR-SWP-0005` is already declared, so this restates the graph
+  finding 5 (line 72): `corpus/0009-the-document-that-is-not-there.md` is not a classified document of this corpus
+  finding 6 (line 81): `prose_quality` is not a class of this sweep. The classes are: undeclared_conflict, quiet_supersession, undefined_concept, audience_mismatch, unwritten_section
+
+2 carried, 4 refused, of 6 the file held. The engine confirmed the citation and the novelty of every carried finding, and it confirmed nothing about whether the claim is true.
+One carried finding proposes an edge, which is the outcome spec 4 asks a sweep for. Nothing here writes one: a person accepts a proposal, and the engine never accepts its own.

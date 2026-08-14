@@ -1,0 +1,104 @@
+{
+  "version": "1.0",
+  "tool": "headwater",
+  "mechanism": "sweep",
+  "provenance": "agent",
+  "sample": "a sample of one agent's reading, not a run over a rule set. Absence is not evidence, and no exit status reads this document.",
+  "slice": {
+    "under": "corpus",
+    "documents": 5,
+    "corpus": 5
+  },
+  "counts": {
+    "read": 6,
+    "carried": 2,
+    "refused": 4
+  },
+  "findings": [
+    {
+      "rule": "sweep.undeclared_conflict",
+      "class": "undeclared_conflict",
+      "provenance": "agent",
+      "severity": "info",
+      "obligation": null,
+      "path": "corpus/0001-an-operator-may-disable-the-cache.md",
+      "line": 17,
+      "column": 1,
+      "message": "One document gives an operator a setting that the other says does not exist, and both are current.",
+      "remediation": "read both passages. Declare `conflicts_with` between the two documents, or record why they do not conflict",
+      "fixable": false,
+      "documents": [
+        "corpus/0001-an-operator-may-disable-the-cache.md",
+        "corpus/0002-the-cache-is-not-an-operator-setting.md"
+      ],
+      "evidence": [
+        {
+          "path": "corpus/0001-an-operator-may-disable-the-cache.md",
+          "line": 17,
+          "quote": "An operator may disable the cache for one run."
+        },
+        {
+          "path": "corpus/0002-the-cache-is-not-an-operator-setting.md",
+          "line": 17,
+          "quote": "No operator setting reaches the cache."
+        }
+      ],
+      "proposal": {
+        "relation": "conflicts_with",
+        "from": "DR-SWP-0001",
+        "to": "DR-SWP-0002",
+        "declared": false
+      }
+    },
+    {
+      "rule": "sweep.unwritten_section",
+      "class": "unwritten_section",
+      "provenance": "agent",
+      "severity": "info",
+      "obligation": null,
+      "path": "corpus/0003-every-check-may-be-disabled-by-an-operator.md",
+      "line": 13,
+      "column": 1,
+      "message": "Both sections this kind requires still hold the scaffolder's prompt, and so does the summary that routing serves.",
+      "remediation": "write the section, or drop the heading if the kind does not require it",
+      "fixable": false,
+      "documents": [
+        "corpus/0003-every-check-may-be-disabled-by-an-operator.md"
+      ],
+      "evidence": [
+        {
+          "path": "corpus/0003-every-check-may-be-disabled-by-an-operator.md",
+          "line": 13,
+          "quote": "TODO write this section."
+        },
+        {
+          "path": "corpus/0003-every-check-may-be-disabled-by-an-operator.md",
+          "line": 6,
+          "quote": "TODO one sentence: what a reader learns here, which is what routing reads"
+        }
+      ]
+    }
+  ],
+  "refused": [
+    {
+      "at": 3,
+      "line": 51,
+      "reason": "`corpus/0001-an-operator-may-disable-the-cache.md` does not hold the quotation \"The cache is written to a database that survives the run.\""
+    },
+    {
+      "at": 4,
+      "line": 60,
+      "reason": "`DR-SWP-0004 conflicts_with DR-SWP-0005` is already declared, so this restates the graph"
+    },
+    {
+      "at": 5,
+      "line": 72,
+      "reason": "`corpus/0009-the-document-that-is-not-there.md` is not a classified document of this corpus"
+    },
+    {
+      "at": 6,
+      "line": 81,
+      "reason": "`prose_quality` is not a class of this sweep. The classes are: undeclared_conflict, quiet_supersession, undefined_concept, audience_mismatch, unwritten_section"
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# What an agent writes back, in the shape `headwater sweep plan` prints.
+#
+# Six findings, and two of them reach a reader. This file is written by hand and
+# it stands for a model's output: no test here claims that a model would return
+# these six, and the suite over it is a test of the intake rather than of a
+# model. That distinction is the point of the mechanism. The sample is not
+# reproducible and everything this engine says about a sample is.
+#
+# The four refusals are one per test the intake runs, so a regression in any of
+# them shows up as a finding that reached a reader and should not have.
+
+taxonomy: sha256:fixture
+slice: corpus
+
+findings:
+  # Carried. Two current documents that contradict each other, neither declares
+  # it, and the proposal is the edge that would end the problem permanently.
+  - class: undeclared_conflict
+    documents:
+      - corpus/0001-an-operator-may-disable-the-cache.md
+      - corpus/0002-the-cache-is-not-an-operator-setting.md
+    evidence:
+      - path: corpus/0001-an-operator-may-disable-the-cache.md
+        quote: An operator may disable the cache for one run.
+      - path: corpus/0002-the-cache-is-not-an-operator-setting.md
+        quote: No operator setting reaches the cache.
+    message: One document gives an operator a setting that the other says does not exist, and both are current.
+    proposal:
+      relation: conflicts_with
+      from: DR-SWP-0001
+      to: DR-SWP-0002
+
+  # Carried. The document every check passes, which OBL-repo-0113 records. The
+  # quotation is the scaffolder's own string, so the engine confirms that the
+  # text is really there and takes no position on the judgment that it says
+  # nothing.
+  - class: unwritten_section
+    documents:
+      - corpus/0003-every-check-may-be-disabled-by-an-operator.md
+    evidence:
+      - path: corpus/0003-every-check-may-be-disabled-by-an-operator.md
+        quote: TODO write this section.
+      - path: corpus/0003-every-check-may-be-disabled-by-an-operator.md
+        quote: "TODO one sentence: what a reader learns here, which is what routing reads"
+    message: Both sections this kind requires still hold the scaffolder's prompt, and so does the summary that routing serves.
+
+  # Refused: the quotation is not in the document. This is the failure a prose
+  # judgment fails by, and it is the reason the intake exists.
+  - class: quiet_supersession
+    documents:
+      - corpus/0001-an-operator-may-disable-the-cache.md
+    evidence:
+      - path: corpus/0001-an-operator-may-disable-the-cache.md
+        quote: The cache is written to a database that survives the run.
+    message: A later decision has overtaken the storage claim in this one.
+
+  # Refused: the graph already declares the conflict, so this restates it.
+  - class: undeclared_conflict
+    documents:
+      - corpus/0004-a-read-set-is-recorded-for-every-run.md
+      - corpus/0005-a-run-records-nothing-about-what-it-read.md
+    evidence:
+      - path: corpus/0004-a-read-set-is-recorded-for-every-run.md
+        quote: Every run records the content hash of every document and every edge it read.
+      - path: corpus/0005-a-run-records-nothing-about-what-it-read.md
+        quote: A run reports its findings and records nothing about its inputs.
+    message: One document records a read set and the other refuses to, and both are current.
+
+  # Refused: no such document.
+  - class: undefined_concept
+    documents:
+      - corpus/0009-the-document-that-is-not-there.md
+    evidence:
+      - path: corpus/0009-the-document-that-is-not-there.md
+        quote: The term is used here and defined nowhere.
+    message: A term is used across the corpus and defined in none of it.
+
+  # Refused: a class this sweep does not carry.
+  - class: prose_quality
+    documents:
+      - corpus/0002-the-cache-is-not-an-operator-setting.md
+    evidence:
+      - path: corpus/0002-the-cache-is-not-an-operator-setting.md
+        quote: The cache is an implementation detail
+    message: The prose here is harder to read than it needs to be.
