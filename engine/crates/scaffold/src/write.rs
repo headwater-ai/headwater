@@ -165,26 +165,36 @@ pub fn splice(source: &str, half: &Half) -> Result<String, Refusal> {
         .map(|(position, _)| position)
         .ok_or_else(|| refuse("the front-matter block is never closed"))?;
 
-    let entry = format!("    - {}", half.id);
+    // An entry with no attribute is a bare target reference, and one with
+    // attributes is the mapping form that spec 2 declares: `to`, and the
+    // declared attributes beside it. The two forms are one list, so a relation
+    // that already holds one takes the other.
+    let entry: Vec<String> = match half.attributes.is_empty() {
+        true => vec![format!("    - {}", half.id)],
+        false => {
+            let mut lines = vec![format!("    - to: {}", half.id)];
+            for (name, value) in &half.attributes {
+                lines.push(format!("      {name}: {value}"));
+            }
+            lines
+        }
+    };
     match block_of("relations:", &lines, 1, close) {
         None => {
-            lines.splice(
-                close..close,
-                [
-                    "relations:".to_string(),
-                    format!("  {}:", half.relation),
-                    entry,
-                ],
-            );
+            let mut block = vec!["relations:".to_string(), format!("  {}:", half.relation)];
+            block.extend(entry);
+            lines.splice(close..close, block);
         }
         Some((start, end)) => {
             let key = format!("  {}:", half.relation);
             match block_of(&key, &lines, start + 1, end) {
                 None => {
-                    lines.splice(end..end, [key, entry]);
+                    let mut block = vec![key];
+                    block.extend(entry);
+                    lines.splice(end..end, block);
                 }
                 Some((_, items_end)) => {
-                    lines.splice(items_end..items_end, [entry]);
+                    lines.splice(items_end..items_end, entry);
                 }
             }
         }
@@ -205,12 +215,7 @@ pub fn splice(source: &str, half: &Half) -> Result<String, Refusal> {
         .and_then(|block| block.value.as_map())
         .and_then(|block| block.get(&half.relation))
         .and_then(|targets| targets.value.as_seq())
-        .map(|targets| {
-            targets
-                .iter()
-                .filter_map(|target| target.value.as_scalar())
-                .any(|target| target.text == half.id)
-        })
+        .map(|targets| targets.iter().any(|target| holds(&target.value, half)))
         .unwrap_or(false);
     match written {
         true => Ok(spliced),
@@ -218,6 +223,33 @@ pub fn splice(source: &str, half: &Half) -> Result<String, Refusal> {
             "the spliced block does not read back as the edge half it wrote",
         )),
     }
+}
+
+/// Whether one entry of a relation's target list is the half that was written.
+///
+/// Both forms, and every attribute. An entry that reads back with the right
+/// target and a lost attribute is a different edge from the one composed, and
+/// the caller of the splice is the one that recorded what the attribute is for.
+fn holds(value: &headwater_yaml::Value, half: &Half) -> bool {
+    if half.attributes.is_empty() {
+        return value
+            .as_scalar()
+            .map(|scalar| scalar.text == half.id)
+            .unwrap_or(false);
+    }
+    let Some(map) = value.as_map() else {
+        return false;
+    };
+    let text = |key: &str| {
+        map.get(key)
+            .and_then(|node| node.value.as_scalar())
+            .map(|scalar| scalar.text.as_str())
+    };
+    text("to") == Some(half.id.as_str())
+        && half
+            .attributes
+            .iter()
+            .all(|(name, expected)| text(name) == Some(expected.as_str()))
 }
 
 /// The extent of a block that opens with `header`, between two line numbers.

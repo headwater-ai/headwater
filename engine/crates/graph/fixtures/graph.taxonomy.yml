@@ -30,6 +30,7 @@ relations:
     inverse: cited_by
     reciprocal: required
     cardinality: many
+    created_by: author
 
   # A relation whose targets are anchors and nothing else.
   governs:
@@ -46,10 +47,13 @@ relations:
     to:   [governed_document, code_path]
 
   # A relation whose anchor kind names a resolver that this run does not have.
+  # It is also the one relation here that an importer may write, which is what
+  # makes the two values of `created_by` comparable over one built graph.
   audited_by:
     family: evidence
     from: [design_spec]
     to:   [ado_work_item]
+    created_by: import
 
 anchors:
   code_path:     {resolver: source-tree}

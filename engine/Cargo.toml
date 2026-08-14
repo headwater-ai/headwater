@@ -9,6 +9,7 @@ members = [
     "crates/generate",
     "crates/graph",
     "crates/hash",
+    "crates/import",
     "crates/lock",
     "crates/mark",
     "crates/meta",

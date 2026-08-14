@@ -63,6 +63,18 @@ pub struct Edge {
     pub target: Target,
     /// Instance attributes: every key of the entry except `to`.
     pub attributes: Vec<Entry>,
+    /// What the relation type declares about who pays for an edge of it, copied
+    /// here from the declaration so that a reader of one edge does not have to
+    /// hold the taxonomy as well.
+    ///
+    /// [Q4](../../../../docs/decisions/0004-relation-storage.md) puts the value
+    /// on the relation type, so two edges of one relation carry one value here
+    /// whatever wrote them. A scaffolded `supersedes` and a hand-typed one are
+    /// one string on disk, and this field says so rather than implying a
+    /// per-edge provenance that nothing records. What it does separate is a
+    /// relation an importer may write from one it may not, and
+    /// `headwater_import` refuses every relation whose value is not `import`.
+    pub created_by: Option<String>,
     /// The entry that declared this edge, which is where a finding about it
     /// anchors. It is the list element rather than the relation name, so a
     /// document with eight targets under one relation reports at the one that
@@ -420,6 +432,7 @@ fn read_relation_entry(
             raw_target,
             target,
             attributes,
+            created_by: named.relation.created_by.clone(),
             span,
         };
 

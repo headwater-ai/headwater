@@ -179,6 +179,15 @@ pub struct Half {
     pub relation: String,
     pub path: String,
     pub id: String,
+    /// Instance attributes the half carries, in the order they are written.
+    ///
+    /// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)
+    /// lets a relation type declare attributes its instances may take, and an
+    /// entry that carries one is a mapping with `to` rather than a bare
+    /// identifier. An empty list writes the bare form, which is what every half
+    /// this crate proposes for itself takes. `headwater_import` is the caller
+    /// that fills it, with the upstream revision an edge was checked against.
+    pub attributes: Vec<(String, String)>,
 }
 
 /// An identifier, and what its scheme said about issuing one.
@@ -1105,12 +1114,14 @@ fn propose_edges(
                     relation: name,
                     path: node.path.clone(),
                     id: minting.id.clone(),
+                    attributes: Vec::new(),
                 })
             }
             (Reciprocal::Symmetric, Some(minting)) => Some(Half {
                 relation: relation.name.clone(),
                 path: node.path.clone(),
                 id: minting.id.clone(),
+                attributes: Vec::new(),
             }),
             _ => None,
         };

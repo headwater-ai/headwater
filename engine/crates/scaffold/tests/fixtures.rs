@@ -455,6 +455,7 @@ fn the_splice_refuses_rather_than_corrupts() {
         relation: "superseded_by".to_string(),
         path: "corpus/spec/02-the-second-part.md".to_string(),
         id: "DR-FIX-0008".to_string(),
+        attributes: Vec::new(),
     };
 
     // No front matter at all.

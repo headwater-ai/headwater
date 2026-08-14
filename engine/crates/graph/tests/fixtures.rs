@@ -371,3 +371,56 @@ fn every_node_of_the_graph_is_a_row_of_the_census_that_resolved_a_kind() {
         );
     }
 }
+
+/// An imported edge and an authored one are two different things in the graph.
+///
+/// [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+/// names an importer a correctness root because "a wrong imported edge produces
+/// a *correct* check result over a *wrong* graph". Nothing downstream can act on
+/// that unless the graph holds the difference, so this asserts that it does.
+///
+/// [Q4](../../../../docs/decisions/0004-relation-storage.md) puts the value on
+/// the relation type, so the grain of the distinction is a relation and never an
+/// edge instance. That is the limit as well as the mechanism: two edges of one
+/// relation read alike here whatever wrote them, and `headwater_import` is what
+/// makes the relation grain hold by refusing to write any other one.
+#[test]
+fn an_imported_edge_and_an_authored_edge_differ_in_the_graph() {
+    let graph = fixture_graph();
+
+    let imported: Vec<&str> = graph
+        .edges
+        .iter()
+        .filter(|edge| edge.created_by.as_deref() == Some("import"))
+        .map(|edge| edge.declared.as_str())
+        .collect();
+    assert_eq!(
+        imported,
+        vec!["audited_by"],
+        "the fixture taxonomy declares one relation an importer may write"
+    );
+
+    let authored = graph
+        .edges
+        .iter()
+        .filter(|edge| edge.created_by.as_deref() == Some("author"))
+        .count();
+    assert!(
+        authored > 0,
+        "the fixture tree declares authored edges too, or the comparison has one side"
+    );
+
+    // The half an author wrote and the half the inverse of it wrote carry one
+    // value, because the value is the relation's and not the writer's.
+    for edge in &graph.edges {
+        if edge.declared == "cites_evidence" {
+            assert_eq!(
+                edge.created_by.as_deref(),
+                Some("author"),
+                "{} writes `{}` and reads as a different creator from its own relation",
+                edge.source.path,
+                edge.name
+            );
+        }
+    }
+}

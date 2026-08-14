@@ -83,6 +83,7 @@ headwater capture            [--format text|json] [--root <path>]
 headwater sweep plan         [--under <path>] [--root <path>]
 headwater sweep report       <path> [--format text|json] [--root <path>]
 headwater generate           [--check] [--root <path>]
+headwater import             [<name>] [--expect <digest>] [--write] [--root <path>]
 headwater export             [--profile <name>] [--format json|jsonschema] [--at <date>]
                              [--check] [--root <path>]
 headwater init               [--corpus <dir>] [--package <name>] [--root <path>]
@@ -133,6 +134,15 @@ headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
   generate           write every projection the taxonomy declares, and report
                      every one it does not write with the reason. It refuses to
                      overwrite a file that carries no generated-file marker.
+  import             read a snapshot that somebody already fetched and
+                     committed, and write the edges it declares into the
+                     documents at their near ends. The snapshot is checked
+                     against a digest and a channel that a person wrote into
+                     `.headwater/taxonomy.yml`, and an import with neither is
+                     refused rather than recorded. Without `--write` it reports
+                     the edges and touches nothing. A wrong imported edge would
+                     produce a correct check result over a wrong graph, so every
+                     link is refused whole rather than reported as a finding.
   export             emit one declared export profile through one emitter
                      target, with the loss set the target declares and the
                      projection census that holds the output against the graph.
@@ -469,6 +479,8 @@ fn main() -> ExitCode {
             "`sweep {other}` is not a verb this binary carries. It carries `plan` and `report`"
         )),
         ["generate"] => generate(&root, check_only),
+        ["import"] => import(&root, None, expect.as_deref(), write),
+        ["import", name] => import(&root, Some(name), expect.as_deref(), write),
         ["export"] => export(&root, profile, format, generated_at, check_only),
         ["init"] => init(&root, corpus_root, package),
         ["infer"] => infer(&root, owner, until, write, now),
@@ -507,7 +519,7 @@ fn main() -> ExitCode {
         [other, ..] => fail(&format!(
             "`{other}` is not a verb this binary carries yet. \
              It carries `check`, `gate`, `route`, `explain`, `mcp`, `new`, `capture`, \
-             `sweep`, `generate`, `export`, `init`, `infer` and `taxonomy`"
+             `sweep`, `generate`, `import`, `export`, `init`, `infer` and `taxonomy`"
         )),
     }
 }
@@ -1579,6 +1591,112 @@ fn sweep_report(root: &Path, path: &Path, format: Option<String>) -> ExitCode {
         true => println!("{}", headwater_sweep::json::render(&report)),
         false => print!("{}", report.render()),
     }
+    ExitCode::SUCCESS
+}
+
+/// `headwater import`, and `--write` over the documents it names.
+///
+/// A dry run and a real one differ by one call, because the plan is what both
+/// print and the write is a loop over what the plan composed.
+///
+/// It exits non-zero on any refusal, and there is no advisory posture to fall
+/// back on. [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+/// says why: a wrong imported edge produces a correct check result over a wrong
+/// graph, so a finding is what a later run cannot make. Either an import is
+/// refused here or nothing downstream is going to notice.
+fn import(root: &Path, name: Option<&str>, expect: Option<&str>, writing: bool) -> ExitCode {
+    let declarations = match headwater_import::declared(root) {
+        Ok(declarations) => declarations,
+        Err(why) => return fail(&why),
+    };
+    let names: Vec<String> = declarations
+        .iter()
+        .map(|declaration| declaration.name.clone())
+        .collect();
+    let declaration = match name {
+        Some(name) => declarations
+            .iter()
+            .find(|declaration| declaration.name == name),
+        // One declared import needs no name on the command line, and two do.
+        // Choosing for the caller where there are two would import whichever
+        // one the file happened to list first.
+        None => match declarations.len() {
+            1 => declarations.first(),
+            _ => None,
+        },
+    };
+    let Some(declaration) = declaration else {
+        return match name {
+            Some(name) => refuse(
+                &headwater_import::Refusal::Undeclared {
+                    name: name.to_string(),
+                    declared: names,
+                }
+                .to_string(),
+            ),
+            None if names.is_empty() => refuse(
+                "this repository declares no import. An import is a block under `imports` in \
+                 `.headwater/taxonomy.yml` naming where a committed snapshot sits, the digest it \
+                 is pinned to, and the channel that digest arrived on",
+            ),
+            None => fail(&format!(
+                "this repository declares {} imports, so `import` takes the name of one: {}",
+                names.len(),
+                names.join(", ")
+            )),
+        };
+    };
+
+    let loaded = match load(root) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let corpus = headwater_import::Corpus {
+        index: &loaded.graph.index,
+        relations: &loaded.relations,
+        shape: &loaded.shape,
+    };
+    let plan = match headwater_import::plan(root, declaration, expect, &corpus) {
+        Ok(plan) => plan,
+        Err(refusals) => {
+            eprintln!("headwater: nothing was imported");
+            eprint!("{}", indent(&headwater_import::render(&refusals)));
+            return ExitCode::FAILURE;
+        }
+    };
+
+    print!("{}", plan.render());
+    let pending = plan.to_write();
+    if !writing {
+        println!(
+            "\n{} to write, and nothing was written. Run it again with `--write`.",
+            headwater_import::plural(pending.len(), "edge half", "edge halves")
+        );
+        return ExitCode::SUCCESS;
+    }
+
+    let composed = match headwater_import::write::compose(root, &pending) {
+        Ok(composed) => composed,
+        Err(why) => {
+            eprintln!("headwater: nothing was written");
+            eprintln!("{}", indent(&why));
+            return ExitCode::FAILURE;
+        }
+    };
+    if let Err(why) = headwater_import::write::apply(root, &composed) {
+        eprintln!("headwater: the write stopped part way");
+        eprintln!("{}", indent(&why));
+        return ExitCode::FAILURE;
+    }
+    println!(
+        "\nwrote {} into {}",
+        headwater_import::plural(pending.len(), "edge half", "edge halves"),
+        headwater_import::plural(composed.len(), "document", "documents")
+    );
+    println!(
+        "The digest says these are the bytes the pin was written for. What stands behind them is \
+         the channel above, and `headwater check` reads the result as it reads any other edge."
+    );
     ExitCode::SUCCESS
 }
 

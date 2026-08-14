@@ -60,6 +60,7 @@ dependencies = [
  "headwater-generate",
  "headwater-graph",
  "headwater-hash",
+ "headwater-import",
  "headwater-lock",
  "headwater-query",
  "headwater-resolve",
@@ -103,6 +104,19 @@ dependencies = [
 [[package]]
 name = "headwater-hash"
 version = "0.1.0"
+
+[[package]]
+name = "headwater-import"
+version = "0.1.0"
+dependencies = [
+ "headwater-census",
+ "headwater-check",
+ "headwater-doc",
+ "headwater-graph",
+ "headwater-resolve",
+ "headwater-scaffold",
+ "headwater-yaml",
+]
 
 [[package]]
 name = "headwater-lock"
