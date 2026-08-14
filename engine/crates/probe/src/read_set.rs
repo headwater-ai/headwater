@@ -147,7 +147,8 @@ impl Member {
 /// be named here before anything can report it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Verdict {
-    /// The intake refused the transcript, so it names no read set to compare.
+    /// There is no read set to compare. Either the intake refused the
+    /// transcript, or no plan composed one over this corpus.
     Unusable,
     /// The declared digest holds and no witness disagrees.
     Stands,
@@ -166,10 +167,9 @@ impl Verdict {
     pub fn stands(self) -> bool {
         match self {
             Verdict::Stands => true,
-            Verdict::Unusable
-            | Verdict::SetMoved
-            | Verdict::OpenedFileMoved
-            | Verdict::Both => false,
+            Verdict::Unusable | Verdict::SetMoved | Verdict::OpenedFileMoved | Verdict::Both => {
+                false
+            }
         }
     }
 }
@@ -210,6 +210,19 @@ impl Staleness {
             anchors: plan.anchors.clone(),
             unusable: None,
         };
+        // An empty composed digest is a plan that stopped before it composed
+        // one, and never a corpus over which the read set is empty. A
+        // comparison against it would report every committed result as voided
+        // by a refusal that has nothing to do with the tree.
+        if plan.read_set.is_empty() {
+            staleness.unusable = Some(match &plan.refusal {
+                Some(refusal) => format!("`headwater probe plan` composed no read set: {refusal}"),
+                None => {
+                    "`headwater probe plan` composed no read set and gave no reason".to_string()
+                }
+            });
+            return staleness;
+        }
         let Some(identity) = &record.identity else {
             staleness.unusable = Some(match &record.refusal {
                 Some(refusal) => refusal.to_string(),
@@ -317,11 +330,10 @@ impl Staleness {
 
         match verdict {
             Verdict::Unusable => {
-                let reason = self.unusable.as_deref().unwrap_or("it names no read set");
+                let reason = self.unusable.as_deref().unwrap_or("there is no read set");
                 let _ = writeln!(
                     out,
-                    "This transcript names no read set, so nothing here decides whether it is \
-                     stale: {reason}"
+                    "Nothing here decides whether this result is stale: {reason}"
                 );
                 return out;
             }

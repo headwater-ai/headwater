@@ -57,13 +57,9 @@ fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
 }
 
-fn corpus() -> Corpus {
-    corpus_at(&fixtures_dir())
-}
-
-/// The same corpus, rooted anywhere. The read-set tests below edit documents,
-/// so they run over a copy of the fixture tree rather than over the tree this
-/// repository commits.
+/// The fixture corpus, rooted anywhere. The read-set tests below edit
+/// documents, so they run over a copy of the fixture tree rather than over the
+/// tree this repository commits.
 fn corpus_at(dir: &Path) -> Corpus {
     Corpus::new(dir.to_path_buf(), "corpus")
 }
@@ -183,6 +179,11 @@ fn results_over(source: &str) -> Results {
 /// The transcript this corpus commits, which is the run the tests below ask
 /// about.
 const COMMITTED: &str = "corpus/probe-runs/committed.md";
+
+/// The sentence a report opens with when a change voided a result. Asserted as
+/// the whole sentence rather than as the word `stale`, which every report of
+/// this module carries somewhere.
+const VOIDED: &str = "**This result is stale.**";
 
 /// The instrument, before any subject. A fixture corpus whose read set is its
 /// corpus tree cannot tell a narrowing from a whole-tree comparison, and every
@@ -321,7 +322,7 @@ fn an_edit_the_read_set_does_not_cover_voids_no_result() {
     );
     let report = staleness.render();
     assert!(
-        !report.contains("stale"),
+        !report.contains(VOIDED),
         "the report calls this result stale:\n{report}"
     );
 }
@@ -837,6 +838,40 @@ fn an_opened_probe_that_names_no_document_stops_the_run() {
         "`opened` over an empty set is never satisfied, so the rate would report \
          the declaration: {:?}",
         plan.refusal
+    );
+}
+
+/// A plan that refused composed no read set, and an empty digest is not a read
+/// set that covers nothing.
+///
+/// `Plan::over` returns from inside the loop that composes the selection, so a
+/// refusal leaves the read set empty. A comparison against an empty digest
+/// reports every committed result as voided by a refusal that has nothing to do
+/// with the tree, which is what a hand run of `headwater probe stale` over a
+/// half-copied corpus printed before this guard existed.
+#[test]
+fn a_plan_that_composed_no_read_set_decides_nothing_about_a_result() {
+    let plan = plan_over_probe(&|source| {
+        source
+            .replace("expectation: answered", "expectation: opened")
+            .replace("expectation: not_opened", "expectation: opened")
+    });
+    assert!(
+        plan.read_set.is_empty(),
+        "this refusal composed a read set, so it tests the wrong thing: {:?}",
+        plan.refusal
+    );
+    let root = taxonomy_map();
+    let taken = census_at(&root, &fixtures_dir());
+    let source =
+        std::fs::read_to_string(fixtures_dir().join(COMMITTED)).expect("the committed transcript");
+    let staleness = Staleness::over(&record_of(&source), &plan, &taken);
+    assert_eq!(staleness.verdict(), Stale::Unusable);
+    let report = staleness.render();
+    assert!(report.contains("composed no read set"), "{report}");
+    assert!(
+        !report.contains(VOIDED),
+        "a refused plan reports a result as stale:\n{report}"
     );
 }
 
