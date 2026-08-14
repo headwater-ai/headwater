@@ -7,14 +7,18 @@
 //! platform: annotations, check runs, job summaries, review comments. Adapters
 //! are thin and swappable so that no forge is privileged in the core."
 //!
-//! # Three formats, and one of them is not written here
+//! # Four formats, and one dispatcher over them
 //!
-//! Spec 6 fixes the set: `text`, `json`, `sarif`, `markdown`. This crate writes
-//! the last three. `text` stays with the caller because the text report is
-//! composed from more than a run — the census and the graph are in it, and this
-//! crate receives neither. [`Format::Text`] is in the enum so that one list
-//! names every format a reader may ask for, and [`render`] returns `None` for
-//! it rather than writing a second, thinner text report beside the first.
+//! Spec 6 fixes the set: `text`, `json`, `sarif`, `markdown`. [`render`] writes
+//! every one of them, and it is the only place any caller turns a run into
+//! bytes. [`text`] needs the census and the graph as well as the run, so
+//! [`render`] takes all three and the three translations ignore two of them.
+//! One argument list that says more than a translation needs is the price of a
+//! single dispatcher. The alternative is a `None` arm for `text` and a caller
+//! that composes that format for itself, which costs one composition per
+//! caller: `headwater check` is one such caller and the MCP `check` tool is
+//! another, and a terminal and an agent that read different text are reading
+//! about different corpora as far as either can tell.
 //!
 //! # Why this is a crate and not a module of `headwater-check`
 //!
@@ -67,10 +71,13 @@
 pub mod json;
 pub mod markdown;
 pub mod sarif;
+pub mod text;
 
+use headwater_census::census::Census as Taken;
 use headwater_check::adoption::Task;
 use headwater_check::suppression::Suppression;
 use headwater_check::{Finding, Run, Severity};
+use headwater_graph::Graph;
 
 /// The name this tool reports under, in every format that names it.
 pub const TOOL: &str = "headwater";
@@ -88,8 +95,8 @@ pub const TOOL_URI: &str = "https://github.com/headwater-ai/headwater";
 /// both would let `check --format shacl` parse.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Format {
-    /// The report a person reads in a terminal. Composed by the caller: see the
-    /// module comment.
+    /// The report a person reads in a terminal, in the engine's own words. See
+    /// [`text`].
     Text,
     /// The finding shape spec 4 declares. Not an adapter.
     Json,
@@ -121,9 +128,12 @@ impl Format {
     /// What this format cannot carry, and why.
     ///
     /// Empty for [`Format::Json`], which is the claim that it drops nothing,
-    /// and [`census`] is what holds that claim. Empty for [`Format::Text`] for
-    /// a different reason: this crate does not write it, so it declares
-    /// nothing about it.
+    /// and [`census`] is what holds that claim. Empty for [`Format::Text`] on
+    /// the same claim and for a different reason: a loss is a member of a
+    /// target vocabulary that a run has no value for, and the terminal is the
+    /// engine's own vocabulary rather than a target. That format carries more
+    /// than the other three rather than less, because the census and the graph
+    /// are in it.
     pub fn loss(self) -> &'static [Loss] {
         match self {
             Format::Text | Format::Json => &[],
@@ -307,16 +317,23 @@ pub struct Subject<'a> {
     pub now: &'a str,
 }
 
-/// The run in one format.
+/// The run in one format: the whole of how this engine turns a run into bytes.
 ///
-/// `None` for [`Format::Text`], which the caller composes: see the module
-/// comment.
-pub fn render(run: &Run, subject: &Subject<'_>, format: Format) -> Option<String> {
+/// The census and the graph are here because [`text`] writes both and the three
+/// translations write neither. See the module comment for why they are
+/// parameters of the dispatcher rather than of one arm of it.
+pub fn render(
+    run: &Run,
+    census: &Taken,
+    graph: &Graph,
+    subject: &Subject<'_>,
+    format: Format,
+) -> String {
     match format {
-        Format::Text => None,
-        Format::Json => Some(json::render(run, subject)),
-        Format::Sarif => Some(sarif::render(run, subject)),
-        Format::Markdown => Some(markdown::render(run, subject)),
+        Format::Text => text::render(run, census, graph, subject),
+        Format::Json => json::render(run, subject),
+        Format::Sarif => sarif::render(run, subject),
+        Format::Markdown => markdown::render(run, subject),
     }
 }
 

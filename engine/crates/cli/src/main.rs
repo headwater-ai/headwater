@@ -52,13 +52,13 @@
 //! count, which belongs there because it is a fact about a disk.
 
 use headwater_adapter::{Format, Subject};
-use headwater_census::census::{self, Detail as CensusDetail};
+use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::{Cache, Context, Date, Declared, Register, Shape};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
-use headwater_graph::{Config, Detail as GraphDetail, Graph};
+use headwater_graph::{Config, Graph};
 use headwater_query::{Budget, Surface};
 use headwater_resolve::render_errors;
 use std::path::{Path, PathBuf};
@@ -71,7 +71,7 @@ headwater check              [--strict] [--fix] [--no-cache] [--now <date>]
 headwater gate               --read-set <path> [--now <date>] [--root <path>]
 headwater route              <task description> [--budget <n>] [--root <path>]
 headwater explain            <path|identifier> [--root <path>]
-headwater mcp                [--root <path>]
+headwater mcp                [--now <date>] [--root <path>]
 headwater new                <kind> --title <text> [--relates <relation>=<identifier>]
                              [--now <date>] [--root <path>]
 headwater capture            [--format text|json] [--root <path>]
@@ -96,9 +96,13 @@ headwater taxonomy resolve   [--check] [--root <path>]
                      as pointers. It is silent when nothing matches.
   explain            why a document is the kind it is, what it serves, and what
                      is consequently required of it.
-  mcp                serve the reads above to an agent over the Model Context
-                     Protocol, on standard input and output. It registers no
-                     tool that writes.
+  mcp                serve the reads above, and one run of the checks, to an
+                     agent over the Model Context Protocol, on standard input
+                     and output. It registers spec 5's query class and no tool
+                     that writes. The corpus is walked once before it starts and
+                     the clock is read once, so every call answers about the
+                     same tree at the same date, and the `check` tool returns
+                     the bytes `check --format` returns.
   new                scaffold a document of a kind: the placement its shelf
                      dictates, the front matter its facets require, the sections
                      its contract requires, an identifier under its scheme, and
@@ -152,13 +156,14 @@ headwater taxonomy resolve   [--check] [--root <path>]
                  instance. This run and a cached one write the same bytes to
                  standard output, and a difference between them is a defect in
                  the cache rather than a result.
-  --now <date>   `check`, `gate` and `new`: the date to evaluate against, as
-                 `YYYY-MM-DD`. Defaults to today. Spec 12 makes the clock an
-                 injected value rather than a syscall inside a check, and this
-                 flag is where it is injected: same corpus, same lock, same
-                 date, same bytes. On `gate` it is the day the question is
+  --now <date>   `check`, `gate`, `new` and `mcp`: the date to evaluate
+                 against, as `YYYY-MM-DD`. Defaults to today. Spec 12 makes the
+                 clock an injected value rather than a syscall inside a check,
+                 and this flag is where it is injected: same corpus, same lock,
+                 same date, same bytes. On `gate` it is the day the question is
                  asked about, and a run that read the clock is void on any
-                 other day.
+                 other day. On `mcp` it is read once and fixed for the life of
+                 the server, and every result states it.
   --read-set <path>
                  `check`: write the read set of this run to a file as well as
                  to the report. `gate`: the file to hold against this tree, and
@@ -370,7 +375,7 @@ fn main() -> ExitCode {
         ["route", task @ ..] => route(&root, &task.join(" "), budget),
         ["explain"] => fail("`explain` takes a path or an identifier"),
         ["explain", target] => explain(&root, target),
-        ["mcp"] => mcp(&root),
+        ["mcp"] => mcp(&root, now),
         ["new"] => fail(
             "`new` takes a kind. Try `headwater new decision --title \"Adopt an overlay\"`",
         ),
@@ -1376,20 +1381,42 @@ fn export(
     }
 }
 
-/// `headwater mcp`: the reads above, served to an agent.
-fn mcp(root: &Path) -> ExitCode {
+/// `headwater mcp`: the reads above and one run of the checks, served to an
+/// agent.
+///
+/// Every decision the `check` tool needs is taken here, at the same boundary
+/// `check` takes it at, and handed over. A protocol call has no boundary of its
+/// own, so a tool that read a clock or opened a cache would be this file's
+/// defaults written a second time behind a wire.
+fn mcp(root: &Path, now: Option<Date>) -> ExitCode {
+    // The clock, read once for the life of the server, by the two lines
+    // `check` reads it with. A server that guessed the date would answer a
+    // windowed expectation wrong for as long as it ran, so a host that cannot
+    // say what day it is gets no server.
+    let ctx = match now.map(Context::at).or_else(Context::from_system_clock) {
+        Some(ctx) => ctx,
+        None => {
+            eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
+            return ExitCode::FAILURE;
+        }
+    };
     let loaded = match load(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
-    // The corpus is read once, at startup, and the surface answers from it.
+    // The corpus is read once, at startup, and every tool answers from it.
     // That is the same posture every other verb takes, and it is what makes two
     // calls in one session answer the same bytes.
-    headwater_query::mcp::serve(
-        &loaded.surface(),
-        std::io::stdin().lock(),
-        std::io::stdout().lock(),
-    );
+    let server = headwater_query::mcp::Server {
+        surface: loaded.surface(),
+        census: &loaded.census,
+        graph: &loaded.graph,
+        declared: loaded.declared(),
+        package: &loaded.lock.package,
+        version: &loaded.lock.version,
+        now: ctx,
+    };
+    headwater_query::mcp::serve(&server, std::io::stdin().lock(), std::io::stdout().lock());
     ExitCode::SUCCESS
 }
 
@@ -1610,10 +1637,12 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
     let run = headwater_check::run(taken, graph, &loaded.declared(), &ctx, &mut cache);
     cache.write(root);
 
-    // A run in a vocabulary that is not the terminal's. Spec 6 lists four
-    // formats and `headwater-adapter` writes three of them: the text report
-    // below is composed from the census and the graph as well as the run, and
-    // the adapters receive neither.
+    // The run, in the vocabulary the caller asked for. Spec 6 lists four
+    // formats and `headwater_adapter::render` writes every one of them, so this
+    // verb composes no report of its own and the MCP `check` tool composes none
+    // either. A run reports the state it evaluated, and the report is not
+    // optional (spec 4): `Subject` is that statement, and the corpus tree is
+    // the half of it that nothing computes yet.
     //
     // What the flag does not touch: the exit status, the cache accounting on
     // standard error, and the two files below. A flag that moved a verdict
@@ -1624,51 +1653,24 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
         lock: &lock.digest,
         now: &ctx.now().render(),
     };
-    let translated = headwater_adapter::render(&run, &subject, format);
-    if let Some(artifact) = &translated {
-        print!("{artifact}");
-        // The census over what was written, in the shape spec 6 fixes for the
-        // graph emitters. A finding that reached no output and that no loss
-        // reason covers is a defect in the adapter, and it fails the run the
-        // way a defective projection census does.
-        let audited = headwater_adapter::census(&run, artifact);
-        if audited.is_defective() {
-            eprintln!(
-                "headwater: the {} adapter dropped {} of {} findings with no declared loss reason:",
-                format.name(),
-                audited.unaccounted.len(),
-                audited.findings
-            );
-            for missing in &audited.unaccounted {
-                eprintln!("  {missing}");
-            }
-            return ExitCode::FAILURE;
+    let artifact = headwater_adapter::render(&run, taken, graph, &subject, format);
+    print!("{artifact}");
+    // The census over what was written, in the shape spec 6 fixes for the
+    // graph emitters. A finding that reached no output and that no loss
+    // reason covers is a defect in the adapter, and it fails the run the
+    // way a defective projection census does.
+    let audited = headwater_adapter::census(&run, &artifact);
+    if audited.is_defective() {
+        eprintln!(
+            "headwater: the {} adapter dropped {} of {} findings with no declared loss reason:",
+            format.name(),
+            audited.unaccounted.len(),
+            audited.findings
+        );
+        for missing in &audited.unaccounted {
+            eprintln!("  {missing}");
         }
-    }
-
-    // A run reports the state it evaluated, and the report is not optional
-    // (spec 4). The lock hash is half of that statement, and the corpus tree is
-    // the other half, which nothing computes yet.
-    if translated.is_none() {
-        println!("taxonomy");
-        println!("  {} {}", lock.package, lock.version);
-        println!("  {}", lock.digest);
-        // The injected values are part of the state a verdict is about, so a run
-        // that does not report them cannot be reproduced from its own output.
-        println!("\nclock");
-        println!("  {}", ctx.now());
-        println!("\ncensus");
-        print!("{}", indent(&taken.render(CensusDetail::Exceptions)));
-        println!("\ngraph");
-        print!("{}", indent(&graph.render(GraphDetail::Exceptions)));
-        println!("\nchecks");
-        print!("{}", indent(&run.render(headwater_check::Detail::Findings)));
-
-        // The read set, which spec 12 asks a run to report beside its coverage
-        // numbers. It is the same bytes `--read-set` writes, so a gate reading the
-        // file and a reader of the report are looking at one artifact.
-        println!("\nread set");
-        print!("{}", indent(&run.read_set.render()));
+        return ExitCode::FAILURE;
     }
 
     if let Some(path) = read_set {

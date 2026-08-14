@@ -28,13 +28,52 @@
 //! because a correct annotation costs nothing and a client may use it — it is
 //! simply not what carries the property.
 //!
-//! # `check` is not here yet, and that is a scope statement
+//! # `check` runs the check layer, and its three inputs arrive rather than
+//! being chosen here
 //!
-//! Spec 5 puts `check` in the query class. It is the one tool of the six that
-//! runs the check layer rather than reading the graph, so it needs a clock, a
-//! cache and a corpus walk, and every one of those is a decision the CLI makes
-//! at its own boundary. It waits for the surface that makes those injectable
-//! rather than being reproduced here with different defaults.
+//! `check` is the one tool of the six that runs the check layer rather than
+//! reading the graph, so it needs a clock, a cache and a corpus walk. Every one
+//! of those is a decision, and a tool that took them again would put a second
+//! set of defaults behind a protocol. So none of the three is taken here.
+//! [Spec 5](../../../../docs/spec/05-ai-integration.md#what-a-check-tool-decides-and-where-each-decision-is-taken)
+//! is where they are decided, and this is what the decisions come to in code.
+//!
+//! **The clock arrives.** [`Server::now`] is read once, when the server starts,
+//! by the same two lines `headwater check` reads it with: `--now` where the
+//! operator gave one, and the system date otherwise. A server whose host cannot
+//! say what day it is does not start. Every result states the value, in all
+//! four formats, because it is an input to the verdict.
+//!
+//! **There is no cache.** [`headwater_check::Cache::at`] reads a store in the
+//! checkout and [`headwater_check::Cache::write`] puts it back, and a tool that
+//! did the second thing would be a tool that writes. A cache that read and
+//! never wrote is a third mode that no other caller of this engine has, which
+//! is a second set of defaults reached by another road. So the run is
+//! [`headwater_check::Cache::disabled`], and the invariant that makes that free
+//! of consequence is the one spec 12 states: a cached run and an uncached run
+//! write the same bytes, so refusing the cache costs time and never an answer.
+//!
+//! **There is no corpus walk.** The corpus is walked once, before the server
+//! starts, and [`Server::census`] and [`Server::graph`] are what that walk
+//! produced. Every one of the six tools answers from it, so `check` costs no
+//! walk that `route` does not. What it costs is one run of the check layer over
+//! two structures already in memory.
+//!
+//! # The one argument is the format, and there is no default for it
+//!
+//! Spec 6 closes the set of output formats at four, and
+//! [`headwater_adapter::render`] writes all four for the CLI and for this tool
+//! alike. So the argument this tool takes is the one the CLI also takes at this
+//! boundary, and the answer is byte-identical to `headwater check --format
+//! <name>` over the same corpus at the same date. It is required rather than
+//! defaulted: a default chosen here is a decision taken in a call site, which
+//! is the thing this whole section exists to avoid.
+//!
+//! It takes no path. A run is over the whole corpus because coverage is
+//! computed against the census as its denominator, and a report filtered to a
+//! path would carry either that denominator with fewer findings under it or a
+//! smaller one that no run evaluated. Both are a second answer about one
+//! corpus.
 //!
 //! # The transport
 //!
@@ -44,6 +83,10 @@
 //! response, and [`serve`] is the loop around it.
 
 use crate::{Budget, Resolved, Surface};
+use headwater_adapter::{Format, Subject};
+use headwater_census::census::Census;
+use headwater_check::{Cache, Context, Declared};
+use headwater_graph::Graph;
 use headwater_yaml::json::Json;
 use headwater_yaml::{Mapping, Value};
 
@@ -55,6 +98,47 @@ use headwater_yaml::{Mapping, Value};
 /// an obligation as verified because a control names it.
 const PROTOCOL: &str = "2024-11-05";
 
+/// What one server answers from, fixed before it accepts a message.
+///
+/// Every field here is a value some caller decided at its own boundary and
+/// handed over. A server that reached for one of them itself — a clock, a
+/// cache, a second walk of the corpus — would be the second set of defaults the
+/// module comment refuses. Nothing here is mutable, which is why two calls in
+/// one session answer the same bytes.
+pub struct Server<'a> {
+    /// The graph reads: five of the six tools are a projection of this.
+    pub surface: Surface<'a>,
+    /// What the walk before start-up produced. The surface reads it too, and it
+    /// is here as well because a check run takes it as its denominator.
+    pub census: &'a Census,
+    /// The edges that walk produced, for the same two readers.
+    pub graph: &'a Graph,
+    /// The declarations one run of the check layer reads, out of the committed
+    /// lock.
+    pub declared: Declared<'a>,
+    /// The taxonomy package and its version, which every rendered report
+    /// states beside the lock digest.
+    pub package: &'a str,
+    pub version: &'a str,
+    /// The clock, read once when the server started, and reported in every
+    /// result. A protocol call has no boundary of its own to read one at, and a
+    /// tool argument would let a caller pick the date that answers the way it
+    /// wanted.
+    pub now: Context,
+}
+
+impl Server<'_> {
+    /// What every report of this server states about the run behind it.
+    fn subject<'a>(&'a self, now: &'a str) -> Subject<'a> {
+        Subject {
+            package: self.package,
+            version: self.version,
+            lock: self.declared.lock,
+            now,
+        }
+    }
+}
+
 /// One tool of the query class.
 pub struct Tool {
     pub name: &'static str,
@@ -64,8 +148,9 @@ pub struct Tool {
     pub argument_description: &'static str,
 }
 
-/// The whole of what this server registers. Spec 5's query class, less `check`.
-pub const TOOLS: [Tool; 5] = [
+/// The whole of what this server registers: spec 5's query class, and nothing
+/// of the other two classes.
+pub const TOOLS: [Tool; 6] = [
     Tool {
         name: "route",
         description: "Resolve a task description to the documents that govern it, as pointers: \
@@ -101,6 +186,20 @@ pub const TOOLS: [Tool; 5] = [
         argument: "path",
         argument_description: "A path in the repository, relative to its root.",
     },
+    Tool {
+        name: "check",
+        description: "Run every check over the whole corpus and report what this run found: the \
+                      taxonomy it read, the date it evaluated against, the coverage, and each \
+                      finding with its remediation. The bytes are those of `headwater check \
+                      --format <format>` over the same corpus at the same date. It writes \
+                      nothing, and it uses no cache.",
+        argument: "format",
+        argument_description: "One of `text`, `json`, `sarif`, `markdown`. `text` is the whole \
+                               report in the engine's own words, `markdown` is the findings as a \
+                               job summary, `sarif` is a check run, and `json` is the finding \
+                               shape itself. There is no default: the vocabulary is the caller's \
+                               to choose.",
+    },
 ];
 
 /// Answer one request, or `None` where the message is a notification.
@@ -108,7 +207,7 @@ pub const TOOLS: [Tool; 5] = [
 /// A notification carries no `id` and takes no response, which is the protocol's
 /// rule and not a shortcut: a server that answered one would put a message on
 /// the wire that no client is reading.
-pub fn respond(surface: &Surface<'_>, request: &str) -> Option<String> {
+pub fn respond(server: &Server<'_>, request: &str) -> Option<String> {
     let parsed = headwater_yaml::load(request).ok()?;
     let message = parsed.value.as_map()?;
     let method = scalar(message, "method").unwrap_or_default();
@@ -133,7 +232,7 @@ pub fn respond(surface: &Surface<'_>, request: &str) -> Option<String> {
             ),
         ])),
         "tools/list" => Ok(Json::object([("tools", tools())])),
-        "tools/call" => call(surface, message),
+        "tools/call" => call(server, message),
         // The protocol's own code for a method a server does not implement.
         // Every write tool of spec 5's other two classes arrives here, because
         // no handler for one exists to reach.
@@ -209,7 +308,8 @@ fn tools() -> Json {
     )
 }
 
-fn call(surface: &Surface<'_>, message: &Mapping) -> Result<Json, Failure> {
+fn call(server: &Server<'_>, message: &Mapping) -> Result<Json, Failure> {
+    let surface = &server.surface;
     let params = message
         .get("params")
         .and_then(|node| node.value.as_map())
@@ -284,6 +384,7 @@ fn call(surface: &Surface<'_>, message: &Mapping) -> Result<Json, Failure> {
                 }
             }
         }
+        "check" => check(server, &argument)?,
         // Unreachable: `tool` came out of `TOOLS`. Answered rather than
         // panicked, because a panic inside a server is a dropped connection and
         // this is a sentence.
@@ -300,6 +401,62 @@ fn call(surface: &Surface<'_>, message: &Mapping) -> Result<Json, Failure> {
         ),
         ("isError", Json::Bool(false)),
     ]))
+}
+
+/// One run of the check layer, in the format the caller named.
+///
+/// The three inputs the module comment settles are all read off [`Server`]
+/// rather than decided here, and the fourth is this function's argument. What
+/// is left is the call the CLI makes with the same five values, so the bytes
+/// are the CLI's bytes.
+fn check(server: &Server<'_>, format: &str) -> Result<String, Failure> {
+    let Some(format) = Format::parse(format) else {
+        let names: Vec<&str> = Format::ALL.iter().map(|format| format.name()).collect();
+        return Err(Failure {
+            code: -32602,
+            // The same list the CLI refuses an unknown `--format` with, because
+            // a caller told two different things about one closed set has to
+            // find out which one is current.
+            message: format!("`check` takes a format, one of {}", names.join(", ")),
+        });
+    };
+    // No cache, and the run is therefore complete every time. See the module
+    // comment: a cache write is a write, and this server has no tool that
+    // writes.
+    let mut cache = Cache::disabled();
+    let run = headwater_check::run(
+        server.census,
+        server.graph,
+        &server.declared,
+        &server.now,
+        &mut cache,
+    );
+    let artifact = headwater_adapter::render(
+        &run,
+        server.census,
+        server.graph,
+        &server.subject(&server.now.now().render()),
+        format,
+    );
+    // The audit the CLI fails a run on, which a caller here is less able to
+    // perform for itself: it holds one artifact rather than a terminal, and a
+    // finding that reached no output is invisible to it. A defective adapter is
+    // an engine defect rather than a fact about the corpus, so it reaches the
+    // protocol as an internal error and never as a report with a hole in it.
+    let audited = headwater_adapter::census(&run, &artifact);
+    match audited.is_defective() {
+        false => Ok(artifact),
+        true => Err(Failure {
+            code: -32603,
+            message: format!(
+                "the {} adapter dropped {} of {} findings with no declared loss reason: {}",
+                format.name(),
+                audited.unaccounted.len(),
+                audited.findings,
+                audited.unaccounted.join(", ")
+            ),
+        }),
+    }
 }
 
 /// A scalar member of a mapping, as text.
@@ -329,13 +486,13 @@ fn raw(value: &Value) -> String {
 /// It answers until standard input closes. A line that is not a message is
 /// skipped rather than answered, because a response to an unparsed message
 /// carries no identifier that any client could match it to.
-pub fn serve(surface: &Surface<'_>, input: impl std::io::BufRead, mut output: impl std::io::Write) {
+pub fn serve(server: &Server<'_>, input: impl std::io::BufRead, mut output: impl std::io::Write) {
     for line in input.lines() {
         let Ok(line) = line else { return };
         if line.trim().is_empty() {
             continue;
         }
-        let Some(response) = respond(surface, &line) else {
+        let Some(response) = respond(server, &line) else {
             continue;
         };
         if writeln!(output, "{response}").is_err() {

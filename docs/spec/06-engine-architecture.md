@@ -290,7 +290,9 @@ The CLI is a thin shell over a library API — load, graph, check, query, genera
 
 ### MCP server
 
-The MCP server is the agent-facing surface of the same library ([AI integration](05-ai-integration.md)). `headwater mcp` starts it on standard input and output, over the corpus that the same lock and the same `corpus:` block describe. It registers the query class alone, and spec 5 gives the reason that the registration rather than the annotation is what carries the property.
+The MCP server is the agent-facing surface of the same library ([AI integration](05-ai-integration.md)). `headwater mcp` starts it on standard input and output, over the corpus the same lock and the same `corpus:` block describe. It registers the whole query class and nothing else. Spec 5 gives the reason that the registration rather than the annotation is what carries the property.
+
+The server walks the corpus once and reads the clock once, before it accepts a message. So every tool answers about one tree at one date. The `check` tool then answers what `check --format` answers, byte for byte. [What a `check` tool decides](05-ai-integration.md#what-a-check-tool-decides-and-where-each-decision-is-taken) states where each of those values is chosen, and none of them is chosen inside a tool.
 
 ### CI adapters
 

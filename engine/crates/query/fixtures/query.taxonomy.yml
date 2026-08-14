@@ -51,6 +51,21 @@ kinds:
     is_a: governed_document
     purpose: behavior
     sections: {require: [Behavior]}
+    # The one rule that reads the clock, declared here so that a report of this
+    # tree is a function of the date it was asked for. Two specifications refine
+    # each other and satisfy it; two do not, and the later of those two is
+    # inside its window on one date and past it on another. A server holds its
+    # clock for its whole life, and this is what makes that visible.
+    relations:
+      expect:
+        - id: detail-behind-it
+          relation: refines
+          to_kind: specification
+          when: {status: current}
+          within: 30d
+          since: state_entered
+          severity: warn
+          rationale: a specification that refines nothing and that nothing refines states a behavior at one grain only
   # The purpose arrives by inheritance here, which is the case spec 2 permits
   # and which `purpose_of` has to walk the chain to answer.
   operations_document:
