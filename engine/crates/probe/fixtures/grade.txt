@@ -1,0 +1,22 @@
+Graded by grader 0.1.0.
+A regression run in the present arm, on a-model at served version a-model-20260701.
+
+## The verdicts
+
+- PROBE-FIX-answered (sufficiency, expects answered)
+    session 1: satisfied — event 2: answered `no`
+- PROBE-FIX-cited (sufficiency, expects cited)
+    session 1: satisfied — event 4: `out/report.md` cites PROBE-FIX-answered
+- PROBE-FIX-not-opened (navigability, expects not_opened)
+    session 1: satisfied — 1 recorded call, and none named any of the 1 document
+- PROBE-FIX-opened (discovery, expects opened)
+    session 1: satisfied — event 1, call 2: `read /home/runner/repo/corpus/probes/0002-answered.md`
+- PROBE-FIX-patched (sufficiency, expects patched)
+    session 1: satisfied — event 5: `section.required.missing` reported nothing over `out/patch.md`
+
+## The rate, and the denominator it is over
+
+5 of 5 graded sessions satisfied their expectation: 100.0%, in a 95% interval of 56.6% to 100.0%.
+The denominator is the graded sessions and never the selected probes. 0 sessions reached no verdict, and a session with no verdict is outside both halves of that fraction.
+
+An interval that overlaps the previous run's is variance and one that does not is drift. This is one arm, so it estimates no effect: an efficacy claim is a comparison of two results, and the arm each one recorded is on it.

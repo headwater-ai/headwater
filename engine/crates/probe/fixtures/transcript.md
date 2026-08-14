@@ -2,7 +2,7 @@
 id: RUN-FIX-one
 status: current
 status_since: 2026-08-14
-summary: One recorded run of the fixture selection, standing for what a recorder writes.
+summary: One recorded run of the fixture selection, in which every predicate form is satisfied.
 tier: regression
 arm: present
 ---
@@ -10,6 +10,8 @@ arm: present
 # One run of the fixture selection
 
 This document stands for what a recorder writes. Nothing in this engine produced it, and nothing in this engine can: a transcript is observed from outside the session that produced it, and the prose around the blocks is what a person wrote about the run afterwards.
+
+Every one of the five predicate forms is satisfied here, and `transcript-missed.md` is the same run with every one of them refuted. Two files rather than one, because a grader that returned `satisfied` for everything would pass the first on its own.
 
 ## Run identity
 
@@ -34,7 +36,10 @@ cost_cents: 41
   session: 1
   calls:
     - tool: read
-      argument: corpus/probes/0002-answered.md
+      argument: corpus/probes/0002-answered.md.bak
+      result: sha256:a0
+    - tool: read
+      argument: /home/runner/repo/corpus/probes/0002-answered.md
       result: sha256:a
   produced: []
   answer: null
@@ -46,6 +51,31 @@ cost_cents: 41
       result: sha256:b
   produced: []
   answer: "no"
+- probe: PROBE-FIX-not-opened
+  session: 1
+  calls:
+    - tool: read
+      argument: corpus/probes/0002-answered.md
+      result: sha256:c
+  produced: []
+  answer: null
+- probe: PROBE-FIX-cited
+  session: 1
+  calls: []
+  produced:
+    - path: out/report.md
+      result: sha256:d
+      cites: [PROBE-FIX-answered, PROBE-FIX-not-opened]
+  answer: null
+- probe: PROBE-FIX-patched
+  session: 1
+  calls: []
+  produced:
+    - path: out/patch.md
+      result: sha256:e
+      cites: []
+      findings: []
+  answer: null
 - probe: PROBE-FIX-not-declared
   session: 1
   calls: []

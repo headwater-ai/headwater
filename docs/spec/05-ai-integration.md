@@ -322,6 +322,8 @@ The grader constraint below needs something to bind, so the specification says w
 | `answered` | The final answer is one named value from a closed set that the probe declares |
 | `patched` | A produced patch passes a named check, which is the oracle route ([spec 2](02-taxonomy-model.md#contract-sidecars-the-specification-as-oracle)) |
 
+**Two of the five forms name something beyond the predicate, and each names it in a different place.** A `patched` probe names its oracle in a facet, and every probe of another form writes the sentinel `none` there. An `answered` probe declares its closed set of values in a fenced block under the `Expectation` section, which the kind already requires. The difference is the shape of the value. A facet of this taxonomy language holds a scalar, and a closed set is a list. The route matters beyond this section: a required section carries a per-document declaration where a facet cannot ([OBL-repo-0123](../obligations/0123-a-facet-that-applies-to-one-value-of-another-facet-has-nowhere-to-say-so.md)).
+
 **A question whose answer needs a rubric is not a probe.** It is a coherence question, and the [sweep](04-assurance-model.md#discharging-coherence-obligations-the-assisted-sweep) owns those. The sweep reports findings rather than verdicts, and it is marked as agent-provenanced.
 
 That rule is what makes the grader constraint a property rather than a promise. A predicate over an event log needs no model, so the grader holds none. This is the shape that [Q7](09-decisions.md#q7--scope-of-the-mcp-surface) used for the write path. A guarantee is a code path that does not exist, and not a declaration.
@@ -376,17 +378,39 @@ So the middle part of a probe run is a **recorder**: a process that drives a ses
 
 The omission of model prose is enforced rather than asked for. Every key of a transcript is a member of a closed set, and one key outside it refuses the file. An omission that nothing tests is a claim. A transcript with a `reasoning` key beside the tool calls returns the self-report through the field the rule forbids.
 
-##### The harness confirms five things and grades none of them
+##### The harness confirms five things, and one component after it grades
 
-`headwater probe plan` fixes the five members of the run identity that exist before a run. They are the lock, the corpus tree, the selection, the seed and the harness version. It projects the sessions against the tier's declared budget and refuses a run above it. Three other conditions stop a run, and each stops the whole run rather than the probe that raised it:
+`headwater probe plan` fixes the five members of the run identity that exist before a run. They are the lock, the corpus tree, the selection, the seed and the harness version. It projects the sessions against the tier's declared budget and refuses a run above it. Five other conditions stop a run, and each stops the whole run rather than the probe that raised it:
 
 - a `patched` probe that names a rule this engine does not carry
 - a probe of another form that names a rule
 - a probe over documents that names none
+- an `answered` probe that declares no closed set of answers
+- a probe of another form that declares one
 
 A selection that dropped what it could not read reports a rate over a denominator nobody declared.
 
 `headwater probe record` reads a transcript back. It confirms the taxonomy, the run identity, the membership of every probe named, and a recorded cost. It confirms that no key outside the closed set appears. It evaluates no expectation, because a verdict is the grader's, and a grader inside the intake is a grader nobody reviewed.
+
+##### What earns the grader the right that every other agent-facing mechanism is denied
+
+`headwater probe grade` returns a verdict. Nothing else in this engine that reaches toward a model does. The sweep verifies the citations of what an agent wrote and reports findings that a person accepts. The intake confirms the five things above and grades nothing. Three properties are what separate the grader from both, and each one is a shape of the mechanism rather than a promise about it.
+
+**Its inputs carry no prose.** A transcript is an event log whose every key comes from a closed set, and an expectation is one of the five predicates above. Nothing the grader reads is a sentence, so nothing it does needs a rubric. This is the rule at the top of this section, read from the other end.
+
+**A satisfied verdict names the event that satisfied it.** The verdict type holds that witness, so a satisfied verdict with nothing behind it cannot be written. A reader re-derives any verdict by counting events in the committed transcript. A verdict that is not satisfied carries the extent of the search. "Nothing matched" is a claim about how much was read.
+
+**It refuses where a passing answer would be free.** Six conditions return no verdict rather than a verdict. A `patched` expectation whose probe declares no oracle. A produced artifact that nothing checked. A `not_opened` over a session that made no tool call, because a session that did nothing is no evidence that it avoided something. A form whose input the recorder never wrote down. A `cited` expectation over targets that carry no identifier. A probe the transcript never names. A refused session leaves the denominator of the rate rather than joining the numerator, and the result prints how many were refused beside the rate.
+
+**Determinism is necessary and it is not the argument.** Two runs of the grader over one transcript write one set of bytes. That is what makes a result reproducible where the behavior under it is not. It is not what makes a result correct, because a grader that answered `satisfied` to everything is also deterministic. A recorded fixture set is what holds the verdicts. This correctness root carries one transcript that satisfies every predicate form, one that refutes every form, and one that refuses every form.
+
+##### An empty list and a missing key are different facts about a run
+
+Three keys of an event carry this distinction, and the grader is wrong without it. `calls: []` says the recorder watched the session and saw no tool call. An event with no `calls` key says that nothing watched. The same holds for `produced` and for `answer`. It holds for the `findings` of one produced artifact: `findings: []` is checked and clean, and no `findings` key is unchecked.
+
+A grader that read the second as the first reports a verdict about the recorder as a verdict about the corpus. The direction of that error is the one this whole layer exists to prevent, because every one of those readings returns a pass.
+
+Two keys of a produced artifact carry a derivation, and that is deliberate. A digest is an identity, and an identity answers no expectation. Two artifacts that cite different identifiers have different digests, and the digest says which cited what. So `cites` is every identifier of the corpus that appears in the artifact, and `findings` is every rule that reported over it. The recorder computes both the same way for every probe and consults no probe. A recorder that wrote only the identifiers one probe named would be a grader with no fixture set and no version.
 
 **The seed is the caller's number.** A seed derived from the corpus moves the rotation whenever the corpus moves. A difference between two runs then carries a change in the phrasing and a change in the corpus at once. A run that repeats a seed repeats a selection.
 

@@ -1,11 +1,11 @@
-A regression probe run over 2 of the 2 classified documents of this corpus.
+A regression probe run over 5 of the 5 classified documents of this corpus.
 
 ## The run identity this plan fixes
 
 ```yaml
 lock: sha256:fixture
-tree: sha256:4a3c8ee07904a5a306a2c1c0753a10b1d498d8823db02dca93e6874a8d0f7163
-selection: sha256:c6f58f5bd22dfb4b353528edb188b7de55e447426fd4ad335559d172e000a9f9
+tree: sha256:9cd0571c32a18081b2fd2f031a69d16f7260bd9a9c77e157884ec0d5ea6968fb
+selection: sha256:acb39c7d95c364df7aa7c4fd5a084010f3fbe9aacbf0586dc93126281a77084e
 seed: 0
 harness: 0.1.0
 tier: regression
@@ -16,18 +16,31 @@ The model, its served version, the wall-clock time and the realized cost belong 
 
 ## The cost
 
-2 probes x 1 arms x 1 repetitions = 2 sessions, at a declared $0.25 each: $0.50 against a ceiling of $20.00.
+5 probes x 1 arms x 1 repetitions = 5 sessions, at a declared $0.25 each: $1.25 against a ceiling of $20.00.
 The unit cost is a number a person declared in `.headwater/probe.yml`. No run has happened, so no realized cost has been recorded against it and this is arithmetic rather than a forecast.
 
 ## The selection
 
 - PROBE-FIX-answered (corpus/probes/0002-answered.md)
-    category: consistency
+    category: sufficiency
     expects: answered
+    answers: no, yes
+- PROBE-FIX-cited (corpus/probes/0004-cited.md)
+    category: sufficiency
+    expects: cited
+    examines: PROBE-FIX-answered at corpus/probes/0002-answered.md
+- PROBE-FIX-not-opened (corpus/probes/0003-not-opened.md)
+    category: navigability
+    expects: not_opened
+    examines: PROBE-FIX-opened at corpus/probes/0001-opened.md
 - PROBE-FIX-opened (corpus/probes/0001-opened.md)
     category: discovery
     expects: opened
-    examines: PROBE-FIX-answered
+    examines: PROBE-FIX-answered at corpus/probes/0002-answered.md
+- PROBE-FIX-patched (corpus/probes/0005-patched.md)
+    category: sufficiency
+    expects: patched
+    oracle: section.required.missing
 
 ## What the recorder writes back
 

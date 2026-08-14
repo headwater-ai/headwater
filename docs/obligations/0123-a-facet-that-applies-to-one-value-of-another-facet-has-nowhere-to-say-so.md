@@ -41,3 +41,11 @@ The corpus owes a way to state that a facet is required when another facet holds
 Nothing discharges this today, and the harness pays the cost meanwhile. `headwater probe plan` refuses a `patched` probe that declares the sentinel. It also refuses a probe of any other form that names a rule. Both directions are enforced, and no check enforces either: the harness never gates. A probe with the wrong pairing reaches a commit and stops a run rather than a merge.
 
 That is the measurement this record holds. The rule that would catch it at commit time cannot be declared, and the count is one facet of five in one repository. A second corpus with a conditional facet is what turns one instance into evidence that the shape is general.
+
+## What the grader added, which is a second instance and a third shape
+
+**The shape recurred inside this repository before any second corpus arrived.** The `answered` expectation is satisfied by one value of a closed set that the probe declares, and nothing held that set. It applies to one value of `expectation` and to no other. That is this record's shape exactly, so the count is two conditional declarations of five forms rather than one.
+
+**The second one did not become a facet, and the reason names a shape this record does not carry.** A closed set of answers is a list, and no facet of this language holds a list. It goes in a fenced block under the `Expectation` section, which the `probe` kind already requires. `headwater probe plan` enforces the pairing in both directions, as it does for the oracle. **A required section carries a per-document declaration where a facet cannot.** That is a third candidate beside `required_when` and the kind-per-form, and it is cheaper than either. It costs the four other forms nothing, and no sentinel is written anywhere.
+
+It is not free, and the price is what keeps this record open. A facet is what a check reads, and a fenced block under a heading is read by the harness alone. So the pairing for `answers` is enforced in one place and by one component, exactly as the pairing for `oracle` is. Whether `oracle` should move to the same section is a question for whoever discharges this. The move would trade a sentinel on every probe for a declaration that no check can see.

@@ -1,0 +1,19 @@
+Graded by grader 0.1.0.
+A regression run in the present arm, on a-model at served version a-model-20260701.
+
+## The verdicts
+
+- PROBE-FIX-answered (sufficiency, expects answered)
+    session 1: no verdict — the event carries no `answer` key, so nothing recorded what this form reads. An empty list is a recorded absence and a missing key is not one
+- PROBE-FIX-cited (sufficiency, expects cited)
+    session 1: no verdict — the event carries no `produced` key, so nothing recorded what this form reads. An empty list is a recorded absence and a missing key is not one
+- PROBE-FIX-not-opened (navigability, expects not_opened)
+    session 1: no verdict — it expects `not_opened` and the session recorded no tool call at all. A session that did nothing is not evidence that it avoided something
+- PROBE-FIX-opened (discovery, expects opened)
+    session 1: no verdict — the event carries no `calls` key, so nothing recorded what this form reads. An empty list is a recorded absence and a missing key is not one
+- PROBE-FIX-patched (sufficiency, expects patched)
+    session 1: no verdict — `out/patch.md` carries no `findings` key, so nothing says whether the oracle was ever run over it. `findings: []` is checked and clean
+
+## The rate, and the denominator it is over
+
+No session reached a verdict, so this run reports no rate. 5 sessions were refused, and a rate over none of them would be a number about nothing.

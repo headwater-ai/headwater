@@ -34,11 +34,11 @@
 //! # What is not confirmed here, and by whom
 //!
 //! Every verdict. This module counts events and refuses malformed ones, and it
-//! evaluates no expectation against anything. The grader is
-//! [#85](https://github.com/headwater-ai/headwater/issues/85): a pure function
-//! of the transcript, the expectations and its own version. The seam is exactly
-//! this type — a `Record` that carried an expectation's verdict would be a
-//! grader written where nobody is looking for one.
+//! evaluates no expectation against anything. [`crate::grade`] is a pure
+//! function of the transcript, the expectations and its own version, and it is
+//! the only component here that returns one. The seam is exactly this type — a
+//! `Record` that carried an expectation's verdict would be a grader written
+//! where nobody is looking for one.
 
 use crate::{Arm, Cents, Tier};
 use headwater_census::census::{Census, Outcome};
@@ -74,6 +74,19 @@ pub const EVENT_KEYS: [&str; 5] = ["probe", "session", "calls", "produced", "ans
 /// bytes a tool returned are the corpus, and a transcript that inlined them
 /// would be a second copy of the tree it already names by digest.
 pub const CALL_KEYS: [&str; 3] = ["tool", "argument", "result"];
+
+/// Every key one produced artifact may carry.
+///
+/// This list is the one thing the grader found wrong in the intake it
+/// inherited. The closed-key test ran over the event and over the tool call and
+/// never over a produced artifact, so a transcript carrying `produced: [{note:
+/// I reasoned as follows}]` was accepted whole. "The transcript holds no model
+/// prose" was an enforcement in two of the three places a key can appear.
+///
+/// `cites` and `findings` are what the recorder observed about the artifact,
+/// and each is the state that changes a verdict rather than a digest of it. See
+/// [`Produced`].
+pub const PRODUCED_KEYS: [&str; 4] = ["path", "result", "cites", "findings"];
 
 /// The tree a transcript is read over.
 pub struct Tree<'a> {
@@ -203,6 +216,91 @@ pub struct Rejected {
     pub reason: Reason,
 }
 
+/// One tool call, as the recorder observed it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Call {
+    pub tool: String,
+    pub argument: String,
+    /// The identity of what the call returned, and never the bytes.
+    pub result: String,
+}
+
+/// One artifact a session produced.
+///
+/// # Two of these four keys carry a derivation, and that is deliberate
+///
+/// A digest of an artifact is an identity, and an identity answers no
+/// expectation: two artifacts that cite different identifiers have different
+/// digests and the digest says which of them cited what. So `cited` and
+/// `patched` are predicates that a transcript of identities alone cannot
+/// evaluate, and the choice is a derived key or a dead predicate form.
+///
+/// The key is safe where the recorder computes it **the same way for every
+/// probe and never consults the probe**. `cites` is every identifier of this
+/// corpus that appears in the artifact, and `findings` is every rule that
+/// reported over it. Neither reads the expectation, and the grader does all the
+/// selecting and all the comparing. A recorder that wrote only the identifiers
+/// a probe named, or only the rule a probe's oracle names, would be a grader
+/// with no fixture set and no version.
+///
+/// `findings` is an `Option` and never a defaulted empty list. `findings: []`
+/// says the artifact was checked and nothing reported. An absent key says
+/// nothing checked it. A grader that read the second as the first would return
+/// a passing `patched` verdict for every run that never ran the oracle, which
+/// is the systematically-green failure this whole component exists to avoid.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Produced {
+    pub path: String,
+    /// The identity of the artifact, and never the bytes.
+    pub result: String,
+    /// Every identifier of this corpus that appears in the artifact, sorted.
+    pub cites: Vec<String>,
+    /// Every rule that reported over the artifact, and `None` where nothing
+    /// checked it.
+    pub findings: Option<Vec<String>>,
+}
+
+/// One event the intake accepted, with everything a predicate over the run
+/// record reads.
+///
+/// This type is the whole of what [`crate::grade`] is given, and it carries no
+/// verdict and no expectation. The intake counts and refuses; the grader
+/// decides. A field here that answered an expectation would be a grader written
+/// where nobody is looking for one.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Event {
+    /// One-based, in the order the block lists them. A witness cites it, so a
+    /// reader finds the event a verdict came from by counting.
+    pub at: usize,
+    pub probe: String,
+    pub session: String,
+    /// The ordered tool calls, and `None` where the event carries no `calls`
+    /// key at all.
+    pub calls: Option<Vec<Call>>,
+    /// The artifacts the session produced, and `None` where the event carries
+    /// no `produced` key at all.
+    pub produced: Option<Vec<Produced>>,
+    pub answer: Answer,
+}
+
+/// What an event says about the final answer, in three states rather than two.
+///
+/// `calls`, `produced` and this key each carry the same distinction, and it is
+/// the distinction a grader is wrong without. An empty list and an absent key
+/// are different facts about the run: one says the recorder watched and saw
+/// nothing, and the other says nothing watched. A grader that read them as one
+/// value reports a verdict about the recorder as a verdict about the corpus.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Answer {
+    /// No `answer` key. Nothing recorded whether the session answered.
+    Unrecorded,
+    /// `answer: null`. The recorder observed the session end with no answer.
+    Absent,
+    /// A value. A quoted `"null"` reaches here, because the closed set belongs
+    /// to the probe and this engine does not decide which strings are values.
+    Value(String),
+}
+
 /// One transcript, read back.
 #[derive(Clone, Debug)]
 pub struct Record {
@@ -215,6 +313,8 @@ pub struct Record {
     pub sessions: usize,
     /// Tool calls in the accepted events.
     pub calls: usize,
+    /// The accepted events, in the order the block listed them.
+    pub events: Vec<Event>,
     pub rejected: Vec<Rejected>,
     pub refusal: Option<Refusal>,
     /// Probes this corpus declares, which is the denominator the run covered
@@ -235,6 +335,7 @@ impl Record {
             probes: Vec::new(),
             sessions: 0,
             calls: 0,
+            events: Vec::new(),
             rejected: Vec::new(),
             refusal: None,
             declared: 0,
@@ -323,8 +424,10 @@ impl Record {
             }
             let session = text(map, "session").unwrap_or_default();
 
-            if let Some(calls) = map.get("calls").and_then(|entry| entry.value.as_seq()) {
-                for call in calls {
+            let mut calls = None;
+            if let Some(items) = map.get("calls").and_then(|entry| entry.value.as_seq()) {
+                let calls = calls.insert(Vec::new());
+                for call in items {
                     let Some(fields) = call.value.as_map() else {
                         record.refusal = Some(Refusal::Malformed(
                             "a tool call is not a mapping of its own".into(),
@@ -336,8 +439,52 @@ impl Record {
                         return record;
                     }
                     record.calls += 1;
+                    calls.push(Call {
+                        tool: text(fields, "tool").unwrap_or_default(),
+                        argument: text(fields, "argument").unwrap_or_default(),
+                        result: text(fields, "result").unwrap_or_default(),
+                    });
                 }
             }
+
+            let mut produced = None;
+            if let Some(items) = map.get("produced").and_then(|entry| entry.value.as_seq()) {
+                let produced = produced.insert(Vec::new());
+                for artifact in items {
+                    let Some(fields) = artifact.value.as_map() else {
+                        record.refusal = Some(Refusal::Malformed(
+                            "a produced artifact is not a mapping of its own".into(),
+                        ));
+                        return record;
+                    };
+                    if let Some(refusal) = closed(fields, "Events", &PRODUCED_KEYS) {
+                        record.refusal = Some(refusal);
+                        return record;
+                    }
+                    let mut cites = strings(fields, "cites").unwrap_or_default();
+                    cites.sort();
+                    cites.dedup();
+                    produced.push(Produced {
+                        path: text(fields, "path").unwrap_or_default(),
+                        result: text(fields, "result").unwrap_or_default(),
+                        cites,
+                        findings: strings(fields, "findings").map(|mut rules| {
+                            rules.sort();
+                            rules.dedup();
+                            rules
+                        }),
+                    });
+                }
+            }
+
+            record.events.push(Event {
+                at,
+                probe: probe.clone(),
+                session: session.clone(),
+                calls,
+                produced,
+                answer: answer(map),
+            });
 
             let key = (probe.clone(), session);
             if !sessions.contains(&key) {
@@ -424,8 +571,8 @@ impl Record {
             "The engine confirmed the taxonomy, the completeness of the run identity, the \
              membership of every probe named, that no key outside the closed set appears, and \
              that a realized cost was recorded. It graded nothing: a verdict is a function of \
-             this transcript, the expectations these probes declare and a grader version, and no \
-             grader ships in this engine yet."
+             this transcript, the expectations these probes declare and a grader version, and \
+             `headwater probe grade` is the verb that holds all three."
         );
         out
     }
@@ -538,6 +685,34 @@ pub fn fenced<'a>(source: &'a str, heading: &str) -> Option<&'a str> {
 
 fn text(map: &Mapping, key: &str) -> Option<String> {
     Some(map.get(key)?.value.as_scalar()?.text.clone())
+}
+
+/// A sequence of scalars, and `None` where the key is absent.
+///
+/// An absent key and an empty sequence are different facts, and
+/// [`Produced::findings`] is the place where reading one as the other returns a
+/// verdict nobody measured. So this returns `None` for the first and
+/// `Some(vec![])` for the second, and every caller decides which it wants.
+fn strings(map: &Mapping, key: &str) -> Option<Vec<String>> {
+    let items = map.get(key)?.value.as_seq()?;
+    Some(
+        items
+            .iter()
+            .filter_map(|item| item.value.as_scalar())
+            .map(|scalar| scalar.text.clone())
+            .collect(),
+    )
+}
+
+/// The final answer, in the three states [`Answer`] separates.
+fn answer(map: &Mapping) -> Answer {
+    let Some(scalar) = map.get("answer").and_then(|entry| entry.value.as_scalar()) else {
+        return Answer::Unrecorded;
+    };
+    match headwater_yaml::core_schema::as_null(scalar) {
+        true => Answer::Absent,
+        false => Answer::Value(scalar.text.clone()),
+    }
 }
 
 #[cfg(test)]

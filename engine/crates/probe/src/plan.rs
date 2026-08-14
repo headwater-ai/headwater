@@ -43,6 +43,29 @@ pub const KIND: &str = "probe";
 /// is a predicate over.
 pub const EXAMINES: &str = "examines";
 
+/// The section a probe declares its expectation in, which the `probe` kind
+/// already requires.
+///
+/// # The second conditional facet did not become a facet
+///
+/// `answered` is satisfied by "one named value from a closed set that the probe
+/// declares", and nothing held that set. It is the same shape as `oracle`: a
+/// declaration that applies to one value of `expectation` and to no other, and
+/// [OBL-repo-0123](../../../../docs/obligations/0123-a-facet-that-applies-to-one-value-of-another-facet-has-nowhere-to-say-so.md)
+/// says the taxonomy language cannot express that. `oracle` paid the sentinel:
+/// every probe declares one and four forms write `none`.
+///
+/// This one does not, because the set is a list and no facet of this language
+/// holds a list. It goes in a fenced block under the section the kind already
+/// requires, and the pairing is enforced in both directions below exactly as
+/// the oracle's is. That is a route the record does not name: **a required
+/// section carries a per-document closed set where a facet cannot**, and it
+/// costs the four other forms nothing. Whether `oracle` should follow it is a
+/// question for the record rather than for this crate.
+pub const EXPECTATION_SECTION: &str = "Expectation";
+/// The key that names the closed answer set inside it.
+pub const ANSWERS: &str = "answers";
+
 /// What a probe writes in `oracle` when its expectation is not `patched`.
 ///
 /// A sentinel, and the taxonomy has nowhere else to put it: a facet that no
@@ -51,6 +74,42 @@ pub const EXAMINES: &str = "examines";
 /// below, so it is a declared absence rather than an empty field.
 pub const NO_ORACLE: &str = "none";
 
+/// One target of an `examines` edge, under both of the names a transcript uses.
+///
+/// # One name was not enough, and building the grader is what showed it
+///
+/// This type replaces the list of strings that #84 handed over, and the reason
+/// is a defect that only the next component could see. Three expectation forms
+/// are predicates over these targets, and **they do not read the same name**. A
+/// session opens a *file*, so `opened` and `not_opened` compare a tool-call
+/// argument against a path. A produced artifact cites an *identifier*, so
+/// `cited` compares against the identifier. A list of identifiers alone makes
+/// every `opened` verdict false, and a list of paths alone makes every `cited`
+/// verdict false. Neither failure raises anything: the run is green, the rate
+/// is a number, and it is wrong in one direction for one form.
+///
+/// So the target carries both, and `id` is `None` where the target has none. An
+/// external anchor — a code path, which is the end that lets a probe measure
+/// the reach of a skill file — is a path and nothing cites it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Examined {
+    /// The identifier, where the target is a document of this corpus.
+    pub id: Option<String>,
+    /// The path a session would open: the document's path, or the string the
+    /// anchor resolver normalized.
+    pub path: String,
+}
+
+impl Examined {
+    /// The name a reader of the plan and of a verdict sees.
+    pub fn name(&self) -> String {
+        match &self.id {
+            Some(id) => format!("{id} at {}", self.path),
+            None => self.path.clone(),
+        }
+    }
+}
+
 /// One probe, as the harness meets it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Selected {
@@ -58,11 +117,14 @@ pub struct Selected {
     pub id: String,
     pub category: Category,
     pub expectation: Expectation,
-    /// The identifiers the `examines` edges of this probe name, sorted.
-    pub examines: Vec<String>,
+    /// What the `examines` edges of this probe name, sorted by path.
+    pub examines: Vec<Examined>,
     /// The rule a `patched` expectation grades against, and `None` for every
     /// other form.
     pub oracle: Option<String>,
+    /// The closed set an `answered` expectation is graded against, sorted, and
+    /// empty for every other form. See [`EXPECTATION_SECTION`].
+    pub answers: Vec<String>,
 }
 
 /// Why a run does not happen.
@@ -102,6 +164,15 @@ pub enum Refusal {
     /// would have nothing to run, and a probe that grades against nothing
     /// returns a verdict about the harness.
     OracleUnknown { probe: String, rule: String },
+    /// An `answered` probe that declares no closed set of answers. Every string
+    /// would then be the expected one, and the rate would be the session count.
+    AnswersUndeclared { probe: String },
+    /// A probe of another form that declares a closed set of answers. Its
+    /// expectation reads no answer, so the set is declared and never read.
+    AnswersNotUsed {
+        probe: String,
+        expectation: Expectation,
+    },
     /// An `opened`, `not_opened` or `cited` probe that names no document.
     /// `opened` over an empty set is never satisfied and `not_opened` over one
     /// always is, so either would report the declaration rather than the
@@ -181,6 +252,19 @@ impl std::fmt::Display for Refusal {
                 "{probe} grades against `{rule}`, which is not one of the {} rules this engine \
                  carries",
                 headwater_check::RULES.len()
+            ),
+            Refusal::AnswersUndeclared { probe } => write!(
+                f,
+                "{probe} expects `answered` and declares no `{ANSWERS}` block under `## \
+                 {EXPECTATION_SECTION}`. The form is satisfied by one value of a closed set the \
+                 probe declares, so a probe without one is satisfied by every string a session \
+                 returns"
+            ),
+            Refusal::AnswersNotUsed { probe, expectation } => write!(
+                f,
+                "{probe} expects `{}` and declares an `{ANSWERS}` block. Only `answered` reads the \
+                 final answer, so that set is declared and never read",
+                expectation.name()
             ),
             Refusal::ExpectationNamesNothing { probe, expectation } => write!(
                 f,
@@ -330,22 +414,26 @@ impl Plan {
                 return plan;
             };
 
-            let mut examines: Vec<String> = graph
+            let mut examines: Vec<Examined> = graph
                 .edges
                 .iter()
                 .filter(|edge| edge.source.path == row.path && edge.declared == EXAMINES)
-                // A document by its identifier, and an anchor by the string the
-                // resolver normalized. A grader reads a transcript for what the
-                // session opened, and a session opens a file rather than an
-                // identifier, so the normalized path is the name that matches.
+                // Both names, because the three predicates over these targets
+                // read two different ones. See [`Examined`].
                 .filter_map(|edge| match &edge.target {
-                    Target::Document { id, .. } => Some(id.clone()),
-                    Target::Anchor { normalized, .. } => Some(normalized.clone()),
+                    Target::Document { id, path, .. } => Some(Examined {
+                        id: Some(id.clone()),
+                        path: path.clone(),
+                    }),
+                    Target::Anchor { normalized, .. } => Some(Examined {
+                        id: None,
+                        path: normalized.clone(),
+                    }),
                     Target::Withheld { .. } => None,
                     _ => None,
                 })
                 .collect();
-            examines.sort();
+            examines.sort_by(|a, b| a.path.cmp(&b.path));
             examines.dedup();
 
             let declared = read("oracle").unwrap_or_else(|| NO_ORACLE.to_string());
@@ -385,6 +473,28 @@ impl Plan {
                 return plan;
             }
 
+            let mut answers = row
+                .document
+                .as_deref()
+                .map(declared_answers)
+                .unwrap_or_default();
+            answers.sort();
+            answers.dedup();
+            match (expectation, answers.is_empty()) {
+                (Expectation::Answered, true) => {
+                    plan.refusal = Some(Refusal::AnswersUndeclared { probe: id });
+                    return plan;
+                }
+                (other, false) if other != Expectation::Answered => {
+                    plan.refusal = Some(Refusal::AnswersNotUsed {
+                        probe: id,
+                        expectation: other,
+                    });
+                    return plan;
+                }
+                _ => {}
+            }
+
             plan.selected.push(Selected {
                 path: row.path.clone(),
                 id,
@@ -392,6 +502,7 @@ impl Plan {
                 expectation,
                 examines,
                 oracle,
+                answers,
             });
         }
 
@@ -538,10 +649,22 @@ impl Plan {
             let _ = writeln!(out, "    category: {}", selected.category.name());
             let _ = writeln!(out, "    expects: {}", selected.expectation.name());
             if !selected.examines.is_empty() {
-                let _ = writeln!(out, "    examines: {}", selected.examines.join(", "));
+                let _ = writeln!(
+                    out,
+                    "    examines: {}",
+                    selected
+                        .examines
+                        .iter()
+                        .map(Examined::name)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                );
             }
             if let Some(oracle) = &selected.oracle {
                 let _ = writeln!(out, "    oracle: {oracle}");
+            }
+            if !selected.answers.is_empty() {
+                let _ = writeln!(out, "    answers: {}", selected.answers.join(", "));
             }
         }
         let _ = writeln!(out);
@@ -565,6 +688,47 @@ impl Plan {
         );
         out
     }
+}
+
+/// The closed answer set a probe declares, read from the parse the census took.
+///
+/// The first fenced block under `## [EXPECTATION_SECTION]`, loaded as YAML, and
+/// the `answers` key of it. Anything that does not read that way declares
+/// nothing, and the caller refuses an `answered` probe that declares nothing —
+/// so a malformed block and an absent one reach one refusal rather than one
+/// refusal and one silent pass.
+///
+/// It reads the document the census parsed and never the file again, for the
+/// reason [`headwater_census::census::Row`] carries a parse at all: a second
+/// read is a second corpus, and the two accounts can differ.
+fn declared_answers(document: &headwater_doc::Document) -> Vec<String> {
+    use headwater_doc::body::BlockKind;
+
+    let mut under = false;
+    for block in &document.body.blocks {
+        match block.kind {
+            BlockKind::Heading(2) => under = block.text().trim() == EXPECTATION_SECTION,
+            BlockKind::Heading(_) => under = false,
+            BlockKind::Code if under => {
+                let Ok(loaded) = headwater_yaml::load(&block.text()) else {
+                    return Vec::new();
+                };
+                let Some(map) = loaded.value.as_map() else {
+                    return Vec::new();
+                };
+                let Some(items) = map.get(ANSWERS).and_then(|entry| entry.value.as_seq()) else {
+                    return Vec::new();
+                };
+                return items
+                    .iter()
+                    .filter_map(|item| item.value.as_scalar())
+                    .map(|scalar| scalar.text.clone())
+                    .collect();
+            }
+            _ => {}
+        }
+    }
+    Vec::new()
 }
 
 /// The arms of a run: the tier's, narrowed by the caller if the caller asked.
