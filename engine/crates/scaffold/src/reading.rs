@@ -10,7 +10,7 @@
 //!
 //! # What a reading holds, and why each field is in it
 //!
-//! Six members, and the last four are [`crate::Assisted`] verbatim.
+//! Seven members, and the last four are [`crate::Assisted`] verbatim.
 //!
 //! - `lock` is the digest of the taxonomy that set the denominator. The
 //!   denominator is a count of declarations, so a required facet the scaffolder
@@ -18,6 +18,13 @@
 //!   readings taken under two digests are two different measurements, and the
 //!   store says which is which rather than averaging them.
 //! - `date` is the injected clock, so a reading is reproducible under `--now`.
+//! - `surface` names what called the verb, and it is the term
+//!   [OBL-repo-0004](../../../../docs/obligations/0004-working-tree-write-tools-have-no-measured-effect.md)
+//!   asks for. [Q7](../../../../docs/spec/09-decisions.md#q7--scope-of-the-mcp-surface)
+//!   claims that a working-tree write tool raises the assisted fraction, and
+//!   that claim is a comparison of two arms. Without this member a reading
+//!   taken at a terminal and a reading taken over the protocol are one
+//!   population, and the comparison reads its own baseline as its treatment.
 //! - `kind` is what the reading is about, and the term the per-kind report
 //!   groups by.
 //! - `document` is the path at birth. `id` is the identifier, which is the join
@@ -38,6 +45,17 @@
 //!
 //! **No prose, and no title.** The store holds counts. The title is in the
 //! document that the reading names.
+//!
+//! **No caller behind the surface.** `surface` names the entry point the verb
+//! ran at, and the entry point is a fact about the run. Who or what drove that
+//! entry point is not: a person who types a tool call into a client and an
+//! agent that emits one produce the same message on the same wire.
+//! [OBL-repo-0111](../../../../docs/obligations/0111-the-capture-cost-surface-names-an-entry-point-and-never-the-caller.md)
+//! holds what that costs a reader of the two arms. **And the surface cannot
+//! move the four counts either.** They are derived from the plan, and a plan
+//! takes a kind, a title, a date and the relations. What a surface can move is
+//! the count of runs, which is
+//! [OBL-repo-0112](../../../../docs/obligations/0112-a-surface-cannot-move-the-assisted-fraction-of-a-run.md).
 //!
 //! **No run that refused.** A refusal wrote no document, so there is nothing to
 //! attribute a reading to. A count of refusals would be a measure of the
@@ -81,11 +99,47 @@ use std::path::Path;
 /// the `merge=union` attribute this repository declares for the path.
 pub const STORE: &str = ".headwater/capture-cost.jsonl";
 
+/// The entry point a run of the authoring verb was made at.
+///
+/// A closed set of two, because the engine has two entry points and the term
+/// exists to separate them. A third value waits on a third entry point, and a
+/// value that no code path produces would be a population nobody can sample.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Surface {
+    /// `headwater new`, at a terminal.
+    Terminal,
+    /// The `new` tool of the MCP server, over the protocol.
+    Protocol,
+}
+
+impl Surface {
+    /// The name the store writes, and the name a report groups by.
+    pub fn name(self) -> &'static str {
+        match self {
+            Surface::Terminal => "terminal",
+            Surface::Protocol => "protocol",
+        }
+    }
+
+    pub fn parse(text: &str) -> Option<Surface> {
+        match text {
+            "terminal" => Some(Surface::Terminal),
+            "protocol" => Some(Surface::Protocol),
+            _ => None,
+        }
+    }
+}
+
 /// One run of `headwater new`, as the store holds it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Reading {
     pub lock: String,
     pub date: Date,
+    /// What called the verb. `None` is a reading the store took before the term
+    /// existed, and it is not the terminal arm under another name: a reading
+    /// with no term states nothing, and a report that read it as one arm would
+    /// invent the fact this member exists to record.
+    pub surface: Option<Surface>,
     pub kind: String,
     pub document: String,
     pub id: Option<String>,
@@ -95,10 +149,15 @@ pub struct Reading {
 impl Reading {
     /// The reading a plan produces, derived from the plan rather than tracked
     /// beside it, in the way [`Plan::assisted`] is.
-    pub fn of(plan: &Plan, lock: &str, date: Date) -> Reading {
+    ///
+    /// The surface is the one member no plan carries, because a plan is the
+    /// same plan whatever asked for it. It is therefore an argument, supplied
+    /// by the caller that knows which entry point it is.
+    pub fn of(plan: &Plan, lock: &str, date: Date, surface: Surface) -> Reading {
         Reading {
             lock: lock.to_string(),
             date,
+            surface: Some(surface),
             kind: plan.kind.clone(),
             document: plan.path.clone(),
             id: plan.minting.as_ref().map(|minting| minting.id.clone()),
@@ -120,9 +179,17 @@ impl Reading {
         let mut members = vec![
             ("lock", Json::string(&self.lock)),
             ("date", Json::string(self.date.render())),
+        ];
+        // Absent rather than empty, on the rule the identifier below follows: a
+        // member with an empty value is a term that names nothing, and every
+        // line the store already holds was written before this member existed.
+        if let Some(surface) = self.surface {
+            members.push(("surface", Json::string(surface.name())));
+        }
+        members.extend([
             ("kind", Json::string(&self.kind)),
             ("document", Json::string(&self.document)),
-        ];
+        ]);
         if let Some(id) = &self.id {
             members.push(("id", Json::string(id)));
         }
@@ -173,10 +240,24 @@ impl Reading {
             }
         };
         let date = text("date")?;
+        // A term this engine does not know is an error naming it, on the same
+        // rule the date follows. A line written by a later engine that added a
+        // third entry point would otherwise be counted under neither arm and
+        // reported as nothing at all.
+        let surface = match map.get("surface").and_then(|node| node.value.as_scalar()) {
+            None => None,
+            Some(scalar) => Some(Surface::parse(&scalar.text).ok_or_else(|| {
+                format!(
+                    "`surface` is `{}` rather than `terminal` or `protocol`",
+                    scalar.text
+                )
+            })?),
+        };
         Ok(Reading {
             lock: text("lock")?,
             date: Date::parse(&date)
                 .ok_or_else(|| format!("`date` is `{date}` rather than a date"))?,
+            surface,
             kind: text("kind")?,
             document: text("document")?,
             id: map
@@ -277,6 +358,29 @@ pub fn by_kind(readings: &[Reading]) -> Vec<(String, usize, Assisted)> {
         .collect()
 }
 
+/// `(surface, readings, the four terms summed)`, in the order the surfaces
+/// first appear in the store.
+///
+/// This is the two arms of [OBL-repo-0004](../../../../docs/obligations/0004-working-tree-write-tools-have-no-measured-effect.md),
+/// and it is a grouping rather than a comparison. A difference between two rows
+/// here is a difference between two populations that nobody powered, and the
+/// report that prints it says so.
+pub fn by_surface(readings: &[Reading]) -> Vec<(Option<Surface>, usize, Assisted)> {
+    let mut out: Vec<(Option<Surface>, Vec<Reading>)> = Vec::new();
+    for reading in readings {
+        match out
+            .iter_mut()
+            .find(|(surface, _)| surface == &reading.surface)
+        {
+            Some((_, held)) => held.push(reading.clone()),
+            None => out.push((reading.surface, vec![reading.clone()])),
+        }
+    }
+    out.into_iter()
+        .map(|(surface, held)| (surface, held.len(), total(&held)))
+        .collect()
+}
+
 /// Every distinct lock digest the store holds, in first-seen order.
 ///
 /// More than one means the readings were taken against more than one
@@ -365,6 +469,7 @@ mod tests {
         Reading {
             lock: "sha256:abc".to_string(),
             date: Date::parse("2026-08-14").expect("a date"),
+            surface: Some(Surface::Terminal),
             kind: "obligation_record".to_string(),
             document: "docs/obligations/0109-a-record.md".to_string(),
             id: Some("OBL-repo-0109".to_string()),
@@ -381,9 +486,65 @@ mod tests {
     fn a_reading_renders_as_one_line_in_a_fixed_member_order() {
         assert_eq!(
             a_reading().render(),
-            "{\"lock\":\"sha256:abc\",\"date\":\"2026-08-14\",\"kind\":\"obligation_record\",\
+            "{\"lock\":\"sha256:abc\",\"date\":\"2026-08-14\",\"surface\":\"terminal\",\
+             \"kind\":\"obligation_record\",\
              \"document\":\"docs/obligations/0109-a-record.md\",\"id\":\"OBL-repo-0109\",\
              \"fields\":[4,5],\"sections\":[3,3],\"identifier\":[1,1],\"edge_halves\":[0,0]}"
+        );
+    }
+
+    /// A line the store already holds names no surface, and it reads as a
+    /// reading that states none.
+    ///
+    /// The two arms are what this member exists to separate, so a reader that
+    /// took an absent term for the terminal arm would put every reading taken
+    /// before the term existed into one of the two populations by assumption.
+    /// That is the invention the store refuses everywhere else.
+    #[test]
+    fn a_reading_written_before_the_term_existed_states_no_surface() {
+        let line = a_reading()
+            .render()
+            .replace("\"surface\":\"terminal\",", "");
+        let read = Reading::parse(&line).expect("a reading");
+        assert_eq!(read.surface, None);
+        assert!(!read.render().contains("surface"));
+        assert_eq!(
+            by_surface(&[read, a_reading()])
+                .into_iter()
+                .map(|(surface, count, _)| (surface, count))
+                .collect::<Vec<_>>(),
+            vec![(None, 1), (Some(Surface::Terminal), 1)]
+        );
+    }
+
+    /// The two arms are two rows, and a reading of each is what makes them two.
+    #[test]
+    fn the_two_entry_points_are_two_populations() {
+        let mut over_the_wire = a_reading();
+        over_the_wire.surface = Some(Surface::Protocol);
+        over_the_wire.document = "docs/obligations/0110-another.md".to_string();
+        assert!(over_the_wire.render().contains("\"surface\":\"protocol\""));
+        assert_eq!(
+            Reading::parse(&over_the_wire.render()),
+            Ok(over_the_wire.clone())
+        );
+        assert_eq!(
+            by_surface(&[a_reading(), over_the_wire])
+                .into_iter()
+                .map(|(surface, count, _)| (surface, count))
+                .collect::<Vec<_>>(),
+            vec![(Some(Surface::Terminal), 1), (Some(Surface::Protocol), 1)]
+        );
+    }
+
+    /// A term a later engine writes and this one does not know is an error, not
+    /// a reading counted under neither arm.
+    #[test]
+    fn a_surface_this_engine_does_not_know_is_an_error_naming_the_member() {
+        let line = a_reading().render().replace("\"terminal\"", "\"editor\"");
+        assert_eq!(
+            Reading::parse(&line),
+            Err("`surface` is `editor` rather than `terminal` or `protocol`".to_string())
         );
     }
 

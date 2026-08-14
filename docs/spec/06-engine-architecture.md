@@ -242,7 +242,7 @@ headwater capture    [--format text|json]
 headwater route      <task description>
 headwater query      <expression>
 headwater explain    <path|identifier>
-headwater mcp
+headwater mcp        [--now <date>] [--write]
 headwater export     [--profile ...] [--format json|jsonschema|shacl|rdf|skos|okf|linkml]
                      [--at <date>] [--check]
 headwater init       [--corpus <dir>] [--package <name>]
@@ -290,9 +290,11 @@ The CLI is a thin shell over a library API — load, graph, check, query, genera
 
 ### MCP server
 
-The MCP server is the agent-facing surface of the same library ([AI integration](05-ai-integration.md)). `headwater mcp` starts it on standard input and output, over the corpus the same lock and the same `corpus:` block describe. It registers the whole query class and nothing else. Spec 5 gives the reason that the registration rather than the annotation is what carries the property.
+The MCP server is the agent-facing surface of the same library ([AI integration](05-ai-integration.md)). `headwater mcp` starts it on standard input and output, over the corpus the same lock and the same `corpus:` block describe. It registers the whole query class, and with `--write` the working-tree write class beside it. Spec 5 gives the reason that the registration rather than the annotation is what carries the property.
 
 The server walks the corpus once and reads the clock once, before it accepts a message. So every tool answers about one tree at one date. The `check` tool then answers what `check --format` answers, byte for byte. [What a `check` tool decides](05-ai-integration.md#what-a-check-tool-decides-and-where-each-decision-is-taken) states where each of those values is chosen, and none of them is chosen inside a tool.
+
+**A call that moves a byte of that tree ends the server.** The walk behind every later answer would otherwise describe a tree that is gone. [What a session looks like after a write](05-ai-integration.md#what-the-working-tree-write-class-registers-and-what-a-session-looks-like-after-a-write) states the rule and the two halves that make it exact. The write tools hold the verbs of this binary as functions. So a tool call runs `new` and `check --fix`, rather than a second assembly of the same parts.
 
 ### CI adapters
 

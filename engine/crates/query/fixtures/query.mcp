@@ -15,6 +15,6 @@
 → {"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"check","arguments":{"format":"yaml"}}}
 ← {"jsonrpc":"2.0","id":7,"error":{"code":-32602,"message":"`check` takes a format, one of text, json, sarif, markdown"}}
 → {"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"new","arguments":{"kind":"decision"}}}
-← {"jsonrpc":"2.0","id":8,"error":{"code":-32602,"message":"`new` is not a tool this server registers. It registers route, explain, related, resolve_identifier, governing_docs_for_path, check, and it registers no tool that writes"}}
+← {"jsonrpc":"2.0","id":8,"error":{"code":-32602,"message":"`new` is not a tool this server registers. It registers route, explain, related, resolve_identifier, governing_docs_for_path, check, and it registers no tool that writes. The working-tree write class is off, and `headwater mcp --write` is what registers `new` and `fix`. A tool that lands a change — a commit, a push, a merge — is registered by no switch at all, because acceptance is a human act"}}
 → {"jsonrpc":"2.0","id":9,"method":"resources/read","params":{"uri":"file:///etc/passwd"}}
 ← {"jsonrpc":"2.0","id":9,"error":{"code":-32601,"message":"`resources/read` is not a method this server implements"}}
