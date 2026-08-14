@@ -815,6 +815,81 @@ mod tests {
         );
     }
 
+    fn event(at: usize, session: &str, calls: Option<Vec<crate::intake::Call>>) -> Event {
+        Event {
+            at,
+            probe: "PROBE-FIX-one".into(),
+            session: session.into(),
+            calls,
+            produced: None,
+            answer: Answer::Unrecorded,
+        }
+    }
+
+    fn opened_over_one_document() -> Selected {
+        Selected {
+            path: "probes/one.md".into(),
+            id: "PROBE-FIX-one".into(),
+            category: Category::Discovery,
+            expectation: Expectation::Opened,
+            examines: vec![target(Some("PROBE-FIX-two"), "probes/two.md")],
+            oracle: None,
+            answers: Vec::new(),
+        }
+    }
+
+    /// `calls: []` reaches a verdict and a missing `calls` key reaches none.
+    ///
+    /// Named, and asserted on both sides, because an invariant that lives only
+    /// inside a `match` arm is an invariant a test suite cannot be asked about.
+    /// The two sessions below differ in exactly one key, so nothing else can be
+    /// the cause of the difference.
+    ///
+    /// The second half is the part that matters more than the verdicts. A
+    /// session that reached no verdict leaves the denominator of the rate: it
+    /// joins neither the numerator nor the failures, and it is printed beside
+    /// the rate instead. A grader that read a missing key as an empty list
+    /// would report two of two here, and the direction of that error is always
+    /// the flattering one.
+    #[test]
+    fn an_omitted_calls_key_leaves_the_denominator_and_an_empty_list_joins_it() {
+        let selected = opened_over_one_document();
+        let watched = event(1, "watched-and-saw-nothing", Some(Vec::new()));
+        let unwatched = event(2, "nothing-watched", None);
+
+        assert_eq!(
+            verdict(&selected, &[&watched]),
+            Verdict::NotSatisfied(Miss::NeverRead { calls: 0, over: 1 }),
+            "`calls: []` says the recorder watched, which is a fact a predicate reads"
+        );
+        assert_eq!(
+            verdict(&selected, &[&unwatched]),
+            Verdict::Refused(Refusal::Unrecorded { what: "calls" }),
+            "an event with no `calls` key says nothing watched, which answers nothing"
+        );
+
+        let record = Record {
+            identity: None,
+            read: 2,
+            probes: vec!["PROBE-FIX-one".into()],
+            sessions: 2,
+            calls: 0,
+            events: vec![watched, unwatched],
+            rejected: Vec::new(),
+            refusal: None,
+            declared: 1,
+        };
+        let results = Results::over(&record, std::slice::from_ref(&selected));
+        assert_eq!(results.graded(), 1, "the refused session left the denominator");
+        assert_eq!(results.satisfied(), 0);
+        assert_eq!(results.refused(), 1);
+        assert_eq!(
+            results.rate().expect("one session was graded").point,
+            0.0,
+            "a refused session that joined the numerator would round this up"
+        );
+    }
+
     /// The interval is the reason a result is readable over quarters, and its
     /// one hard property is that it stays inside zero and one where a normal
     /// interval does not.

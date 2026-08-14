@@ -543,13 +543,12 @@ impl Record {
 
         let _ = writeln!(
             out,
-            "{} events over {} of the {} probes this corpus declares, in {} sessions and {} tool \
-             calls.",
-            self.read,
+            "{} over {} of the {} this corpus declares, in {} and {}.",
+            count(self.read, "event"),
             self.probes.len(),
-            self.declared,
-            self.sessions,
-            self.calls
+            count(self.declared, "probe"),
+            count(self.sessions, "session"),
+            count(self.calls, "tool call")
         );
 
         if !self.rejected.is_empty() {
@@ -575,6 +574,20 @@ impl Record {
              `headwater probe grade` is the verb that holds all three."
         );
         out
+    }
+}
+
+/// A count and its noun.
+///
+/// The same helper the grader keeps, and it is here now because this report is
+/// no longer only something a person reads on a terminal. A `probe_result`
+/// projection commits these sentences to the corpus, and "1 tool calls" in a
+/// committed document is a line every later reader has to decide whether to
+/// trust.
+fn count(how_many: usize, noun: &str) -> String {
+    match how_many {
+        1 => format!("1 {noun}"),
+        other => format!("{other} {noun}s"),
     }
 }
 

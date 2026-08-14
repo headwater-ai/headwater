@@ -451,6 +451,7 @@ fn a_generated_document_is_a_document_of_its_shelf() {
         &before.census,
         &projections,
         &fixture_identity(),
+        &Runs::default(),
     );
     let report = write(&tree, &first);
     assert!(!report.has_errors(), "{}", report.render());
@@ -625,12 +626,27 @@ fn this_repository_generates_its_four_artifacts_and_accounts_for_the_rest() {
         "this repository writes the decisions index, the specification index, the \
          redirect map and the descriptor, in that order"
     );
-    // One declared shelf that holds no document, and the register. Nothing is
-    // passed over: a projection that produced no file states a reason.
+    // One declared shelf that holds no document, one declared projection whose
+    // source this corpus does not hold, and the register. Nothing is passed
+    // over: a projection that produced no file states a reason.
     assert_eq!(
         plan.unwritten.len(),
-        2,
+        3,
         "a projection produced neither a file nor a reason"
+    );
+    // The empty arm, and where it is stated. `docs/probe-runs/` holds no file,
+    // so no result is written and the run prints the reason. This assertion is
+    // what makes that a measurement rather than a silence, and it is the one
+    // that has to be deleted on the day a transcript is committed.
+    let result = plan
+        .unwritten
+        .iter()
+        .find(|unwritten| unwritten.kind == headwater_generate::Kind::ProbeResult)
+        .expect("the probe-result declaration reports itself");
+    assert!(
+        result.reason.contains("holds no `probe_transcript` document"),
+        "the reason does not name the missing input: {}",
+        result.reason
     );
     for unwritten in &plan.unwritten {
         assert!(
@@ -698,6 +714,7 @@ fn the_redirect_map_keeps_every_anchor_that_this_corpus_cites_into_it() {
         &built.census,
         &projections,
         &Identity::default(),
+        &Runs::default(),
     );
     let map = plan
         .outputs

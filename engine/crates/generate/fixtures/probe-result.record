@@ -13,7 +13,7 @@ A regression run in the present arm, on a-model at 2026-08-14.
 served version a-model-20260701, tree sha256:fixture-tree, selection sha256:fixture-selection, seed 0, harness 0.1.0.
 realized cost $0.41, which the adaptive layer reads as the cost of its own instrument.
 
-4 events over 2 of the 2 probes this corpus declares, in 4 sessions and 1 tool calls.
+4 events over 2 of the 2 probes this corpus declares, in 4 sessions and 1 tool call.
 
 The engine confirmed the taxonomy, the completeness of the run identity, the membership of every probe named, that no key outside the closed set appears, and that a realized cost was recorded. It graded nothing: a verdict is a function of this transcript, the expectations these probes declare and a grader version, and `headwater probe grade` is the verb that holds all three.
 

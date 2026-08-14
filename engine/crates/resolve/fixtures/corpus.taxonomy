@@ -332,6 +332,13 @@ kinds:
         - Task
         - Expectation
     voice: declarative
+  probe_result:
+    identifier:
+      scheme: result_id
+    is_a: governed_document
+    lifecycle: standard
+    purpose: evidence
+    voice: declarative
   probe_transcript:
     facets:
       require:
@@ -501,6 +508,10 @@ shelves:
     kind: obligation_record
     layout: "{seq:04d}-{slug}.md"
     path: "docs/obligations/**"
+  probe_results:
+    homogeneous: true
+    kind: probe_result
+    path: "docs/probe-results/**"
   probe_runs:
     homogeneous: true
     kind: probe_transcript
@@ -546,6 +557,10 @@ identifier_schemes:
     allocation: minted-once
     namespace: HW
     pattern: "REG-{namespace}-{slug}"
+  result_id:
+    allocation: minted-once
+    namespace: HW
+    pattern: "RESULT-{namespace}-{slug}"
   review_id:
     allocation: minted-once
     namespace: HW
@@ -584,6 +599,11 @@ projections:
     identity:
       id: REG-HW-open-questions
       kind: decision_register
+  - kind: probe_result
+    output: "docs/probe-results/{run}.md"
+    identity:
+      id: "RESULT-HW-{run}"
+      kind: probe_result
 obligations:
   OB-COV-1:
     statement: "Every file under the corpus root is classified, or reported as unclassifiable"
