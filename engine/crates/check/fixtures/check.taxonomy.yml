@@ -131,7 +131,23 @@ shelves:
     homogeneous: true
     kind: evaluation
 
+# One external anchor kind, and the resolver every run over a repository has.
+# The tree under `fixtures/check/` declares no edge onto it, so nothing here
+# changes what the recorded reports hold. `tests/cache.rs` writes the document
+# that declares one, into its own copy of the tree, because the case it tests is
+# a target that moves between two runs and a recorded fixture holds one state.
+anchors:
+  code_path: {resolver: source-tree}
+
 relations:
+  # A target the corpus does not hold, so the key of an instance about one names
+  # no byte of it. See `crates/check/src/cache.rs`.
+  governs:
+    family: governance
+    from: [design_spec]
+    to:   [code_path]
+    cardinality: many
+
   cites_evidence:
     family: evidence
     from: [design_spec]

@@ -626,6 +626,7 @@ pub struct EdgeView<'a> {
     inverse: Option<&'a Edge>,
     clock: Option<Date>,
     reads: Vec<Input>,
+    resolution: String,
 }
 
 impl<'a> EdgeView<'a> {
@@ -668,7 +669,21 @@ impl<'a> EdgeView<'a> {
             inverse,
             clock,
             reads,
+            resolution: anchor.target.resolution(),
         })
+    }
+
+    /// What the target of this edge bound to, for the cache key and for
+    /// nothing else.
+    ///
+    /// It is taken from the same half the read set is taken from, so one
+    /// instance names one binding however many documents wrote a half of it.
+    /// At [`EdgeUnit::Pair`] both halves are documents by construction, and
+    /// both are in the read set above. At [`EdgeUnit::Entry`] the half is the
+    /// entry, and this is the only component of the key that names what its
+    /// target string reached.
+    fn resolution(&self) -> &str {
+        &self.resolution
     }
 
     /// The relation this pair declares, after a name resolved to its type.
@@ -914,9 +929,18 @@ pub fn over_documents<C: DocumentCheck>(
         // The target of a document-scoped instance is the document, so the
         // path is its identity as well as its one input.
         let reads = view.reads();
-        let outcome = cache.outcome(C::RULE, C::VERSION, scope, &row.path, &reads, clock, || {
-            check.evaluate(&view)
-        });
+        // No resolution: a document-scoped instance reads one document, and a
+        // document is a corpus path that the read set above already names.
+        let outcome = cache.outcome(
+            C::RULE,
+            C::VERSION,
+            scope,
+            &row.path,
+            &reads,
+            clock,
+            None,
+            || check.evaluate(&view),
+        );
         instances.push(Instance::of(C::RULE, Grain::Document, reads, outcome));
     }
     instances
@@ -986,9 +1010,20 @@ pub fn over_edges<C: EdgeCheck>(
         // two instances apart that read the same two documents. One pair of
         // documents can carry two relations, and their read sets are equal.
         let reads = view.reads().to_vec();
-        let outcome = cache.outcome(C::RULE, C::VERSION, scope, triple, &reads, clock, || {
-            check.evaluate(&view)
-        });
+        // The one scope that reaches a resolver. See [`crate::cache`]: the
+        // identity of an anchor edge is the same string on both sides of the
+        // change that falsifies its verdict, so the binding is named in the key
+        // beside it.
+        let outcome = cache.outcome(
+            C::RULE,
+            C::VERSION,
+            scope,
+            triple,
+            &reads,
+            clock,
+            Some(view.resolution()),
+            || check.evaluate(&view),
+        );
         instances.push(Instance::of(C::RULE, Grain::Edge, reads, outcome));
     }
     instances
@@ -1045,9 +1080,19 @@ pub fn over_neighbourhoods<C: NeighbourhoodCheck>(
             clock,
             reads: reads.clone(),
         };
-        let outcome = cache.outcome(C::RULE, C::VERSION, scope, &row.path, &reads, clock, || {
-            check.evaluate(&view)
-        });
+        // No resolution either. [`Adjacency`] holds only the neighbours whose
+        // target is a document, so this grain reaches no anchor and every input
+        // it read is a path of the read set above.
+        let outcome = cache.outcome(
+            C::RULE,
+            C::VERSION,
+            scope,
+            &row.path,
+            &reads,
+            clock,
+            None,
+            || check.evaluate(&view),
+        );
         instances.push(Instance::of(
             C::RULE,
             Grain::Neighbourhood { depth: 1 },
@@ -1096,9 +1141,16 @@ pub fn over_corpus<C: CorpusCheck>(
     // to bind and the key would carry nothing about a day. The first
     // corpus-scoped rule that reads a date brings the declaration with it, on
     // the terms the other three traits already state.
-    let outcome = cache.outcome(C::RULE, C::VERSION, scope, CORPUS, &reads, None, || {
-        check.evaluate(&view)
-    });
+    let outcome = cache.outcome(
+        C::RULE,
+        C::VERSION,
+        scope,
+        CORPUS,
+        &reads,
+        None,
+        None,
+        || check.evaluate(&view),
+    );
     vec![Instance::of(C::RULE, Grain::Corpus, reads, outcome)]
 }
 

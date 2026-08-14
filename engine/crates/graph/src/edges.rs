@@ -279,6 +279,42 @@ impl Edge {
     }
 }
 
+impl Target {
+    /// What binding this target string reached, in full, as one line.
+    ///
+    /// [`Edge::normalized_target`] is the identity of an edge and this is not
+    /// that. The identity of an anchor edge is the string the resolver made of
+    /// the target, and it is the **same string** whether the resolver bound it
+    /// or refused it: an unbound target falls back to the raw text, and a path
+    /// anchor normalizes to that text. So two runs over two trees, one holding
+    /// the file and one not, produce one identity and two verdicts.
+    ///
+    /// A cache key needs the second value rather than the first.
+    /// [Spec 12](../../../../docs/spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)
+    /// puts "the content hash of every document **and edge** that an instance
+    /// read" in a read set, and a read set is a list of corpus paths. An anchor
+    /// names something outside the corpus, so no path in that list moves when
+    /// the anchor's target moves, and this value is the only thing in a key
+    /// that names it.
+    ///
+    /// **It is the derived `Debug`, and that is the point.** The value has to
+    /// be total over the type: a variant or a field that this rendering omits
+    /// is an input that a key omits, which is the correctness bug spec 12 names
+    /// and the one this method exists for. A hand-written arm per variant is a
+    /// second statement of the shape of [`Target`], and the next variant added
+    /// beside it would key nothing new while compiling clean. The compiler
+    /// writes this one, so it cannot fall behind the type.
+    ///
+    /// The format is not a stable one, and it does not need to be. Nothing
+    /// reads this back: it is hashed into a key, and a rustc that renders it
+    /// differently costs one uncached run, which is the direction
+    /// [`headwater_check`'s cache](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+    /// resolves every doubtful case in.
+    pub fn resolution(&self) -> String {
+        format!("{self:?}")
+    }
+}
+
 /// Resolve every `relations:` block of the census into edges.
 ///
 /// The input set is the rows that resolved a kind, which is
@@ -574,4 +610,114 @@ fn instance_attributes(map: &Mapping) -> Vec<Entry> {
         .filter(|entry| entry.key.value != "to")
         .cloned()
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn edge(target: Target) -> Edge {
+        Edge {
+            source: Source {
+                id: "SPEC-HW-ai-integration".to_string(),
+                path: "docs/spec/05-ai-integration.md".to_string(),
+                kind: "design_spec".to_string(),
+                kind_span: None,
+            },
+            name: "governs".to_string(),
+            declared: "governs".to_string(),
+            direction: Direction::AsDeclared,
+            raw_target: ".claude/hooks/lib.sh".to_string(),
+            target,
+            attributes: Vec::new(),
+            created_by: None,
+            span: Span::default(),
+        }
+    }
+
+    fn bound() -> Target {
+        Target::Anchor {
+            anchor_kind: "code_path".to_string(),
+            resolver: "source-tree".to_string(),
+            normalized: ".claude/hooks/lib.sh".to_string(),
+            excluded_by: None,
+        }
+    }
+
+    fn gone() -> Target {
+        Target::Unbound(Unbound::AnchorUnresolved {
+            anchor_kind: "code_path".to_string(),
+            why: "no `.claude/hooks/lib.sh` in the source tree".to_string(),
+        })
+    }
+
+    /// The defect [#160](https://github.com/headwater-ai/headwater/issues/160)
+    /// is about, stated as two values that a key can tell apart and an identity
+    /// cannot.
+    ///
+    /// One `governs` edge, one anchor string, and the file behind it removed.
+    /// The identity is the same on both sides, because a path anchor normalizes
+    /// to the text an author wrote and an unbound target falls back to that
+    /// same text. So a cache key over the identity serves the verdict of the
+    /// tree that still held the file.
+    #[test]
+    fn a_removed_anchor_target_keeps_its_identity_and_changes_its_resolution() {
+        assert_eq!(
+            edge(bound()).triple(),
+            edge(gone()).triple(),
+            "the identity told the two trees apart, so this test proves nothing"
+        );
+        assert_ne!(
+            bound().resolution(),
+            gone().resolution(),
+            "a key over this value serves a verdict the tree falsifies"
+        );
+    }
+
+    /// Every field a resolver decides is in the value, so no two bindings that
+    /// differ share one.
+    ///
+    /// The rendering is the derived `Debug`, so this is a test of that choice
+    /// rather than of a hand-written table: an exclusion that claims the target
+    /// and a profile that withholds it are both a resolver's answer, and a key
+    /// that dropped either would serve a verdict across the change that makes
+    /// it.
+    #[test]
+    fn two_bindings_that_differ_anywhere_render_two_resolutions() {
+        let excluded = Target::Anchor {
+            anchor_kind: "code_path".to_string(),
+            resolver: "source-tree".to_string(),
+            normalized: ".claude/hooks/lib.sh".to_string(),
+            excluded_by: Some("engine/**".to_string()),
+        };
+        let others = [
+            excluded,
+            gone(),
+            Target::Withheld {
+                anchor_kind: "code_path".to_string(),
+                profile: "public".to_string(),
+            },
+            Target::Unbound(Unbound::NoResolver {
+                anchor_kind: "code_path".to_string(),
+                resolver: "source-tree".to_string(),
+            }),
+            Target::Unbound(Unbound::NoSuchTarget {
+                also_tried: Vec::new(),
+            }),
+            Target::Document {
+                id: "SPEC-HW-check-layer".to_string(),
+                path: "docs/spec/12-check-layer.md".to_string(),
+                kind: "design_spec".to_string(),
+            },
+        ];
+        let mut seen = vec![bound().resolution()];
+        for other in others {
+            let text = other.resolution();
+            assert!(
+                !seen.contains(&text),
+                "two bindings share one value: {text}"
+            );
+            seen.push(text);
+        }
+    }
 }
