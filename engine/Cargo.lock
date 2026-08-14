@@ -105,6 +105,18 @@ name = "headwater-hash"
 version = "0.1.0"
 
 [[package]]
+name = "headwater-import"
+version = "0.1.0"
+dependencies = [
+ "headwater-check",
+ "headwater-doc",
+ "headwater-graph",
+ "headwater-resolve",
+ "headwater-scaffold",
+ "headwater-yaml",
+]
+
+[[package]]
 name = "headwater-lock"
 version = "0.1.0"
 dependencies = [

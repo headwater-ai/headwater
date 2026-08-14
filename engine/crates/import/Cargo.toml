@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "headwater-import"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+# The dialect. A committed snapshot is a YAML source on the Q2 rulings, read by
+# the same parser that reads a taxonomy and a document's front matter.
+headwater-yaml = { path = "../yaml" }
+
+# The pin. A snapshot is checked with `release::verify`, which is the object #77
+# built for a package. Spec 7 says a taxonomy pin, a requirements snapshot pin
+# and a source-export pin all work the same way, so this crate takes the same
+# object rather than writing a second one that would drift from it.
+headwater-resolve = { path = "../resolve" }
+
+# The graph the import lands in. The relation declarations say what an edge may
+# be, and the identifier index says whether the near end of one exists.
+headwater-graph = { path = "../graph" }
+
+# The kind hierarchy, for the one question `Declarations` cannot answer: whether
+# a relation that runs from an abstract kind admits the kind of the document at
+# the near end of a link. `Shape::descends_from` is the reader the endpoint rule
+# already uses, and a second walk of `is_a` would be a second answer to it.
+headwater-check = { path = "../check" }
+
+# The splice. An imported edge goes into a document somebody else wrote, through
+# the one function that guesses an indentation and then parses its own result.
+headwater-scaffold = { path = "../scaffold" }
+
+# Front matter, to read a document back after a splice wrote into it.
+headwater-doc = { path = "../doc" }

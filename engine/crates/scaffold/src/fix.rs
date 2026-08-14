@@ -269,6 +269,7 @@ fn halves_of(path: &str, patches: &[&Patch]) -> Vec<Half> {
             path: path.to_string(),
             relation: relation.clone(),
             id: id.clone(),
+            attributes: Vec::new(),
         });
     }
     out
