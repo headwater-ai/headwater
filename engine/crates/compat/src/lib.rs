@@ -209,8 +209,10 @@ impl Measured {
 /// back. Spec 2 makes any broken dimension force a major version, and a base
 /// that removed a declaration an adopter addresses is exactly that.
 ///
-/// Measured over this repository's own sources, 58 operations found nothing, so
-/// the reading is not one that fires on an ordinary upgrade.
+/// The reading is quiet on a corpus that is right, and
+/// `headwater_resolve`'s `tests/founded.rs` is where that is a case rather than
+/// a sentence: every overlay this repository selects reaches a declaration that
+/// is there.
 pub fn addressability(founded: &[Founding], sources: &[String], refused: Vec<Break>) -> Outcome {
     let mut breaks = refused;
     breaks.extend(founded.iter().map(|founding| Break {
