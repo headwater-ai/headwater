@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
-//! A live document does not rest on a terminal one, where the taxonomy says
-//! the lifecycle of the two ends is part of what the relation means.
+//! A Graph-origin check: a live document does not rest on a terminal one, where
+//! the taxonomy says that the lifecycle of the two ends is part of what the
+//! relation means.
 //!
 //! # The gap this closes
 //!

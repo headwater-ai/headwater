@@ -29,11 +29,14 @@
 //! which is the distinction the two lists have always drawn: the origin is what
 //! a rule reads a declaration from, and the grain is what one instance covers.
 //!
-//! Two of the Graph-origin rules are **document-grained**, which the other
-//! three are not. [`declaration`] and [`identity`] route the phase-A defects
-//! that stop an edge from existing: an edge-scoped instance exists per edge, so
-//! no edge-scoped rule reaches a block whose entries produced none. The origin
-//! is what a rule reads and the grain is what one instance covers, and the two
+//! The eight Graph-origin rules span all four grains. [`target`],
+//! [`reciprocity`], [`endpoint`] and [`dependency`] are edge-grained,
+//! [`participation`] is neighbourhood-grained, [`duplicate`] is corpus-grained,
+//! and [`declaration`] and [`identity`] are **document-grained**. The last two
+//! are the ones worth stating: they route the phase-A defects that stop an edge
+//! from existing, and an edge-scoped instance exists per edge, so no
+//! edge-scoped rule reaches a block whose entries produced none. The origin is
+//! what a rule reads and the grain is what one instance covers, and the two
 //! were never one statement.
 //!
 //! The four Document-origin rules are generated from a declaration in the same
