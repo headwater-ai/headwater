@@ -4,9 +4,9 @@ touched corpus/spec/02-the-second-part.md
 touched corpus/decisions/a-second-successor.md
 touched corpus/decisions/an-earlier-decision.md
 
-9 seen, 9 classified, 9 checked, 100 check instances
+9 seen, 9 classified, 9 checked, 109 check instances
       9 skipped: this document writes no fragment into itself
-      9 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+     18 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
       4 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
 9 documents in the read set, and 1 barrier that no gate carries across a merge
       9 instances of facet.required.missing
@@ -23,6 +23,7 @@ touched corpus/decisions/an-earlier-decision.md
       7 instances of section.required.missing
       9 instances of link.fragment.unresolved
       9 instances of warrant.promoted
+      9 instances of lifecycle.transition.not_permitted
 rules, and for each the scope that binds it
   facet.required.missing
     document scope, one document and its front matter
@@ -60,6 +61,8 @@ rules, and for each the scope that binds it
     document scope, one document, its front matter and its body
   warrant.promoted
     document scope, one document and its front matter, and the version of it that stood before the change
+  lifecycle.transition.not_permitted
+    document scope, one document and its front matter, and the version of it that stood before the change
   coverage.document_unchecked
     corpus scope, every row of the census, and it is a barrier
   obligation.disposition.not_one
@@ -92,6 +95,7 @@ register
   section.required.missing reaches no obligation, so it names none
   link.fragment.unresolved reaches no obligation, so it names none
   warrant.promoted reaches no obligation, so it names none
+  lifecycle.transition.not_permitted reaches no obligation, so it names none
   coverage.document_unchecked reaches no obligation, so it names none
   obligation.disposition.not_one reaches no obligation, so it names none
   control.mechanism.unimplemented reaches no obligation, so it names none
@@ -298,6 +302,24 @@ instances
   warrant.promoted corpus/spec/04-a-scaffolded-fourth-part.md
     skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
   warrant.promoted corpus/standards/a-standard.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  lifecycle.transition.not_permitted corpus/decisions/a-scaffolded-successor.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  lifecycle.transition.not_permitted corpus/decisions/a-second-successor.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  lifecycle.transition.not_permitted corpus/decisions/an-earlier-decision.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  lifecycle.transition.not_permitted corpus/exhausted/the-last-one.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  lifecycle.transition.not_permitted corpus/spec/01-the-first-part.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  lifecycle.transition.not_permitted corpus/spec/02-the-second-part.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  lifecycle.transition.not_permitted corpus/spec/03-the-third-part.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  lifecycle.transition.not_permitted corpus/spec/04-a-scaffolded-fourth-part.md
+    skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  lifecycle.transition.not_permitted corpus/standards/a-standard.md
     skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 
 corpus/standards/a-standard.md:1:1 error

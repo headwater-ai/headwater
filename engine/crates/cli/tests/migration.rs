@@ -60,12 +60,14 @@ const CANDIDATE: [(&[&str], &[&str]); 3] = [
             "    - {value: current,    role: live}",
             "    - {value: superseded, role: terminal-retained}",
             "    - {value: deprecated, role: terminal-retained}",
+            "    - {value: discharged, role: terminal-retained}",
         ],
         &[
             "    - {value: outline,    role: initial}",
             "    - {value: settled,    role: live}",
             "    - {value: provisional}",
             "    - {value: superseded, role: terminal-retained}",
+            "    - {value: discharged, role: terminal-retained}",
         ],
     ),
     (
@@ -74,22 +76,24 @@ const CANDIDATE: [(&[&str], &[&str]); 3] = [
             "      current: the document states what holds now, and a reader may rely on it",
             "      superseded: a later document replaced this one, and the succession edge names it",
             "      deprecated: the document is no longer to be relied on, and nothing replaced it",
+            "      discharged: the document recorded something the corpus owed, the corpus paid it, and the record is kept as the receipt",
         ],
         &[
             "      outline: the document is being written or argued over, and nothing may rely on it",
             "      settled: the document states what holds now and nobody is arguing with it",
             "      provisional: the document states what holds now and the argument is not closed",
             "      superseded: a later document replaced this one, and the succession edge names it",
+            "      discharged: the document recorded something the corpus owed, the corpus paid it, and the record is kept as the receipt",
         ],
     ),
     (
         &[
             "      initial: draft",
-            "      transitions: {draft: [current, deprecated], current: [superseded, deprecated]}",
+            "      transitions: {draft: [current, deprecated], current: [superseded, deprecated, discharged]}",
         ],
         &[
             "      initial: outline",
-            "      transitions: {outline: [provisional, settled], provisional: [settled, superseded], settled: [superseded]}",
+            "      transitions: {outline: [provisional, settled], provisional: [settled, superseded], settled: [superseded, discharged]}",
         ],
     ),
 ];

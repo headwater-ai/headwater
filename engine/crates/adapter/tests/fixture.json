@@ -156,6 +156,12 @@
       "obligations": []
     },
     {
+      "rule": "lifecycle.transition.not_permitted",
+      "scope": "document",
+      "version": 1,
+      "obligations": []
+    },
+    {
       "rule": "coverage.document_unchecked",
       "scope": "corpus",
       "version": 1,

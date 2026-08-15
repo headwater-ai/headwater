@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 2.0.0
+version: 2.1.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -34,6 +34,8 @@ vocabularies:
       role: terminal-retained
     - value: deprecated
       role: terminal-retained
+    - value: discharged
+      role: terminal-retained
 facets:
   status:
     role: state
@@ -46,6 +48,8 @@ facets:
         role: terminal-retained
       - value: deprecated
         role: terminal-retained
+      - value: discharged
+        role: terminal-retained
     required: true
     volatility: mutable
     guidance:
@@ -53,6 +57,7 @@ facets:
       current: "the document states what holds now, and a reader may rely on it"
       superseded: "a later document replaced this one, and the succession edge names it"
       deprecated: "the document is no longer to be relied on, and nothing replaced it"
+      discharged: "the document recorded something the corpus owed, the corpus paid it, and the record is kept as the receipt"
   status_since:
     role: state_entered
     type: date
@@ -153,6 +158,7 @@ regimes:
         current:
           - superseded
           - deprecated
+          - discharged
       retain_terminal: true
   voice:
     declarative:
@@ -731,6 +737,12 @@ obligations:
     class: cohesion
     prevents: process.traceability
     severity: medium
+  OB-LIFE-1:
+    statement: "A document moves between states only along an edge the lifecycle regime of its kind declares"
+    rationale: "One state value cannot say how it was reached, so a corpus run sees a document that skipped every state between where it was and where it is as one that walked there. A machine that admits every movement is a vocabulary with an arrow drawn on it, and the states that a taxonomy went to the trouble of ordering then order nothing"
+    class: cohesion
+    prevents: process.traceability
+    severity: medium
   OB-REG-1:
     statement: "Every obligation this taxonomy declares carries exactly one disposition"
     rationale: "An obligation that no control discharges and that states neither a gap nor an acceptance reads from outside like one that is met, and that silence is how an assurance model decays into a list of good intentions"
@@ -931,6 +943,16 @@ controls:
     promotion:
       permanently_advisory:
         reasoning: "Spec 3 rules the posture directly. \"Forty in one change is a finding about the review rather than about the documents. The posture is advisory permanently, for the reason that the shift ratio is advisory permanently. A threshold teaches people to promote in smaller batches, and nothing declares one.\" A promotion is a legitimate act, so the rule reports a count and never a defect, and there is nothing for a gate to block on until a taxonomy states how many is too many"
+  CT-LIFE-1:
+    mechanism: "check:lifecycle.transition.not_permitted"
+    discharges:
+      - OB-LIFE-1
+    trigger: pull_request
+    posture: blocking
+    acts: detective
+    promotion:
+      final_posture:
+        reasoning: "The promotion path collects evidence about a rule that can be wrong about the text it reads, and this one reads two declared values and one declared edge. A movement it refuses is refused by the taxonomy that the corpus itself resolved, so an advisory period would measure a false-positive rate that the construction fixes at zero, and it would collect that reading while illegal movements landed. Spec 3 states the posture in one sentence, which is that the engine rejects a transition that is not in the declared machine when it lands"
   CT-LANG-1:
     mechanism: "check:language.controlled.not_met"
     discharges:

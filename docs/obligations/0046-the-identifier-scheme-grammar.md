@@ -36,4 +36,6 @@ What the missing member costs is a name. An RDF or SKOS projection has no declar
 
 A meta-schema that declares `prefix`, `namespace` and the local-part form as three members, and nine schemes that write them, discharge this. The rendered form of every identifier stays as it is, which `engine/crates/check/fixtures/identifiers.mint` records scheme by scheme.
 
+This record stays at `current` and it does not reach `discharged`. Half of what it asks for is met. `taxonomy validate` decides disjointness out of the parsed segments, so `identifier integrity` is decided in whole. The half that stays open is the name, and [#217](https://github.com/headwater-ai/headwater/issues/217) tracks it.
+
 The meta-schema has shipped at `engine/crates/meta/meta-schema.yml`. So the change costs a major version of the meta-schema and of the package that reads it. The cost buys a projection that nobody has asked for yet. [Q13](../spec/09-decisions.md#q13--linkml-and-shacl-as-substrate) puts each unbuilt format behind a named external consumer, and none exists. [Spec 3](../spec/03-authoring-and-lifecycle.md#identifiers) is where the grammar belongs.

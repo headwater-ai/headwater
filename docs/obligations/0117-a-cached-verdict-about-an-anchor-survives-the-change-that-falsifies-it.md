@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0117
-status: current
-status_since: 2026-08-14
+status: discharged
+status_since: 2026-08-15
 summary: "The read set of an edge instance holds the declaring document, so a target outside the corpus is in no key and a cached run reports what an uncached run does not."
 last_verified: 2026-08-14
 title: "A cached verdict about an anchor survives the change that falsifies it"

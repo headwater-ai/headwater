@@ -1,0 +1,58 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the transition tree is checked against. It is the smallest shape
+# a state movement needs: one state vocabulary, one lifecycle regime, and two
+# kinds, of which only one binds the regime.
+#
+# `note` is here so that the instance set has a document it must not reach. A
+# kind with no declared machine has no illegal movement to make, and a rule that
+# instantiated over it would report a coverage figure it did not earn.
+#
+# It is a tree of its own rather than two more documents in `fixtures/check/`,
+# for the reason `promotion.taxonomy.yml` is one: a corpus that separates a
+# permitted movement from a refused one has to be read twice, once with the
+# change and once without, and the recorded report of that tree holds one run.
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft,      role: initial}
+      - {value: current,    role: live}
+      - {value: superseded, role: terminal-retained}
+  status_since:
+    role: state_entered
+    required: true
+  summary:
+    role: scent
+    required: true
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current], current: [superseded]}
+      retain_terminal: true
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+kinds:
+  record:
+    identifier: {scheme: note_id}
+    lifecycle: standard
+    facets: {require: [status, status_since, summary]}
+  note:
+    identifier: {scheme: note_id}
+    facets: {require: [status, status_since, summary]}
+
+shelves:
+  records:
+    path: transition/records/**
+    homogeneous: true
+    kind: record
+  notes:
+    path: transition/notes/**
+    homogeneous: true
+    kind: note

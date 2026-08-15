@@ -344,8 +344,8 @@ fn the_state_facet_of_this_repository_carries_the_vocabulary_it_reads() {
     .expect("the state facet declares its values");
     assert_eq!(
         values.value.as_seq().expect("a value set").len(),
-        4,
-        "the four lifecycle states of the base package"
+        5,
+        "the five lifecycle states of the base package"
     );
 }
 
