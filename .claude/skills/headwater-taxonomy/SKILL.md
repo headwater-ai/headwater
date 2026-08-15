@@ -48,13 +48,13 @@ Four judgments are yours, because no validator makes them.
 - **Is this a kind or a facet?** A kind is a species of document and a facet is a property of one. If two documents differ only in a value, they are one kind with a facet.
 - **Does the shelf pattern overlap another?** Placement is primary, so a path that two shelves claim resolves to a kind by accident.
 - **Is the purpose right?** Routing matches a declared purpose against the intent of a task before it matches any text, so a wrong purpose is a wrong answer at the highest-value moment.
-- **Who pays for an edge?** `created_by` names an actor from a closed set, and it is a claim about the world. [OBL-repo-0105](../../../docs/obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md) records two relations that name `hook` where nothing mechanical writes them. Do not write a value that no code and no procedure honors.
+- **Who pays for an edge?** `created_by` names an actor from a closed set, and it is a claim about the world. [HW-OBL-0105](../../../docs/obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md) records two relations that name `hook` where nothing mechanical writes them. Do not write a value that no code and no procedure honors.
 
 ## Three declarations that are easy to forget
 
 **A shelf whose files carry a number owes a `layout`.** Without one the scaffolder names a file from the title alone, and a numbered shelf gains a sibling that sorts by its first letter. `{seq:04d}-{slug}.md` reads the sequence of the identifier that the run mints, so the number is one value rather than two that can disagree. A layout placeholder that nothing fills is a refusal.
 
-**A kind that a relation may name owes an identifier scheme.** Otherwise a document of it is neither end of any edge, `identifier.unusable` reports it on every run, and `headwater new` refuses to write it at all. The base package ships one such kind, and [OBL-repo-0107](../../../docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md) records it.
+**A kind that a relation may name owes an identifier scheme.** Otherwise a document of it is neither end of any edge, `identifier.unusable` reports it on every run, and `headwater new` refuses to write it at all. The base package ships one such kind, and [HW-OBL-0107](../../../docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md) records it.
 
 **A required facet with a closed value set owes a role that determines it, or the kind cannot be scaffolded.** A prompt is not a member of a closed set, so `headwater new` refuses rather than writing a value nobody chose.
 

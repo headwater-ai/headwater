@@ -12,39 +12,39 @@
       ],
       "taxonomy": {
         "package": "headwater/standard",
-        "version": "1.0.0",
-        "lock": "sha256:b6b8539129626a4eecee268ac7d4fc17d0563d677a43c3ab0f90bd1ec3b16da0"
+        "version": "2.0.0",
+        "lock": "sha256:221468a244c429105697ad5a37403f3d1eb9c4ffa03a19ddc40bb2e5cc56d9bc"
       },
       "entry_points": [
         {
           "shelf": "decisions",
           "path": "docs/decisions/0001-implementation-language.md",
-          "id": "DR-repo-0001"
+          "id": "HW-DR-0001"
         },
         {
           "shelf": "evaluations",
           "path": "docs/evaluations/default-taxonomy-first-run.md",
-          "id": "EVAL-HW-default-taxonomy-first-run"
+          "id": "HW-EVAL-default-taxonomy-first-run"
         },
         {
           "shelf": "obligations",
           "path": "docs/obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md",
-          "id": "OBL-repo-0001"
+          "id": "HW-OBL-0001"
         },
         {
           "shelf": "probes",
           "path": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
-          "id": "PROBE-HW-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor"
+          "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor"
         },
         {
           "shelf": "reviews",
           "path": "docs/reviews/core-concepts-findings-assessment.md",
-          "id": "REV-HW-core-concepts-assessment"
+          "id": "HW-REV-core-concepts-assessment"
         },
         {
           "shelf": "spec_series",
           "path": "docs/spec/00-vision-and-scope.md",
-          "id": "SPEC-HW-vision-and-scope"
+          "id": "HW-SPEC-vision-and-scope"
         }
       ],
       "exports": []

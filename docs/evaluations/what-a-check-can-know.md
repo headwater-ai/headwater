@@ -1,5 +1,5 @@
 ---
-id: EVAL-HW-what-a-check-can-know
+id: HW-EVAL-what-a-check-can-know
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -13,14 +13,14 @@ provenance:
   evidence_basis: evidenced
 relations:
   cited_by:
-    - REG-HW-decisions
-    - SPEC-HW-taxonomy-model
-    - SPEC-HW-authoring-and-lifecycle
-    - SPEC-HW-assurance-model
-    - SPEC-HW-engine-architecture
-    - SPEC-HW-theoretical-foundations
-    - SPEC-HW-adjacent-work
-    - SPEC-HW-check-layer
+    - HW-REG-decisions
+    - HW-SPEC-taxonomy-model
+    - HW-SPEC-authoring-and-lifecycle
+    - HW-SPEC-assurance-model
+    - HW-SPEC-engine-architecture
+    - HW-SPEC-theoretical-foundations
+    - HW-SPEC-adjacent-work
+    - HW-SPEC-check-layer
   traces_to:
     - engine/crates/check/src/language.rs
 ---

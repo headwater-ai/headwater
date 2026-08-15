@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0013
+id: HW-DR-0013
 title: Q13 — LinkML and SHACL as substrate
 status: current
 status_since: 2026-08-11
@@ -14,9 +14,9 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - EVAL-HW-graph-export-and-federation
-    - EVAL-HW-linkml-worked-example
-    - EVAL-HW-shacl-worked-example
+    - HW-EVAL-graph-export-and-federation
+    - HW-EVAL-linkml-worked-example
+    - HW-EVAL-shacl-worked-example
 ---
 
 # Q13 — LinkML and SHACL as substrate

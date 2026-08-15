@@ -1,5 +1,5 @@
 ---
-id: EVAL-HW-schema-format-walkthrough
+id: HW-EVAL-schema-format-walkthrough
 status: current
 status_since: 2026-08-10
 last_verified: 2026-08-10
@@ -13,10 +13,10 @@ provenance:
   evidence_basis: evidenced
 relations:
   cited_by:
-    - REG-HW-decisions
-    - SPEC-HW-taxonomy-model
-    - SPEC-HW-theoretical-foundations
-    - SPEC-HW-adjacent-work
+    - HW-REG-decisions
+    - HW-SPEC-taxonomy-model
+    - HW-SPEC-theoretical-foundations
+    - HW-SPEC-adjacent-work
 ---
 
 # Choosing the schema format — a cognitive-dimensions walkthrough

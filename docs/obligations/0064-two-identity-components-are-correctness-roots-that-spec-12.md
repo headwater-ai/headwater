@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0064
+id: HW-OBL-0064
 title: "Two identity components are correctness roots that spec 12 does not cover"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-check-layer
+    - HW-SPEC-check-layer
 ---
 
 # Two identity components are correctness roots that spec 12 does not cover

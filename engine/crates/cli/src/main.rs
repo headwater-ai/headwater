@@ -492,7 +492,7 @@ fn main() -> ExitCode {
                     _ => {
                         return fail(
                             "--relates takes `<relation>=<identifier>`, as in \
-                             `--relates supersedes=DR-repo-0007`",
+                             `--relates supersedes=HW-DR-0007`",
                         )
                     }
                 },
@@ -2276,7 +2276,7 @@ fn explain(root: &Path, target: &str) -> ExitCode {
 /// [Q4](../../../../docs/decisions/0004-relation-storage.md) keeps `created_by`
 /// on the relation type, so a later reader of a committed corpus cannot tell a
 /// scaffolded edge from a hand-typed one.
-/// [OBL-repo-0001](../../../../docs/obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md)
+/// [HW-OBL-0001](../../../../docs/obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md)
 /// holds the debt that nothing trends this number yet.
 fn new(
     root: &Path,
@@ -2321,7 +2321,7 @@ fn new(
 /// the second authoring path this repository rules against.
 ///
 /// **The surface is an argument here and a decision at each boundary.** It is
-/// the term [OBL-repo-0004](../../../../docs/obligations/0004-working-tree-write-tools-have-no-measured-effect.md)
+/// the term [HW-OBL-0004](../../../../docs/obligations/0004-working-tree-write-tools-have-no-measured-effect.md)
 /// asks the capture-cost store for, and it is the one input that is a fact
 /// about the caller rather than about the corpus.
 fn scaffold(
@@ -2787,7 +2787,7 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
             );
         }
 
-        // The two arms of OBL-repo-0004, as a grouping and never as a
+        // The two arms of HW-OBL-0004, as a grouping and never as a
         // comparison. Q7 claims that a write tool raises the fraction, and a
         // claim of that shape needs a powered comparison rather than two rows
         // that differ.
@@ -2812,7 +2812,7 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
         }
         println!(
             "  the surface is the entry point a run was made at, and never who drove it. A person \
-             at a client and an agent at the same client are one reading, which OBL-repo-0111 \
+             at a client and an agent at the same client are one reading, which HW-OBL-0111 \
              records"
         );
     }
@@ -2919,7 +2919,7 @@ fn sweep_plan(root: &Path, under: Option<String>) -> ExitCode {
 /// The report prints the front matter that would declare a proposed edge and
 /// never writes it. A proposal an agent applies to itself is the same act as an
 /// agent accepting its own draft, which is what
-/// [OBL-repo-0108](../../../../docs/obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md)
+/// [HW-OBL-0108](../../../../docs/obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md)
 /// records. So there is no `--write`, and this is the one verb of the write
 /// path that has none.
 fn sweep_report(root: &Path, path: &Path, format: Option<String>) -> ExitCode {
@@ -4509,7 +4509,7 @@ corpus:
 # has no edges, and no check about an edge can say anything about it.
 #
 #   add:
-#     identifier_schemes.doc_id: {{pattern: \"DOC-{{namespace}}-{{slug}}\", namespace: ACME, allocation: minted-once}}
+#     identifier_schemes.doc_id: {{pattern: \"{{namespace}}-DOC-{{slug}}\", namespace: ACME, allocation: minted-once}}
 #     kinds.<kind>.identifier: {{scheme: doc_id}}
 #
 # INTERVIEW 3 --- what does this corpus already write?

@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0098
+id: HW-OBL-0098
 title: "Whether a withheld anchor needs a class beside its count"
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0017
+    - HW-DR-0017
 ---
 
 # Whether a withheld anchor needs a class beside its count

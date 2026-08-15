@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0024
+id: HW-OBL-0024
 title: "Whether any corpus other than this one needs a retired-term lexicon"
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0021
+    - HW-DR-0021
 ---
 
 # Whether any corpus other than this one needs a retired-term lexicon

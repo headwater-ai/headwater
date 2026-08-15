@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0022
+id: HW-OBL-0022
 title: "Whether the transcription projection ships at all"
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0019
+    - HW-DR-0019
 ---
 
 # Whether the transcription projection ships at all

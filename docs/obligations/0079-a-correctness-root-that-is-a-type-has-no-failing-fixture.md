@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0079
+id: HW-OBL-0079
 title: "A correctness root that is a type has no failing fixture"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-check-layer
+    - HW-SPEC-check-layer
 ---
 
 # A correctness root that is a type has no failing fixture

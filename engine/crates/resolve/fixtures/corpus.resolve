@@ -1,4 +1,4 @@
-headwater/standard 1.0.0
+headwater/standard 2.0.0
 
 sources, in application order
   packages/headwater-standard/taxonomy.yml
@@ -33,6 +33,8 @@ operations
   add.obligations.OB-DR-1 (docs/taxonomies/decision-record/bundle.yml)
   add.obligations.OB-DR-2 (docs/taxonomies/decision-record/bundle.yml)
   add.obligations.OB-DR-3 (docs/taxonomies/decision-record/bundle.yml)
+  add.identifier_schemes.decision_id.namespace (.headwater/overlay.yml)
+  add.identifier_schemes.obligation_record_id.namespace (.headwater/overlay.yml)
   add.identifier_schemes.spec_id (.headwater/overlay.yml)
   add.identifier_schemes.register_id (.headwater/overlay.yml)
   add.identifier_schemes.evaluation_id (.headwater/overlay.yml)
@@ -68,7 +70,7 @@ operations
 
 declarations, by member count
   taxonomy: headwater/standard
-  version: 1.0.0
+  version: 2.0.0
   purposes: 4 members
   vocabularies: 1 member
   facets: 12 members
@@ -96,7 +98,7 @@ rule by rule
     on the result: one resolver per anchor kind, and no two anchor kinds share a namespace
   identifier integrity (in part)
     on the result: every scheme carries a namespace, and no two schemes in one namespace share a literal prefix
-    not decided: the prefix is a literal inside the `pattern` string, so the engine compares the text before the first placeholder and cannot decide two patterns whose placeholders overlap. Spec 13 carries the grammar
+    not decided: the prefix is a literal inside the `pattern` string. The engine expands the declared namespace and compares the text up to the first placeholder left, so it decides a pattern whose literal segment follows the namespace and still cannot decide two whose free placeholders meet. Spec 13 carries the grammar
   coverage
     on the result: every shelf reaches a kind, every concrete kind is reached by a shelf, and an abstract kind is reached by none
   kind inheritance

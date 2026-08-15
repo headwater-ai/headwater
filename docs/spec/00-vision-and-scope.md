@@ -1,5 +1,5 @@
 ---
-id: SPEC-HW-vision-and-scope
+id: HW-SPEC-vision-and-scope
 status: current
 status_since: 2026-08-01
 last_verified: 2026-08-11
@@ -15,9 +15,9 @@ provenance:
   evidence_basis: evidenced
 relations:
   cites_evidence:
-    - EVAL-HW-default-taxonomy-first-run
-    - EVAL-HW-first-contact
-    - EVAL-HW-the-serving-boundary
+    - HW-EVAL-default-taxonomy-first-run
+    - HW-EVAL-first-contact
+    - HW-EVAL-the-serving-boundary
 ---
 
 # 0 — Vision and scope

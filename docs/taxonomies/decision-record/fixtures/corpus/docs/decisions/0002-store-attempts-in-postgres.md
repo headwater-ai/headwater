@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0002
+id: HW-DR-0002
 title: Store attempts in Postgres rather than in the queue
 status: current
 status_since: 2026-04-02
@@ -14,7 +14,7 @@ relations:
   traces_to:
     - EVAL-repo-retry-ceiling
   conflicts_with:
-    - DR-repo-0006
+    - HW-DR-0006
 ---
 
 # Store attempts in Postgres rather than in the queue

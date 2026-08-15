@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0095
+id: HW-OBL-0095
 title: "Whether the RDF emitter carries `owl:inverseOf`"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0013
+    - HW-DR-0013
 ---
 
 # Whether the RDF emitter carries `owl:inverseOf`

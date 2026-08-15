@@ -1,5 +1,5 @@
 ---
-id: EVAL-HW-the-measurement-layer
+id: HW-EVAL-the-measurement-layer
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -13,15 +13,15 @@ provenance:
   evidence_basis: evidenced
 relations:
   cited_by:
-    - REG-HW-decisions
-    - SPEC-HW-authoring-and-lifecycle
-    - SPEC-HW-assurance-model
-    - SPEC-HW-ai-integration
-    - SPEC-HW-engine-architecture
-    - SPEC-HW-theoretical-foundations
-    - SPEC-HW-adjacent-work
-    - SPEC-HW-check-layer
-    - SPEC-HW-glossary
+    - HW-REG-decisions
+    - HW-SPEC-authoring-and-lifecycle
+    - HW-SPEC-assurance-model
+    - HW-SPEC-ai-integration
+    - HW-SPEC-engine-architecture
+    - HW-SPEC-theoretical-foundations
+    - HW-SPEC-adjacent-work
+    - HW-SPEC-check-layer
+    - HW-SPEC-glossary
 ---
 
 # The measurement layer — the Q8 and Q20 evaluation
@@ -55,7 +55,7 @@ Twenty claims across the specification and the evaluations name an instrument. T
 | Harvest keeps a solution-tier route query under 100 ms ([Q9](../spec/09-open-questions.md#q9--multi-repository-corpora)) | route latency at the tier | benchmark | Declared. Needs a real tier |
 | Publishing the read set lets a gate skip a re-run ([Q21](../spec/09-open-questions.md#q21--terminological-succession-and-validity-under-merge)) | the fraction of merges whose read set the other side never touched | history measurement | Needs the engine. The exposure prior is measured |
 | Declarative voice is detectable at useful precision ([Q5](../spec/09-open-questions.md#q5--voice-checking-depth)) | an adjudicated sample of 50 findings per category | human adjudication | Specified in full, and unrun |
-| Working-tree write tools raise the assisted fraction ([Q7](../spec/09-open-questions.md#q7--scope-of-the-mcp-surface)) | the assisted fraction with the tools on and off | engine metric, paired | **No design exists for the pair.** One team cannot author the same corpus twice, and the arms contaminate each other. The metric now has a store, and the store carries no term that names which arm produced a reading. [OBL-repo-0004](../obligations/0004-working-tree-write-tools-have-no-measured-effect.md) records that the issue registering a write tool owes one |
+| Working-tree write tools raise the assisted fraction ([Q7](../spec/09-open-questions.md#q7--scope-of-the-mcp-surface)) | the assisted fraction with the tools on and off | engine metric, paired | **No design exists for the pair.** One team cannot author the same corpus twice, and the arms contaminate each other. The metric now has a store, and the store carries no term that names which arm produced a reading. [HW-OBL-0004](../obligations/0004-working-tree-write-tools-have-no-measured-effect.md) records that the issue registering a write tool owes one |
 | Transition continuity measures coherence ([spec 10 §G](../spec/10-theoretical-foundations.md#what-the-theory-did-not-settle)) | the distribution across healthy and unhealthy corpora | comparison | **The comparison set does not exist**, and nothing in the specification defines what labels a corpus healthy |
 
 ### What the audit shows

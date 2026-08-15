@@ -35,7 +35,7 @@
 //! it is the only reading here that produces a finding. Every other reading is
 //! a distribution printed with its population beside it, and the report says
 //! that no declaration turns it into a verdict.
-//! [OBL-repo-0119](../../../../docs/obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md)
+//! [HW-OBL-0119](../../../../docs/obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md)
 //! holds the gap.
 //!
 //! # The grain of a creator reading is a relation
@@ -220,7 +220,7 @@ pub struct ShelfReading {
 /// [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#templates-and-scaffolding)
 /// makes a layout a convention at birth: `headwater new` writes the name and no
 /// check reads it afterwards, so a rename answers to nothing
-/// ([OBL-repo-0106](../../../../docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md)).
+/// ([HW-OBL-0106](../../../../docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md)).
 /// This reading is what says how far the convention has drifted, and it is here
 /// rather than in that record because a figure a document holds is a figure
 /// nobody re-derives.
@@ -645,7 +645,7 @@ fn waiting(classified: &[&Row], graph: &Graph, shape: &Shape) -> Vec<Waiting> {
                 supply: match cues(graph) {
                     0 => Supply::Unauthored(format!(
                         "no half of the {halves} this corpus declares carries a `{}` attribute, \
-                         which OBL-repo-0023 records",
+                         which HW-OBL-0023 records",
                         headwater_graph::edges::CUE
                     )),
                     n => Supply::Supplied(format!(

@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0038
+id: HW-OBL-0038
 title: "A corpus that never runs `generate --check` has no test of a generated-file marker"
 status: current
 status_since: 2026-08-13
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-engine-architecture
+    - HW-SPEC-engine-architecture
 ---
 
 # A corpus that never runs `generate --check` has no test of a generated-file marker

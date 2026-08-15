@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0001
+id: HW-OBL-0001
 title: The deduplication window length is unmeasured
 status: current
 status_since: 2026-03-20
@@ -12,7 +12,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0004
+    - HW-DR-0004
   discharged_by:
     - EVAL-repo-retry-ceiling
 ---

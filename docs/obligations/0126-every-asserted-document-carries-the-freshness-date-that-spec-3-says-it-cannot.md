@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0126
+id: HW-OBL-0126
 status: draft
 status_since: 2026-08-15
 summary: "Spec 3 rules that an `asserted` document cannot carry `last_verified`. The facet contract requires it on every kind that has one, and nine of nine asserted documents carry it."
@@ -13,7 +13,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-authoring-and-lifecycle
+    - HW-SPEC-authoring-and-lifecycle
 ---
 
 # Every asserted document carries the freshness date that spec 3 says it cannot
@@ -36,6 +36,6 @@ Three answers are open and each says something different about what a warrant me
 
 ## Discharge
 
-A ruling that names which of the three holds, recorded where the next author meets it. If spec 3 stands, the facet contract needs a declaration that makes `last_verified` conditional on the warrant. [OBL-repo-0123](0123-a-facet-that-applies-to-one-value-of-another-facet-has-nowhere-to-say-so.md) already reports that such a declaration has nowhere to be stated. If the facet contract stands, the sentence in spec 3 goes and the pairing table gains a row.
+A ruling that names which of the three holds, recorded where the next author meets it. If spec 3 stands, the facet contract needs a declaration that makes `last_verified` conditional on the warrant. [HW-OBL-0123](0123-a-facet-that-applies-to-one-value-of-another-facet-has-nowhere-to-say-so.md) already reports that such a declaration has nowhere to be stated. If the facet contract stands, the sentence in spec 3 goes and the pairing table gains a row.
 
-This is not settled by an agent. The question is what an acceptance stamp and a freshness date each mean, which is the same question [OBL-repo-0108](0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md) and [OBL-repo-0125](0125-nine-documents-state-a-warrant-the-closed-set-does-not-hold-and-no-check-reads-one.md) put to a human. An agent that answered it would be deciding what stands behind its own drafts.
+This is not settled by an agent. The question is what an acceptance stamp and a freshness date each mean, which is the same question [HW-OBL-0108](0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md) and [HW-OBL-0125](0125-nine-documents-state-a-warrant-the-closed-set-does-not-hold-and-no-check-reads-one.md) put to a human. An agent that answered it would be deciding what stands behind its own drafts.

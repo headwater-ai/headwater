@@ -8,7 +8,7 @@
 //! state facts that no reader and no rule ever asks for.
 //!
 //! A projection that takes over the path of a document is a different artifact.
-//! `docs/spec/09-open-questions.md` carries `REG-HW-open-questions`, and three
+//! `docs/spec/09-open-questions.md` carries `HW-REG-open-questions`, and three
 //! documents name that identifier. A file at that path with no front matter
 //! holds no identifier, so it is no node, so every one of those three edges
 //! resolves to nothing. The census admits a generated Markdown document that

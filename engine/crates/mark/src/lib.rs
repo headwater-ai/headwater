@@ -301,7 +301,7 @@ mod tests {
     #[test]
     fn a_markdown_document_carries_the_marker_inside_its_front_matter_block() {
         let generated = format!(
-            "---\nid: REG-HW-open-questions\n{}\n---\n\n## Q1\n",
+            "---\nid: HW-REG-open-questions\n{}\n---\n\n## Q1\n",
             marker_member("shelf_sections")
         );
         assert!(carries_marker("docs/spec/09-open-questions.md", &generated));
@@ -314,7 +314,7 @@ mod tests {
         // block, and a body that quotes one is prose. This repository's own
         // specification is a document that does exactly that.
         let quoting = format!(
-            "---\nid: SPEC-HW-engine\n---\n\nA projection writes {}.\n",
+            "---\nid: HW-SPEC-engine\n---\n\nA projection writes {}.\n",
             marker_member("shelf_sections")
         );
         assert!(!carries_marker(
@@ -326,7 +326,7 @@ mod tests {
         // rule either, because the block ends at the first fence after the
         // first line.
         let fenced = format!(
-            "---\nid: SPEC-HW-engine\n---\n\n---\n{}\n---\n",
+            "---\nid: HW-SPEC-engine\n---\n\n---\n{}\n---\n",
             marker_member("shelf_sections")
         );
         assert!(!carries_marker(

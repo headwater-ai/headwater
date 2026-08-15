@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0013
+id: HW-OBL-0013
 title: "No probe tests whether a counted tombstone stops a confident report of absence"
 status: current
 status_since: 2026-08-10
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0017
+    - HW-DR-0017
 ---
 
 # No probe tests whether a counted tombstone stops a confident report of absence

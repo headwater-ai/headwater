@@ -133,6 +133,6 @@ what this verb does not measure, and what each one waits on
   scent quality — waits
     a cue authored on an edge instance
       nothing authored one — no half of the 6 this corpus declares carries a `cue`
-      attribute, which OBL-repo-0023 records
+      attribute, which HW-OBL-0023 records
   2 of 2 still wait. Each one states what ends it: a declaration, or an
   authoring pass over a corpus.

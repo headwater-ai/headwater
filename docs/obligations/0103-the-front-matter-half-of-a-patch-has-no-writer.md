@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0103
+id: HW-OBL-0103
 title: "The front-matter half of a patch has no writer"
 status: current
 status_since: 2026-08-14
@@ -14,9 +14,9 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-check-layer
-    - SPEC-HW-authoring-and-lifecycle
-    - SPEC-HW-taxonomy-model
+    - HW-SPEC-check-layer
+    - HW-SPEC-authoring-and-lifecycle
+    - HW-SPEC-taxonomy-model
 ---
 
 # The front-matter half of a patch has no writer
@@ -41,10 +41,10 @@ Two questions follow, and the first now has an answer for one shape of edit.
 
 The first is what a front-matter read-back compares. `taxonomy migrate --apply` answers it for a replacement, and the expectation is a value rather than a diff. The value is the scalar list of the source with the moved entries substituted. The other answer, a comparison of the spans of the keys that stayed, holds a weaker property and nothing takes it. A deletion, a re-order and an addition each need an expectation of their own, and no document states one.
 
-The second is the grain. [OBL-repo-0088](0088-correcting-an-identifier-is-mechanical-and-it-is-not-local.md) records that correcting an identifier is mechanical and reaches every document that cites it. A patch shape that names one file cannot express that repair, and this record is where the shape would gain the reach.
+The second is the grain. [HW-OBL-0088](0088-correcting-an-identifier-is-mechanical-and-it-is-not-local.md) records that correcting an identifier is mechanical and reaches every document that cites it. A patch shape that names one file cannot express that repair, and this record is where the shape would gain the reach.
 
 ## Discharge
 
-A patch shape that writes a facet, under a read-back that a reader can state in one sentence. `headwater taxonomy migrate --apply` supplies the read-back and not the patch shape. It writes a facet, it is no `Patch`, and no rule reaches it. What stays open is the variant `check --fix` carries, an expectation for an edit that moves a key, and the reach that [OBL-repo-0088](0088-correcting-an-identifier-is-mechanical-and-it-is-not-local.md) prices. Each way the read-back refuses owes a failing fixture. `shelf.placement_is_primary` is the first customer and its patch is a deletion, and the fixture corpus already holds the document that fails the rule.
+A patch shape that writes a facet, under a read-back that a reader can state in one sentence. `headwater taxonomy migrate --apply` supplies the read-back and not the patch shape. It writes a facet, it is no `Patch`, and no rule reaches it. What stays open is the variant `check --fix` carries, an expectation for an edit that moves a key, and the reach that [HW-OBL-0088](0088-correcting-an-identifier-is-mechanical-and-it-is-not-local.md) prices. Each way the read-back refuses owes a failing fixture. `shelf.placement_is_primary` is the first customer and its patch is a deletion, and the fixture corpus already holds the document that fails the rule.
 
-Until then every rule whose remedy is a facet reports remediation prose, and `fixable` in a report stays the narrow reading that [OBL-repo-0087](0087-fixable-has-two-readings-inside-one-engine.md) settled.
+Until then every rule whose remedy is a facet reports remediation prose, and `fixable` in a report stays the narrow reading that [HW-OBL-0087](0087-fixable-has-two-readings-inside-one-engine.md) settled.

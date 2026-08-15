@@ -729,7 +729,7 @@ check/spec/10-suppressed.md:27:1 warn
   language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words a sentence, and this one has 31
   fix: split the sentence, or move a clause into its own sentence
 check/spec/11-identifier-mismatch.md:2:1 error
-  identifier.pattern.not_met (OB-FIX-23): `SPEC-HW-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `HW-mismatch` is where the namespace `FIX` was expected
+  identifier.pattern.not_met (OB-FIX-23): `SPEC-XX-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `XX-mismatch` is where the namespace `FIX` was expected
   fix: write the identifier of check/spec/11-identifier-mismatch.md in the form `SPEC-FIX-<slug>`
 check/spec/13-dangling.md:9:7 error
   relation.target.unresolved (OB-FIX-24): `SPEC-FIX-dangling` declares `assesses: SPEC-FIX-no-such-document`, and that target resolves to nothing at all

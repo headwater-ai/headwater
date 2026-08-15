@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0068
+id: HW-OBL-0068
 title: "The promotion record has three members and no unit, scale or shape"
 status: current
 status_since: 2026-08-13
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-assurance-model
+    - HW-SPEC-assurance-model
 ---
 
 # The promotion record has three members and no unit, scale or shape

@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0006
+id: HW-DR-0006
 title: Hold hot attempt state in Redis
 status: current
 status_since: 2026-05-30
@@ -12,7 +12,7 @@ provenance:
   evidence_basis: unevidenced
 relations:
   conflicts_with:
-    - DR-repo-0002
+    - HW-DR-0002
 ---
 
 # Hold hot attempt state in Redis
@@ -27,4 +27,4 @@ Beacon holds attempt state in Redis for the length of the retry window, and writ
 
 ## Consequences
 
-Two stores hold the same state, and an operator reading during the window reads Redis. This record and `DR-repo-0002` are both current and they contradict each other, which is what the planted conflict is here to report.
+Two stores hold the same state, and an operator reading during the window reads Redis. This record and `HW-DR-0002` are both current and they contradict each other, which is what the planted conflict is here to report.

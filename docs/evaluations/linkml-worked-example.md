@@ -1,5 +1,5 @@
 ---
-id: EVAL-HW-linkml-worked-example
+id: HW-EVAL-linkml-worked-example
 status: current
 status_since: 2026-08-02
 last_verified: 2026-08-11
@@ -13,8 +13,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   cited_by:
-    - REG-HW-decisions
-    - SPEC-HW-adjacent-work
+    - HW-REG-decisions
+    - HW-SPEC-adjacent-work
 ---
 
 # The Headwater taxonomy in LinkML — a worked example
@@ -95,7 +95,7 @@ slots:
     description: Stable, globally unique, resolvable without its document.
     identifier: true
     structured_pattern:
-      syntax: "DR-{namespace}-{seq}"
+      syntax: "{namespace}-DR-{seq}"
       interpolated: true
 
   status:

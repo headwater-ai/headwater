@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0018
+id: HW-OBL-0018
 title: "The bundle set is a guess about how adopters cluster"
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0003
+    - HW-DR-0003
 ---
 
 # The bundle set is a guess about how adopters cluster

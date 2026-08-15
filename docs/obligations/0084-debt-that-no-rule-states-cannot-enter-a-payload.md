@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0084
+id: HW-OBL-0084
 title: "Debt that no rule states cannot enter a payload"
 status: current
 status_since: 2026-08-13
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-ai-integration
-    - SPEC-HW-distribution-and-federation
+    - HW-SPEC-ai-integration
+    - HW-SPEC-distribution-and-federation
 ---
 
 # Debt that no rule states cannot enter a payload

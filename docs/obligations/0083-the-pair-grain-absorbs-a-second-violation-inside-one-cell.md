@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0083
+id: HW-OBL-0083
 title: "The pair grain absorbs a second violation inside one cell"
 status: current
 status_since: 2026-08-13
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-distribution-and-federation
+    - HW-SPEC-distribution-and-federation
 ---
 
 # The pair grain absorbs a second violation inside one cell

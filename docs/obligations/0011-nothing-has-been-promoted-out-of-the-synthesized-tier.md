@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0011
+id: HW-OBL-0011
 title: "Nothing has been promoted out of the synthesized tier"
 status: current
 status_since: 2026-08-10
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0015
+    - HW-DR-0015
 ---
 
 # Nothing has been promoted out of the synthesized tier

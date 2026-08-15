@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0124
+id: HW-OBL-0124
 status: current
 status_since: 2026-08-14
 summary: "The grader writes verdicts to standard output, no kind types a result, and the standing test spec 12 names cannot run."
@@ -13,7 +13,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-ai-integration
+    - HW-SPEC-ai-integration
 ---
 
 # A probe result is printed and never committed, so nothing regenerates one

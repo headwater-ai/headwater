@@ -1,5 +1,5 @@
 ---
-id: EVAL-HW-graph-export-and-federation
+id: HW-EVAL-graph-export-and-federation
 status: current
 status_since: 2026-08-10
 last_verified: 2026-08-10
@@ -13,14 +13,14 @@ provenance:
   evidence_basis: evidenced
 relations:
   cited_by:
-    - REG-HW-decisions
-    - SPEC-HW-conceptual-model
-    - SPEC-HW-taxonomy-model
-    - SPEC-HW-engine-architecture
-    - SPEC-HW-distribution-and-federation
-    - SPEC-HW-adjacent-work
-    - SPEC-HW-check-layer
-    - SPEC-HW-glossary
+    - HW-REG-decisions
+    - HW-SPEC-conceptual-model
+    - HW-SPEC-taxonomy-model
+    - HW-SPEC-engine-architecture
+    - HW-SPEC-distribution-and-federation
+    - HW-SPEC-adjacent-work
+    - HW-SPEC-check-layer
+    - HW-SPEC-glossary
 ---
 
 # The graph, its export, and the tier above it

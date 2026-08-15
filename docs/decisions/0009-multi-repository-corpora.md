@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0009
+id: HW-DR-0009
 title: Q9 — Multi-repository corpora
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - EVAL-HW-graph-export-and-federation
+    - HW-EVAL-graph-export-and-federation
 ---
 
 # Q9 — Multi-repository corpora

@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0018
+id: HW-DR-0018
 title: Q18 — Recording adjudicated disagreements
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - EVAL-HW-warrant-and-adjudication
+    - HW-EVAL-warrant-and-adjudication
 ---
 
 # Q18 — Recording adjudicated disagreements

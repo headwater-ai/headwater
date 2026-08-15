@@ -1,12 +1,12 @@
 ---
-id: SPEC-HW-example
+id: HW-SPEC-example
 provenance:
   warrant: accepted
   drafted_by: [claude-opus-5]
 relations:
   cites_evidence:
-    - EVAL-HW-language-spike-results
-    - EVAL-HW-relation-storage
+    - HW-EVAL-language-spike-results
+    - HW-EVAL-relation-storage
 stable: no
 ---
 

@@ -1,5 +1,5 @@
 ---
-id: SPEC-HW-taxonomy-model
+id: HW-SPEC-taxonomy-model
 status: current
 status_since: 2026-08-01
 last_verified: 2026-08-12
@@ -15,13 +15,13 @@ provenance:
   evidence_basis: evidenced
 relations:
   cites_evidence:
-    - EVAL-HW-default-taxonomy-first-run
-    - EVAL-HW-graph-export-and-federation
-    - EVAL-HW-relation-storage
-    - EVAL-HW-schema-format-walkthrough
-    - EVAL-HW-the-serving-boundary
-    - EVAL-HW-warrant-and-adjudication
-    - EVAL-HW-what-a-check-can-know
+    - HW-EVAL-default-taxonomy-first-run
+    - HW-EVAL-graph-export-and-federation
+    - HW-EVAL-relation-storage
+    - HW-EVAL-schema-format-walkthrough
+    - HW-EVAL-the-serving-boundary
+    - HW-EVAL-warrant-and-adjudication
+    - HW-EVAL-what-a-check-can-know
 ---
 
 # 2 — The taxonomy model
@@ -210,9 +210,9 @@ kinds:
 
 identifier_schemes:
   decision_id:
-    pattern: "DR-{namespace}-{seq:04d}"
-    namespace: repo                    # globally unique when vendored
+    pattern: "{namespace}-DR-{seq:04d}"  # the namespace opens the identifier
     allocation: reconcile-first        # never reuse; scan before minting
+                                       # no namespace here: a package cannot name one
 
 core:                                  # what overlays may never remove or redefine
   requires:
@@ -223,7 +223,7 @@ core:                                  # what overlays may never remove or redef
     - purpose: behavior
     - relation_family: succession
       lifecycle_sensitive: true
-    - identifier_scheme: namespaced    # rename at will, never drop the namespace
+    - identifier_scheme: decision_id   # rewrite the pattern at will, never remove the scheme
 
 projections:
   - kind: shelf_index
@@ -580,9 +580,11 @@ core:
 
 Without this, "the same taxonomy" means nothing. If a consumer may override or remove anything, two consumers of one package can share no structure at all. The publisher then has no answer to "are they still using the method?"
 
-**The core is semantic, not lexical.** It constrains *roles and purposes*, never names or paths. An adopter may rename every shelf, relocate every directory, change identifier patterns except the namespace, and replace the lifecycle vocabulary — and still satisfy the core. The condition is that after resolution *some* facet carries the state role, *some* kind serves the `rationale` purpose, and lineage remains expressible and lifecycle-sensitive.
+**The core is semantic, not lexical.** It constrains *roles and purposes*, never names or paths. An adopter may rename every shelf, relocate every directory, rewrite every identifier pattern, and replace the lifecycle vocabulary — and still satisfy the core. The condition is that after resolution *some* facet carries the state role, *some* kind serves the `rationale` purpose, and lineage remains expressible and lifecycle-sensitive.
 
-The identifier namespace is the one lexical requirement, and it earns the exception. An identifier is minted to travel: it appears in commit messages, code comments, tickets, and agent prompts ([spec 3](03-authoring-and-lifecycle.md#identifiers)). A corpus can rewrite its own documents at any time, and it can never rewrite a ticket that somebody else owns. So a namespace is cheap at minting and unrecoverable later, which is the whole of [departure 7](08-design-departures.md#7-identifier-namespacing-arrives-late).
+The identifier namespace is the one lexical requirement, and the core does not carry it. `identifier integrity` requires one on every resolved scheme, and no core entry can ask for the same thing. `core.requires` has an identifier form, and that form names a scheme an overlay may not remove. An identifier is minted to travel: it appears in commit messages, code comments, tickets, and agent prompts ([spec 3](03-authoring-and-lifecycle.md#identifiers)). A corpus can rewrite its own documents at any time, and it can never rewrite a ticket that somebody else owns. So a namespace is cheap at minting and unrecoverable later, which is the whole of [departure 7](08-design-departures.md#7-identifier-namespacing-arrives-late).
+
+The value is the adopter's and no package states it. A package that named a namespace would give one to every corpus that adopts it, and a stand-in such as `repo` names nobody at all. So a package declares none, and the consumer's overlay declares one. The namespace opens the pattern, because a rendered identifier reads outermost part first, as `PROJ-123` and `owner/repo#n` do. [Q25](09-decisions.md#q25--where-the-namespace-goes-in-an-identifier-and-who-declares-it) is the ruling on both halves.
 
 That is the boundary-object property stated precisely: plastic enough to adapt to local practice, robust enough to keep a common identity across sites. Local form is entirely negotiable. Shared meaning is not.
 
@@ -701,7 +703,7 @@ extends: headwater/standard@2.1.0
 
 override:
   shelves.decisions.path: docs/adr/**            # we call them ADRs
-  identifier_schemes.decision_id.pattern: "ADR-{namespace}-{seq:03d}"   # rename at will, the namespace stays
+  identifier_schemes.decision_id.pattern: "{namespace}-ADR-{seq:03d}"   # rename at will, the namespace stays outermost
   vocabularies.lifecycle_state:                  # our lifecycle, our names
     - {value: draft,   role: initial}
     - {value: active,  role: live}
@@ -794,7 +796,7 @@ The taxonomy language has a formal schema, published with the engine and version
 - **reference well-formedness** — every address and every `$`-reference parses under [the sublanguage](#the--reference-sublanguage). A reference names a root from the closed set, and the node it reads is not a second reference. An address names a node that exists, and it reaches no position in a list.
 - referential integrity — every referenced vocabulary, regime, kind, facet, and purpose exists. Every relation endpoint is a declared kind or a declared anchor kind.
 - **anchor integrity** — every anchor kind names exactly one resolver, and no two anchor kinds claim the same resolver namespace.
-- **identifier integrity** — every identifier scheme carries the namespace that `core` requires, and no two schemes in one namespace admit the same string. A scheme whose strings another scheme's pattern also matches is a validation error, for the reason that two shelf patterns over one path are.
+- **identifier integrity** — every identifier scheme carries a namespace after resolution, and no two schemes in one namespace admit the same string. This rule requires the namespace and `core` cannot. The identifier form of a core requirement names a scheme rather than a property of one. The engine expands the declared namespace before it compares two literal prefixes, so it decides a pattern that opens with `{namespace}`. A scheme whose strings another scheme's pattern also matches is a validation error, for the reason that two shelf patterns over one path are.
 - coverage — every shelf resolves to at least one kind. Every concrete kind is reachable from at least one shelf. An abstract kind is reachable from none, and says so.
 - **kind inheritance** — `is_a` names a declared abstract kind. The chain terminates and holds no cycle. No child un-requires what a parent requires, and no child forbids a facet that a parent requires.
 - **purpose completeness** — every concrete kind has a purpose, declared or inherited, and every declared purpose is served by at least one concrete kind.

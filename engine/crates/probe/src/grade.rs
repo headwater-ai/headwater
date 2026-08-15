@@ -207,7 +207,7 @@ pub enum Refusal {
     NotRun,
     /// A `patched` expectation whose probe declares no oracle. The taxonomy
     /// cannot require the field on that form alone
-    /// ([OBL-repo-0123](../../../../docs/obligations/0123-a-facet-that-applies-to-one-value-of-another-facet-has-nowhere-to-say-so.md)),
+    /// ([HW-OBL-0123](../../../../docs/obligations/0123-a-facet-that-applies-to-one-value-of-another-facet-has-nowhere-to-say-so.md)),
     /// so the sentinel reaches here as a declared absence and an absence is not
     /// a pass.
     OracleUndeclared,
@@ -801,7 +801,7 @@ mod tests {
 
     #[test]
     fn a_tool_call_names_a_document_by_equality_or_at_a_path_boundary() {
-        let want = target(Some("SPEC-HW-05"), "docs/spec/05-ai-integration.md");
+        let want = target(Some("HW-SPEC-05"), "docs/spec/05-ai-integration.md");
         assert!(names("docs/spec/05-ai-integration.md", &want));
         assert!(names("/home/a/repo/docs/spec/05-ai-integration.md", &want));
         assert!(names("C:\\repo\\docs\\spec\\05-ai-integration.md", &want));

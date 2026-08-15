@@ -1,5 +1,5 @@
 ---
-id: SPEC-HW-theoretical-foundations
+id: HW-SPEC-theoretical-foundations
 status: current
 status_since: 2026-08-01
 last_verified: 2026-08-11
@@ -15,9 +15,9 @@ provenance:
   evidence_basis: evidenced
 relations:
   cites_evidence:
-    - EVAL-HW-schema-format-walkthrough
-    - EVAL-HW-the-measurement-layer
-    - EVAL-HW-what-a-check-can-know
+    - HW-EVAL-schema-format-walkthrough
+    - HW-EVAL-the-measurement-layer
+    - HW-EVAL-what-a-check-can-know
 ---
 
 # 10 — Theoretical foundations

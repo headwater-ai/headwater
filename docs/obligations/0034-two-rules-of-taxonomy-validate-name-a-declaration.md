@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0034
+id: HW-OBL-0034
 title: "Two rules of `taxonomy validate` name a declaration or an artifact that does not exist"
 status: current
 status_since: 2026-08-12
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-taxonomy-model
-    - SPEC-HW-ai-integration
+    - HW-SPEC-taxonomy-model
+    - HW-SPEC-ai-integration
 ---
 
 # Two rules of `taxonomy validate` name a declaration or an artifact that does not exist

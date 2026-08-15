@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0061
+id: HW-OBL-0061
 title: "An anchor resolver normalizes, and nothing states how"
 status: current
 status_since: 2026-08-12
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-taxonomy-model
-    - SPEC-HW-check-layer
+    - HW-SPEC-taxonomy-model
+    - HW-SPEC-check-layer
 ---
 
 # An anchor resolver normalizes, and nothing states how

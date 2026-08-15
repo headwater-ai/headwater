@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0078
+id: HW-OBL-0078
 title: "Two positions that the meta-schema marks a gap are a closed set in the engine"
 status: current
 status_since: 2026-08-13
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-authoring-and-lifecycle
-    - SPEC-HW-taxonomy-model
+    - HW-SPEC-authoring-and-lifecycle
+    - HW-SPEC-taxonomy-model
 ---
 
 # Two positions that the meta-schema marks a gap are a closed set in the engine

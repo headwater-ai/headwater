@@ -21,7 +21,12 @@
 # breaking change.
 
 package: headwater/standard
-version: 1.0.0
+# This number and the one in `taxonomy.yml` are two declarations of one thing,
+# and nothing compares them. `resolve::package::sources` holds the consumer's
+# pin against this file and reads the version in the taxonomy source for
+# nothing at all, so the two can disagree through a whole resolution. #212
+# carries the finding.
+version: 2.0.0
 requires_engine: ">=0.1 <2"
 
 contents:

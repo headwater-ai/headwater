@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0122
+id: HW-OBL-0122
 status: current
 status_since: 2026-08-14
 summary: "A conformance rule set is held by the release digest and never by the lock, so a repository that takes its package from source can edit the rules its own gate reads."
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-distribution-and-federation
+    - HW-SPEC-distribution-and-federation
 ---
 
 # Nothing holds the conformance rule set of a package a consumer takes from source

@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0052
+id: HW-OBL-0052
 title: "A document has no identifier, and every relation target must be one"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0004
+    - HW-DR-0004
 ---
 
 # A document has no identifier, and every relation target must be one

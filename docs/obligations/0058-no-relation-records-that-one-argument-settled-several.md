@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0058
+id: HW-OBL-0058
 title: "No relation records that one argument settled several decisions"
 status: current
 status_since: 2026-08-13
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-conceptual-model
+    - HW-SPEC-conceptual-model
 ---
 
 # No relation records that one argument settled several decisions

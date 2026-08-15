@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0108
+id: HW-OBL-0108
 title: "An agent writes the acceptance stamp of every document in this corpus"
 status: current
 status_since: 2026-08-14
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-ai-integration
-    - SPEC-HW-authoring-and-lifecycle
+    - HW-SPEC-ai-integration
+    - HW-SPEC-authoring-and-lifecycle
 ---
 
 # An agent writes the acceptance stamp of every document in this corpus
@@ -48,20 +48,20 @@ The corpus owes a ruling, and the two available answers differ in what they cost
 
 The second reading is defensible and the bytes do not carry it. A document that a human merged and a document that an agent stamped and nobody read are the same file. So the corpus cannot answer the question that [spec 3](../spec/03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed) says provenance exists to make a query rather than an archaeology exercise.
 
-Nothing reports any of this. [OBL-repo-0030](0030-the-provenance-block-belongs-to-the-engine-and-nothing-states.md) records that no taxonomy declares the block, so no rule reads a field of it. A stop rule with no instrument is a preference. This is the measurement of what that preference costs over 161 documents.
+Nothing reports any of this. [HW-OBL-0030](0030-the-provenance-block-belongs-to-the-engine-and-nothing-states.md) records that no taxonomy declares the block, so no rule reads a field of it. A stop rule with no instrument is a preference. This is the measurement of what that preference costs over 161 documents.
 
 ## Discharge
 
 A ruling on which reading holds, in the decision register, because the two answers assign the act to different parties.
 
-Under the second reading, the block owes a form that separates a proposed stamp from a merged one. A warrant of `asserted` at draft time and a promotion at merge is one shape. It needs an actor that this engine does not have. [OBL-repo-0105](0105-nothing-plays-the-hook-role-that-two-relations-name.md) already records that the `hook` actor plays no part anywhere.
+Under the second reading, the block owes a form that separates a proposed stamp from a merged one. A warrant of `asserted` at draft time and a promotion at merge is one shape. It needs an actor that this engine does not have. [HW-OBL-0105](0105-nothing-plays-the-hook-role-that-two-relations-name.md) already records that the `hook` actor plays no part anywhere.
 
-Under either reading, the block owes a declaration before a rule can read it, which is `OBL-repo-0030`.
+Under either reading, the block owes a declaration before a rule can read it, which is `HW-OBL-0030`.
 
 ## The practice moved before the ruling arrived, and this is the count
 
-Re-measured on 2026-08-14 over every Markdown document under `docs/`, outside `docs/taxonomies/**`. 182 carry `drafted_by`. 179 carry `accepted_by`. **Six carry `warrant: asserted` and no `accepted_by` at all**, and every one of the six was written on 2026-08-14. They are the three probes, `OBL-repo-0123`, `OBL-repo-0124` and `SPEC-HW-the-recorder-contract`.
+Re-measured on 2026-08-14 over every Markdown document under `docs/`, outside `docs/taxonomies/**`. 182 carry `drafted_by`. 179 carry `accepted_by`. **Six carry `warrant: asserted` and no `accepted_by` at all**, and every one of the six was written on 2026-08-14. They are the three probes, `HW-OBL-0123`, `HW-OBL-0124` and `HW-SPEC-the-recorder-contract`.
 
 So a second practice runs beside the one this record measures, and nothing declared it. An agent drafts, states the warrant it can state, and leaves the stamp to the reader of the proposal. That is what stop rule 5 asks for, and it is a shape rather than a ruling. The ruling this record waits on decides whether the six are the right answer or the start of a second gap.
 
-**A third practice runs beside both, and it is worse than either.** The warrant reading of `taxonomy audit` reports the documents that state `warrant: proposed`, which spec 3's closed set does not hold. Each of them also names an acceptor, so each states a stamp under a warrant that requires nothing. [OBL-repo-0125](0125-nine-documents-state-a-warrant-the-closed-set-does-not-hold-and-no-check-reads-one.md) holds it. The ruling this record waits on now covers three practices rather than two.
+**A third practice runs beside both, and it is worse than either.** The warrant reading of `taxonomy audit` reports the documents that state `warrant: proposed`, which spec 3's closed set does not hold. Each of them also names an acceptor, so each states a stamp under a warrant that requires nothing. [HW-OBL-0125](0125-nine-documents-state-a-warrant-the-closed-set-does-not-hold-and-no-check-reads-one.md) holds it. The ruling this record waits on now covers three practices rather than two.

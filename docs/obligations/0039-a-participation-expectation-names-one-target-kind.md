@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0039
+id: HW-OBL-0039
 title: "A participation expectation names one target kind"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-taxonomy-model
+    - HW-SPEC-taxonomy-model
 ---
 
 # A participation expectation names one target kind

@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0033
+id: HW-OBL-0033
 title: "A required declaration that an overlay may supply cannot be required of a source"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0002
+    - HW-DR-0002
 ---
 
 # A required declaration that an overlay may supply cannot be required of a source

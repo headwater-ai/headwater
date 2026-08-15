@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0074
+id: HW-OBL-0074
 title: "A check version is raised by hand, and nothing catches a stale one"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-check-layer
+    - HW-SPEC-check-layer
 ---
 
 # A check version is raised by hand, and nothing catches a stale one

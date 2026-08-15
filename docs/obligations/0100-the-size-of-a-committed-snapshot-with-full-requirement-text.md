@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0100
+id: HW-OBL-0100
 title: "The size of a committed snapshot with full requirement text"
 status: current
 status_since: 2026-08-11
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0019
-    - DR-repo-0009
+    - HW-DR-0019
+    - HW-DR-0009
 ---
 
 # The size of a committed snapshot with full requirement text

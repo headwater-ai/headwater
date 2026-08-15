@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0015
+id: HW-OBL-0015
 title: "Imported edge staleness is unmeasured against scaffolded edges"
 status: current
 status_since: 2026-08-10
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0019
+    - HW-DR-0019
 ---
 
 # Imported edge staleness is unmeasured against scaffolded edges

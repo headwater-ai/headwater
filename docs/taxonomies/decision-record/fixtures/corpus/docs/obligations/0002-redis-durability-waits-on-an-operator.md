@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0002
+id: HW-OBL-0002
 title: Redis durability under a node loss is untested
 status: current
 status_since: 2026-06-01
@@ -12,7 +12,7 @@ provenance:
   evidence_basis: unevidenced
 relations:
   traces_to:
-    - DR-repo-0006
+    - HW-DR-0006
 ---
 
 # Redis durability under a node loss is untested

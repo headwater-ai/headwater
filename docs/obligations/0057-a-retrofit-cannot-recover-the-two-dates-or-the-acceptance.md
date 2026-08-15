@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0057
+id: HW-OBL-0057
 title: "A retrofit cannot recover the two dates or the acceptance"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0012
+    - HW-DR-0012
 ---
 
 # A retrofit cannot recover the two dates or the acceptance

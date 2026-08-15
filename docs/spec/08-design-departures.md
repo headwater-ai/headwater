@@ -1,5 +1,5 @@
 ---
-id: SPEC-HW-design-departures
+id: HW-SPEC-design-departures
 status: current
 status_since: 2026-08-01
 last_verified: 2026-08-11

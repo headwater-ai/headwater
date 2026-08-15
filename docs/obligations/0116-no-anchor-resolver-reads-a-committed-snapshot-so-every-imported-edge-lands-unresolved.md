@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0116
+id: HW-OBL-0116
 status: current
 status_since: 2026-08-14
 summary: "An import writes an edge onto an anchor kind, one resolver ships, and it reads the source tree, so the check layer reports every imported edge as unresolved."
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0019
+    - HW-DR-0019
 ---
 
 # No anchor resolver reads a committed snapshot, so every imported edge lands unresolved

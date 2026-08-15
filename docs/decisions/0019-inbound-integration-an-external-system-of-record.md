@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0019
+id: HW-DR-0019
 title: "Q19 — Inbound integration: an external system of record"
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - EVAL-HW-warrant-and-adjudication
+    - HW-EVAL-warrant-and-adjudication
 ---
 
 # Q19 — Inbound integration: an external system of record

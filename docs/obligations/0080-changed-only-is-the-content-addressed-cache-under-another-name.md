@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0080
+id: HW-OBL-0080
 title: "`--changed-only` is the content-addressed cache under another name"
 status: current
 status_since: 2026-08-13
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0006
+    - HW-DR-0006
 ---
 
 # `--changed-only` is the content-addressed cache under another name
@@ -31,7 +31,7 @@ The cache also derives what moved from content hashes rather than from a list th
 
 ## Obligation
 
-What no flag reaches is Phase A. `headwater explain` walks the corpus, parses it, builds the graph and runs no check. It costs 36 to 45 ms on the same corpus and the same build. So Phase A is about seven tenths of the warm run and about a twelfth of the cold one. To scope it is to cache the census and the graph, and [Q6](../spec/09-decisions.md#q6--where-the-corpus-graph-lives-at-rest) rules that nothing stores the graph. [OBL-repo-0072](0072-a-cache-of-check-results-does-not-make-a-run-proportional.md) carries what that leaves open in spec 6's own promise.
+What no flag reaches is Phase A. `headwater explain` walks the corpus, parses it, builds the graph and runs no check. It costs 36 to 45 ms on the same corpus and the same build. So Phase A is about seven tenths of the warm run and about a twelfth of the cold one. To scope it is to cache the census and the graph, and [Q6](../spec/09-decisions.md#q6--where-the-corpus-graph-lives-at-rest) rules that nothing stores the graph. [HW-OBL-0072](0072-a-cache-of-check-results-does-not-make-a-run-proportional.md) carries what that leaves open in spec 6's own promise.
 
 ## Discharge
 

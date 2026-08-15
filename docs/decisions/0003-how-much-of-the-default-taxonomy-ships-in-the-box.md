@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0003
+id: HW-DR-0003
 title: Q3 — How much of the default taxonomy ships in the box
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - EVAL-HW-default-taxonomy-first-run
+    - HW-EVAL-default-taxonomy-first-run
 ---
 
 # Q3 — How much of the default taxonomy ships in the box

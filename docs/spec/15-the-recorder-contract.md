@@ -1,5 +1,5 @@
 ---
-id: SPEC-HW-the-recorder-contract
+id: HW-SPEC-the-recorder-contract
 status: draft
 status_since: 2026-08-14
 summary: Everything an external recorder writes into a transcript, the closed key sets that refuse a file, and the one member of the run identity this engine compares.
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-ai-integration
+    - HW-SPEC-ai-integration
 ---
 
 # The recorder contract
@@ -131,7 +131,7 @@ Present is not confirmed, and the difference is what the rest of this section st
 
 Every value in a transcript is a value that a person can type. The lock digest is printed by `headwater probe plan`. So is the selection digest, and so is the read-set digest. The events are lines of YAML. No signature, no key and no witness is part of this contract. An integrity artifact that travels with the file it describes states internal consistency rather than identity.
 
-The distinction between a recorded artifact and a written one lives in `provenance.warrant`. No taxonomy declares that block and no check reads it. A shelf index prints the warrant of every document it covers, and the shelf that holds a transcript has no index. [OBL-repo-0030](../obligations/0030-the-provenance-block-belongs-to-the-engine-and-nothing-states.md) holds that gap. This contract is the sharpest instance of it. The warrant is the only field that separates the two artifacts, and it is the field with no shape.
+The distinction between a recorded artifact and a written one lives in `provenance.warrant`. No taxonomy declares that block and no check reads it. A shelf index prints the warrant of every document it covers, and the shelf that holds a transcript has no index. [HW-OBL-0030](../obligations/0030-the-provenance-block-belongs-to-the-engine-and-nothing-states.md) holds that gap. This contract is the sharpest instance of it. The warrant is the only field that separates the two artifacts, and it is the field with no shape.
 
 What the design does buy is narrower and it is worth stating exactly. **A rate is not a value that anybody types.** `headwater generate` derives it from the events, and `generate --check` holds the committed result to the derivation. So a forged rate needs a forged event log. That is a claim about which documents a session opened, rather than a number in a summary. A reader who doubts a result reads the transcript and counts events. Every satisfied verdict names the event it came from.
 
@@ -139,4 +139,4 @@ What the design does buy is narrower and it is worth stating exactly. **A rate i
 
 `docs/probes/` holds three probes. `docs/probe-runs/` is a declared shelf that holds nothing, so `headwater generate` writes no probe result and prints the reason on every run.
 
-The reason is this part, read from the other end. A recorder observes a session from outside it, and no process in this repository does that. An agent that works here and writes a file about the documents it opened produces the self-report that spec 5 refuses. No check here tells that file from a recorded one. So the transcript is owed by a component that this repository does not hold. [OBL-repo-0124](../obligations/0124-a-probe-result-is-printed-and-never-committed-so-nothing-regenerates-one.md) carries the debt.
+The reason is this part, read from the other end. A recorder observes a session from outside it, and no process in this repository does that. An agent that works here and writes a file about the documents it opened produces the self-report that spec 5 refuses. No check here tells that file from a recorded one. So the transcript is owed by a component that this repository does not hold. [HW-OBL-0124](../obligations/0124-a-probe-result-is-printed-and-never-committed-so-nothing-regenerates-one.md) carries the debt.

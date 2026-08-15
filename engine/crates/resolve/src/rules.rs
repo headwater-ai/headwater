@@ -83,9 +83,11 @@ pub const RULES: [(&str, Ran); 23] = [
         Ran::Partly {
             decides: "every scheme carries a namespace, and no two schemes in one namespace \
                       share a literal prefix",
-            waits: "the prefix is a literal inside the `pattern` string, so the engine compares \
-                    the text before the first placeholder and cannot decide two patterns whose \
-                    placeholders overlap. Spec 13 carries the grammar",
+            waits: "the prefix is a literal inside the `pattern` string. The engine expands the \
+                    declared namespace and compares the text up to the first placeholder left, \
+                    so it decides a pattern whose literal segment follows the namespace and \
+                    still cannot decide two whose free placeholders meet. Spec 13 carries the \
+                    grammar",
         },
     ),
     (
@@ -1575,8 +1577,9 @@ fn placeholders(text: &str) -> BTreeSet<String> {
 /// string from both and refuses the pair. `{namespace}` is a constant of the
 /// scheme and not a free token, so reading it costs no soundness: the result is
 /// still a string that every admitted identifier starts with, and it is a
-/// longer one. The type-first case improves for the same reason, because
-/// `SPEC-HW-` discriminates where `SPEC-` does not.
+/// longer one. A type-first pattern improves for the same reason: a scheme
+/// written `SPEC-{namespace}-{slug}` is compared on its type and its namespace
+/// together, and was compared on the four characters before the placeholder.
 ///
 /// Two schemes can still expand to one prefix. That is the refusing direction:
 /// the pair is reported, and it is never admitted.

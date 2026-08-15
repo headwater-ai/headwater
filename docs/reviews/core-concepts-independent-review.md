@@ -1,5 +1,5 @@
 ---
-id: REV-HW-core-concepts-independent
+id: HW-REV-core-concepts-independent
 status: current
 status_since: 2026-08-05
 last_verified: 2026-08-08
@@ -12,13 +12,13 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
-  applies: REV-HW-core-concepts-prompt
+  applies: HW-REV-core-concepts-prompt
   assesses:
-    - SPEC-HW-conceptual-model
-    - SPEC-HW-taxonomy-model
-    - SPEC-HW-vision-and-scope
-    - SPEC-HW-assurance-model
-    - SPEC-HW-check-layer
+    - HW-SPEC-conceptual-model
+    - HW-SPEC-taxonomy-model
+    - HW-SPEC-vision-and-scope
+    - HW-SPEC-assurance-model
+    - HW-SPEC-check-layer
 ---
 
 # Core-concepts independent review

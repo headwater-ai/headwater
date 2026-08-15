@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0001
+id: HW-DR-0001
 title: Deliver at least once, and expose the attempt identifier
 status: superseded
 status_since: 2026-03-14
@@ -12,7 +12,7 @@ provenance:
   evidence_basis: unevidenced
 relations:
   superseded_by:
-    - DR-repo-0004
+    - HW-DR-0004
 ---
 
 # Deliver at least once, and expose the attempt identifier

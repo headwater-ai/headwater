@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0001
+id: HW-DR-0001
 title: Q1 — Implementation language
 status: current
 status_since: 2026-08-11
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - EVAL-HW-language-choice
-    - EVAL-HW-language-spike-results
+    - HW-EVAL-language-choice
+    - HW-EVAL-language-spike-results
 ---
 
 # Q1 — Implementation language

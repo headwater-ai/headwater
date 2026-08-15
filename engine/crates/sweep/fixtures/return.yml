@@ -32,7 +32,7 @@ findings:
       from: DR-SWP-0001
       to: DR-SWP-0002
 
-  # Carried. The document every check passes, which OBL-repo-0113 records. The
+  # Carried. The document every check passes, which HW-OBL-0113 records. The
   # quotation is the scaffolder's own string, so the engine confirms that the
   # text is really there and takes no position on the judgment that it says
   # nothing.

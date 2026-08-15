@@ -1,5 +1,5 @@
 ---
-id: EVAL-HW-language-spike-results
+id: HW-EVAL-language-spike-results
 status: current
 status_since: 2026-08-10
 last_verified: 2026-08-10
@@ -13,9 +13,9 @@ provenance:
   evidence_basis: evidenced
 relations:
   cited_by:
-    - REG-HW-decisions
-    - SPEC-HW-engine-architecture
-    - SPEC-HW-check-layer
+    - HW-REG-decisions
+    - HW-SPEC-engine-architecture
+    - HW-SPEC-check-layer
   traces_to:
     - spike/
 ---

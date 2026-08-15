@@ -1,5 +1,5 @@
 ---
-id: EVAL-HW-language-choice
+id: HW-EVAL-language-choice
 status: current
 status_since: 2026-08-10
 last_verified: 2026-08-10
@@ -13,7 +13,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   cited_by:
-    - REG-HW-decisions
+    - HW-REG-decisions
 ---
 
 # The implementation language — the evidence for Q1

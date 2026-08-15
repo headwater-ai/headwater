@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0086
+id: HW-OBL-0086
 title: "An inline quotation reaches every lexical rule as this author's prose"
 status: current
 status_since: 2026-08-13
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-authoring-and-lifecycle
+    - HW-SPEC-authoring-and-lifecycle
 ---
 
 # An inline quotation reaches every lexical rule as this author's prose

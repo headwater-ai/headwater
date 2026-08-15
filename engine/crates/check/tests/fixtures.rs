@@ -1244,7 +1244,7 @@ fn a_restated_discriminator_is_a_finding_at_the_line_that_restates_it() {
     assert_eq!(finding.line, 3, "the finding is not at the `doc_type` key");
     // No patch, and this rule used to claim one. The remedy is mechanical and
     // this engine does not write it, and `fixable` now says the second thing.
-    // See `placement.rs` and OBL-repo-0104.
+    // See `placement.rs` and HW-OBL-0104.
     assert!(!finding.fixable());
 
     // And exactly one, so no document on a heterogeneous shelf produced one.

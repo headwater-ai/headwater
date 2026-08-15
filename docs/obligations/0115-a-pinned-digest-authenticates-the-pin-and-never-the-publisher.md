@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0115
+id: HW-OBL-0115
 status: current
 status_since: 2026-08-14
 summary: A consumer that vendors a package for the first time takes the publisher's identity on the channel that carried the digest, because nothing signs a release and no key reaches an adopter.
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-distribution-and-federation
-    - DR-repo-0022
+    - HW-SPEC-distribution-and-federation
+    - HW-DR-0022
 ---
 
 # A pinned digest authenticates the pin and never the publisher

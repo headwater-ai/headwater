@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0007
+id: HW-DR-0007
 title: Q7 — Scope of the MCP surface
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - EVAL-HW-the-serving-boundary
+    - HW-EVAL-the-serving-boundary
 ---
 
 # Q7 — Scope of the MCP surface

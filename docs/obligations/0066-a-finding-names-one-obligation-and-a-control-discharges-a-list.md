@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0066
+id: HW-OBL-0066
 title: "A finding names one obligation, and a control discharges a list"
 status: current
 status_since: 2026-08-12
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-assurance-model
-    - SPEC-HW-check-layer
+    - HW-SPEC-assurance-model
+    - HW-SPEC-check-layer
 ---
 
 # A finding names one obligation, and a control discharges a list

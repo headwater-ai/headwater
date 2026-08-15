@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0037
+id: HW-OBL-0037
 title: "The register is not a projection of the lock alone, so `generate --check` cannot hold it"
 status: current
 status_since: 2026-08-13
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-assurance-model
-    - SPEC-HW-engine-architecture
+    - HW-SPEC-assurance-model
+    - HW-SPEC-engine-architecture
 ---
 
 # The register is not a projection of the lock alone, so `generate --check` cannot hold it

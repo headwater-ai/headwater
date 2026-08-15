@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0006
+id: HW-DR-0006
 title: Q6 — Where the corpus graph lives at rest
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - EVAL-HW-graph-export-and-federation
+    - HW-EVAL-graph-export-and-federation
 ---
 
 # Q6 — Where the corpus graph lives at rest

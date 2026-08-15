@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0027
+id: HW-OBL-0027
 title: "What `optional` holds under the `package` root"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0002
+    - HW-DR-0002
 ---
 
 # What `optional` holds under the `package` root

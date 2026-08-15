@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0002
+id: HW-DR-0002
 title: The second live document
 status: current
 status_since: 2026-08-01

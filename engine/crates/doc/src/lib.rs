@@ -123,7 +123,7 @@ mod tests {
 
     const DOC: &str = "\
 ---
-id: SPEC-HW-check-layer
+id: HW-SPEC-check-layer
 sequence: 12
 ---
 

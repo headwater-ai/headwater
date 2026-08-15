@@ -1,5 +1,5 @@
 ---
-id: SPEC-HW-engine-architecture
+id: HW-SPEC-engine-architecture
 status: current
 status_since: 2026-08-01
 last_verified: 2026-08-11
@@ -15,14 +15,14 @@ provenance:
   evidence_basis: evidenced
 relations:
   cites_evidence:
-    - EVAL-HW-first-contact
-    - EVAL-HW-graph-export-and-federation
-    - EVAL-HW-language-spike-results
-    - EVAL-HW-shacl-worked-example
-    - EVAL-HW-the-measurement-layer
-    - EVAL-HW-the-serving-boundary
-    - EVAL-HW-warrant-and-adjudication
-    - EVAL-HW-what-a-check-can-know
+    - HW-EVAL-first-contact
+    - HW-EVAL-graph-export-and-federation
+    - HW-EVAL-language-spike-results
+    - HW-EVAL-shacl-worked-example
+    - HW-EVAL-the-measurement-layer
+    - HW-EVAL-the-serving-boundary
+    - HW-EVAL-warrant-and-adjudication
+    - HW-EVAL-what-a-check-can-know
 ---
 
 # 6 — Engine architecture
@@ -291,7 +291,7 @@ The budget declaration is `.headwater/probe.yml`, beside the lock. It is outside
 
 The CLI is advisory by default (exit 0 with findings on stdout). Use `--strict` for gates. The default is deliberate: a tool that blocks on first contact is removed, and a removed tool catches nothing.
 
-**No flag decides which findings count, and there is no `--changed-only`.** A flag that took a caller's list of changed documents would put a second input into the verdict that no reviewer sees. It would also report the rest as neither checked nor skipped. A scope derived from content rather than from a list is the cache, and the cache ships. So the one job such a flag has is to pay for a 200 ms hook, and that job is either forbidden or already paid. [OBL-repo-0080](../obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md) holds the measurement. An adopter who wants patient debt gets it from the [adoption payload](07-distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy). That is a fact about the corpus, rather than a property of an invocation ([Q12](09-decisions.md#q12--migration-path-for-an-existing-corpus)).
+**No flag decides which findings count, and there is no `--changed-only`.** A flag that took a caller's list of changed documents would put a second input into the verdict that no reviewer sees. It would also report the rest as neither checked nor skipped. A scope derived from content rather than from a list is the cache, and the cache ships. So the one job such a flag has is to pay for a 200 ms hook, and that job is either forbidden or already paid. [HW-OBL-0080](../obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md) holds the measurement. An adopter who wants patient debt gets it from the [adoption payload](07-distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy). That is a fact about the corpus, rather than a property of an invocation ([Q12](09-decisions.md#q12--migration-path-for-an-existing-corpus)).
 
 **`--read-set` writes what the report already states.** A run reports the union of its in-scope inputs beside its coverage numbers ([spec 12](12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)). The flag writes the same bytes to a file. The reader that needs them is a gate, which holds this run against a later tree and reads a file rather than a report. The flag decides no finding and it moves no verdict.
 
@@ -305,7 +305,7 @@ There are two commands because there are two kinds of question. The distinction 
 
 **`audit`** measures the schema *against a corpus*. Eight readings run. It measures facet differentiation and orthogonality, edge counts and staleness by `created_by`, and relation drift by family. It also measures the discriminator distribution of a heterogeneous shelf, the state-dwell distribution, and the warrant of every classified document. The eighth reading is the file names on every shelf that declares a layout. Its findings are advisory by construction, because a young or small corpus fails differentiation for reasons that are not defects. The findings are about the taxonomy, not the documents. A facet that nothing distinguishes is a schema problem that only documents can show.
 
-Two of the readings this section named do not run. The report evaluates the wait of each one against the corpus in front of it, so a wait that a corpus has ended says so. Each prerequisite that a run does not find states where the absence lives. That matters because a declaration, an authoring pass and a decision are three different acts. Transition continuity waits on a facet in a role that spec 2's closed registry does not hold. Its absence is therefore a column rather than a row. Scent quality waits on a cue that nobody has authored on an edge instance ([OBL-repo-0023](../obligations/0023-no-corpus-has-authored-enough-cues-to-grade.md)). The promotion rate of [Q15](09-decisions.md#q15--a-synthesized-content-tier) is no longer one of them, and it is no longer a wait either. This verb reads one working tree, so it holds the denominator and it can never reach the numerator. `warrant.promoted` counts a promotion in the change that makes one, and the warrant reading names that rule beside the population it reports.
+Two of the readings this section named do not run. The report evaluates the wait of each one against the corpus in front of it, so a wait that a corpus has ended says so. Each prerequisite that a run does not find states where the absence lives. That matters because a declaration, an authoring pass and a decision are three different acts. Transition continuity waits on a facet in a role that spec 2's closed registry does not hold. Its absence is therefore a column rather than a row. Scent quality waits on a cue that nobody has authored on an edge instance ([HW-OBL-0023](../obligations/0023-no-corpus-has-authored-enough-cues-to-grade.md)). The promotion rate of [Q15](09-decisions.md#q15--a-synthesized-content-tier) is no longer one of them, and it is no longer a wait either. This verb reads one working tree, so it holds the denominator and it can never reach the numerator. `warrant.promoted` counts a promotion in the change that makes one, and the warrant reading names that rule beside the population it reports.
 
 **A wait that a string literal states is a claim that no run re-derives.** The three readings above were three such literals until 2026-08-15. One of them said that no document of this corpus carried `warrant: asserted`, six already did, and the verb printed the sentence anyway. A reading that this verb does not take is now a list of prerequisites, and a run evaluates every one of them.
 
@@ -315,7 +315,7 @@ Two of the readings this section named do not run. The report evaluates the wait
 
 **The layout reading holds apart the arm that no declaration lets it measure.** A shelf layout names a file at birth, and no check reads one after that ([spec 3](03-authoring-and-lifecycle.md#templates-and-scaffolding)). The reading renders each name again, through the function that `headwater new` writes one with. A kind that declares no source for a placeholder puts its whole shelf outside the reading, and the row states where the absence lives. A document that the reading could not measure is in no numerator and no denominator. A missing declaration is not a name that drifted, and one figure over both would report the first as the second.
 
-**One bar is declared, and it is what separates a finding from a distribution.** `stale_after_days` on the freshness facet is the one number a taxonomy states about these readings. So the one finding this verb produces is a relation with a half on a document past that window. Nothing states how narrow a facet may get before it separates nothing. Nothing states how low a capture rate may fall before a relation is unmaintained. A bar the engine invented would be a verdict derived from nothing a corpus declared. Every other reading therefore prints its population and carries no verdict, and [OBL-repo-0119](../obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md) holds the gap.
+**One bar is declared, and it is what separates a finding from a distribution.** `stale_after_days` on the freshness facet is the one number a taxonomy states about these readings. So the one finding this verb produces is a relation with a half on a document past that window. Nothing states how narrow a facet may get before it separates nothing. Nothing states how low a capture rate may fall before a relation is unmaintained. A bar the engine invented would be a verdict derived from nothing a corpus declared. Every other reading therefore prints its population and carries no verdict, and [HW-OBL-0119](../obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md) holds the gap.
 
 **The grain of the creator reading is a relation, and never an edge.** [Q4](09-decisions.md#q4--relation-storage) keeps `created_by` on the relation type, so a scaffolded `supersedes` and a hand-typed one are one string on disk. A row presented per edge would state a provenance that nothing records. The reading walks the closed set of six creators rather than the values in use. A creator that no relation declares is the arm a comparison needs, and a report of the values in use omits exactly that.
 

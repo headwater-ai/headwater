@@ -63,7 +63,7 @@
 //! carried finding that proposes one prints the front matter that declares it.
 //! Nothing here writes it. A proposal an agent applies to itself is the same
 //! act as an agent accepting its own work, which is what
-//! [OBL-repo-0108](../../../../docs/obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md)
+//! [HW-OBL-0108](../../../../docs/obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md)
 //! records, so the verb has no `--write` and this crate opens no file for
 //! writing.
 
@@ -110,7 +110,7 @@ pub enum Class {
     /// A document whose declared audience cannot use it.
     AudienceMismatch,
     /// A heading a kind requires, over prose that says nothing about it. See
-    /// [OBL-repo-0113](../../../../docs/obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md).
+    /// [HW-OBL-0113](../../../../docs/obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md).
     UnwrittenSection,
 }
 

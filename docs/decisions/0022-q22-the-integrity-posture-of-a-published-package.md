@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0022
+id: HW-DR-0022
 status: current
 status_since: 2026-08-14
 summary: A package digest checks a fetched artifact against a pin that a person committed, and it is never a signature. The in-house SHA-256 is held against a second implementation rather than replaced by a dependency.
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-distribution-and-federation
+    - HW-SPEC-distribution-and-federation
 ---
 
 # Q22 — The integrity posture of a published package
@@ -41,7 +41,7 @@ The consumer writes the publisher's digest into `.headwater/taxonomy.yml`, which
 
 **What the check now refuses, measured on 2026-08-14.** A file changed inside a published artifact, a file added that the record does not name, a file the record names that is gone, and a whole artifact republished with a record that agrees with itself. The first three are named file by file in the message. The fourth is the case a record cannot catch on its own, and the pin is what refuses it. `engine/crates/resolve/tests/publish.rs` provokes each one, and each of seven regressions of the implementation was caught by the test named for it.
 
-**What it does not refuse, and the record that says so.** The first fetch, which is the one that produced the pin. Nothing here authenticates a publisher, and closing that gap needs a key, a channel that distributes the key, and a rule for revocation. None of the three is decided, so the gap is [OBL-repo-0115](../obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md) rather than a field named `signature` that holds a digest.
+**What it does not refuse, and the record that says so.** The first fetch, which is the one that produced the pin. Nothing here authenticates a publisher, and closing that gap needs a key, a channel that distributes the key, and a rule for revocation. None of the three is decided, so the gap is [HW-OBL-0115](../obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md) rather than a field named `signature` that holds a digest.
 
 **A sentence in the engine is falsified rather than left standing.** `engine/crates/hash/src/lib.rs` and `engine/README.md` both said that this digest should reach for a vetted implementation. Both now state the argument above and cite this record, because a reader who meets the old sentence would conclude that the reuse was an oversight.
 

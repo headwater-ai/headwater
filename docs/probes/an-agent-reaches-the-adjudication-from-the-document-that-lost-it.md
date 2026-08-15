@@ -1,5 +1,5 @@
 ---
-id: PROBE-HW-an-agent-reaches-the-adjudication-from-the-document-that-lost-it
+id: HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it
 status: draft
 status_since: 2026-08-14
 summary: A session that meets the superseded register first either reaches the decision that replaced it or reports the stale answer.
@@ -15,9 +15,9 @@ provenance:
   evidence_basis: unevidenced
 relations:
   examines:
-    - REG-HW-decisions
+    - HW-REG-decisions
   traces_to:
-    - OBL-repo-0014
+    - HW-OBL-0014
 ---
 
 # An agent reaches the adjudication from the document that lost it
@@ -30,8 +30,8 @@ The task names the anchor because that is the state under test. 136 citations in
 
 ## Expectation
 
-`opened` over `REG-HW-decisions`. The transcript shows that the session read the decision register, which is where the answer moved.
+`opened` over `HW-REG-decisions`. The transcript shows that the session read the decision register, which is where the answer moved.
 
 **The losing document is a tombstone that still writes a heading for every decision, so a session can read a heading there and stop.** That is the failure this probe is for: an answer taken from the superseded document reads as an answer, and only the read set separates it from an answer taken from the adjudication.
 
-[OBL-repo-0014](../obligations/0014-no-probe-tests-whether-an-agent-reaches-the-adjudication-from.md) records that no probe tests this and that the corpus holds no adjudicated pair. The pair here is a supersession rather than an adjudicated disagreement, so a run of this probe narrows that record and does not close it: [Q18](../spec/09-decisions.md#q18--recording-adjudicated-disagreements) is about two documents that disagreed and were settled, and this corpus still holds none.
+[HW-OBL-0014](../obligations/0014-no-probe-tests-whether-an-agent-reaches-the-adjudication-from.md) records that no probe tests this and that the corpus holds no adjudicated pair. The pair here is a supersession rather than an adjudicated disagreement, so a run of this probe narrows that record and does not close it: [Q18](../spec/09-decisions.md#q18--recording-adjudicated-disagreements) is about two documents that disagreed and were settled, and this corpus still holds none.

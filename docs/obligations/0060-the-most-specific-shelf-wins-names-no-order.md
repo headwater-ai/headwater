@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0060
+id: HW-OBL-0060
 title: "\"The most specific shelf wins\" names no order"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-taxonomy-model
+    - HW-SPEC-taxonomy-model
 ---
 
 # "The most specific shelf wins" names no order

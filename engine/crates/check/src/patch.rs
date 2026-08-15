@@ -9,7 +9,7 @@
 //!
 //! # The flag this type replaced, and the obligation that asked for it
 //!
-//! [OBL-repo-0087](../../../../docs/obligations/0087-fixable-has-two-readings-inside-one-engine.md)
+//! [HW-OBL-0087](../../../../docs/obligations/0087-fixable-has-two-readings-inside-one-engine.md)
 //! records that `fixable` carried two readings at once. One says the defect has
 //! a mechanical remedy, and the other says the engine will apply it. The record
 //! says where they meet: "`check --fix` is where the two meet, and until it

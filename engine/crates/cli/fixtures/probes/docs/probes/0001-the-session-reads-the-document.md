@@ -1,5 +1,5 @@
 ---
-id: PROBE-HW-the-session-reads-the-document
+id: HW-PROBE-the-session-reads-the-document
 status: current
 status_since: 2026-08-01
 last_verified: 2026-08-01
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: unevidenced
 relations:
   examines:
-    - PROBE-HW-the-category-is-outside-the-closed-set
+    - HW-PROBE-the-category-is-outside-the-closed-set
 ---
 
 # The session reads the document

@@ -34,6 +34,9 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+mod common;
+use common::pin;
+
 fn repository() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../..")
@@ -171,6 +174,8 @@ impl Root {
             std::fs::copy(repository.join(".headwater").join(name), to)
                 .expect("the declaration copies");
         }
+
+        pin(&at, "1.0.0");
 
         let root = Root { at };
         let resolved = root.run(&["taxonomy", "resolve"]);

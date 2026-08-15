@@ -56,7 +56,7 @@
 //! it and measured why: an instance is keyed on the content hashes of what it
 //! read, and [`cache`] serves the ones nothing touched, so a warm run over this
 //! repository takes about 57 ms against about 476 ms with no cache
-//! ([OBL-repo-0080](../../../../docs/obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md)
+//! ([HW-OBL-0080](../../../../docs/obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md)
 //! holds the conditions). The cache derives what
 //! moved from the bytes rather than from a list a caller supplies, and spec 6
 //! forbids a flag that puts an input into a verdict which no reviewer sees.

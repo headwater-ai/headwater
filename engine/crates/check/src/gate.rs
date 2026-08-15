@@ -10,7 +10,7 @@
 //! at that path in the tree in front of it. A hash that moved voids the
 //! verdict. Nothing else is read. Spec 12 asked for a diff of two trees at one
 //! time, and
-//! [OBL-repo-0028](../../../../docs/obligations/0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md)
+//! [HW-OBL-0028](../../../../docs/obligations/0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md)
 //! holds why that test cannot ship: a diff of two trees needs a tree, and no
 //! run computes one. This test needs neither a tree nor a run.
 //!

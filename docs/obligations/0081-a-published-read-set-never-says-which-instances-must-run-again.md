@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0081
+id: HW-OBL-0081
 title: "A published read set never says which instances must run again"
 status: current
 status_since: 2026-08-13
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0021
+    - HW-DR-0021
 ---
 
 # A published read set never says which instances must run again

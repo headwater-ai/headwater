@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0051
+id: HW-OBL-0051
 title: "Downstream delivery of a standards corpus"
 status: current
 status_since: 2026-08-12
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0009
-    - DR-repo-0019
+    - HW-DR-0009
+    - HW-DR-0019
 ---
 
 # Downstream delivery of a standards corpus

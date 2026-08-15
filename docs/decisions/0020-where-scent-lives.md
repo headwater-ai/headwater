@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0020
+id: HW-DR-0020
 title: Q20 — Where scent lives
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - EVAL-HW-the-measurement-layer
+    - HW-EVAL-the-measurement-layer
 ---
 
 # Q20 — Where scent lives

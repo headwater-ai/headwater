@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0091
+id: HW-OBL-0091
 title: "The friction signal that Q4 narrowed is still unread"
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0004
+    - HW-DR-0004
 ---
 
 # The friction signal that Q4 narrowed is still unread

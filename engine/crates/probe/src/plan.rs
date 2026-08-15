@@ -51,7 +51,7 @@ pub const EXAMINES: &str = "examines";
 /// `answered` is satisfied by "one named value from a closed set that the probe
 /// declares", and nothing held that set. It is the same shape as `oracle`: a
 /// declaration that applies to one value of `expectation` and to no other, and
-/// [OBL-repo-0123](../../../../docs/obligations/0123-a-facet-that-applies-to-one-value-of-another-facet-has-nowhere-to-say-so.md)
+/// [HW-OBL-0123](../../../../docs/obligations/0123-a-facet-that-applies-to-one-value-of-another-facet-has-nowhere-to-say-so.md)
 /// says the taxonomy language cannot express that. `oracle` paid the sentinel:
 /// every probe declares one and four forms write `none`.
 ///

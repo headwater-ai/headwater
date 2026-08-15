@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0121
+id: HW-OBL-0121
 status: current
 status_since: 2026-08-14
 summary: "Three of the seven conformance rules can never be met, because the attestation each one names has no record format, and four rungs of the ladder wait behind them."
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-distribution-and-federation
+    - HW-SPEC-distribution-and-federation
 ---
 
 # Three conformance rules name an attestation that no record format exists for

@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0012
+id: HW-DR-0012
 title: Q12 — Migration path for an existing corpus
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - EVAL-HW-first-contact
+    - HW-EVAL-first-contact
 ---
 
 # Q12 — Migration path for an existing corpus

@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0099
+id: HW-OBL-0099
 title: "Whether an adjudication is ever partial"
 status: current
 status_since: 2026-08-10
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0018
+    - HW-DR-0018
 ---
 
 # Whether an adjudication is ever partial

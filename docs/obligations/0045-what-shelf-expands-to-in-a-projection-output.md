@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0045
+id: HW-OBL-0045
 title: "What `{shelf}` expands to in a projection output"
 status: current
 status_since: 2026-08-13
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-taxonomy-model
-    - SPEC-HW-engine-architecture
+    - HW-SPEC-taxonomy-model
+    - HW-SPEC-engine-architecture
 ---
 
 # What `{shelf}` expands to in a projection output

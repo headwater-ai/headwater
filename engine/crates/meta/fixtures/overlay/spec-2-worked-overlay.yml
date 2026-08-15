@@ -8,7 +8,7 @@ extends: headwater/standard@2.1.0
 
 override:
   shelves.decisions.path: docs/adr/**
-  identifier_schemes.decision_id.pattern: "ADR-{namespace}-{seq:03d}"
+  identifier_schemes.decision_id.pattern: "{namespace}-ADR-{seq:03d}"
   vocabularies.lifecycle_state:
     - {value: draft, role: initial}
     - {value: active, role: live}

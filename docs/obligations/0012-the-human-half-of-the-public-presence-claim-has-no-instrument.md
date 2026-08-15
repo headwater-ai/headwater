@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0012
+id: HW-OBL-0012
 title: "The human half of the public presence claim has no instrument at all"
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0016
+    - HW-DR-0016
 ---
 
 # The human half of the public presence claim has no instrument at all

@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0011
+id: HW-DR-0011
 title: Q11 — License and distribution posture
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - EVAL-HW-first-contact
+    - HW-EVAL-first-contact
 ---
 
 # Q11 — License and distribution posture

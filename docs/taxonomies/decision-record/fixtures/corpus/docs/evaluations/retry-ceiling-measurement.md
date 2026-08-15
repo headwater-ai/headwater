@@ -12,8 +12,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   discharges:
-    - OBL-repo-0001
-    - OBL-repo-0003
+    - HW-OBL-0001
+    - HW-OBL-0003
 ---
 
 # How far apart two attempts of one delivery fall
@@ -30,4 +30,4 @@ The ninety-ninth percentile interval is eleven minutes. The maximum is fifty-two
 
 One week is one week. A destination that goes down for a day produces intervals this measurement never saw.
 
-This document also claims to discharge `OBL-repo-0003`, which it does not measure and which does not name it back. That claim is planted, and the reciprocity rule is what reports it.
+This document also claims to discharge `HW-OBL-0003`, which it does not measure and which does not name it back. That claim is planted, and the reciprocity rule is what reports it.

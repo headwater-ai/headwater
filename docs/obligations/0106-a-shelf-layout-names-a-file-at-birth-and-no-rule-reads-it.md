@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0106
+id: HW-OBL-0106
 title: "A shelf layout names a file at birth and no rule reads it"
 status: current
 status_since: 2026-08-14
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-authoring-and-lifecycle
-    - SPEC-HW-taxonomy-model
+    - HW-SPEC-authoring-and-lifecycle
+    - HW-SPEC-taxonomy-model
 ---
 
 # A shelf layout names a file at birth and no rule reads it
@@ -26,7 +26,7 @@ relations:
 
 Two shelves that number their files declared no layout. So the verb named a record after its title alone, and `headwater new obligation_record --title "A governs edge reaches the path it names and nothing under it"` wrote `docs/obligations/a-governs-edge-reaches-the-path-it-names-and-nothing-under-it.md`. That name sorts under `a` among siblings named `0001-` through `0105-`, and a person renamed both records of [#150](https://github.com/headwater-ai/headwater/issues/150) by hand.
 
-Both shelves now declare `{seq:04d}-{slug}.md`. `{seq}` reads the sequence of the identifier that the run mints. The number in the file name and the number in `OBL-repo-0106` are therefore one value written twice. No facet holds a third copy.
+Both shelves now declare `{seq:04d}-{slug}.md`. `{seq}` reads the sequence of the identifier that the run mints. The number in the file name and the number in `HW-OBL-0106` are therefore one value written twice. No facet holds a third copy.
 
 ## Obligation
 

@@ -1,5 +1,5 @@
 ---
-id: SPEC-HW-adjacent-work
+id: HW-SPEC-adjacent-work
 status: current
 status_since: 2026-08-02
 last_verified: 2026-08-11
@@ -15,16 +15,16 @@ provenance:
   evidence_basis: evidenced
 relations:
   cites_evidence:
-    - EVAL-HW-default-taxonomy-first-run
-    - EVAL-HW-first-contact
-    - EVAL-HW-graph-export-and-federation
-    - EVAL-HW-linkml-worked-example
-    - EVAL-HW-schema-format-walkthrough
-    - EVAL-HW-shacl-worked-example
-    - EVAL-HW-the-measurement-layer
-    - EVAL-HW-the-serving-boundary
-    - EVAL-HW-warrant-and-adjudication
-    - EVAL-HW-what-a-check-can-know
+    - HW-EVAL-default-taxonomy-first-run
+    - HW-EVAL-first-contact
+    - HW-EVAL-graph-export-and-federation
+    - HW-EVAL-linkml-worked-example
+    - HW-EVAL-schema-format-walkthrough
+    - HW-EVAL-shacl-worked-example
+    - HW-EVAL-the-measurement-layer
+    - HW-EVAL-the-serving-boundary
+    - HW-EVAL-warrant-and-adjudication
+    - HW-EVAL-what-a-check-can-know
 ---
 
 # 11 — Adjacent work and tooling

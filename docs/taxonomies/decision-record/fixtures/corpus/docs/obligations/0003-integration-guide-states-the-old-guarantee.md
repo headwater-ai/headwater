@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0003
+id: HW-OBL-0003
 title: The integration guide states the superseded guarantee
 status: current
 status_since: 2026-03-15
@@ -12,7 +12,7 @@ provenance:
   evidence_basis: unevidenced
 relations:
   traces_to:
-    - DR-repo-0004
+    - HW-DR-0004
 ---
 
 # The integration guide states the superseded guarantee

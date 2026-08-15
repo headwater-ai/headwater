@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0023
+id: HW-DR-0023
 status: current
 status_since: 2026-08-15
 summary: A published Rust guideline set is not installed as a skill, because a skill carries no rule of its own. Twenty-two lints are declared once in the workspace manifest, and each was chosen by measuring the corpus rather than by adopting a list.

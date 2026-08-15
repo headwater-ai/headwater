@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0009
+id: HW-OBL-0009
 title: "The Shape-origin finding rate is already zero, so the intervention has nowhere to act"
 status: current
 status_since: 2026-08-10
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0013
+    - HW-DR-0013
 ---
 
 # The Shape-origin finding rate is already zero, so the intervention has nowhere to act

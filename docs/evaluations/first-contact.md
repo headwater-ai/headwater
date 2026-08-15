@@ -1,5 +1,5 @@
 ---
-id: EVAL-HW-first-contact
+id: HW-EVAL-first-contact
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
@@ -13,12 +13,12 @@ provenance:
   evidence_basis: evidenced
 relations:
   cited_by:
-    - REG-HW-decisions
-    - SPEC-HW-vision-and-scope
-    - SPEC-HW-assurance-model
-    - SPEC-HW-engine-architecture
-    - SPEC-HW-distribution-and-federation
-    - SPEC-HW-adjacent-work
+    - HW-REG-decisions
+    - HW-SPEC-vision-and-scope
+    - HW-SPEC-assurance-model
+    - HW-SPEC-engine-architecture
+    - HW-SPEC-distribution-and-federation
+    - HW-SPEC-adjacent-work
 ---
 
 # First contact — the Q11, Q12 and Q16 evaluation

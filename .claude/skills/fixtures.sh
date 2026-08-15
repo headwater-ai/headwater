@@ -236,7 +236,7 @@ if [ -x "$engine" ]; then
         'The verb writes an edge only where the taxonomy declares `created_by: scaffold` on the relation.' \
         1 'created_by: hook' \
         "$engine" new obligation_record --title 'An edge a hook pays for' \
-        --relates traces_to=SPEC-HW-ai-integration --root "$scratch"
+        --relates traces_to=HW-SPEC-ai-integration --root "$scratch"
 
     # A shelf with no layout, because a layout that carries the identifier
     # sequence mints a fresh number on every run and so never collides. The
@@ -304,7 +304,7 @@ if [ -x "$engine" ]; then
             sed -n 's/^  \([0-9]*\) of \([0-9]*\) classified documents carry a reading$/\1 \2/p')
 
         # The same document shape, written by no verb at all.
-        printf -- '---\nid: OBL-repo-9998\ntitle: "A record no verb wrote"\nstatus: current\nstatus_since: 2026-08-14\nlast_verified: 2026-08-14\nsummary: "Written by no verb, to hold the reach figure against a route the store does not watch."\n---\n\n# A record no verb wrote\n\n## Context\n\nNone.\n\n## Obligation\n\nNone.\n\n## Discharge\n\nNone.\n' \
+        printf -- '---\nid: HW-OBL-9998\ntitle: "A record no verb wrote"\nstatus: current\nstatus_since: 2026-08-14\nlast_verified: 2026-08-14\nsummary: "Written by no verb, to hold the reach figure against a route the store does not watch."\n---\n\n# A record no verb wrote\n\n## Context\n\nNone.\n\n## Obligation\n\nNone.\n\n## Discharge\n\nNone.\n' \
             > "$clean/docs/obligations/9998-a-record-no-verb-wrote.md"
         by_hand=$("$engine" capture --root "$clean" |
             sed -n 's/^  \([0-9]*\) of \([0-9]*\) classified documents carry a reading$/\1 \2/p')
@@ -531,7 +531,7 @@ $out" ;;
     # A transcript with a key outside the closed set. Spec 5 says the transcript
     # holds no model prose and that the omission is the enforcement, so the
     # failing arm is a file that carries some.
-    printf '# A run\n\n## Run identity\n\n```yaml\nmodel: a\nreasoning: I read the governing document first.\n```\n\n## Events\n\n```yaml\n- probe: PROBE-HW-nothing\n```\n' \
+    printf '# A run\n\n## Run identity\n\n```yaml\nmodel: a\nreasoning: I read the governing document first.\n```\n\n## Events\n\n```yaml\n- probe: HW-PROBE-nothing\n```\n' \
         > "$scratch/prose.md"
     claim 'a transcript that carries model prose is refused, and the refusal exits 0' \
         ../../docs/spec/05-ai-integration.md \

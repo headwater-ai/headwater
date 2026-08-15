@@ -1,5 +1,5 @@
 ---
-id: REV-HW-ste-editorial-pass
+id: HW-REV-ste-editorial-pass
 status: current
 status_since: 2026-08-10
 last_verified: 2026-08-10
@@ -14,18 +14,18 @@ provenance:
   evidence_basis: evidenced
 relations:
   assesses:
-    - SPEC-HW-vision-and-scope
-    - SPEC-HW-conceptual-model
-    - SPEC-HW-taxonomy-model
-    - SPEC-HW-authoring-and-lifecycle
-    - SPEC-HW-assurance-model
-    - SPEC-HW-ai-integration
-    - SPEC-HW-engine-architecture
-    - SPEC-HW-distribution-and-federation
-    - REG-HW-open-questions
-    - SPEC-HW-theoretical-foundations
-    - SPEC-HW-adjacent-work
-    - SPEC-HW-glossary
+    - HW-SPEC-vision-and-scope
+    - HW-SPEC-conceptual-model
+    - HW-SPEC-taxonomy-model
+    - HW-SPEC-authoring-and-lifecycle
+    - HW-SPEC-assurance-model
+    - HW-SPEC-ai-integration
+    - HW-SPEC-engine-architecture
+    - HW-SPEC-distribution-and-federation
+    - HW-REG-open-questions
+    - HW-SPEC-theoretical-foundations
+    - HW-SPEC-adjacent-work
+    - HW-SPEC-glossary
 ---
 
 # STE editorial pass — source findings to address

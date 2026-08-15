@@ -1,5 +1,5 @@
 ---
-id: SPEC-HW-glossary
+id: HW-SPEC-glossary
 status: current
 status_since: 2026-08-10
 last_verified: 2026-08-11
@@ -15,11 +15,11 @@ provenance:
   evidence_basis: evidenced
 relations:
   cites_evidence:
-    - EVAL-HW-default-taxonomy-first-run
-    - EVAL-HW-graph-export-and-federation
-    - EVAL-HW-the-measurement-layer
-    - EVAL-HW-the-serving-boundary
-    - EVAL-HW-warrant-and-adjudication
+    - HW-EVAL-default-taxonomy-first-run
+    - HW-EVAL-graph-export-and-federation
+    - HW-EVAL-the-measurement-layer
+    - HW-EVAL-the-serving-boundary
+    - HW-EVAL-warrant-and-adjudication
 ---
 
 # Glossary

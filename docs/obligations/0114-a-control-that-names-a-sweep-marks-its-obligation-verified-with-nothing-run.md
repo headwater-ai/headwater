@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0114
+id: HW-OBL-0114
 status: current
 status_since: 2026-08-14
 summary: The register holds no coherence obligation at all, and the one mechanism that could bind the sweep to one reports it verified from the declaration alone.
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-assurance-model
-    - SPEC-HW-check-layer
+    - HW-SPEC-assurance-model
+    - HW-SPEC-check-layer
 ---
 
 # A control that names a sweep marks its obligation verified with nothing run

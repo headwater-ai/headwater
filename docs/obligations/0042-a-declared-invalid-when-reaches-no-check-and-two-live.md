@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0042
+id: HW-OBL-0042
 title: "A declared `invalid_when` reaches no check, and two live contradictory decisions pass in silence"
 status: current
 status_since: 2026-08-13
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-taxonomy-model
-    - SPEC-HW-adjacent-work
+    - HW-SPEC-taxonomy-model
+    - HW-SPEC-adjacent-work
 ---
 
 # A declared `invalid_when` reaches no check, and two live contradictory decisions pass in silence

@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0040
+id: HW-OBL-0040
 title: "Composition between two library entries has no add-only form"
 status: current
 status_since: 2026-08-13
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0003
+    - HW-DR-0003
 ---
 
 # Composition between two library entries has no add-only form

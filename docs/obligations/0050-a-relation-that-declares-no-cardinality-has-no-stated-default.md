@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0050
+id: HW-OBL-0050
 title: "A relation that declares no cardinality has no stated default"
 status: current
 status_since: 2026-08-13
@@ -14,9 +14,9 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-conceptual-model
-    - SPEC-HW-taxonomy-model
-    - SPEC-HW-check-layer
+    - HW-SPEC-conceptual-model
+    - HW-SPEC-taxonomy-model
+    - HW-SPEC-check-layer
 ---
 
 # A relation that declares no cardinality has no stated default

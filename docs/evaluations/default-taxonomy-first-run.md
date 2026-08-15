@@ -1,5 +1,5 @@
 ---
-id: EVAL-HW-default-taxonomy-first-run
+id: HW-EVAL-default-taxonomy-first-run
 status: current
 status_since: 2026-08-10
 last_verified: 2026-08-10
@@ -13,13 +13,13 @@ provenance:
   evidence_basis: evidenced
 relations:
   cited_by:
-    - REG-HW-decisions
-    - REG-HW-open-obligations
-    - SPEC-HW-vision-and-scope
-    - SPEC-HW-taxonomy-model
-    - SPEC-HW-distribution-and-federation
-    - SPEC-HW-adjacent-work
-    - SPEC-HW-glossary
+    - HW-REG-decisions
+    - HW-REG-open-obligations
+    - HW-SPEC-vision-and-scope
+    - HW-SPEC-taxonomy-model
+    - HW-SPEC-distribution-and-federation
+    - HW-SPEC-adjacent-work
+    - HW-SPEC-glossary
 ---
 
 # What ships in the box — a first-run walkthrough
@@ -153,7 +153,7 @@ shelves:
   specifications: {path: docs/specifications/**, homogeneous: true, kind: specification}
 
 identifier_schemes:
-  decision_id: {pattern: "DR-{namespace}-{seq:04d}", namespace: repo, allocation: reconcile-first}
+  decision_id: {pattern: "{namespace}-DR-{seq:04d}", namespace: repo, allocation: reconcile-first}
 
 core:
   requires:

@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0053
+id: HW-OBL-0053
 title: "The front-matter key that carries an identifier is undeclared"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0002
+    - HW-DR-0002
 ---
 
 # The front-matter key that carries an identifier is undeclared

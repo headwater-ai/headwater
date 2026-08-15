@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0113
+id: HW-OBL-0113
 title: "Every check passes a document that is still the scaffolder's placeholder"
 status: current
 status_since: 2026-08-14
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-check-layer
-    - DR-repo-0007
+    - HW-SPEC-check-layer
+    - HW-DR-0007
 ---
 
 # Every check passes a document that is still the scaffolder's placeholder
