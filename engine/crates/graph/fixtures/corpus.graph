@@ -1,6 +1,6 @@
-194 nodes, 424 declared edge halves
+195 nodes, 425 declared edge halves
     399 to a document
-     25 to an anchor
+     26 to an anchor
 0 prose links that did not resolve
 
 anchors
@@ -13,6 +13,7 @@ anchors
       2 code_path `.claude/skills/headwater-authoring/SKILL.md` via source-tree
       1 code_path `.claude/skills/headwater-sweep/SKILL.md` via source-tree
       1 code_path `.claude/skills/headwater-taxonomy/SKILL.md` via source-tree
+      1 code_path `.headwater/overlay.yml` via source-tree
       1 code_path `docs/taxonomies/decision-record/bundle.yml` via source-tree
         inside `docs/taxonomies/**`, which this corpus declares is not corpus content
       1 code_path `engine/Cargo.toml` via source-tree
