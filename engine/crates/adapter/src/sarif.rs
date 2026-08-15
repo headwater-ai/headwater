@@ -125,7 +125,10 @@
 //! a member that means *the tree this run is about* would be the emitter
 //! printing something false to fill a slot.
 
-use crate::{reported, Escape, Format, Loss, Reported, Subject, TOOL, TOOL_URI};
+use crate::{
+    a_scoped_run, every_finding, every_run, reported, Carrier, Escape, Format, Loss, Place,
+    Reported, Subject, TOOL, TOOL_URI,
+};
 use headwater_check::instance::Input;
 use headwater_check::register::Bound;
 use headwater_check::{Run, Severity};
@@ -144,25 +147,47 @@ pub const SCHEMA: &str =
     "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json";
 
 /// What SARIF cannot carry, and where each value went instead.
+///
+/// Four of the seven entries name a member of this document, and
+/// [`crate::census`] resolves each one against the emitted bytes. The `coverage`
+/// entry names the eight members its own reason lists, rather than the bag they
+/// sit in: an entry that named the bag alone stood for as long as it existed
+/// while three of the seven values coverage reports went nowhere, and a bag is
+/// what it named.
 pub const LOSS: &[Loss] = &[
     Loss {
         field: "the obligation's severity",
         reason: "`level` is the check's scale, and SARIF has no second member for how much an \
                  invariant matters. A consumer that ranks by `level` ranks by the check",
-        carried_in: "properties.headwater.obligation_severity",
+        carrier: Carrier::PerFinding {
+            places: &[Place {
+                at: &["properties", "headwater", "obligation_severity"],
+                members: &[],
+            }],
+            // The member is on the results whose finding names an obligation
+            // that the register grades, and on no others. The predicate reads
+            // the same register the emitter reads, through the same function.
+            when: a_graded_obligation,
+        },
     },
     Loss {
         field: "the escape class",
         reason: "`suppression.kind` has two values and spec 4 fixes three escape classes. A \
                  directive is `inSource`; a task of the adoption payload is `external`, and a \
                  waiver would be `external` too",
-        carried_in: "properties.headwater.escape",
+        carrier: Carrier::PerFinding {
+            places: &[Place {
+                at: &["properties", "headwater", "escape"],
+                members: &[],
+            }],
+            when: every_finding,
+        },
     },
     Loss {
         field: "the control's posture",
         reason: "no member says whether a finding stops a gate, and the engine emits what it \
                  evaluated and never orders what lands",
-        carried_in: "",
+        carrier: Carrier::Nowhere,
     },
     Loss {
         field: "coverage",
@@ -170,13 +195,44 @@ pub const LOSS: &[Loss] = &[
                  documents, including the ones no check classified. What is carried is every \
                  number the text report writes: the counts, the skip classes with their reasons, \
                  and the paths no census row accounts for",
-        carried_in: "run.properties.headwater.coverage",
+        carrier: Carrier::Run {
+            places: &[Place {
+                at: &["properties", "headwater", "coverage"],
+                // The seven values the reason above names, and `generated`
+                // beside them. Named one by one, because the bag is what the
+                // entry used to name and the bag was there while three of them
+                // were not.
+                members: &[
+                    "seen",
+                    "classified",
+                    "checked",
+                    "generated",
+                    "instances",
+                    "skipped",
+                    "skips",
+                    "unaccounted",
+                ],
+            }],
+            when: every_run,
+        },
     },
     Loss {
         field: "the remediation of a mechanical fix",
         reason: "`fixes[]` carries replacement text and a finding carries prose with a \
                  `fixable` flag, so no result here carries a `fix`",
-        carried_in: "properties.headwater.remediation and message.markdown",
+        carrier: Carrier::PerFinding {
+            places: &[
+                Place {
+                    at: &["properties", "headwater", "remediation"],
+                    members: &[],
+                },
+                Place {
+                    at: &["message", "markdown"],
+                    members: &[],
+                },
+            ],
+            when: every_finding,
+        },
     },
     Loss {
         field: "the change a run was scoped to",
@@ -184,15 +240,52 @@ pub const LOSS: &[Loss] = &[
                  `invocations` holds the runtime environment of the tool process and these are \
                  readings rather than process facts, and `automationDetails.id` uniquely \
                  identifies one run, which is an identity this engine mints none of",
-        carried_in: "run.properties.headwater.change",
+        carrier: Carrier::Run {
+            places: &[Place {
+                at: &["properties", "headwater", "change"],
+                members: &[
+                    "documents",
+                    "added",
+                    "carried",
+                    "unreadable",
+                    "unmatched",
+                    "promotions",
+                ],
+            }],
+            // A full-corpus run writes no member at all, and the absence is what
+            // tells the two runs apart. So the census requires the member on a
+            // scoped run and requires its absence on every other, which is the
+            // reading #234 rests on.
+            when: a_scoped_run,
+        },
     },
     Loss {
         field: "the corpus tree",
         reason: "`run.automationDetails.id` is where one would go and nothing computes one. The \
                  read set is not a tree: it holds what the checks read",
-        carried_in: "",
+        carrier: Carrier::Nowhere,
     },
 ];
+
+/// The severity the register declares for the obligation a finding serves.
+///
+/// One reader for the emitter below and for the loss set's own predicate above.
+/// Two copies of this lookup would be an emitter and a claim about the emitter
+/// that could come apart in silence, which is the class of defect the carrier
+/// audit exists to report.
+pub fn obligation_severity(entry: &Reported<'_>, run: &Run) -> Option<String> {
+    let obligation = entry.finding.obligation.as_ref()?;
+    run.register
+        .obligations
+        .iter()
+        .find(|disposed| disposed.id == *obligation)
+        .and_then(|disposed| disposed.severity.clone())
+}
+
+/// Whether this result carries the member the first entry of [`LOSS`] names.
+fn a_graded_obligation(entry: &Reported<'_>, run: &Run) -> bool {
+    obligation_severity(entry, run).is_some()
+}
 
 /// The check's severity as a SARIF `level`.
 ///
@@ -501,13 +594,9 @@ fn result_properties(entry: &Reported<'_>, run: &Run) -> Json {
         // The other scale, in the member the loss set points at. It is read off
         // the register rather than off the finding, because it is a property of
         // the invariant and a finding carries the check's severity instead.
-        let declared = run
-            .register
-            .obligations
-            .iter()
-            .find(|disposed| disposed.id == *obligation)
-            .and_then(|disposed| disposed.severity.clone());
-        if let Some(declared) = declared {
+        // [`obligation_severity`] is the one reader of it, and the predicate on
+        // that loss entry calls the same function.
+        if let Some(declared) = obligation_severity(entry, run) {
             headwater.push(("obligation_severity", Json::string(declared)));
         }
     }
@@ -591,7 +680,7 @@ pub fn loss_set() -> Json {
                 Json::object([
                     ("field", Json::string(loss.field)),
                     ("reason", Json::string(loss.reason)),
-                    ("carried_in", Json::string(loss.carried_in)),
+                    ("carried_in", Json::string(loss.carried_in())),
                 ])
             })
             .collect(),

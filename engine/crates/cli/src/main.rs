@@ -3918,15 +3918,9 @@ fn fix_over(root: &Path, ctx: &Context, format: Format) -> Result<Written, Strin
     // The same audit the verb fails a run on. A caller here holds one artifact
     // rather than a terminal, so a finding that reached no output is invisible
     // to it.
-    let audited = headwater_adapter::census(&run, &artifact);
+    let audited = headwater_adapter::census(&run, format, &artifact);
     if audited.is_defective() {
-        return Err(format!(
-            "the {} adapter dropped {} of {} findings with no declared loss reason: {}",
-            format.name(),
-            audited.unaccounted.len(),
-            audited.findings,
-            audited.unaccounted.join(", ")
-        ));
+        return Err(audited.complaint(format));
     }
     Ok(Written {
         account: format!("{}{}", fixed.account, refusal_account(&fixed.refused)),
@@ -4074,17 +4068,9 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
     // graph emitters. A finding that reached no output and that no loss
     // reason covers is a defect in the adapter, and it fails the run the
     // way a defective projection census does.
-    let audited = headwater_adapter::census(&run, &artifact);
+    let audited = headwater_adapter::census(&run, format, &artifact);
     if audited.is_defective() {
-        eprintln!(
-            "headwater: the {} adapter dropped {} of {} findings with no declared loss reason:",
-            format.name(),
-            audited.unaccounted.len(),
-            audited.findings
-        );
-        for missing in &audited.unaccounted {
-            eprintln!("  {missing}");
-        }
+        eprint!("headwater: {}", audited.complaint(format));
         return ExitCode::FAILURE;
     }
 

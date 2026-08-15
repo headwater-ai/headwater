@@ -42,7 +42,9 @@
 //!
 //! Read the diff before committing it. A blessed record is the change.
 
-use headwater_adapter::{reported, Escape, Format, Subject};
+use headwater_adapter::{
+    every_run, reported, Carrier, Escape, Format, Loss, OnFinding, OnRun, Place, Subject,
+};
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
@@ -405,7 +407,7 @@ fn every_finding_reaches_every_format() {
     for ran in [fixture_run(), scoped_run()] {
         for format in Format::ALL {
             let artifact = render(&ran, format);
-            let audited = headwater_adapter::census(&ran.run, &artifact);
+            let audited = headwater_adapter::census(&ran.run, format, &artifact);
             assert!(
                 !audited.is_defective(),
                 "the {} adapter dropped {:?}",
@@ -416,6 +418,348 @@ fn every_finding_reaches_every_format() {
             assert!(audited.findings > 0);
         }
     }
+}
+
+/// Every entry of every loss set reaches one of the three outcomes, and the
+/// three sum to the entries declared.
+///
+/// The tripwire under every other assertion here. An entry that fell out of all
+/// three would be an entry the audit walked past, which is the whole defect this
+/// half of the census was written for.
+#[test]
+fn every_entry_of_every_loss_set_is_accounted_for() {
+    for ran in [fixture_run(), scoped_run()] {
+        for format in Format::ALL {
+            let artifact = render(&ran, format);
+            let audited = headwater_adapter::census(&ran.run, format, &artifact);
+            assert!(
+                audited.accounts(),
+                "{}: {} entries, {} held, {} adrift, {} unaudited",
+                format.name(),
+                audited.entries,
+                audited.held,
+                audited.adrift.len(),
+                audited.unaudited
+            );
+            assert_eq!(audited.entries, format.loss().len());
+            assert!(audited.adrift.is_empty(), "{:?}", audited.adrift);
+        }
+    }
+}
+
+/// What each format's loss set is held to, entry by entry.
+///
+/// The counts rather than the verdict. `is_defective` is false over a format
+/// that audited nothing and over one that audited everything, so a suite that
+/// asserted the verdict alone could not tell the two apart. Five of SARIF's
+/// seven entries name a member of the document and two name nowhere. All four of
+/// Markdown's name nowhere in it, because that artifact is prose. `text` and
+/// `json` declare no loss at all.
+#[test]
+fn the_audited_and_the_unaudited_are_counted_apart() {
+    for ran in [fixture_run(), scoped_run()] {
+        for (format, entries, held, unaudited) in [
+            (Format::Text, 0, 0, 0),
+            (Format::Json, 0, 0, 0),
+            (Format::Sarif, 7, 5, 2),
+            (Format::Markdown, 4, 0, 4),
+        ] {
+            let artifact = render(&ran, format);
+            let audited = headwater_adapter::census(&ran.run, format, &artifact);
+            assert_eq!(
+                (audited.entries, audited.held, audited.unaudited),
+                (entries, held, unaudited),
+                "{}",
+                format.name()
+            );
+        }
+    }
+}
+
+/// One place, at the lifetime a declaration has.
+///
+/// A loss set is `const` data in the crate it belongs to, so a place lives for
+/// the program. A place this suite composes at run time does not, and leaking
+/// one is what gives a test the same lifetime a declaration has. A handful of
+/// single-element arrays for the life of one test binary.
+fn place(at: &'static [&'static str], members: &'static [&'static str]) -> &'static [Place] {
+    Box::leak(Box::new([Place { at, members }]))
+}
+
+/// One place in a SARIF run object, named by a test rather than by a format.
+fn run_place(at: &'static [&'static str], members: &'static [&'static str], when: OnRun) -> Loss {
+    Loss {
+        field: "a field this test invented",
+        reason: "so that a declaration this suite wrote can be held to an artifact",
+        carrier: Carrier::Run {
+            places: place(at, members),
+            when,
+        },
+    }
+}
+
+/// One place in every result of a SARIF run.
+fn finding_place(
+    at: &'static [&'static str],
+    members: &'static [&'static str],
+    when: OnFinding,
+) -> Loss {
+    Loss {
+        field: "a field this test invented",
+        reason: "so that a declaration this suite wrote can be held to an artifact",
+        carrier: Carrier::PerFinding {
+            places: place(at, members),
+            when,
+        },
+    }
+}
+
+fn no_run(_: &Run) -> bool {
+    false
+}
+
+fn no_finding(_: &headwater_adapter::Reported<'_>, _: &Run) -> bool {
+    false
+}
+
+/// A loss entry that is false fails the audit, and a true one passes it.
+///
+/// The test this half of the census exists for, at both grains. Before this
+/// branch the audit reached neither: it walked the finding set, so a run-level
+/// entry and a record-level entry were both claims that only a recorded artifact
+/// held. "It passed" and "it was never asked" were one result.
+///
+/// The declaration is what varies and the artifact is fixed, because a format's
+/// loss set is a `const`: a probe that could only doctor the artifact would
+/// measure the emitter, and the instrument is what is on trial here.
+#[test]
+fn a_carrier_that_is_wrong_is_adrift_and_one_that_is_right_is_held() {
+    let ran = fixture_run();
+    let artifact = render(&ran, Format::Sarif);
+
+    for (name, entry, adrift) in [
+        (
+            "a run-level member that is there",
+            run_place(&["properties", "headwater", "coverage"], &[], every_run),
+            false,
+        ),
+        (
+            "a run-level member that is not",
+            run_place(&["properties", "headwater", "covrage"], &[], every_run),
+            true,
+        ),
+        (
+            "a record-level member that is there",
+            finding_place(
+                &["properties", "headwater", "escape"],
+                &[],
+                headwater_adapter::every_finding,
+            ),
+            false,
+        ),
+        (
+            "a record-level member that is not",
+            finding_place(
+                &["properties", "headwater", "escapee"],
+                &[],
+                headwater_adapter::every_finding,
+            ),
+            true,
+        ),
+    ] {
+        let loss = [entry];
+        let audited = headwater_adapter::census_with(&ran.run, Format::Sarif, &artifact, &loss);
+        assert!(audited.accounts(), "{name}");
+        assert_eq!(audited.entries, 1, "{name}");
+        assert_eq!(audited.unaudited, 0, "{name}");
+        assert_eq!(!audited.adrift.is_empty(), adrift, "{name}: {audited:?}");
+        assert_eq!(audited.held, usize::from(!adrift), "{name}");
+        assert_eq!(audited.is_defective(), adrift, "{name}");
+    }
+}
+
+/// A block that is there and empty of the values the entry claims is adrift.
+///
+/// The injectivity question, over the case that produced #233. `coverage` named
+/// a property bag while three of the seven values it reports went nowhere, and a
+/// carrier that stopped at the bag would report that entry as held. The members
+/// are what the entry names now, and a member that is not under the block fails
+/// while the block itself resolves.
+#[test]
+fn a_carrier_that_names_the_block_and_not_the_values_cannot_see_the_difference() {
+    let ran = fixture_run();
+    let artifact = render(&ran, Format::Sarif);
+    let at: &[&str] = &["properties", "headwater", "coverage"];
+
+    let block = [run_place(at, &[], every_run)];
+    let audited = headwater_adapter::census_with(&ran.run, Format::Sarif, &artifact, &block);
+    assert_eq!(audited.held, 1, "the block alone resolves");
+
+    let values = [run_place(at, &["seen", "skips", "unaccounted"], every_run)];
+    let audited = headwater_adapter::census_with(&ran.run, Format::Sarif, &artifact, &values);
+    assert_eq!(audited.held, 1, "and so do the values it carries");
+
+    let missing = [run_place(
+        at,
+        &["seen", "the_document_each_skip_fell_on"],
+        every_run,
+    )];
+    let audited = headwater_adapter::census_with(&ran.run, Format::Sarif, &artifact, &missing);
+    assert!(
+        !audited.adrift.is_empty(),
+        "a value the block does not hold is adrift while the block resolves"
+    );
+    assert!(audited.adrift[0].contains("the_document_each_skip_fell_on"));
+}
+
+/// A member written where the run carries no value for it is adrift too.
+///
+/// The other direction, and it is the one #234 rests on: an absent `change`
+/// member is what says a run read the whole corpus. An audit that only asked
+/// whether a declared member was present would report an emitter that wrote the
+/// member on every run as correct, and a reader of that artifact could no longer
+/// tell the two runs apart.
+#[test]
+fn a_member_present_where_the_run_has_no_value_is_adrift() {
+    let at: &[&str] = &["properties", "headwater", "change"];
+    let full = fixture_run();
+    let scoped = scoped_run();
+
+    let claimed = [run_place(at, &[], every_run)];
+    let audited = headwater_adapter::census_with(
+        &full.run,
+        Format::Sarif,
+        &render(&full, Format::Sarif),
+        &claimed,
+    );
+    assert!(
+        !audited.adrift.is_empty(),
+        "a full-corpus artifact has no change member to hold"
+    );
+
+    let denied = [run_place(at, &[], no_run)];
+    let audited = headwater_adapter::census_with(
+        &scoped.run,
+        Format::Sarif,
+        &render(&scoped, Format::Sarif),
+        &denied,
+    );
+    assert!(
+        !audited.adrift.is_empty(),
+        "a scoped artifact has one, and a carrier that denies it is wrong about it"
+    );
+    assert!(audited.adrift[0].contains("carries no value for it"));
+
+    let denied_per_finding = [finding_place(
+        &["properties", "headwater", "escape"],
+        &[],
+        no_finding,
+    )];
+    let audited = headwater_adapter::census_with(
+        &full.run,
+        Format::Sarif,
+        &render(&full, Format::Sarif),
+        &denied_per_finding,
+    );
+    assert!(
+        !audited.adrift.is_empty(),
+        "and the same holds one grain down, on a member every result carries"
+    );
+}
+
+/// A member path into an artifact nothing can parse is a defect, not a pass.
+///
+/// The `Option` this branch could have reintroduced one level up. The audit
+/// resolves a path against a parsed document, so every step of it returns an
+/// `Option`, and a reader that treated "I could not read this" as "there was
+/// nothing to find" would make the whole instrument green over an artifact it
+/// never opened. Two states reach it here: a format whose artifact is prose, and
+/// bytes that are not a document at all.
+#[test]
+fn a_carrier_the_reader_cannot_reach_is_adrift_rather_than_unaudited() {
+    let ran = fixture_run();
+    let loss = [run_place(
+        &["properties", "headwater", "coverage"],
+        &[],
+        every_run,
+    )];
+
+    for (name, format, artifact) in [
+        ("prose", Format::Markdown, render(&ran, Format::Markdown)),
+        ("prose", Format::Text, render(&ran, Format::Text)),
+        (
+            "not a document",
+            Format::Sarif,
+            "\t\tnot a document".to_string(),
+        ),
+        ("an empty document", Format::Sarif, "{}\n".to_string()),
+    ] {
+        let audited = headwater_adapter::census_with(&ran.run, format, &artifact, &loss);
+        assert!(audited.accounts(), "{name}");
+        assert_eq!(audited.unaudited, 0, "{name}: it was asked");
+        assert_eq!(audited.held, 0, "{name}: and it did not hold");
+        assert!(audited.is_defective(), "{name}");
+    }
+}
+
+/// A record count that does not match the finding count is a defect.
+///
+/// The precondition under every per-record carrier. Both machine-readable
+/// emitters write one record per reported finding, in that order, and an audit
+/// that matched by position without saying so would read the wrong record after
+/// any drift. The artifact here is one run's and the finding set is another's.
+#[test]
+fn a_record_list_that_does_not_line_up_with_the_finding_set_is_adrift() {
+    let full = fixture_run();
+    let loss = [finding_place(
+        &["properties", "headwater", "escape"],
+        &[],
+        headwater_adapter::every_finding,
+    )];
+    let empty = r#"{"version": "2.1.0", "runs": [{"results": []}]}"#;
+    let audited = headwater_adapter::census_with(&full.run, Format::Sarif, empty, &loss);
+    assert!(!audited.adrift.is_empty());
+    assert!(audited.adrift[0].contains("records for"));
+}
+
+/// The sentence an artifact carries is derived from the carrier and from nothing
+/// else.
+///
+/// One source for the declaration and for the string a consumer reads. The
+/// recorded artifacts pin the seven strings; this pins that they are pairwise
+/// distinct where they say anything, so a permutation of two entries could not
+/// pass the recordings.
+#[test]
+fn every_carrier_renders_the_one_sentence_and_no_two_agree() {
+    for format in Format::ALL {
+        let mut named: Vec<String> = format
+            .loss()
+            .iter()
+            .map(|entry| entry.carried_in())
+            .filter(|text| !text.is_empty())
+            .collect();
+        let before = named.len();
+        named.sort();
+        named.dedup();
+        assert_eq!(named.len(), before, "{}", format.name());
+    }
+    let sarif: Vec<String> = Format::Sarif
+        .loss()
+        .iter()
+        .map(|entry| entry.carried_in())
+        .collect();
+    assert_eq!(
+        sarif,
+        [
+            "properties.headwater.obligation_severity",
+            "properties.headwater.escape",
+            "",
+            "run.properties.headwater.coverage",
+            "properties.headwater.remediation and message.markdown",
+            "run.properties.headwater.change",
+            "",
+        ]
+    );
 }
 
 /// Whether one artifact states what the run was scoped to.
@@ -1380,4 +1724,70 @@ fn results(document: &Value) -> Vec<Value> {
         .iter()
         .map(|spanned| spanned.value.clone())
         .collect()
+}
+
+/// A member of one artifact, by path.
+fn at<'a>(
+    value: &'a headwater_yaml::Spanned<headwater_yaml::Value>,
+    path: &[&str],
+) -> Option<&'a headwater_yaml::Spanned<headwater_yaml::Value>> {
+    let mut found = value;
+    for key in path {
+        found = found.value.as_map()?.get(key)?;
+    }
+    Some(found)
+}
+
+/// The members a run-level carrier names are the members the artifact writes.
+///
+/// The census holds the artifact to the declaration. Nothing held the
+/// declaration to the artifact, and without this a member could leave the list
+/// in silence: the audit would then ask for less, every count would still add
+/// up, and the entry would read as held. It is the same weakening that produced
+/// #233 one grain out, where the entry named a bag and the bag was there.
+///
+/// Derived rather than listed. Every entry of every loss set that names members
+/// is read out of the declaration, and the names are read out of the emitted
+/// bytes. An emitter that adds a member to a declared block fails this too,
+/// because a value that reaches an artifact and no declaration is a value the
+/// loss set does not account for.
+#[test]
+fn the_members_a_carrier_names_are_the_members_the_artifact_writes() {
+    let mut checked = 0;
+    for ran in [fixture_run(), scoped_run()] {
+        for format in Format::ALL {
+            let artifact = render(&ran, format);
+            let Ok(root) = headwater_yaml::load(&artifact) else {
+                continue;
+            };
+            let Some(runs) = at(&root, &["runs"]).and_then(|found| found.value.as_seq()) else {
+                continue;
+            };
+            let object = runs.first().expect("one run");
+            for entry in format.loss() {
+                let Carrier::Run { places, when } = entry.carrier else {
+                    continue;
+                };
+                if !when(&ran.run) {
+                    continue;
+                }
+                for place in places.iter().filter(|place| !place.members.is_empty()) {
+                    let block = at(object, place.at).expect("the block the entry names");
+                    let written: BTreeSet<&str> = block
+                        .value
+                        .as_map()
+                        .expect("a mapping")
+                        .iter()
+                        .map(|member| member.key.value.as_str())
+                        .collect();
+                    let declared: BTreeSet<&str> = place.members.iter().copied().collect();
+                    assert_eq!(declared, written, "{} in {}", entry.field, format.name());
+                    checked += 1;
+                }
+            }
+        }
+    }
+    // Two entries over the full-corpus run and the scoped one, minus the change
+    // entry that a full-corpus run does not write.
+    assert_eq!(checked, 3);
 }

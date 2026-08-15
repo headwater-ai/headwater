@@ -78,6 +78,7 @@ use headwater_check::adoption::Task;
 use headwater_check::suppression::Suppression;
 use headwater_check::{Finding, Run, Severity};
 use headwater_graph::Graph;
+use headwater_yaml::{Spanned, Value};
 
 /// The name this tool reports under, in every format that names it.
 pub const TOOL: &str = "headwater";
@@ -146,16 +147,143 @@ impl Format {
 /// One entry of a format's loss set: something a run carries, the target
 /// vocabulary has no member for, and the reason.
 ///
-/// `carried_in` names where the value went instead, and it is empty where the
-/// value went nowhere. A property bag is not a member of the vocabulary, so a
-/// value that rides in one is still a loss for every consumer that reads the
-/// vocabulary alone. Saying which is the difference between a loss set and an
-/// apology.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// [`Loss::carrier`] names where the value went instead. A property bag is not
+/// a member of the vocabulary, so a value that rides in one is still a loss for
+/// every consumer that reads the vocabulary alone. Saying which is the
+/// difference between a loss set and an apology.
+///
+/// The carrier is a structure rather than the sentence it renders as, because
+/// [`census`] resolves it against the emitted bytes. A `&'static str` there is
+/// a claim in prose, and a claim in prose is what this crate shipped: SARIF
+/// declared that the coverage went to `run.properties.headwater.coverage` while
+/// three of the seven values coverage reports went nowhere, and no run read the
+/// declaration against the document.
+#[derive(Clone, Copy, Debug)]
 pub struct Loss {
     pub field: &'static str,
     pub reason: &'static str,
-    pub carried_in: &'static str,
+    pub carrier: Carrier,
+}
+
+impl Loss {
+    /// Where the value went, as the one sentence every artifact writes.
+    ///
+    /// The rendering is here and in no emitter, so the declaration and the
+    /// string a consumer reads cannot disagree.
+    pub fn carried_in(&self) -> String {
+        self.carrier.render()
+    }
+}
+
+/// One place in an artifact that a lost value went, and what it holds there.
+///
+/// `at` is the path from the object the [`Carrier`] is relative to. `members`
+/// are the members of the value at `at` that the entry claims are there, and it
+/// is empty where the value at `at` is the whole of what was carried.
+///
+/// The two grains are not decoration. A carrier that named a block alone would
+/// pass over a block emptied of everything but its own name, which is the shape
+/// of the defect this type exists to catch: an entry that said "the coverage is
+/// in this bag" over a bag that held four of the seven values.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Place {
+    pub at: &'static [&'static str],
+    pub members: &'static [&'static str],
+}
+
+impl Place {
+    /// The path, dotted, with no statement about which object it starts from.
+    fn path(&self) -> String {
+        self.at.join(".")
+    }
+}
+
+/// Whether a run writes a [`Carrier::Run`] place, read off the run and never
+/// off the artifact.
+///
+/// A predicate rather than a flag, because a member written on some runs and
+/// not on others is the case a presence test cannot audit. It reads the run,
+/// which is what the emitter reads, so a drift between the two fails the census
+/// rather than passing it.
+pub type OnRun = fn(&Run) -> bool;
+
+/// Whether one reported finding's record carries a [`Carrier::PerFinding`]
+/// place.
+pub type OnFinding = fn(&Reported<'_>, &Run) -> bool;
+
+/// Every run writes it.
+pub fn every_run(_: &Run) -> bool {
+    true
+}
+
+/// A run that was told about a change writes it, and a full-corpus run does
+/// not.
+pub fn a_scoped_run(run: &Run) -> bool {
+    run.change.is_some()
+}
+
+/// Every record carries it.
+pub fn every_finding(_: &Reported<'_>, _: &Run) -> bool {
+    true
+}
+
+/// Where a value the target vocabulary cannot hold went instead.
+///
+/// Four cases, and the split is what lets [`census`] say "this entry was not
+/// audited" rather than reporting it as one that passed. The two that name a
+/// member of the artifact are resolved against the emitted bytes. The two that
+/// do not are counted, and the count stands in the census beside the held ones.
+/// No `PartialEq`. Two of these variants hold a function pointer, and a
+/// comparison of those compares addresses the compiler is free to merge or to
+/// duplicate, which is a comparison that answers a question nobody asked.
+#[derive(Clone, Copy, Debug)]
+pub enum Carrier {
+    /// Nowhere. A consumer that holds these bytes cannot recover the value.
+    Nowhere,
+    /// Outside these bytes, by the means named. A second command or a second
+    /// format, in prose because it is not a path into this artifact.
+    Elsewhere(&'static str),
+    /// Members of the artifact's run object, on the runs `when` names.
+    Run {
+        places: &'static [Place],
+        when: OnRun,
+    },
+    /// Members of the record the artifact writes per reported finding, on the
+    /// records `when` names.
+    PerFinding {
+        places: &'static [Place],
+        when: OnFinding,
+    },
+}
+
+impl Carrier {
+    /// The sentence an artifact carries in its `carried_in` member.
+    ///
+    /// A [`Carrier::Run`] place is written with a `run.` prefix and a
+    /// [`Carrier::PerFinding`] place without one, which is the notation the
+    /// SARIF entries already used and a difference a reader could not otherwise
+    /// see. Two places join with `and`, because an entry whose value reached
+    /// two members has to name both.
+    pub fn render(&self) -> String {
+        let joined = |places: &[Place], prefix: &str| {
+            places
+                .iter()
+                .map(|place| format!("{prefix}{}", place.path()))
+                .collect::<Vec<String>>()
+                .join(" and ")
+        };
+        match self {
+            Carrier::Nowhere => String::new(),
+            Carrier::Elsewhere(text) => (*text).to_string(),
+            Carrier::Run { places, .. } => joined(places, "run."),
+            Carrier::PerFinding { places, .. } => joined(places, ""),
+        }
+    }
+
+    /// Whether [`census`] can hold this entry to the bytes.
+    pub fn names_a_member(&self) -> bool {
+        matches!(self, Carrier::Run { .. } | Carrier::PerFinding { .. })
+    }
 }
 
 /// Which escape mechanism holds a finding back, in the precedence
@@ -255,6 +383,20 @@ pub fn reported(run: &Run) -> Vec<Reported<'_>> {
 /// either present in the output, or accounted for by a declared loss reason."
 /// Here the denominator is every finding of the run rather than every node of
 /// the graph, and the rest of the sentence is the same one.
+///
+/// # A loss set makes two claims and this holds both
+///
+/// The first three fields are the finding claim: every finding of the run is in
+/// the output. The last four are the **carrier** claim, which nothing audited
+/// until this type held it. An entry that says a value went to a member of the
+/// artifact is a statement about the emitted bytes, and it was a statement a
+/// recorded artifact held and nothing else. That is how one entry stood while it
+/// named the whole of the coverage and pointed at four of its seven values.
+///
+/// `entries == held + adrift.len() + unaudited` on every census, which
+/// [`Census::accounts`] states. An entry that fell out of all three outcomes
+/// would be an entry nothing looked at and nothing reported, which is the state
+/// this type exists to make impossible.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Census {
     pub findings: usize,
@@ -262,22 +404,245 @@ pub struct Census {
     /// Findings the output does not carry and no loss reason covers. A
     /// non-empty list is a defect in the adapter, not a fact about the corpus.
     pub unaccounted: Vec<String>,
+    /// Loss entries the format declares.
+    pub entries: usize,
+    /// Entries whose carrier names members of this artifact, where the artifact
+    /// agrees with the run about every one of them: there where this run has a
+    /// value, and absent where it has none.
+    pub held: usize,
+    /// Entries whose carrier and artifact disagree. A non-empty list is a defect
+    /// in the adapter, in the sense [`Census::unaccounted`] is one: the emitter
+    /// and its own declaration have come apart, and the declaration is what a
+    /// consumer reads.
+    pub adrift: Vec<String>,
+    /// Entries that name no member of this artifact: the value went nowhere, or
+    /// it went somewhere these bytes are not. Counted rather than passed over,
+    /// because "nothing here audits this" and "this was audited and it held" are
+    /// different results, and only one of them is evidence.
+    pub unaudited: usize,
 }
 
 impl Census {
     pub fn is_defective(&self) -> bool {
-        !self.unaccounted.is_empty()
+        !self.unaccounted.is_empty() || !self.adrift.is_empty()
     }
+
+    /// Every declared entry reached one of the three outcomes.
+    pub fn accounts(&self) -> bool {
+        self.entries == self.held + self.adrift.len() + self.unaudited
+    }
+
+    /// What a caller prints when the audit fails.
+    ///
+    /// One rendering, because the three callers of [`census`] wrote three of
+    /// them and a fourth outcome would have reached one caller. Empty when the
+    /// census found no defect.
+    pub fn complaint(&self, format: Format) -> String {
+        let mut out = String::new();
+        if !self.unaccounted.is_empty() {
+            out.push_str(&format!(
+                "the {} adapter dropped {} of {} findings with no declared loss reason:\n",
+                format.name(),
+                self.unaccounted.len(),
+                self.findings
+            ));
+            for missing in &self.unaccounted {
+                out.push_str(&format!("  {missing}\n"));
+            }
+        }
+        if !self.adrift.is_empty() {
+            out.push_str(&format!(
+                "the {} loss set declares {} of {} carriers that this artifact does not agree with:\n",
+                format.name(),
+                self.adrift.len(),
+                self.entries
+            ));
+            for adrift in &self.adrift {
+                out.push_str(&format!("  {adrift}\n"));
+            }
+        }
+        out
+    }
+}
+
+/// The objects a loss carrier's paths start from, read out of the bytes.
+///
+/// The artifact is parsed rather than searched. `headwater_yaml::load` is the
+/// reader that `headwater_yaml::json` names as the other half of its writer,
+/// because JSON is a subset of the YAML 1.2 core schema that loader implements.
+/// A search would carry the defect the finding half of [`census`] still has: a
+/// substring reaches a document's index of names as readily as its records.
+struct Objects<'a> {
+    /// What a [`Carrier::Run`] place is relative to.
+    run: &'a Spanned<Value>,
+    /// One record per reported finding, in [`reported`] order, which is the
+    /// order both emitters write them in.
+    records: &'a [Spanned<Value>],
+}
+
+/// Where those two objects are in each format's document.
+///
+/// `None` for a format whose artifact is prose. That is not a pass: a carrier
+/// that names a member of such an artifact reaches [`Census::adrift`], because a
+/// member path into a document nothing can parse is a claim nothing can hold.
+fn objects<'a>(format: Format, root: &'a Spanned<Value>) -> Option<Objects<'a>> {
+    let empty: &'a [Spanned<Value>] = &[];
+    let seq = |value: Option<&'a Spanned<Value>>| {
+        value
+            .and_then(|found| found.value.as_seq())
+            .unwrap_or(empty)
+    };
+    match format {
+        Format::Sarif => {
+            let runs = root.value.as_map()?.get("runs")?.value.as_seq()?;
+            let run = runs.first()?;
+            Some(Objects {
+                run,
+                records: seq(run.value.as_map()?.get("results")),
+            })
+        }
+        Format::Json => Some(Objects {
+            run: root,
+            records: seq(root.value.as_map()?.get("findings")),
+        }),
+        Format::Text | Format::Markdown => None,
+    }
+}
+
+/// One step of a member path, and then the next.
+fn member<'a>(value: &'a Spanned<Value>, path: &[&str]) -> Option<&'a Spanned<Value>> {
+    let mut at = value;
+    for key in path {
+        at = at.value.as_map()?.get(key)?;
+    }
+    Some(at)
+}
+
+/// Whether one object carries one place: the path resolves, and every member the
+/// place names is under it.
+fn holds(object: &Spanned<Value>, place: &Place) -> Result<(), String> {
+    let Some(at) = member(object, place.at) else {
+        return Err(format!("`{}` is not there", place.path()));
+    };
+    let missing: Vec<&str> = place
+        .members
+        .iter()
+        .copied()
+        .filter(|name| member(at, &[name]).is_none())
+        .collect();
+    match missing.is_empty() {
+        true => Ok(()),
+        false => Err(format!(
+            "`{}` is there and holds none of: {}",
+            place.path(),
+            missing.join(", ")
+        )),
+    }
+}
+
+/// Every place of one carrier, against one object that either writes it or does
+/// not.
+///
+/// Both directions, because an entry is a statement about the artifact of a run
+/// with a value **and** about the artifact of a run without one. A member
+/// written where this run has nothing is what makes a reader think the absence
+/// of that member means something, and #234 rests on exactly that reading.
+fn against(object: &Spanned<Value>, places: &[Place], written: bool) -> Vec<String> {
+    places
+        .iter()
+        .filter_map(|place| match written {
+            true => holds(object, place).err(),
+            false => member(object, place.at).is_some().then(|| {
+                format!(
+                    "`{}` is there and this run carries no value for it",
+                    place.path()
+                )
+            }),
+        })
+        .collect()
+}
+
+/// One per-finding carrier, against every record of the artifact.
+fn per_finding(
+    read: &Objects<'_>,
+    places: &[Place],
+    when: OnFinding,
+    all: &[Reported<'_>],
+    run: &Run,
+) -> Vec<String> {
+    // The record list has to line up with the finding list before a per-record
+    // place means anything. Both emitters write one record per `reported` entry,
+    // in that order, and a census that assumed it in silence would audit the
+    // wrong record after any drift.
+    if read.records.len() != all.len() {
+        return vec![format!(
+            "the artifact writes {} records for {} reported findings",
+            read.records.len(),
+            all.len()
+        )];
+    }
+    all.iter()
+        .zip(read.records)
+        .flat_map(|(entry, record)| {
+            against(record, places, when(entry, run))
+                .into_iter()
+                .map(|fault| format!("{fault}, on {}", entry.finding.rule))
+                .collect::<Vec<String>>()
+        })
+        .collect()
 }
 
 /// Audit one rendered artifact against the run it came from.
 ///
 /// It reads the bytes rather than the emitter, for the reason
 /// `headwater_generate::export::audit` does: an emitter that audited itself
-/// would be the untrusted projector one layer out. A finding is carried when
-/// the output names its rule and its path in one place a reader can find, which
-/// is the coarsest grain all three formats share.
-pub fn census(run: &Run, artifact: &str) -> Census {
+/// would be the untrusted projector one layer out.
+///
+/// # The finding half, and what it still cannot say
+///
+/// A finding is carried when the output names its rule and its path. Those are
+/// two independent substring tests over the whole document, so a format that
+/// prints an index of rule names and an index of paths passes them whatever its
+/// records hold. `HW-OBL-0110` records the measurement, and this function still
+/// carries the defect. That record proposes a test per line or per record and
+/// says that none of the four formats needs a parser for it. [`Objects`] is a
+/// second route, available to the two machine-readable formats and to neither
+/// prose one, and nothing here settles which of the two that record takes.
+///
+/// # The carrier half
+///
+/// Every entry of the format's loss set reaches exactly one of three outcomes.
+/// An entry whose carrier names members of the artifact is resolved against the
+/// parsed document and is held or adrift. An entry whose carrier names nowhere,
+/// or a place outside these bytes, is counted as unaudited. Nothing falls out,
+/// which [`Census::accounts`] states and the suite asserts.
+///
+/// # What a held entry does not prove
+///
+/// A place whose `members` are empty is held when its path resolves to anything
+/// at all, so a carrier can be made vaguer without going adrift: name the bag
+/// above the member and both resolve. What catches that today is the recorded
+/// artifact rather than this function, because the sentence an entry renders is
+/// derived from the path and changes with it.
+///
+/// And the predicate on an entry reads the run through the same function the
+/// emitter reads it through, which is what stops the two from drifting apart. A
+/// change to that one function moves the artifact and the expectation together,
+/// so this audit stays silent and the recorded artifact is again what reports
+/// it.
+pub fn census(run: &Run, format: Format, artifact: &str) -> Census {
+    census_with(run, format, artifact, format.loss())
+}
+
+/// The same audit, over a loss set the caller names.
+///
+/// [`census`] passes the format's own set and every caller in this engine calls
+/// that one. This exists for a suite, and the reason it has to exist is the
+/// review question underneath it: a test that could only doctor the artifact
+/// would measure the emitter and never the instrument. A format's loss set is a
+/// `const`, so the only way to ask "does a **wrong** declaration fail this
+/// audit" is to hand the audit a wrong declaration.
+pub fn census_with(run: &Run, format: Format, artifact: &str, loss: &[Loss]) -> Census {
     let all = reported(run);
     let mut unaccounted = Vec::new();
     let mut carried = 0;
@@ -292,10 +657,63 @@ pub fn census(run: &Run, artifact: &str) -> Census {
             )),
         }
     }
+
+    // The document, parsed once, and only where an entry needs it. A format
+    // whose loss set names no member of its own artifact never reaches a parser,
+    // which is what keeps the two prose formats out of one.
+    let parsed = loss
+        .iter()
+        .any(|entry| entry.carrier.names_a_member())
+        .then(|| headwater_yaml::load(artifact));
+    let read = match &parsed {
+        Some(Ok(root)) => objects(format, root),
+        Some(Err(_)) | None => None,
+    };
+    let unread = match &parsed {
+        Some(Err(_)) => "this artifact does not parse",
+        Some(Ok(_)) => "no reader of this format finds the object the path starts from",
+        None => "this artifact was not read",
+    };
+
+    let mut held = 0;
+    let mut unaudited = 0;
+    let mut adrift = Vec::new();
+    for entry in loss {
+        let faults = match (entry.carrier, &read) {
+            (Carrier::Nowhere | Carrier::Elsewhere(_), _) => {
+                unaudited += 1;
+                continue;
+            }
+            (Carrier::Run { .. } | Carrier::PerFinding { .. }, None) => {
+                vec![unread.to_string()]
+            }
+            (Carrier::Run { places, when }, Some(read)) => against(read.run, places, when(run)),
+            (Carrier::PerFinding { places, when }, Some(read)) => {
+                per_finding(read, places, when, &all, run)
+            }
+        };
+        match faults.first() {
+            None => held += 1,
+            // One line per entry, and the first fault on it. A carrier that is
+            // wrong is wrong once: the same missing member repeats on every
+            // record, and a list of forty-five copies of it is a list nobody
+            // reads.
+            Some(fault) => adrift.push(format!(
+                "{} claims `{}`, and {fault}",
+                entry.field,
+                entry.carried_in()
+            )),
+        }
+    }
+
     Census {
         findings: all.len(),
         carried,
         unaccounted,
+        entries: loss.len(),
+        held,
+        adrift,
+        unaudited,
     }
 }
 

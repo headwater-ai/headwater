@@ -30,34 +30,41 @@
 //! decided nothing. [`coverage_of`] writes the same values the other three
 //! write, in the one form this format has for anything.
 
-use crate::{reported, Escape, Loss, Reported, Subject};
+use crate::{reported, Carrier, Escape, Loss, Reported, Subject};
 use headwater_check::{Coverage, Run, Scoped, Severity};
 
 /// What a job summary cannot carry, and where each value went instead.
+///
+/// No entry here names a member of this artifact, and no entry here can. A
+/// carrier is a path into a document a reader can resolve, and this format
+/// produces prose. So [`crate::census`] reports all four as unaudited, which is
+/// the count that says a person is the only thing holding this declaration.
 pub const LOSS: &[Loss] = &[
     Loss {
         field: "the read set",
         reason: "a digest for each of the inputs is the artifact a gate reads, and a summary a \
                  person reads cannot hold one line per document",
-        carried_in: "the count alone, and `--read-set` or `--format json` for the rest",
+        carrier: Carrier::Elsewhere(
+            "the count alone, and `--read-set` or `--format json` for the rest",
+        ),
     },
     Loss {
         field: "the check editions and scopes",
         reason: "a rule's edition is a component of a cache key rather than something a reviewer \
                  acts on",
-        carried_in: "",
+        carrier: Carrier::Nowhere,
     },
     Loss {
         field: "the loss set",
         reason: "no member of this format is machine-readable, so an artifact that declared its \
                  own loss would be declaring it to a person who cannot act on it",
-        carried_in: "",
+        carrier: Carrier::Nowhere,
     },
     Loss {
         field: "the obligation's severity",
         reason: "the same drop SARIF makes, and for the same reason: one column per finding, and \
                  the check's severity is the one a reviewer acts on",
-        carried_in: "",
+        carrier: Carrier::Nowhere,
     },
 ];
 
