@@ -231,13 +231,18 @@ headwater taxonomy diff      <dir> [--to <version>] [--now <date>] [--root <path
                      release record over it: every file, the digest of its
                      bytes, and one digest over that list. It prints the digest,
                      which is the number the release notes state and a consumer
-                     pins.
+                     pins. It reads every migration payload the manifest
+                     declares before it writes a file, and refuses one that the
+                     taxonomy under publication contradicts.
   taxonomy diff      measure what a published artifact would do to this corpus,
                      across the six compatibility dimensions of spec 2. It
                      resolves the artifact under this repository's own overlays
                      and runs every phase twice over one tree, so a difference
                      is attributable to the schema rather than to two publishes
-                     of one package differing in trivia. It writes nothing, and
+                     of one package differing in trivia. Where the artifact
+                     ships a migration payload for the move, it reports what
+                     each step reaches in this corpus and every document that
+                     stopped validating under no step. It writes nothing, and
                      it fails only when it could not measure.
   taxonomy vendor    check an artifact that somebody already fetched against the
                      digest this repository pinned, and install it under
@@ -696,13 +701,13 @@ fn main() -> ExitCode {
         // says what it waits on rather than reading as a verb this binary
         // forgot.
         ["taxonomy", "migrate", ..] => fail(
-            "`taxonomy migrate` waits on a published migration payload. Spec 2 makes the \
-             mechanical half of a migration the rename map that a major version ships, and \
-             `taxonomy publish` writes no `migrations/` because no document states that \
-             payload's form. Without the map there are no mechanical steps to apply. \
-             `headwater taxonomy diff <artifact>` measures the upgrade, and `headwater infer` \
-             writes a payload against no prior version. \
-             See `docs/spec/07-distribution-and-federation.md`",
+            "`taxonomy migrate` waits on the half of a migration that writes. Spec 7 states the \
+             form of the payload, `taxonomy publish` carries it and refuses one it cannot, and \
+             `taxonomy diff <artifact>` reads it and reports what each step reaches in this \
+             corpus. What no verb does is apply a step: nothing rewrites the facet value of a \
+             document, nothing rewrites an overlay address, and nothing writes the open task set \
+             into the lock. Until one of the three runs, this verb would print what `diff` \
+             already prints. See `docs/spec/07-distribution-and-federation.md`",
         ),
         ["taxonomy", other, ..] => fail(&format!(
             "`taxonomy {other}` is not a verb this binary carries yet. \
@@ -1265,6 +1270,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     };
     let package = record.package.clone();
     let from = lock.version.clone();
+    let lock_version = lock.version.clone();
     let to = record.version.clone();
 
     let taking = match load_against(root, Bound::of(lock)) {
@@ -1293,9 +1299,19 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     let after = run_of(&against, &ctx);
     let identity = taking.identity();
 
+    // The two dimensions a migration step is a remedy for, and each one answers
+    // with the documents it moved beside its verdict. The union is the
+    // denominator the payload is accounted against, and it is built from the
+    // comparisons that decided the dimensions rather than from a second reading
+    // of them.
+    let (classification, reclassified) =
+        headwater_compat::classification(&taking.census, &against.census);
+    let (validity, invalidated) = headwater_compat::instance_validity(&before, &after);
+    let moved: std::collections::BTreeSet<String> =
+        reclassified.union(&invalidated).cloned().collect();
     let measured = headwater_compat::Measured {
-        classification: headwater_compat::classification(&taking.census, &against.census),
-        instance_validity: headwater_compat::instance_validity(&before, &after),
+        classification,
+        instance_validity: validity,
         consequence: headwater_compat::consequence(&before, &after),
         // Both plans are built under one identity, and it is the identity of
         // the lock. Two projections carry the package, the version and the
@@ -1334,6 +1350,17 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     };
     print!("{}", report.render());
 
+    if let Err(code) = payload(
+        fetched,
+        &manifest,
+        &taking,
+        &lock_version,
+        &record.version,
+        &moved,
+    ) {
+        return code;
+    }
+
     if !refusals.is_empty() {
         println!(
             "\nthe candidate resolves under this overlay and {} rule{} of `taxonomy validate` \
@@ -1352,6 +1379,90 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     // is the ordinary case rather than an error ([spec 7](../../../../docs/spec/07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)).
     // What does fail is a run that could not measure, which is above.
     ExitCode::SUCCESS
+}
+
+/// What the artifact's migration payload says about the breaks measured above.
+///
+/// **It reports and it never gates.** The verb measures a version that nobody
+/// has taken yet, and the payload is the publisher's account of what the
+/// upgrade costs. A missing payload for a major upgrade is a finding a consumer
+/// acts on, and [spec 2](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
+/// makes it a hard failure of `migrate` rather than of the measurement that
+/// precedes it.
+///
+/// **A step whose source this repository does not hold is reported, not
+/// refused.** The old taxonomy a consumer holds is the base under its own
+/// overlays, and an overlay may have removed the value a step renames. What is
+/// refused, and at the other end where the publisher can act on it, is a step
+/// whose source is still declared in the taxonomy it ships. See
+/// [`headwater_resolve::migration`].
+///
+/// The error arm is a payload the artifact carries and this engine cannot read,
+/// which is the one state that says nothing about the corpus at all.
+fn payload(
+    fetched: &Path,
+    manifest: &headwater_yaml::Mapping,
+    taking: &Loaded,
+    from: &str,
+    to: &str,
+    moved: &std::collections::BTreeSet<String>,
+) -> Result<(), ExitCode> {
+    let payloads = match headwater_resolve::migration::at(fetched, manifest) {
+        Ok(payloads) => payloads,
+        Err(refusals) => {
+            eprintln!(
+                "headwater: the artifact carries a migration payload this engine cannot read"
+            );
+            eprint!(
+                "{}",
+                indent(&render_errors(&headwater_resolve::migration::as_errors(
+                    &fetched.display().to_string(),
+                    &refusals,
+                )))
+            );
+            return Err(ExitCode::FAILURE);
+        }
+    };
+
+    let taxonomy = &taking.bound.taxonomy;
+    let declares = |step: &headwater_resolve::migration::Step| {
+        headwater_resolve::migration::declares(taxonomy, &step.subject, &step.from)
+    };
+
+    let mut selected = 0;
+    for carried in &payloads {
+        match carried.covers(from, to) {
+            Err(why) => {
+                println!(
+                    "\n{} states a version range this engine cannot read, so nothing selected it: \
+                     {why}",
+                    carried.at
+                );
+            }
+            Ok(false) => {}
+            Ok(true) => {
+                selected += 1;
+                print!(
+                    "{}",
+                    headwater_compat::payload::account(carried, &taking.census, declares, moved)
+                        .render()
+                );
+            }
+        }
+    }
+
+    if selected == 0 && !moved.is_empty() {
+        println!(
+            "\nthe artifact ships no migration payload for {from} to {to}, and {} document{} \
+             stopped validating. Spec 2 makes a major version ship one",
+            moved.len(),
+            match moved.len() {
+                1 => "",
+                _ => "s",
+            }
+        );
+    }
+    Ok(())
 }
 
 /// One run of the check layer, with the cache off.

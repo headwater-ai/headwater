@@ -1,0 +1,53 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The migration payload of a candidate 2.0.0 of `headwater/standard`, in the
+# form spec 7 (The migration payload) states. It is the artifact that pays the
+# cost of the format: `engine/crates/cli/tests/migration.rs` publishes a
+# candidate that carries it and runs `taxonomy diff` over a corpus, so a wrong
+# format is a failing test rather than a specification nobody has met.
+#
+# Three steps, one of each application. The split between them is derived from
+# the target list and no key declares it.
+
+migration:
+  format: 1
+  from: ">=1 <2"
+  to: ">=2 <3"
+
+steps:
+  # A closed choice. One old value maps to a set and the author picks one, which
+  # is the requirement the schema-format walkthrough put on this format.
+  - subject: facet_value
+    facet: status
+    from: current
+    to: [settled, provisional]
+    task: >-
+      Say whether the argument this document makes is closed. A document that a
+      reader may rely on and still argue with is `provisional`. One that nobody
+      is arguing with is `settled`.
+    because: >-
+      One live state held two states that a reader acts on differently, and no
+      check could tell them apart.
+
+  # Mechanical. One target, no task, and the engine applies it.
+  - subject: facet_value
+    facet: status
+    from: draft
+    to: [outline]
+    because: >-
+      The initial state is named for the shape of a document rather than for the
+      stage of its argument.
+
+  # A re-statement. Nothing replaces the old value, so every document that
+  # carries it needs an author.
+  - subject: facet_value
+    facet: status
+    from: deprecated
+    to: []
+    task: >-
+      Decide what the document is now. A document that a later one replaced is
+      `superseded` and names the successor. One that nothing replaced is not a
+      governed document any more, and it leaves the corpus.
+    because: >-
+      The two terminal states differed only in whether an edge existed, and the
+      edge already says so.

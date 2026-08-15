@@ -43,7 +43,10 @@ use headwater_check::scope::Grain;
 use headwater_check::Run;
 use headwater_generate::Plan;
 use headwater_graph::Graph;
-use std::collections::BTreeMap;
+use headwater_resolve::migration::{Step, Subject};
+use std::collections::{BTreeMap, BTreeSet};
+
+pub mod payload;
 
 /// The six dimensions, in the order [spec 2](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
 /// tabulates them. The set belongs to the engine and no taxonomy may vary it.
@@ -193,12 +196,22 @@ impl Measured {
 /// most about, and a comparison over typed rows alone would drop exactly that
 /// case: the row is absent on one side and the two lists still agree on every
 /// row they share.
-pub fn classification(before: &Census, after: &Census) -> Outcome {
-    Outcome::over(compare(
+///
+/// # It answers with the documents beside the verdict
+///
+/// For the reason [`instance_validity`] does, and more directly: the key of
+/// this comparison is a path already, so the set is the break list read at its
+/// own grain. A `kind` step of a migration payload is a remedy for this
+/// dimension, and a remedy that nothing held against a measurement would be a
+/// claim.
+pub fn classification(before: &Census, after: &Census) -> (Outcome, BTreeSet<String>) {
+    let breaks = compare(
         &keyed(before, classified),
         &keyed(after, classified),
         "no such file",
-    ))
+    );
+    let moved = breaks.iter().map(|entry| entry.at.clone()).collect();
+    (Outcome::over(breaks), moved)
 }
 
 /// `identifier`: does every identifier still resolve to the same document?
@@ -306,13 +319,83 @@ fn reported(run: &Run, rules: &[&'static str]) -> BTreeMap<String, String> {
 /// the split tells a reader is whether the change reached documents or only the
 /// graph between them, which is the difference between a payload of rewrites
 /// and a payload of re-statements.
-pub fn instance_validity(before: &Run, after: &Run) -> Outcome {
+///
+/// # It answers with the documents beside the verdict, out of one comparison
+///
+/// A migration payload names what moved, and the question a consumer asks of it
+/// is whether the documents that stopped validating are the documents the
+/// payload claims. That needs the set, and a second pass over the same
+/// instances to build it could disagree with the pass that decided the
+/// dimension. So the set falls out of the one comparison that is already here.
+///
+/// The map from a key to a document is safe for exactly this grain and for no
+/// other. An instance whose grain is `Document` reads one document, so its key
+/// names one path. An edge instance reads two and a corpus instance reads every
+/// row, which is why neither is in this partition.
+pub fn instance_validity(before: &Run, after: &Run) -> (Outcome, BTreeSet<String>) {
     let document = |instance: &Instance| instance.grain == Grain::Document;
-    Outcome::over(compare(
+    let mut over: BTreeMap<String, String> = BTreeMap::new();
+    for instance in before
+        .instances
+        .iter()
+        .chain(after.instances.iter())
+        .filter(|instance| document(instance))
+    {
+        if let Some(input) = instance.reads.first() {
+            over.insert(key(instance), input.path.clone());
+        }
+    }
+    let breaks = compare(
         &verdicts(&before.instances, document),
         &verdicts(&after.instances, document),
         "no instance",
-    ))
+    );
+    let moved = breaks
+        .iter()
+        .filter_map(|entry| over.get(&entry.at).cloned())
+        .collect();
+    (Outcome::over(breaks), moved)
+}
+
+/// The documents of this corpus that one step of a migration payload names.
+///
+/// **Read off the census of the taxonomy this repository takes**, which is the
+/// taxonomy the step's `from` was written against. A reading taken under the
+/// candidate would ask a taxonomy that no longer declares the value which
+/// documents carry it, and would answer none of them for every step in the
+/// payload.
+///
+/// A facet value is matched in either spelling a document may write it: one
+/// scalar, or a sequence that holds it among others.
+pub fn subjects(step: &Step, census: &Census) -> BTreeSet<String> {
+    census
+        .rows
+        .iter()
+        .filter(|row| match &step.subject {
+            Subject::Kind => matches!(
+                &row.outcome,
+                Row::Typed { kind, .. } if *kind == step.from
+            ),
+            Subject::FacetValue { facet } => row
+                .document
+                .as_ref()
+                .and_then(|document| document.facets.get(facet))
+                .map(|node| carries(&node.value, &step.from))
+                .unwrap_or(false),
+        })
+        .map(|row| row.path.clone())
+        .collect()
+}
+
+/// Whether one front-matter value is, or holds, the value a step names.
+fn carries(value: &headwater_yaml::Value, wanted: &str) -> bool {
+    match value {
+        headwater_yaml::Value::Scalar(scalar) => scalar.text == wanted,
+        headwater_yaml::Value::Seq(items) => items
+            .iter()
+            .any(|item| matches!(&item.value, headwater_yaml::Value::Scalar(scalar) if scalar.text == wanted)),
+        headwater_yaml::Value::Map(_) => false,
+    }
 }
 
 /// Every key of either map, with the two readings under it.
