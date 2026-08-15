@@ -2,7 +2,7 @@
 id: OBL-repo-0126
 status: draft
 status_since: 2026-08-15
-summary: "Spec 3 rules that an `asserted` document cannot carry `last_verified`. The facet contract requires it on every kind that has one, and eight of eight asserted documents carry it."
+summary: "Spec 3 rules that an `asserted` document cannot carry `last_verified`. The facet contract requires it on every kind that has one, and nine of nine asserted documents carry it."
 last_verified: 2026-08-15
 title: "Every asserted document carries the freshness date that spec 3 says it cannot"
 provenance:
@@ -28,11 +28,11 @@ The facet contract answers the other way. `last_verified` is in the `freshness` 
 
 ## Obligation
 
-The corpus stands on the facet contract's side, in every case. Eight documents carry `warrant: asserted` on 2026-08-15, and eight of the eight carry `last_verified`. No document exercises the reading that spec 3 states.
+The corpus stands on the facet contract's side, in every case. `headwater taxonomy audit` reports nine documents under `warrant: asserted` on 2026-08-15, and nine of the nine carry `last_verified`. No document exercises the reading that spec 3 states.
 
 Nothing reports the split. `facet.required.missing` reads the kind and never the warrant, and no rule pairs the two. So the sentence in spec 3 is a rule that no check enforces and that no document obeys. A reader who follows it writes a document the gate refuses.
 
-Three answers are open and each says something different about what a warrant means. Spec 3 is wrong. A freshness date on unaccepted content records when the content was produced, rather than when a human confirmed it. Or the facet contract is wrong, and `last_verified` belongs to the kinds whose documents can be accepted rather than to every kind. Or the eight documents are wrong, and `asserted` is a warrant that this corpus has been writing for the wrong reason.
+Three answers are open and each says something different about what a warrant means. Spec 3 is wrong. A freshness date on unaccepted content records when the content was produced, rather than when a human confirmed it. Or the facet contract is wrong, and `last_verified` belongs to the kinds whose documents can be accepted rather than to every kind. Or the nine documents are wrong, and `asserted` is a warrant that this corpus has been writing for the wrong reason.
 
 ## Discharge
 
