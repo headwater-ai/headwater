@@ -324,6 +324,65 @@ it read $now_reached of $now_total. The numerator must hold at 1 and the denomin
         fi
     fi
 
+    printf '\n# headwater-engine, against the flag that makes a verb runnable from anywhere\n'
+
+    # The skill tells an agent to pass `--root` rather than to put a `cd` in
+    # front of every command. That advice is worth nothing unless the same verb
+    # fails without the flag, so both halves run from a directory that holds no
+    # corpus, and neither half runs from this tree.
+    sentence='**Every verb takes `--root`.**'
+    name='a verb answers from another directory with --root, and refuses without it'
+    if ! grep -qF "$sentence" "$skills/headwater-engine/SKILL.md"; then
+        fail "$name" "the skill no longer says: $sentence"
+    else
+        elsewhere=$(mktemp -d "${TMPDIR:-/tmp}/headwater-elsewhere-XXXXXX")
+        (cd "$elsewhere" && "$engine" explain docs/spec/05-ai-integration.md \
+            --root "$root" >/dev/null 2>&1)
+        rooted=$?
+        (cd "$elsewhere" && "$engine" explain docs/spec/05-ai-integration.md \
+            >/dev/null 2>&1)
+        bare=$?
+        rmdir "$elsewhere"
+        if [ "$rooted" -eq 0 ] && [ "$bare" -ne 0 ]; then
+            pass "$name"
+        else
+            fail "$name" \
+                "with --root it exited $rooted and without it $bare, so the flag \
+is not what reaches the corpus"
+        fi
+    fi
+
+    printf '\n# headwater-orient, against the two verbs it sends an agent to\n'
+
+    # `explain` is offered as the thing that answers without reading the
+    # document, and the two lines that claim rests on are the summary and the
+    # edges. A verb that stopped printing either would leave the skill
+    # recommending a command that no longer orients anybody.
+    sentence='the **summary** says what the document is for, in its author'
+    name='explain prints the summary and the edges that orientation reads'
+    if ! grep -qF "$sentence" "$skills/headwater-orient/SKILL.md"; then
+        fail "$name" "the skill no longer says: $sentence"
+    else
+        out=$("$engine" explain docs/spec/05-ai-integration.md --root "$root" 2>&1)
+        case $out in
+            *'  summary '*)
+                case $out in
+                    *' cited_by '*) pass "$name" ;;
+                    *) fail "$name" 'it printed a summary and no edge into the document' ;;
+                esac ;;
+            *) fail "$name" "it printed no summary line:
+$out" ;;
+        esac
+    fi
+
+    # Silence is a result rather than a failure, and that is the sentence which
+    # licenses a search when the route matched nothing.
+    claim 'a route that matches nothing says so, and still exits 0' \
+        headwater-orient/SKILL.md \
+        'It reports honestly when nothing matched.' \
+        0 'no declared purpose answers this task' \
+        "$engine" route zzzqqqwww --root "$root"
+
     printf '\n# headwater-maintainer, against the hook it invokes\n'
 
     # The agent tells its reader to drive the write hook by hand, one path at a
