@@ -46,7 +46,7 @@ impl Root {
 /// The key under `add:` takes an address and nothing else, so an address wears
 /// no sigil.
 ///
-/// Quoting is not an escape. [Q2](../../../docs/spec/09-decisions.md#q2--schema-format)
+/// Quoting is not an escape. [Q2](../../../../docs/spec/09-decisions.md#q2--schema-format)
 /// rules that a scalar takes its type from the meta-schema and never from the
 /// YAML resolver, so `"$vocabularies.audience"` and `$vocabularies.audience`
 /// are one value. [`classify`] carries the escape that quoting cannot.

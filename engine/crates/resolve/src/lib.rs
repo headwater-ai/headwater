@@ -2,12 +2,12 @@
 //! The overlay resolver: a base package and its overlays merged into one
 //! validated taxonomy.
 //!
-//! [Spec 2](../../../docs/spec/02-taxonomy-model.md#customization-by-composition):
+//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition):
 //! "A taxonomy is one logical document. The engine assembles it from a base
 //! package plus zero or more overlays, and it resolves to a single validated
 //! object." This crate is that assembly.
 //!
-//! [Spec 12](../../../docs/spec/12-check-layer.md#the-correctness-roots) puts
+//! [Spec 12](../../../../docs/spec/12-check-layer.md#the-correctness-roots) puts
 //! it first on the list of components that every check trusts silently: "A
 //! resolver bug corrupts every check, projection, and conformance claim at
 //! once. A committed and diffable lock decreases the risk but does not test the
@@ -37,7 +37,7 @@
 //! # Resolving and validating are two operations, and the lock is what joins them
 //!
 //! [`resolve`] is the five steps above, which is what
-//! [spec 6](../../../docs/spec/06-engine-architecture.md#pipeline) gives the
+//! [spec 6](../../../../docs/spec/06-engine-architecture.md#pipeline) gives the
 //! verb: "merges the base taxonomy and overlays, validates against the
 //! meta-schema, and writes a content-hashed lock". [`Resolution::validate`] is
 //! the rest of spec 2's list — the rules that read the result and report on it
@@ -120,7 +120,7 @@ pub struct Resolution {
 /// # Why it is a reading rather than a refusal
 ///
 /// The state it names is the one an upgrade produces and nothing reports.
-/// [Spec 2](../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
+/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
 /// measures `addressability` by whether the adopter's overlay still resolves,
 /// and this case resolves: a base that renames `decision` to `ruling` leaves
 /// the overlay addressing a path that now has no base under it, and the

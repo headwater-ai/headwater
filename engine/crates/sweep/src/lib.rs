@@ -63,7 +63,7 @@
 //! carried finding that proposes one prints the front matter that declares it.
 //! Nothing here writes it. A proposal an agent applies to itself is the same
 //! act as an agent accepting its own work, which is what
-//! [OBL-repo-0108](../../../../docs/obligations/0108-every-agent-drafted-document-carries-an-accepted-by-the-drafting-agent-typed.md)
+//! [OBL-repo-0108](../../../../docs/obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md)
 //! records, so the verb has no `--write` and this crate opens no file for
 //! writing.
 

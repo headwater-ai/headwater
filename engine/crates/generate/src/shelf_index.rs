@@ -3,7 +3,7 @@
 //!
 //! # The order is not the file order
 //!
-//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#relations) derives
+//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#reading-precedence-is-derived) derives
 //! reading precedence from the relation family and the nucleus, and names three
 //! consumers: a routing result, the document a conflict is reported against, and
 //! "reading order in generated indexes". This is the third one. It calls the

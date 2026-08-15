@@ -140,7 +140,7 @@ pub enum Grain {
     Corpus,
     /// The resolved taxonomy, and no document at all.
     ///
-    /// [Spec 12](../../../../docs/spec/12-check-layer.md#the-four-scopes) draws
+    /// [Spec 12](../../../../docs/spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on) draws
     /// every scope over the corpus, and it names five. A rule that reads the
     /// taxonomy rather than the corpus fits none of them, and
     /// [`crate::register`] holds two: an obligation that carries no disposition
@@ -418,7 +418,7 @@ pub trait DocumentCheck {
 /// What one edge-scoped instance is created over.
 ///
 /// Both members are one relation instance, which is the grain
-/// [spec 12](../../../../docs/spec/12-check-layer.md#the-four-scopes) fixes for
+/// [spec 12](../../../../docs/spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on) fixes for
 /// this trait. They differ over what counts as one, and the difference is
 /// whether the target resolved.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
