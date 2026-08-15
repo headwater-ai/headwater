@@ -32,6 +32,8 @@ A state vocabulary is one list for a whole taxonomy, and each value may carry a 
 
 **The reason both of those documents gave for the narrowing is wrong.** #242 states it as a property of the code: "Making the role per-regime would need a regime at every call site that has none." That was measured here and it does not hold. Terminality has two production readers. `crate::retention` reads the machine through `LifecycleRegime::terminal`, and it holds the regime already. `crate::dependency` reads the role through `StateFacet::standing`, and eleven lines below that reading it calls `self.shape.lifecycle_of(target.kind)` for another purpose. The target's own regime is in hand at the only call site the argument was about. A per-regime reading is a one-line change there.
 
+The source end of that rule is different, and a refutation pass measured it. `Shape::lifecycle_of` is called once in `crate::dependency`, for the target's kind alone, so the regime of the citing document is not in hand. That does not rescue the original argument. `lifecycle.dependency.on_terminal` decides terminality at the target, and the citing document's regime is the wrong regime to ask, which `engine/crates/check/tests/terminal_dependency.rs` states in its module comment.
+
 So the narrowing is a choice rather than a constraint of the engine, and it needs an argument that survives that fact.
 
 ## Decision
