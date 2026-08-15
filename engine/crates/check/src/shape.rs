@@ -216,7 +216,7 @@ pub struct Facet {
     /// The values the facet admits, and empty for a facet that declares no set.
     /// A vocabulary reference is already resolved in the lock, so both spellings
     /// arrive here as a list.
-    pub values: Vec<String>,
+    pub values: Vec<FacetValue>,
     /// How many days a value of this facet stands for before it is stale.
     ///
     /// The one bar a taxonomy declares about time that is not a participation
@@ -225,6 +225,48 @@ pub struct Facet {
     /// reads it, so nothing here turns it into a verdict about a document.
     pub stale_after_days: Option<i64>,
     pub span: Span,
+}
+
+impl Facet {
+    /// The admitted values, in declaration order.
+    ///
+    /// One projection of one list rather than a second field beside it. A
+    /// second field is where the value set and the roles would drift.
+    pub fn admitted(&self) -> Vec<&str> {
+        self.values
+            .iter()
+            .map(|value| value.value.as_str())
+            .collect()
+    }
+
+    /// The role the vocabulary gives one value, and nothing for a value this
+    /// facet does not admit or for one that declares no role.
+    ///
+    /// The two absences are one answer on purpose: a caller asking what a value
+    /// is *for* gets nothing in both cases, and whether the facet admits it at
+    /// all is [`Facet::admitted`]'s question and a different rule's finding.
+    pub fn role_of(&self, value: &str) -> Option<&str> {
+        self.values
+            .iter()
+            .find(|held| held.value == value)
+            .and_then(|held| held.role.as_deref())
+    }
+}
+
+/// One admitted value of a facet, and what the vocabulary says it is for.
+///
+/// The role is why this is a pair rather than a string. A plain enumeration is
+/// a list of scalars and every value of it carries none. A vocabulary entry is
+/// a mapping, and the `role` beside the value is what tells a live state from a
+/// terminal one — the reading [`crate::lifecycle_state::StateFacet`] owns and
+/// [`crate::dependency`] is the rule that needed it.
+#[derive(Clone, Debug)]
+pub struct FacetValue {
+    pub value: String,
+    /// `initial`, `live`, `terminal-retained` and whatever else a vocabulary
+    /// writes. Read as written: the meta-schema owns the value set, and a role
+    /// this engine does not know decides nothing rather than something invented.
+    pub role: Option<String>,
 }
 
 /// A reader intent the corpus serves, as `purposes` declares it.
@@ -665,18 +707,24 @@ fn read_facet(name: &str, value: &Value, span: Span) -> Result<Facet, Declaratio
 /// writes.
 ///
 /// A vocabulary entry is a mapping with a `value`, because the value carries a
-/// lifecycle role beside it. A plain enumeration is a list of scalars. Both are
-/// a list of admitted strings to a check, and the difference is the taxonomy's
-/// business rather than a rule's.
-fn read_values(map: &Mapping) -> Vec<String> {
+/// lifecycle role beside it. A plain enumeration is a list of scalars. The role
+/// travels with the value from here, because a rule that folds a state set into
+/// live and terminal reads the role and nothing else says it.
+fn read_values(map: &Mapping) -> Vec<FacetValue> {
     let Some(items) = map.get("values").and_then(|node| node.value.as_seq()) else {
         return Vec::new();
     };
     items
         .iter()
         .filter_map(|item| match &item.value {
-            Value::Map(entry) => scalar(entry, "value"),
-            other => other.as_scalar().map(|scalar| scalar.text.clone()),
+            Value::Map(entry) => scalar(entry, "value").map(|value| FacetValue {
+                value,
+                role: scalar(entry, "role"),
+            }),
+            other => other.as_scalar().map(|scalar| FacetValue {
+                value: scalar.text.clone(),
+                role: None,
+            }),
         })
         .collect()
 }
@@ -903,13 +951,21 @@ kinds:
     fn a_value_set_reads_from_a_vocabulary_and_from_a_plain_list() {
         let shape = shape(SOURCE);
         assert_eq!(
-            shape.facet("status").expect("declared").values,
+            shape.facet("status").expect("declared").admitted(),
             ["draft", "current"]
         );
         assert_eq!(
-            shape.facet("doc_type").expect("declared").values,
+            shape.facet("doc_type").expect("declared").admitted(),
             ["design_spec", "evaluation"]
         );
+        // The role travels with the value out of a vocabulary, and a plain
+        // enumeration carries none.
+        let status = shape.facet("status").expect("declared");
+        assert_eq!(status.values[0].role.as_deref(), Some("initial"));
+        assert_eq!(status.values[1].role.as_deref(), Some("live"));
+        assert!(shape.facet("doc_type").expect("declared").values[0]
+            .role
+            .is_none());
         assert!(shape
             .facet("status_since")
             .expect("declared")

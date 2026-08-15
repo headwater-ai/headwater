@@ -34,6 +34,22 @@
 //! whose members declare no `on_target` is expressible lineage that no
 //! lifecycle follows, which is the case the requirement exists to refuse.
 
+/// Whether a role on a state value names a terminal state.
+///
+/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the-immutable-core)
+/// writes the role as `terminal-retained`, and the hyphen carries what happens
+/// to the document rather than whether the state ends the machine. A taxonomy
+/// that declares a second terminal role writes a second `terminal-` name, so
+/// the prefix is the reading and the suffix is that taxonomy's business.
+///
+/// One function, because three components ask the question: `lifecycle
+/// soundness` asks it of a declaration, [`satisfiers`] states it in prose as
+/// the role a conformant overlay may not drop, and the check layer asks it of
+/// the state a document stands in.
+pub fn role_is_terminal(role: &str) -> bool {
+    role.starts_with("terminal")
+}
+
 use crate::error::{ResolveError, ResolveErrorKind};
 use crate::merge;
 use crate::operation::{OpKind, Operation};

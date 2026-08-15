@@ -31,10 +31,14 @@ headwater-yaml = { path = "../yaml" }
 # grammar would disagree the day a placeholder form is added.
 headwater-meta = { path = "../meta" }
 
-[dev-dependencies]
-# The run over this repository needs this repository's taxonomy resolved. The
-# runner takes an already-resolved one.
+# The resolver owns what a declaration means, and two readings here need it.
+# `role_is_terminal` says which roles on a state value end the machine, and
+# `headwater_graph::Declarations` reads `core.requires` through the same crate.
+# The runner still takes an already-resolved taxonomy: this is a dependency on
+# the meaning of a declaration and never on the act of resolving one.
 headwater-resolve = { path = "../resolve" }
+
+[dev-dependencies]
 
 # The cache differential over this repository keys on the digest the committed
 # lock declares, which is the number a real run of `headwater check` uses.

@@ -738,7 +738,7 @@ fn constraint(shape: &headwater_check::Shape, name: &str) -> Json {
                         facet
                             .values
                             .iter()
-                            .map(|value| Json::string(value.as_str()))
+                            .map(|value| Json::string(&value.value))
                             .collect(),
                     ),
                 )]),

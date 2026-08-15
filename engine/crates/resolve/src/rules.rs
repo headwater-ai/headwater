@@ -969,7 +969,7 @@ fn lifecycle_soundness(view: &View, out: &mut Vec<ResolveError>) {
         .iter()
         .filter(|(_, role)| {
             role.as_deref()
-                .is_some_and(|role| role.starts_with("terminal"))
+                .is_some_and(crate::core::role_is_terminal)
         })
         .map(|(value, _)| value.as_str())
         .collect();
