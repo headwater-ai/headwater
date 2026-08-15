@@ -1072,10 +1072,12 @@ fn every_format_states_how_many_instances_reached_no_verdict() {
             assert_eq!(&text(entry, "reason"), reason);
             assert_eq!(count(entry, "instances"), *instances);
         }
-        // Present and empty rather than absent. No check of this engine reads
-        // outside the census today, so the empty list is the only state a
-        // fixture can hold, and a member that appeared only when it was
-        // non-empty would make a reader tell "none" from "not reported".
+        // Present and empty rather than absent. This is a full-corpus run, so
+        // the one rule that reads outside the census reads nothing at all: it
+        // declares the prior version and skips where there is no change. The
+        // scoped fixture is where the member carries paths, and a member that
+        // appeared only when it was non-empty would make a reader tell "none"
+        // from "not reported".
         assert_eq!(
             member(&block, "unaccounted")
                 .expect("the unaccounted paths")
@@ -1088,8 +1090,8 @@ fn every_format_states_how_many_instances_reached_no_verdict() {
 
     let text_report = render(&ran, Format::Text);
     let markdown = render(&ran, Format::Markdown);
-    assert!(text_report.contains("266 check instances"));
-    assert!(markdown.contains("It created 266 check instances, and 66 of them reached no verdict."));
+    assert!(text_report.contains("267 check instances"));
+    assert!(markdown.contains("It created 267 check instances, and 67 of them reached no verdict."));
     for (reason, instances) in ran.run.coverage.skips() {
         assert!(
             text_report.contains(&format!("{instances} skipped: {reason}")),
@@ -1104,18 +1106,18 @@ fn every_format_states_how_many_instances_reached_no_verdict() {
 
 /// A path that no census row accounts for is named in the artifact.
 ///
-/// **The one member of the coverage block that a recorded artifact cannot hold.**
 /// `Coverage::unaccounted` is written when an instance reads a file the census
-/// never walked, and no check of this engine does that today, so every fixture
-/// tree of this repository produces an empty list. A probe that emptied the
-/// member in the emitter therefore moved no recorded byte and failed no test,
-/// which is what this test is here to stop.
+/// never walked. That was unreachable until `lifecycle.deletion.not_permitted`,
+/// which reads the version of every path a change named that no row holds, so
+/// the recorded scoped artifact now carries two entries and the recorded
+/// full-corpus one still carries none. This test predates both and keeps its
+/// own state, because what it holds is the emitter rather than the rule: one
+/// instance over a path that is on no row of a real census.
 ///
-/// The state is built rather than found: one instance over a path that is on no
-/// row of a real census. What it proves is what the block is for — a check that
-/// read outside the denominator read outside the set every coverage guarantee is
-/// computed over, and the reader who can act on that needs the path rather than a
-/// count of them.
+/// What it proves is what the block is for — a check that read outside the
+/// denominator read outside the set every coverage guarantee is computed over,
+/// and the reader who can act on that needs the path rather than a count of
+/// them.
 #[test]
 fn a_path_the_census_never_walked_is_named_and_not_counted() {
     let ran = fixture_run();

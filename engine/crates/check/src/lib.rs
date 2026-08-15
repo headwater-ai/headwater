@@ -156,6 +156,7 @@ pub mod promotion;
 pub mod readset;
 pub mod reciprocity;
 pub mod register;
+pub mod retention;
 pub mod retired;
 pub mod scope;
 pub mod sections;
@@ -198,7 +199,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 24] = [
+pub const RULES: [&str; 25] = [
     facet_required::RULE,
     facet_value::RULE,
     identifier::RULE,
@@ -220,6 +221,7 @@ pub const RULES: [&str; 24] = [
     promotion::RULE,
     transition::RULE,
     lifecycle_state::RULE,
+    retention::RULE,
     coverage::RULE,
     register::DISPOSITION,
     register::MECHANISM,
@@ -466,6 +468,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::document_exports::<lifecycle_state::StateAdmitted<'_>>(),
         ),
         (
+            retention::RULE,
+            scope::corpus_scope::<retention::Retention<'_>>(),
+            scope::corpus_version::<retention::Retention<'_>>(),
+            scope::corpus_exports::<retention::Retention<'_>>(),
+        ),
+        (
             coverage::RULE,
             coverage::SCOPE,
             coverage::VERSION,
@@ -572,6 +580,11 @@ pub fn run(
     // survives in the document and a document authored at a wrong state made no
     // movement to read. See [`lifecycle_state`].
     let standing = lifecycle_state::StateAdmitted::over(declared.shape);
+    // The third, and the only one about a document this corpus no longer
+    // holds. Corpus-scoped because a deleted document has no census row to
+    // instantiate over, and it declares the corpus-grained half of the prior
+    // input. See [`retention`].
+    let retention = retention::Retention::over(declared.taxonomy, declared.shape);
 
     let digests = scope::Digests::of(census);
     let mut instances = scope::over_documents(&required, census, graph, ctx, cache);
@@ -628,7 +641,7 @@ pub fn run(
         ctx,
         cache,
     ));
-    instances.extend(scope::over_corpus(&duplicates, census, graph, cache));
+    instances.extend(scope::over_corpus(&duplicates, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&voice, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&language, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&retired, census, graph, ctx, cache));
@@ -650,6 +663,7 @@ pub fn run(
         cache,
     ));
     instances.extend(scope::over_documents(&standing, census, graph, ctx, cache));
+    instances.extend(scope::over_corpus(&retention, census, graph, ctx, cache));
 
     let coverage = Coverage::of(census, &instances);
 

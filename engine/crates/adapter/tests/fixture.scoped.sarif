@@ -340,6 +340,20 @@
               }
             },
             {
+              "id": "lifecycle.deletion.not_permitted",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and the version of each path the change named that no row of this corpus holds, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
               "id": "coverage.document_unchecked",
               "shortDescription": {
                 "text": "corpus scope, every row of the census, and it is a barrier"
@@ -395,6 +409,17 @@
         }
       ],
       "artifacts": [
+        {
+          "location": {
+            "uri": "./check/evaluations/delta.md"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "fbf9f2c834c8821f3c7780f97e6b8e054c94475a3f4b49d2380e7f4383b21c83"
+          }
+        },
         {
           "location": {
             "uri": "check/evaluations/alpha.md"
@@ -470,6 +495,17 @@
           ],
           "hashes": {
             "sha-256": "78ec68e48f9e8e1f8826c1280bdb523820556b14e2ac375f21cf8c1915240964"
+          }
+        },
+        {
+          "location": {
+            "uri": "check/spec/00-both-halves.markdown"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "fbf9f2c834c8821f3c7780f97e6b8e054c94475a3f4b49d2380e7f4383b21c83"
           }
         },
         {
@@ -1943,7 +1979,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 23,
+          "ruleIndex": 24,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1972,7 +2008,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 23,
+          "ruleIndex": 24,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2001,7 +2037,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 22,
+          "ruleIndex": 23,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2030,7 +2066,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 22,
+          "ruleIndex": 23,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2059,7 +2095,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 22,
+          "ruleIndex": 23,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2088,7 +2124,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 22,
+          "ruleIndex": 23,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2143,7 +2179,7 @@
             "classified": 23,
             "checked": 23,
             "generated": 1,
-            "instances": 266,
+            "instances": 267,
             "skipped": 46,
             "skips": [
               {
@@ -2175,7 +2211,10 @@
                 "instances": 3
               }
             ],
-            "unaccounted": []
+            "unaccounted": [
+              "./check/evaluations/delta.md",
+              "check/spec/00-both-halves.markdown"
+            ]
           },
           "escaped": {
             "waived": "no waiver reaches a check finding",
@@ -2183,7 +2222,7 @@
             "suppressed": 2
           },
           "read_set": {
-            "inputs": 24,
+            "inputs": 26,
             "unhashed": 0
           },
           "loss_set": [

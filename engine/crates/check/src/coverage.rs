@@ -91,7 +91,7 @@ pub const RULE: &str = "coverage.document_unchecked";
 
 /// The grain this rule has. See the module comment for why it is stated here
 /// rather than derived from a trait: this rule receives no view.
-pub const SCOPE: Scope = Scope::corpus(false);
+pub const SCOPE: Scope = Scope::corpus(false, false);
 
 /// Which edition of this rule reached a verdict, stated here for the reason
 /// [`SCOPE`] is: no trait carries it. It is published in the read set beside
@@ -131,9 +131,17 @@ pub struct Coverage {
     /// subset: a reader asking how much work a run did is asking about all of
     /// it.
     pub instances: usize,
-    /// Instances accounted to a path the census never walked. Never zero
-    /// without meaning it: such an instance is a check reading outside the
-    /// denominator, which is the silent pass one level up.
+    /// One entry per reading of a path the census never walked, in instance
+    /// order. Never empty without meaning it: an instance that read outside
+    /// the census read outside the denominator every number here is computed
+    /// over.
+    ///
+    /// It is a reading rather than an instance and rather than a path. One
+    /// instance that read two such paths writes two entries, and so would two
+    /// instances that read one path each. A count of instances is what the
+    /// member was named for and never what it held, and until
+    /// `lifecycle.deletion.not_permitted` nothing in this engine could reach
+    /// it to tell the difference.
     pub unaccounted: Vec<String>,
     /// Each reason an instance reached no verdict, with the number of
     /// **instances** it covers, in the order the reasons first appear.
@@ -182,10 +190,14 @@ impl Coverage {
                     // about the denominator rather than about coverage: an
                     // instance of any grain that read outside the census read
                     // outside the set every guarantee here is computed over.
-                    // A check that read a file the census never walked. It
-                    // cannot happen today, because every instance is created
-                    // from a census row, and it is recorded rather than
-                    // dropped because dropping it is what hides the defect.
+                    // A check that read a file the census never walked. One
+                    // rule does it deliberately: a corpus-scoped instance of
+                    // `lifecycle.deletion.not_permitted` reads the version of
+                    // every path a change named that no row holds, which is
+                    // outside this denominator by definition. Every other way
+                    // of arriving here is a defect, and one line reports both,
+                    // because the fact stated is the same one — coverage was
+                    // computed over a set that does not hold this path.
                     unaccounted.push(path.to_string());
                     continue;
                 };

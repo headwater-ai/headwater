@@ -19,6 +19,14 @@
 # source names itself with `taxonomy:`.
 
 taxonomy: headwater/standard
+# 3.2.0 adds `OB-LIFE-4` and `CT-LIFE-4`, which are the obligation and the
+# control behind `lifecycle.deletion.not_permitted`. Nothing is removed and
+# nothing already declared changes meaning, so it is a minor. What a consumer
+# meets is a rule that reads a member both regimes of this package have written
+# since 1.0.0: `retain_terminal: true` said that a document at the end of a
+# regime is kept, and until now no component read it, so the promise was one
+# the taxonomy made and could not keep.
+#
 # 3.1.0 adds `OB-LIFE-3` and `CT-LIFE-3`, which are the obligation and the
 # control behind `lifecycle.dependency.on_terminal`. Nothing is removed and
 # nothing already declared changes meaning, so it is a minor. What a consumer
@@ -45,7 +53,7 @@ taxonomy: headwater/standard
 # longer declares a namespace, so a consumer that declared none resolves to a
 # refusal until it does, and the pattern renders the namespace first, so an
 # identifier already minted under 1.0.0 no longer matches.
-version: 3.1.0
+version: 3.2.0
 
 purposes:
   rationale:
@@ -411,6 +419,13 @@ obligations:
     prevents: content.inconsistent
     severity: medium
 
+  OB-LIFE-4:
+    statement: A document standing at a terminal state of a regime that declares `retain_terminal` is not deleted from the corpus
+    rationale: A terminal state is where a document is kept rather than where it stops mattering, and `retain_terminal` is the member that says so. A corpus that deletes the record loses the only account of what it once said, and every citation of it then resolves to nothing. No standing reading of the corpus can report the loss, because a document that left leaves no row to report about, so the change that removes it is the one moment the claim is checkable
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+
   OB-REG-1:
     statement: Every obligation this taxonomy declares carries exactly one disposition
     rationale: An obligation that no control discharges and that states neither a gap nor an acceptance reads from outside like one that is met, and that silence is how an assurance model decays into a list of good intentions
@@ -633,6 +648,16 @@ controls:
     promotion:
       permanently_advisory:
         reasoning: The two rules above it read declared values and refuse what the declaration refuses, and this one reads the same values and cannot say what to do about them. A live document resting on a retired one is repaired by pointing at the successor, by retiring the citing document, or by a judgment that the citation stands as a citation of the record. There is no fourth answer and the engine cannot pick among the three, so a posture that stopped a merge would stop it on a question only an author can settle
+
+  CT-LIFE-4:
+    mechanism: check:lifecycle.deletion.not_permitted
+    discharges: [OB-LIFE-4]
+    trigger: pull_request
+    posture: blocking
+    acts: detective
+    promotion:
+      final_posture:
+        reasoning: The reading CT-LIFE-1 takes, and the remedy is narrower still. The rule reads one declared member, one declared state and one declared machine, all of which the corpus itself resolved, so an advisory period would measure a false-positive rate that the construction fixes at zero. What it refuses is repaired by putting the file back, which is mechanical and total, so there is no judgment for an author to make and nothing for a posture to soften. A corpus that means to delete the record declares that member false on that regime, which is the escape this rule reads rather than one it overrides
 
   CT-LANG-1:
     mechanism: check:language.controlled.not_met

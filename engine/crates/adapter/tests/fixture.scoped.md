@@ -13,7 +13,7 @@
 - `check/spec/00-both-halves.markdown`
 - `engine/crates/check/src/change.rs`
 
-**Coverage.** This run saw 25 files and classified 23 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 266 check instances, and 46 of them reached no verdict.
+**Coverage.** This run saw 25 files and classified 23 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 267 check instances, and 46 of them reached no verdict.
 
 - 1 — no `id` facet, which is the key this engine reads an identifier from and which no declaration states
 - 1 — the `id` facet is a sequence, and an identifier is a word
@@ -22,6 +22,11 @@
 - 2 — `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
 - 21 — this document writes no fragment into itself
 - 3 — the prior version at `a prior version that no tree holds` did not open: no prior version stands at this name
+
+2 readings of a path the census never walked, so the coverage above is computed over a set that does not hold them:
+
+- `./check/evaluations/delta.md`
+- `check/spec/00-both-halves.markdown`
 
 | Severity | Where | Rule | Finding |
 |---|---|---|---|
@@ -77,4 +82,4 @@
 
 </details>
 
-24 documents in the read set, and 1 barrier that no gate carries across a merge. 26 obligations, 21 verified.
+26 documents in the read set, and 2 barriers that no gate carries across a merge. 26 obligations, 21 verified.

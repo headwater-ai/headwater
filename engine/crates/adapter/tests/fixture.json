@@ -12,8 +12,8 @@
     "classified": 23,
     "checked": 22,
     "generated": 1,
-    "instances": 266,
-    "skipped": 66,
+    "instances": 267,
+    "skipped": 67,
     "skips": [
       {
         "reason": "no `id` facet, which is the key this engine reads an identifier from and which no declaration states",
@@ -41,7 +41,7 @@
       },
       {
         "reason": "change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change",
-        "instances": 23
+        "instances": 24
       }
     ],
     "unaccounted": []
@@ -203,6 +203,12 @@
     {
       "rule": "lifecycle.state.not_admitted",
       "scope": "document",
+      "version": 1,
+      "obligations": []
+    },
+    {
+      "rule": "lifecycle.deletion.not_permitted",
+      "scope": "corpus",
       "version": 1,
       "obligations": []
     },

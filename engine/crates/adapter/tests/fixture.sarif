@@ -340,6 +340,20 @@
               }
             },
             {
+              "id": "lifecycle.deletion.not_permitted",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and the version of each path the change named that no row of this corpus holds, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
               "id": "coverage.document_unchecked",
               "shortDescription": {
                 "text": "corpus scope, every row of the census, and it is a barrier"
@@ -904,7 +918,7 @@
         },
         {
           "ruleId": "coverage.document_unchecked",
-          "ruleIndex": 21,
+          "ruleIndex": 22,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1970,7 +1984,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 23,
+          "ruleIndex": 24,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1999,7 +2013,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 23,
+          "ruleIndex": 24,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2028,7 +2042,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 22,
+          "ruleIndex": 23,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2057,7 +2071,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 22,
+          "ruleIndex": 23,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2086,7 +2100,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 22,
+          "ruleIndex": 23,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2115,7 +2129,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 22,
+          "ruleIndex": 23,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2157,8 +2171,8 @@
             "classified": 23,
             "checked": 22,
             "generated": 1,
-            "instances": 266,
-            "skipped": 66,
+            "instances": 267,
+            "skipped": 67,
             "skips": [
               {
                 "reason": "no `id` facet, which is the key this engine reads an identifier from and which no declaration states",
@@ -2186,7 +2200,7 @@
               },
               {
                 "reason": "change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change",
-                "instances": 23
+                "instances": 24
               }
             ],
             "unaccounted": []

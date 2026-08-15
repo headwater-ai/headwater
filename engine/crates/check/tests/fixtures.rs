@@ -1467,6 +1467,12 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             // is the same grain for the reason the two above it are: the
             // defect survives in one document.
             Grain::Document,
+            // The third rule that reads a lifecycle regime, and the only one
+            // whose subject is a document this corpus no longer holds. A
+            // deleted document has no census row, so there is nothing smaller
+            // than the corpus to instantiate over. It is also the one rule
+            // that declares the prior version at this grain.
+            Grain::Corpus,
             Grain::Corpus,
             // The two register rules, which read the taxonomy and no document.
             Grain::Taxonomy,
