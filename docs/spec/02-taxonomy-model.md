@@ -110,7 +110,7 @@ regimes:
         draft:      [current, deprecated]
         current:    [superseded, deprecated]
         superseded: []
-      retain_terminal: true            # superseded documents are never deleted
+      retain_terminal: true            # a change that deletes one of them is refused
   language:
     default:
       tag: en-US                       # BCP 47: language and variant in one tag
