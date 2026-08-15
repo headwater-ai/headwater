@@ -1,5 +1,5 @@
 {
-  "version": "1.1",
+  "version": "1.2",
   "tool": "headwater",
   "taxonomy": {
     "package": "headwater/fixture",
@@ -11,7 +11,40 @@
     "seen": 25,
     "classified": 23,
     "checked": 22,
-    "instances": 266
+    "generated": 1,
+    "instances": 266,
+    "skipped": 66,
+    "skips": [
+      {
+        "reason": "no `id` facet, which is the key this engine reads an identifier from and which no declaration states",
+        "instances": 1
+      },
+      {
+        "reason": "the `id` facet is a sequence, and an identifier is a word",
+        "instances": 1
+      },
+      {
+        "reason": "the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it",
+        "instances": 16
+      },
+      {
+        "reason": "`guarded` forbids hedging, and this engine has no pattern set for it",
+        "instances": 2
+      },
+      {
+        "reason": "`ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it",
+        "instances": 2
+      },
+      {
+        "reason": "this document writes no fragment into itself",
+        "instances": 21
+      },
+      {
+        "reason": "change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change",
+        "instances": 23
+      }
+    ],
+    "unaccounted": []
   },
   "rules": [
     {

@@ -23,9 +23,15 @@
 //! Nothing here is machine-readable, so nothing here declares its loss inside
 //! the artifact the way [`crate::sarif`] does. The declaration is in this
 //! source, and `headwater check --format json` is where the dropped values are.
+//!
+//! Coverage is not in that set and it was in it in fact until #233. This format
+//! wrote two of the counts inside its first sentence and named no skip at all,
+//! so a reviewer read "across 22 of 25 documents" over a run where 66 instances
+//! decided nothing. [`coverage_of`] writes the same values the other three
+//! write, in the one form this format has for anything.
 
 use crate::{reported, Escape, Loss, Reported, Subject};
-use headwater_check::{Run, Scoped, Severity};
+use headwater_check::{Coverage, Run, Scoped, Severity};
 
 /// What a job summary cannot carry, and where each value went instead.
 pub const LOSS: &[Loss] = &[
@@ -83,6 +89,12 @@ pub fn render(run: &Run, subject: &Subject<'_>) -> String {
     if let Some(scoped) = &run.change {
         out.push_str(&scoped_to(scoped));
     }
+
+    // What the run looked at, under what it was told, and above the findings.
+    // The order the other three formats write these two blocks in, and the
+    // order of the pipeline: the change decides which instances reach a verdict
+    // and this counts the ones that did not.
+    out.push_str(&coverage_of(&run.coverage));
 
     if !live.is_empty() {
         let _ = writeln!(out, "| Severity | Where | Rule | Finding |");
@@ -181,6 +193,57 @@ fn scoped_to(scoped: &Scoped) -> String {
             scoped.unmatched.len()
         );
         for path in &scoped.unmatched {
+            let _ = writeln!(out, "- `{path}`");
+        }
+        out.push('\n');
+    }
+    out
+}
+
+/// What the run looked at, as a reviewer of a proposal reads it.
+///
+/// The same values `--format json` writes as data. The skip classes are a list
+/// rather than a count, because the reason is the part a reviewer acts on: a
+/// rule that skipped every instance over a document is a rule that reported
+/// nothing about it, and the sentence naming why is the whole remedy.
+///
+/// The sentence is written on every run, including one that skipped nothing, so
+/// that "everything this run created reached a verdict" is a thing this format
+/// says rather than a thing a reader infers from a missing paragraph.
+fn coverage_of(coverage: &Coverage) -> String {
+    use std::fmt::Write;
+    let mut out = String::new();
+    let generated = match coverage.generated() {
+        0 => String::new(),
+        one => format!(
+            ", and left {one} to `headwater generate --check`, which holds a generated file to \
+             the bytes its emitter writes"
+        ),
+    };
+    let _ = writeln!(
+        out,
+        "**Coverage.** This run saw {} files and classified {} of them{}. It created {} check \
+         instances, and {} of them reached no verdict.\n",
+        coverage.seen(),
+        coverage.classified(),
+        generated,
+        coverage.instances,
+        coverage.skipped()
+    );
+    for (reason, instances) in coverage.skips() {
+        let _ = writeln!(out, "- {instances} — {reason}");
+    }
+    if !coverage.skips().is_empty() {
+        out.push('\n');
+    }
+    if !coverage.unaccounted.is_empty() {
+        let _ = writeln!(
+            out,
+            "{} instances read a path that the census never walked, so the coverage above is \
+             computed over a set that does not hold them:\n",
+            coverage.unaccounted.len()
+        );
+        for path in &coverage.unaccounted {
             let _ = writeln!(out, "- `{path}`");
         }
         out.push('\n');

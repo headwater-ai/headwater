@@ -1,9 +1,9 @@
 234 seen, 191 classified, 191 checked, 3498 check instances
       3 generated, held to regeneration by `headwater generate --check`
+     22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+      2 skipped: the document at the target end, `HW-REG-open-questions`, declares no value for the state facet, so there is no state to read there
     179 skipped: this document writes no fragment into itself
     382 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
-     22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
-      4 skipped: the document at the target end, `HW-REG-open-questions`, declares no value for the state facet, so there is no state to read there
 adoption
   1 pairs open, 0 closed, holding 1 finding, in 1 task
   AD-1 1 open, 0 closed, holding 1 finding, owner the specification authors, until 2027-06-30

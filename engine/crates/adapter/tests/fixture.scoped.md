@@ -13,6 +13,16 @@
 - `check/spec/00-both-halves.markdown`
 - `engine/crates/check/src/change.rs`
 
+**Coverage.** This run saw 25 files and classified 23 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 266 check instances, and 46 of them reached no verdict.
+
+- 1 — no `id` facet, which is the key this engine reads an identifier from and which no declaration states
+- 1 — the `id` facet is a sequence, and an identifier is a word
+- 16 — the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+- 2 — `guarded` forbids hedging, and this engine has no pattern set for it
+- 2 — `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
+- 21 — this document writes no fragment into itself
+- 3 — the prior version at `a prior version that no tree holds` did not open: no prior version stands at this name
+
 | Severity | Where | Rule | Finding |
 |---|---|---|---|
 | warn | `check/evaluations/epsilon.md:4` | `relation.participation.overdue` | `evidence-cited`: 219 days since `status_since`, and this `evaluation` reaches no `cites_evidence` to a `design_spec` inside the 30 days the taxonomy allows |
