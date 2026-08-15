@@ -1,4 +1,4 @@
-headwater/taxonomy 0.2.0
+headwater/taxonomy 0.3.0
 
 declarations
   taxonomy (required) scalar:string
@@ -27,7 +27,6 @@ declarations
     lifecycle map of members
         initial (required) scalar:string
         transitions (required) map of seq of scalar:string
-        terminal seq of scalar:string
         retain_terminal scalar:boolean
     language map of members
         tag (required) scalar:string
