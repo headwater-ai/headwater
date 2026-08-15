@@ -51,7 +51,9 @@ The four clean groups differ by a factor of 40 from the two dirty ones. Every do
 
 **So a binding does not clean a shelf and it was never going to.** It stops the next document arriving dirty, and that is the whole of what this line buys.
 
-**Fourth, an evaluation is prose this repository wrote, and the taxonomy already says so.** 14 of the 15 evaluations declare `cited_by`, and 12 are cited by path from `docs/spec/`. No review record and no probe declares `cited_by` at all. Q27 excused `docs/reviews/` as text this repository recorded rather than wrote, and excused a probe as the instrument of a measurement. Neither excuse reaches a document the specification cites as its own evidence.
+**Fourth, an evaluation is the evidence of governed prose, and the taxonomy declares that rather than this record observing it.** The `cites_evidence` relation runs `from: [design_spec, decision_register, obligation_register]` and `to: [evaluation]`. So `evaluation` is the only kind that can stand at the evidence end of a citation from prose the regime already binds. `review_record`, `review_prompt`, `probe` and `probe_result` cannot be an endpoint of it at all. The corpus agrees with the declaration. 14 of the 15 evaluations carry `cited_by` and 12 are cited by path from `docs/spec/`. No review record and no probe carries one.
+
+Q27 excused `docs/reviews/` as text this repository recorded rather than wrote, and excused a probe as the instrument of a measurement. Neither excuse reaches a document that the bound prose cites as its own evidence, and no other unbound kind is reachable by that relation.
 
 ## Consequences
 
