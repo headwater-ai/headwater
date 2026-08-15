@@ -43,10 +43,18 @@
 meta_schema: headwater/taxonomy
 # 0.2.0 relaxes `identifier_scheme.namespace` from required to optional. Every
 # source that validated under 0.1.0 validates under this one, so it is a minor.
+#
+# 0.3.0 removes `lifecycle_regime.terminal`, and it is not a minor. A source
+# that wrote the member validated under 0.2.0 and is refused here by name,
+# because `members` is a closed set. No package of this repository wrote it and
+# one fixture did.
+#
 # No consumer compares this value against anything. `fixtures/schema.record`
 # carries it, so a bump shows up in a diff, and nothing refuses a source for
-# the version it was written against.
-version: 0.2.0
+# the version it was written against. So the position of a digit here is a
+# statement to a reader and never a gate: the removal above is refused at the
+# member and never at the version.
+version: 0.3.0
 
 # --- the root of a taxonomy source ------------------------------------------
 #
@@ -183,7 +191,11 @@ definitions:
     members:
       initial: {scalar: string, required: true}
       transitions: {map: {seq: {scalar: string}}, required: true}
-      terminal: {seq: {scalar: string}}
+      # There is no `terminal` member. Which states end a regime is read off the
+      # machine, and which states a rule may call terminal is read off the
+      # `terminal-` role on the vocabulary value. A list here was a third way to
+      # say it that reached neither reader, so `lifecycle soundness` refuses a
+      # regime where the machine and the role disagree instead.
       retain_terminal: {scalar: boolean}
 
   language_regime:

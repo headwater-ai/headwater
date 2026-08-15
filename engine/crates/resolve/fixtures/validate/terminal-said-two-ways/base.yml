@@ -1,0 +1,65 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Terminality, said two ways that disagree. Three components of this engine
+# answer "is this state terminal", and each direction below makes two of them
+# answer differently about one state.
+#
+#   `deprecated` carries a `terminal-` role and the machine gives it an exit.
+#   The role reading that `lifecycle.dependency.on_terminal` uses calls it
+#   terminal. The machine reading that `lifecycle.deletion.not_permitted` and
+#   `lifecycle.transition.not_permitted` use does not.
+#
+#   `sealed` reaches nothing and its value carries no role. The machine reading
+#   calls it terminal. The role reading does not, so a live document may rest on
+#   a sealed one and nothing reports it.
+#
+# The second one is why the `terminal` member left this meta-schema. A list
+# beside the machine suppressed the refusal below and reached no other reader,
+# so it bought a state terminality under one rule and not under the other.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+facets:
+  status:
+    role: state
+    values:
+      - {value: draft, role: initial}
+      - {value: current, role: live}
+      - {value: deprecated, role: terminal-retained}
+      - {value: superseded, role: terminal-retained}
+      - {value: sealed}
+    required: true
+    volatility: mutable
+    guidance:
+      draft: it is being argued over
+      current: it states what holds now
+      deprecated: it is kept and no longer current
+      superseded: a later document took its place
+      sealed: nothing further happens to it
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions:
+        draft: [current]
+        current: [deprecated, sealed]
+        deprecated: [superseded]
+      retain_terminal: true
+
+kinds:
+  decision:
+    purpose: rationale
+    lifecycle: standard
+    facets: {require: [status]}
+
+shelves:
+  decisions: {path: "docs/decisions/**", homogeneous: true, kind: decision}
+
+core:
+  requires:
+    - facet_role: state
