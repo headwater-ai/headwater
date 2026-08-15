@@ -66,10 +66,18 @@
 //!
 //! A state is terminal when the regime names it and it reaches nothing, which
 //! is [`crate::shape::LifecycleRegime::terminal`] and the same reading
-//! [`crate::transition`] takes. `regimes.lifecycle` also declares a `terminal`
-//! member, and nothing reads it: a second list would be a second definition of
-//! the same fact, free to disagree with the machine beside it. That gap is
-//! recorded rather than filled here.
+//! [`crate::transition`] takes.
+//!
+//! `regimes.lifecycle` also declares a `terminal` member, and one component
+//! reads it: `lifecycle soundness` in the resolver accepts a state with no exit
+//! where either that list or a `terminal-` role on the value declares it. So
+//! there are two readings of the word. The resolver asks whether a corpus
+//! *declared* the state terminal, and this layer asks whether the machine can
+//! leave it. They cannot disagree in one direction, because the resolver
+//! refuses a lock whose regime gives a reached state no exit and declares
+//! nothing about it. They can in the other: a state declared `terminal` that
+//! the machine does give an exit is not terminal here, and it is not terminal
+//! in fact. No governed document states the pair.
 //!
 //! # The severity is an error, and the finding carries no patch
 //!
