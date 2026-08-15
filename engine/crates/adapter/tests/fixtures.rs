@@ -405,7 +405,7 @@ fn every_finding_reaches_every_format() {
     for ran in [fixture_run(), scoped_run()] {
         for format in Format::ALL {
             let artifact = render(&ran, format);
-            let audited = headwater_adapter::census(&ran.run, &artifact);
+            let audited = headwater_adapter::census(&ran.run, format, &artifact);
             assert!(
                 !audited.is_defective(),
                 "the {} adapter dropped {:?}",

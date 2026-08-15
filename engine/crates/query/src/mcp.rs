@@ -991,18 +991,12 @@ fn check(server: &Server<'_>, format: &str) -> Result<String, Failure> {
     // finding that reached no output is invisible to it. A defective adapter is
     // an engine defect rather than a fact about the corpus, so it reaches the
     // protocol as an internal error and never as a report with a hole in it.
-    let audited = headwater_adapter::census(&run, &artifact);
+    let audited = headwater_adapter::census(&run, format, &artifact);
     match audited.is_defective() {
         false => Ok(artifact),
         true => Err(Failure {
             code: -32603,
-            message: format!(
-                "the {} adapter dropped {} of {} findings with no declared loss reason: {}",
-                format.name(),
-                audited.unaccounted.len(),
-                audited.findings,
-                audited.unaccounted.join(", ")
-            ),
+            message: audited.complaint(format),
         }),
     }
 }
