@@ -617,19 +617,33 @@ fn a_change_that_named_nothing_is_not_a_full_corpus_run() {
 /// re-bless the runner's own recorded reports for a reason unrelated to this.
 /// So the non-zero value is exercised here, against the emitters, which are
 /// what this crate is a test of.
+///
+/// Read out of the parsed document and never as a substring. A digest is
+/// hexadecimal and a finding carries a line number, so `contains("37")` is true
+/// of every artifact here whatever the emitter wrote: a probe that replaced the
+/// count with a literal zero passed a test written that way, in all four.
 #[test]
 fn the_promotion_count_reaches_every_format() {
     let mut ran = scoped_run();
     let scoped = ran.run.change.as_mut().expect("the run was scoped");
     scoped.promotions = 37;
-    for format in Format::ALL {
-        let artifact = render(&ran, format);
-        assert!(
-            artifact.contains("37"),
-            "the {} artifact drops the promotion count",
-            format.name()
-        );
-    }
+
+    let json = parse(&render(&ran, Format::Json));
+    let block = member(&json, "change").expect("the change");
+    assert_eq!(text(&block, "promotions"), "37");
+
+    let document = parse(&render(&ran, Format::Sarif));
+    let bag = member(&runs(&document)[0], "properties")
+        .and_then(|properties| member(&properties, "headwater"))
+        .and_then(|headwater| member(&headwater, "change"))
+        .expect("the change");
+    assert_eq!(text(&bag, "promotions"), "37");
+
+    // The two prose formats have no member to read, so the sentence is the
+    // assertion, and each one is the whole sentence rather than the number.
+    assert!(render(&ran, Format::Markdown)
+        .contains("37 promoted from `asserted` to `accepted` in this change."));
+    assert!(render(&ran, Format::Text).contains("37 promoted from `asserted` to `accepted`"));
 }
 
 /// The change rides in the run's property bag, and in no member of the
