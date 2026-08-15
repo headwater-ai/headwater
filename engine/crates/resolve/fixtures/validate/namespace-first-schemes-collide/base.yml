@@ -1,0 +1,83 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# A collision that survives the expansion, so that the fix which made
+# `namespace-first-is-decidable/` valid is measured rather than assumed.
+#
+# `decision_id` and `draft_id` expand to one prefix, `HW-DR-`, and `HW-DR-0042`
+# satisfies both patterns. A rule that stopped refusing everything would make
+# this case valid too, which is the state this file exists to report.
+#
+# `superseded_id` is the third arm and it is the one an over-eager expansion
+# would lose: its literal segment is `-DRAFT-` where `draft_id` writes `-DR-`,
+# so the two share the text `HW-DR` and no identifier. The comparison is over
+# whole prefixes and not over a common leading run, and this arm says so.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+vocabularies:
+  lifecycle_state:
+    - {value: draft,      role: initial}
+    - {value: current,    role: live}
+    - {value: superseded, role: terminal-retained}
+
+facets:
+  status:
+    role: state
+    values: $vocabularies.lifecycle_state
+    required: true
+    volatility: mutable
+    guidance:
+      draft: it is being argued over, and nothing may rely on it
+      current: it states what holds now
+      superseded: a later decision replaced it
+  sequence:
+    type: integer
+    required: true
+    volatility: stable
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current], current: [superseded]}
+      retain_terminal: true
+
+identifier_schemes:
+  decision_id:   {pattern: "{namespace}-DR-{seq:04d}",   namespace: HW, allocation: reconcile-first}
+  draft_id:      {pattern: "{namespace}-DR-{slug}",      namespace: HW, allocation: minted-once}
+  superseded_id: {pattern: "{namespace}-DRAFT-{slug}",   namespace: HW, allocation: minted-once}
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status]}
+  decision:
+    is_a: governed_document
+    purpose: rationale
+    lifecycle: standard
+    identifier: {scheme: decision_id}
+    facets: {require: [sequence]}
+
+relations:
+  supersedes:
+    family: succession
+    from: [decision]
+    to: [decision]
+    reciprocal: required
+    on_target: {set_state: superseded}
+    created_by: scaffold
+
+shelves:
+  decisions:
+    path: docs/decisions/**
+    homogeneous: true
+    kind: decision
+    layout: "{sequence:02d}-{slug}.md"
+
+core:
+  requires:
+    - facet_role: state

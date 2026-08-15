@@ -703,7 +703,7 @@ fn identifier_integrity(view: &View, out: &mut Vec<ResolveError>) {
         by_namespace
             .entry(namespace)
             .or_default()
-            .push((scheme, literal_prefix(pattern)));
+            .push((scheme, literal_prefix(pattern, namespace)));
     }
     for (namespace, schemes) in by_namespace {
         for (index, (scheme, prefix)) in schemes.iter().enumerate() {
@@ -1548,11 +1548,25 @@ fn placeholders(text: &str) -> BTreeSet<String> {
     out
 }
 
-/// The text of a pattern before its first placeholder.
-fn literal_prefix(pattern: &str) -> String {
-    match pattern.find('{') {
-        Some(at) => pattern[..at].to_string(),
-        None => pattern.to_string(),
+/// The text every identifier of a scheme begins with: the pattern up to its
+/// first placeholder, after `{namespace}` is expanded to the declared constant.
+///
+/// The expansion is what lets the comparison above decide a namespace-first
+/// pattern. `{namespace}-DR-{seq:04d}` and `{namespace}-SPEC-{slug}` can never
+/// admit one string, and a scan that stops at the first `{` reads the empty
+/// string from both and refuses the pair. `{namespace}` is a constant of the
+/// scheme and not a free token, so reading it costs no soundness: the result is
+/// still a string that every admitted identifier starts with, and it is a
+/// longer one. The type-first case improves for the same reason, because
+/// `SPEC-HW-` discriminates where `SPEC-` does not.
+///
+/// Two schemes can still expand to one prefix. That is the refusing direction:
+/// the pair is reported, and it is never admitted.
+fn literal_prefix(pattern: &str, namespace: &str) -> String {
+    let expanded = pattern.replace("{namespace}", namespace);
+    match expanded.find('{') {
+        Some(at) => expanded[..at].to_string(),
+        None => expanded,
     }
 }
 
