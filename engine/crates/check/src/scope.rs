@@ -732,9 +732,42 @@ pub struct EdgeView<'a> {
     relation: &'a str,
     declared: Option<&'a Edge>,
     inverse: Option<&'a Edge>,
+    /// The two ends in the direction the relation declares, source first, and
+    /// nothing for an instance whose far end is not a document. See
+    /// [`EdgeView::ends`].
+    ends: Option<(EdgeEnd<'a>, EdgeEnd<'a>)>,
     clock: Option<Date>,
     reads: Vec<Input>,
     resolution: String,
+}
+
+/// One end of a relation instance, in the direction the relation declares.
+///
+/// [Spec 12](../../../../docs/spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on)
+/// fixes an edge-scoped instance at "one relation instance **and both
+/// endpoints**", and the front matter here is that clause read literally. It is
+/// not the depth-1 boundary that [`Neighbour`] holds: a neighbourhood has as
+/// many neighbours as the corpus wrote, so a front matter on each one would
+/// make that grain a corpus view, while an edge has exactly two ends and the
+/// read set already hashes both of them.
+#[derive(Clone, Copy, Debug)]
+pub struct EdgeEnd<'a> {
+    pub id: &'a str,
+    pub path: &'a str,
+    pub kind: &'a str,
+    facets: Option<&'a Mapping>,
+}
+
+impl<'a> EdgeEnd<'a> {
+    /// The front matter of the document at this end, as its author wrote it.
+    ///
+    /// Nothing where the census carries no parsed document for the path, which
+    /// is an absence rather than empty front matter: a rule that read the two
+    /// as one would report a document nobody could open as one that declared
+    /// nothing.
+    pub fn facets(&self) -> Option<&'a Mapping> {
+        self.facets
+    }
 }
 
 impl<'a> EdgeView<'a> {
@@ -748,7 +781,12 @@ impl<'a> EdgeView<'a> {
     /// declared inside the front matter of one of its endpoints, so hashing
     /// both endpoints covers the relation name, the target and every instance
     /// attribute on it.
-    fn over(halves: &[&'a Edge], digests: &Digests, clock: Option<Date>) -> Option<Self> {
+    fn over(
+        halves: &[&'a Edge],
+        census: &'a Census,
+        digests: &Digests,
+        clock: Option<Date>,
+    ) -> Option<Self> {
         let declared = halves
             .iter()
             .copied()
@@ -771,10 +809,38 @@ impl<'a> EdgeView<'a> {
             }
         }
 
+        // The two ends, normalized once. An author may write either half, so
+        // the document that declared the entry sits at the source end or at the
+        // target end depending on the direction the graph resolved. Doing it
+        // here rather than in each rule is what stops two rules from disagreeing
+        // about which end of one edge is which.
+        let ends = match &anchor.target {
+            Target::Document { id, path, kind } => {
+                let writer = EdgeEnd {
+                    id: &anchor.source.id,
+                    path: &anchor.source.path,
+                    kind: &anchor.source.kind,
+                    facets: facets_of(census, &anchor.source.path),
+                };
+                let other = EdgeEnd {
+                    id,
+                    path,
+                    kind,
+                    facets: facets_of(census, path),
+                };
+                Some(match anchor.direction {
+                    Direction::AsDeclared => (writer, other),
+                    Direction::Inverse => (other, writer),
+                })
+            }
+            _ => None,
+        };
+
         Some(EdgeView {
             relation: anchor.declared.as_str(),
             declared,
             inverse,
+            ends,
             clock,
             reads,
             resolution: anchor.target.resolution(),
@@ -807,6 +873,17 @@ impl<'a> EdgeView<'a> {
     /// The half written from the target end, when a document wrote it.
     pub fn inverse_half(&self) -> Option<&'a Edge> {
         self.inverse
+    }
+
+    /// The two ends of this relation instance, source first, in the direction
+    /// the relation declares.
+    ///
+    /// Nothing when the far end is not a document: an anchor, a withheld target
+    /// and an unbound one are all a relation with one endpoint, and there is no
+    /// second document to read. At [`EdgeUnit::Pair`] that never happens, and at
+    /// [`EdgeUnit::Entry`] it is most of what the unit exists to reach.
+    pub fn ends(&self) -> Option<(EdgeEnd<'a>, EdgeEnd<'a>)> {
+        self.ends
     }
 
     /// The injected date, and only for a check that declared `NEEDS_CLOCK`.
@@ -971,6 +1048,23 @@ impl Digests {
     }
 }
 
+/// The front matter the census parsed for one path, and nothing where it
+/// parsed none.
+///
+/// The census is the one reader of the corpus, and this is the second lookup
+/// into it from an edge-scoped view. [`Digests`] is the first, and it binary
+/// searches the same list; the difference is that this one borrows out of the
+/// census rather than copying, so it takes the census by reference at the point
+/// of use instead of being built once.
+fn facets_of<'a>(census: &'a Census, path: &str) -> Option<&'a Mapping> {
+    census
+        .rows
+        .binary_search_by(|row| row.path.as_str().cmp(path))
+        .ok()
+        .and_then(|index| census.rows[index].document.as_ref())
+        .map(|document| &document.facets)
+}
+
 /// Instantiate a document-scoped check over a census.
 ///
 /// One instance per typed document the check generates over. An untyped row
@@ -1092,6 +1186,7 @@ pub fn over_documents<C: DocumentCheck>(
 /// to be the same for both. Two functions is where the two would drift.
 pub fn over_edges<C: EdgeCheck>(
     check: &C,
+    census: &Census,
     graph: &Graph,
     digests: &Digests,
     ctx: &Context,
@@ -1135,7 +1230,7 @@ pub fn over_edges<C: EdgeCheck>(
 
     let mut instances = Vec::with_capacity(pairs.len());
     for (triple, halves) in &pairs {
-        let Some(view) = EdgeView::over(halves, digests, clock) else {
+        let Some(view) = EdgeView::over(halves, census, digests, clock) else {
             continue;
         };
         // The triple is the identity Q4 gives an edge, and it is what tells

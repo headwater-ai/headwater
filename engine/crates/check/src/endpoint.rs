@@ -47,7 +47,7 @@ use crate::instance::Outcome;
 use crate::scope::{EdgeCheck, EdgeView};
 use crate::shape::Shape;
 use headwater_graph::declarations::Relation;
-use headwater_graph::{Declarations, Direction, Target};
+use headwater_graph::Declarations;
 
 pub const RULE: &str = "relation.endpoint.not_permitted";
 
@@ -126,39 +126,26 @@ impl EdgeCheck for Endpoints<'_> {
             return Outcome::Skipped(NO_RELATION.to_string());
         };
 
-        let Target::Document { id, path, kind } = &half.target else {
-            // An anchor, a withheld target or an unbound one. None of the three
-            // is a document pair, and `declared_triple` already declines to
-            // group them, so this is unreachable rather than tolerated.
+        // The direction says which end each document is at, and the view
+        // normalizes it once for every edge-scoped rule. A document that wrote
+        // an inverse half sits at the relation's target end, so the two labels
+        // swap and the documents do not move. An instance whose far end is not
+        // a document is no pair at all, and `declared_triple` already declines
+        // to group one, so the absence is unreachable rather than tolerated.
+        let Some((at_from, at_to)) = view.ends() else {
             return Outcome::Skipped(NO_RELATION.to_string());
         };
-        let writer = Endpoint {
+        let source = Endpoint {
             key: "from",
-            id: &half.source.id,
-            path: &half.source.path,
-            kind: &half.source.kind,
+            id: at_from.id,
+            path: at_from.path,
+            kind: at_from.kind,
         };
-        let other = Endpoint {
+        let target = Endpoint {
             key: "to",
-            id,
-            path,
-            kind,
-        };
-        // The direction says which end each document is at. The document that
-        // wrote an inverse half sits at the relation's target end, so the two
-        // labels swap and the documents do not move.
-        let (source, target) = match half.direction {
-            Direction::AsDeclared => (writer, other),
-            Direction::Inverse => (
-                Endpoint {
-                    key: "from",
-                    ..other
-                },
-                Endpoint {
-                    key: "to",
-                    ..writer
-                },
-            ),
+            id: at_to.id,
+            path: at_to.path,
+            kind: at_to.kind,
         };
 
         let (line, column) = at(Some(half.span));
