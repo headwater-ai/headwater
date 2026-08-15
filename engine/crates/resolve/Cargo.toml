@@ -24,3 +24,6 @@ headwater-meta = { path = "../meta" }
 # a number this crate writes and a number a verifier recomputes cannot come from
 # two readings. `release.rs` argues why a fetched artifact is checked with it.
 headwater-hash = { path = "../hash" }
+
+[lints]
+workspace = true

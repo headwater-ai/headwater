@@ -91,7 +91,7 @@ impl Budgets {
         };
 
         let mut tiers = Vec::new();
-        for entry in block.iter() {
+        for entry in block {
             let name = entry.key.value.as_str();
             let Some(tier) = Tier::read(name) else {
                 return Err(Unreadable::UnknownTier(name.to_string()));

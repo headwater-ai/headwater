@@ -90,19 +90,18 @@ pub fn overlay(schema: &MetaSchema, root: &Spanned<Value>) -> Vec<MetaError> {
             continue; // the shape check above already reported it
         };
         for operation_entry in operations {
-            let address = match parse_address(
+            let Some(address) = parse_address(
                 &operation_entry.key.value,
                 operation,
                 &operation_entry.key.span,
                 &mut out,
-            ) {
-                Some(address) => address,
-                None => continue,
+            ) else {
+                continue;
             };
             let at = format!("{operation}.{address}");
-            let shape = match position(schema, &address, &at, operation_entry.key.span, &mut out) {
-                Some(shape) => shape,
-                None => continue,
+            let Some(shape) = position(schema, &address, &at, operation_entry.key.span, &mut out)
+            else {
+                continue;
             };
             // `add: {relations.forbids: $package.optional.forbids}` enables a
             // relation by reference. So an operation's whole value may be a

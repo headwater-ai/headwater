@@ -42,3 +42,6 @@ headwater-doc = { path = "../doc" }
 # The property test runs over this repository's own corpus, which needs its
 # committed lock and the consumer declaration that says what to walk.
 headwater-lock = { path = "../lock" }
+
+[lints]
+workspace = true

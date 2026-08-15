@@ -704,10 +704,10 @@ mod tests {
         /// built from a thread identity is reused when a thread ends.
         static NEXT: AtomicUsize = AtomicUsize::new(0);
 
-        pub struct Dir(PathBuf);
+        pub(super) struct Dir(PathBuf);
 
         impl Dir {
-            pub fn with(files: &[(&str, &str)]) -> Dir {
+            pub(super) fn with(files: &[(&str, &str)]) -> Dir {
                 let root = std::env::temp_dir().join(format!(
                     "headwater-fix-{}-{}",
                     std::process::id(),
@@ -721,7 +721,7 @@ mod tests {
                 Dir(root)
             }
 
-            pub fn path(&self) -> &Path {
+            pub(super) fn path(&self) -> &Path {
                 &self.0
             }
         }

@@ -11,3 +11,6 @@ publish.workspace = true
 # One implementation, so that two of them cannot disagree about what a digest
 # of the same bytes is.
 [dependencies]
+
+[lints]
+workspace = true

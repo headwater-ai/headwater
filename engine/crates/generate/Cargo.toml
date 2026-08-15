@@ -46,3 +46,6 @@ headwater-resolve = { path = "../resolve" }
 # The dogfood test states this repository's own identity, and it reads the lock
 # for it rather than re-resolving, because the lock is what the binary reads.
 headwater-lock = { path = "../lock" }
+
+[lints]
+workspace = true

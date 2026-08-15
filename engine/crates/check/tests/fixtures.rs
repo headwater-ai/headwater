@@ -592,7 +592,7 @@ fn every_defect_of_a_relations_block_is_a_finding_that_names_the_entry() {
         .collect();
     assert_eq!(entries.len(), 4, "{entries:#?}");
     let mut lines: Vec<usize> = entries.iter().map(|finding| finding.line).collect();
-    lines.sort();
+    lines.sort_unstable();
     lines.dedup();
     assert_eq!(lines.len(), 4, "{entries:#?}");
     for expected in [
@@ -807,7 +807,7 @@ fn the_graph_fixture_corpus_routes_every_phase_a_defect_of_a_relation() {
         .collect();
     assert_eq!(twins.len(), 2, "{twins:#?}");
     let mut paths: Vec<&str> = twins.iter().map(|finding| finding.path.as_str()).collect();
-    paths.sort();
+    paths.sort_unstable();
     assert_eq!(paths, ["graph/spec/00-first.md", "graph/spec/04-twin.md"]);
 
     // One sentence, read the same way in both files. The index reports the

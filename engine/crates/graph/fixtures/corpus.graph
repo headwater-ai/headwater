@@ -1,6 +1,6 @@
-187 nodes, 411 declared edge halves
+188 nodes, 412 declared edge halves
     397 to a document
-     14 to an anchor
+     15 to an anchor
 0 prose links that did not resolve
 
 anchors
@@ -12,6 +12,7 @@ anchors
       1 code_path `.claude/skills/fixtures.sh` via source-tree
       2 code_path `.claude/skills/headwater-authoring/SKILL.md` via source-tree
       1 code_path `.claude/skills/headwater-taxonomy/SKILL.md` via source-tree
+      1 code_path `engine/Cargo.toml` via source-tree
       1 code_path `engine/crates/check/src/language.rs` via source-tree
       2 code_path `engine/crates/scaffold/src/reading.rs` via source-tree
       1 code_path `spike` via source-tree

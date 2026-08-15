@@ -11,3 +11,6 @@ publish.workspace = true
 # core satisfiability read a resolved tree, which is the resolver's.
 headwater-yaml = { path = "../yaml" }
 headwater-ref = { path = "../ref" }
+
+[lints]
+workspace = true

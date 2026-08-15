@@ -421,10 +421,10 @@ fn every_tool_annotates_what_it_does() {
     let supplied = verbs(false);
     let server = built.writing(RECORDED_AT, supplied.writing());
     let listed = once(&server, r#"{"jsonrpc":"2.0","id":1,"method":"tools/list"}"#);
-    for tool in QUERY_CLASS.iter() {
+    for tool in &QUERY_CLASS {
         assert!(!tool.writes, "{}", tool.name);
     }
-    for tool in WRITE_CLASS.iter() {
+    for tool in &WRITE_CLASS {
         assert!(tool.writes, "{}", tool.name);
     }
     // Six reads and two writes, and the two annotations are the two values.
@@ -788,7 +788,7 @@ fn a_session_writes_nothing_to_the_corpus_it_reads() {
     let before = snapshot(&fixtures_dir());
     let built = fixture_tree();
     let server = built.server(RECORDED_AT);
-    for tool in QUERY_CLASS.iter() {
+    for tool in &QUERY_CLASS {
         let request = calling(
             tool.name,
             &format!(

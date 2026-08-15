@@ -208,7 +208,7 @@ impl Root {
     /// consumer is in: the lock names the version this repository took, and the
     /// artifact names the version somebody is proposing.
     fn candidate(&self, payload: Option<&str>) {
-        self.candidate_of(&CANDIDATE, payload)
+        self.candidate_of(&CANDIDATE, payload);
     }
 
     fn candidate_of(&self, edits: &[(&[&str], &[&str])], payload: Option<&str>) {

@@ -837,7 +837,7 @@ impl Projection {
                 self.tally(self.controls.iter().map(|c| c.acts.as_deref())),
             ),
         ] {
-            values.sort();
+            values.sort_unstable();
             for (value, count) in values {
                 let _ = writeln!(out, "  {count:5} {label} {value}");
             }

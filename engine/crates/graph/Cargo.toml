@@ -21,3 +21,6 @@ headwater-yaml = { path = "../yaml" }
 # The graph of this repository needs this repository's taxonomy resolved. The
 # build itself takes an already-resolved one.
 headwater-resolve = { path = "../resolve" }
+
+[lints]
+workspace = true

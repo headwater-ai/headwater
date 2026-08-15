@@ -513,12 +513,9 @@ impl Record {
             return out;
         }
 
-        let identity = match &self.identity {
-            Some(identity) => identity,
-            None => {
-                let _ = writeln!(out, "This transcript carries no run identity.");
-                return out;
-            }
+        let Some(identity) = &self.identity else {
+            let _ = writeln!(out, "This transcript carries no run identity.");
+            return out;
         };
 
         let _ = writeln!(
@@ -644,7 +641,7 @@ fn closed(
     block: &'static str,
     permitted: &'static [&'static str],
 ) -> Option<Refusal> {
-    for entry in map.iter() {
+    for entry in map {
         if !permitted.contains(&entry.key.value.as_str()) {
             return Some(Refusal::KeyNotPermitted {
                 block,

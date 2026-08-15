@@ -239,7 +239,7 @@ pub fn scan(source: &str, body: &str, offset: usize) -> Body {
             Event::Start(tag) => match tag {
                 Tag::BlockQuote(_) => quote_depth += 1,
                 Tag::Paragraph => {
-                    open.push(block(BlockKind::Paragraph, span_of(range), quote_depth))
+                    open.push(block(BlockKind::Paragraph, span_of(range), quote_depth));
                 }
                 Tag::Heading { level, .. } => open.push(block(
                     BlockKind::Heading(level_of(level)),
@@ -248,7 +248,7 @@ pub fn scan(source: &str, body: &str, offset: usize) -> Body {
                 )),
                 Tag::Item => open.push(block(BlockKind::Item, span_of(range), quote_depth)),
                 Tag::TableCell => {
-                    open.push(block(BlockKind::TableCell, span_of(range), quote_depth))
+                    open.push(block(BlockKind::TableCell, span_of(range), quote_depth));
                 }
                 Tag::CodeBlock(_) => open.push(block(BlockKind::Code, span_of(range), quote_depth)),
                 Tag::Link {

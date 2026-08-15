@@ -19,3 +19,6 @@ headwater-yaml = { path = "../yaml" }
 # writes, and the digest is over that form. The two are the same text on
 # purpose: see `render`.
 headwater-resolve = { path = "../resolve" }
+
+[lints]
+workspace = true

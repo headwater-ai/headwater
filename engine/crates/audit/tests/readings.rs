@@ -611,7 +611,7 @@ fn a_reading_that_still_waits_says_where_the_absence_lives() {
     );
     assert!(matches!(cue, Supply::Unauthored(_)), "{}", cue.says());
     assert!(
-        cue.says().contains("6"),
+        cue.says().contains('6'),
         "the population is named: {}",
         cue.says()
     );

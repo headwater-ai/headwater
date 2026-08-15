@@ -818,9 +818,9 @@ fn a_bare_enum_over_a_composite_value_is_a_divergence() {
     );
 
     let bare = parse(
-        r##"{"type": "object",
+        r#"{"type": "object",
             "properties": {"status": {"enum": ["draft", "current", "superseded"]}},
-            "required": ["status", "status_since", "summary"]}"##,
+            "required": ["status", "status_since", "summary"]}"#,
     );
     let mut without_guard = Vec::new();
     evaluate(&bare, &bare, &instance, "probe", &mut without_guard);

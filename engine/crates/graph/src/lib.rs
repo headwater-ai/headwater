@@ -256,7 +256,7 @@ impl Graph {
                 links::Binding::External => external += 1,
                 links::Binding::SameDocument => same += 1,
                 links::Binding::Missing { .. } | links::Binding::Unnormalizable { .. } => {
-                    broken += 1
+                    broken += 1;
                 }
             }
         }

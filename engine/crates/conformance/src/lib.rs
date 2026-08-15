@@ -383,11 +383,10 @@ impl Waiver {
 /// survive the next upgrade.
 pub fn waivers(root: &Path) -> Result<Vec<Waiver>, Vec<String>> {
     let path = root.join(headwater_resolve::package::CONSUMER);
-    let text = match std::fs::read_to_string(&path) {
-        Ok(text) => text,
-        // A repository with no consumer declaration has no pin either, and the
-        // caller met that failure before it reached here.
-        Err(_) => return Ok(Vec::new()),
+    // A repository with no consumer declaration has no pin either, and the
+    // caller met that failure before it reached here.
+    let Ok(text) = std::fs::read_to_string(&path) else {
+        return Ok(Vec::new());
     };
     let loaded = headwater_yaml::load(&text)
         .map_err(|errors| vec![headwater_yaml::error::render(&errors)])?;
@@ -408,7 +407,7 @@ pub fn waivers(root: &Path) -> Result<Vec<Waiver>, Vec<String>> {
     // is `level`, which reads as a declaration and is not one: the report
     // derives a level from the rules that pass, so a level an adopter typed
     // would be a claim that nothing evaluated and nothing contradicted.
-    for entry in block.iter() {
+    for entry in block {
         if entry.key.value == "waivers" {
             continue;
         }

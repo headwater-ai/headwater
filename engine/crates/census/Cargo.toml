@@ -37,3 +37,6 @@ headwater-meta = { path = "../meta" }
 # library takes an already-resolved taxonomy and knows nothing about where one
 # comes from, so the dependency is the fixture's rather than the crate's.
 headwater-resolve = { path = "../resolve" }
+
+[lints]
+workspace = true

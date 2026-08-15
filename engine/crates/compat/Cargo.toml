@@ -22,3 +22,6 @@ headwater-resolve = { path = "../resolve" }
 # for one caller.
 headwater-ref = { path = "../ref" }
 headwater-yaml = { path = "../yaml" }
+
+[lints]
+workspace = true

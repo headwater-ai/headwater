@@ -367,7 +367,7 @@ fn recognizable(
 /// [`headwater_yaml::Mapping`] keeps.
 fn scalars(mapping: &Mapping, under: &str) -> Vec<(String, String, Span)> {
     let mut out = Vec::new();
-    for entry in mapping.iter() {
+    for entry in mapping {
         let at = match under.is_empty() {
             true => entry.key.value.clone(),
             false => format!("{under}.{}", entry.key.value),

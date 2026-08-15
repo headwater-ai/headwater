@@ -586,7 +586,7 @@ pub fn plan(
             Kind::ShelfSections => shelf_sections::emit(surface, census, declaration, &mut plan),
             Kind::GraphExport => graph_export(surface, projections, declaration, &mut plan),
             Kind::ProbeResult => {
-                probe_result::emit(surface, census, declaration, runs, identity, &mut plan)
+                probe_result::emit(surface, census, declaration, runs, identity, &mut plan);
             }
             other => plan.unwritten.push(Unwritten {
                 at: declaration.output.clone(),
