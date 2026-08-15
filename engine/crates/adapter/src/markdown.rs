@@ -76,11 +76,10 @@ pub fn render(run: &Run, subject: &Subject<'_>) -> String {
         subject.now
     );
 
-    // What the run was scoped to, above the findings. A reviewer who reads the
-    // count above as a reading of the whole corpus has read the wrong number,
-    // and this is the sentence that stops that. A full-corpus run writes
-    // nothing here, so the block is present exactly when the reading is
-    // partial.
+    // What the run was told about, above the findings. A reviewer of a proposal
+    // needs it, because the promotion count and every transition check are
+    // about that change and about nothing else. A full-corpus run writes
+    // nothing here, so the block stands exactly when there is a change to name.
     if let Some(scoped) = &run.change {
         out.push_str(&scoped_to(scoped));
     }
@@ -155,13 +154,16 @@ fn scoped_to(scoped: &Scoped) -> String {
     let unreadable = match named.unreadable {
         0 => String::new(),
         one => format!(
-            ", and {one} whose prior version this run could not read and checked nothing over"
+            ", and {one} whose prior version did not read, so every check that needed one was \
+             skipped over it"
         ),
     };
     let _ = writeln!(
         out,
-        "**Scoped to a change.** Everything above is over the {} documents this change named and \
-         not over the corpus: {} the change adds, {} with a prior version this run read{}.\n",
+        "**Scoped to a change.** This run was told what one change carries, so the checks that \
+         read the version a document stood at before it could run at all. {} documents were \
+         named: {} that the change adds, {} with a prior version this run read{}. The findings \
+         above are over the whole corpus, as they are in a run that names no change.\n",
         named.documents, named.added, named.carried, unreadable
     );
     let _ = writeln!(

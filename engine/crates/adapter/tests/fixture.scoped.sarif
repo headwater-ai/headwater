@@ -903,33 +903,6 @@
           }
         },
         {
-          "ruleId": "coverage.document_unchecked",
-          "ruleIndex": 21,
-          "level": "warning",
-          "kind": "fail",
-          "message": {
-            "text": "this document is classified and all 3 of its check instances were skipped",
-            "markdown": "this document is classified and all 3 of its check instances were skipped\n\n**Fix:** check that the shelf pattern claims the right files, and that the kind declares something a check reads"
-          },
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "check/spec/03-no-instance.md"
-                }
-              }
-            }
-          ],
-          "properties": {
-            "headwater": {
-              "severity": "warn",
-              "fixable": false,
-              "remediation": "check that the shelf pattern claims the right files, and that the kind declares something a check reads",
-              "escape": "none"
-            }
-          }
-        },
-        {
           "ruleId": "facet.required.missing",
           "ruleIndex": 0,
           "level": "error",
@@ -2151,10 +2124,21 @@
             "lock": "0d5deef4f0b065206f6e33e9641af29c0de5411b4e8c5d9eedaf22d68f04c746"
           },
           "clock": "2026-08-12",
+          "change": {
+            "documents": 5,
+            "added": 1,
+            "carried": 1,
+            "unreadable": 1,
+            "unmatched": [
+              "README.md",
+              "check/spec/00-both-halves.markdown"
+            ],
+            "promotions": 0
+          },
           "coverage": {
             "seen": 25,
             "classified": 23,
-            "checked": 22,
+            "checked": 23,
             "instances": 266
           },
           "escaped": {

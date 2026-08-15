@@ -86,9 +86,11 @@
 //!
 //! # Where a scoped run says so, and the two members that were read first
 //!
-//! A run of `headwater check --change` reads the documents one change carries
-//! and not the corpus. That fact has no member in this vocabulary, so it rides
-//! in `run.properties.headwater.change` and [`LOSS`] records it as a loss. Two
+//! A run of `headwater check --change` is told what one change carries. It
+//! checks the whole corpus either way, and the manifest is what lets the rules
+//! that read a prior version reach a verdict rather than a skip. That fact has
+//! no member in this vocabulary, so it rides in
+//! `run.properties.headwater.change` and [`LOSS`] records it as a loss. Two
 //! defined members were held against it first, and the schema is what refused
 //! both.
 //!
@@ -176,7 +178,7 @@ pub const LOSS: &[Loss] = &[
     },
     Loss {
         field: "the change a run was scoped to",
-        reason: "no member of this vocabulary says that a run read one change and not a corpus. \
+        reason: "no member of this vocabulary says which change a run was told about. \
                  `invocations` holds the runtime environment of the tool process and these are \
                  readings rather than process facts, and `automationDetails.id` uniquely \
                  identifies one run, which is an identity this engine mints none of",
