@@ -703,3 +703,217 @@ fn text_of(map: &Mapping, key: &str) -> Option<String> {
         .and_then(|node| node.value.as_scalar())
         .map(|scalar| scalar.text.clone())
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn payload(steps: &str) -> Result<Payload, Vec<PayloadError>> {
+        read(
+            &format!("migration:\n  from: \">=1 <2\"\n  to: \">=2 <3\"\nsteps:\n{steps}"),
+            "migrations/1-to-2.yml",
+        )
+    }
+
+    fn one(steps: &str) -> PayloadError {
+        let errors = payload(steps).expect_err("it refuses");
+        assert_eq!(errors.len(), 1, "{errors:?}");
+        errors.into_iter().next().expect("one")
+    }
+
+    /// The distinction the whole format rests on at the parse boundary.
+    ///
+    /// `to: []` is a publisher who said that nothing replaces the value, and an
+    /// absent `to` is a publisher who did not say. An `unwrap_or_default` would
+    /// read the second as the first, and every step that forgot a target would
+    /// silently become a re-statement task over the documents that carry it.
+    #[test]
+    fn an_absent_target_list_is_not_an_empty_one() {
+        let absent = one(
+            "  - subject: facet_value\n    facet: status\n    from: draft\n    because: why\n",
+        );
+        assert!(
+            matches!(&absent, PayloadError::Malformed { what, .. } if what.contains("did not say")),
+            "{absent}"
+        );
+
+        let empty = payload(
+            "  - subject: facet_value\n    facet: status\n    from: draft\n    to: []\n    task: \
+             re-state it\n    because: why\n",
+        )
+        .expect("an empty list is a legal re-statement");
+        assert!(matches!(
+            empty.steps[0].apply,
+            Application::Restatement { .. }
+        ));
+    }
+
+    /// The three applications, out of the target list alone.
+    #[test]
+    fn the_application_is_derived_from_the_target_list() {
+        let mechanical = Application::over(vec!["one".into()], None).expect("one target");
+        assert!(mechanical.mechanical());
+        assert_eq!(mechanical.targets().len(), 1);
+        assert_eq!(mechanical.task(), None);
+
+        let choice = Application::over(vec!["one".into(), "two".into()], Some("pick".into()))
+            .expect("two targets and a task");
+        assert!(!choice.mechanical());
+        assert_eq!(choice.task(), Some("pick"));
+
+        let restated =
+            Application::over(Vec::new(), Some("re-state".into())).expect("no target and a task");
+        assert!(restated.targets().is_empty());
+        assert!(!restated.mechanical());
+    }
+
+    /// A task beside one target has nowhere to go, and a reader that dropped it
+    /// would be the defect this payload exists to stop.
+    #[test]
+    fn a_task_on_a_mechanical_step_is_refused_rather_than_dropped() {
+        let refused = Application::over(vec!["one".into()], Some("a question".into()))
+            .expect_err("it refuses");
+        assert!(refused.contains("applies with no judgment"), "{refused}");
+    }
+
+    /// A choice and a re-statement both need somebody to act, and a step that
+    /// names nobody is a question that no task list would carry.
+    #[test]
+    fn a_judgment_step_with_no_task_is_refused() {
+        for targets in [Vec::new(), vec!["one".into(), "two".into()]] {
+            let count = targets.len();
+            assert!(
+                Application::over(targets, None).is_err(),
+                "{count} targets and no task"
+            );
+        }
+    }
+
+    /// A `facet` key on a `kind` step is a key this engine would read and drop.
+    #[test]
+    fn a_key_a_subject_does_not_take_is_refused() {
+        let refused = one("  - subject: kind\n    facet: status\n    from: decision\n    to: \
+                           [ruling]\n    because: why\n");
+        assert!(
+            matches!(&refused, PayloadError::Malformed { what, .. } if what.contains("read and dropped")),
+            "{refused}"
+        );
+    }
+
+    /// A subject outside the closed set names the set it is outside of.
+    #[test]
+    fn a_subject_outside_the_set_names_the_set() {
+        let refused = one("  - subject: shelf\n    from: decisions\n    to: [rulings]\n    \
+                           because: why\n");
+        assert!(
+            matches!(&refused, PayloadError::Subject { found, .. } if found == "shelf"),
+            "{refused}"
+        );
+        assert!(refused.to_string().contains("facet_value, kind"), "{refused}");
+    }
+
+    /// A later format is refused rather than read as this one.
+    #[test]
+    fn a_later_format_is_refused() {
+        let refused = read(
+            "migration:\n  format: 2\n  from: \">=1 <2\"\n  to: \">=2 <3\"\nsteps: []\n",
+            "migrations/1-to-2.yml",
+        )
+        .expect_err("it refuses");
+        assert!(matches!(refused[0], PayloadError::Format { .. }), "{refused:?}");
+    }
+
+    /// The subject fixes the dimension, and no payload can vary it.
+    #[test]
+    fn the_remedy_is_fixed_by_the_subject() {
+        assert_eq!(
+            Subject::FacetValue {
+                facet: "status".into()
+            }
+            .remedies(),
+            ["instance_validity", "consequence"]
+        );
+        assert_eq!(Subject::Kind.remedies(), ["classification"]);
+    }
+
+    fn taxonomy(text: &str) -> Mapping {
+        headwater_yaml::load(text)
+            .expect("it loads")
+            .value
+            .as_map()
+            .expect("a mapping")
+            .clone()
+    }
+
+    /// A `values` list is written in two spellings, and a reader of one alone
+    /// would answer that the base package declares no lifecycle value at all.
+    #[test]
+    fn a_value_is_found_in_either_spelling() {
+        let status = Subject::FacetValue {
+            facet: "status".into(),
+        };
+        let mapped = taxonomy(
+            "facets:\n  status:\n    values:\n      - {value: draft, role: initial}\n      - \
+             {value: current}\n",
+        );
+        assert!(declares(&mapped, &status, "draft"));
+        assert!(!declares(&mapped, &status, "retired"));
+
+        let bare = taxonomy("facets:\n  status:\n    values: [draft, current]\n");
+        assert!(declares(&bare, &status, "current"));
+        assert!(!declares(&bare, &status, "retired"));
+
+        let kinds = taxonomy("kinds:\n  decision: {}\n");
+        assert!(declares(&kinds, &Subject::Kind, "decision"));
+        assert!(!declares(&kinds, &Subject::Kind, "ruling"));
+    }
+
+    /// Both ends of a payload are ranges, read by the one piece of version
+    /// arithmetic this engine has.
+    #[test]
+    fn a_payload_covers_a_move_between_two_versions() {
+        let built = payload(
+            "  - subject: facet_value\n    facet: status\n    from: draft\n    to: [outline]\n    \
+             because: why\n",
+        )
+        .expect("it reads");
+        assert!(built.covers("1.4.0", "2.0.0").expect("both read"));
+        assert!(!built.covers("2.0.0", "3.0.0").expect("both read"));
+        assert!(!built.covers("0.9.0", "2.0.0").expect("both read"));
+    }
+
+    /// The publisher's half: a source that still stands, and a target that is
+    /// not there.
+    #[test]
+    fn the_publisher_is_held_to_the_taxonomy_it_ships() {
+        let built = payload(
+            "  - subject: facet_value\n    facet: status\n    from: draft\n    to: [outline]\n    \
+             because: why\n",
+        )
+        .expect("it reads");
+
+        let moved = taxonomy("facets:\n  status:\n    values: [outline, current]\n");
+        assert!(holds(&built, &moved, "2.0.0").is_empty());
+
+        let unmoved = taxonomy("facets:\n  status:\n    values: [draft, outline]\n");
+        assert!(matches!(
+            holds(&built, &unmoved, "2.0.0")[..],
+            [PayloadError::SourceStands { .. }]
+        ));
+
+        let dangling = taxonomy("facets:\n  status:\n    values: [current]\n");
+        assert!(matches!(
+            holds(&built, &dangling, "2.0.0")[..],
+            [PayloadError::TargetAbsent { .. }]
+        ));
+
+        // A payload for another release, carried by this one.
+        assert!(holds(&built, &moved, "3.0.0")
+            .iter()
+            .any(|error| matches!(error, PayloadError::NotThisVersion { .. })));
+        assert!(holds(&built, &moved, "1.5.0")
+            .iter()
+            .any(|error| matches!(error, PayloadError::FromItself { .. })));
+    }
+}
