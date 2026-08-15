@@ -1,0 +1,88 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the retention tree is checked against, and the smallest shape the
+# question needs: one state vocabulary, three lifecycle regimes that differ only
+# in what they say about `retain_terminal`, and a fourth kind that binds no
+# regime at all.
+#
+# `keeps` declares the member `true`, `releases` declares it `false`, and
+# `silent` does not declare it. The last two produce one behaviour and they are
+# not one fact, which is why both are here: a reader that folded them would
+# turn a corpus that said nothing into one that ruled, and no arm of this file
+# would move. No regime of this repository declares `false`, so this is the only
+# place that arm has a location at all.
+#
+# `loose` binds no regime, so the departed set holds a document that this rule
+# must not reach.
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft,      role: initial}
+      - {value: current,    role: live}
+      - {value: superseded, role: terminal-retained}
+      - {value: discharged, role: terminal-retained}
+      # Held by the vocabulary and named by no regime here, which is the state
+      # that separates "terminal" from "reaches nothing". Every regime below
+      # reaches nothing from it, because none of them has heard of it.
+      - {value: withdrawn,  role: terminal-retained}
+  status_since:
+    role: state_entered
+    required: true
+  summary:
+    role: scent
+    required: true
+
+regimes:
+  lifecycle:
+    keeps:
+      initial: draft
+      transitions: {draft: [current], current: [superseded, discharged]}
+      retain_terminal: true
+    releases:
+      initial: draft
+      transitions: {draft: [current], current: [superseded, discharged]}
+      retain_terminal: false
+    silent:
+      initial: draft
+      transitions: {draft: [current], current: [superseded, discharged]}
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+kinds:
+  kept:
+    identifier: {scheme: note_id}
+    lifecycle: keeps
+    facets: {require: [status, status_since, summary]}
+  released:
+    identifier: {scheme: note_id}
+    lifecycle: releases
+    facets: {require: [status, status_since, summary]}
+  unsaid:
+    identifier: {scheme: note_id}
+    lifecycle: silent
+    facets: {require: [status, status_since, summary]}
+  loose:
+    identifier: {scheme: note_id}
+    facets: {require: [status, status_since, summary]}
+
+shelves:
+  kept_documents:
+    path: retention/kept/**
+    homogeneous: true
+    kind: kept
+  released_documents:
+    path: retention/released/**
+    homogeneous: true
+    kind: released
+  unsaid_documents:
+    path: retention/unsaid/**
+    homogeneous: true
+    kind: unsaid
+  loose_documents:
+    path: retention/loose/**
+    homogeneous: true
+    kind: loose
