@@ -321,9 +321,7 @@ fn members(map: &headwater_yaml::Mapping, block: &'static str) -> Result<Vec<Mem
             .value
             .value
             .as_map()
-            .and_then(|map| map.get("required"))
-            .and_then(|value| value.value.as_scalar())
-            .and_then(headwater_yaml::core_schema::as_bool)
+            .and_then(|map| headwater_yaml::core_schema::flag(map, "required"))
             .unwrap_or(false);
         read.push(Member {
             name,

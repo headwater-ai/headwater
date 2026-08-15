@@ -81,6 +81,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The whole history, because the step that describes this change reads
+          # the base of the pull request and a shallow clone does not hold it.
+          # `.githooks/change-manifest` refuses a base revision it cannot see
+          # rather than describing a shorter change, so a depth of 1 would turn
+          # that step red instead of quietly reporting a change of nothing.
+          fetch-depth: 0
       - name: The toolchain this build needs
         run: |
           rustup update --no-self-update stable
@@ -88,6 +95,20 @@ jobs:
       - name: Build the engine
         run: cargo build --release -p headwater-cli
         working-directory: engine
+      - name: The commit gate refuses what it claims to refuse
+        # `.githooks/pre-commit` and the producer under it sit outside the
+        # corpus root, so no check reads them and `cargo test` never sees them.
+        # This step is what holds them, and it runs over this corpus rather than
+        # a fixture tree: the rule it drives reads the lifecycle regime a kind
+        # binds, and this repository binds two.
+        #
+        # It blocks. A commit gate is the one gate a contributor can skip with
+        # `--no-verify`, which is exactly why a broken one stays invisible.
+        #
+        # First of the corpus steps, because it copies every tracked and
+        # untracked file into a scratch repository, and every step below writes
+        # a report into the workspace that would ride along.
+        run: sh .githooks/fixtures.sh
       - name: The committed lock is what the sources resolve to
         # This one blocks, and it is the only step here that does. It is not a
         # finding about the corpus: a stale lock means the verdict below was
@@ -138,6 +159,65 @@ jobs:
         # after it would otherwise fail the comparison at the end for a reason
         # that has nothing to do with the cache.
         run: echo "HEADWATER_NOW=$(date -u +%F)" >> "$GITHUB_ENV"
+      - name: The change this pull request carries
+        # The reading that this repository has never taken. Two rules declare
+        # `needs_prior`, and an instance of one reaches no verdict in a run that
+        # carries no change: 382 of 3498 instances report `change-scoped-only`
+        # on a full-corpus run, which every step above is.
+        #
+        # The anchor is the base of the pull request, which is what spec 12
+        # fixes for a proposed change. `.githooks/pre-commit` passes `HEAD`
+        # instead, which is the other anchor that sentence names, so the commit
+        # gate and this step ask the same rules two different questions.
+        #
+        # Advisory, like the check above it and for the same reason. What
+        # `warrant.promoted` produces is a count, and
+        # [HW-OBL-0119](../../docs/obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md)
+        # records that nothing declares a bar for one. The count goes into the
+        # job summary, so it has a reader rather than a file nobody opens. The
+        # movement half is not advisory here by choice: it is the commit gate
+        # that blocks on it, and a pull request whose commits went through that
+        # gate has already answered it.
+        #
+        # Only on a pull request. A push to `main` has no proposed change to be
+        # the base of, and the changes in it were each described at the commit.
+        #
+        # Its position is part of its correctness. The producer names every file
+        # the index does not track, because an author's new document is one of
+        # those and a document that reached the engine as unchanged is the
+        # reading this path exists to avoid. Every step below writes a report
+        # into the workspace, and each one would then be named as a file this
+        # pull request adds.
+        # The text report and not the markdown adapter, which is the opposite
+        # of the step above and is a defect rather than a preference: the block
+        # that states what a run was scoped to is written by `text` and by none
+        # of the other three formats, so the adapter this job would rather use
+        # renders a scoped run as an unscoped one. #230 records that.
+        #
+        # A producer that refuses fails this step. It is not a finding about the
+        # corpus: it says the change could not be described, and a step that
+        # went green on that would report a promotion count of zero over a
+        # reading nobody took, which is the whole shape this exists to close.
+        if: github.event_name == 'pull_request'
+        run: |
+          manifest=$(sh .githooks/change-manifest "${{ github.event.pull_request.base.sha }}" "$RUNNER_TEMP/change")
+          ./engine/target/release/headwater check --no-cache --now "$HEADWATER_NOW" \
+            --change "$manifest" > change.txt
+          # Onto the step log as well as into the summary. A step that writes
+          # only into a file reads as a step that did nothing, and the two lines
+          # this prints are the two numbers the reading is for.
+          grep -E 'scoped to a change:|promoted from' change.txt
+          {
+            echo '## The change this pull request carries'
+            echo
+            echo '<details><summary>the run, scoped to the change</summary>'
+            echo
+            echo '```'
+            cat change.txt
+            echo '```'
+            echo
+            echo '</details>'
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Check this corpus
         # No `--strict`. Advisory, on purpose: a tool that blocks on first
         # contact is removed, and a removed tool catches nothing.

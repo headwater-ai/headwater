@@ -391,10 +391,17 @@ impl<'a> View<'a> {
             .map(|(_, body)| body)
     }
 
+    /// Whether a kind is abstract, through the core schema.
+    ///
+    /// The reading this replaces compared the text of the scalar to `"true"`.
+    /// A package that wrote `abstract: True` passed the meta-schema, which
+    /// validates the member with the same function called here, and then had
+    /// its one abstract kind read as concrete. Three rules read this answer,
+    /// and none of the findings they then reported named `abstract`.
     fn is_abstract(&self, name: &str) -> bool {
         self.kind(name)
-            .and_then(|body| text(body, "abstract"))
-            .is_some_and(|value| value == "true")
+            .and_then(|body| headwater_yaml::core_schema::flag(body, "abstract"))
+            .unwrap_or(false)
     }
 
     /// A kind and every kind above it, nearest first, with a cycle cut short.

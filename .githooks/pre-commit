@@ -1,5 +1,5 @@
 #!/bin/sh
-# The prose gate on this repository, which is `headwater check` and nothing else.
+# The gate on this repository, which is `headwater check` and nothing else.
 #
 # Install once per clone (the repo ships the hook, git does not install it):
 #     git config core.hooksPath .githooks
@@ -16,6 +16,26 @@
 # And it needed only a Python interpreter, where this needs a built engine: the
 # hook fails open when there is none, and says so in one line, because the CI
 # job builds the engine and runs the same check on every pull request.
+#
+# # The change this commit carries
+#
+# Two rules of the engine declare `needs_prior`, and an instance of one reaches
+# no verdict in a run that carries no change. `warrant.promoted` counts the
+# promotions, and `lifecycle.transition.not_permitted` refuses a state movement
+# the declared machine does not admit. That second one is an error severity, so
+# this is where it blocks: an illegal movement is only visible against the
+# version that stood before it, and a working-tree hook is the one gate that has
+# it.
+#
+# `change-manifest` beside this file is what turns `HEAD` and the working tree
+# into the manifest the engine reads. Spec 12 fixes `HEAD` as the anchor here
+# and the merge base as the anchor for a proposed change, which is what the CI
+# job passes.
+#
+# It fails open, like the line above it: no git, no `mktemp`, or a `HEAD` this
+# clone does not hold, and the commit is checked without a change rather than
+# refused. The cost of failing open is one rule that reports a skip, and the
+# cost of failing closed is a repository nobody can commit to.
 
 root=$(git rev-parse --show-toplevel) || exit 0
 
@@ -26,7 +46,23 @@ if [ ! -x "$engine" ]; then
     exit 0
 fi
 
-report=$("$engine" check --strict 2>&1)
+manifest=
+work=$(mktemp -d 2>/dev/null)
+if [ -n "$work" ]; then
+    trap 'rm -rf "$work"' EXIT HUP INT TERM
+    manifest=$(sh "$root/.githooks/change-manifest" HEAD "$work" 2>"$work/why")
+fi
+if [ -z "$manifest" ]; then
+    echo "headwater: this commit carries no described change, so a state movement is"
+    echo "  checked by nothing. Every other rule still runs."
+    [ -n "$work" ] && [ -s "$work/why" ] && sed 's/^/  /' "$work/why"
+fi
+
+if [ -n "$manifest" ]; then
+    report=$("$engine" check --strict --change "$manifest" 2>&1)
+else
+    report=$("$engine" check --strict 2>&1)
+fi
 status=$?
 [ "$status" -eq 0 ] && exit 0
 

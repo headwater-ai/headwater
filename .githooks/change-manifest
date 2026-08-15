@@ -1,0 +1,177 @@
+#!/bin/sh
+# The producer: a git range becomes the manifest that `headwater check --change`
+# reads.
+#
+#     .githooks/change-manifest <base-rev> <out-dir>
+#
+# It writes `<out-dir>/manifest` and one file per prior version under
+# `<out-dir>/prior/`, and it prints the path of the manifest on standard output.
+# The caller owns `<out-dir>` and removes it.
+#
+# # Why this is a script and not a crate
+#
+# `engine/crates/check/src/change.rs` states the boundary: that module "walks no
+# history, it runs no version control tool, and it opens no file that the caller
+# did not name", and "the caller is a hook or a CI job, which is where a
+# repository's version control lives". This is that caller. Every `git` in the
+# path from a commit to a verdict is in this file, and the engine reads bytes
+# somebody named.
+#
+# # The two anchors, and why one script serves both
+#
+# Spec 12 fixes what `prior` is anchored to and names two: the committed `HEAD`
+# for a working-tree hook, and the merge base for a proposed change. Both are a
+# revision, and the side that is compared against it is the working tree in both
+# cases, because the working tree is what the engine walks. So the anchor is the
+# argument and there is one code path. `.githooks/pre-commit` passes `HEAD`; the
+# CI job passes the base of the pull request.
+#
+# # It names every file the change carries, and filters nothing
+#
+# A change carries files that are no document of any corpus. Naming them costs a
+# line in the report saying the path reached no row, and `change.rs` says why
+# that is the honest side of the trade: "refusing those would make the honest
+# wrapper the one thing this engine declines to accept."
+#
+# Filtering to the corpus root first would be quieter and it would hide the one
+# defect this producer can have. A path this script writes in a form the census
+# does not use — a leading `./`, a backslash, an absolute path — reaches no row,
+# and the run reports it. Under a filter that same path would be dropped before
+# the engine ever saw it, and the run would report a correct-looking nothing.
+# The noise is the instrument.
+#
+# A deleted document is named too, as a `prior` line. It reaches no row, because
+# the working tree holds no file there, so the report counts it among the paths
+# that matched nothing. That is the truth about it, and it is the only line
+# anything in this repository writes about a document that left: `retain_terminal`
+# is declared on both lifecycle regimes and no component reads it.
+#
+# # What it refuses
+#
+# A manifest line is tab separated, so a path holding a tab would produce a line
+# the reader would mis-split or refuse. This script refuses first, because a
+# corrupted manifest is the "dropped line" failure that `change.rs` refuses
+# whole: a document the manifest meant to name and the reader did not reads as a
+# document that did not change, and that is a movement nothing reports.
+#
+# It also refuses a base revision this repository does not hold, which is the
+# shallow-clone case. A caller that fell back to no manifest on that would be a
+# caller whose silence means both "nothing moved" and "I could not look".
+
+set -u
+
+if [ $# -ne 2 ]; then
+    echo "usage: change-manifest <base-rev> <out-dir>" >&2
+    exit 2
+fi
+base=$1
+out=$2
+
+if ! command -v git >/dev/null 2>&1; then
+    echo "change-manifest: no git on this host, so no change can be described." >&2
+    exit 1
+fi
+
+root=$(git rev-parse --show-toplevel 2>/dev/null) || {
+    echo "change-manifest: not inside a git repository." >&2
+    exit 1
+}
+
+if ! git -C "$root" rev-parse --verify --quiet "$base^{commit}" >/dev/null 2>&1; then
+    echo "change-manifest: this repository does not hold \`$base\`, so there is no prior" >&2
+    echo "  version to name. A shallow clone is the usual cause." >&2
+    exit 1
+fi
+
+mkdir -p "$out/prior" || exit 1
+manifest="$out/manifest"
+printf 'headwater change 1\n' > "$manifest" || exit 1
+
+tab=$(printf '\t')
+priors=0
+
+# One line of the manifest. `$1` is the git status letter, `$2` the path the
+# prior version stands at (empty unless the change renamed or copied it), and
+# `$3` the path the working tree stands at.
+emit() {
+    status=$1
+    old=$2
+    new=$3
+    case $new in
+        *"$tab"*)
+            echo "change-manifest: \`$new\` holds a tab and a manifest line is tab" >&2
+            echo "  separated, so this change cannot be described without corrupting it." >&2
+            exit 1
+            ;;
+    esac
+    if [ "$status" = "A" ]; then
+        printf 'added\t%s\n' "$new" >> "$manifest"
+        return
+    fi
+    [ -n "$old" ] || old=$new
+    priors=$((priors + 1))
+    file="$out/prior/$priors"
+    if ! git -C "$root" show "$base:$old" > "$file" 2>/dev/null; then
+        echo "change-manifest: \`$base:$old\` did not read, and the engine is told" >&2
+        echo "  which files moved rather than what they became. Nothing is written." >&2
+        exit 1
+    fi
+    printf 'prior\t%s\t%s\n' "$new" "$file" >> "$manifest"
+}
+
+# `-z` rather than the default, because git quotes a path holding a special
+# character under the default and a quoted path reaches no census row. With `-z`
+# the bytes are the path. Newline is then the one separator left, and a path
+# holding one would split here; git itself is the only producer of these names
+# and this repository holds none.
+git -C "$root" diff --name-status --find-renames -z "$base" -- \
+    | tr '\0' '\n' > "$out/status" || exit 1
+
+state=status
+status=
+old=
+while IFS= read -r field; do
+    case $state in
+        status)
+            status=$field
+            case $status in
+                R*|C*) state=old ;;
+                *) state=new ;;
+            esac
+            ;;
+        old)
+            old=$field
+            state=new
+            ;;
+        new)
+            # A rename or a copy is one document at a new path, and the prior
+            # version is the one at the old path. Git decides that by
+            # similarity, which is the caller stating which files moved: the
+            # trust boundary `change.rs` names. Without it a moved document
+            # reads as added, and an added document made no transition, so the
+            # movement the rename carried would be checked by nothing.
+            case $status in
+                R*|C*) emit M "$old" "$field" ;;
+                A) emit A "" "$field" ;;
+                *) emit M "" "$field" ;;
+            esac
+            state=status
+            old=
+            ;;
+    esac
+done < "$out/status"
+
+# A file the working tree holds and the index does not is a document the change
+# adds. `git diff` does not report one, and a document that reached the engine
+# as one that did not change is the reading this whole path exists to avoid.
+# The two sets are disjoint by construction: `--others` is what the index does
+# not track, and `git diff <rev>` reads what it does.
+git -C "$root" ls-files --others --exclude-standard -z \
+    | tr '\0' '\n' > "$out/untracked" || exit 1
+while IFS= read -r path; do
+    [ -n "$path" ] || continue
+    emit A "" "$path"
+done < "$out/untracked"
+
+rm -f "$out/status" "$out/untracked"
+printf '%s\n' "$manifest"

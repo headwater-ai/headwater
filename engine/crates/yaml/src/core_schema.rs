@@ -17,7 +17,7 @@
 //! Every function here refuses a non-plain scalar. A quoted `true` is the string
 //! `true`, and that is the only way an author has to say so.
 
-use crate::value::Scalar;
+use crate::value::{Mapping, Scalar};
 
 /// Whether the core schema resolves this scalar to null.
 ///
@@ -37,6 +37,26 @@ pub fn as_bool(scalar: &Scalar) -> Option<bool> {
         "false" | "False" | "FALSE" => Some(false),
         _ => None,
     }
+}
+
+/// The boolean a member of a mapping stands at, for a member the meta-schema
+/// declares `{scalar: boolean}`.
+///
+/// `None` is three states at once and every caller has to choose among them:
+/// the member is absent, the member is not a scalar, or the text resolves to no
+/// boolean. A caller that reads a member with a declared default writes
+/// `.unwrap_or(false)`; a caller that has to tell an absent declaration from a
+/// false one keeps the `Option`.
+///
+/// This exists because the shape was written out at six call sites and two of
+/// them compared the text of the scalar to the literal `"true"`. Those two read
+/// `True` and `TRUE` as false, and the meta-schema validates the same member
+/// with [`as_bool`], which resolves all three. One declaration had two parsers,
+/// and the reading that disagreed was the one nothing here could see.
+pub fn flag(map: &Mapping, key: &str) -> Option<bool> {
+    map.get(key)
+        .and_then(|node| node.value.as_scalar())
+        .and_then(as_bool)
 }
 
 /// `[-+]? [0-9]+` in base ten, `0o[0-7]+`, or `0x[0-9a-fA-F]+`.
