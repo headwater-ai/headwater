@@ -158,6 +158,12 @@
     {
       "rule": "lifecycle.transition.not_permitted",
       "scope": "document",
+      "version": 2,
+      "obligations": []
+    },
+    {
+      "rule": "lifecycle.state.not_admitted",
+      "scope": "document",
       "version": 1,
       "obligations": []
     },

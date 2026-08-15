@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 2.1.0
+version: 3.0.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -158,6 +158,16 @@ regimes:
         current:
           - superseded
           - deprecated
+      retain_terminal: true
+    obligation:
+      initial: draft
+      transitions:
+        draft:
+          - current
+          - deprecated
+        current:
+          - superseded
+          - deprecated
           - discharged
       retain_terminal: true
   voice:
@@ -302,7 +312,7 @@ kinds:
       scheme: obligation_record_id
     is_a: governed_document
     language: ste_house
-    lifecycle: standard
+    lifecycle: obligation
     purpose: obligation
     sections:
       require:
@@ -743,6 +753,12 @@ obligations:
     class: cohesion
     prevents: process.traceability
     severity: medium
+  OB-LIFE-2:
+    statement: "A document stands only at a state that the lifecycle regime of its kind names"
+    rationale: "A state vocabulary is one list for a whole taxonomy, so a value that means something for one kind is spelled the same on every other. A document set to a state its kind has no use for reads to a person as a claim about that document and to every rule as nothing at all, and a movement rule cannot see it because a document authored at the wrong state made no movement"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
   OB-REG-1:
     statement: "Every obligation this taxonomy declares carries exactly one disposition"
     rationale: "An obligation that no control discharges and that states neither a gap nor an acceptance reads from outside like one that is met, and that silence is how an assurance model decays into a list of good intentions"
@@ -953,6 +969,16 @@ controls:
     promotion:
       final_posture:
         reasoning: "The promotion path collects evidence about a rule that can be wrong about the text it reads, and this one reads two declared values and one declared edge. A movement it refuses is refused by the taxonomy that the corpus itself resolved, so an advisory period would measure a false-positive rate that the construction fixes at zero, and it would collect that reading while illegal movements landed. Spec 3 states the posture in one sentence, which is that the engine rejects a transition that is not in the declared machine when it lands"
+  CT-LIFE-2:
+    mechanism: "check:lifecycle.state.not_admitted"
+    discharges:
+      - OB-LIFE-2
+    trigger: pull_request
+    posture: blocking
+    acts: detective
+    promotion:
+      final_posture:
+        reasoning: "The same reading CT-LIFE-1 takes, and the input is narrower still. This rule reads one declared value against one declared state set, both of which the corpus itself resolved, so an advisory period would measure a false-positive rate that the construction fixes at zero. What it cannot decide is which admitted state the document belongs in, and that is why the finding carries no patch rather than why it should not block"
   CT-LANG-1:
     mechanism: "check:language.controlled.not_met"
     discharges:

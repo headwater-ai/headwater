@@ -1462,6 +1462,10 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             // the input rather than the unit: a change names documents.
             Grain::Document,
             Grain::Document,
+            // The state a document stands in, which needs no prior version and
+            // is the same grain for the reason the two above it are: the
+            // defect survives in one document.
+            Grain::Document,
             Grain::Corpus,
             // The two register rules, which read the taxonomy and no document.
             Grain::Taxonomy,

@@ -4,7 +4,7 @@ touched corpus/spec/02-the-second-part.md
 touched corpus/decisions/a-second-successor.md
 touched corpus/decisions/an-earlier-decision.md
 
-9 seen, 9 classified, 9 checked, 109 check instances
+9 seen, 9 classified, 9 checked, 118 check instances
       9 skipped: this document writes no fragment into itself
      18 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
       4 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
@@ -24,6 +24,7 @@ touched corpus/decisions/an-earlier-decision.md
       9 instances of link.fragment.unresolved
       9 instances of warrant.promoted
       9 instances of lifecycle.transition.not_permitted
+      9 instances of lifecycle.state.not_admitted
 rules, and for each the scope that binds it
   facet.required.missing
     document scope, one document and its front matter
@@ -63,6 +64,8 @@ rules, and for each the scope that binds it
     document scope, one document and its front matter, and the version of it that stood before the change
   lifecycle.transition.not_permitted
     document scope, one document and its front matter, and the version of it that stood before the change
+  lifecycle.state.not_admitted
+    document scope, one document and its front matter
   coverage.document_unchecked
     corpus scope, every row of the census, and it is a barrier
   obligation.disposition.not_one
@@ -96,6 +99,7 @@ register
   link.fragment.unresolved reaches no obligation, so it names none
   warrant.promoted reaches no obligation, so it names none
   lifecycle.transition.not_permitted reaches no obligation, so it names none
+  lifecycle.state.not_admitted reaches no obligation, so it names none
   coverage.document_unchecked reaches no obligation, so it names none
   obligation.disposition.not_one reaches no obligation, so it names none
   control.mechanism.unimplemented reaches no obligation, so it names none
@@ -321,6 +325,24 @@ instances
     skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
   lifecycle.transition.not_permitted corpus/standards/a-standard.md
     skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+  lifecycle.state.not_admitted corpus/decisions/a-scaffolded-successor.md
+    passed
+  lifecycle.state.not_admitted corpus/decisions/a-second-successor.md
+    passed
+  lifecycle.state.not_admitted corpus/decisions/an-earlier-decision.md
+    passed
+  lifecycle.state.not_admitted corpus/exhausted/the-last-one.md
+    passed
+  lifecycle.state.not_admitted corpus/spec/01-the-first-part.md
+    passed
+  lifecycle.state.not_admitted corpus/spec/02-the-second-part.md
+    passed
+  lifecycle.state.not_admitted corpus/spec/03-the-third-part.md
+    passed
+  lifecycle.state.not_admitted corpus/spec/04-a-scaffolded-fourth-part.md
+    passed
+  lifecycle.state.not_admitted corpus/standards/a-standard.md
+    passed
 
 corpus/standards/a-standard.md:1:1 error
   identifier.unusable (OB-FIX-1): a typed `standard` that declares no identifier, so no edge can name it

@@ -1,4 +1,4 @@
-headwater/standard 2.1.0
+headwater/standard 3.0.0
 
 sources, in application order
   packages/headwater-standard/taxonomy.yml
@@ -70,7 +70,7 @@ operations
 
 declarations, by member count
   taxonomy: headwater/standard
-  version: 2.1.0
+  version: 3.0.0
   purposes: 4 members
   vocabularies: 1 member
   facets: 12 members
@@ -82,8 +82,8 @@ declarations, by member count
   identifier_schemes: 9 members
   core: 1 member
   projections: 4 items
-  obligations: 27 members
-  controls: 24 members
+  obligations: 28 members
+  controls: 25 members
 
 `taxonomy validate`: valid
 
@@ -109,7 +109,7 @@ rule by rule
   role uniqueness
     on the result: at most one facet claims each role of the closed registry
   lifecycle soundness
-    on the result: every state is a value of the state vocabulary, every state is reachable from the initial one, and every state with no exit is declared terminal
+    on the result: every state is a value of the state vocabulary, every state a regime names is reachable from that regime's initial state, every state of the vocabulary is reachable in at least one regime, and every state with no exit is declared terminal
   relation coherence (in part)
     on the result: a nucleus–satellite relation names its nucleus and a multinuclear one names none, and `inherits` names facets that both ends carry
     not decided: "a family's default is not contradicted without explicit override" states no rule that a validator can fail. A declared nuclearity is the explicit override, and spec 2 gives the count to `taxonomy audit`
