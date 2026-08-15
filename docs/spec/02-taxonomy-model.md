@@ -841,6 +841,8 @@ So the engine evaluates compatibility along six dimensions. Five of them measure
 
 **`addressability` is the one dimension whose subject is the schema.** The other five ask what happened to a corpus. This one asks what happened to the surface that an overlay addresses. A rename can leave every document classified, every check unchanged, and every projection identical. It still breaks every consumer overlay that addressed the old path, and all five corpus dimensions report compatible.
 
+**A consumer reads this dimension from one side, and the lock is why.** The question worth asking is whether the candidate drops a declaration that an overlay addresses, and it needs both bases before any overlay applies. The lock holds a *resolved* taxonomy, in which an overlay that put a declaration back is indistinguishable from a base that kept it. So the reading asks instead what each operation does under the candidate. An `add` that creates the declaration it reaches into is reported, whatever the base before it held ([Customization by composition](#customization-by-composition)).
+
 [Spec 7](07-distribution-and-federation.md#upgrading) already reports invalidated overlay entries to the consumer, so half of this existed. What was missing is the half that acts. A report does not force a version bump, and a publisher that measures corpora alone never learns that it broke anyone. Promotion to a dimension fixes both ends. The publisher keeps reference *overlays* beside its reference corpora, and they are cheap to keep.
 
 The publisher and the consumer play different roles here, and both are necessary:
