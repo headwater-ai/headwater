@@ -6,7 +6,7 @@
 # regime at all.
 #
 # `keeps` declares the member `true`, `releases` declares it `false`, and
-# `silent` does not declare it. The last two produce one behaviour and they are
+# `silent` does not declare it. The last two produce one behavior and they are
 # not one fact, which is why both are here: a reader that folded them would
 # turn a corpus that said nothing into one that ruled, and no arm of this file
 # would move. No regime of this repository declares `false`, so this is the only

@@ -1407,7 +1407,7 @@ pub fn over_corpus<C: CorpusCheck>(
                 C::RULE,
                 Grain::Corpus,
                 reads,
-                &format!(
+                format!(
                     "{CHANGE_SCOPED_ONLY}: the prior version is available only in change-scoped \
                      evaluation, and this run carries no change"
                 ),

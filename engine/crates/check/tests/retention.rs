@@ -60,7 +60,10 @@ const HELD: [&str; 3] = [
 fn departure(path: &str, prior: &str) -> String {
     format!(
         "prior\t{path}\t{}\n",
-        fixtures_dir().join("retention-before").join(prior).display()
+        fixtures_dir()
+            .join("retention-before")
+            .join(prior)
+            .display()
     )
 }
 
@@ -78,8 +81,14 @@ fn change_of(lines: &str) -> Change {
 /// decide, and never that it decides these eight apart.
 fn every_departure() -> String {
     [
-        departure("retention/kept/gone-superseded.md", "terminal-superseded.md"),
-        departure("retention/kept/gone-discharged.md", "terminal-discharged.md"),
+        departure(
+            "retention/kept/gone-superseded.md",
+            "terminal-superseded.md",
+        ),
+        departure(
+            "retention/kept/gone-discharged.md",
+            "terminal-discharged.md",
+        ),
         departure("retention/kept/gone-current.md", "live-current.md"),
         departure("retention/kept/gone-draft.md", "opening-draft.md"),
         departure(
@@ -217,7 +226,10 @@ fn a_deletion_at_a_terminal_state_of_a_retaining_regime_is_refused() {
         .iter()
         .find(|message| message.contains("superseded"))
         .expect("the finding about the superseded document");
-    assert!(superseded.contains("NOTE-FIX-gone-superseded"), "{superseded}");
+    assert!(
+        superseded.contains("NOTE-FIX-gone-superseded"),
+        "{superseded}"
+    );
     assert!(superseded.contains("`keeps`"), "the regime: {superseded}");
     assert!(
         superseded.contains("retain_terminal: true"),
@@ -229,11 +241,11 @@ fn a_deletion_at_a_terminal_state_of_a_retaining_regime_is_refused() {
 /// nothing both permit the deletion, and they are two facts.
 ///
 /// This is the arm the corpus of this repository cannot reach: both of its
-/// regimes declare `true`. The behaviour is the same either way, so the
-/// behaviour cannot be what holds them apart, and the shape is asserted
+/// regimes declare `true`. The behavior is the same either way, so the
+/// behavior cannot be what holds them apart, and the shape is asserted
 /// directly.
 #[test]
-fn a_permitted_deletion_and_an_unruled_one_are_two_facts_with_one_behaviour() {
+fn a_permitted_deletion_and_an_unruled_one_are_two_facts_with_one_behavior() {
     let source = std::fs::read_to_string(fixtures_dir().join("retention.taxonomy.yml"))
         .expect("the fixture taxonomy");
     let root = headwater_yaml::load(&source)
@@ -253,21 +265,27 @@ fn a_permitted_deletion_and_an_unruled_one_are_two_facts_with_one_behaviour() {
     };
     assert_eq!(declared("keeps"), Some(true));
     assert_eq!(declared("releases"), Some(false), "a declared refusal");
-    assert_eq!(declared("silent"), None, "silence, and not a declared false");
+    assert_eq!(
+        declared("silent"),
+        None,
+        "silence, and not a declared false"
+    );
 
-    // And neither of the last two is reported, which is the behaviour the two
+    // And neither of the last two is reported, which is the behavior the two
     // facts share.
-    let run = over(&[
-        departure(
-            "retention/released/gone-superseded.md",
-            "released-superseded.md",
-        ),
-        departure(
-            "retention/unsaid/gone-superseded.md",
-            "unsaid-superseded.md",
-        ),
-    ]
-    .concat());
+    let run = over(
+        &[
+            departure(
+                "retention/released/gone-superseded.md",
+                "released-superseded.md",
+            ),
+            departure(
+                "retention/unsaid/gone-superseded.md",
+                "unsaid-superseded.md",
+            ),
+        ]
+        .concat(),
+    );
     assert_eq!(refusals(&run), Vec::<&str>::new());
 }
 
