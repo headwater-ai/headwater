@@ -47,6 +47,7 @@
 use crate::finding::{Finding, Severity};
 use crate::instance::Outcome;
 use crate::scope::{DocumentCheck, DocumentView};
+use std::collections::{HashMap, HashSet};
 
 pub const RULE: &str = "link.fragment.unresolved";
 
@@ -58,8 +59,11 @@ pub struct Fragments;
 
 impl DocumentCheck for Fragments {
     const RULE: &'static str = self::RULE;
-    /// The first edition of this rule.
-    const VERSION: u32 = 1;
+    /// The second edition. The first numbered a repeated heading by counting
+    /// every earlier anchor that began with its slug and a hyphen, which is
+    /// not what a renderer does, so a verdict the first edition cached is a
+    /// verdict about a different rule.
+    const VERSION: u32 = 2;
     const NEEDS_BODY: bool = true;
 
     fn evaluate(&self, view: &DocumentView<'_>) -> Outcome {
@@ -110,18 +114,51 @@ impl DocumentCheck for Fragments {
 /// A repeated heading takes a numeric suffix, first occurrence bare. Two
 /// `## Consequences` headings therefore give `consequences` and
 /// `consequences-1`, and a link to the second resolves.
+///
+/// # Two rules, and either one alone gets a document of this corpus wrong
+///
+/// The suffix counts how many anchors this **exact** slug has already been the
+/// base of. A longer heading whose slug merely begins with a shorter one is
+/// not a repeat of it, so `## Edit sites, as spec 2 stands` standing above two
+/// `## Edit sites` leaves them `edit-sites` and `edit-sites-1`.
+/// `docs/evaluations/schema-format-walkthrough.md` is that document.
+///
+/// Then a candidate an earlier heading already took is stepped past, and the
+/// counter resumes from where the search stopped. So `## One`, `## One` and
+/// `## One-1` give `one`, `one-1` and `one-1-1`, and a fourth `## One` gives
+/// `one-2` rather than colliding with the third heading.
+///
+/// That second half is what makes this function injective: two headings that
+/// differ never receive one anchor, because an anchor is issued once. Counting
+/// a prefix as a repeat was not injective, and the witness is short —
+/// `## One-1` above two `## One` gave the first two headings the anchor
+/// `one-1` each.
+///
+/// Both halves are settled against GitHub's own renderer rather than against a
+/// second implementation of the rule, by posting headings to its `/markdown`
+/// endpoint and reading the `user-content-` identifiers it returns. The tests
+/// below carry the cases that endpoint answered.
 fn anchors(body: &headwater_doc::Body) -> Vec<String> {
     let mut anchors: Vec<String> = Vec::new();
+    let mut issued: HashSet<String> = HashSet::new();
+    let mut repeats: HashMap<String, usize> = HashMap::new();
     for heading in body.headings() {
         let slug = slug(&heading.text());
-        let seen = anchors
-            .iter()
-            .filter(|known| **known == slug || known.starts_with(&format!("{slug}-")))
-            .count();
-        anchors.push(match seen {
-            0 => slug,
-            n => format!("{slug}-{n}"),
-        });
+        let mut n = repeats.get(&slug).copied().unwrap_or(0);
+        let anchor = loop {
+            let candidate = if n == 0 {
+                slug.clone()
+            } else {
+                format!("{slug}-{n}")
+            };
+            n += 1;
+            if !issued.contains(&candidate) {
+                break candidate;
+            }
+        };
+        repeats.insert(slug, n);
+        issued.insert(anchor.clone());
+        anchors.push(anchor);
     }
     anchors
 }
@@ -354,9 +391,16 @@ mod comment_links {
     }
 
     /// Every broken link, as `path:line: target`.
-    fn broken(root: &Path) -> Vec<String> {
+    ///
+    /// `walk` is the tree of Rust sources to read and `root` is what a reported
+    /// path is relative to. They are two parameters rather than one so that the
+    /// whole chain below can be pointed at a tree a test wrote. A function that
+    /// walked a hardcoded root could only ever run over material that is clean,
+    /// and a filter inverted inside it would read nothing while every test here
+    /// stayed green.
+    fn broken(walk: &Path, root: &Path) -> Vec<String> {
         let mut files = Vec::new();
-        sources(&engine_root(), &mut files);
+        sources(walk, &mut files);
         let mut out = Vec::new();
         for file in files {
             let src = std::fs::read_to_string(&file).expect("a source of this engine");
@@ -364,11 +408,26 @@ mod comment_links {
             let body = headwater_doc::body::scan(&markdown, &markdown, 0);
             let dir = file.parent().expect("a source has a directory");
             for link in &body.links {
-                // The class this holds is the one a reader follows into this
-                // repository. A link into rustdoc's own output tree resolves
-                // against `target/doc` and not against the source, so a
-                // filesystem test of one would report a defect that is not one.
-                if link.image || !link.destination.starts_with('.') {
+                // The class this holds is the one a reader follows into
+                // this repository, and two classes are skipped for reasons
+                // that differ. An absolute URL and an absolute path leave the
+                // checkout, so nothing here can resolve them. A relative
+                // destination naming no `docs/` component is rustdoc's own
+                // output tree, which resolves against `target/doc` and not
+                // against the source, so a filesystem test of one would report
+                // a defect that is not one. The `docs/` test below is what
+                // holds that class out.
+                //
+                // A dotless relative destination such as
+                // `docs/spec/02-taxonomy-model.md#x` is neither. It resolves
+                // against the source file's own directory exactly as
+                // `./docs/...` does, in a browser and here, so it is checked
+                // rather than skipped. Requiring the leading `.` skipped it
+                // silently, which is the second half of #206.
+                if link.image
+                    || link.destination.contains("://")
+                    || link.destination.starts_with('/')
+                {
                     continue;
                 }
                 let (target, fragment) = match link.destination.split_once('#') {
@@ -421,7 +480,7 @@ mod comment_links {
     #[test]
     fn every_comment_link_into_docs_resolves() {
         let root = repository_root();
-        let broken = broken(&root);
+        let broken = broken(&engine_root(), &root);
         assert!(
             broken.is_empty(),
             "{} comment links into docs/ do not resolve:\n{}",
@@ -463,6 +522,86 @@ mod comment_links {
         assert!(real.contains(&"q4--relation-storage".to_string()));
         assert!(!real.contains(&"the-four-scopes".to_string()));
     }
+
+    /// A directory nothing else in this process writes into.
+    ///
+    /// The process identifier alone is not a key here, because cargo runs the
+    /// cases of one target as threads of one process (#189). The test's own
+    /// name and the clock carry the rest.
+    fn scratch(name: &str) -> PathBuf {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("a clock later than the epoch")
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!(
+            "headwater-fragment-{name}-{}-{nanos}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&dir).expect("a scratch directory");
+        dir
+    }
+
+    fn write(path: &Path, body: &str) {
+        std::fs::create_dir_all(path.parent().expect("a file has a directory"))
+            .expect("a fixture directory");
+        std::fs::write(path, body).expect("a fixture file");
+    }
+
+    /// The whole chain, against a tree written here, one link of each class.
+    ///
+    /// [`every_comment_link_into_docs_resolves`] runs over material that is
+    /// clean, so it returns the same empty list whether the chain reads the
+    /// tree or reads nothing at all. Invert a filter inside `broken` and that
+    /// test stays green. This one gives the chain five links whose classes are
+    /// known and asserts exactly which of them come back, so a filter that
+    /// stopped holding its class fails here in one direction or the other.
+    #[test]
+    fn the_filter_chain_names_what_it_holds_and_passes_what_it_does_not() {
+        let dir = scratch("filter-chain");
+        write(
+            &dir.join("docs/spec/02-taxonomy-model.md"),
+            "# A model\n\nThe body.\n\n## The heading that is here\n\nMore body.\n",
+        );
+        // Four levels below the tree root, as this crate's own sources are.
+        write(
+            &dir.join("engine/crates/check/src/sample.rs"),
+            concat!(
+                "//! [here](../../../../docs/spec/02-taxonomy-model.md#the-heading-that-is-here)\n",
+                "//! [gone](../../../../docs/spec/99-not-a-document.md)\n",
+                "//! [retitled](../../../../docs/spec/02-taxonomy-model.md#the-heading-that-is-not)\n",
+                "//! [rustdoc](../../headwater_doc/struct.Body.html)\n",
+                "//! [remote](https://example.invalid/docs/spec/02-taxonomy-model.md)\n",
+            ),
+        );
+        // The dotless class, both directions, one level below the tree root.
+        write(
+            &dir.join("engine/docs/spec/02-taxonomy-model.md"),
+            "# A model\n\nThe body.\n\n## The heading that is here\n\nMore body.\n",
+        );
+        write(
+            &dir.join("engine/probe.rs"),
+            concat!(
+                "//! [here](docs/spec/02-taxonomy-model.md#the-heading-that-is-here)\n",
+                "//! [retitled](docs/spec/02-taxonomy-model.md#the-heading-that-is-not)\n",
+            ),
+        );
+
+        let mut found = broken(&dir, &dir);
+        found.sort();
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert_eq!(
+            found,
+            [
+                "engine/crates/check/src/sample.rs:2: no such file: \
+                 ../../../../docs/spec/99-not-a-document.md",
+                "engine/crates/check/src/sample.rs:3: no such heading: \
+                 ../../../../docs/spec/02-taxonomy-model.md#the-heading-that-is-not",
+                "engine/probe.rs:2: no such heading: \
+                 docs/spec/02-taxonomy-model.md#the-heading-that-is-not",
+            ]
+        );
+    }
 }
 
 #[cfg(test)]
@@ -483,9 +622,64 @@ mod tests {
         );
     }
 
+    /// The anchors of a document that is these headings and nothing else.
+    fn anchors_of(source: &str) -> Vec<String> {
+        anchors(&scan(source, source, 0))
+    }
+
     #[test]
     fn a_repeated_heading_takes_a_numeric_suffix() {
         let body = scan("# One\n\n# One\n\n# One\n", "# One\n\n# One\n\n# One\n", 0);
         assert_eq!(anchors(&body), ["one", "one-1", "one-2"]);
+    }
+
+    /// A longer heading is not a repeat of the shorter one its slug extends.
+    ///
+    /// Three identical headings cannot see this rule, because counting an
+    /// exact repeat and counting a hyphen-prefixed one give the same three
+    /// anchors. The case below is the shape that separates them, and
+    /// `docs/evaluations/schema-format-walkthrough.md` carries it: the first
+    /// heading is a prefix extension of the two that follow, so a rule that
+    /// counted it moved every later suffix up by one.
+    ///
+    /// GitHub's `/markdown` endpoint returns these three identifiers for this
+    /// input.
+    #[test]
+    fn a_longer_heading_is_not_a_repeat_of_the_one_it_extends() {
+        assert_eq!(
+            anchors_of("## Edit sites, as spec 2 stands\n\n## Edit sites\n\n## Edit sites\n"),
+            ["edit-sites-as-spec-2-stands", "edit-sites", "edit-sites-1"]
+        );
+    }
+
+    /// A candidate an earlier heading took is stepped past, and the count
+    /// resumes from where the search stopped.
+    ///
+    /// This is the half that counting exact repeats alone still gets wrong.
+    /// The third heading wants `one-1`, which the second heading holds, so it
+    /// takes `one-1-1`. The fourth heading is the second repeat of `one` and
+    /// takes `one-2`, which no rule reading only the anchors already issued
+    /// arrives at. GitHub's `/markdown` endpoint returns these four.
+    #[test]
+    fn a_suffix_an_earlier_heading_took_is_stepped_past() {
+        assert_eq!(
+            anchors_of("## One\n\n## One\n\n## One-1\n\n## One\n"),
+            ["one", "one-1", "one-1-1", "one-2"]
+        );
+    }
+
+    /// Two headings that differ never receive one anchor.
+    ///
+    /// The review question this answers is whether two states that must differ
+    /// can produce one key. Counting a hyphen-prefixed anchor as a repeat
+    /// could: on this input it gave the first two headings `one-1` each, so a
+    /// link to `#one-1` named two places and the second was unreachable.
+    /// GitHub's `/markdown` endpoint returns `one-1`, `one`, `one-2`.
+    #[test]
+    fn two_headings_that_differ_never_share_an_anchor() {
+        let anchors = anchors_of("## One-1\n\n## One\n\n## One\n");
+        assert_eq!(anchors, ["one-1", "one", "one-2"]);
+        let issued: std::collections::HashSet<&String> = anchors.iter().collect();
+        assert_eq!(issued.len(), anchors.len(), "an anchor is issued once");
     }
 }
