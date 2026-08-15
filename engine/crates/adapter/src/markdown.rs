@@ -25,7 +25,7 @@
 //! source, and `headwater check --format json` is where the dropped values are.
 
 use crate::{reported, Escape, Loss, Reported, Subject};
-use headwater_check::{Run, Severity};
+use headwater_check::{Run, Scoped, Severity};
 
 /// What a job summary cannot carry, and where each value went instead.
 pub const LOSS: &[Loss] = &[
@@ -75,6 +75,15 @@ pub fn render(run: &Run, subject: &Subject<'_>) -> String {
         subject.lock,
         subject.now
     );
+
+    // What the run was scoped to, above the findings. A reviewer who reads the
+    // count above as a reading of the whole corpus has read the wrong number,
+    // and this is the sentence that stops that. A full-corpus run writes
+    // nothing here, so the block is present exactly when the reading is
+    // partial.
+    if let Some(scoped) = &run.change {
+        out.push_str(&scoped_to(scoped));
+    }
 
     if !live.is_empty() {
         let _ = writeln!(out, "| Severity | Where | Rule | Finding |");
@@ -129,6 +138,51 @@ pub fn render(run: &Run, subject: &Subject<'_>) -> String {
             .at(headwater_check::register::Disposition::Verified)
             .count()
     );
+    out
+}
+
+/// The change this run was scoped to, as a reviewer of a proposal reads it.
+///
+/// The same six values `--format json` writes as data, in the one form this
+/// format has for anything: a sentence and a list. The unmatched paths are
+/// named rather than counted, because a path that reached no row of the corpus
+/// is a document nothing was checked over, and the reviewer is the person who
+/// can see that it should have been.
+fn scoped_to(scoped: &Scoped) -> String {
+    use std::fmt::Write;
+    let named = &scoped.named;
+    let mut out = String::new();
+    let unreadable = match named.unreadable {
+        0 => String::new(),
+        one => format!(
+            ", and {one} whose prior version this run could not read and checked nothing over"
+        ),
+    };
+    let _ = writeln!(
+        out,
+        "**Scoped to a change.** Everything above is over the {} documents this change named and \
+         not over the corpus: {} the change adds, {} with a prior version this run read{}.\n",
+        named.documents, named.added, named.carried, unreadable
+    );
+    let _ = writeln!(
+        out,
+        "{} promoted from `{}` to `{}` in this change. Nothing declares how many promotions in \
+         one change is too many.\n",
+        scoped.promotions,
+        headwater_check::promotion::FROM,
+        headwater_check::promotion::TO
+    );
+    if !scoped.unmatched.is_empty() {
+        let _ = writeln!(
+            out,
+            "{} of those paths named no row of this corpus, so nothing was checked over them:\n",
+            scoped.unmatched.len()
+        );
+        for path in &scoped.unmatched {
+            let _ = writeln!(out, "- `{path}`");
+        }
+        out.push('\n');
+    }
     out
 }
 

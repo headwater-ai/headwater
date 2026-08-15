@@ -84,6 +84,36 @@
 //! bag is still a loss, because a property bag is not a member of the
 //! vocabulary and a consumer that reads SARIF alone does not find it.
 //!
+//! # Where a scoped run says so, and the two members that were read first
+//!
+//! A run of `headwater check --change` reads the documents one change carries
+//! and not the corpus. That fact has no member in this vocabulary, so it rides
+//! in `run.properties.headwater.change` and [`LOSS`] records it as a loss. Two
+//! defined members were held against it first, and the schema is what refused
+//! both.
+//!
+//! The `invocation` object is "the runtime environment of the analysis tool
+//! run", and every member of it is a fact about the process: the command line,
+//! the arguments, the working directory, the exit code, the streams. The
+//! counts a scoped run reports are not process facts. They are what the engine
+//! made of a manifest after it read it, and a document whose path reached no
+//! row of the corpus is a reading rather than an argument. So `invocations` is
+//! the wrong object, and its own property bag would be a bag one level further
+//! from the reader than the run's.
+//!
+//! `run.automationDetails.id` is the member a consumer reads to decide which
+//! runs to compare, and it is the one that would stop a forge from baselining
+//! a scoped run against a full-corpus one. The schema defines it as "a
+//! hierarchical string that uniquely identifies this object's containing run
+//! object", and `correlationGuid` beside it as a GUID. This engine mints no run
+//! identity: [`crate::text`] and every artifact here are a function of the
+//! corpus, the lock and the injected clock alone, so a value that varied per
+//! run would break the determinism spec 12 fixes, and a constant would identify
+//! a class rather than a run. Writing either would be this emitter filling a
+//! uniqueness member with something that is not unique. The residue is real: a
+//! consumer that baselines still cannot tell the two runs apart from a member
+//! of the vocabulary, and the property bag is where the answer is.
+//!
 //! One entry is worth reading twice. Spec 6 asks a run to report "the corpus
 //! tree, the taxonomy lock hash, and its read set". SARIF has
 //! `run.automationDetails.id`, which is exactly where a corpus tree would go,
@@ -143,6 +173,14 @@ pub const LOSS: &[Loss] = &[
         reason: "`fixes[]` carries replacement text and a finding carries prose with a \
                  `fixable` flag, so no result here carries a `fix`",
         carried_in: "properties.headwater.remediation and message.markdown",
+    },
+    Loss {
+        field: "the change a run was scoped to",
+        reason: "no member of this vocabulary says that a run read one change and not a corpus. \
+                 `invocations` holds the runtime environment of the tool process and these are \
+                 readings rather than process facts, and `automationDetails.id` uniquely \
+                 identifies one run, which is an identity this engine mints none of",
+        carried_in: "run.properties.headwater.change",
     },
     Loss {
         field: "the corpus tree",
@@ -479,55 +517,61 @@ fn run_properties(run: &Run, subject: &Subject<'_>) -> Json {
             .filter(|entry| entry.escape == Some(escape))
             .count()
     };
-    Json::object([(
-        "headwater",
-        Json::object([
-            (
-                "taxonomy",
-                Json::object([
-                    ("package", Json::string(subject.package)),
-                    ("version", Json::string(subject.version)),
-                    ("lock", Json::string(subject.lock)),
-                ]),
-            ),
-            ("clock", Json::string(subject.now)),
-            (
-                "coverage",
-                Json::object([
-                    ("seen", number(run.coverage.seen())),
-                    ("classified", number(run.coverage.classified())),
-                    ("checked", number(run.coverage.checked())),
-                    ("instances", number(run.coverage.instances)),
-                ]),
-            ),
-            (
-                "escaped",
-                Json::object([
-                    // In the precedence spec 4 fixes. The first is absent
-                    // because no waiver reaches a check finding, and a reader
-                    // who meets two counts should not have to work out whether
-                    // the third is zero or missing. The mechanism does ship —
-                    // `headwater conformance` reads a waiver over a conformance
-                    // rule — and spec 7 states that the reader for the other
-                    // population is what has not landed.
-                    ("waived", Json::string("no waiver reaches a check finding")),
-                    (
-                        "migration_pending",
-                        number(escaped(Escape::MigrationPending)),
-                    ),
-                    ("suppressed", number(escaped(Escape::Suppression))),
-                ]),
-            ),
-            (
-                "read_set",
-                Json::object([
-                    ("inputs", number(run.read_set.inputs.len())),
-                    ("unhashed", number(run.read_set.unhashed())),
-                ]),
-            ),
-            ("loss_set", loss_set()),
-        ]),
-    )])
+    let mut headwater: Vec<(&'static str, Json)> = vec![
+        (
+            "taxonomy",
+            Json::object([
+                ("package", Json::string(subject.package)),
+                ("version", Json::string(subject.version)),
+                ("lock", Json::string(subject.lock)),
+            ]),
+        ),
+        ("clock", Json::string(subject.now)),
+    ];
+    // Above coverage here as in every other format, and written only for a run
+    // that was scoped. See the module comment for the two members of the
+    // vocabulary that were held against this bag first.
+    if let Some(scoped) = &run.change {
+        headwater.push(("change", crate::json::change(scoped)));
+    }
+    headwater.extend([
+        (
+            "coverage",
+            Json::object([
+                ("seen", number(run.coverage.seen())),
+                ("classified", number(run.coverage.classified())),
+                ("checked", number(run.coverage.checked())),
+                ("instances", number(run.coverage.instances)),
+            ]),
+        ),
+        (
+            "escaped",
+            Json::object([
+                // In the precedence spec 4 fixes. The first is absent
+                // because no waiver reaches a check finding, and a reader
+                // who meets two counts should not have to work out whether
+                // the third is zero or missing. The mechanism does ship —
+                // `headwater conformance` reads a waiver over a conformance
+                // rule — and spec 7 states that the reader for the other
+                // population is what has not landed.
+                ("waived", Json::string("no waiver reaches a check finding")),
+                (
+                    "migration_pending",
+                    number(escaped(Escape::MigrationPending)),
+                ),
+                ("suppressed", number(escaped(Escape::Suppression))),
+            ]),
+        ),
+        (
+            "read_set",
+            Json::object([
+                ("inputs", number(run.read_set.inputs.len())),
+                ("unhashed", number(run.read_set.unhashed())),
+            ]),
+        ),
+        ("loss_set", loss_set()),
+    ]);
+    Json::object([("headwater", Json::object(headwater))])
 }
 
 /// The loss set, written into the artifact.
