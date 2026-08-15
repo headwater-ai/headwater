@@ -131,6 +131,39 @@ impl LifecycleRegime {
     pub fn admits(&self, from: &str, to: &str) -> bool {
         self.exits(from).iter().any(|state| state == to)
     }
+
+    /// Every state this regime names, in declaration order: the initial state,
+    /// then each from-state and the states it reaches.
+    ///
+    /// This is the set a document of a kind that binds this regime may stand
+    /// in, and reading it is what makes a lifecycle regime a per-kind
+    /// narrowing of one shared state vocabulary rather than a second copy of
+    /// it. A state the vocabulary holds and this declaration never writes is a
+    /// state this machine has no place for, and [`crate::lifecycle_state`] is
+    /// the rule that says so about a document.
+    ///
+    /// Reachability is not asked here. A state this regime names and cannot
+    /// reach from `initial` is a defect of the declaration, and `lifecycle
+    /// soundness` in the resolver is the component that owns it. A check that
+    /// folded the two would report one declaration defect once per document of
+    /// every kind that binds the regime.
+    pub fn states(&self) -> Vec<&str> {
+        let mut states: Vec<&str> = Vec::new();
+        // A regime that declares no initial state is not a machine, and the
+        // empty string that absence reads as is not a state either. It is
+        // dropped here, so the caller meets a regime that names nothing rather
+        // than one that names one impossible value.
+        for state in std::iter::once(&self.initial).chain(
+            self.transitions
+                .iter()
+                .flat_map(|(from, targets)| std::iter::once(from).chain(targets.iter())),
+        ) {
+            if !state.is_empty() && !states.contains(&state.as_str()) {
+                states.push(state.as_str());
+            }
+        }
+        states
+    }
 }
 
 /// One term a corpus retired.
