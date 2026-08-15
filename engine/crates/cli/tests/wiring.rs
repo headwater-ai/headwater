@@ -1,0 +1,313 @@
+// SPDX-License-Identifier: Apache-2.0
+//! What the binary decides, at the grain where nothing else can see it.
+//!
+//! # The defect this target exists for
+//!
+//! Every crate below this one is tested against inputs its own tests build. The
+//! wiring is where a caller decides *which* library value to read, and a test
+//! that constructs the value cannot catch a caller that reads the one beside
+//! it. Three defects of exactly that shape have been found in `main.rs`, all
+//! three by hand and none by the suite:
+//!
+//! 1. `Loaded::runs()` took `Plan::over(..).selected` and dropped the refusal
+//!    beside it, so a corpus whose plan stopped partway still published a rate
+//!    over a denominator no document declares (#172).
+//! 2. `probe grade` tested `plan.selected.is_empty()` where the rule is
+//!    `Refusal::stops_a_grade`, so every late refusal graded against the probes
+//!    a planner read before it gave up (#173).
+//! 3. `check --change` reads a manifest, binds it, and scopes a context to it.
+//!    A flag that reached nothing would produce the report of a run with no
+//!    flag, which is the correct output for a full-corpus run (#177).
+//!
+//! The fix for each one is held at the library grain and two of them are held
+//! by a type: `Plan::gradable` is the one route to a gradable selection, and
+//! `Change` is the only value `Context::over` takes. Neither says anything
+//! about a caller that stops asking. The one measurement that made #174 an
+//! issue rather than an observation is that reverting the `probe grade` guard
+//! left the whole suite green, and each test below was watched failing against
+//! the pre-fix form of the decision it names.
+//!
+//! # Why this drives the binary rather than a function
+//!
+//! A test of an extracted wiring function proves the function and not the
+//! wiring, which is the defect restated. So each case here runs the built
+//! binary over a repository root and reads what a caller reads. Cargo builds
+//! the binary for this target and names it in `CARGO_BIN_EXE_headwater`, under
+//! both `cargo test` and `cargo test --release`.
+//!
+//! # The root each case runs over
+//!
+//! A fixture corpus, and the repository's own lock and corpus descriptor. The
+//! lock is copied rather than committed here for the reason no rule of this
+//! repository is written down twice: `taxonomy resolve --check` holds that file
+//! to its sources on every pull request, and a second copy under `fixtures/`
+//! would be a resolved taxonomy that nothing checks and that goes stale in
+//! silence. So a taxonomy that stops declaring what these documents are fails
+//! these tests loudly, which is the report a stale copy would not make.
+//!
+//! Each root holds one to three documents, so a case costs one process and a
+//! walk of three files. The whole target is well under a second.
+
+use std::path::{Path, PathBuf};
+use std::process::Command;
+
+/// The repository this test tree sits in.
+fn repository() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../..")
+        .canonicalize()
+        .expect("the repository root resolves")
+}
+
+fn fixtures() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
+}
+
+/// A repository root assembled over one fixture corpus.
+struct Root {
+    at: PathBuf,
+}
+
+impl Root {
+    /// The fixture corpus under `fixtures/<case>`, plus the lock and the corpus
+    /// descriptor this repository resolves for itself.
+    ///
+    /// `label` names the test rather than the case, and it is a parameter for a
+    /// reason that cost this file one debugging pass: cargo runs the cases of
+    /// one target as threads of one process, so two of them over one fixture
+    /// corpus share a process identifier, and a directory named after the case
+    /// is a directory one case removes while the other is reading it.
+    fn over(case: &str, label: &str) -> Root {
+        let at = std::env::temp_dir().join(format!(
+            "headwater-cli-wiring-{}-{label}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&at);
+        copy(&fixtures().join(case), &at);
+        let headwater = at.join(".headwater");
+        std::fs::create_dir_all(&headwater).expect("the declaration directory is there");
+        for name in ["taxonomy.lock", "taxonomy.yml"] {
+            std::fs::copy(
+                repository().join(".headwater").join(name),
+                headwater.join(name),
+            )
+            .expect("the declaration copies");
+        }
+        Root { at }
+    }
+
+    fn path(&self, relative: &str) -> PathBuf {
+        self.at.join(relative)
+    }
+
+    /// One invocation, with the root named rather than inherited from the
+    /// working directory, because `cargo test` runs every target from one place
+    /// and a case that reached this repository would check the wrong corpus.
+    fn run(&self, arguments: &[&str]) -> Ran {
+        let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+            .args(arguments)
+            .arg("--root")
+            .arg(&self.at)
+            .output()
+            .expect("the binary runs");
+        Ran {
+            code: output.status.code(),
+            out: String::from_utf8_lossy(&output.stdout).into_owned(),
+            err: String::from_utf8_lossy(&output.stderr).into_owned(),
+        }
+    }
+}
+
+/// What one invocation reported. The two streams are held apart, because
+/// `check` writes a run statistic to standard error and the artifact to
+/// standard output, and a case that read them merged would assert over both.
+struct Ran {
+    code: Option<i32>,
+    out: String,
+    err: String,
+}
+
+impl Ran {
+    fn says(&self, text: &str) -> bool {
+        self.out.contains(text)
+    }
+}
+
+fn copy(from: &Path, to: &Path) {
+    std::fs::create_dir_all(to).expect("the directory is there");
+    for entry in std::fs::read_dir(from).expect("the fixture directory reads") {
+        let entry = entry.expect("the entry reads");
+        let target = to.join(entry.file_name());
+        match entry.file_type().expect("the file type reads").is_dir() {
+            true => copy(&entry.path(), &target),
+            false => {
+                std::fs::copy(entry.path(), &target).expect("the fixture copies");
+            }
+        }
+    }
+}
+
+/// `check --change` reaches the verdict, and not only the parser.
+///
+/// The failure this holds is silent by construction. A run that carries no
+/// change reports every instance of `warrant.promoted` as skipped, which is the
+/// right output for a full-corpus run, so a flag that was read and dropped
+/// produces exactly the report of a run that passed no flag. Nothing in an exit
+/// status or a finding count tells the two apart, and the assertion below is
+/// therefore about what the scoped report says that the unscoped one does not.
+#[test]
+fn a_change_the_flag_named_reaches_the_verdict_and_not_only_the_parser() {
+    let root = Root::over("change", "change-reaches-the-verdict");
+    let manifest = root.path("manifest.txt");
+    let prior = fixtures().join("change-prior/0001-the-warrant-a-person-set.md");
+    std::fs::write(
+        &manifest,
+        format!(
+            "headwater change 1\nprior\tdocs/decisions/0001-the-warrant-a-person-set.md\t{}\n",
+            prior.display()
+        ),
+    )
+    .expect("the manifest writes");
+
+    // The state under test: one document at the `accepted` warrant, whose
+    // prior version stands at `asserted`. Loose on purpose, so that the
+    // decisive failure below is the one about the flag.
+    let unscoped = root.run(&["check", "--no-cache", "--now", "2026-08-01"]);
+    assert_eq!(unscoped.code, Some(0), "{}{}", unscoped.out, unscoped.err);
+    assert!(
+        unscoped.says("change-scoped-only"),
+        "a run carrying no change reports the promotion instance as skipped:\n{}",
+        unscoped.out
+    );
+
+    let scoped = root.run(&[
+        "check",
+        "--no-cache",
+        "--now",
+        "2026-08-01",
+        "--change",
+        &manifest.display().to_string(),
+    ]);
+    assert_eq!(scoped.code, Some(0), "{}{}", scoped.out, scoped.err);
+    // The decision: the manifest the flag named reached `Context::scoped_to`.
+    // Both lines below are false of a run that read the manifest and dropped
+    // it, and the second is the reading the change produces.
+    assert!(
+        scoped.says("scoped to a change: 1 documents named, 0 added, 1 with a prior version"),
+        "the report states the change this run was scoped to:\n{}",
+        scoped.out
+    );
+    assert!(
+        scoped.says("1 promoted from `asserted` to `accepted`"),
+        "the run counts the promotion the change carried:\n{}",
+        scoped.out
+    );
+    assert!(
+        scoped.out != unscoped.out,
+        "a run scoped to a change reports something a full-corpus run does not"
+    );
+}
+
+/// `probe grade` reads `Plan::gradable` and never the selection beside it.
+///
+/// The fixture corpus holds two probes. The first is well formed and the second
+/// declares a category outside the closed set, so `Plan::over` returns from
+/// inside the loop that composes the selection and leaves exactly one probe
+/// behind it. That state is the whole instrument: a plan that refused with an
+/// *empty* selection is refused by `plan.selected.is_empty()` as well, and a
+/// case built over one would pass against the defect it was written for.
+///
+/// The transcript this grades cannot confirm against this corpus and no fixture
+/// could: the plan refuses, so it composes no selection digest, and a
+/// transcript naming one that matched would describe a plan this tree cannot
+/// compose. That is why the second assertion is about the intake rather than
+/// about a verdict. Under the pre-fix guard the verb walks past the refusal and
+/// hands the transcript to `Record::read`, which reports that it reached no
+/// grader; under the rule it never gets there.
+#[test]
+fn a_plan_that_stopped_partway_grades_nothing_through_the_verb() {
+    let root = Root::over("probes", "grade-reads-gradable");
+
+    // The state under test, and the reason the case is decisive rather than
+    // accidental: the plan refuses and the selection it leaves holds one probe
+    // of the two. Loose on purpose.
+    let planned = root.run(&["probe", "plan"]);
+    assert_eq!(planned.code, Some(0), "{}{}", planned.out, planned.err);
+    assert!(
+        planned.says("over 1 of the 3 classified documents"),
+        "the plan stops partway and leaves a selection of one:\n{}",
+        planned.out
+    );
+    assert!(
+        planned.says("This run does not start"),
+        "the plan refuses this corpus:\n{}",
+        planned.out
+    );
+
+    // The decision. Under `plan.selected.is_empty()` the selection holds one
+    // probe, the guard does not fire, and the verb walks on into the intake
+    // with the part of a selection the planner managed.
+    let graded = root.run(&[
+        "probe",
+        "grade",
+        &root
+            .path("docs/probe-runs/first-regression.md")
+            .display()
+            .to_string(),
+    ]);
+    assert_eq!(graded.code, Some(0), "{}{}", graded.out, graded.err);
+    assert!(
+        graded.says("Nothing was graded. `headwater probe plan` refuses this corpus: the probe at docs/probes/0002-the-category-is-outside-the-closed-set.md"),
+        "the verb reports the refusal the plan composed, which only `gradable` hands it:\n{}",
+        graded.out
+    );
+    assert!(
+        !graded.says("This transcript reached no grader"),
+        "the refusal stopped this verb before it read the transcript at all:\n{}",
+        graded.out
+    );
+}
+
+/// The `Loaded::runs()` call site hands the generator the plan and not the
+/// selection.
+///
+/// `Runs::graded_against` is the rule and it is held by two tests of its own
+/// crate. What no test held is the decision, inside the binary, to call it: a
+/// caller that composed a plan and never handed it over leaves `Runs` at its
+/// default, and the projection then reports that nothing composed a selection
+/// and nothing said why. That message and the one below are the two states this
+/// case tells apart, and only one of them names the corpus.
+#[test]
+fn the_generator_is_handed_the_refusal_beside_the_selection() {
+    let root = Root::over("probes", "generate-carries-the-refusal");
+    let generated = root.run(&["generate"]);
+    assert_eq!(
+        generated.code,
+        Some(0),
+        "{}{}",
+        generated.out,
+        generated.err
+    );
+
+    // Loose on purpose, and looser than it reads: a run that composed nothing
+    // reports the declaration's pattern here and a run that carries a refusal
+    // reports the file it names, so this holds in both states and the decisive
+    // failure below is the one about the call site.
+    assert!(
+        generated.says("probe_result docs/probe-results/"),
+        "the probe_result declaration reaches this corpus:\n{}",
+        generated.out
+    );
+    // The decision: the reason is the plan's refusal, which the call site
+    // carries only by handing the whole plan over.
+    assert!(
+        generated.says("it does not compose them over this corpus: the probe at docs/probes/0002-the-category-is-outside-the-closed-set.md"),
+        "the projection names the refusal the plan composed:\n{}",
+        generated.out
+    );
+    assert!(
+        !generated.says("nothing composed a probe selection and nothing said why"),
+        "a refusal reached the generator, so the caller that composed nothing is not this one:\n{}",
+        generated.out
+    );
+}

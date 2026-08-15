@@ -12,6 +12,12 @@ path = "src/main.rs"
 # Spec 6: "The CLI is a thin shell over a library API." Everything below is a
 # library that an editor, the MCP server or a CI adapter consumes directly, and
 # none of them starts this binary and parses its text.
+#
+# `tests/wiring.rs` is the one caller that does, and it starts the binary on
+# purpose. What it holds is the shell rather than anything below it: the
+# decision this file makes about which library value to read, which is the one
+# thing a test of a library under it cannot see. Three defects of that shape
+# have been found here, so the exception is narrow and it is not a consumer.
 [dependencies]
 # The sampler, which is not a check and is a separate crate for that reason.
 # Nothing in `headwater-check` names it, so no rule can read a sweep finding
@@ -19,8 +25,11 @@ path = "src/main.rs"
 headwater-sweep = { path = "../sweep" }
 
 # The probe harness, on the same side of the same line and for the same reason.
-# It names `headwater-check`, so nothing in the check layer can name it, and
-# this binary is its only caller: no hook, no gate and no CI step runs it.
+# It names `headwater-check`, so nothing in the check layer can name it, and no
+# hook and no gate runs it. One CI step reaches it, and it is `cargo test`:
+# `tests/wiring.rs` starts this binary at `probe grade` over a fixture corpus
+# whose plan refuses. That is a test of the wiring above the harness, so no
+# probe of this repository is planned, recorded or graded by anything automatic.
 headwater-probe = { path = "../probe" }
 
 # The CI adapters. `check --format` is the one caller, and the dependency
