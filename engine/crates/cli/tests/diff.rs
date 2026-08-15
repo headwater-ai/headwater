@@ -57,10 +57,8 @@ struct Root {
 
 impl Root {
     fn new(label: &str) -> Root {
-        let at = std::env::temp_dir().join(format!(
-            "headwater-cli-diff-{}-{label}",
-            std::process::id()
-        ));
+        let at =
+            std::env::temp_dir().join(format!("headwater-cli-diff-{}-{label}", std::process::id()));
         let _ = std::fs::remove_dir_all(&at);
         std::fs::create_dir_all(&at).expect("the root is made");
 
@@ -273,8 +271,14 @@ fn a_declaration_that_breaks_a_document_names_that_document() {
         "2026-08-01",
     ]);
     assert_eq!(ran.code, Some(0), "a measured break is a report: {ran:?}");
-    assert!(ran.dimension("instance_validity").starts_with("BROKEN"), "{ran:?}");
-    assert!(ran.dimension("consequence").starts_with("BROKEN"), "{ran:?}");
+    assert!(
+        ran.dimension("instance_validity").starts_with("BROKEN"),
+        "{ran:?}"
+    );
+    assert!(
+        ran.dimension("consequence").starts_with("BROKEN"),
+        "{ran:?}"
+    );
     assert!(
         ran.out
             .contains("facet.required.missing at docs/decisions/0001-the-warrant-a-person-set.md"),
@@ -324,8 +328,15 @@ fn an_overlay_address_the_new_base_takes_is_the_addressability_dimension() {
         "--now",
         "2026-08-01",
     ]);
-    assert_eq!(ran.code, Some(1), "a run that could not measure fails: {ran:?}");
-    assert!(ran.dimension("addressability").starts_with("BROKEN"), "{ran:?}");
+    assert_eq!(
+        ran.code,
+        Some(1),
+        "a run that could not measure fails: {ran:?}"
+    );
+    assert!(
+        ran.dimension("addressability").starts_with("BROKEN"),
+        "{ran:?}"
+    );
     assert!(
         ran.out
             .contains("add.identifier_schemes.spec_id in .headwater/overlay.yml"),
@@ -344,7 +355,8 @@ fn an_overlay_address_the_new_base_takes_is_the_addressability_dimension() {
         );
     }
     assert!(
-        ran.err.contains("five of the six dimensions were not measured"),
+        ran.err
+            .contains("five of the six dimensions were not measured"),
         "{ran:?}"
     );
 }
@@ -413,7 +425,8 @@ fn an_artifact_that_left_its_own_release_record_is_refused() {
     ]);
     assert_eq!(ran.code, Some(1), "{ran:?}");
     assert!(
-        ran.err.contains("not what its own release record says it is"),
+        ran.err
+            .contains("not what its own release record says it is"),
         "{ran:?}"
     );
 }

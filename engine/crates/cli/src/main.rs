@@ -1377,8 +1377,8 @@ fn plan_of(
     loaded: &Loaded,
     identity: &headwater_generate::Identity,
 ) -> Result<headwater_generate::Plan, String> {
-    let projections = headwater_generate::Projections::read(&loaded.bound.taxonomy)
-        .map_err(|errors| {
+    let projections =
+        headwater_generate::Projections::read(&loaded.bound.taxonomy).map_err(|errors| {
             errors
                 .iter()
                 .map(|error| error.to_string())

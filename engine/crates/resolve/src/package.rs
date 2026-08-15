@@ -187,9 +187,10 @@ pub fn sources_at(
     // read. A package that needs a later engine resolves into a taxonomy this
     // engine reads with whatever it does not understand dropped, and that is a
     // lock nobody can reproduce. The refusal names both numbers.
-    if let Err(refused) =
-        release::engine_range(&consumer.package, text(manifest, REQUIRES_ENGINE).as_deref())
-    {
+    if let Err(refused) = release::engine_range(
+        &consumer.package,
+        text(manifest, REQUIRES_ENGINE).as_deref(),
+    ) {
         return Err(release::as_error(&manifest_name(root, directory), &refused));
     }
 
@@ -268,11 +269,12 @@ pub fn located(root: &Path, name: &str) -> Option<(PathBuf, Mapping)> {
 pub fn manifest_at(directory: &Path) -> Result<Mapping, Vec<ResolveError>> {
     let manifest = directory.join(MANIFEST);
     let loaded = crate::source::load(&manifest)?;
-    loaded
-        .value
-        .as_map()
-        .cloned()
-        .ok_or_else(|| refusal(&manifest.display().to_string(), "the manifest is not a mapping"))
+    loaded.value.as_map().cloned().ok_or_else(|| {
+        refusal(
+            &manifest.display().to_string(),
+            "the manifest is not a mapping",
+        )
+    })
 }
 
 fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>> {

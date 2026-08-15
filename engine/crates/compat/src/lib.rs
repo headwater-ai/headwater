@@ -39,8 +39,8 @@
 
 use headwater_census::census::{Census, Outcome as Row};
 use headwater_check::instance::{Instance, Outcome as Verdict};
-use headwater_check::Run;
 use headwater_check::scope::Grain;
+use headwater_check::Run;
 use headwater_generate::Plan;
 use headwater_graph::Graph;
 use std::collections::BTreeMap;
@@ -386,10 +386,12 @@ fn emitted(plan: &Plan) -> BTreeMap<String, String> {
         .outputs
         .iter()
         .map(|output| (output.path.clone(), output.bytes.clone()));
-    let unwritten = plan
-        .unwritten
-        .iter()
-        .map(|unwritten| (unwritten.at.clone(), format!("nothing: {}", unwritten.reason)));
+    let unwritten = plan.unwritten.iter().map(|unwritten| {
+        (
+            unwritten.at.clone(),
+            format!("nothing: {}", unwritten.reason),
+        )
+    });
     written.chain(unwritten).collect()
 }
 
@@ -404,13 +406,14 @@ fn emitted(plan: &Plan) -> BTreeMap<String, String> {
 /// engine over this one tree, so a message differs only when the fact under it
 /// does. That is what makes the comparison sensitive enough to catch a rule
 /// that started failing for a different reason at the same document.
-fn verdicts(
-    instances: &[Instance],
-    admit: impl Fn(&Instance) -> bool,
-) -> BTreeMap<String, String> {
+fn verdicts(instances: &[Instance], admit: impl Fn(&Instance) -> bool) -> BTreeMap<String, String> {
     let mut out = BTreeMap::new();
     for instance in instances.iter().filter(|instance| admit(instance)) {
-        let read: Vec<&str> = instance.reads.iter().map(|input| input.path.as_str()).collect();
+        let read: Vec<&str> = instance
+            .reads
+            .iter()
+            .map(|input| input.path.as_str())
+            .collect();
         let at = match read.is_empty() {
             true => format!("{} over the corpus", instance.rule),
             false => format!("{} at {}", instance.rule, read.join(", ")),
