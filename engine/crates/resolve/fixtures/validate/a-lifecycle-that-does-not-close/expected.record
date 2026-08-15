@@ -1,7 +1,7 @@
 the resolved taxonomy `regimes.lifecycle.standard.initial`: lifecycle soundness: is `draft`, which the state vocabulary does not hold
 the resolved taxonomy `regimes.lifecycle.standard.transitions`: lifecycle soundness: names `draft`, which the state vocabulary does not hold
 the resolved taxonomy `regimes.lifecycle.standard.transitions`: lifecycle soundness: names `retired`, which the state vocabulary does not hold
-the resolved taxonomy `regimes.lifecycle.standard.transitions`: lifecycle soundness: leaves `proposed` unreachable from `draft`, so no document reaches it
-the resolved taxonomy `regimes.lifecycle.standard.transitions`: lifecycle soundness: leaves `archived` unreachable from `draft`, so no document reaches it
-the resolved taxonomy `regimes.lifecycle.standard.transitions`: lifecycle soundness: leaves `sealed` unreachable from `draft`, so no document reaches it
 the resolved taxonomy `regimes.lifecycle.standard.transitions`: lifecycle soundness: gives `retired` no exit and nothing declares it terminal. A terminal state is named, either in `terminal` here or by a `terminal-` role on the value
+the resolved taxonomy `regimes.lifecycle`: lifecycle soundness: leaves `proposed` unreachable in every lifecycle regime (`standard` from `draft`), so no document of any kind reaches it
+the resolved taxonomy `regimes.lifecycle`: lifecycle soundness: leaves `archived` unreachable in every lifecycle regime (`standard` from `draft`), so no document of any kind reaches it
+the resolved taxonomy `regimes.lifecycle`: lifecycle soundness: leaves `sealed` unreachable in every lifecycle regime (`standard` from `draft`), so no document of any kind reaches it

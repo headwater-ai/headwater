@@ -1,0 +1,68 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Two lifecycle regimes over one state vocabulary, which is how a taxonomy says
+# that one kind means a state and another does not. This case is valid, and it
+# was refused before [#219](https://github.com/headwater-ai/headwater/issues/219).
+#
+# `narrow` reaches `superseded` and never `discharged`. `wide` reaches
+# `discharged` and never `superseded`. Each of the two terminal states is
+# reachable in exactly one regime, and the two live states are where both
+# machines begin, so no regime carries the whole vocabulary and every value of
+# it is reachable somewhere.
+#
+# The reading that refused this asked every state of the vocabulary to be
+# reachable from the initial state of *each* regime, which is right while one
+# regime exists and makes a second one undeclarable.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+facets:
+  status:
+    role: state
+    values:
+      - {value: draft,      role: initial}
+      - {value: current,    role: live}
+      - {value: superseded, role: terminal-retained}
+      - {value: discharged, role: terminal-retained}
+    required: true
+    volatility: mutable
+    guidance:
+      draft: it is being argued over
+      current: it states what holds now
+      superseded: a later document replaced it
+      discharged: it recorded something the corpus owed, and the corpus paid it
+
+regimes:
+  lifecycle:
+    narrow:
+      initial: draft
+      transitions:
+        draft: [current]
+        current: [superseded]
+    wide:
+      initial: draft
+      transitions:
+        draft: [current]
+        current: [discharged]
+
+kinds:
+  decision:
+    purpose: rationale
+    lifecycle: narrow
+    facets: {require: [status]}
+  receipt:
+    purpose: rationale
+    lifecycle: wide
+    facets: {require: [status]}
+
+shelves:
+  decisions: {path: "docs/decisions/**", homogeneous: true, kind: decision}
+  receipts:  {path: "docs/receipts/**",  homogeneous: true, kind: receipt}
+
+core:
+  requires:
+    - facet_role: state

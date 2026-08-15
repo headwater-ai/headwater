@@ -1,0 +1,63 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The half of lifecycle soundness that stays per regime. `narrow` reaches every
+# value of the vocabulary, so nothing is unreachable across the family and the
+# family-level report is silent. `wide` gives `superseded` an exit and no way
+# in, so it holds a state its own documents cannot get to.
+#
+# It is the case that says the two halves are independent: a state reachable
+# somewhere is not a state every regime that mentions it can reach.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+facets:
+  status:
+    role: state
+    values:
+      - {value: draft,      role: initial}
+      - {value: current,    role: live}
+      - {value: superseded, role: terminal-retained}
+      - {value: discharged, role: terminal-retained}
+    required: true
+    volatility: mutable
+    guidance:
+      draft: it is being argued over
+      current: it states what holds now
+      superseded: a later document replaced it
+      discharged: it recorded something the corpus owed, and the corpus paid it
+
+regimes:
+  lifecycle:
+    narrow:
+      initial: draft
+      transitions:
+        draft: [current]
+        current: [superseded, discharged]
+    wide:
+      initial: draft
+      transitions:
+        draft: [current]
+        current: [discharged]
+        superseded: [discharged]
+
+kinds:
+  decision:
+    purpose: rationale
+    lifecycle: narrow
+    facets: {require: [status]}
+  receipt:
+    purpose: rationale
+    lifecycle: wide
+    facets: {require: [status]}
+
+shelves:
+  decisions: {path: "docs/decisions/**", homogeneous: true, kind: decision}
+  receipts:  {path: "docs/receipts/**",  homogeneous: true, kind: receipt}
+
+core:
+  requires:
+    - facet_role: state
