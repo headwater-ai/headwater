@@ -604,8 +604,10 @@ fn per_finding(
 /// two independent substring tests over the whole document, so a format that
 /// prints an index of rule names and an index of paths passes them whatever its
 /// records hold. `HW-OBL-0110` records the measurement, and this function still
-/// carries the defect. [`Objects`] is the reader that half needs, and moving it
-/// onto that reader is the rest of that record.
+/// carries the defect. That record proposes a test per line or per record and
+/// says that none of the four formats needs a parser for it. [`Objects`] is a
+/// second route, available to the two machine-readable formats and to neither
+/// prose one, and nothing here settles which of the two that record takes.
 ///
 /// # The carrier half
 ///
@@ -614,6 +616,20 @@ fn per_finding(
 /// parsed document and is held or adrift. An entry whose carrier names nowhere,
 /// or a place outside these bytes, is counted as unaudited. Nothing falls out,
 /// which [`Census::accounts`] states and the suite asserts.
+///
+/// # What a held entry does not prove
+///
+/// A place whose `members` are empty is held when its path resolves to anything
+/// at all, so a carrier can be made vaguer without going adrift: name the bag
+/// above the member and both resolve. What catches that today is the recorded
+/// artifact rather than this function, because the sentence an entry renders is
+/// derived from the path and changes with it.
+///
+/// And the predicate on an entry reads the run through the same function the
+/// emitter reads it through, which is what stops the two from drifting apart. A
+/// change to that one function moves the artifact and the expectation together,
+/// so this audit stays silent and the recorded artifact is again what reports
+/// it.
 pub fn census(run: &Run, format: Format, artifact: &str) -> Census {
     census_with(run, format, artifact, format.loss())
 }
