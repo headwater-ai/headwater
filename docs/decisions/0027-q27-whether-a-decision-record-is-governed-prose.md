@@ -48,7 +48,7 @@ The instrument was proved on the treatment arm rather than assumed. The five-def
 
 ## Consequences
 
-**What a writer meets.** A decision record now answers to the six rules that read prose. A hard wrap or a British spelling in one stops a commit, and `headwater check --fix` writes both corrections. The 64 findings above are advisory and nothing works them down on a clock.
+**What a writer meets.** A decision record now answers to the six rules that read prose. A hard wrap or a British spelling in one stops a commit. `headwater check --fix` writes the spelling and leaves the wrap, because the source-form rule carries no patch. The 64 findings above are advisory and nothing works them down on a clock.
 
 **Why no adoption pair was written.** The `adoption` block of the lock holds a `(document, rule)` pair so that a pending finding does not fail a strict run. None of these 64 fails a strict run. So a pair would suppress nothing, and it would put an expiry on work that no gate waits for. What this leaves is 64 advisory lines that a reader of `headwater check` meets on every run.
 
