@@ -31,7 +31,7 @@ findings before
   check/spec/07-prose-defects.md link.fragment.unresolved `#no-such-section` names no heading of this document
   check/spec/09-contract-missing.md section.required.missing `decision_record` requires the section `Decision`, and no heading of this document says so
   check/spec/10-suppressed.md language.controlled.not_met `ste_house` holds prose to 25 words a sentence, and this one has 31
-  check/spec/11-identifier-mismatch.md identifier.pattern.not_met `SPEC-HW-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `HW-mismatch` is where the namespace `FIX` was expected
+  check/spec/11-identifier-mismatch.md identifier.pattern.not_met `SPEC-XX-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `XX-mismatch` is where the namespace `FIX` was expected
   check/spec/13-dangling.md relation.target.unresolved `SPEC-FIX-dangling` declares `assesses: SPEC-FIX-no-such-document`, and that target resolves to nothing at all
   check/spec/13-dangling.md relation.target.unresolved `SPEC-FIX-dangling` declares `assesses: SPEC-FIX-untyped`, and that target names check/spec/04-untyped.md, which is untyped: the census gave it no kind, and an endpoint is a kind
   check/spec/14-relations-not-a-mapping.md relation.declaration.unusable `relations` is a sequence, and it names relation types
@@ -69,7 +69,7 @@ findings after
   check/spec/07-prose-defects.md link.fragment.unresolved `#no-such-section` names no heading of this document
   check/spec/09-contract-missing.md section.required.missing `decision_record` requires the section `Decision`, and no heading of this document says so
   check/spec/10-suppressed.md language.controlled.not_met `ste_house` holds prose to 25 words a sentence, and this one has 31
-  check/spec/11-identifier-mismatch.md identifier.pattern.not_met `SPEC-HW-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `HW-mismatch` is where the namespace `FIX` was expected
+  check/spec/11-identifier-mismatch.md identifier.pattern.not_met `SPEC-XX-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `XX-mismatch` is where the namespace `FIX` was expected
   check/spec/13-dangling.md relation.target.unresolved `SPEC-FIX-dangling` declares `assesses: SPEC-FIX-no-such-document`, and that target resolves to nothing at all
   check/spec/13-dangling.md relation.target.unresolved `SPEC-FIX-dangling` declares `assesses: SPEC-FIX-untyped`, and that target names check/spec/04-untyped.md, which is untyped: the census gave it no kind, and an endpoint is a kind
   check/spec/14-relations-not-a-mapping.md relation.declaration.unusable `relations` is a sequence, and it names relation types

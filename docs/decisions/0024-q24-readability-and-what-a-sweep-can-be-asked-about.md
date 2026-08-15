@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0024
+id: HW-DR-0024
 status: draft
 status_since: 2026-08-15
 last_verified: 2026-08-15

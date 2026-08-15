@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0123
+id: HW-OBL-0123
 status: current
 status_since: 2026-08-14
 summary: "Two rules of the language meet on a facet whose value is the author's judgment, and a sentinel is what the corpus wrote instead."
@@ -13,7 +13,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-taxonomy-model
+    - HW-SPEC-taxonomy-model
 ---
 
 # A facet that applies to one value of another facet has nowhere to say so

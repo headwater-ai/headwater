@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 1.0.0
+version: 2.0.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -538,41 +538,41 @@ shelves:
     path: "docs/spec/**"
 identifier_schemes:
   decision_id:
-    pattern: "DR-{namespace}-{seq:04d}"
-    namespace: repo
+    pattern: "{namespace}-DR-{seq:04d}"
     allocation: reconcile-first
+    namespace: HW
   evaluation_id:
     allocation: minted-once
     namespace: HW
-    pattern: "EVAL-{namespace}-{slug}"
+    pattern: "{namespace}-EVAL-{slug}"
   obligation_record_id:
     allocation: reconcile-first
-    namespace: repo
-    pattern: "OBL-{namespace}-{seq:04d}"
+    namespace: HW
+    pattern: "{namespace}-OBL-{seq:04d}"
   probe_id:
     allocation: minted-once
     namespace: HW
-    pattern: "PROBE-{namespace}-{slug}"
+    pattern: "{namespace}-PROBE-{slug}"
   register_id:
     allocation: minted-once
     namespace: HW
-    pattern: "REG-{namespace}-{slug}"
+    pattern: "{namespace}-REG-{slug}"
   result_id:
     allocation: minted-once
     namespace: HW
-    pattern: "RESULT-{namespace}-{slug}"
+    pattern: "{namespace}-RESULT-{slug}"
   review_id:
     allocation: minted-once
     namespace: HW
-    pattern: "REV-{namespace}-{slug}"
+    pattern: "{namespace}-REV-{slug}"
   run_id:
     allocation: minted-once
     namespace: HW
-    pattern: "RUN-{namespace}-{slug}"
+    pattern: "{namespace}-RUN-{slug}"
   spec_id:
     allocation: minted-once
     namespace: HW
-    pattern: "SPEC-{namespace}-{slug}"
+    pattern: "{namespace}-SPEC-{slug}"
 core:
   requires:
     - facet_role: state
@@ -597,12 +597,12 @@ projections:
       - decisions
     output: docs/spec/09-open-questions.md
     identity:
-      id: REG-HW-open-questions
+      id: HW-REG-open-questions
       kind: decision_register
   - kind: probe_result
     output: "docs/probe-results/{run}.md"
     identity:
-      id: "RESULT-HW-{run}"
+      id: "HW-RESULT-{run}"
       kind: probe_result
 obligations:
   OB-COV-1:

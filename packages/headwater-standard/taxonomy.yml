@@ -19,7 +19,11 @@
 # source names itself with `taxonomy:`.
 
 taxonomy: headwater/standard
-version: 1.0.0
+# 2.0.0 is a major, and both halves of the change earn it. `decision_id` no
+# longer declares a namespace, so a consumer that declared none resolves to a
+# refusal until it does, and the pattern renders the namespace first, so an
+# identifier already minted under 1.0.0 no longer matches.
+version: 2.0.0
 
 purposes:
   rationale:
@@ -145,8 +149,20 @@ shelves:
   decisions:      {path: docs/decisions/**,      homogeneous: true, kind: decision, layout: "{seq:04d}-{slug}.md"}
   specifications: {path: docs/specifications/**, homogeneous: true, kind: specification}
 
+# The namespace goes first and this package declares none.
+#
+# A published package cannot name the namespace. Its own would be inherited by
+# every corpus that adopts it, and a stand-in such as `repo` is a word every
+# adopter also writes, so two adopters would both mint `HW-DR-0001` and the
+# one thing a namespace is for would be gone. The consumer's overlay declares
+# it, and `taxonomy validate` refuses a resolved scheme that carries none.
+#
+# `{namespace}` opens the pattern because every system with a real namespace
+# renders it outermost, and because `^<namespace>-` is then an anchored match
+# for everything one corpus owns. [Q25](../../docs/decisions/0025-q25-where-the-namespace-goes-in-an-identifier-and-who-declares-it.md)
+# is the ruling.
 identifier_schemes:
-  decision_id: {pattern: "DR-{namespace}-{seq:04d}", namespace: repo, allocation: reconcile-first}
+  decision_id: {pattern: "{namespace}-DR-{seq:04d}", allocation: reconcile-first}
 
 core:
   requires:

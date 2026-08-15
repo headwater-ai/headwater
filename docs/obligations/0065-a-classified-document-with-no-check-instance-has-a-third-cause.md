@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0065
+id: HW-OBL-0065
 title: "A classified document with no check instance has a third cause"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-check-layer
+    - HW-SPEC-check-layer
 ---
 
 # A classified document with no check instance has a third cause

@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0017
+id: HW-DR-0017
 title: Q17 — Governed access and the solution layer
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - EVAL-HW-the-serving-boundary
+    - HW-EVAL-the-serving-boundary
 ---
 
 # Q17 — Governed access and the solution layer

@@ -1,5 +1,5 @@
 ---
-id: SPEC-HW-check-layer
+id: HW-SPEC-check-layer
 status: current
 status_since: 2026-08-02
 last_verified: 2026-08-14
@@ -15,14 +15,14 @@ provenance:
   evidence_basis: evidenced
 relations:
   cites_evidence:
-    - EVAL-HW-graph-export-and-federation
-    - EVAL-HW-language-spike-results
-    - EVAL-HW-relation-storage
-    - EVAL-HW-shacl-worked-example
-    - EVAL-HW-the-measurement-layer
-    - EVAL-HW-the-serving-boundary
-    - EVAL-HW-warrant-and-adjudication
-    - EVAL-HW-what-a-check-can-know
+    - HW-EVAL-graph-export-and-federation
+    - HW-EVAL-language-spike-results
+    - HW-EVAL-relation-storage
+    - HW-EVAL-shacl-worked-example
+    - HW-EVAL-the-measurement-layer
+    - HW-EVAL-the-serving-boundary
+    - HW-EVAL-warrant-and-adjudication
+    - HW-EVAL-what-a-check-can-know
 ---
 
 # 12 — The check layer
@@ -135,7 +135,7 @@ The set is the view's and never the check's. The runner records what it handed a
 
 That statement is the whole test, and it decides three things.
 
-**1. The test is a comparison over listed inputs rather than a diff of two trees.** A diff reads two trees, so it sees the file that a merge added. A diff also needs a tree, and no run of this engine computes one ([OBL-repo-0028](../obligations/0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md)). The comparison needs neither a tree nor a run, so it costs one hash for each listed input. What that economy buys and what it cannot buy is decision 3.
+**1. The test is a comparison over listed inputs rather than a diff of two trees.** A diff reads two trees, so it sees the file that a merge added. A diff also needs a tree, and no run of this engine computes one ([HW-OBL-0028](../obligations/0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md)). The comparison needs neither a tree nor a run, so it costs one hash for each listed input. What that economy buys and what it cannot buy is decision 3.
 
 **2. The clock voids a verdict, and a tree is not the whole subject of one.** A verdict is about one state of the corpus **and one day**. A rule that reads the injected clock is named on a `windowed` line of the artifact. A gate asked about another day voids those rules, and no tree change is needed for that. A run that reads no clock is about a tree alone, so the day decides nothing about it.
 
@@ -153,9 +153,9 @@ This is where the design gets something free that a database has to add. A seria
 
 The construction that this costs is small enough to state. One branch adds a document that mints an identifier, and a second branch adds a different document that mints the same one. Each branch holds one claimant, so each branch is valid. The merge holds two claimants and is invalid. Neither read set lists the document that the other branch added, so every listed hash stands. A gate that read the listed hashes alone would report that both verdicts survive, and the `barrier` line is what stops it.
 
-**An external anchor is in no read set, so a key over one names what a resolver said.** A read set is a list of corpus paths, and an anchor names a target that is not one. The identity of an edge does not move when the target of its anchor does. A path anchor normalizes to the text that its author wrote, and an unbound target falls back to the same text. A key that held the identity alone would serve a verdict across the deletion of the file that the anchor names ([OBL-repo-0117](../obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md)). So the key of an edge instance names the binding that the resolver returned, beside the identity of the edge.
+**An external anchor is in no read set, so a key over one names what a resolver said.** A read set is a list of corpus paths, and an anchor names a target that is not one. The identity of an edge does not move when the target of its anchor does. A path anchor normalizes to the text that its author wrote, and an unbound target falls back to the same text. A key that held the identity alone would serve a verdict across the deletion of the file that the anchor names ([HW-OBL-0117](../obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md)). So the key of an edge instance names the binding that the resolver returned, beside the identity of the edge.
 
-**The published artifact names no anchor, so a gate decides nothing about one.** It holds one line for each document that a run read, and the answer of a resolver is not a document. A comparison over listed hashes therefore cannot see the target of an anchor leave the tree. Every run over this corpus publishes a barrier line, and a barrier voids the whole answer before it reaches that limit. A gate that answered for one rule at a time would reach it, and [OBL-repo-0118](../obligations/0118-the-published-read-set-names-no-anchor-so-a-gate-decides-nothing-about-one.md) records the gap.
+**The published artifact names no anchor, so a gate decides nothing about one.** It holds one line for each document that a run read, and the answer of a resolver is not a document. A comparison over listed hashes therefore cannot see the target of an anchor leave the tree. Every run over this corpus publishes a barrier line, and a barrier voids the whole answer before it reaches that limit. A gate that answered for one rule at a time would reach it, and [HW-OBL-0118](../obligations/0118-the-published-read-set-names-no-anchor-so-a-gate-decides-nothing-about-one.md) records the gap.
 
 **The invalidation test fails toward re-running.** A false invalidation costs one run. A false survival ships an invalid corpus with a green report. That asymmetry decides every doubtful case, and it is the same rule that [principle 7](00-vision-and-scope.md#design-principles) gives an exporter.
 
@@ -229,7 +229,7 @@ A check may return a patch alongside a finding. The rule for whether it may retu
 
 To regenerate a stale projection, to add a missing reciprocal link, to normalize front-matter key order, to correct the format of an identifier: these are mechanical. To rewrite a section to satisfy a contract, to choose a summary, to resolve a conflict between two live decisions: these are not. Those carry remediation prose instead. A plausible automatic fix for them would be worse than none, because it would be applied unread.
 
-**Fixability is the patch, and never a second field beside it.** The bar above is a test over a defect. `fixable` in a report answers a narrower question: whether `headwater check --fix` writes this correction. A finding is fixable when a patch rides with it, and two values cannot disagree where there is one. [OBL-repo-0087](../obligations/0087-fixable-has-two-readings-inside-one-engine.md) records the reading that the flag lost. The severity carries that reading: a defect whose remedy is mechanical is an error, and the engine may still write nothing.
+**Fixability is the patch, and never a second field beside it.** The bar above is a test over a defect. `fixable` in a report answers a narrower question: whether `headwater check --fix` writes this correction. A finding is fixable when a patch rides with it, and two values cannot disagree where there is one. [HW-OBL-0087](../obligations/0087-fixable-has-two-readings-inside-one-engine.md) records the reading that the flag lost. The severity carries that reading: a defect whose remedy is mechanical is an error, and the engine may still write nothing.
 
 **The bar is per finding rather than per rule.** One rule states two defects whose remedies differ. `doesn't` expands to `does not` and nothing else, and `it's` is `it is` or `it has`, so a reader of the sentence settles the second. Both are the same rule and the same severity, and only the first carries a patch.
 
@@ -321,7 +321,7 @@ The probe half of this path is where the third enforcement reads differently, an
 
 **No socket.** No crate of this engine depends on an HTTP client, and the sweep verbs open no connection. A model that nobody can reach means that nobody wrote a return file, and a verb with no file to read says so and stops. So an unreachable model can never fail a build, because no build ever waits for one.
 
-The engine also writes nothing. `sweep report` prints the front matter that would declare a proposed edge, and it has no `--write`. A proposal that an agent applies to itself is the same act as an agent that accepts its own draft. [OBL-repo-0108](../obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md) records that act at the scale of a whole corpus.
+The engine also writes nothing. `sweep report` prints the front matter that would declare a proposed edge, and it has no `--write`. A proposal that an agent applies to itself is the same act as an agent that accepts its own draft. [HW-OBL-0108](../obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md) records that act at the scale of a whole corpus.
 
 ### What a suite over a sampler can hold
 
@@ -329,7 +329,7 @@ A check without a failing fixture does not ship, and a sampler has no such fixtu
 
 The plan is a function of the tree. The report is a function of a return file and the tree. Both are recorded whole and both are asserted to write one set of bytes over two runs. A return file that stands for what a model returns is written by hand, and it carries one refusal per test that the intake runs. A regression in any test then shows up as a finding that reached a reader and should not have.
 
-One test in that suite asserts a silence. The fixture corpus holds the document of [OBL-repo-0113](../obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md), the whole check layer runs over it, and no finding names it. The sweep intake then runs and one finding does. A green run is no evidence that a constraint is enforced, and this pair of assertions is the standing statement of that.
+One test in that suite asserts a silence. The fixture corpus holds the document of [HW-OBL-0113](../obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md), the whole check layer runs over it, and no finding names it. The sweep intake then runs and one finding does. A green run is no evidence that a constraint is enforced, and this pair of assertions is the standing statement of that.
 
 ## The correctness roots
 

@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0032
+id: HW-OBL-0032
 title: "A `remove` that orphans a name is refused, and the message names the wrong line"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-taxonomy-model
+    - HW-SPEC-taxonomy-model
 ---
 
 # A `remove` that orphans a name is refused, and the message names the wrong line

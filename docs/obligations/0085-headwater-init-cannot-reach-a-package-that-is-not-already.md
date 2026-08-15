@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0085
+id: HW-OBL-0085
 title: "`headwater init` cannot reach a package that is not already vendored"
 status: current
 status_since: 2026-08-13
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-distribution-and-federation
+    - HW-SPEC-distribution-and-federation
 ---
 
 # `headwater init` cannot reach a package that is not already vendored

@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0071
+id: HW-OBL-0071
 title: "A corpus-scoped check makes the coverage rule unreachable"
 status: current
 status_since: 2026-08-12
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-check-layer
-    - SPEC-HW-assurance-model
+    - HW-SPEC-check-layer
+    - HW-SPEC-assurance-model
 ---
 
 # A corpus-scoped check makes the coverage rule unreachable

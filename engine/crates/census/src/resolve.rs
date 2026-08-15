@@ -392,7 +392,7 @@ shelves:
     fn placement_carries_the_kind_on_a_homogeneous_shelf() {
         let resolved = resolve(
             "docs/evaluations/naming-survey.md",
-            &facets("id: EVAL-HW-naming\n"),
+            &facets("id: HW-EVAL-naming\n"),
             &taxonomy(TAXONOMY),
         );
         assert_eq!(resolved.kind(), Some("evaluation"));
@@ -418,7 +418,7 @@ shelves:
     fn a_missing_discriminator_stops_at_step_three_and_says_so() {
         let resolved = resolve(
             "docs/spec/12-check-layer.md",
-            &facets("id: SPEC-HW-check-layer\n"),
+            &facets("id: HW-SPEC-check-layer\n"),
             &taxonomy(TAXONOMY),
         );
         assert_eq!(

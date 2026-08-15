@@ -628,7 +628,7 @@ mod tests {
     fn edge(target: Target) -> Edge {
         Edge {
             source: Source {
-                id: "SPEC-HW-ai-integration".to_string(),
+                id: "HW-SPEC-ai-integration".to_string(),
                 path: "docs/spec/05-ai-integration.md".to_string(),
                 kind: "design_spec".to_string(),
                 kind_span: None,
@@ -714,7 +714,7 @@ mod tests {
                 also_tried: Vec::new(),
             }),
             Target::Document {
-                id: "SPEC-HW-check-layer".to_string(),
+                id: "HW-SPEC-check-layer".to_string(),
                 path: "docs/spec/12-check-layer.md".to_string(),
                 kind: "design_spec".to_string(),
             },

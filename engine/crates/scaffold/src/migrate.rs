@@ -419,7 +419,7 @@ mod tests {
         }
     }
 
-    const DOCUMENT: &str = "---\nid: DR-repo-0001\nstatus: draft\ntitle: A document\ntags:\n  - draft\n  - other\n---\n\n# A document\n\nThe word draft appears in the body and nothing here rewrites it.\n";
+    const DOCUMENT: &str = "---\nid: HW-DR-0001\nstatus: draft\ntitle: A document\ntags:\n  - draft\n  - other\n---\n\n# A document\n\nThe word draft appears in the body and nothing here rewrites it.\n";
 
     fn moving(key: &str, from: &str, to: &str) -> Move {
         Move {

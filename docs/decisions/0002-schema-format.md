@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0002
+id: HW-DR-0002
 title: Q2 — Schema format
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - EVAL-HW-schema-format-walkthrough
+    - HW-EVAL-schema-format-walkthrough
 ---
 
 # Q2 — Schema format

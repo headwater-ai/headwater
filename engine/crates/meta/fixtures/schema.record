@@ -1,4 +1,4 @@
-headwater/taxonomy 0.1.0
+headwater/taxonomy 0.2.0
 
 declarations
   taxonomy (required) scalar:string
@@ -95,7 +95,7 @@ declarations
             rationale (required) scalar:string
   identifier_schemes map of members
       pattern (required) scalar:string
-      namespace (required) scalar:string
+      namespace scalar:string
       allocation (required) scalar:string
   core members
     requires (required) seq of one of [members

@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0082
+id: HW-OBL-0082
 title: "The lock is half generated and half authored, and nothing states the rule for the seam"
 status: current
 status_since: 2026-08-13
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0012
+    - HW-DR-0012
 ---
 
 # The lock is half generated and half authored, and nothing states the rule for the seam

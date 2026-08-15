@@ -29,7 +29,7 @@ add:
   # --- facets ---------------------------------------------------------------
   # A generated index over this shelf labels each record with its identifier,
   # because no facet in the base or in the design-spec entry carries a name
-  # (#123). A log of decisions that reads `DR-repo-0007` is not a log anybody
+  # (#123). A log of decisions that reads `HW-DR-0007` is not a log anybody
   # reads, so this entry declares the facet. It reaches this entry's kinds and
   # the base `decision` only, and doctrine.md states why that is not a fix.
   #
@@ -82,7 +82,7 @@ add:
   # the kind. Obligation records need a shelf of their own.
   #
   # `layout` is what names the file. `{seq}` is the sequence of the identifier
-  # the run mints, so the number on the file and the number in `OBL-repo-0106`
+  # the run mints, so the number on the file and the number in `HW-OBL-0106`
   # are one value written twice rather than two values that may disagree. No
   # facet holds it, which is why the layout reads the identifier instead.
   # Without this line the verb names a record after its title alone, and a shelf
@@ -100,9 +100,12 @@ add:
   # draws that line between this remedy and the contract-sidecar one, where a
   # criterion numbers within its requirement instead.
 
+  # No namespace here, for the reason the base package declares none: a bundle
+  # ships to adopters, and any constant it wrote would be minted by all of them
+  # at once. The consumer's overlay declares it and `taxonomy validate` refuses
+  # a resolved scheme without one.
   identifier_schemes.obligation_record_id:
-    pattern: "OBL-{namespace}-{seq:04d}"
-    namespace: repo
+    pattern: "{namespace}-OBL-{seq:04d}"
     allocation: reconcile-first
 
   # --- obligations ----------------------------------------------------------

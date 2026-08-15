@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0075
+id: HW-OBL-0075
 title: "A participation expectation needs depth one, and `Edge` does not reach it"
 status: current
 status_since: 2026-08-13
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-check-layer
+    - HW-SPEC-check-layer
 ---
 
 # A participation expectation needs depth one, and `Edge` does not reach it

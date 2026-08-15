@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0093
+id: HW-OBL-0093
 title: "Whether a harvesting tier owes conformance rules of its own"
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0009
+    - HW-DR-0009
 ---
 
 # Whether a harvesting tier owes conformance rules of its own

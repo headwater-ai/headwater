@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0020
+id: HW-OBL-0020
 title: "Whether a solution corpus vendors each source export or references it"
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0009
+    - HW-DR-0009
 ---
 
 # Whether a solution corpus vendors each source export or references it

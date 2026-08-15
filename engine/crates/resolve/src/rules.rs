@@ -83,9 +83,11 @@ pub const RULES: [(&str, Ran); 23] = [
         Ran::Partly {
             decides: "every scheme carries a namespace, and no two schemes in one namespace \
                       share a literal prefix",
-            waits: "the prefix is a literal inside the `pattern` string, so the engine compares \
-                    the text before the first placeholder and cannot decide two patterns whose \
-                    placeholders overlap. Spec 13 carries the grammar",
+            waits: "the prefix is a literal inside the `pattern` string. The engine expands the \
+                    declared namespace and compares the text up to the first placeholder left, \
+                    so it decides a pattern whose literal segment follows the namespace and \
+                    still cannot decide two whose free placeholders meet. Spec 13 carries the \
+                    grammar",
         },
     ),
     (
@@ -690,20 +692,38 @@ fn identifier_integrity(view: &View, out: &mut Vec<ResolveError>) {
     const RULE: &str = "identifier integrity";
     let mut by_namespace: BTreeMap<&str, Vec<(&str, String)>> = BTreeMap::new();
     for (scheme, body) in view.members("identifier_schemes") {
-        let Some(namespace) = text(body, "namespace") else {
-            out.push(refusal(
-                RULE,
-                &format!("identifier_schemes.{scheme}"),
-                "carries no namespace, and the invariant core requires one on every scheme"
-                    .to_string(),
-            ));
-            continue;
+        // Three states and not two. The meta-schema lets a package omit
+        // `namespace`, so an absent key means the choice is open and an empty
+        // one means a consumer answered it with nothing. Collapsing them into
+        // one `Option` would report a package defect against a consumer.
+        let namespace = match text(body, "namespace") {
+            None => {
+                out.push(refusal(
+                    RULE,
+                    &format!("identifier_schemes.{scheme}"),
+                    "carries no namespace after resolution. A package leaves the namespace to \
+                     the corpus that adopts it, so an overlay of this corpus has to declare one"
+                        .to_string(),
+                ));
+                continue;
+            }
+            Some("") => {
+                out.push(refusal(
+                    RULE,
+                    &format!("identifier_schemes.{scheme}.namespace"),
+                    "is the empty string, which names nobody. The namespace is the part of an \
+                     identifier that tells this corpus's records from another corpus's"
+                        .to_string(),
+                ));
+                continue;
+            }
+            Some(found) => found,
         };
         let pattern = text(body, "pattern").unwrap_or_default();
         by_namespace
             .entry(namespace)
             .or_default()
-            .push((scheme, literal_prefix(pattern)));
+            .push((scheme, literal_prefix(pattern, namespace)));
     }
     for (namespace, schemes) in by_namespace {
         for (index, (scheme, prefix)) in schemes.iter().enumerate() {
@@ -1548,11 +1568,26 @@ fn placeholders(text: &str) -> BTreeSet<String> {
     out
 }
 
-/// The text of a pattern before its first placeholder.
-fn literal_prefix(pattern: &str) -> String {
-    match pattern.find('{') {
-        Some(at) => pattern[..at].to_string(),
-        None => pattern.to_string(),
+/// The text every identifier of a scheme begins with: the pattern up to its
+/// first placeholder, after `{namespace}` is expanded to the declared constant.
+///
+/// The expansion is what lets the comparison above decide a namespace-first
+/// pattern. `{namespace}-DR-{seq:04d}` and `{namespace}-SPEC-{slug}` can never
+/// admit one string, and a scan that stops at the first `{` reads the empty
+/// string from both and refuses the pair. `{namespace}` is a constant of the
+/// scheme and not a free token, so reading it costs no soundness: the result is
+/// still a string that every admitted identifier starts with, and it is a
+/// longer one. A type-first pattern improves for the same reason: a scheme
+/// written `SPEC-{namespace}-{slug}` is compared on its type and its namespace
+/// together, and was compared on the four characters before the placeholder.
+///
+/// Two schemes can still expand to one prefix. That is the refusing direction:
+/// the pair is reported, and it is never admitted.
+fn literal_prefix(pattern: &str, namespace: &str) -> String {
+    let expanded = pattern.replace("{namespace}", namespace);
+    match expanded.find('{') {
+        Some(at) => expanded[..at].to_string(),
+        None => expanded,
     }
 }
 

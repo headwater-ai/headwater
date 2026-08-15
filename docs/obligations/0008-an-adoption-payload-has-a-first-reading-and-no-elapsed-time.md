@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0008
+id: HW-OBL-0008
 title: "An adoption payload has a first reading and no elapsed time"
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0012
+    - HW-DR-0012
 ---
 
 # An adoption payload has a first reading and no elapsed time

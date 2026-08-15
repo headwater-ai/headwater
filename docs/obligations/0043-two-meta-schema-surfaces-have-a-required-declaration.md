@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0043
+id: HW-OBL-0043
 title: "Two meta-schema surfaces have a required declaration and no stated form"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0002
+    - HW-DR-0002
 ---
 
 # Two meta-schema surfaces have a required declaration and no stated form

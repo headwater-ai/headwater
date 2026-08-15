@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0016
+id: HW-DR-0016
 title: Q16 — Public presence
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - EVAL-HW-first-contact
+    - HW-EVAL-first-contact
 ---
 
 # Q16 — Public presence

@@ -1,0 +1,86 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The namespace is required after resolution and not in a source, and the two
+# ways of not having one are two findings.
+#
+# `open_id` omits the key, which is what a published package writes: it cannot
+# declare its own namespace, because every adopter would inherit it, and it
+# cannot write a stand-in such as `repo`, because every adopter would then mint
+# the same identifiers. The choice belongs to the corpus that adopts it, and
+# this case is what happens when no overlay makes it.
+#
+# `answered_with_nothing_id` writes the key as the empty string, which is a
+# consumer answering the question with nobody. Before this pair existed, the
+# rule read one `Option` and only the first state had a message; the second
+# resolved clean, and the identifier check downstream skipped every document
+# under the scheme for a template it could not read. Two states, two arms, two
+# locations.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+vocabularies:
+  lifecycle_state:
+    - {value: draft,      role: initial}
+    - {value: current,    role: live}
+    - {value: superseded, role: terminal-retained}
+
+facets:
+  status:
+    role: state
+    values: $vocabularies.lifecycle_state
+    required: true
+    volatility: mutable
+    guidance:
+      draft: it is being argued over, and nothing may rely on it
+      current: it states what holds now
+      superseded: a later decision replaced it
+  sequence:
+    type: integer
+    required: true
+    volatility: stable
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current], current: [superseded]}
+      retain_terminal: true
+
+identifier_schemes:
+  open_id: {pattern: "{namespace}-DR-{seq:04d}", allocation: reconcile-first}
+  answered_with_nothing_id: {pattern: "{namespace}-OBL-{seq:04d}", namespace: "", allocation: reconcile-first}
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status]}
+  decision:
+    is_a: governed_document
+    purpose: rationale
+    lifecycle: standard
+    identifier: {scheme: open_id}
+    facets: {require: [sequence]}
+
+relations:
+  supersedes:
+    family: succession
+    from: [decision]
+    to: [decision]
+    reciprocal: required
+    on_target: {set_state: superseded}
+    created_by: scaffold
+
+shelves:
+  decisions:
+    path: docs/decisions/**
+    homogeneous: true
+    kind: decision
+    layout: "{sequence:02d}-{slug}.md"
+
+core:
+  requires:
+    - facet_role: state

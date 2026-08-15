@@ -551,7 +551,7 @@
       "path": "check/spec/11-identifier-mismatch.md",
       "line": 2,
       "column": 1,
-      "message": "`SPEC-HW-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `HW-mismatch` is where the namespace `FIX` was expected",
+      "message": "`SPEC-XX-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `XX-mismatch` is where the namespace `FIX` was expected",
       "remediation": "write the identifier of check/spec/11-identifier-mismatch.md in the form `SPEC-FIX-<slug>`",
       "fixable": false,
       "escape": "none"
@@ -812,7 +812,7 @@
     },
     {
       "path": "check/spec/11-identifier-mismatch.md",
-      "digest": "sha256:68f87dae942b5f7ef8b0a2aa47c3635a774c4ea65d0895e1d6895e5617d86a5b"
+      "digest": "sha256:c916abc0cb05ccfcb8c239e8482d6afe7c2ae975efceba2888ec2895d09bc6bd"
     },
     {
       "path": "check/spec/13-dangling.md",

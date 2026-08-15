@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0076
+id: HW-OBL-0076
 title: "A generated check reads its severity from the taxonomy"
 status: current
 status_since: 2026-08-13
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-check-layer
+    - HW-SPEC-check-layer
 ---
 
 # A generated check reads its severity from the taxonomy

@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0049
+id: HW-OBL-0049
 title: "The meta-schema closes eight value sets that nothing states"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0002
+    - HW-DR-0002
 ---
 
 # The meta-schema closes eight value sets that nothing states

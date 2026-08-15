@@ -19,7 +19,7 @@
 //!   store says which is which rather than averaging them.
 //! - `date` is the injected clock, so a reading is reproducible under `--now`.
 //! - `surface` names what called the verb, and it is the term
-//!   [OBL-repo-0004](../../../../docs/obligations/0004-working-tree-write-tools-have-no-measured-effect.md)
+//!   [HW-OBL-0004](../../../../docs/obligations/0004-working-tree-write-tools-have-no-measured-effect.md)
 //!   asks for. [Q7](../../../../docs/spec/09-decisions.md#q7--scope-of-the-mcp-surface)
 //!   claims that a working-tree write tool raises the assisted fraction, and
 //!   that claim is a comparison of two arms. Without this member a reading
@@ -50,12 +50,12 @@
 //! ran at, and the entry point is a fact about the run. Who or what drove that
 //! entry point is not: a person who types a tool call into a client and an
 //! agent that emits one produce the same message on the same wire.
-//! [OBL-repo-0111](../../../../docs/obligations/0111-the-capture-cost-surface-names-an-entry-point-and-never-the-caller.md)
+//! [HW-OBL-0111](../../../../docs/obligations/0111-the-capture-cost-surface-names-an-entry-point-and-never-the-caller.md)
 //! holds what that costs a reader of the two arms. **And the surface cannot
 //! move the four counts either.** They are derived from the plan, and a plan
 //! takes a kind, a title, a date and the relations. What a surface can move is
 //! the count of runs, which is
-//! [OBL-repo-0112](../../../../docs/obligations/0112-a-surface-cannot-move-the-assisted-fraction-of-a-run.md).
+//! [HW-OBL-0112](../../../../docs/obligations/0112-a-surface-cannot-move-the-assisted-fraction-of-a-run.md).
 //!
 //! **No run that refused.** A refusal wrote no document, so there is nothing to
 //! attribute a reading to. A count of refusals would be a measure of the
@@ -361,7 +361,7 @@ pub fn by_kind(readings: &[Reading]) -> Vec<(String, usize, Assisted)> {
 /// `(surface, readings, the four terms summed)`, in the order the surfaces
 /// first appear in the store.
 ///
-/// This is the two arms of [OBL-repo-0004](../../../../docs/obligations/0004-working-tree-write-tools-have-no-measured-effect.md),
+/// This is the two arms of [HW-OBL-0004](../../../../docs/obligations/0004-working-tree-write-tools-have-no-measured-effect.md),
 /// and it is a grouping rather than a comparison. A difference between two rows
 /// here is a difference between two populations that nobody powered, and the
 /// report that prints it says so.
@@ -472,7 +472,7 @@ mod tests {
             surface: Some(Surface::Terminal),
             kind: "obligation_record".to_string(),
             document: "docs/obligations/0109-a-record.md".to_string(),
-            id: Some("OBL-repo-0109".to_string()),
+            id: Some("HW-OBL-0109".to_string()),
             assisted: Assisted {
                 fields: (4, 5),
                 sections: (3, 3),
@@ -488,7 +488,7 @@ mod tests {
             a_reading().render(),
             "{\"lock\":\"sha256:abc\",\"date\":\"2026-08-14\",\"surface\":\"terminal\",\
              \"kind\":\"obligation_record\",\
-             \"document\":\"docs/obligations/0109-a-record.md\",\"id\":\"OBL-repo-0109\",\
+             \"document\":\"docs/obligations/0109-a-record.md\",\"id\":\"HW-OBL-0109\",\
              \"fields\":[4,5],\"sections\":[3,3],\"identifier\":[1,1],\"edge_halves\":[0,0]}"
         );
     }

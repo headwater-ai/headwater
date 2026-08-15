@@ -23,7 +23,7 @@
 //! carries in the closed role registry. Three candidates were argued and two
 //! are refused.
 //!
-//! - **The identifier.** `DR-repo-0009` is minted once and never edited, which
+//! - **The identifier.** `HW-DR-0009` is minted once and never edited, which
 //!   makes it the stable choice and the useless one. An index of identifiers is
 //!   the artifact that the decision-record entry declared `title` to escape.
 //! - **A template on the declaration.** The largest of the three, and the one
@@ -372,7 +372,7 @@ mod tests {
     #[test]
     fn an_identity_block_carries_the_marker_and_the_body_follows_it() {
         let sections = vec![section("d/0001.md", "DR-1", "Q1 — Implementation language")];
-        let block = "---\n\"headwater:generated\": \"shelf_sections. x\"\nid: REG-HW-x\n---\n\n";
+        let block = "---\n\"headwater:generated\": \"shelf_sections. x\"\nid: HW-REG-x\n---\n\n";
         let out = render(
             "decisions",
             "docs/spec/09-open-questions.md",

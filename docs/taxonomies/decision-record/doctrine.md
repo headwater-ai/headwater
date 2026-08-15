@@ -51,7 +51,7 @@ The sections say the same thing in the other direction. `Context, Obligation, Di
 
 ### The title facet, and what it does not reach
 
-`docs/spec/README.md` is generated, and it labels each document with `SPEC-HW-vision-and-scope` where the table it replaced read "Vision and scope". [#123](https://github.com/headwater-ai/headwater/pull/123) measured that and recorded the cause: the taxonomy declares `summary`, which carries the scent role, and it declares no name. A summary is a sentence, and a reader who scans a log wants a name.
+`docs/spec/README.md` is generated, and it labels each document with `HW-SPEC-vision-and-scope` where the table it replaced read "Vision and scope". [#123](https://github.com/headwater-ai/headwater/pull/123) measured that and recorded the cause: the taxonomy declares `summary`, which carries the scent role, and it declares no name. A summary is a sentence, and a reader who scans a log wants a name.
 
 A tradition whose whole point is a readable log has to answer this, so `facets.title` is here. It is `stable` rather than `mutable`, which is the tradition's own claim: an accepted record is amended by succession, so its name changes by rename and never by edit.
 
@@ -127,7 +127,7 @@ Criterion 5 of the [admission criteria](../README.md#admission-criteria) asks ea
 
 **A projection.** The log wants an index by date and by state, and `projections` is a list in the base. The same rule that blocks a lifecycle state blocks this. It also blocks the artifact that made this issue urgent: the redirect map of [#68](https://github.com/headwater-ai/headwater/issues/68) is a projection, and it has to come from an adopter overlay rather than from this entry.
 
-**A second identifier scheme for decisions.** The base declares `decision_id` as `DR-{namespace}-{seq:04d}` and binds it to the kind. A tradition that renumbers is a tradition that breaks citations.
+**A second identifier scheme for decisions.** The base declares `decision_id` as `{namespace}-DR-{seq:04d}` and binds it to the kind. A tradition that renumbers is a tradition that breaks citations.
 
 **A language regime, or a voice regime.** The base declares `declarative` and binds it to `decision`, which is right for this tradition: a record states what was decided, and it does not narrate the argument as it unfolds. An adopter that wants a controlled profile binds one in its own overlay.
 
@@ -161,7 +161,7 @@ The three share a root. Vocabulary that more than one tradition needs cannot liv
 
 This entry is the taxonomy, and the conversion of this repository is separate work. Both have run now, in two passes, and this section records what the entry predicted against what the passes measured.
 
-**[#124](https://github.com/headwater-ai/headwater/issues/124) converted the decisions.** Twenty-one records on `docs/decisions/**`, each of the base `decision` kind, with `DR-repo-NNNN` and the three Nygard sections. **[#126](https://github.com/headwater-ai/headwater/issues/126) converted the obligations.** 101 records on `docs/obligations/**`, each of this entry's `obligation_record` kind, with `OBL-repo-NNNN` and the three sections that this entry requires. The estimate above said sixty for the largest list and the list holds sixty-four, so the count was low by four and the total was low by one.
+**[#124](https://github.com/headwater-ai/headwater/issues/124) converted the decisions.** Twenty-one records on `docs/decisions/**`, each of the base `decision` kind, with `HW-DR-NNNN` and the three Nygard sections. **[#126](https://github.com/headwater-ai/headwater/issues/126) converted the obligations.** 101 records on `docs/obligations/**`, each of this entry's `obligation_record` kind, with `HW-OBL-NNNN` and the three sections that this entry requires. The estimate above said sixty for the largest list and the list holds sixty-four, so the count was low by four and the total was low by one.
 
 **Ready, and it was.** The kinds, the shelves, the identifier schemes, and the sections. Neither pass changed a declaration of this entry. The second pass added one line to the adopter overlay, and it added no member and no kind here.
 

@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0096
+id: HW-OBL-0096
 title: "Whether anything is ever promoted out of the asserted tier"
 status: current
 status_since: 2026-08-10
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0015
+    - HW-DR-0015
 ---
 
 # Whether anything is ever promoted out of the asserted tier

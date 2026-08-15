@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0105
+id: HW-OBL-0105
 title: "Nothing plays the hook role that two relations name as their author"
 status: current
 status_since: 2026-08-13
@@ -14,9 +14,9 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-taxonomy-model
-    - SPEC-HW-ai-integration
-    - EVAL-HW-default-taxonomy-first-run
+    - HW-SPEC-taxonomy-model
+    - HW-SPEC-ai-integration
+    - HW-EVAL-default-taxonomy-first-run
 ---
 
 # Nothing plays the hook role that two relations name as their author
@@ -47,4 +47,4 @@ A verb that proposes these edges from a change, with the fixtures that hold what
 
 Where no such verb is written, the base package owes a `created_by` value that is true, and the walkthrough owes the corrected count. `author` states the cost plainly, and `agent` states that the coherence sweep owns the proposal.
 
-[OBL-repo-0104](0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md) raises what either answer costs. A `governs` edge reaches one path, so an actor that proposes them proposes one for every governed file.
+[HW-OBL-0104](0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md) raises what either answer costs. A `governs` edge reaches one path, so an actor that proposes them proposes one for every governed file.

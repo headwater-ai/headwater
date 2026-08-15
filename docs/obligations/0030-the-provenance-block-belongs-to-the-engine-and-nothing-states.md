@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0030
+id: HW-OBL-0030
 title: "The provenance block belongs to the engine, and nothing states its shape"
 status: current
 status_since: 2026-08-13
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-authoring-and-lifecycle
-    - SPEC-HW-ai-integration
+    - HW-SPEC-authoring-and-lifecycle
+    - HW-SPEC-ai-integration
 ---
 
 # The provenance block belongs to the engine, and nothing states its shape

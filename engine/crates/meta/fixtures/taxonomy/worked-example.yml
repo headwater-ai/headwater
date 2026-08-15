@@ -144,8 +144,7 @@ kinds:
 
 identifier_schemes:
   decision_id:
-    pattern: "DR-{namespace}-{seq:04d}"
-    namespace: repo
+    pattern: "{namespace}-DR-{seq:04d}"
     allocation: reconcile-first
 
 core:
@@ -157,7 +156,7 @@ core:
     - purpose: behavior
     - relation_family: succession
       lifecycle_sensitive: true
-    - identifier_scheme: namespaced
+    - identifier_scheme: decision_id
 
 mappings:
   - to: platform/headwater-taxonomy@2.0.0

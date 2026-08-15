@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0119
+id: HW-OBL-0119
 status: current
 status_since: 2026-08-14
 summary: "Of the six readings `taxonomy audit` takes, one has a number a taxonomy states and five have none, so five report a population and no verdict."
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-engine-architecture
+    - HW-SPEC-engine-architecture
 ---
 
 # An audit reading carries no declared bar, so a distribution cannot become a finding

@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0016
+id: HW-OBL-0016
 title: "A cue has no measured effect on traversal precision"
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0020
+    - HW-DR-0020
 ---
 
 # A cue has no measured effect on traversal precision

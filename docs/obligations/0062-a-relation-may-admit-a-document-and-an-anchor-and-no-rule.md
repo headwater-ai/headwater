@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0062
+id: HW-OBL-0062
 title: "A relation may admit a document and an anchor, and no rule orders the two"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0004
+    - HW-DR-0004
 ---
 
 # A relation may admit a document and an anchor, and no rule orders the two

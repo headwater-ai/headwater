@@ -1,5 +1,5 @@
 ---
-id: "{{DR-repo-0001, minted once and never reissued}}"
+id: "{{HW-DR-0001, minted once and never reissued}}"
 title: "{{the decision, stated as a decision and not as a topic}}"
 status: draft
 status_since: "{{today}}"

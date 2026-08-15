@@ -1,0 +1,93 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Nine schemes in one namespace, every pattern written namespace first, and
+# nothing here collides. `valid/base.yml` declares no identifier scheme at all,
+# so this is the case that reads the identifier-integrity comparison over a
+# realistic set rather than over the empty one.
+#
+# It is the treatment arm of a correctness fix. Before `literal_prefix`
+# expanded `{namespace}`, every pattern below yielded the empty string, every
+# one of the thirty-six pairs was reported, and this file recorded thirty-six
+# refusals instead of `valid`. The pairs that matter are the two shapes that
+# can never admit one string whatever the local part is: `{namespace}-DR-` and
+# `{namespace}-SPEC-` differ in the segment after the namespace, and a rule
+# that reads only as far as the first placeholder cannot see it.
+#
+# `namespace-first-schemes-collide/` is the other arm. If a change ever made
+# this file valid by making the rule admit everything, that case fails.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+vocabularies:
+  lifecycle_state:
+    - {value: draft,      role: initial}
+    - {value: current,    role: live}
+    - {value: superseded, role: terminal-retained}
+
+facets:
+  status:
+    role: state
+    values: $vocabularies.lifecycle_state
+    required: true
+    volatility: mutable
+    guidance:
+      draft: it is being argued over, and nothing may rely on it
+      current: it states what holds now
+      superseded: a later decision replaced it
+  sequence:
+    type: integer
+    required: true
+    volatility: stable
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current], current: [superseded]}
+      retain_terminal: true
+
+identifier_schemes:
+  decision_id:    {pattern: "{namespace}-DR-{seq:04d}",     namespace: HW, allocation: reconcile-first}
+  obligation_id:  {pattern: "{namespace}-OBL-{seq:04d}",    namespace: HW, allocation: reconcile-first}
+  spec_id:        {pattern: "{namespace}-SPEC-{slug}",      namespace: HW, allocation: minted-once}
+  register_id:    {pattern: "{namespace}-REG-{slug}",       namespace: HW, allocation: minted-once}
+  evaluation_id:  {pattern: "{namespace}-EVAL-{slug}",      namespace: HW, allocation: minted-once}
+  review_id:      {pattern: "{namespace}-REV-{slug}",       namespace: HW, allocation: minted-once}
+  probe_id:       {pattern: "{namespace}-PROBE-{slug}",     namespace: HW, allocation: minted-once}
+  run_id:         {pattern: "{namespace}-RUN-{slug}",       namespace: HW, allocation: minted-once}
+  result_id:      {pattern: "{namespace}-RESULT-{slug}",    namespace: HW, allocation: minted-once}
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status]}
+  decision:
+    is_a: governed_document
+    purpose: rationale
+    lifecycle: standard
+    identifier: {scheme: decision_id}
+    facets: {require: [sequence]}
+
+relations:
+  supersedes:
+    family: succession
+    from: [decision]
+    to: [decision]
+    reciprocal: required
+    on_target: {set_state: superseded}
+    created_by: scaffold
+
+shelves:
+  decisions:
+    path: docs/decisions/**
+    homogeneous: true
+    kind: decision
+    layout: "{sequence:02d}-{slug}.md"
+
+core:
+  requires:
+    - facet_role: state

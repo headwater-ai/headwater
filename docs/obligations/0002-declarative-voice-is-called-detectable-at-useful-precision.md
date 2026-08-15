@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0002
+id: HW-OBL-0002
 title: "Declarative voice is called detectable at useful precision, and the sample is unreachable"
 status: current
 status_since: 2026-08-11
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0005
-    - EVAL-HW-what-a-check-can-know
+    - HW-DR-0005
+    - HW-EVAL-what-a-check-can-know
 ---
 
 # Declarative voice is called detectable at useful precision, and the sample is unreachable

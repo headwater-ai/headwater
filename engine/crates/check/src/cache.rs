@@ -86,7 +86,7 @@
 //! text, so deleting the file leaves every component of the key where it was. A
 //! cached run then reports zero unresolved targets over a tree that an uncached
 //! run reports two on, which is
-//! [OBL-repo-0117](../../../../docs/obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md).
+//! [HW-OBL-0117](../../../../docs/obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md).
 //!
 //! So an instance whose subject is a resolved target keys on
 //! [`headwater_graph::Target::resolution`] beside the identity. Two shapes were
@@ -959,7 +959,7 @@ mod tests {
 
     /// Two bindings of one anchor are two keys, and the instance keeps a key.
     ///
-    /// This is the component [OBL-repo-0117] is about. The identity of the
+    /// This is the component [HW-OBL-0117] is about. The identity of the
     /// instance is unchanged across the change that falsifies the verdict — the
     /// target string below is the same on both sides, because a path anchor
     /// normalizes to the text an author wrote and an unbound target falls back
@@ -970,11 +970,11 @@ mod tests {
     /// the two verdicts, and it would leave every anchor edge evaluated on
     /// every run forever. This component divides a key and never withholds one.
     ///
-    /// [OBL-repo-0117]: ../../../../docs/obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md
+    /// [HW-OBL-0117]: ../../../../docs/obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md
     #[test]
     fn two_bindings_of_one_anchor_are_two_keys_and_neither_is_unkeyed() {
         let scope = Scope::edge(false);
-        let target = "SPEC-HW-ai-integration\u{1f}governs\u{1f}.claude/hooks/lib.sh";
+        let target = "HW-SPEC-ai-integration\u{1f}governs\u{1f}.claude/hooks/lib.sh";
         let key = |resolution: Option<&str>| {
             cache().key(
                 "relation.target.unresolved",

@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0004
+id: HW-DR-0004
 title: Deduplicate per destination, so delivery is exactly once
 status: current
 status_since: 2026-03-14
@@ -12,7 +12,7 @@ provenance:
   evidence_basis: unevidenced
 relations:
   supersedes:
-    - DR-repo-0001
+    - HW-DR-0001
 ---
 
 # Deduplicate per destination, so delivery is exactly once

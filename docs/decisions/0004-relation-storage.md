@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0004
+id: HW-DR-0004
 title: Q4 — Relation storage
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - EVAL-HW-relation-storage
+    - HW-EVAL-relation-storage
 ---
 
 # Q4 — Relation storage

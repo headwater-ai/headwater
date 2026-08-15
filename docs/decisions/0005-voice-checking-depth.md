@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0005
+id: HW-DR-0005
 title: Q5 — Voice checking depth
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - EVAL-HW-what-a-check-can-know
+    - HW-EVAL-what-a-check-can-know
 ---
 
 # Q5 — Voice checking depth

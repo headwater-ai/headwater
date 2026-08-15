@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0112
+id: HW-OBL-0112
 title: "A surface cannot move the assisted fraction of a run"
 status: current
 status_since: 2026-08-14
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0007
+    - HW-DR-0007
     - engine/crates/scaffold/src/reading.rs
 ---
 
@@ -22,7 +22,7 @@ relations:
 
 ## Context
 
-[Q7](../spec/09-decisions.md#q7--scope-of-the-mcp-surface) claims that a working-tree write tool raises the assisted fraction. [OBL-repo-0004](0004-working-tree-write-tools-have-no-measured-effect.md) makes that claim a comparison of a baseline arm and a treatment arm. The capture-cost store now names the arm of every reading, and `headwater capture` groups by it.
+[Q7](../spec/09-decisions.md#q7--scope-of-the-mcp-surface) claims that a working-tree write tool raises the assisted fraction. [HW-OBL-0004](0004-working-tree-write-tools-have-no-measured-effect.md) makes that claim a comparison of a baseline arm and a treatment arm. The capture-cost store now names the arm of every reading, and `headwater capture` groups by it.
 
 ## Obligation
 
@@ -34,4 +34,4 @@ So two runs of one kind, with the same relations, write the same four counts wha
 
 Measured on 2026-08-14 over this repository. Two readings of one kind, one from each arm, carry the same four pairs. Front matter is 4 of 5, sections 3 of 3, identifier 1 of 1, and edge halves 0 of 0. Each run is 8 of 9. The two lines of the store differ in `surface`, in `document` and in `id`, and in nothing else.
 
-The comparison that OBL-repo-0004 asks for therefore reads one of two other things. The first is reach, which is a count over runs that happened. The report already states it. The second is the aggregate fraction over a mix of kinds that the two surfaces reached for differently. That second reading is a claim about what an author picks. It needs many runs and a stated population. This corpus holds five readings, three of which name an arm, so neither is available.
+The comparison that HW-OBL-0004 asks for therefore reads one of two other things. The first is reach, which is a count over runs that happened. The report already states it. The second is the aggregate fraction over a mix of kinds that the two surfaces reached for differently. That second reading is a claim about what an author picks. It needs many runs and a stated population. This corpus holds five readings, three of which name an arm, so neither is available.

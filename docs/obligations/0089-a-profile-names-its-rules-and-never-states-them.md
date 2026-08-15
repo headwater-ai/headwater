@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0089
+id: HW-OBL-0089
 title: "A profile names its rules and never states them"
 status: current
 status_since: 2026-08-13
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-taxonomy-model
+    - HW-SPEC-taxonomy-model
 ---
 
 # A profile names its rules and never states them

@@ -20,7 +20,7 @@
 //! # The test that matters most is the one where a check finds nothing
 //!
 //! `corpus/0003-…` is the document
-//! [OBL-repo-0113](../../../../docs/obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md)
+//! [HW-OBL-0113](../../../../docs/obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md)
 //! records: a decision record whose two required sections each read `TODO write
 //! this section.` and whose summary is the scaffolder's own prompt. The test
 //! below runs this whole check layer over the fixture corpus and asserts that
@@ -183,12 +183,12 @@ fn a_report_is_the_same_bytes_twice() {
     );
 }
 
-// --- the OBL-repo-0113 case -------------------------------------------------
+// --- the HW-OBL-0113 case -------------------------------------------------
 
 /// The placeholder document, held twice: once against every check this engine
 /// runs, and once against the sweep.
 ///
-/// The first half is the finding OBL-repo-0113 records, turned into a standing
+/// The first half is the finding HW-OBL-0113 records, turned into a standing
 /// assertion. If a rule ever starts to report a document whose sections are the
 /// scaffolder's prompt, this test fails and the record is discharged. Until
 /// then it says, in a file that runs, that the run names nothing.
@@ -239,7 +239,7 @@ fn no_check_names_the_placeholder_document_and_the_sweep_does() {
     assert!(
         named.is_empty(),
         "a check now names the placeholder document: {named:?}. \
-         OBL-repo-0113 is discharged and this test is what should change"
+         HW-OBL-0113 is discharged and this test is what should change"
     );
 
     let report = report_of(&returned());
@@ -362,7 +362,7 @@ fn a_paraphrase_is_not_a_quotation() {
 // --- what a control cannot say about a sweep --------------------------------
 
 /// The measurement behind
-/// [OBL-repo-0114](../../../../docs/obligations/0114-a-control-that-names-a-sweep-marks-its-obligation-verified-with-nothing-run.md).
+/// [HW-OBL-0114](../../../../docs/obligations/0114-a-control-that-names-a-sweep-marks-its-obligation-verified-with-nothing-run.md).
 ///
 /// `sweep.taxonomy.yml` declares one coherence obligation and one control whose
 /// mechanism is `sweep:undeclared_conflict`. The engine reads two mechanism
@@ -382,12 +382,12 @@ fn a_control_that_names_a_sweep_verifies_its_obligation_with_nothing_run() {
         .expect("the coherence obligation");
     assert!(
         disposed.discharged(),
-        "the register no longer reads an external control as discharging, so OBL-repo-0114 \
+        "the register no longer reads an external control as discharging, so HW-OBL-0114 \
          is discharged and this test is what should change"
     );
     assert!(
         disposed.unimplemented.is_empty(),
         "the engine now reports a `sweep:` mechanism as unimplemented, which is the other \
-         repair OBL-repo-0114 admits"
+         repair HW-OBL-0114 admits"
     );
 }

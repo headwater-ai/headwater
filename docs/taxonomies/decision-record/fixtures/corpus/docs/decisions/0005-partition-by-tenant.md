@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0005
+id: HW-DR-0005
 title: Partition attempt storage by tenant
 status: draft
 status_since: 2026-01-05

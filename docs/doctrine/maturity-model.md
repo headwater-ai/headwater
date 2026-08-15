@@ -32,7 +32,7 @@ The four rungs above ship nothing yet, and each waits on a different thing.
 | L3 Linked | A reading of relation participation and of installed hooks. The second is per-clone configuration, so it waits on the attestation record below |
 | L4 Gated | An attestation record. Branch protection lives in the administration surface of a forge, and no reading of a tree decides it |
 | L5 Publishing | A reading of whether the local overlay is itself a published package |
-| L6 Measured | The measurement layer, which is [OBL-repo-0023](../obligations/0023-no-corpus-has-authored-enough-cues-to-grade.md) and the probe tiers |
+| L6 Measured | The measurement layer, which is [HW-OBL-0023](../obligations/0023-no-corpus-has-authored-enough-cues-to-grade.md) and the probe tiers |
 
 **Three rules ship with no rung at all.** `checks.wired`, `gates.required` and `hooks.installed` each declare an attestation in place of a reading. `headwater conformance` names each one, states what would decide it, and counts it as neither met nor missing. No rung names one of them, because a rung that names a rule nothing can meet is a rung nobody reaches, and a ladder with an unreachable rung is worse than a ladder that stops.
 

@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0029
+id: HW-OBL-0029
 title: "What `headwater query` takes"
 status: current
 status_since: 2026-08-13
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-engine-architecture
-    - SPEC-HW-ai-integration
+    - HW-SPEC-engine-architecture
+    - HW-SPEC-ai-integration
 ---
 
 # What `headwater query` takes

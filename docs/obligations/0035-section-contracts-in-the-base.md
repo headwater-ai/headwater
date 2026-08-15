@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0035
+id: HW-OBL-0035
 title: "Section contracts in the base"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0003
+    - HW-DR-0003
 ---
 
 # Section contracts in the base

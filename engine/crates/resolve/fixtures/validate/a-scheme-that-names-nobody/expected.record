@@ -1,0 +1,2 @@
+the resolved taxonomy `identifier_schemes.open_id`: identifier integrity: carries no namespace after resolution. A package leaves the namespace to the corpus that adopts it, so an overlay of this corpus has to declare one
+the resolved taxonomy `identifier_schemes.answered_with_nothing_id.namespace`: identifier integrity: is the empty string, which names nobody. The namespace is the part of an identifier that tells this corpus's records from another corpus's

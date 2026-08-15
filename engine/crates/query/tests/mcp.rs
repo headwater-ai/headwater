@@ -455,7 +455,7 @@ fn one_request_answers_the_same_bytes_twice() {
 /// This is the answer to what a session looks like after a write, and it is a
 /// code path rather than a sentence in a specification. The server walked the
 /// corpus once, so an answer after a write would be about a tree that is gone —
-/// which OBL-repo-0028 measured at two findings over this repository. The seal
+/// which HW-OBL-0028 measured at two findings over this repository. The seal
 /// follows the bytes: a `fix` that found no patch, and a scaffolder that
 /// refused, leave the tree as the walk described it.
 #[test]

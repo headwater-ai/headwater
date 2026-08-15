@@ -37,7 +37,7 @@
 //!    kind, and [`anchors`] is what binds one. A declaration that supplies no
 //!    resolver therefore writes edges that the next `headwater check` reports as
 //!    resolving to nothing, which is the whole of
-//!    [OBL-repo-0116](../../../../docs/obligations/0116-no-anchor-resolver-reads-a-committed-snapshot-so-every-imported-edge-lands-unresolved.md).
+//!    [HW-OBL-0116](../../../../docs/obligations/0116-no-anchor-resolver-reads-a-committed-snapshot-so-every-imported-edge-lands-unresolved.md).
 //!    Refusing here is what stops that state from being reachable by leaving one
 //!    line out.
 //! 4. **The artifact is not the pinned one.** This is
@@ -65,7 +65,7 @@
 //! **It says nothing about whether the snapshot is what the upstream system
 //! holds, and no fixture here can.** A digest over a snapshot proves that these
 //! bytes are the bytes somebody pinned. It proves nothing about who produced
-//! them ([OBL-repo-0115](../../../../docs/obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md)),
+//! them ([HW-OBL-0115](../../../../docs/obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md)),
 //! and a record that travels inside the artifact it describes can only ever
 //! verify internal consistency. So an imported edge does not inherit the
 //! digest's authority. It inherits the authority of whoever handed a person the
@@ -438,7 +438,7 @@ pub fn plan(
     }
     // The third field of the declaration, and the last thing that is the
     // caller's own word. An import with no resolver writes edges that nothing
-    // can bind, which is the state OBL-repo-0116 recorded, so it is refused
+    // can bind, which is the state HW-OBL-0116 recorded, so it is refused
     // here rather than left to be discovered by the next `headwater check`.
     if declaration
         .resolver

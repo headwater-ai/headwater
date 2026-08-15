@@ -1,5 +1,5 @@
 ---
-id: PROBE-HW-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document
+id: HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document
 status: draft
 status_since: 2026-08-14
 summary: Nothing makes a skill load, so its reach is a measurement, and this is the instrument that takes it.
@@ -17,7 +17,7 @@ relations:
   examines:
     - .claude/skills/headwater-authoring/SKILL.md
   traces_to:
-    - SPEC-HW-ai-integration
+    - HW-SPEC-ai-integration
 ---
 
 # The authoring skill reaches an agent that is about to write a governed document

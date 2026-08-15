@@ -736,14 +736,14 @@ model: a-model
 ## Events
 
 ```yaml
-- probe: PROBE-HW-one
+- probe: HW-PROBE-one
 ```
 ";
 
     #[test]
     fn a_block_is_found_under_its_own_heading_and_nowhere_else() {
         assert_eq!(fenced(DOCUMENT, "Run identity"), Some("model: a-model\n"));
-        assert_eq!(fenced(DOCUMENT, "Events"), Some("- probe: PROBE-HW-one\n"));
+        assert_eq!(fenced(DOCUMENT, "Events"), Some("- probe: HW-PROBE-one\n"));
         assert_eq!(fenced(DOCUMENT, "Cost"), None);
     }
 

@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0015
+id: HW-DR-0015
 title: Q15 — A synthesized content tier
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - EVAL-HW-warrant-and-adjudication
+    - HW-EVAL-warrant-and-adjudication
 ---
 
 # Q15 — A synthesized content tier

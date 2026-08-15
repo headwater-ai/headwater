@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0021
+id: HW-DR-0021
 title: Q21 — Terminological succession, and validity under merge
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - EVAL-HW-what-a-check-can-know
+    - HW-EVAL-what-a-check-can-know
 ---
 
 # Q21 — Terminological succession, and validity under merge

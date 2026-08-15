@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0026
+id: HW-OBL-0026
 title: "The operational shape of a hosted server is unstated"
 status: current
 status_since: 2026-08-11
@@ -14,9 +14,9 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0007
-    - DR-repo-0017
-    - DR-repo-0011
+    - HW-DR-0007
+    - HW-DR-0017
+    - HW-DR-0011
 ---
 
 # The operational shape of a hosted server is unstated

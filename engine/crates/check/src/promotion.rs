@@ -51,7 +51,7 @@
 //! promotion is not a defect and this rule reports it at `info`. The count is
 //! the reading, and the report states it.
 //!
-//! [OBL-repo-0119](../../../../docs/obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md)
+//! [HW-OBL-0119](../../../../docs/obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md)
 //! holds the missing bar. Nothing in a taxonomy says how many promotions in one
 //! change is too many, so a number invented here would be a verdict this engine
 //! derived from nothing a corpus declared.
@@ -136,7 +136,7 @@ impl DocumentCheck for Promoted {
                 ("nothing, for one. Spec 3 makes promotion one human, one document, one diff, and \
                  the reading is the count of this rule over the change rather than any one line \
                  of it. Nothing declares how many promotions in one change is too many, which \
-                 OBL-repo-0119 holds")
+                 HW-OBL-0119 holds")
                     .to_string(),
             // No patch. There is nothing to correct: this rule reports an act
             // rather than a defect, and spec 12's fixability bar is about a

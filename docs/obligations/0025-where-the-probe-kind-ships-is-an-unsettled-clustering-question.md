@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0025
+id: HW-OBL-0025
 title: "Where the probe kind ships is an unsettled clustering question"
 status: current
 status_since: 2026-08-11
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0008
-    - DR-repo-0003
+    - HW-DR-0008
+    - HW-DR-0003
 ---
 
 # Where the probe kind ships is an unsettled clustering question

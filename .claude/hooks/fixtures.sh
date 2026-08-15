@@ -124,10 +124,10 @@ if [ -x "$engine" ]; then
     expect 'an edit to a path nothing governs is silent' \
         write.sh 0 '' \
         '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/src/lib.rs"}}'
-    # OBL-repo-0104. A `governs` edge reaches the path it names and no path
+    # HW-OBL-0104. A `governs` edge reaches the path it names and no path
     # under it, so this fixture records the silence rather than asserting the
     # containment that a reader of spec 5 expects.
-    expect 'a path under a governed directory is silent, which OBL-repo-0104 holds' \
+    expect 'a path under a governed directory is silent, which HW-OBL-0104 holds' \
         write.sh 0 '' \
         '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/nothing-governs-this.sh"}}'
 else
@@ -148,7 +148,7 @@ if [ -x "$engine" ]; then
     trap 'rm -f "$planted"' EXIT INT TERM
     {
         echo '---'
-        echo 'id: OBL-repo-9999'
+        echo 'id: HW-OBL-9999'
         echo 'title: "A fixture that this runner removes"'
         echo 'status: current'
         echo 'status_since: 2026-08-14'

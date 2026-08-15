@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0102
+id: HW-OBL-0102
 title: "Two documents state what voids a verdict, and they do not agree"
 status: current
 status_since: 2026-08-13
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-check-layer
-    - SPEC-HW-assurance-model
+    - HW-SPEC-check-layer
+    - HW-SPEC-assurance-model
 ---
 
 # Two documents state what voids a verdict, and they do not agree
@@ -36,11 +36,11 @@ Three consequences follow from the disagreement, and no document records any of 
 
 The first is a sentence that the published test falsifies. Spec 12 rules that a corpus-scoped instance reads everything, so any concurrent change voids it. Under a comparison over listed inputs, a merge that only adds documents moves no listed hash, and the instance survives.
 
-The second is that the reading of [OBL-repo-0017](0017-publishing-the-read-set-skips-a-re-run-on-two-of-the-eighteen.md) points the gate at the merges it cannot inspect. Two Shape rules generate over every kind, so an edit to any classified document voids almost every instance. The merges that a gate could carry are therefore the ones that add rather than edit. That is the class that a comparison over listed inputs cannot see.
+The second is that the reading of [HW-OBL-0017](0017-publishing-the-read-set-skips-a-re-run-on-two-of-the-eighteen.md) points the gate at the merges it cannot inspect. Two Shape rules generate over every kind, so an edit to any classified document voids almost every instance. The merges that a gate could carry are therefore the ones that add rather than edit. That is the class that a comparison over listed inputs cannot see.
 
 The third is the clock. The void condition of both specifications reads a tree alone. A windowed participation expectation goes stale with no tree change at all, and `readset.rs` says so where no specification does.
 
-The first consequence has a construction, and `identifier.claimed_twice` is the rule that supplies it. One branch adds a document that mints `SPEC-HW-new`. A second branch adds a different document that mints the same identifier. Each branch is valid, because each holds one claimant of it. The merge holds two claimants, so the merge result is invalid. The read set of the corpus-scoped instance lists every document of the branch that produced it. Neither branch lists the document that the other one added. Every listed hash therefore stands, and a comparison over listed inputs reports that both verdicts survive.
+The first consequence has a construction, and `identifier.claimed_twice` is the rule that supplies it. One branch adds a document that mints `HW-SPEC-new`. A second branch adds a different document that mints the same identifier. Each branch is valid, because each holds one claimant of it. The merge holds two claimants, so the merge result is invalid. The read set of the corpus-scoped instance lists every document of the branch that produced it. Neither branch lists the document that the other one added. Every listed hash therefore stands, and a comparison over listed inputs reports that both verdicts survive.
 
 The cache and the gate read one artifact by two procedures, and that is why one of the two is sound. A run rebuilds the read set of every instance from the tree in front of it. A document that the tree gained joins that set and moves the key. A gate holds the set that an earlier run published and compares it against a later tree. A document that the tree gained is on no list. That a cache cannot serve a stale verdict is therefore no evidence about what a gate can decide.
 
@@ -48,7 +48,7 @@ The cache and the gate read one artifact by two procedures, and that is why one 
 
 **This record is discharged.** [Spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) carries one statement of what a gate reads. A gate reads the published read set and the tree in front of it, and nothing else. `headwater gate --read-set <path>` is that statement as a verb, and the statement decides the three things above.
 
-**The test is a comparison over listed inputs.** A gate hashes the file at each listed path and holds it against the hash the run recorded. [OBL-repo-0028](0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md) holds the other reading, and this ruling settles the dependency rather than waits on it. A comparison over listed inputs needs no tree, so a run that computes none blocks nothing here. That record stands on [spec 6](../spec/06-engine-architecture.md#ci-adapters), which asks a run for a tree for reasons of its own.
+**The test is a comparison over listed inputs.** A gate hashes the file at each listed path and holds it against the hash the run recorded. [HW-OBL-0028](0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md) holds the other reading, and this ruling settles the dependency rather than waits on it. A comparison over listed inputs needs no tree, so a run that computes none blocks nothing here. That record stands on [spec 6](../spec/06-engine-architecture.md#ci-adapters), which asks a run for a tree for reasons of its own.
 
 **The clock voids a verdict.** The artifact names each rule that read the injected clock on a `windowed` line. A gate asked about another day voids those rules, and no tree change is needed for that.
 

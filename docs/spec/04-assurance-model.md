@@ -1,5 +1,5 @@
 ---
-id: SPEC-HW-assurance-model
+id: HW-SPEC-assurance-model
 status: current
 status_since: 2026-08-01
 last_verified: 2026-08-11
@@ -15,13 +15,13 @@ provenance:
   evidence_basis: evidenced
 relations:
   cites_evidence:
-    - EVAL-HW-first-contact
-    - EVAL-HW-relation-storage
-    - EVAL-HW-shacl-worked-example
-    - EVAL-HW-the-measurement-layer
-    - EVAL-HW-the-serving-boundary
-    - EVAL-HW-warrant-and-adjudication
-    - EVAL-HW-what-a-check-can-know
+    - HW-EVAL-first-contact
+    - HW-EVAL-relation-storage
+    - HW-EVAL-shacl-worked-example
+    - HW-EVAL-the-measurement-layer
+    - HW-EVAL-the-serving-boundary
+    - HW-EVAL-warrant-and-adjudication
+    - HW-EVAL-what-a-check-can-know
 ---
 
 # 4 — Assurance model
@@ -270,7 +270,7 @@ To name a coherence class is easy. To discharge it is the hard part, and structu
 - documents whose declared audience cannot actually use them
 - a heading that a kind requires, over prose that says nothing about it
 
-The fifth entry arrived from a measurement. [OBL-repo-0113](../obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md) records a decision record whose two required sections each held the scaffolder's own prompt. Every check passed it and the strict run exited zero. The remedy is a rewrite, so no rule can ever block on it. A sweep is the only surface that reads what is under a heading. The class is `unwritten_section`.
+The fifth entry arrived from a measurement. [HW-OBL-0113](../obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md) records a decision record whose two required sections each held the scaffolder's own prompt. Every check passed it and the strict run exited zero. The remedy is a rewrite, so no rule can ever block on it. A sweep is the only surface that reads what is under a heading. The class is `unwritten_section`.
 
 Four constraints keep this inside the rules that the rest of the system obeys:
 
@@ -301,7 +301,7 @@ The verification is reproducible and the sample is not. A sweep is therefore a r
 
 Every obligation of the base package carries `class: cohesion`. The class that this section exists to serve has no member, so the sweep that discharges it discharges nothing yet.
 
-A control could bind one. It would name the mechanism `sweep:<class>` beside the `check:` and `phase:` prefixes that the engine reads. [OBL-repo-0114](../obligations/0114-a-control-that-names-a-sweep-marks-its-obligation-verified-with-nothing-run.md) measures what that costs today. A prefix that the engine does not read is external, and an external control counts toward discharge. The obligation then reports `verified` from the declaration alone. A sweep is opt-in and network-bound, so no run of the checks can observe that one happened.
+A control could bind one. It would name the mechanism `sweep:<class>` beside the `check:` and `phase:` prefixes that the engine reads. [HW-OBL-0114](../obligations/0114-a-control-that-names-a-sweep-marks-its-obligation-verified-with-nothing-run.md) measures what that costs today. A prefix that the engine does not read is external, and an external control counts toward discharge. The obligation then reports `verified` from the declaration alone. A sweep is opt-in and network-bound, so no run of the checks can observe that one happened.
 
 So a sweep finding carries no obligation, and the report says `None` rather than an identifier that no register would recognize. That is the same answer the check layer gives for a rule that no control names. A derived state has to be derived from what runs.
 
@@ -389,8 +389,8 @@ Every finding, from every mechanism, has one shape:
   "obligation": "OB-014",
   "path": "docs/decisions/dr-0042.md",
   "line": 7,
-  "message": "DR-ACME-0042 declares supersedes: DR-ACME-0031, which does not link back",
-  "remediation": "add 'superseded_by: DR-ACME-0042' to docs/decisions/dr-0031.md",
+  "message": "ACME-DR-0042 declares supersedes: ACME-DR-0031, which does not link back",
+  "remediation": "add 'superseded_by: ACME-DR-0042' to docs/decisions/dr-0031.md",
   "fixable": true
 }
 ```

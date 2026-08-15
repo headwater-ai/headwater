@@ -1,5 +1,5 @@
 ---
-id: EVAL-HW-shacl-worked-example
+id: HW-EVAL-shacl-worked-example
 status: current
 status_since: 2026-08-02
 last_verified: 2026-08-11
@@ -13,11 +13,11 @@ provenance:
   evidence_basis: evidenced
 relations:
   cited_by:
-    - REG-HW-decisions
-    - SPEC-HW-assurance-model
-    - SPEC-HW-engine-architecture
-    - SPEC-HW-adjacent-work
-    - SPEC-HW-check-layer
+    - HW-REG-decisions
+    - HW-SPEC-assurance-model
+    - HW-SPEC-engine-architecture
+    - HW-SPEC-adjacent-work
+    - HW-SPEC-check-layer
 ---
 
 # The Headwater checks in SHACL — a worked example
@@ -39,7 +39,7 @@ SHACL validates RDF, so the corpus graph needs a triple projection. This is mech
 
 <file:///docs/decisions/dr-0042.md>
     a              dg:Decision ;
-    dg:id          "DR-ACME-0042" ;
+    dg:id          "ACME-DR-0042" ;
     dg:status      dg:current ;
     dg:lastVerified "2026-07-15"^^xsd:date ;
     dg:summary     "Overlay-based customization keeps consumers on upstream fixes" ;

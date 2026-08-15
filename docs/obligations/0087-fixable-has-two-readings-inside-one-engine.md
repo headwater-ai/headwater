@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0087
+id: HW-OBL-0087
 title: "`fixable` has two readings inside one engine"
 status: current
 status_since: 2026-08-13
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-check-layer
-    - SPEC-HW-taxonomy-model
+    - HW-SPEC-check-layer
+    - HW-SPEC-taxonomy-model
 ---
 
 # `fixable` has two readings inside one engine
@@ -38,4 +38,4 @@ Both readings are defensible and they are not the same reading. One says what is
 
 **The bar reads per finding rather than per rule, and the two rules of this record show it.** `language.controlled.not_met` reports a contraction with a patch where the expansion is one word. It reports one without a patch where a reader of the sentence chooses between `it is` and `it has`. `language.retired_term.used` keeps the reading that [spec 2](../spec/02-taxonomy-model.md#the-language-regime-carries-the-terms-that-the-corpus-retired) gives it, and the declared replacement becomes the patch as well as the remediation prose.
 
-**Two questions about the same flag stay open, and each has a record.** [OBL-repo-0088](0088-correcting-an-identifier-is-mechanical-and-it-is-not-local.md) asks whether a patch may span documents. [OBL-repo-0103](0103-the-front-matter-half-of-a-patch-has-no-writer.md) asks what a read-back over front matter compares.
+**Two questions about the same flag stay open, and each has a record.** [HW-OBL-0088](0088-correcting-an-identifier-is-mechanical-and-it-is-not-local.md) asks whether a patch may span documents. [HW-OBL-0103](0103-the-front-matter-half-of-a-patch-has-no-writer.md) asks what a read-back over front matter compares.

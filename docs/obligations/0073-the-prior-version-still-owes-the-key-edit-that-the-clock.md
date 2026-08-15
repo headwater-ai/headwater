@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0073
+id: HW-OBL-0073
 title: "The prior version still owes the key edit that the clock has now made"
 status: current
 status_since: 2026-08-13
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-check-layer
+    - HW-SPEC-check-layer
 ---
 
 # The prior version still owes the key edit that the clock has now made

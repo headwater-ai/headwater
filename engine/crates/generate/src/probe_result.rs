@@ -38,11 +38,11 @@
 //! for a placeholder in an output path, and this is the second one. It is the
 //! transcript's file stem rather than its identifier, because the same
 //! substitution has to serve the output path and the declared identifier, and a
-//! file called `RUN-HW-first.md` reads as a shout where `first-regression.md`
+//! file called `HW-RUN-first.md` reads as a shout where `first-regression.md`
 //! reads as a name. So a transcript at `docs/probe-runs/first-regression.md`
 //! under `output: docs/probe-results/{run}.md` writes
 //! `docs/probe-results/first-regression.md`, and an `identity` of
-//! `RESULT-HW-{run}` mints `RESULT-HW-first-regression`.
+//! `HW-RESULT-{run}` mints `HW-RESULT-first-regression`.
 //!
 //! A rename of the transcript therefore renames the result and moves its
 //! identifier. That is the cost of deriving a name from a path, and it is the

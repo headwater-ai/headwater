@@ -684,7 +684,7 @@ fn this_repository_generates_its_four_artifacts_and_accounts_for_the_rest() {
 ///    would drop all 136 in silence.
 /// 2. **The file declares the identity three other documents name.** A generated
 ///    file with no front matter is no node, and the three edges into
-///    `REG-HW-open-questions` would resolve to nothing.
+///    `HW-REG-open-questions` would resolve to nothing.
 /// 3. **The reciprocal half of each of those edges is in the block**, derived
 ///    and never declared. Two documents supersede this one, `supersedes` says
 ///    `reciprocal: required`, and a file that omitted the halves would report
@@ -741,11 +741,11 @@ fn the_redirect_map_keeps_every_anchor_that_this_corpus_cites_into_it() {
         "a document that declares an identity opens with the fence"
     );
     for member in [
-        "id: REG-HW-open-questions",
+        "id: HW-REG-open-questions",
         "doc_type: decision_register",
         "  superseded_by:",
-        "    - REG-HW-decisions",
-        "    - REG-HW-open-obligations",
+        "    - HW-REG-decisions",
+        "    - HW-REG-open-obligations",
     ] {
         assert!(
             map.contains(member),

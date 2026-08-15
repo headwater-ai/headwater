@@ -31,7 +31,7 @@ Report only these five classes:
 - **quiet_supersession** — a newer document has overtaken an older claim, and the older one still reads as live.
 - **undefined_concept** — a term is used across the slice and defined in none of it.
 - **audience_mismatch** — the audience the document declares could not act on what it says.
-- **unwritten_section** — a heading the kind requires, over prose that says nothing about it. [OBL-repo-0113](../../../docs/obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md) is why this class exists: a decision record whose sections each read the scaffolder's own prompt passed every check.
+- **unwritten_section** — a heading the kind requires, over prose that says nothing about it. [HW-OBL-0113](../../../docs/obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md) is why this class exists: a decision record whose sections each read the scaffolder's own prompt passed every check.
 
 **Readability is not one of them, and no sixth class is coming.** [Q24](../../../docs/decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md) rules that every class above names two things that do not fit, and that a finding about prose being hard to read names one. With no second term the quotation is the finding rather than evidence for it, so the intake would confirm what `grep` confirms. That work is a hand pass with the `ste-editor` skill.
 
@@ -55,7 +55,7 @@ The report tells you what was carried and what was refused, and it names the tes
 
 Spec 4: the best outcome of a sweep is not a finding but a declared `conflicts_with`. After the edge is declared the engine owns the problem permanently and no sweep needs to find it again. So propose one whenever the class implies one, in the `proposal` block of a finding.
 
-Propose it and stop there. `headwater sweep report` prints the front matter that would declare the edge and it writes nothing, and there is no flag that makes it write. Do not apply the proposal yourself either. [OBL-repo-0108](../../../docs/obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md) records what happens when an agent accepts its own work at the scale of a corpus, and a proposal you apply to yourself is that same act.
+Propose it and stop there. `headwater sweep report` prints the front matter that would declare the edge and it writes nothing, and there is no flag that makes it write. Do not apply the proposal yourself either. [HW-OBL-0108](../../../docs/obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md) records what happens when an agent accepts its own work at the scale of a corpus, and a proposal you apply to yourself is that same act.
 
 ## What the engine confirms, and what stays yours
 

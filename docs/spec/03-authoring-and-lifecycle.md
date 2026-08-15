@@ -1,5 +1,5 @@
 ---
-id: SPEC-HW-authoring-and-lifecycle
+id: HW-SPEC-authoring-and-lifecycle
 status: current
 status_since: 2026-08-01
 last_verified: 2026-08-11
@@ -15,9 +15,9 @@ provenance:
   evidence_basis: evidenced
 relations:
   cites_evidence:
-    - EVAL-HW-the-measurement-layer
-    - EVAL-HW-warrant-and-adjudication
-    - EVAL-HW-what-a-check-can-know
+    - HW-EVAL-the-measurement-layer
+    - HW-EVAL-warrant-and-adjudication
+    - HW-EVAL-what-a-check-can-know
 ---
 
 # 3 — Authoring and lifecycle
@@ -117,7 +117,7 @@ resolves the kind, allocates an identifier, seeds front matter, and emits requir
 
 **A shelf layout reads three sources, and a placeholder it cannot fill is a refusal.** `{slug}` takes the slug of the title. A placeholder that names a facet takes the value that the run wrote into that field. `{seq}` takes the sequence that the identifier of the run carries. A numbered shelf therefore names a file from the number it already holds, rather than from a second copy of that number in a facet. A namespace is a constant of its scheme, so no layout names one. Such a placeholder is the same characters in every file name on the shelf. A placeholder that none of the three fills is a refusal, because a name with a hole in it names nothing.
 
-**No rule reads a layout, and the reason is measured rather than deferred.** A layout renders a name from a title, and a title is an argument to one run. So a check has to re-derive the slug from a facet, and `design_spec` requires no facet in the `name` role at all. `taxonomy audit` takes that measurement over every shelf that declares a layout, and it holds apart the shelf that no declaration lets it measure. [OBL-repo-0106](../obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md) states what a rule of this shape would need. A layout is therefore a convention at birth that the scaffolder obeys, and a rename after that birth is a fact that no declaration states.
+**No rule reads a layout, and the reason is measured rather than deferred.** A layout renders a name from a title, and a title is an argument to one run. So a check has to re-derive the slug from a facet, and `design_spec` requires no facet in the `name` role at all. `taxonomy audit` takes that measurement over every shelf that declares a layout, and it holds apart the shelf that no declaration lets it measure. [HW-OBL-0106](../obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md) states what a rule of this shape would need. A layout is therefore a convention at birth that the scaffolder obeys, and a rename after that birth is a fact that no declaration states.
 
 **A required facet that nothing determines and no prompt fits is a refusal.** A closed value set admits no prompt, and neither does an integer or a date. A value the engine picked there would be a state that nobody chose. That is the fabricated fact that [spec 12](12-check-layer.md#the-correctness-roots) holds a scaffolder to account for. So the run writes nothing and names the facet and the kind.
 
@@ -129,11 +129,11 @@ resolves the kind, allocates an identifier, seeds front matter, and emits requir
 
 Some artifacts need stable names that survive a move, a rename, or a read out of context. These artifacts are decisions, requirements, acceptance criteria, controls, and obligations.
 
-The taxonomy declares the pattern, the namespace, and the allocation policy of each identifier scheme. Three properties matter:
+The resolved taxonomy declares the pattern, the namespace, and the allocation policy of each identifier scheme. The namespace is the one of the three that no published package declares. A package that named one would give it to every corpus that adopts it, so the corpus declares its own in an overlay ([Q25](09-decisions.md#q25--where-the-namespace-goes-in-an-identifier-and-who-declares-it)). Three properties matter:
 
-1. **Globally unique.** An identifier is namespaced at minting — by repository or organization. Thus, when a corpus is vendored into another repository, identifiers from two sources cannot collide. To retrofit a namespace later is expensive. The default is to always have one.
+1. **Globally unique.** An identifier is namespaced at minting — by repository or organization. The namespace goes first, so `^ACME-` matches everything one corpus owns and a lexical sort groups foreign identifiers by their owner. Thus, when a corpus is vendored into another repository, identifiers from two sources cannot collide. To retrofit a namespace later is expensive. The default is to always have one.
 
-2. **Resolvable without its document.** Given `DR-ACME-0042` and nothing else, the engine resolves it to a path. The graph contains an identifier index, so identifiers work in commit messages, code comments, tickets, and agent prompts.
+2. **Resolvable without its document.** Given `ACME-DR-0042` and nothing else, the engine resolves it to a path. The graph contains an identifier index, so identifiers work in commit messages, code comments, tickets, and agent prompts.
 
 3. **Never reused.** Allocation is reconcile-first. The allocator scans the corpus (terminal-state documents included) for the highest allocated value before it mints a new one. A deleted document does not free its number.
 
@@ -207,7 +207,7 @@ The failure mode is bulk. A script that stamps forty documents writes bytes that
 
 **Nothing in this repository writes a manifest, so the count has only ever been taken by hand.** No hook, no job of the integration and no skill constructs one from a change. The path from a version control system to a manifest is the wrapper that a repository writes once, and this repository has not written it. So the instrument runs and the reading is untaken, which is a different state from a reading that runs and returns zero. A run holds every path of a manifest against the corpus it walks, and it names each one that reaches no row. A wrapper that writes a path in the wrong form would otherwise report zero promotions over every change, and report success.
 
-**It cannot live in `taxonomy audit`, and an earlier draft of this section said it would.** That verb reads one working tree, and spec 12 makes the prior version available only in change-scoped evaluation. So the mis-assignment was the verb rather than the shape of the reading. What `taxonomy audit` reports instead is the population standing at `asserted`, which is the denominator a promotion rate divides by. That figure is a stock rather than a flow. A bulk stamp lowers it and forty separate acceptances lower it by the same amount. So it answers whether anything is ever promoted, and it does not answer whether one change was a review. [OBL-repo-0119](../obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md) holds the missing bar, with the other readings that carry none.
+**It cannot live in `taxonomy audit`, and an earlier draft of this section said it would.** That verb reads one working tree, and spec 12 makes the prior version available only in change-scoped evaluation. So the mis-assignment was the verb rather than the shape of the reading. What `taxonomy audit` reports instead is the population standing at `asserted`, which is the denominator a promotion rate divides by. That figure is a stock rather than a flow. A bulk stamp lowers it and forty separate acceptances lower it by the same amount. So it answers whether anything is ever promoted, and it does not answer whether one change was a review. [HW-OBL-0119](../obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md) holds the missing bar, with the other readings that carry none.
 
 Promotion never rewrites history. `drafted_by` and `agency` stay as they were, so the corpus can still say which parts an agent drafted.
 
@@ -232,7 +232,7 @@ The metric is reported in the adaptive layer of the [assurance model](04-assuran
 
 The store is `.headwater/capture-cost.jsonl`. A run of `headwater new` that writes a document appends one line to it, and no line is ever rewritten. A run whose document landed and whose reading did not exits non-zero. A silent hole in the denominator is the one state that no later reading can report.
 
-**What a reading holds.** The four terms above, the kind, the path the run wrote, and the identifier it minted. Beside them go the date of the injected clock and the digest of the taxonomy the run resolved. The digest is there because the denominator is a count of declarations. A required facet that the scaffolder can fill raises the fraction with no change in what a person types. So two readings taken under two digests are two measurements, and `headwater capture` states how many digests the readings span rather than averaging them. [OBL-repo-0109](../obligations/0109-the-capture-cost-denominator-is-set-by-declaration-and-not-by-work.md) holds the measurement of what that denominator does and does not count.
+**What a reading holds.** The four terms above, the kind, the path the run wrote, and the identifier it minted. Beside them go the date of the injected clock and the digest of the taxonomy the run resolved. The digest is there because the denominator is a count of declarations. A required facet that the scaffolder can fill raises the fraction with no change in what a person types. So two readings taken under two digests are two measurements, and `headwater capture` states how many digests the readings span rather than averaging them. [HW-OBL-0109](../obligations/0109-the-capture-cost-denominator-is-set-by-declaration-and-not-by-work.md) holds the measurement of what that denominator does and does not count.
 
 **What a reading refuses to hold, and the reason for each.** Telemetry about capture cost is a measurement of people and of agents, so what is left out is a ruling rather than an omission.
 
@@ -250,7 +250,7 @@ The store is `.headwater/capture-cost.jsonl`. A run of `headwater new` that writ
 
 **The reach figure carries the age of the store with it.** Every document that a corpus wrote before the store existed carries no reading and never could. So the report states the date of the first reading beside the fraction, and a reader holds the two together. A number that started at zero on the day the store shipped is not a finding about how those documents were written.
 
-[OBL-repo-0001](../obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) carries what the store still does not settle.
+[HW-OBL-0001](../obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) carries what the store still does not settle.
 
 ## Authoring surfaces
 
@@ -263,4 +263,4 @@ The store is `.headwater/capture-cost.jsonl`. A run of `headwater new` that writ
 
 All four converge on the same schema. There is no path into the corpus that skips it.
 
-**Two of the three corrections in that row have a writer, and one does not.** A missing reciprocal link and a substitution inside prose each carry a patch. [Spec 12](12-check-layer.md#what-a-patch-may-say) states the two shapes a patch takes. A projection is regenerated by `headwater generate` rather than by a patch, which is one verb for one artifact. A correction inside front matter needs a read-back over a mapping, and the engine has none. So every rule whose remedy is a facet reports remediation prose, and [OBL-repo-0103](../obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md) holds the remainder.
+**Two of the three corrections in that row have a writer, and one does not.** A missing reciprocal link and a substitution inside prose each carry a patch. [Spec 12](12-check-layer.md#what-a-patch-may-say) states the two shapes a patch takes. A projection is regenerated by `headwater generate` rather than by a patch, which is one verb for one artifact. A correction inside front matter needs a read-back over a mapping, and the engine has none. So every rule whose remedy is a facet reports remediation prose, and [HW-OBL-0103](../obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md) holds the remainder.

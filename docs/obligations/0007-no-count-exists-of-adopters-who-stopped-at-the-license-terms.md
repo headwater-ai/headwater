@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0007
+id: HW-OBL-0007
 title: "No count exists of adopters who stopped at the license terms"
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0011
+    - HW-DR-0011
 ---
 
 # No count exists of adopters who stopped at the license terms

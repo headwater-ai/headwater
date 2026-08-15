@@ -559,7 +559,7 @@
             "analysisTarget"
           ],
           "hashes": {
-            "sha-256": "68f87dae942b5f7ef8b0a2aa47c3635a774c4ea65d0895e1d6895e5617d86a5b"
+            "sha-256": "c916abc0cb05ccfcb8c239e8482d6afe7c2ae975efceba2888ec2895d09bc6bd"
           }
         },
         {
@@ -1602,8 +1602,8 @@
           "level": "error",
           "kind": "fail",
           "message": {
-            "text": "`SPEC-HW-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `HW-mismatch` is where the namespace `FIX` was expected",
-            "markdown": "`SPEC-HW-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `HW-mismatch` is where the namespace `FIX` was expected\n\n**Fix:** write the identifier of check/spec/11-identifier-mismatch.md in the form `SPEC-FIX-<slug>`"
+            "text": "`SPEC-XX-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `XX-mismatch` is where the namespace `FIX` was expected",
+            "markdown": "`SPEC-XX-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `XX-mismatch` is where the namespace `FIX` was expected\n\n**Fix:** write the identifier of check/spec/11-identifier-mismatch.md in the form `SPEC-FIX-<slug>`"
           },
           "locations": [
             {

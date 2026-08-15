@@ -1,5 +1,5 @@
 ---
-id: SPEC-HW-conceptual-model
+id: HW-SPEC-conceptual-model
 status: current
 status_since: 2026-08-01
 last_verified: 2026-08-11
@@ -15,10 +15,10 @@ provenance:
   evidence_basis: evidenced
 relations:
   cites_evidence:
-    - EVAL-HW-graph-export-and-federation
-    - EVAL-HW-relation-storage
-    - EVAL-HW-the-serving-boundary
-    - EVAL-HW-warrant-and-adjudication
+    - HW-EVAL-graph-export-and-federation
+    - HW-EVAL-relation-storage
+    - HW-EVAL-the-serving-boundary
+    - HW-EVAL-warrant-and-adjudication
 ---
 
 # 1 — Conceptual model
@@ -114,8 +114,8 @@ An entry is a target reference, or a mapping with `to:` and instance attributes.
 
 ```yaml
 relations:
-  supersedes: DR-ACME-0031
-  conflicts_with: DR-ACME-0044
+  supersedes: ACME-DR-0031
+  conflicts_with: ACME-DR-0044
   cites:
     - STD-ACME-0007
     - to: STD-ACME-0012

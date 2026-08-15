@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0003
+id: HW-OBL-0003
 title: "The rebuild-and-cache design is measured at spike scale alone"
 status: current
 status_since: 2026-08-10
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0006
+    - HW-DR-0006
 ---
 
 # The rebuild-and-cache design is measured at spike scale alone

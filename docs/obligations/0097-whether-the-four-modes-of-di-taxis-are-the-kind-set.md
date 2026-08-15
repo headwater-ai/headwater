@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0097
+id: HW-OBL-0097
 title: "Whether the four modes of Diátaxis are the kind set for a documentation-site bundle"
 status: current
 status_since: 2026-08-11
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0016
-    - DR-repo-0003
+    - HW-DR-0016
+    - HW-DR-0003
 ---
 
 # Whether the four modes of Diátaxis are the kind set for a documentation-site bundle

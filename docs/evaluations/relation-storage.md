@@ -1,5 +1,5 @@
 ---
-id: EVAL-HW-relation-storage
+id: HW-EVAL-relation-storage
 status: current
 status_since: 2026-08-10
 last_verified: 2026-08-10
@@ -13,11 +13,11 @@ provenance:
   evidence_basis: evidenced
 relations:
   cited_by:
-    - REG-HW-decisions
-    - SPEC-HW-conceptual-model
-    - SPEC-HW-taxonomy-model
-    - SPEC-HW-assurance-model
-    - SPEC-HW-check-layer
+    - HW-REG-decisions
+    - HW-SPEC-conceptual-model
+    - HW-SPEC-taxonomy-model
+    - HW-SPEC-assurance-model
+    - HW-SPEC-check-layer
 ---
 
 # Relation storage — the Q4 evaluation
@@ -104,10 +104,10 @@ Q18 and Q20 both need per-instance data, so a relation entry needs a long form. 
 
 ```yaml
 relations:
-  supersedes: DR-ACME-0031
+  supersedes: ACME-DR-0031
   cites: [STD-ACME-0007, STD-ACME-0012]
   conflicts_with:
-    - to: DR-ACME-0044
+    - to: ACME-DR-0044
       adjudicated_by: J. Baxter
       adjudicated_on: 2026-07-14
 ```

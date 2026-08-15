@@ -140,7 +140,7 @@ snapshot:
 ///
 /// The snapshot's own record is written the way a fetch script leaves one: the
 /// digest is computed over the directory, and the caller is then handed it. That
-/// is the position [OBL-repo-0115](../../../../docs/obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md)
+/// is the position [HW-OBL-0115](../../../../docs/obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md)
 /// describes, and the pin in `.headwater/taxonomy.yml` is what refuses a whole
 /// re-publication of it.
 fn tree(scratch: &Scratch, payload: &str) -> String {
@@ -351,7 +351,7 @@ fn a_digest_with_no_channel_beside_it_is_refused() {
 /// An import writes an edge onto an anchor kind, and only a resolver binds one.
 /// A declaration with no resolver therefore writes edges that the next
 /// `headwater check` reports as resolving to nothing, which is the whole of
-/// [OBL-repo-0116](../../../../docs/obligations/0116-no-anchor-resolver-reads-a-committed-snapshot-so-every-imported-edge-lands-unresolved.md).
+/// [HW-OBL-0116](../../../../docs/obligations/0116-no-anchor-resolver-reads-a-committed-snapshot-so-every-imported-edge-lands-unresolved.md).
 /// This refusal is what stops that state from being reachable by omission.
 #[test]
 fn a_declaration_that_names_no_resolver_is_refused() {

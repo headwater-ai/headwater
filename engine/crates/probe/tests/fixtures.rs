@@ -612,7 +612,7 @@ fn a_refused_transcript_produces_no_verdict_at_all() {
 /// plan` stops the run before one is recorded. The grader holds them anyway: a
 /// caller that assembled a selection by hand is a caller the plan never saw,
 /// and a component that trusted its caller for the `patched` sentinel would
-/// pass the one case [OBL-repo-0123] says must be refused.
+/// pass the one case [HW-OBL-0123] says must be refused.
 #[test]
 fn the_grader_refuses_a_selection_the_plan_would_not_have_produced() {
     let one = |expectation: Expectation, oracle: Option<&str>, answers: Vec<String>| Selected {

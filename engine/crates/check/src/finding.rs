@@ -45,7 +45,7 @@
 //!
 //! [`crate::Patch`] is the thing itself, and [`Finding::fixable`] reads it. A
 //! second field beside it could disagree with it, and
-//! [OBL-repo-0087](../../../../docs/obligations/0087-fixable-has-two-readings-inside-one-engine.md)
+//! [HW-OBL-0087](../../../../docs/obligations/0087-fixable-has-two-readings-inside-one-engine.md)
 //! is the record of that disagreement already standing between two rules. The
 //! reading this engine now carries is "the engine will fix it". The other
 //! reading — that the defect has a mechanical remedy — is what the severity

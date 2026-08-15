@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0109
+id: HW-OBL-0109
 title: "The capture-cost denominator is set by declaration and not by work"
 status: current
 status_since: 2026-08-14
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-authoring-and-lifecycle
+    - HW-SPEC-authoring-and-lifecycle
 ---
 
 # The capture-cost denominator is set by declaration and not by work
@@ -23,7 +23,7 @@ relations:
 
 [Spec 3](../spec/03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) names four terms of the assisted fraction. They are the required front matter, the required sections, the identifier, and the halves of each proposed edge. A section counts as its heading and never as its prose.
 
-`headwater new` over every concrete kind of this repository is a reading of that denominator. Eight kinds scaffold and `specification` refuses, which [OBL-repo-0107](0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md) already holds. No run named a relation, so no run proposed an edge.
+`headwater new` over every concrete kind of this repository is a reading of that denominator. Eight kinds scaffold and `specification` refuses, which [HW-OBL-0107](0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md) already holds. No run named a relation, so no run proposed an edge.
 
 | kind | assisted | required sections |
 |---|---|---|

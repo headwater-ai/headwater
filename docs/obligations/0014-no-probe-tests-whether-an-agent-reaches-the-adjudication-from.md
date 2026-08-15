@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0014
+id: HW-OBL-0014
 title: "No probe tests whether an agent reaches the adjudication from the losing document"
 status: current
 status_since: 2026-08-10
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0018
+    - HW-DR-0018
 ---
 
 # No probe tests whether an agent reaches the adjudication from the losing document
@@ -29,4 +29,4 @@ A probe over a settled pair is the instrument.
 
 ## Discharge
 
-The harness exists and this corpus still holds no adjudicated pair. [PROBE-HW-an-agent-reaches-the-adjudication-from-the-document-that-lost-it](../probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md) runs over a supersession instead: the tombstone at `docs/spec/09-open-questions.md` still writes a heading for every decision, and 136 citations reach it. A run of that probe narrows this record and closes none of it. [Q18](../spec/09-decisions.md#q18--recording-adjudicated-disagreements) is about two documents that disagreed and were settled, and no run has happened either way.
+The harness exists and this corpus still holds no adjudicated pair. [HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it](../probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md) runs over a supersession instead: the tombstone at `docs/spec/09-open-questions.md` still writes a heading for every decision, and 136 citations reach it. A run of that probe narrows this record and closes none of it. [Q18](../spec/09-decisions.md#q18--recording-adjudicated-disagreements) is about two documents that disagreed and were settled, and no run has happened either way.

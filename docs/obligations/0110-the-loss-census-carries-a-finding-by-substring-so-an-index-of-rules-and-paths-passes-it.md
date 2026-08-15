@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0110
+id: HW-OBL-0110
 title: "The loss census carries a finding by substring, so an index of rules and paths passes it"
 status: current
 status_since: 2026-08-14
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-engine-architecture
-    - SPEC-HW-assurance-model
+    - HW-SPEC-engine-architecture
+    - HW-SPEC-assurance-model
 ---
 
 # The loss census carries a finding by substring, so an index of rules and paths passes it

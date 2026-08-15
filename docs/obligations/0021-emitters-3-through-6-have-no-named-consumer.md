@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0021
+id: HW-OBL-0021
 title: "Emitters 3 through 6 have no named consumer"
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0013
+    - HW-DR-0013
 ---
 
 # Emitters 3 through 6 have no named consumer

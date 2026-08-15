@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0069
+id: HW-OBL-0069
 title: "A suppressed finding leaves its obligation verified, and spec 4 does not say so"
 status: current
 status_since: 2026-08-13
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-assurance-model
+    - HW-SPEC-assurance-model
 ---
 
 # A suppressed finding leaves its obligation verified, and spec 4 does not say so

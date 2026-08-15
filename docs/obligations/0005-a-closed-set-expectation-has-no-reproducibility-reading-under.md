@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0005
+id: HW-OBL-0005
 title: "A closed-set expectation has no reproducibility reading under grading"
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0008
+    - HW-DR-0008
 ---
 
 # A closed-set expectation has no reproducibility reading under grading

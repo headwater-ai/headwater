@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0031
+id: HW-OBL-0031
 title: "List extension in an add-only overlay"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0003
+    - HW-DR-0003
 ---
 
 # List extension in an add-only overlay

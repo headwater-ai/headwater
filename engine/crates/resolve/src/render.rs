@@ -156,7 +156,7 @@ regimes:
 shelves:
   decisions: {path: \"docs/decisions/**\", homogeneous: true}
 identifier_schemes:
-  decision_id: {pattern: \"DR-{namespace}-{seq:04d}\", namespace: repo, allocation: minted-once}
+  decision_id: {pattern: \"{namespace}-DR-{seq:04d}\", namespace: repo, allocation: minted-once}
 core:
   requires:
     - facet_role: state

@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0041
+id: HW-OBL-0041
 title: "No declaration expresses a rule about content or state over time"
 status: current
 status_since: 2026-08-13
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-taxonomy-model
-    - SPEC-HW-check-layer
+    - HW-SPEC-taxonomy-model
+    - HW-SPEC-check-layer
 ---
 
 # No declaration expresses a rule about content or state over time

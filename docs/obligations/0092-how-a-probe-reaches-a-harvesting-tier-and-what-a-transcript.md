@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0092
+id: HW-OBL-0092
 title: "How a probe reaches a harvesting tier, and what a transcript costs to keep"
 status: current
 status_since: 2026-08-11
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0008
-    - DR-repo-0011
+    - HW-DR-0008
+    - HW-DR-0011
 ---
 
 # How a probe reaches a harvesting tier, and what a transcript costs to keep

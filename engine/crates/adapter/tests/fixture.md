@@ -30,7 +30,7 @@
 | error | `check/spec/07-prose-defects.md:61` | `link.fragment.unresolved` | `#no-such-section` names no heading of this document |
 | error | `check/spec/09-contract-missing.md` | `section.required.missing` | `decision_record` requires the section `Decision`, and no heading of this document says so |
 | warn | `check/spec/10-suppressed.md:27` | `language.controlled.not_met` | `ste_house` holds prose to 25 words a sentence, and this one has 31 |
-| error | `check/spec/11-identifier-mismatch.md:2` | `identifier.pattern.not_met` | `SPEC-HW-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `HW-mismatch` is where the namespace `FIX` was expected |
+| error | `check/spec/11-identifier-mismatch.md:2` | `identifier.pattern.not_met` | `SPEC-XX-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `XX-mismatch` is where the namespace `FIX` was expected |
 | error | `check/spec/13-dangling.md:9` | `relation.target.unresolved` | `SPEC-FIX-dangling` declares `assesses: SPEC-FIX-no-such-document`, and that target resolves to nothing at all |
 | error | `check/spec/13-dangling.md:10` | `relation.target.unresolved` | `SPEC-FIX-dangling` declares `assesses: SPEC-FIX-untyped`, and that target names check/spec/04-untyped.md, which is untyped: the census gave it no kind, and an endpoint is a kind |
 | error | `check/spec/14-relations-not-a-mapping.md:8` | `relation.declaration.unusable` | `relations` is a sequence, and it names relation types |

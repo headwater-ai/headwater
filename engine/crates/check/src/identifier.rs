@@ -5,7 +5,7 @@
 //! [Spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check)
 //! lists "identifier pattern" third among the Shape-origin examples. A kind
 //! declares `identifier: {scheme: spec_id}`, the scheme declares
-//! `pattern: "SPEC-{namespace}-{slug}"` and `namespace: HW`, and the check is
+//! `pattern: "{namespace}-SPEC-{slug}"` and `namespace: HW`, and the check is
 //! that the document's identifier is a string the template admits. Nothing
 //! below names a scheme or a kind.
 //!
@@ -21,11 +21,14 @@
 //! constraint the specification states.
 //!
 //! * `{namespace}` is the declared `namespace`, exactly. That is the one
-//!   lexical requirement the invariant core makes: an adopter "may change
-//!   identifier patterns except the namespace"
-//!   ([spec 2](../../../../docs/spec/02-taxonomy-model.md#the-immutable-core)),
-//!   because a namespace is cheap at minting and unrecoverable once the
-//!   identifier is in somebody else's ticket.
+//!   lexical requirement of a pattern, and `identifier integrity` on the
+//!   resolved taxonomy is what makes it
+//!   ([spec 2](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema)).
+//!   The invariant core cannot: its identifier form names a scheme rather
+//!   than a property of one. A namespace is cheap at minting and
+//!   unrecoverable once the identifier is in somebody else's ticket, and
+//!   [Q25](../../../../docs/spec/09-decisions.md#q25--where-the-namespace-goes-in-an-identifier-and-who-declares-it)
+//!   puts it first in the rendered form.
 //! * `{seq:04d}` is exactly four decimal digits, and `{seq:0Nd}` is exactly N.
 //!   The width is in the declaration, so the check reads it rather than
 //!   assuming one.
@@ -40,13 +43,13 @@
 //! it. `{namespace}` and `{seq:0Nd}` have a known width or a known value, so
 //! they need no lookahead. `{slug}` does not, so it is read only in terminal
 //! position: a template that puts a free token before another segment does not
-//! say where the token ends, and two readings of `SPEC-HW-a-b` would be equally
+//! say where the token ends, and two readings of `HW-SPEC-a-b` would be equally
 //! defensible. Such a template makes the instance skip with the reason, rather
 //! than pick one.
 //!
 //! # The prefix is a literal, and that is a gap this check reports around
 //!
-//! `SPEC-` is a run of literal characters inside the `pattern` string, and no
+//! `-SPEC-` is a run of literal characters inside the `pattern` string, and no
 //! field names it. So this check can say that an identifier does not match its
 //! template, and it can say which segment of the template stopped the match,
 //! and it cannot say that two schemes mint disjoint identifiers — that is
@@ -514,38 +517,45 @@ mod tests {
 
     #[test]
     fn a_namespace_placeholder_is_the_declared_namespace_and_no_other_string() {
-        assert!(admits("SPEC-{namespace}-{slug}", "HW", "SPEC-HW-glossary"));
-        // The one lexical requirement the invariant core makes.
-        assert!(!admits("SPEC-{namespace}-{slug}", "HW", "SPEC-XX-glossary"));
-        assert!(!admits("SPEC-{namespace}-{slug}", "HW", "SPEC--glossary"));
+        assert!(admits("{namespace}-SPEC-{slug}", "HW", "HW-SPEC-glossary"));
+        // The one lexical requirement, and `identifier integrity` is what makes
+        // it. Another owner's namespace, and no namespace at all.
+        assert!(!admits("{namespace}-SPEC-{slug}", "HW", "XX-SPEC-glossary"));
+        assert!(!admits("{namespace}-SPEC-{slug}", "HW", "-SPEC-glossary"));
+        // The same two under a type-first pattern, which this engine still
+        // reads and which no taxonomy of this repository writes. The namespace
+        // here is somebody else's for the same reason the pattern is.
+        assert!(admits("SPEC-{namespace}-{slug}", "XX", "SPEC-XX-glossary"));
+        assert!(!admits("SPEC-{namespace}-{slug}", "XX", "SPEC-YY-glossary"));
+        assert!(!admits("SPEC-{namespace}-{slug}", "XX", "SPEC--glossary"));
     }
 
     #[test]
     fn a_sequence_placeholder_is_the_width_the_declaration_writes() {
-        assert!(admits("DR-{namespace}-{seq:04d}", "ACME", "DR-ACME-0042"));
+        assert!(admits("{namespace}-DR-{seq:04d}", "ACME", "ACME-DR-0042"));
         // Not the same identifier written short. See `digits`.
-        assert!(!admits("DR-{namespace}-{seq:04d}", "ACME", "DR-ACME-42"));
-        assert!(!admits("DR-{namespace}-{seq:04d}", "ACME", "DR-ACME-00042"));
-        assert!(!admits("DR-{namespace}-{seq:04d}", "ACME", "DR-ACME-004x"));
-        assert!(admits("DR-{namespace}-{seq:03d}", "ACME", "DR-ACME-042"));
+        assert!(!admits("{namespace}-DR-{seq:04d}", "ACME", "ACME-DR-42"));
+        assert!(!admits("{namespace}-DR-{seq:04d}", "ACME", "ACME-DR-00042"));
+        assert!(!admits("{namespace}-DR-{seq:04d}", "ACME", "ACME-DR-004x"));
+        assert!(admits("{namespace}-DR-{seq:03d}", "ACME", "ACME-DR-042"));
     }
 
     #[test]
     fn a_slug_is_a_free_token_and_this_check_states_nothing_about_its_alphabet() {
-        assert!(admits("SPEC-{namespace}-{slug}", "HW", "SPEC-HW-two-words"));
+        assert!(admits("{namespace}-SPEC-{slug}", "HW", "HW-SPEC-two-words"));
         assert!(admits(
-            "SPEC-{namespace}-{slug}",
+            "{namespace}-SPEC-{slug}",
             "HW",
-            "SPEC-HW-Mixed_Case9"
+            "HW-SPEC-Mixed_Case9"
         ));
         // Present and not empty is the whole of the requirement.
-        assert!(!admits("SPEC-{namespace}-{slug}", "HW", "SPEC-HW-"));
+        assert!(!admits("{namespace}-SPEC-{slug}", "HW", "HW-SPEC-"));
     }
 
     #[test]
     fn the_literal_prefix_has_to_be_there() {
-        assert!(!admits("SPEC-{namespace}-{slug}", "HW", "REG-HW-glossary"));
-        assert!(!admits("SPEC-{namespace}-{slug}", "HW", "HW-glossary"));
+        assert!(!admits("{namespace}-SPEC-{slug}", "HW", "HW-REG-glossary"));
+        assert!(!admits("{namespace}-SPEC-{slug}", "HW", "HW-glossary"));
     }
 
     /// A pattern this module cannot read is a skip with the reason in it, and
@@ -557,15 +567,15 @@ mod tests {
             // declaration does not choose.
             ("SPEC-{slug}-{namespace}", "HW"),
             // A placeholder spec 2 does not write.
-            ("SPEC-{namespace}-{uuid}", "HW"),
+            ("{namespace}-SPEC-{uuid}", "HW"),
             // A width the format language does not give.
-            ("DR-{namespace}-{seq:d}", "HW"),
-            ("DR-{namespace}-{seq:00d}", "HW"),
+            ("{namespace}-DR-{seq:d}", "HW"),
+            ("{namespace}-DR-{seq:00d}", "HW"),
             // An unclosed placeholder.
             ("SPEC-{namespace", "HW"),
             // The namespace is required, and a scheme without one states
             // nothing this check can hold an identifier to.
-            ("SPEC-{namespace}-{slug}", ""),
+            ("{namespace}-SPEC-{slug}", ""),
             // No pattern at all.
             ("", "HW"),
         ] {
@@ -580,9 +590,9 @@ mod tests {
     /// reader compares two strings rather than a string and a form.
     #[test]
     fn a_rendered_template_is_the_shape_an_identifier_takes() {
-        let template = Template::parse("SPEC-{namespace}-{slug}", "HW").expect("a template");
-        assert_eq!(template.render(), "SPEC-HW-<slug>");
-        let template = Template::parse("DR-{namespace}-{seq:04d}", "ACME").expect("a template");
-        assert_eq!(template.render(), "DR-ACME-0000");
+        let template = Template::parse("{namespace}-SPEC-{slug}", "HW").expect("a template");
+        assert_eq!(template.render(), "HW-SPEC-<slug>");
+        let template = Template::parse("{namespace}-DR-{seq:04d}", "ACME").expect("a template");
+        assert_eq!(template.render(), "ACME-DR-0000");
     }
 }

@@ -29,7 +29,7 @@ For the `governs` half, run the write hook the way the harness does, once per ch
 
     printf '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"<path>"}}' | sh .claude/hooks/write.sh
 
-It answers by string equality against the value on each edge. A path *under* a governed directory answers nothing, so a silent result is not evidence that no document governs the area — see OBL-repo-0104. Say so in part 4 rather than reporting silence as absence.
+It answers by string equality against the value on each edge. A path *under* a governed directory answers nothing, so a silent result is not evidence that no document governs the area — see HW-OBL-0104. Say so in part 4 rather than reporting silence as absence.
 
 ## What you never do
 

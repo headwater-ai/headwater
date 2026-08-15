@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0104
+id: HW-OBL-0104
 title: "A governs edge reaches the path it names and nothing under it"
 status: current
 status_since: 2026-08-13
@@ -14,9 +14,9 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-ai-integration
-    - SPEC-HW-taxonomy-model
-    - SPEC-HW-conceptual-model
+    - HW-SPEC-ai-integration
+    - HW-SPEC-taxonomy-model
+    - HW-SPEC-conceptual-model
 ---
 
 # A governs edge reaches the path it names and nothing under it
@@ -37,11 +37,11 @@ This repository now declares four edges, one for each file under that directory,
 
 The corpus owes a ruling on what a `code_path` anchor denotes. One file, or a subtree, and spec 2 states neither.
 
-Under equality, an author pays one edge for every file that a document governs. [Spec 3](../spec/03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) names that cost as the thing that killed every prior design-rationale tool. A directory of forty files takes forty hand-typed edges, and [OBL-repo-0105](0105-nothing-plays-the-hook-role-that-two-relations-name.md) records that nothing mechanical writes even one of them.
+Under equality, an author pays one edge for every file that a document governs. [Spec 3](../spec/03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) names that cost as the thing that killed every prior design-rationale tool. A directory of forty files takes forty hand-typed edges, and [HW-OBL-0105](0105-nothing-plays-the-hook-role-that-two-relations-name.md) records that nothing mechanical writes even one of them.
 
 The failure mode is silence rather than error. A hook that finds no governing document exits 0 and reports nothing. A rename inside a governed directory produces an unresolved anchor, which a check does report, but a *new* file in that directory produces nothing anywhere. Impact detection is then green over code that a document governs in every sense except the one the engine reads.
 
-**The same silence covers a set that names no directory at all.** [DR-repo-0024](../decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md) rules over three files, and the agent that drafted it named one. Nothing reported the two it left out. The anchor resolved, every check passed, and a document that governs one of three reads exactly like a document that governs one. So the gap is wider than the directory case above. A `governs` set has no denominator, and the author is the only reader who knows the full set.
+**The same silence covers a set that names no directory at all.** [HW-DR-0024](../decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md) rules over three files, and the agent that drafted it named one. Nothing reported the two it left out. The anchor resolved, every check passed, and a document that governs one of three reads exactly like a document that governs one. So the gap is wider than the directory case above. A `governs` set has no denominator, and the author is the only reader who knows the full set.
 
 The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md) calls impact detection the most valuable thing the corpus does for a coding agent. Spec 5 makes the same claim in the same words. A mechanism that reaches one file for each declared edge is a smaller claim, and no document states which one holds.
 

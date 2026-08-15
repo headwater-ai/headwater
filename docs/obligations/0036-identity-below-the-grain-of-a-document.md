@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0036
+id: HW-OBL-0036
 title: "Identity below the grain of a document"
 status: current
 status_since: 2026-08-12
@@ -14,9 +14,9 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-authoring-and-lifecycle
-    - SPEC-HW-assurance-model
-    - SPEC-HW-glossary
+    - HW-SPEC-authoring-and-lifecycle
+    - HW-SPEC-assurance-model
+    - HW-SPEC-glossary
 ---
 
 # Identity below the grain of a document

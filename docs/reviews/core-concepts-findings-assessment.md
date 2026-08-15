@@ -1,5 +1,5 @@
 ---
-id: REV-HW-core-concepts-assessment
+id: HW-REV-core-concepts-assessment
 status: current
 status_since: 2026-08-05
 last_verified: 2026-08-08
@@ -13,7 +13,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   assesses:
-    - REV-HW-core-concepts-findings-1
+    - HW-REV-core-concepts-findings-1
 ---
 
 # Assessment of the existing core-concepts findings

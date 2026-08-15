@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0107
+id: HW-OBL-0107
 title: "The base package ships a kind that the scaffolder refuses to write"
 status: current
 status_since: 2026-08-14
@@ -14,8 +14,8 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-taxonomy-model
-    - SPEC-HW-authoring-and-lifecycle
+    - HW-SPEC-taxonomy-model
+    - HW-SPEC-authoring-and-lifecycle
 ---
 
 # The base package ships a kind that the scaffolder refuses to write
@@ -48,4 +48,4 @@ The base package is the layer that owes the repair, rather than this overlay. An
 
 `kinds.specification.identifier` in `packages/headwater-standard/taxonomy.yml`, under a scheme the package declares beside `decision_id`.
 
-Beside that, a rule or a verb that reads the taxonomy rather than the corpus. `headwater new` over every concrete kind is a taxonomy audit with no home. It finds a kind on no shelf, a kind on two shelves, and a required facet that nothing determines. It finds a scheme whose pattern cannot be read, and it finds this. [Spec 12](../spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on) has no grain for a rule whose subject is a declaration and whose corpus is empty, and [OBL-repo-0067](0067-a-rule-that-reads-the-taxonomy-has-no-grain-in-spec-12s-list.md) holds that gap.
+Beside that, a rule or a verb that reads the taxonomy rather than the corpus. `headwater new` over every concrete kind is a taxonomy audit with no home. It finds a kind on no shelf, a kind on two shelves, and a required facet that nothing determines. It finds a scheme whose pattern cannot be read, and it finds this. [Spec 12](../spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on) has no grain for a rule whose subject is a declaration and whose corpus is empty, and [HW-OBL-0067](0067-a-rule-that-reads-the-taxonomy-has-no-grain-in-spec-12s-list.md) holds that gap.

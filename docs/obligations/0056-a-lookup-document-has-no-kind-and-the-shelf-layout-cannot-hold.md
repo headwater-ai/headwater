@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0056
+id: HW-OBL-0056
 title: "A lookup document has no kind, and the shelf layout cannot hold one"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-glossary
+    - HW-SPEC-glossary
 ---
 
 # A lookup document has no kind, and the shelf layout cannot hold one

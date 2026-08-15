@@ -1,5 +1,5 @@
 ---
-id: SPEC-HW-distribution-and-federation
+id: HW-SPEC-distribution-and-federation
 status: current
 status_since: 2026-08-01
 last_verified: 2026-08-12
@@ -15,11 +15,11 @@ provenance:
   evidence_basis: evidenced
 relations:
   cites_evidence:
-    - EVAL-HW-default-taxonomy-first-run
-    - EVAL-HW-first-contact
-    - EVAL-HW-graph-export-and-federation
-    - EVAL-HW-the-serving-boundary
-    - EVAL-HW-warrant-and-adjudication
+    - HW-EVAL-default-taxonomy-first-run
+    - HW-EVAL-first-contact
+    - HW-EVAL-graph-export-and-federation
+    - HW-EVAL-the-serving-boundary
+    - HW-EVAL-warrant-and-adjudication
 ---
 
 # 7 — Distribution and federation
@@ -137,7 +137,7 @@ Consuming is two steps, and the split is what keeps the network out of the engin
 
 **The pin is authored, and no verb writes it.** A digest that the engine recorded from whatever it had just received would be a pin against itself. So `vendor` refuses to run when no pin exists, and it names the field to write. The publisher states the digest where a consumer reads it, and the artifact and the digest travel apart.
 
-**It does not prove who published the artifact.** Nothing here is a signature, so the first fetch rests on the channel that carried the digest. A signature needs a key, a route that distributes the key to an adopter who has never met the publisher, and a rule for revocation. None of the three is decided ([Q22](09-decisions.md#q22--the-integrity-posture-of-a-published-package)), and [OBL-repo-0115](../obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md) holds the question rather than a manifest key that would read as an answer.
+**It does not prove who published the artifact.** Nothing here is a signature, so the first fetch rests on the channel that carried the digest. A signature needs a key, a route that distributes the key to an adopter who has never met the publisher, and a rule for revocation. None of the three is decided ([Q22](09-decisions.md#q22--the-integrity-posture-of-a-published-package)), and [HW-OBL-0115](../obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md) holds the question rather than a manifest key that would read as an answer.
 
 **A vendored package is not a maintained one.** `vendor` replaces a directory that carries a release record, and it refuses a directory that carries none. A package that a person maintains is a publisher's source, and a consumer command that overwrote one would delete the thing being published. Spec 2 requires customization by overlay and never by fork, so a vendored directory has nothing in it that an adopter should have edited.
 
@@ -183,10 +183,10 @@ So `headwater/starter` is the base package, a named bundle selection, and the do
 - **It is package data, not engine code.** [Principle 1](00-vision-and-scope.md#design-principles) puts anything an adopter might want different into the schema. An interview compiled into the engine cannot ship with a third-party package, and a publisher with its own bundles needs its own questions. The interview sits beside profiles and templates in the package. It is not a taxonomy declaration, because it describes the package rather than the corpus, so the count of declarations stays at thirteen.
 - **It is `headwater infer` with a second evidence source.** [Q12](09-decisions.md#q12--migration-path-for-an-existing-corpus) makes `infer` propose a taxonomy from a tree that already exists. Both emit the same artifact, so they are one command with two inputs. On an empty repository the tree contributes nothing and the interview asks everything. The blank-schema case is thus the degenerate one rather than a special one.
 - **It emits three artifacts, and one read of the tree produces all three.** The overlay above. A report of what the tree holds that no proposed shelf or kind explains. And the [adoption payload](#first-contact-adoption-is-a-migration-from-no-taxonomy), which is the set of findings that the proposal expects to fail. `infer` cannot weaken the base to fit the corpus, and that is structural rather than a rule to police. A bundle selection is add-only, and an add-only overlay carries no operation that removes a base rule.
-- **Every question is about the corpus, and none is about the taxonomy.** "Do you write runbooks?" needs no model in the reader's head. "Do you want a `procedure` purpose?" needs the whole of spec 2 first. Each answer selects a bundle, and no answer exposes a declaration name.
-- **A question that an existing ruling answers is deleted rather than asked.** [Spec 3](03-authoring-and-lifecycle.md#identifiers) rules that an identifier always carries a namespace, so the interview never asks whether the adopter wants identifiers.
+- **Every question is about the corpus, and none is about the taxonomy.** "Do you write runbooks?" needs no model in the reader's head. "Do you want a `procedure` purpose?" needs the whole of spec 2 first. Each answer selects a bundle or supplies a value that the corpus alone holds, and no answer exposes a declaration name.
+- **A question that an existing ruling answers is deleted, and a question that no ruling can answer is asked.** [Spec 3](03-authoring-and-lifecycle.md#identifiers) rules that an identifier always carries a namespace, so the interview never asks whether the adopter wants identifiers. It asks what the namespace is. No package can supply that value. A package that named one would give it to every corpus that adopts it, and a stand-in such as `repo` names nobody at all. The interview is the first moment at which the owner of the corpus is present to answer. It is the one answer that selects no bundle, and it lands in the overlay as `identifier_schemes.<scheme>.namespace` on every scheme the selection reaches.
 
-The interview asks only what changes the selection. Everything else waits for a corpus that `taxonomy audit` can measure, because a day-one guess about facet orthogonality is worse than a day-thirty measurement of it.
+The interview asks only what changes the selection, and the one value that no package can hold. Everything else waits for a corpus that `taxonomy audit` can measure, because a day-one guess about facet orthogonality is worse than a day-thirty measurement of it.
 
 The cost is the one that overlays already carry, one level up. A resolved taxonomy is an artifact that nobody authored directly, and an interview adds a step where nobody authored the answers as configuration either. So the generated overlay carries a comment above each block that names the question and the answer which produced it. Re-running `init` re-asks with the current answers as defaults and rewrites the same blocks. An adopter who changes their mind edits an answer, not a taxonomy.
 
@@ -194,9 +194,9 @@ The cost is the one that overlays already carry, one level up. A resolved taxono
 
 A package declares a **core**: the semantics that an overlay may extend but never remove or redefine ([spec 2](02-taxonomy-model.md#the-immutable-core)). Without one, "the same taxonomy" is not a meaningful claim. If a consumer may override anything, two consumers of one package can share no structure at all.
 
-The core is **semantic, not lexical**, with one exception that it names. It constrains roles and purposes, never names or paths. A consumer may rename every shelf, relocate every directory, and replace identifier patterns except the namespace and every lifecycle value, and still satisfy the core. The condition: after resolution, some facet still has the state role, some kind still serves the `rationale` purpose, and lineage remains expressible and lifecycle-sensitive.
+The core is **semantic, not lexical**. It constrains roles and purposes, never names or paths. A consumer may rename every shelf, relocate every directory, and replace every identifier pattern and every lifecycle value, and still satisfy the core. The condition: after resolution, some facet still has the state role, some kind still serves the `rationale` purpose, and lineage remains expressible and lifecycle-sensitive.
 
-The exception is the identifier namespace, which `core` requires and no overlay may remove ([spec 2](02-taxonomy-model.md#the-immutable-core)). It is lexical because the alternative is unrecoverable rather than merely untidy.
+The identifier namespace is lexical and the core does not carry it. `identifier integrity` requires one on every resolved scheme ([spec 2](02-taxonomy-model.md#the-meta-schema)), and the core has no form that could ask for the same thing. The value is the consumer's own, because a package that named one would give it to every corpus that adopts it. The rule is lexical because the alternative is unrecoverable rather than merely untidy.
 
 That is what makes the package a workable boundary object. It is plastic enough to adapt to local practice, and strong enough to keep a common identity across sites. Local form is fully negotiable. Shared meaning is not.
 
@@ -247,7 +247,7 @@ Thus the migration state is recorded in the lock: from-version, to-version, an o
 
 A label by document alone would blanket every finding on a named document for the whole migration. Defects introduced yesterday would then read as expected breakage. The pair grain keeps yesterday's regression loud while the declared debt stays patient. `migration-pending` findings are counted, visible in coverage, never blocking, and never suppressed individually.
 
-**No verb writes that state, and the omission is a decision.** The state lives in the `adoption` block of the lock, and [OBL-repo-0082](../obligations/0082-the-lock-is-half-generated-and-half-authored-and-nothing.md) records the seam under that block. No document says whether `taxonomy resolve --check` may pass while the authored half of the lock is stale. No document says whether a reviewed artifact may hold a part that no digest verifies. A verb that wrote there would settle both questions by precedent rather than by a decision. So `headwater taxonomy migrate` reports the state it would have written, and states on every run that it wrote none of it. `headwater infer --owner <name> --write` stays the one writer of that block.
+**No verb writes that state, and the omission is a decision.** The state lives in the `adoption` block of the lock, and [HW-OBL-0082](../obligations/0082-the-lock-is-half-generated-and-half-authored-and-nothing.md) records the seam under that block. No document says whether `taxonomy resolve --check` may pass while the authored half of the lock is stale. No document says whether a reviewed artifact may hold a part that no digest verifies. A verb that wrote there would settle both questions by precedent rather than by a decision. So `headwater taxonomy migrate` reports the state it would have written, and states on every run that it wrote none of it. `headwater infer --owner <name> --write` stays the one writer of that block.
 
 When the last task closes, the state ends. The expiry is the anti-parking device, on the same terms as the expiry of a waiver. A migration state past its expiry is a finding against the owner. It is renewable only by an explicit move of the date — a decision with a paper trail, not a timeout that nobody notices. Waivers are per-rule, and suppressions are per-file. Neither fits a corpus that is half-way across, and that is why the state is its own mechanism, not a pile of either.
 
@@ -417,6 +417,6 @@ A scheduled check compares the pinned version against the latest release of the 
 
 **One pattern, three instances.** A taxonomy pin, a requirements snapshot pin ([Q19](09-decisions.md#q19--inbound-integration-an-external-system-of-record)), and a source-export pin all work the same way. Each one fetches out of band, commits the result, checks against the committed copy, and compares on a schedule. Each one raises a change proposal and never a mutation. To state the pattern once is what keeps the third instance from arriving as a new mechanism.
 
-**A pin states the channel that carried it, and an import with no channel is refused.** A digest authenticates the pin and never the publisher, which [§What a package digest proves](#what-a-package-digest-proves-and-what-it-does-not) states for a package and [OBL-repo-0115](../obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md) records. The consequence is sharper inbound than outbound. An adopter who binds a package reads a lock and a diff. An edge that an import wrote reaches a graph that every later check agrees with. So an imported edge carries the weight of the channel the snapshot arrived on rather than the weight of the digest. The declaration therefore names both, in the words of the person who wrote the digest down, and neither is ever written by a verb. A channel stated beside the payload would certify itself, which is the move the pin exists to refuse.
+**A pin states the channel that carried it, and an import with no channel is refused.** A digest authenticates the pin and never the publisher, which [§What a package digest proves](#what-a-package-digest-proves-and-what-it-does-not) states for a package and [HW-OBL-0115](../obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md) records. The consequence is sharper inbound than outbound. An adopter who binds a package reads a lock and a diff. An edge that an import wrote reaches a graph that every later check agrees with. So an imported edge carries the weight of the channel the snapshot arrived on rather than the weight of the digest. The declaration therefore names both, in the words of the person who wrote the digest down, and neither is ever written by a verb. A channel stated beside the payload would certify itself, which is the move the pin exists to refuse.
 
 **A snapshot pin reports drift on each affected edge, and not only on the pin.** A snapshot carries the upstream identity and revision of every item in it, so an advance says which items changed. Every edge into a changed item is then a finding until a person re-verifies it. Requirements practice reached the same mechanism and calls such an edge *suspect*. A proposal against the whole snapshot names a file, and a finding on an edge names the document whose author can act. That is [spec 4](04-assurance-model.md#absence-is-a-finding-class-of-its-own)'s report-at-the-origin rule, applied to a second kind of upstream.

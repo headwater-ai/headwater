@@ -1,5 +1,5 @@
 ---
-id: REV-HW-core-concepts-prompt
+id: HW-REV-core-concepts-prompt
 status: current
 status_since: 2026-08-04
 last_verified: 2026-08-08
@@ -14,9 +14,9 @@ provenance:
   evidence_basis: unevidenced
 relations:
   applied_in:
-    - REV-HW-core-concepts-findings-1
-    - REV-HW-core-concepts-independent
-    - REV-HW-core-concepts-findings-2
+    - HW-REV-core-concepts-findings-1
+    - HW-REV-core-concepts-independent
+    - HW-REV-core-concepts-findings-2
 ---
 
 # Review the core concepts of headwater: simplification and robustness

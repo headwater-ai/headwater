@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0006
+id: HW-OBL-0006
 title: "Route latency at a harvesting tier is unmeasured"
 status: current
 status_since: 2026-08-10
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0009
+    - HW-DR-0009
 ---
 
 # Route latency at a harvesting tier is unmeasured

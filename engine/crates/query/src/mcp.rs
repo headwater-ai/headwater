@@ -55,7 +55,7 @@
 //!    `accepted_by` and no warrant of `accepted`, so neither does this. [Spec
 //!    3's stop rule 5](../../../../docs/spec/03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed)
 //!    forbids an agent from stamping its own output, and
-//!    [OBL-repo-0108](../../../../docs/obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md)
+//!    [HW-OBL-0108](../../../../docs/obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md)
 //!    measures how often an agent does it anyway. What this surface adds to
 //!    that is nothing: there is no field for it in what the verb writes, so the
 //!    stamp is still an edit a reader can see in a diff.
@@ -64,7 +64,7 @@
 //!
 //! The corpus is walked once, before the server accepts a message, and every
 //! tool answers from that walk. A write tool ends the tree that walk described.
-//! [OBL-repo-0028](../../../../docs/obligations/0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md)
+//! [HW-OBL-0028](../../../../docs/obligations/0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md)
 //! measured what a stale walk costs: a server started before an edit reported
 //! 28 findings where a fresh run reported 30, and its two answers were
 //! identical across the edit. A server that wrote and then kept answering would
@@ -854,7 +854,7 @@ fn repeated(
              `[\"{}\"]` rather than a bare string",
             argument.name,
             match argument.name {
-                "relates" => "supersedes=DR-repo-0007",
+                "relates" => "supersedes=HW-DR-0007",
                 other => other,
             }
         ),

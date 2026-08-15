@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0063
+id: HW-OBL-0063
 title: "An anchor that resolves inside a declared exclusion has no stated outcome"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0017
+    - HW-DR-0017
 ---
 
 # An anchor that resolves inside a declared exclusion has no stated outcome

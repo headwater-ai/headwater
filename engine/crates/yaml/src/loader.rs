@@ -520,7 +520,7 @@ mod tests {
     fn an_origin_moves_every_line_and_byte_and_no_column() {
         // The block a document's front matter sits in: line 1 is the `---`, so
         // the YAML starts on file line 2 at byte 4.
-        let source = "id: SPEC-HW-check-layer\nsequence: 12\n";
+        let source = "id: HW-SPEC-check-layer\nsequence: 12\n";
         let root = load_with(source, Options::front_matter(Origin::new(2, 4))).expect("loads");
         let map = root.as_map().expect("a mapping");
         let span = map.key_span("sequence").expect("the sequence key");

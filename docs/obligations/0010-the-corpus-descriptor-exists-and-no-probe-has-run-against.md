@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0010
+id: HW-OBL-0010
 title: "The corpus descriptor exists and no probe has run against it"
 status: current
 status_since: 2026-08-10
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0014
+    - HW-DR-0014
 ---
 
 # The corpus descriptor exists and no probe has run against it
@@ -29,7 +29,7 @@ The Discovery and Navigability probe categories are the instrument, and this cor
 
 ## Discharge
 
-**The artifact under test exists, the instrument is declared, and no run has happened.** [PROBE-HW-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor](../probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md) states the task and the expectation, and `headwater probe plan` selects it. What is missing is a recorder: a transcript is observed from outside the session that produced it, and no such process is in this repository. So the wait moved from an instrument nobody had declared to a run nobody has taken.
+**The artifact under test exists, the instrument is declared, and no run has happened.** [HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor](../probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md) states the task and the expectation, and `headwater probe plan` selects it. What is missing is a recorder: a transcript is observed from outside the session that produced it, and no such process is in this repository. So the wait moved from an instrument nobody had declared to a run nobody has taken.
 
 `headwater generate` writes `.headwater/corpus.json`, and `generate --check` holds it to regeneration. The descriptor over this corpus names one root, one exclusion, the taxonomy identity, the lock hash and five entry points. Five, because six shelves are declared and one holds no document. So a probe has something to run against, and no probe has run.
 

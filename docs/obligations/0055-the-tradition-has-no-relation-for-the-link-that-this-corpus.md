@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0055
+id: HW-OBL-0055
 title: "The tradition has no relation for the link that this corpus makes most"
 status: current
 status_since: 2026-08-12
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0004
+    - HW-DR-0004
 ---
 
 # The tradition has no relation for the link that this corpus makes most

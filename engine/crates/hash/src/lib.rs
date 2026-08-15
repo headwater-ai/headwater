@@ -31,7 +31,7 @@
 //!
 //! What no implementation of this function buys is a statement about who
 //! published an artifact. That gap is
-//! [OBL-repo-0115](../../../../docs/obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md).
+//! [HW-OBL-0115](../../../../docs/obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md).
 //!
 //! # Why it is a crate of its own
 //!

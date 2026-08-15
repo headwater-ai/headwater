@@ -1,0 +1,1 @@
+the resolved taxonomy `identifier_schemes.decision_id.pattern`: identifier integrity: and `identifier_schemes.draft_id.pattern` are both in namespace `HW` and neither literal prefix rules the other out, so one string can satisfy both

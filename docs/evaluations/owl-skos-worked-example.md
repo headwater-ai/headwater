@@ -1,5 +1,5 @@
 ---
-id: EVAL-HW-owl-skos-worked-example
+id: HW-EVAL-owl-skos-worked-example
 status: current
 status_since: 2026-08-12
 last_verified: 2026-08-12
@@ -13,7 +13,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   cited_by:
-    - REG-HW-open-obligations
+    - HW-REG-open-obligations
   traces_to:
     - tools/rdf-probe/emit.py
 ---

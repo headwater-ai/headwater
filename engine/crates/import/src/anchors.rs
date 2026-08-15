@@ -7,7 +7,7 @@
 //! `headwater_graph::anchors::SourceTree` is the first half of that sentence.
 //! This module is the second, and until it existed every edge that
 //! [`crate::plan`] wrote was reported as resolving to nothing
-//! ([OBL-repo-0116](../../../../docs/obligations/0116-no-anchor-resolver-reads-a-committed-snapshot-so-every-imported-edge-lands-unresolved.md)).
+//! ([HW-OBL-0116](../../../../docs/obligations/0116-no-anchor-resolver-reads-a-committed-snapshot-so-every-imported-edge-lands-unresolved.md)).
 //!
 //! # It looks an identity up, and it never normalizes one
 //!

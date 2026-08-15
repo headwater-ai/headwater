@@ -1,5 +1,5 @@
 ---
-id: RUN-HW-first-regression
+id: HW-RUN-first-regression
 status: current
 status_since: 2026-08-01
 last_verified: 2026-08-01
@@ -39,7 +39,7 @@ cost_cents: 25
 ## Events
 
 ```yaml
-- probe: PROBE-HW-the-session-reads-the-document
+- probe: HW-PROBE-the-session-reads-the-document
   session: 1
   calls:
     - tool: read

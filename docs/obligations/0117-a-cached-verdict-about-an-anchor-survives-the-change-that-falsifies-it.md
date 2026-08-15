@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0117
+id: HW-OBL-0117
 status: current
 status_since: 2026-08-14
 summary: "The read set of an edge instance holds the declaring document, so a target outside the corpus is in no key and a cached run reports what an uncached run does not."
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-check-layer
+    - HW-SPEC-check-layer
 ---
 
 # A cached verdict about an anchor survives the change that falsifies it
@@ -57,7 +57,7 @@ Both resolvers are reached, so this is a property of the read set rather than of
 **The measurement, repeated on the branch on 2026-08-14.** The same hand run over this repository, which declares thirteen anchor edges, reports the finding on the cached run:
 
     $ headwater check          # the file a `governs` edge names is removed
-      relation.target.unresolved (OB-REL-4): `SPEC-HW-ai-integration` declares
+      relation.target.unresolved (OB-REL-4): `HW-SPEC-ai-integration` declares
         `governs: .claude/hooks/lib.sh`, and that target `code_path`: no
         `.claude/hooks/lib.sh` in the source tree
 

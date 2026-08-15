@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0101
+id: HW-OBL-0101
 title: "Whether the read set of a real corpus is small enough that publishing it is free"
 status: current
 status_since: 2026-08-13
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0021
+    - HW-DR-0021
 ---
 
 # Whether the read set of a real corpus is small enough that publishing it is free

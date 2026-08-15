@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0118
+id: HW-OBL-0118
 status: current
 status_since: 2026-08-14
 summary: "The read set artifact holds one line per document, so an external anchor is on no line and a gate that compares listed hashes cannot see the target of one leave the tree."
@@ -14,14 +14,14 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - SPEC-HW-check-layer
+    - HW-SPEC-check-layer
 ---
 
 # The published read set names no anchor, so a gate decides nothing about one
 
 ## Context
 
-[OBL-repo-0117](0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md) is the same gap in the cache key, and it is discharged. The key of an edge instance names the binding that the resolver returned, so two states of one anchor no longer share an entry.
+[HW-OBL-0117](0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md) is the same gap in the cache key, and it is discharged. The key of an edge instance names the binding that the resolver returned, so two states of one anchor no longer share an entry.
 
 The key is one of the two uses that [spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) gives the read set. The other one is the artifact that `headwater check --read-set` writes and that `headwater gate` reads back. This record is about the second use, and the fix for the first one does not reach it. A key is computed inside one run, where a resolver has already answered. An artifact is read by a later process over a later tree, which has no answer of any resolver in front of it.
 

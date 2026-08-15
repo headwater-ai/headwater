@@ -1,5 +1,5 @@
 ---
-id: OBL-repo-0077
+id: HW-OBL-0077
 title: "A fragment on a path needs a grain that no scope supplies"
 status: current
 status_since: 2026-08-13
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - DR-repo-0004
+    - HW-DR-0004
 ---
 
 # A fragment on a path needs a grain that no scope supplies

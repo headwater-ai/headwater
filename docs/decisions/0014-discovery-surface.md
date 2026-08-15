@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0014
+id: HW-DR-0014
 title: Q14 — Discovery surface
 status: current
 status_since: 2026-08-11
@@ -14,7 +14,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   traces_to:
-    - EVAL-HW-the-serving-boundary
+    - HW-EVAL-the-serving-boundary
 ---
 
 # Q14 — Discovery surface

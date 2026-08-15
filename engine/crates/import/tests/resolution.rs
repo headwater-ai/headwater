@@ -2,7 +2,7 @@
 //! The whole chain: an import writes an edge, and the next check says it
 //! resolves.
 //!
-//! [OBL-repo-0116](../../../../docs/obligations/0116-no-anchor-resolver-reads-a-committed-snapshot-so-every-imported-edge-lands-unresolved.md)
+//! [HW-OBL-0116](../../../../docs/obligations/0116-no-anchor-resolver-reads-a-committed-snapshot-so-every-imported-edge-lands-unresolved.md)
 //! records the state this file exists to end, and it says why no case in
 //! `fixtures.rs` could have found it: "No fixture of the importer can fail on
 //! this, because the importer is right. The gap is one component further on, and
@@ -239,7 +239,7 @@ fn unresolved(graph: &Graph) -> Vec<(&str, &Unbound)> {
         .collect()
 }
 
-/// The defect OBL-repo-0116 recorded, and its end.
+/// The defect HW-OBL-0116 recorded, and its end.
 ///
 /// Before the resolver existed this ran the same four steps and the last one
 /// reported `relation.target.unresolved` against the document the import had
@@ -343,7 +343,7 @@ fn a_snapshot_that_is_not_the_pinned_artifact_binds_nothing_and_names_the_pin() 
 }
 
 /// The check layer over the same tree, because a bound target and a rule that
-/// reports nothing are two claims. OBL-repo-0116's measurement is this one.
+/// reports nothing are two claims. HW-OBL-0116's measurement is this one.
 #[test]
 fn the_check_layer_reports_no_unresolved_target_over_an_imported_edge() {
     let scratch = Scratch::new("checked");

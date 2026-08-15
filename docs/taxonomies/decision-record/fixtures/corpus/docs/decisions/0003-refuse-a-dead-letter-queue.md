@@ -1,5 +1,5 @@
 ---
-id: DR-repo-0003
+id: HW-DR-0003
 title: Refuse a dead-letter queue
 status: deprecated
 status_since: 2026-02-20
