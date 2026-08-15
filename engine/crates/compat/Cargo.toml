@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "headwater-compat"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+# The six dimensions read what four phases already produced, and this crate
+# runs none of them. `headwater-generate` reaches the check layer, the graph
+# and the census, so naming it names all four and adds no edge this workspace
+# did not already carry. No crate names this one except the binary, so nothing
+# in a phase can read a compatibility verdict.
+headwater-generate = { path = "../generate" }
+headwater-check = { path = "../check" }
+headwater-census = { path = "../census" }
+headwater-graph = { path = "../graph" }
+headwater-resolve = { path = "../resolve" }

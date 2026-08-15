@@ -164,18 +164,33 @@ pub fn sources(root: &Path, consumer: &Consumer) -> Result<Vec<Source>, Vec<Reso
         ));
     }
 
+    sources_at(root, &directory, &manifest, consumer)
+}
+
+/// The same sources, out of a package directory the caller already holds.
+///
+/// [`sources`] finds the package by the name the consumer pinned and holds it
+/// to the version the consumer pinned. A comparison of two versions needs the
+/// second half of that dropped and nothing else: the artifact under comparison
+/// is by definition not the version this repository takes, and the overlays it
+/// is resolved under are this repository's own. So the version check lives in
+/// the caller above and every other step is here, in one copy. A second reader
+/// of a `contents` block would be a second answer to "what does this package
+/// ship", and the two could then disagree about a bundle path.
+pub fn sources_at(
+    root: &Path,
+    directory: &Path,
+    manifest: &Mapping,
+    consumer: &Consumer,
+) -> Result<Vec<Source>, Vec<ResolveError>> {
     // The engine range the package declares, checked before a single source is
     // read. A package that needs a later engine resolves into a taxonomy this
     // engine reads with whatever it does not understand dropped, and that is a
     // lock nobody can reproduce. The refusal names both numbers.
-    if let Err(refused) = release::engine_range(
-        &consumer.package,
-        text(&manifest, REQUIRES_ENGINE).as_deref(),
-    ) {
-        return Err(release::as_error(
-            &manifest_name(root, &directory),
-            &refused,
-        ));
+    if let Err(refused) =
+        release::engine_range(&consumer.package, text(manifest, REQUIRES_ENGINE).as_deref())
+    {
+        return Err(release::as_error(&manifest_name(root, directory), &refused));
     }
 
     let contents = manifest
@@ -241,6 +256,23 @@ pub fn find_version(root: &Path, name: &str) -> Option<String> {
 /// the ordinary state of a repository that nothing has bound yet.
 pub fn located(root: &Path, name: &str) -> Option<(PathBuf, Mapping)> {
     find(root, name).ok()
+}
+
+/// The manifest of a package directory the caller already holds.
+///
+/// [`find`] locates a package by the name it declares, under `packages/`. An
+/// artifact somebody fetched is neither: it sits wherever the caller put it and
+/// its name is what the comparison is about rather than what finds it. So this
+/// is the same read from the other end, and it is the only one this crate
+/// exposes that takes a directory.
+pub fn manifest_at(directory: &Path) -> Result<Mapping, Vec<ResolveError>> {
+    let manifest = directory.join(MANIFEST);
+    let loaded = crate::source::load(&manifest)?;
+    loaded
+        .value
+        .as_map()
+        .cloned()
+        .ok_or_else(|| refusal(&manifest.display().to_string(), "the manifest is not a mapping"))
 }
 
 fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>> {

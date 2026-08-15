@@ -5,6 +5,7 @@ members = [
     "crates/audit",
     "crates/census",
     "crates/check",
+    "crates/compat",
     "crates/cli",
     "crates/conformance",
     "crates/doc",

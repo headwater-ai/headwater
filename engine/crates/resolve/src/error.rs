@@ -84,6 +84,45 @@ pub enum ResolveErrorKind {
     },
 }
 
+impl ResolveErrorKind {
+    /// Whether this refusal is about an address that an overlay wrote.
+    ///
+    /// Spec 2's [`addressability`](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
+    /// dimension asks whether every path an overlay can address still exists
+    /// and means the same thing, and it is the one dimension whose subject is
+    /// the schema rather than a corpus. This is the engine's answer, and it is
+    /// here rather than at the caller because the arms are this enum's: a new
+    /// refusal that names an address has to state which side of the line it is
+    /// on, and the match below has no wildcard, so it will not compile until
+    /// somebody says.
+    ///
+    /// A reference refusal is not one of these. An overlay addresses a node of
+    /// the merged tree, and a reference resolves afterwards, so a reference
+    /// that no longer reads is a fault of the base rather than of an address
+    /// the consumer wrote.
+    pub fn names_an_address(&self) -> bool {
+        use ResolveErrorKind::*;
+        match self {
+            AddCollides(_)
+            | OverrideMissing(_)
+            | RemoveMissing(_)
+            | ThroughNonMapping { .. }
+            | ThroughReference { .. }
+            | NotAList(_)
+            | ItemNotInList(_) => true,
+            SourceRefused(_)
+            | WrongRole { .. }
+            | NotConfluent { .. }
+            | ReferenceUnresolved(_)
+            | ReferenceChain { .. }
+            | ReferenceRootUnavailable { .. }
+            | RemoveBreaksReference { .. }
+            | Invalid { .. }
+            | CoreUnsatisfied { .. } => false,
+        }
+    }
+}
+
 impl std::fmt::Display for ResolveError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use ResolveErrorKind::*;
