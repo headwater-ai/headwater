@@ -538,7 +538,7 @@ fn bind(
         };
         match resolver.resolve(raw) {
             binding @ (Binding::Resolved { .. } | Binding::Withheld { .. }) => {
-                claimed.push((&anchor.name, binding))
+                claimed.push((&anchor.name, binding));
             }
             Binding::Unresolved(why) => refusals.push(Unbound::AnchorUnresolved {
                 anchor_kind: anchor.name.clone(),

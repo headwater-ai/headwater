@@ -35,3 +35,6 @@ headwater-yaml = { path = "../yaml" }
 # a rule set that its own publisher's engine refuses is a rule set nobody can
 # evaluate against.
 headwater-lock = { path = "../lock" }
+
+[lints]
+workspace = true

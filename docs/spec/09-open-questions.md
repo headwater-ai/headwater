@@ -10,7 +10,7 @@ relations:
 
 # decisions
 
-22 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+23 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -99,3 +99,7 @@ relations:
 ## Q22 — The integrity posture of a published package
 
 [DR-repo-0022](../decisions/0022-q22-the-integrity-posture-of-a-published-package.md) — A package digest checks a fetched artifact against a pin that a person committed, and it is never a signature. The in-house SHA-256 is held against a second implementation rather than replaced by a dependency.
+
+## Q23 — The engine lint floor
+
+[DR-repo-0023](../decisions/0023-the-engine-lint-floor.md) — A published Rust guideline set is not installed as a skill, because a skill carries no rule of its own. Twenty-two lints are declared once in the workspace manifest, and each was chosen by measuring the corpus rather than by adopting a list.

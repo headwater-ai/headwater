@@ -13,3 +13,6 @@ publish.workspace = true
 # the drift that lets the writer and the reader disagree about which files this
 # engine wrote.
 [dependencies]
+
+[lints]
+workspace = true

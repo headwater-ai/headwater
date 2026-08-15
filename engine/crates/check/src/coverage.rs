@@ -160,7 +160,7 @@ impl Coverage {
                 document.created += 1;
                 match instance.outcome {
                     InstanceOutcome::Skipped(ref reason) => {
-                        document.skipped.push((instance.rule, reason.clone()))
+                        document.skipped.push((instance.rule, reason.clone()));
                     }
                     _ => document.ran += 1,
                 }

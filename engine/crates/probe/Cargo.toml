@@ -43,3 +43,6 @@ headwater-hash = { path = "../hash" }
 # The loader for the budget declaration and for what a transcript holds. One
 # dialect, one parser, one set of spans in a refusal.
 headwater-yaml = { path = "../yaml" }
+
+[lints]
+workspace = true

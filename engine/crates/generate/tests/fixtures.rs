@@ -963,7 +963,7 @@ fn the_native_export_round_trips_the_graph() {
             .get("facets")
             .and_then(|node| node.value.as_map())
             .expect("facets");
-        for facet in document.facets.iter() {
+        for facet in document.facets {
             assert!(
                 facets.get(&facet.key.value).is_some(),
                 "{}: the facet `{}` did not survive the export",

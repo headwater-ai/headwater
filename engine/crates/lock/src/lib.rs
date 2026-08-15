@@ -526,7 +526,7 @@ core:
         // The edit a reviewer would never see: one word in the body, and the
         // digest left alone.
         let tampered = text.replace("homogeneous: true", "homogeneous: false");
-        assert!(tampered != text);
+        assert_ne!(tampered, text);
         assert!(matches!(read(&tampered), Err(LockError::Tampered { .. })));
     }
 

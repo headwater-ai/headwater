@@ -487,7 +487,7 @@ fn main() -> ExitCode {
             "--relates" => match arguments.next() {
                 Some(pair) => match pair.split_once('=') {
                     Some((relation, target)) if !relation.is_empty() && !target.is_empty() => {
-                        relates.push((relation.to_string(), target.to_string()))
+                        relates.push((relation.to_string(), target.to_string()));
                     }
                     _ => {
                         return fail(
@@ -503,7 +503,7 @@ fn main() -> ExitCode {
             "--facet" => match arguments.next() {
                 Some(pair) => match pair.split_once('=') {
                     Some((facet, value)) if !facet.is_empty() && !value.is_empty() => {
-                        facets.push((facet.to_string(), value.to_string()))
+                        facets.push((facet.to_string(), value.to_string()));
                     }
                     _ => {
                         return fail(
@@ -3510,12 +3510,9 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
     // `check` reads it with. A server that guessed the date would answer a
     // windowed expectation wrong for as long as it ran, so a host that cannot
     // say what day it is gets no server.
-    let ctx = match now.map(Context::at).or_else(Context::from_system_clock) {
-        Some(ctx) => ctx,
-        None => {
-            eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
-            return ExitCode::FAILURE;
-        }
+    let Some(ctx) = now.map(Context::at).or_else(Context::from_system_clock) else {
+        eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
+        return ExitCode::FAILURE;
     };
     let loaded = match load(root) {
         Ok(loaded) => loaded,
@@ -3581,15 +3578,13 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
 /// the artifact: the answer costs one hash per listed input, and it costs no
 /// run. It is also the limit of the answer, which the report states every time.
 fn gate(root: &Path, read_set: Option<PathBuf>, now: Option<Date>) -> ExitCode {
-    let path =
-        match read_set {
-            Some(path) => path,
-            None => return fail(
-                "`gate` holds a read set against this tree and takes the file that carries one. \
-                 Try `headwater check --read-set run.readset` on one tree, then `headwater gate \
-                 --read-set run.readset` on another",
-            ),
-        };
+    let Some(path) = read_set else {
+        return fail(
+            "`gate` holds a read set against this tree and takes the file that carries one. \
+             Try `headwater check --read-set run.readset` on one tree, then `headwater gate \
+             --read-set run.readset` on another",
+        );
+    };
     let text = match std::fs::read_to_string(&path) {
         Ok(text) => text,
         Err(error) => return fail(&format!("cannot read {}: {error}", path.display())),
@@ -3606,12 +3601,9 @@ fn gate(root: &Path, read_set: Option<PathBuf>, now: Option<Date>) -> ExitCode {
     };
     // The same clock rule `check` follows, and for the same reason: a gate that
     // guessed the day would carry a windowed verdict across the day it expired.
-    let asked = match now.or_else(|| Context::from_system_clock().map(|ctx| ctx.now())) {
-        Some(asked) => asked,
-        None => {
-            eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
-            return ExitCode::FAILURE;
-        }
+    let Some(asked) = now.or_else(|| Context::from_system_clock().map(|ctx| ctx.now())) else {
+        eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
+        return ExitCode::FAILURE;
     };
     // The lock, and nothing else of the taxonomy. A lock that moved voids every
     // result at once, so its digest is the one component a gate compares that is
@@ -3845,12 +3837,9 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
     // check. Spec 12: "`ctx.now` is a bound value, never a syscall." A run
     // whose host cannot say what day it is refuses rather than guesses, because
     // a windowed expectation evaluated against a guess is a wrong verdict.
-    let ctx = match now.map(Context::at).or_else(Context::from_system_clock) {
-        Some(ctx) => ctx,
-        None => {
-            eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
-            return ExitCode::FAILURE;
-        }
+    let Some(ctx) = now.map(Context::at).or_else(Context::from_system_clock) else {
+        eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
+        return ExitCode::FAILURE;
     };
     // The second injected value, read here and bound after the walk below. A
     // manifest this engine cannot read is a refusal rather than a shorter
@@ -4022,11 +4011,8 @@ fn infer(
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
-    let ctx = match now.map(Context::at).or_else(Context::from_system_clock) {
-        Some(ctx) => ctx,
-        None => {
-            return fail("the host clock is before 1970, and this engine will not guess a date")
-        }
+    let Some(ctx) = now.map(Context::at).or_else(Context::from_system_clock) else {
+        return fail("the host clock is before 1970, and this engine will not guess a date");
     };
     let until = until.unwrap_or_else(|| ctx.now().plus_days(DEFAULT_WINDOW));
     if until < ctx.now() {
@@ -4346,14 +4332,11 @@ fn init(root: &Path, corpus_root: Option<String>, package: Option<String>) -> Ex
     // Markdown, because that is the evidence a tree offers about where its
     // documentation is, and the adopter overrides it with one word.
     let proposed = corpus_root.or_else(|| busiest_directory(root));
-    let corpus_root = match proposed {
-        Some(root) => root,
-        None => {
-            return fail(
-                "no directory under this repository holds a Markdown file, so nothing here \
-                 proposes a corpus root. Pass --corpus <dir> to name one",
-            )
-        }
+    let Some(corpus_root) = proposed else {
+        return fail(
+            "no directory under this repository holds a Markdown file, so nothing here \
+             proposes a corpus root. Pass --corpus <dir> to name one",
+        );
     };
 
     // The package, found rather than assumed. Nothing in this engine fetches

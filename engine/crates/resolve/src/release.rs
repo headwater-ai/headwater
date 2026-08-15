@@ -662,7 +662,7 @@ mod tests {
             &headwater_hash::digest(b"one"),
             &headwater_hash::digest(b"two"),
         );
-        assert!(forged != text);
+        assert_ne!(forged, text);
         assert!(matches!(
             read(&forged),
             Err(ReleaseError::RecordMoved { .. })

@@ -430,7 +430,7 @@ pub(crate) fn group(memberships: &[Membership]) -> Result<Vec<Profile>, Vec<Decl
                             grain.name()
                         ),
                         span: membership.span,
-                    })
+                    });
                 }
                 false => profile.tombstone = grain,
             }

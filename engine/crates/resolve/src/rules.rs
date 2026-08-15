@@ -961,7 +961,7 @@ fn lifecycle_soundness(view: &View, out: &mut Vec<ResolveError>) {
 
         let transitions = block(body, "transitions").cloned().unwrap_or_default();
         let mut exits: BTreeMap<String, Vec<String>> = BTreeMap::new();
-        for entry in transitions.iter() {
+        for entry in &transitions {
             let from = entry.key.value.clone();
             let targets: Vec<String> = entry
                 .value
@@ -1010,7 +1010,7 @@ fn lifecycle_soundness(view: &View, out: &mut Vec<ResolveError>) {
         // A terminal state is declared, either by the regime's own list or by
         // the role that the vocabulary gives the value.
         let declared: BTreeSet<String> = strings(body, "terminal").into_iter().collect();
-        for state in reached.iter() {
+        for state in &reached {
             let leaves = exits.get(state).is_some_and(|targets| !targets.is_empty());
             if leaves || declared.contains(state) || retained.contains(state.as_str()) {
                 continue;
@@ -1283,7 +1283,7 @@ fn attributes(view: &View, out: &mut Vec<ResolveError>) {
         let Some(declared) = block(body, "attributes") else {
             continue;
         };
-        for entry in declared.iter() {
+        for entry in declared {
             let name = entry.key.value.as_str();
             let at = format!("relations.{relation}.attributes.{name}");
             if name == "to" {
@@ -1374,7 +1374,7 @@ fn mapping_integrity(view: &View, out: &mut Vec<ResolveError>) {
     for (index, body) in view.items("mappings").into_iter().enumerate() {
         let at = |member: &str| format!("mappings.{index}.{member}");
         if let Some(named) = block(body, "kinds") {
-            for entry in named.iter() {
+            for entry in named {
                 let name = entry.key.value.as_str();
                 if !kinds.contains(name) {
                     out.push(refusal(
@@ -1386,7 +1386,7 @@ fn mapping_integrity(view: &View, out: &mut Vec<ResolveError>) {
             }
         }
         if let Some(named) = block(body, "facet_values") {
-            for entry in named.iter() {
+            for entry in named {
                 let key = entry.key.value.as_str();
                 let Some((facet, value)) = key.split_once('.') else {
                     out.push(refusal(

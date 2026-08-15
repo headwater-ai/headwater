@@ -37,3 +37,6 @@ headwater-lock = { path = "../lock" }
 # The pipeline test runs the real check layer over a scaffolded tree, and the
 # digest of the fixture taxonomy stands in for a lock digest.
 headwater-hash = { path = "../hash" }
+
+[lints]
+workspace = true

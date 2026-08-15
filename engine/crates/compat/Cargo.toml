@@ -21,3 +21,6 @@ headwater-resolve = { path = "../resolve" }
 # value; the alternative was a second accessor on `headwater-doc` that exists
 # for one caller.
 headwater-yaml = { path = "../yaml" }
+
+[lints]
+workspace = true

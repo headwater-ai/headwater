@@ -33,3 +33,6 @@ headwater-resolve = { path = "../resolve" }
 # The cache differential over this repository keys on the digest the committed
 # lock declares, which is the number a real run of `headwater check` uses.
 headwater-lock = { path = "../lock" }
+
+[lints]
+workspace = true

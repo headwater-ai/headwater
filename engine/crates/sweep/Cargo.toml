@@ -31,3 +31,6 @@ headwater-graph = { path = "../graph" }
 # sweep's return file is YAML for the reason every other authored input here is:
 # one dialect, one parser, one set of spans in a refusal.
 headwater-yaml = { path = "../yaml" }
+
+[lints]
+workspace = true

@@ -330,9 +330,8 @@ fn outcome_of(entry: &walk::Entry, taxonomy: &Taxonomy) -> Read {
     // One read of the file, and the digest of exactly those bytes. Everything
     // after this line works on what is already in hand.
     let digest = headwater_hash::digest(&bytes);
-    let source = match String::from_utf8(bytes) {
-        Ok(text) => text,
-        Err(_) => return hashed(Outcome::Unreadable(Unreadable::NotText), digest),
+    let Ok(source) = String::from_utf8(bytes) else {
+        return hashed(Outcome::Unreadable(Unreadable::NotText), digest);
     };
 
     // Step 5. Before the parse, because a marked file has no front matter to
@@ -718,13 +717,13 @@ mod tests {
             match &row.outcome {
                 Outcome::Typed { .. } => assert!(parsed, "{} is typed and empty", row.path),
                 Outcome::Untyped(Untyped::NoFrontMatter) => {
-                    assert!(!parsed, "{} has no block to carry", row.path)
+                    assert!(!parsed, "{} has no block to carry", row.path);
                 }
                 Outcome::Excluded { .. }
                 | Outcome::NotADocument
                 | Outcome::Unwalkable(_)
                 | Outcome::Unreadable(_) => {
-                    assert!(!parsed, "{} carries a document nothing read", row.path)
+                    assert!(!parsed, "{} carries a document nothing read", row.path);
                 }
                 // A generated row carries a document exactly when it declared
                 // one. The kind rides on the document rather than on the

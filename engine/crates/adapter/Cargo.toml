@@ -28,3 +28,6 @@ headwater-graph = { path = "../graph" }
 # needs what a run needs. It reads that tree rather than growing a second one:
 # see the suite's own comment for why.
 headwater-hash = { path = "../hash" }
+
+[lints]
+workspace = true

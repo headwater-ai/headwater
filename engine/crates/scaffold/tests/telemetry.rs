@@ -189,7 +189,7 @@ fn the_store_lands_outside_the_tree_the_census_walks() {
 
     let resolved = load_map(&fixtures_dir().join("scaffold.taxonomy.yml"));
     let shelves = Taxonomy::read(&resolved).expect("the shelves read");
-    let taken = census::take(&Corpus::new(root.to_path_buf(), "corpus"), &shelves);
+    let taken = census::take(&Corpus::new(root.clone(), "corpus"), &shelves);
     assert!(
         !taken
             .rows

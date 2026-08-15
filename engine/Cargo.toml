@@ -35,6 +35,84 @@ version = "0.1.0"
 edition = "2021"
 publish = false
 
+# The lint floor. Every crate inherits it with `[lints] workspace = true`, so a
+# rule is declared once here rather than repeated in twenty-two manifests or
+# remembered by whoever writes the next crate.
+#
+# CI runs `cargo clippy --all-targets -- -D warnings`, so a lint named here at
+# any level fails the build. That is why the set is chosen by measurement: each
+# entry was at zero hits when it was added, or its hits were fixed in the same
+# change. A lint that would need a rewrite is left out, and Q23 records which
+# ones and why.
+[workspace.lints.rust]
+# The engine has no `unsafe` block and no reason to acquire one: it reads files,
+# builds a graph and writes text. `forbid` rather than `deny` because the point
+# is that no module can re-admit it with a local `#[allow]`.
+unsafe_code = "forbid"
+
+# A `pub` item that no path exports is a public surface nothing can reach. The
+# crates here are libraries that the CLI consumes, so the distinction between
+# what a crate offers and what it merely failed to hide is the one this lint
+# keeps honest.
+unreachable_pub = "deny"
+
+# `trivial_casts` is not here. `crates/check/src/register.rs` casts the first
+# closure of an array to `fn(String) -> Promotion` so that the remaining
+# elements coerce to one type, and the lint reads a coercion the array needs as
+# a redundant one. The alternative is an `#[allow]` on a correct line.
+trivial_numeric_casts = "deny"
+unused_lifetimes = "deny"
+variant_size_differences = "deny"
+
+[workspace.lints.clippy]
+# A stub that reached main. `headwater check` exits 0 with findings, so a verb
+# that panicked on a `todo!` would read as an engine defect rather than as
+# unfinished work.
+todo = "deny"
+unimplemented = "deny"
+
+# Debugging left in place. `dbg!` writes to standard error, which is where
+# `--fix` reports what it wrote, so a stray one lands in the middle of output a
+# person is meant to read.
+dbg_macro = "deny"
+
+# `process::exit` skips every destructor and every buffered write. The CLI is a
+# shell over libraries that return values, and it has never needed this.
+exit = "deny"
+
+# Correctness, and each was at zero on the run that added it.
+mem_forget = "deny"
+lossy_float_literal = "deny"
+filetype_is_file = "deny"
+rc_buffer = "deny"
+
+# Three correctness lints were measured and left out, because CI reads tests with
+# `--all-targets` and each one reports correct code there. `unwrap_in_result`
+# reports the four `read` helpers of a `#[cfg(test)]` module, where an `expect`
+# on a fixture is the intent. `verbose_file_reads` reports
+# `crates/scaffold/src/tree.rs`, which keeps the handle it read from in order to
+# write through it, so `fs::read_to_string` would lose the thing the function
+# returns. `float_cmp` reports an `assert_eq!` against `0.0` that is exact
+# because the numerator is zero.
+
+# One idiom per thing, so that a reader who learned a pattern in one crate
+# meets the same pattern in the next. `cargo clippy --fix` wrote the corrections
+# for the lints it can apply mechanically, and the `let ... else` rewrites were
+# taken by hand.
+semicolon_if_nothing_returned = "deny"
+explicit_iter_loop = "deny"
+manual_let_else = "deny"
+manual_assert_eq = "deny"
+implicit_clone = "deny"
+stable_sort_primitive = "deny"
+uninlined_format_args = "deny"
+single_char_pattern = "deny"
+needless_raw_string_hashes = "deny"
+
+# `assigning_clones` is not here. Its correction is `clone_from`, which trades a
+# readable assignment for a method that saves an allocation this engine does not
+# count, in ten places that read correctly today.
+
 [profile.release]
 opt-level = 3
 lto = true

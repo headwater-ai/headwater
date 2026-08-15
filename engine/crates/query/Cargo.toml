@@ -35,3 +35,6 @@ headwater-doc = { path = "../doc" }
 # needs its taxonomy resolved and its lock read.
 headwater-resolve = { path = "../resolve" }
 headwater-lock = { path = "../lock" }
+
+[lints]
+workspace = true

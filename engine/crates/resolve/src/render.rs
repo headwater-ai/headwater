@@ -128,8 +128,8 @@ mod tests {
     fn round_trip(source: &str) {
         let loaded = headwater_yaml::load(source).expect("the fixture loads");
         let written = render(loaded.value.as_map().expect("a mapping"));
-        let again = headwater_yaml::load(&written)
-            .unwrap_or_else(|errors| panic!("{written}\n{:?}", errors));
+        let again =
+            headwater_yaml::load(&written).unwrap_or_else(|errors| panic!("{written}\n{errors:?}"));
         assert!(
             same(&loaded.value, &again.value),
             "{source}\nbecame\n{written}"

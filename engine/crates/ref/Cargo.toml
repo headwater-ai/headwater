@@ -15,3 +15,6 @@ publish.workspace = true
 # The fixtures hold the grammar to the addresses this repository already wrote,
 # and reading them out of the two sources needs the loader.
 headwater-yaml = { path = "../yaml" }
+
+[lints]
+workspace = true

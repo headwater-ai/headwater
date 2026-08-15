@@ -922,7 +922,7 @@ fn a_key_outside_the_closed_set_refuses_the_transcript() {
     let record = record_of(&transcript("transcript-with-prose.md"));
     match record.refusal {
         Some(headwater_probe::intake::Refusal::KeyNotPermitted { ref key, .. }) => {
-            assert_eq!(key, "reasoning")
+            assert_eq!(key, "reasoning");
         }
         other => panic!("{other:?}"),
     }
@@ -946,7 +946,7 @@ fn a_key_outside_the_closed_set_of_a_produced_artifact_refuses_the_transcript() 
     let record = record_of(&source);
     match record.refusal {
         Some(headwater_probe::intake::Refusal::KeyNotPermitted { ref key, .. }) => {
-            assert_eq!(key, "note")
+            assert_eq!(key, "note");
         }
         other => panic!("{other:?}"),
     }

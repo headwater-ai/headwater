@@ -38,3 +38,6 @@ headwater-doc = { path = "../doc" }
 # held against is the index a run would build rather than one written by hand.
 headwater-census = { path = "../census" }
 headwater-yaml = { path = "../yaml" }
+
+[lints]
+workspace = true

@@ -143,3 +143,9 @@ A retired-term lexicon sits in the language regime, and a verdict reports the re
 A package digest checks a fetched artifact against a pin that a person committed, and it is never a signature. The in-house SHA-256 is held against a second implementation rather than replaced by a dependency. The record is [DR-repo-0022](../decisions/0022-q22-the-integrity-posture-of-a-published-package.md).
 
 **This question arrived after the twenty-one above closed, and it did not come from the design phase.** [#77](https://github.com/headwater-ai/headwater/issues/77) built the publishing half of [spec 7](07-distribution-and-federation.md#publishing) and found a choice that would otherwise have been made by reflex. The engine already carried a SHA-256, and reaching for it would have settled what a fetched artifact is checked against without anybody stating it.
+
+## Q23 — The engine lint floor
+
+A published Rust guideline set is not installed as a skill, because a skill carries no rule of its own. Twenty-two lints are declared once in the workspace manifest, and each was chosen by measuring the corpus rather than by adopting a list. The record is [DR-repo-0023](../decisions/0023-the-engine-lint-floor.md).
+
+**This question also arrived from outside the design phase, and it was asked as a question about a skill.** Two agent-facing Rust guideline sets were offered for installation. [Spec 5](05-ai-integration.md#how-a-skill-reaches-an-agent-and-what-nothing-does) already refuses that shape, so the answer was available. What the question found is that the rule the guidance points at had nowhere to live. The workspace manifest declared no lint, and the continuous integration job ran the default set alone.

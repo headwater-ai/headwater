@@ -10,3 +10,6 @@ publish.workspace = true
 # deserializer: spec 12 needs a span on every key, and no convenient
 # `Deserialize` implementation supplies one.
 saphyr-parser = "0.0.11"
+
+[lints]
+workspace = true

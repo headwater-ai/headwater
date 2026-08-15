@@ -76,3 +76,6 @@ headwater-scaffold = { path = "../scaffold" }
 # it goes into the lock, so what the verb prints and what it stores are one
 # artifact that went through one reader.
 headwater-yaml = { path = "../yaml" }
+
+[lints]
+workspace = true
