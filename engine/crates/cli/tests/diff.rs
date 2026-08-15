@@ -480,3 +480,55 @@ fn a_finding_about_the_taxonomy_alone_is_consequence_and_not_instance_validity()
         "and the report names the rule: {ran:?}"
     );
 }
+
+/// `classification`, `identifier` and `projection` go red, and nothing else
+/// proves that they can.
+///
+/// Every case above asserts these three `preserved`, which is a treatment arm
+/// that proves the subject and not the instrument: a dimension wired to a
+/// comparison that can never differ passes all three of them. So this case
+/// moves the shelf that types the one document of the fixture corpus, and each
+/// of the three has to say so.
+///
+/// One edit reaches all three because they are three readings of one event. A
+/// document that matches no shelf resolves to no kind, so it leaves the census
+/// as untyped, it leaves the identifier index, and it leaves every projection
+/// that lists the shelf it was on.
+#[test]
+fn a_shelf_that_moves_reaches_classification_identifier_and_projection() {
+    let root = Root::new("shelf-moves");
+    root.publish("1.0.0");
+    root.edit(
+        "version: 2.0.0",
+        &[("path: docs/decisions/**", "path: docs/rulings/**")],
+    );
+    let candidate = root.publish("2.0.0");
+
+    let ran = root.run(&[
+        "taxonomy",
+        "diff",
+        candidate.to_str().expect("utf-8"),
+        "--now",
+        "2026-08-01",
+    ]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    for dimension in ["classification", "identifier", "projection"] {
+        assert!(
+            ran.dimension(dimension).starts_with("BROKEN"),
+            "`{dimension}` cannot go red, so no case above measures it: {ran:?}"
+        );
+    }
+    assert!(
+        ran.out
+            .contains("docs/decisions/0001-the-warrant-a-person-set.md"),
+        "the report names the document that changed kind: {ran:?}"
+    );
+    assert!(
+        ran.out.contains("DR-repo-0001"),
+        "and the identifier that stopped resolving: {ran:?}"
+    );
+    assert!(
+        ran.out.contains("this change requires a major version"),
+        "{ran:?}"
+    );
+}
