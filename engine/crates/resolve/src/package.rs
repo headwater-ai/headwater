@@ -35,6 +35,7 @@
 //! [`crate::release`] holds the record and argues what its digest proves.
 
 use crate::error::{ResolveError, ResolveErrorKind};
+use crate::operation::{self, Operation};
 use crate::release::{self, Release, ReleaseError};
 use crate::source::{Role, Source};
 use headwater_yaml::Mapping;
@@ -230,6 +231,68 @@ pub fn sources_at(
     }
 
     Ok(out)
+}
+
+/// The adopter's own overlay, read on its own and merged into nothing.
+///
+/// # Why the bundles are not here
+///
+/// A migration rewrites the addresses of the file this repository owns. A
+/// bundle is package content, and
+/// [spec 7](../../../../docs/spec/07-distribution-and-federation.md#waivers)
+/// gives the reason a local edit to package content does not survive:
+/// `headwater taxonomy vendor` replaces a vendored package directory whole. An
+/// address rewritten inside a bundle is lost at the next upgrade, and the
+/// publisher of the bundle is who moves it. So the writable set is this one
+/// file, and a bundle whose address no longer reaches a declaration is reported
+/// by the `addressability` dimension against the publisher instead.
+///
+/// The source index of every operation is 0, because there is one source.
+pub fn adopted(root: &Path, consumer: &Consumer) -> Result<Adopted, Vec<ResolveError>> {
+    let Some(declared) = &consumer.overlay else {
+        return Ok(Adopted::None);
+    };
+    let source = Source::read(&root.join(declared), declared, Role::Overlay)?;
+    let operations = operation::read(0, declared, &source.root)?;
+    Ok(Adopted::Declared {
+        at: declared.clone(),
+        operations,
+    })
+}
+
+/// What a repository declares as its own overlay.
+///
+/// Two arms rather than an [`Option`], because "this repository declares no
+/// overlay" and "the overlay it declares holds no operation" are two states a
+/// report says different things about, and one of them is a file somebody has
+/// to open.
+#[derive(Clone, Debug)]
+pub enum Adopted {
+    Declared {
+        /// The path, as the consumer declaration writes it.
+        at: String,
+        operations: Vec<Operation>,
+    },
+    /// The consumer declaration names no overlay, so no address of this
+    /// repository is a migration subject.
+    None,
+}
+
+impl Adopted {
+    pub fn operations(&self) -> &[Operation] {
+        match self {
+            Adopted::Declared { operations, .. } => operations,
+            Adopted::None => &[],
+        }
+    }
+
+    /// The file a rewrite would write, where there is one.
+    pub fn at(&self) -> Option<&str> {
+        match self {
+            Adopted::Declared { at, .. } => Some(at),
+            Adopted::None => None,
+        }
+    }
 }
 
 /// The package directory whose manifest declares `name`.

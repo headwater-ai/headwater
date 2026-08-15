@@ -1535,7 +1535,17 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     let candidate = headwater_resolve::package::sources_at(root, fetched, &manifest, &consumer)
         .and_then(|sources| headwater_resolve::resolve(&sources));
     let (resolution, addressability) = match candidate {
-        Ok(resolution) => (Some(resolution), headwater_compat::Outcome::Preserved),
+        Ok(resolution) => {
+            // The quiet half. The candidate resolved, and it may have resolved
+            // because an overlay `add` created the declaration the new base
+            // removed. See `headwater_compat::addressability`.
+            let outcome = headwater_compat::addressability(
+                &resolution.founded,
+                &resolution.sources,
+                Vec::new(),
+            );
+            (Some(resolution), outcome)
+        }
         Err(errors) => {
             let breaks: Vec<headwater_compat::Break> = errors
                 .iter()

@@ -25,6 +25,10 @@ headwater-graph = { path = "../graph" }
 # result is parsed again before anything reaches disk.
 headwater-doc = { path = "../doc" }
 
+# The overlay writer reads its own read-back through the resolver's operation
+# reader, so the comparison it makes is the reading the resolver will take.
+headwater-resolve = { path = "../resolve" }
+
 # Four members of a resolved taxonomy that no typed reader carries. See
 # `declared.rs` for the list and for why each one is read here.
 headwater-yaml = { path = "../yaml" }

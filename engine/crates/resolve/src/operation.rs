@@ -92,6 +92,14 @@ impl Operation {
         format!("{}.{}", self.kind.word(), self.address)
     }
 
+    /// The address with its last segment dropped: the declaration this
+    /// operation reaches into. Empty where the address holds one segment,
+    /// which is an operation on a whole block.
+    pub fn reaches_into(&self) -> &[String] {
+        let segments = self.address.segments();
+        &segments[..segments.len() - 1]
+    }
+
     /// Every leaf this operation writes, as a path from the root.
     ///
     /// See the module comment. An `add` is the union of its value's leaves

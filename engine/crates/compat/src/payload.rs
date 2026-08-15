@@ -26,7 +26,8 @@
 //! right for the publisher can be vacuous here.
 
 use headwater_census::census::Census;
-use headwater_resolve::migration::{Payload, Step};
+use headwater_resolve::migration::{Payload, Step, Subject};
+use headwater_resolve::Adopted;
 use std::collections::BTreeSet;
 
 /// One payload, against one corpus.
@@ -47,6 +48,10 @@ pub struct Accounting {
 /// One step, against one corpus.
 #[derive(Clone, Debug)]
 pub struct Accounted {
+    /// What the step moves. The noun a report counts subjects in is fixed by
+    /// it, and a second table of nouns beside the enum would be a place for the
+    /// two to disagree.
+    pub subject: Subject,
     /// How the payload names the step.
     pub at: String,
     pub how: String,
@@ -69,6 +74,7 @@ pub struct Accounted {
 pub fn account(
     payload: &Payload,
     census: &Census,
+    overlay: &Adopted,
     declares: impl Fn(&Step) -> bool,
     moved: &BTreeSet<String>,
 ) -> Accounting {
@@ -76,17 +82,26 @@ pub fn account(
         .steps
         .iter()
         .map(|step| Accounted {
+            subject: step.subject.clone(),
             at: step.at(),
             how: step.apply.sentence(),
             remedies: step.subject.remedies(),
-            subjects: crate::subjects(step, census),
+            subjects: crate::subjects(step, census, overlay),
             declared: declares(step),
             task: step.apply.task().map(str::to_string),
             because: step.because.clone(),
         })
         .collect();
 
-    let named: BTreeSet<&String> = steps.iter().flat_map(|step| step.subjects.iter()).collect();
+    // Only the document subjects, because `moved` is a set of document paths
+    // and an overlay entry is not one. A key that could never match would not
+    // change the answer, and it would make the denominator below read as
+    // though it counted two kinds of thing.
+    let named: BTreeSet<&String> = steps
+        .iter()
+        .filter(|step| !step.subject.addressed())
+        .flat_map(|step| step.subjects.iter())
+        .collect();
     Accounting {
         at: payload.at.clone(),
         from: payload.from.clone(),
@@ -172,12 +187,8 @@ impl Accounted {
             (false, _) => "the taxonomy this repository takes declares no such value, so this \
                            step migrates nothing here"
                 .to_string(),
-            (true, 0) => {
-                "no document of this corpus carries the old value, so this step is a no-op here"
-                    .to_string()
-            }
-            (true, 1) => "1 document of this corpus carries the old value".to_string(),
-            (true, count) => format!("{count} documents of this corpus carry the old value"),
+            (true, 0) => self.subject.reached_nothing().to_string(),
+            (true, count) => self.subject.reached(count),
         }
     }
 }
