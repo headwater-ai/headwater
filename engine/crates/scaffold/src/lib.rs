@@ -942,7 +942,9 @@ fn front_matter(
                             quoted: false,
                             origin: Origin::Scaffolded(format!(
                                 "`regimes.lifecycle.{}` opens at `{state}`",
-                                regime.map(|regime| regime.name.as_str()).unwrap_or_default()
+                                regime
+                                    .map(|regime| regime.name.as_str())
+                                    .unwrap_or_default()
                             )),
                         },
                         None => return Err(Refusal::FacetUndeterminable {

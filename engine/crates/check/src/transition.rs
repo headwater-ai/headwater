@@ -146,9 +146,10 @@ impl DocumentCheck for Transition<'_> {
         // line, and the exits this rule would offer come from a state the
         // machine never had.
         let named = regime.states();
-        if let Some(unnamed) = [before, after].into_iter().find(|state| {
-            !named.contains(state)
-        }) {
+        if let Some(unnamed) = [before, after]
+            .into_iter()
+            .find(|state| !named.contains(state))
+        {
             return Outcome::Skipped(format!(
                 "one version of this document stands at `{unnamed}`, which the lifecycle regime \
                  `{}` does not name, and `lifecycle.state.not_admitted` reports that",

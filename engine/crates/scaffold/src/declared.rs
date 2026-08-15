@@ -62,7 +62,6 @@ pub fn created_by<'a>(root: &'a Mapping, relation: &str) -> Option<&'a str> {
     member(root, "relations", relation, "created_by")
 }
 
-
 /// `facets.<facet>.type`, which decides whether a prompt may stand in a field.
 ///
 /// A free string takes a prompt and stays readable. An integer or a date does

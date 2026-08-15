@@ -139,7 +139,8 @@ fn a_document_authored_at_a_state_its_kind_does_not_admit_is_reported() {
     assert!(message.contains("`discharged`"), "the state: {message}");
     assert!(message.contains("`narrow`"), "the regime: {message}");
     assert!(
-        message.contains("`draft`") && message.contains("`current`")
+        message.contains("`draft`")
+            && message.contains("`current`")
             && message.contains("`superseded`"),
         "what the kind does admit: {message}"
     );
@@ -162,9 +163,14 @@ fn the_same_state_on_a_kind_whose_regime_names_it_is_silent() {
         !reported.contains(&"admitted-state/receipts/discharged.md"),
         "the rule read the value rather than the kind: {reported:?}"
     );
-    assert_eq!(skips(&run).iter().filter(|(path, _)| {
-        *path == "admitted-state/receipts/discharged.md"
-    }).count(), 0, "the receipt passed rather than declined to decide");
+    assert_eq!(
+        skips(&run)
+            .iter()
+            .filter(|(path, _)| { *path == "admitted-state/receipts/discharged.md" })
+            .count(),
+        0,
+        "the receipt passed rather than declined to decide"
+    );
 }
 
 /// A terminal state the kind's own regime names is silent.
