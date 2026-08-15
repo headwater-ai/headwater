@@ -5,10 +5,11 @@ status_since: 2026-08-15
 summary: A published Rust guideline set is not installed as a skill, because a skill carries no rule of its own. Twenty-two lints are declared once in the workspace manifest, and each was chosen by measuring the corpus rather than by adopting a list.
 last_verified: 2026-08-15
 provenance:
-  warrant: proposed
+  warrant: accepted
   agency: mixed
   drafted_by: claude-opus-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   governs:
