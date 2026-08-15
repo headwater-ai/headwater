@@ -221,6 +221,35 @@ impl Root {
             "2026-08-01",
         ])
     }
+
+    fn migrate(&self, name: &str, flags: &[&str]) -> Ran {
+        let at = self.released(name);
+        let mut arguments = vec![
+            "taxonomy",
+            "migrate",
+            at.to_str().expect("utf-8"),
+            "--now",
+            "2026-08-01",
+        ];
+        arguments.extend_from_slice(flags);
+        self.run(&arguments)
+    }
+
+    fn read(&self, path: &str) -> String {
+        std::fs::read_to_string(self.at.join(path)).expect("the document reads")
+    }
+
+    /// Make one document of the corpus unwritable.
+    ///
+    /// A read-only file rather than a missing one, because a missing file is
+    /// also a corpus a census never walked, and the case worth testing is the
+    /// document a run named and then could not write.
+    fn read_only(&self, path: &str) {
+        let at = self.at.join(path);
+        let mut permissions = std::fs::metadata(&at).expect("the document is there").permissions();
+        permissions.set_readonly(true);
+        std::fs::set_permissions(&at, permissions).expect("the document locks");
+    }
 }
 
 impl Drop for Root {
@@ -511,4 +540,229 @@ fn a_kind_step_is_accounted_against_classification() {
             "the report states `{line}`: {ran:?}"
         );
     }
+}
+
+// ---------------------------------------------------------------------------
+// `taxonomy migrate --apply`: the half that writes.
+// ---------------------------------------------------------------------------
+
+/// The committed payload with its closed choice made mechanical.
+///
+/// The committed one has exactly one mechanical step and it reaches exactly one
+/// document, so no case built on it can tell a run that writes one file from a
+/// run that writes a set. `current` reaches two documents, and turning its
+/// choice into a single target turns it into a step the engine applies.
+fn two_document_payload() -> String {
+    let full = payload();
+    let choice = [
+        "    to: [settled, provisional]",
+        "    task: >-",
+        "      Say whether the argument this document makes is closed. A document that a",
+        "      reader may rely on and still argue with is `provisional`. One that nobody",
+        "      is arguing with is `settled`.",
+    ]
+    .join("\n");
+    assert!(full.contains(&choice), "the committed payload carries it");
+    full.replacen(&choice, "    to: [settled]", 1)
+}
+
+/// The case the whole issue is about, and the one it would be worst to get
+/// wrong in the other direction.
+///
+/// A mechanical step writes the documents it covers. A judgment step writes
+/// nothing, and that is asserted against the *bytes* of the two documents the
+/// closed choice names rather than against a line of the report.
+#[test]
+fn the_mechanical_step_writes_and_a_judgment_step_writes_nothing() {
+    let root = Root::new("apply-writes-the-mechanical-half");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate(Some(&payload()));
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let live = root.read("docs/decisions/0001-the-live-document.md");
+    let second = root.read("docs/decisions/0002-the-second-live-document.md");
+    let written = root.read("docs/decisions/0003-the-document-still-being-written.md");
+    assert!(written.contains("status: draft"), "the fixture is at draft");
+
+    let ran = root.migrate("2.0.0", &["--apply"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(ran.out.contains("wrote 1 value in 1 document"), "{ran:?}");
+
+    assert!(
+        root.read("docs/decisions/0003-the-document-still-being-written.md")
+            .contains("status: outline"),
+        "the mechanical step wrote its one target"
+    );
+    assert_eq!(
+        root.read("docs/decisions/0001-the-live-document.md"),
+        live,
+        "a closed choice is settled by an author, and `--apply` wrote this document"
+    );
+    assert_eq!(
+        root.read("docs/decisions/0002-the-second-live-document.md"),
+        second,
+        "a closed choice is settled by an author, and `--apply` wrote this document"
+    );
+    assert!(
+        ran.out.contains("2 tasks for an author"),
+        "the judgment half is emitted as a task list: {ran:?}"
+    );
+    assert!(
+        ran.out.contains("Say whether the argument this document makes is closed"),
+        "the task carries its own text: {ran:?}"
+    );
+}
+
+/// A run without `--apply` reports the same thing and writes nothing.
+#[test]
+fn a_run_without_apply_writes_no_document() {
+    let root = Root::new("apply-is-required");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate(Some(&payload()));
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let before = root.read("docs/decisions/0003-the-document-still-being-written.md");
+    let ran = root.migrate("2.0.0", &[]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(
+        ran.out
+            .contains("1 value in 1 document would be written. Nothing was: pass `--apply`"),
+        "{ran:?}"
+    );
+    assert_eq!(
+        root.read("docs/decisions/0003-the-document-still-being-written.md"),
+        before
+    );
+}
+
+/// The bar the issue set, tested where it can fail.
+///
+/// Two documents lie under one mechanical step and one of them cannot be
+/// written. The run refuses and names it, and the other document is byte for
+/// byte what it was. A writer that wrote as it went would have written that
+/// document before it reached the one it could not, and the tree would then be
+/// half migrated with nothing recording which half.
+#[test]
+fn a_document_that_cannot_be_written_leaves_every_other_document_as_it_was() {
+    let root = Root::new("half-written");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate(Some(&two_document_payload()));
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    // Three documents lie under the two mechanical steps, which is what makes
+    // the assertion below about a set rather than about one file. The
+    // unwritable one is the middle of the three in path order, so one document
+    // sits before it and one after: a writer that wrote as it went would have
+    // written the first and not the third.
+    let planned = root.migrate("2.0.0", &[]);
+    assert_eq!(planned.code, Some(0), "{planned:?}");
+    assert!(
+        planned
+            .out
+            .contains("3 values in 3 documents would be written"),
+        "{planned:?}"
+    );
+
+    let first = "docs/decisions/0001-the-live-document.md";
+    let second = "docs/decisions/0002-the-second-live-document.md";
+    let third = "docs/decisions/0003-the-document-still-being-written.md";
+    let before = root.read(first);
+    let after = root.read(third);
+    root.read_only(second);
+
+    let ran = root.migrate("2.0.0", &["--apply"]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(
+        ran.err.contains(second),
+        "the refusal names the file it could not write: {ran:?}"
+    );
+    assert!(
+        ran.err
+            .contains("a document of this migration cannot be written, so none was"),
+        "{ran:?}"
+    );
+    assert_eq!(
+        root.read(first),
+        before,
+        "the document before the unwritable one is exactly what it was"
+    );
+    assert_eq!(
+        root.read(third),
+        after,
+        "and so is the document after it"
+    );
+    assert!(
+        root.read(second).contains("status: current"),
+        "the unwritable document did not move either"
+    );
+}
+
+/// A kind a homogeneous shelf carries has no byte to rewrite, and the run says
+/// which shelf carries it rather than reporting nothing.
+#[test]
+fn a_kind_the_shelf_carries_is_named_and_no_document_is_written() {
+    let root = Root::new("kind-by-placement");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    let payload =
+        std::fs::read_to_string(fixtures().join("kinds-1-to-2.yml")).expect("the payload reads");
+    root.candidate_of(&KIND, Some(&payload));
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let before = root.read("docs/decisions/0001-the-live-document.md");
+    let ran = root.migrate("2.0.0", &["--apply"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(
+        ran.out.contains(
+            "takes its kind from `decisions`, which is homogeneous, so the document declares \
+             the kind nowhere. The remedy is to move the file"
+        ),
+        "{ran:?}"
+    );
+    assert!(ran.out.contains("wrote 0 values in 0 documents"), "{ran:?}");
+    assert_eq!(root.read("docs/decisions/0001-the-live-document.md"), before);
+}
+
+/// The fourth Done-when clause, where a reader of the run will find it.
+#[test]
+fn every_run_states_that_it_does_not_write_the_lock() {
+    let root = Root::new("says-what-the-lock-is-owed");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate(Some(&payload()));
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let before = std::fs::read_to_string(root.at.join(".headwater/taxonomy.lock"))
+        .expect("the lock reads");
+    let ran = root.migrate("2.0.0", &["--apply"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(
+        ran.out.contains("the lock is not written"),
+        "the run states it: {ran:?}"
+    );
+    assert!(
+        ran.out.contains("whose seam #61 left unstated"),
+        "and states why: {ran:?}"
+    );
+    assert_eq!(
+        std::fs::read_to_string(root.at.join(".headwater/taxonomy.lock")).expect("the lock reads"),
+        before,
+        "and the lock is byte for byte what it was"
+    );
+}
+
+/// An artifact with no payload for this transition is a refusal rather than a
+/// run that migrated nothing and said it was done.
+#[test]
+fn an_artifact_with_no_payload_for_the_transition_is_refused() {
+    let root = Root::new("no-payload");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate(None);
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let ran = root.migrate("2.0.0", &["--apply"]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(
+        ran.err
+            .contains("the artifact ships no migration payload for 1.0.0 to 2.0.0"),
+        "{ran:?}"
+    );
 }
