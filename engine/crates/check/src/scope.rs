@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Scope: what one check may read, carried by the type it receives.
 //!
+//! A view exposes only what the scope declared, and a `Document`-scoped check
+//! physically cannot read a sibling.
 //! [Spec 12](../../../../docs/spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on)
-//! gives scope four uses, and the fourth is what makes the other three true:
-//! "the view exposes *only* what the scope declared. A `Document`-scoped check
-//! physically cannot read a sibling." A scope that nothing enforces "would
-//! silently corrupt every cache key derived from it", which is why spec 12
-//! puts scope enforcement on its list of
-//! [correctness roots](../../../../docs/spec/12-check-layer.md#the-correctness-roots).
+//! states the cost of the alternative: a scope that nothing enforces "would
+//! silently corrupt every cache key derived from it". Spec 12 lists scope
+//! enforcement as a
+//! [correctness root](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+//! for that reason.
 //!
 //! # The declaration is a type, and this module is where that holds
 //!
@@ -16,88 +17,88 @@
 //! fact beside the argument it receives. Nothing connects them, so a check can
 //! declare `Document` and still be handed a view that reads the corpus."
 //!
-//! One trait per scope removes the second fact, and three properties of this
-//! module are what make the removal real rather than a convention:
+//! One trait per scope removes the second fact. Three properties of this module
+//! enforce it:
 //!
-//! 1. **A view has private fields, and only this module builds one.** So a
-//!    check cannot widen the view it was handed, and cannot make a wider one.
+//! 1. **A view has private fields, and only this module builds one.** A check
+//!    cannot widen the view it was handed, and it cannot construct a wider one.
 //! 2. **[`Scope`] has private fields and no public constructor.** A check
-//!    cannot mint one, so the reported scope is derived from the trait rather
-//!    than supplied beside it. [`document_scope`], [`edge_scope`],
-//!    [`neighbourhood_scope`] and [`corpus_scope`] are the derivation, and each
-//!    one reads only its own trait.
-//! 3. **The read set is the view's and never the check's.** An instance
+//!    cannot mint a scope. The engine derives the reported scope from the
+//!    trait, in [`document_scope`], [`edge_scope`], [`neighbourhood_scope`] and
+//!    [`corpus_scope`], and each one reads only its own trait.
+//! 3. **The view owns the read set, and the check never does.** An instance
 //!    records what the view carried, so a check cannot under-report what it
-//!    read. Spec 12 needs that set twice over: as the cache key, and as the
-//!    read set that makes a verdict honest under merge. Each read carries the
-//!    census digest of the file, because a key over a path alone would survive
-//!    every edit to the document it names.
+//!    read. Spec 12 uses that set for two things: the cache key, and the read
+//!    set that keeps a verdict honest under merge. Each read carries the census
+//!    digest of the file. A key over a path alone would survive every edit to
+//!    the document it names.
 //!
 //! # What a check still declares, and what it cannot
 //!
 //! The grain comes from the trait. `NEEDS_BODY`, `NEEDS_PHASE_A` and
-//! `NEEDS_CLOCK` stay declarations, because each is a real input requirement
-//! rather than a claim about the grain, and all three are enforced the same
-//! way: a view returns nothing to a check that did not declare the input.
+//! `NEEDS_CLOCK` stay declarations, because each states an input the check
+//! needs and none of them claims a grain. One rule enforces all three: a view
+//! returns nothing to a check that did not declare the input.
 //!
 //! `NEEDS_PHASE_A` is the third of them and the newest.
 //! [`headwater_graph::Trouble`] is what the graph build could not make of one
-//! document, and a rule that routes a phase-A defect to a finding has to read
-//! it. It arrives **on the view**, restricted to the one document the instance
-//! is over, rather than on the check: a check that held the whole report and
-//! looked its own path up in it could look a sibling's path up just as easily,
-//! and that is the widening this module exists to make impossible.
+//! document, and a rule that reports a phase-A defect has to read it. It
+//! arrives **on the view**, restricted to the one document the instance is
+//! over, rather than on the check. A check that held the whole report could
+//! look a sibling's path up as easily as its own, and that is the widening this
+//! module makes impossible.
 //!
 //! `VERSION` is the other declaration, and it is the one component of a cache
 //! key that no input supplies. It says which edition of a rule reached a
-//! verdict, so that a change to what a rule decides invalidates the entries
-//! the earlier edition wrote. Nothing can derive it: two editions of a rule
-//! read the same documents and the same lock, and they differ only in code.
-//! So it is raised by hand, and
+//! verdict, so a change to what a rule decides invalidates the entries the
+//! earlier edition wrote. Nothing derives it: two editions of a rule read the
+//! same documents and the same lock, and they differ only in code. So an author
+//! raises it by hand, and
 //! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
 //! carries the gap that no instrument catches an author who forgets.
 //!
 //! # The clock is one declaration with two uses, and that is the point
 //!
 //! `NEEDS_CLOCK` decides two things through one value of [`Scope`]. It decides
-//! whether a view carries [`crate::Context::now`], and it decides whether the
-//! cache key carries the same date. The two cannot drift, because the
-//! instantiation functions below bind the clock once and hand the same binding
-//! to the view and to [`crate::cache`].
+//! whether a view carries [`crate::Context::now`], and whether the cache key
+//! carries the same date. The two cannot drift, because the instantiation
+//! functions below bind the clock once and hand that binding to the view and to
+//! [`crate::cache`].
 //!
-//! That is the whole answer to the hole spec 13 recorded against the key: a
-//! check that reads the clock and does not key on it serves yesterday's
-//! verdict today, and the `--no-cache` differential cannot see it, because both
-//! sides of that comparison hold one value of the clock.
+//! That answers the hole spec 13 recorded against the key. A check that reads
+//! the clock and does not key on it serves yesterday's verdict today. The
+//! `--no-cache` differential cannot see it, because both sides of that
+//! comparison hold one value of the clock.
 //!
 //! # The prior version is the second declaration of that shape
 //!
-//! `NEEDS_PRIOR` decides the same two things through one value of [`Scope`],
-//! and [`prior_for`] is the second half of [`clock_for`]: one call per
-//! instantiation, and its result goes to the view and to the cache key. So a
-//! run where the prior version differs keys differently, and a cached verdict
-//! cannot survive a change to the version it was about.
+//! `NEEDS_PRIOR` decides the same two things through one value of [`Scope`].
+//! [`prior_for`] is the second half of [`clock_for`]: one call per
+//! instantiation, and its result goes to the view and to the cache key. A run
+//! where the prior version differs therefore keys differently, and a cached
+//! verdict cannot survive a change to the version it was about.
 //!
 //! Spec 12 makes the prior version available **only in change-scoped
 //! evaluation**, and that is where the two declarations part. A run with no
-//! change cannot hand one over. It does not pass the instance either: every
-//! instance of such a check is created and reported as skipped, with the reason
-//! [`CHANGE_SCOPED_ONLY`], because a check that quietly contributes nothing in
-//! the mode a repository actually runs is the silent pass
+//! change cannot hand one over. It does not pass the instance either. The
+//! engine creates every instance of such a check and reports it as skipped,
+//! with the reason [`CHANGE_SCOPED_ONLY`], because a check that quietly
+//! contributes nothing in the mode a repository actually runs is the silent
+//! pass
 //! [spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
 //! exists to prevent.
 //!
 //! The view carries the front matter of the same document at an earlier state,
-//! so no scope widens: a document-scoped check still reads one document and
+//! so no scope widens. A document-scoped check still reads one document and
 //! still cannot reach a sibling.
 //!
 //! # Where the instance set comes from
 //!
 //! A check is a template, and the engine instantiates it per target. The
-//! generation step reads the taxonomy alone: `instantiates` is asked about a
-//! kind or a relation name, never about a document. So a check cannot choose
-//! its own targets out of the corpus, which is the same failure as a returned
-//! scope one level up.
+//! generation step reads the taxonomy alone. It asks `instantiates` about a
+//! kind or a relation name and never about a document, so a check cannot choose
+//! its own targets out of the corpus. That is the same failure as a returned
+//! scope, one level up.
 //!
 //! Order is the census's for a document check and for a neighbourhood check,
 //! and the graph's edge order for an edge check. All three are path order, so a

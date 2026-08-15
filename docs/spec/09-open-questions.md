@@ -10,7 +10,7 @@ relations:
 
 # decisions
 
-23 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+24 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -103,3 +103,7 @@ relations:
 ## Q23 — The engine lint floor
 
 [DR-repo-0023](../decisions/0023-the-engine-lint-floor.md) — A published Rust guideline set is not installed as a skill, because a skill carries no rule of its own. Twenty-two lints are declared once in the workspace manifest, and each was chosen by measuring the corpus rather than by adopting a list.
+
+## Q24 — Readability, and what a sweep can be asked about
+
+[DR-repo-0024](../decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md) — Readability is not a sweep class and gets no verb, because every class of a sweep names two things that do not fit and a readability finding names one. A source file is not a slice member, because admitting one degrades the membership refusal for every class. (asserted, and no human has accepted it)
