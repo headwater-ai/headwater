@@ -1,0 +1,87 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the admitted-state tree is checked against. It is the smallest
+# shape the question needs: one state vocabulary, two lifecycle regimes over it,
+# and three kinds that bind three different answers.
+#
+# `narrow` and `wide` are the declaration this rule exists to read. They share
+# one vocabulary and they name different parts of it, which is how a taxonomy
+# says "this kind means these states" without a member on `kind` and without a
+# second vocabulary. `discharged` is reachable in `wide` and unnamed in
+# `narrow`, which is the case `lifecycle soundness` refused before the union
+# reading landed.
+#
+# `hollow` binds a regime that declares nothing. It is here so the arm that
+# declines to report has a document under it: a regime that names no state is a
+# defect of the declaration, `taxonomy validate` owns it, and a check that
+# reported it would put it on every document of the kind.
+#
+# `note` binds no regime at all, so the instance set has a document it must not
+# reach.
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft,      role: initial}
+      - {value: current,    role: live}
+      - {value: superseded, role: terminal-retained}
+      - {value: discharged, role: terminal-retained}
+  status_since:
+    role: state_entered
+    required: true
+  summary:
+    role: scent
+    required: true
+
+regimes:
+  lifecycle:
+    narrow:
+      initial: draft
+      transitions: {draft: [current], current: [superseded]}
+      retain_terminal: true
+    wide:
+      initial: draft
+      transitions: {draft: [current], current: [superseded, discharged]}
+      retain_terminal: true
+    empty:
+      transitions: {}
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+kinds:
+  record:
+    identifier: {scheme: note_id}
+    lifecycle: narrow
+    facets: {require: [status, status_since, summary]}
+  receipt:
+    identifier: {scheme: note_id}
+    lifecycle: wide
+    facets: {require: [status, status_since, summary]}
+  hollow:
+    identifier: {scheme: note_id}
+    lifecycle: empty
+    facets: {require: [status, status_since, summary]}
+  note:
+    identifier: {scheme: note_id}
+    facets: {require: [status, status_since, summary]}
+
+shelves:
+  records:
+    path: admitted-state/records/**
+    homogeneous: true
+    kind: record
+  receipts:
+    path: admitted-state/receipts/**
+    homogeneous: true
+    kind: receipt
+  hollows:
+    path: admitted-state/hollows/**
+    homogeneous: true
+    kind: hollow
+  notes:
+    path: admitted-state/notes/**
+    homogeneous: true
+    kind: note

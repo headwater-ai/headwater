@@ -19,16 +19,26 @@
 # source names itself with `taxonomy:`.
 
 taxonomy: headwater/standard
-# 2.1.0 adds and removes nothing. `lifecycle_state` gains `discharged` and the
-# `standard` regime gains one edge into it, so every document that resolved
-# under 2.0.0 still resolves, and a consumer that never writes the value never
-# meets it. `OB-LIFE-1` and `CT-LIFE-1` are additions on the same terms.
+# 3.0.0 takes one edge out of `standard`. `current` no longer joins
+# `discharged`, and `discharged` moves to a second regime, `obligation`, which
+# no kind of this package binds and which the decision-record bundle binds on
+# `obligation_record`. A consumer whose own kind stands at `discharged` under
+# `standard` is reported by `lifecycle.state.not_admitted` until it binds a
+# regime that names the state, so this is a removal and it is a major.
+#
+# 2.1.0 said that "a consumer that never writes the value never meets it", and
+# that was the wrong reassurance. The value was reachable by every kind that
+# bound the one regime, and so were `superseded` and `deprecated` before it.
+# [#219](https://github.com/headwater-ai/headwater/issues/219) measured the
+# class and this version closes it.
+#
+# 2.1.0 added `discharged`, one edge into it, `OB-LIFE-1` and `CT-LIFE-1`.
 #
 # 2.0.0 was a major, and both halves of that change earned it. `decision_id` no
 # longer declares a namespace, so a consumer that declared none resolves to a
 # refusal until it does, and the pattern renders the namespace first, so an
 # identifier already minted under 1.0.0 no longer matches.
-version: 2.1.0
+version: 3.0.0
 
 purposes:
   rationale:
@@ -44,12 +54,14 @@ purposes:
 # something a corpus owed, which the corpus then paid, is neither: the work was
 # done and the record is the receipt.
 #
-# The vocabulary is one list for every kind that runs a lifecycle regime, so a
-# kind whose documents are never owed anything can reach `discharged` as well.
-# Nothing in the language restricts a state to a kind. A second regime that
-# admitted the state for one kind alone would leave it unreachable in `standard`,
-# and `lifecycle soundness` refuses a state that the regime it reads cannot
-# reach. Spec 13 carries the gap.
+# The vocabulary is one list and a kind takes the part of it that its own
+# lifecycle regime names. `standard` names four of these five and `obligation`
+# names the fifth, so `discharged` is out of reach of a kind whose documents are
+# never owed anything. That is the whole of the per-kind restriction: no member
+# on `kind` says it, and the two declarations that do say it were already in the
+# language. `lifecycle.state.not_admitted` reads a document against it, and
+# `lifecycle soundness` asks for reachability across the family rather than
+# inside each regime, which is what makes a second regime declarable at all.
 
 vocabularies:
   lifecycle_state:
@@ -93,9 +105,23 @@ facets:
     required: true
     volatility: mutable
 
+# Two lifecycle regimes over one vocabulary, and the pair is the answer to "may
+# a kind narrow a value set". It may, where the facet is the one in the `state`
+# role, and the narrowing is the regime rather than a second list of values.
+#
+# `standard` is for a document that states something. It is written, it holds,
+# and it is either replaced or retired. `obligation` is for a document that
+# records something the corpus owes, which has one more ending: the corpus paid
+# it, and the record is the receipt. No kind of this package binds `obligation`,
+# and the decision-record bundle binds it on `obligation_record`, which is the
+# only kind in the library whose documents are owed.
 regimes:
   lifecycle:
     standard:
+      initial: draft
+      transitions: {draft: [current, deprecated], current: [superseded, deprecated]}
+      retain_terminal: true
+    obligation:
       initial: draft
       transitions: {draft: [current, deprecated], current: [superseded, deprecated, discharged]}
       retain_terminal: true
@@ -364,6 +390,13 @@ obligations:
     prevents: process.traceability
     severity: medium
 
+  OB-LIFE-2:
+    statement: A document stands only at a state that the lifecycle regime of its kind names
+    rationale: A state vocabulary is one list for a whole taxonomy, so a value that means something for one kind is spelled the same on every other. A document set to a state its kind has no use for reads to a person as a claim about that document and to every rule as nothing at all, and a movement rule cannot see it because a document authored at the wrong state made no movement
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
+
   OB-REG-1:
     statement: Every obligation this taxonomy declares carries exactly one disposition
     rationale: An obligation that no control discharges and that states neither a gap nor an acceptance reads from outside like one that is met, and that silence is how an assurance model decays into a list of good intentions
@@ -566,6 +599,16 @@ controls:
     promotion:
       final_posture:
         reasoning: The promotion path collects evidence about a rule that can be wrong about the text it reads, and this one reads two declared values and one declared edge. A movement it refuses is refused by the taxonomy that the corpus itself resolved, so an advisory period would measure a false-positive rate that the construction fixes at zero, and it would collect that reading while illegal movements landed. Spec 3 states the posture in one sentence, which is that the engine rejects a transition that is not in the declared machine when it lands
+
+  CT-LIFE-2:
+    mechanism: check:lifecycle.state.not_admitted
+    discharges: [OB-LIFE-2]
+    trigger: pull_request
+    posture: blocking
+    acts: detective
+    promotion:
+      final_posture:
+        reasoning: The same reading CT-LIFE-1 takes, and the input is narrower still. This rule reads one declared value against one declared state set, both of which the corpus itself resolved, so an advisory period would measure a false-positive rate that the construction fixes at zero. What it cannot decide is which admitted state the document belongs in, and that is why the finding carries no patch rather than why it should not block
 
   CT-LANG-1:
     mechanism: check:language.controlled.not_met

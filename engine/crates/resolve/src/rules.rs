@@ -124,8 +124,9 @@ pub const RULES: [(&str, Ran); 23] = [
     (
         "lifecycle soundness",
         Ran::Resolved(
-            "every state is a value of the state vocabulary, every state is reachable from the \
-             initial one, and every state with no exit is declared terminal",
+            "every state is a value of the state vocabulary, every state a regime names is \
+             reachable from that regime's initial state, every state of the vocabulary is \
+             reachable in at least one regime, and every state with no exit is declared terminal",
         ),
     ),
     (
@@ -986,13 +987,20 @@ fn lifecycle_soundness(view: &View, out: &mut Vec<ResolveError>) {
     else {
         return;
     };
+    // Every state any regime of the family reaches, and the initial state each
+    // one starts from. Both are read after the loop, because the question they
+    // answer is about the family and not about one member of it.
+    let mut anywhere: BTreeSet<String> = BTreeSet::new();
+    let mut initials: Vec<String> = Vec::new();
     for entry in family {
         let regime = entry.key.value.as_str();
         let Some(body) = entry.value.value.as_map() else {
             continue;
         };
+        let mut stranded: BTreeSet<&str> = BTreeSet::new();
         let at = |member: &str| format!("regimes.lifecycle.{regime}.{member}");
         let initial = text(body, "initial").unwrap_or_default();
+        initials.push(format!("`{regime}` from `{initial}`"));
         if !known.is_empty() && !known.contains(initial) {
             out.push(refusal(
                 RULE,
@@ -1026,9 +1034,22 @@ fn lifecycle_soundness(view: &View, out: &mut Vec<ResolveError>) {
             exits.insert(from, targets);
         }
 
-        // Connected: every state of the vocabulary is reachable from the
-        // initial one. A state that nothing reaches is a state no document can
-        // ever be in, which is a declaration that reads as a promise.
+        // Connected, and the question is asked twice because two different
+        // things can be broken.
+        //
+        // Within one regime: a state this regime *names* and cannot reach from
+        // its own initial state is a machine with a piece that does not join
+        // it. That is a defect of this declaration wherever else the state may
+        // be reachable.
+        //
+        // Across the family: a state of the vocabulary that no regime reaches
+        // is a state no document can ever be in, which is a declaration that
+        // reads as a promise. That reading used to be taken per regime, and it
+        // made two regimes over one vocabulary undeclarable — the moment a
+        // second regime carried the extra state, the first failed for not
+        // carrying it. Per regime is right while one regime exists, and a
+        // taxonomy that narrows a state set per kind declares more than one.
+        // [#219](https://github.com/headwater-ai/headwater/issues/219).
         let mut reached: BTreeSet<String> = BTreeSet::new();
         let mut frontier = vec![initial.to_string()];
         while let Some(state) = frontier.pop() {
@@ -1037,17 +1058,23 @@ fn lifecycle_soundness(view: &View, out: &mut Vec<ResolveError>) {
             }
             frontier.extend(exits.get(&state).cloned().unwrap_or_default());
         }
-        for (state, _) in &states {
-            if !reached.contains(state) {
+        for named in exits
+            .iter()
+            .flat_map(|(from, targets)| std::iter::once(from).chain(targets.iter()))
+        {
+            if !reached.contains(named) && !stranded.contains(named.as_str()) {
+                stranded.insert(named.as_str());
                 out.push(refusal(
                     RULE,
                     &at("transitions"),
                     format!(
-                        "leaves `{state}` unreachable from `{initial}`, so no document reaches it"
+                        "names `{named}` and does not reach it from `{initial}`, so this regime \
+                         holds a state its own documents cannot get to"
                     ),
                 ));
             }
         }
+        anywhere.extend(reached.iter().cloned());
 
         // A terminal state is declared, either by the regime's own list or by
         // the role that the vocabulary gives the value.
@@ -1063,6 +1090,24 @@ fn lifecycle_soundness(view: &View, out: &mut Vec<ResolveError>) {
                 format!(
                     "gives `{state}` no exit and nothing declares it terminal. A terminal state \
                      is named, either in `terminal` here or by a `terminal-` role on the value"
+                ),
+            ));
+        }
+    }
+
+    // The family-level half. It reports at `regimes.lifecycle` rather than at
+    // one regime, because no single regime is the one that should have carried
+    // the state, and a report that picked one would name a file the author has
+    // no reason to open.
+    let tried = initials.join(", ");
+    for (state, _) in &states {
+        if !anywhere.contains(state) {
+            out.push(refusal(
+                RULE,
+                "regimes.lifecycle",
+                format!(
+                    "leaves `{state}` unreachable in every lifecycle regime ({tried}), so no \
+                     document of any kind reaches it"
                 ),
             ));
         }

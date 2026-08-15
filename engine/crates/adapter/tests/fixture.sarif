@@ -305,6 +305,20 @@
               "properties": {
                 "headwater": {
                   "scope": "document",
+                  "version": 2,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "lifecycle.state.not_admitted",
+              "shortDescription": {
+                "text": "document scope, one document and its front matter"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "document",
                   "version": 1,
                   "obligations": [],
                   "exportable_as": []
@@ -876,7 +890,7 @@
         },
         {
           "ruleId": "coverage.document_unchecked",
-          "ruleIndex": 19,
+          "ruleIndex": 20,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1942,7 +1956,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 21,
+          "ruleIndex": 22,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1971,7 +1985,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 21,
+          "ruleIndex": 22,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2000,7 +2014,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 20,
+          "ruleIndex": 21,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2029,7 +2043,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 20,
+          "ruleIndex": 21,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2058,7 +2072,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 20,
+          "ruleIndex": 21,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2087,7 +2101,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 20,
+          "ruleIndex": 21,
           "level": "warning",
           "kind": "fail",
           "message": {

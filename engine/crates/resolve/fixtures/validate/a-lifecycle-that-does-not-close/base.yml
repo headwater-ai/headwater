@@ -6,8 +6,14 @@
 #
 #   an initial state that the vocabulary does not hold
 #   a transition target that the vocabulary does not hold
-#   a state that nothing reaches from the initial one
+#   a state that no regime of the family reaches
 #   a state with no exit that nothing declares terminal
+#
+# The third one is reported against `regimes.lifecycle` and not against a
+# regime. One regime failing to reach a state is how a kind narrows its state
+# set, and `two-regimes-over-one-vocabulary/` is the case that stands for that.
+# A regime that names a state and cannot reach it is still refused, and
+# `a-regime-that-strands-a-state-it-names/` is that one.
 
 taxonomy: acme/fixture
 version: 1.0.0

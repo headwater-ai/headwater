@@ -924,9 +924,17 @@ fn front_matter(
         let field =
             match role {
                 Some("state") => {
-                    let regime = declared::lifecycle_of(sources.resolved, kind);
-                    let initial =
-                        regime.and_then(|regime| declared::initial_state(sources.resolved, regime));
+                    // Through the typed reader, which has carried both members
+                    // since a rule started reading the machine. An untyped
+                    // second path to one declaration is the drift that
+                    // [principle 2](../../../../docs/spec/00-vision-and-scope.md#design-principles)
+                    // rules against, and the empty string is what an absent
+                    // `initial` reads as there, so it is refused here rather
+                    // than written into a document.
+                    let regime = sources.shape.lifecycle_of(kind);
+                    let initial = regime
+                        .map(|regime| regime.initial.as_str())
+                        .filter(|initial| !initial.is_empty());
                     match initial {
                         Some(state) => Field {
                             key: name.clone(),
@@ -934,7 +942,9 @@ fn front_matter(
                             quoted: false,
                             origin: Origin::Scaffolded(format!(
                                 "`regimes.lifecycle.{}` opens at `{state}`",
-                                regime.unwrap_or_default()
+                                regime
+                                    .map(|regime| regime.name.as_str())
+                                    .unwrap_or_default()
                             )),
                         },
                         None => return Err(Refusal::FacetUndeterminable {

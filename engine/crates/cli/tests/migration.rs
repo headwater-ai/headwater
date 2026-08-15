@@ -368,9 +368,18 @@ fn addresses() -> String {
 /// carries two of them, `instance_validity` reports three documents, and the
 /// payload names those three and no others.
 ///
-/// The `BROKEN, 3` assertion is deliberately the loose half. A payload that
+/// The `BROKEN, 6` assertion is deliberately the loose half. A payload that
 /// named nothing would still meet it, and the accounting line below is where
 /// this case fails.
+///
+/// Six instances and three documents. Three are `facet.value.not_permitted`
+/// going from passed to failed, which is what "stopped validating" means. The
+/// other three are `lifecycle.state.not_admitted` going from passed to
+/// *skipped*, because the value the document carries is outside the candidate's
+/// vocabulary and that rule defers to the one above it. A skip is a rule that
+/// declined to decide rather than a document that broke, and this dimension
+/// counts the two as one thing.
+/// [#221](https://github.com/headwater-ai/headwater/issues/221) holds that.
 #[test]
 fn the_payload_names_every_document_whose_validity_moved() {
     let root = Root::new("names-every-document");
@@ -381,7 +390,7 @@ fn the_payload_names_every_document_whose_validity_moved() {
 
     let ran = root.diff("2.0.0");
     assert_eq!(ran.code, Some(0), "{ran:?}");
-    assert_eq!(ran.dimension("instance_validity"), "BROKEN, 3 of them");
+    assert_eq!(ran.dimension("instance_validity"), "BROKEN, 6 of them");
     assert!(
         ran.out.contains(
             "3 of the 3 documents a dimension reports as moved lie under a step of this payload"
@@ -442,7 +451,7 @@ fn a_document_no_step_names_is_named() {
     assert_eq!(ran.code, Some(0), "{ran:?}");
     assert_eq!(
         ran.dimension("instance_validity"),
-        "BROKEN, 3 of them",
+        "BROKEN, 6 of them",
         "the corpus and the candidate are the ones the case above measured: {ran:?}"
     );
     assert!(
@@ -904,7 +913,7 @@ fn an_overlay_address_the_new_base_still_declares_is_preserved() {
     );
     assert_eq!(
         ran.dimension("instance_validity"),
-        "BROKEN, 3 of them",
+        "BROKEN, 6 of them",
         "and the run did measure something, or this case proves nothing: {ran:?}"
     );
 }

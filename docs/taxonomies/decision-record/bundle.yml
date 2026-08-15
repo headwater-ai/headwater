@@ -51,12 +51,17 @@ add:
   kinds.decision.facets:
     require: [title]
 
+  # `obligation` and not `standard`, and it is the one kind in this library that
+  # takes the wider regime. A record here is a debt the corpus wrote down, so it
+  # has an ending the other kinds do not: the corpus paid it and the record is
+  # kept as the receipt. `standard` names no `discharged`, and a kind that bound
+  # it could not stand there.
   kinds.obligation_record:
     is_a: governed_document
     purpose: obligation
     identifier: {scheme: obligation_record_id}
     voice: declarative
-    lifecycle: standard
+    lifecycle: obligation
     facets:
       require: [title]
     sections: {require: [Context, Obligation, Discharge]}

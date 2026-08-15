@@ -41,22 +41,29 @@ Everything else — owner, scope, audience, domain — is a taxonomy choice.
 
 ## Lifecycle
 
-The lifecycle is a state machine, declared in the taxonomy and interpreted by the engine. The default taxonomy uses:
+The lifecycle is a state machine, declared in the taxonomy and interpreted by the engine. A taxonomy declares one machine per regime, and a kind binds one regime. The default taxonomy declares two:
 
 ```
-draft ──┬──▶ current ──┬──▶ superseded
-        │              ├──▶ deprecated
-        │              └──▶ discharged
-        └──▶ deprecated
+standard    draft ──┬──▶ current ──┬──▶ superseded
+                    │              └──▶ deprecated
+                    └──▶ deprecated
+
+obligation  draft ──┬──▶ current ──┬──▶ superseded
+                    │              ├──▶ deprecated
+                    │              └──▶ discharged
+                    └──▶ deprecated
 ```
 
 The three terminal states answer three different questions. `superseded` names a successor. `deprecated` says that nothing replaced this one. `discharged` says that the document recorded something the corpus owed, and that the corpus paid it.
 
+**A regime is where a kind says which states it means.** The state vocabulary is one list for a whole taxonomy, and a machine names the part of that list its own documents move through. `standard` names four of the five states and `obligation` names all five, so only a kind that binds `obligation` stands at `discharged`. That is the whole of the per-kind restriction, and no member on `kinds` carries it.
+
 Rules that the engine enforces from the declaration alone:
 
 - the engine rejects transitions that are not in the declared machine **when they land**. `lifecycle.transition.not_permitted` is the rule, and it reads the machine that the resolved taxonomy declares rather than a set of states written into the engine. An illegal transition is only visible against the prior state, and the prior state lives in the diff, not in the graph. Thus hooks and change-scoped CI receive the prior version as a declared check input ([spec 12](12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version)). A full-corpus run sees only current states. It reports transition instances as change-scoped, and it does not silently pass them.
+- a document stands only at a state that the regime of its kind names. `lifecycle.state.not_admitted` is the rule, and it reads one declared value against one declared state set. It needs no prior version, so it reaches the case the rule above it cannot. A document **authored** at a state its kind has no use for made no movement, and a full-corpus run reports it anyway. Where a movement lands on such a state, this rule owns the finding and the transition rule stands down. One defect stays one finding.
 - terminal states marked `retain: true` may never be deleted. Lineage is the point.
-- a live document may not depend on a terminal one through a relation declared `lifecycle_sensitive`. Thus a current specification that cites a superseded decision is a finding, automatically, for each such relation.
+- a live document may not depend on a terminal one through a relation declared `lifecycle_sensitive`. Thus a current specification that cites a superseded decision is a finding, automatically, for each such relation. No rule reads this one, and [#223](https://github.com/headwater-ai/headwater/issues/223) holds it. It is the first component that folds the five states into live and terminal, and no component does that today.
 - entry into a state can require facets (a `superseded` document must name its successor). Entry can also cause reciprocal updates on the target.
 - dwell in a non-terminal state is observable, not policed. `status_since` makes "parked in `draft` for a year" a fact. `taxonomy audit` reports the dwell distribution per state. A shelf whose documents sit indefinitely in the state with the fewest obligations is a finding about the shelf. A document that evades live-state obligations because it never goes live is in the same absence class that participation expectations catch, one level down.
 

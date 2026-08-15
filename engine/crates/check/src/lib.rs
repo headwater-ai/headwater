@@ -144,6 +144,7 @@ pub mod identifier;
 pub mod identity;
 pub mod instance;
 pub mod language;
+pub mod lifecycle_state;
 pub mod participation;
 pub mod patch;
 pub mod placement;
@@ -193,7 +194,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 22] = [
+pub const RULES: [&str; 23] = [
     facet_required::RULE,
     facet_value::RULE,
     identifier::RULE,
@@ -213,6 +214,7 @@ pub const RULES: [&str; 22] = [
     fragment::RULE,
     promotion::RULE,
     transition::RULE,
+    lifecycle_state::RULE,
     coverage::RULE,
     register::DISPOSITION,
     register::MECHANISM,
@@ -447,6 +449,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::document_exports::<transition::Transition<'_>>(),
         ),
         (
+            lifecycle_state::RULE,
+            scope::document_scope::<lifecycle_state::StateAdmitted<'_>>(),
+            scope::document_version::<lifecycle_state::StateAdmitted<'_>>(),
+            scope::document_exports::<lifecycle_state::StateAdmitted<'_>>(),
+        ),
+        (
             coverage::RULE,
             coverage::SCOPE,
             coverage::VERSION,
@@ -543,6 +551,11 @@ pub fn run(
     // The second, and this one carries a declaration: the machine it reads is
     // `regimes.lifecycle` of the resolved taxonomy. See [`transition`].
     let transitions = transition::Transition::over(declared.shape);
+    // The state a document stands in, against the states the regime of its kind
+    // names. Document-scoped rather than change-scoped, because the defect
+    // survives in the document and a document authored at a wrong state made no
+    // movement to read. See [`lifecycle_state`].
+    let standing = lifecycle_state::StateAdmitted::over(declared.shape);
 
     let digests = scope::Digests::of(census);
     let mut instances = scope::over_documents(&required, census, graph, ctx, cache);
@@ -601,6 +614,7 @@ pub fn run(
         ctx,
         cache,
     ));
+    instances.extend(scope::over_documents(&standing, census, graph, ctx, cache));
 
     let coverage = Coverage::of(census, &instances);
 

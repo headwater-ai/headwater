@@ -26,14 +26,22 @@
 //! # A movement is two readings of one facet, and neither may be guessed
 //!
 //! The facet is the one in the `state` role, so nothing here names `status`.
-//! [`Stood`] is what one version of a document reads as, and it has three arms
-//! for the reason [`crate::change::Prior`] has three: a document that declares
-//! no state is not a document at the initial state, and a document whose state
-//! the vocabulary does not hold is neither of those. The last one belongs to
-//! `facet.value.not_permitted`, which reports it at the line that carries it. A
-//! transition rule that took an unknown value for a state would put two
-//! findings on one line, and the second would name a machine that never had an
-//! edge to offer.
+//! [`crate::lifecycle_state::Stood`] is what one version of a document reads
+//! as, and it has three arms for the reason [`crate::change::Prior`] has three:
+//! a document that declares no state is not a document at the initial state,
+//! and a document whose state the vocabulary does not hold is neither of those.
+//! The last one belongs to `facet.value.not_permitted`, which reports it at the
+//! line that carries it. A transition rule that took an unknown value for a
+//! state would put two findings on one line, and the second would name a
+//! machine that never had an edge to offer.
+//!
+//! There is a fourth reading on the same terms, and it arrived with
+//! [#219](https://github.com/headwater-ai/headwater/issues/219). A value the
+//! vocabulary holds and *this regime does not name* is not an end of any
+//! movement this machine can describe, and `lifecycle.state.not_admitted`
+//! reports the document that stands there. So a movement with such an end skips
+//! here and names that rule, and one defect stays one finding. See
+//! [`crate::lifecycle_state`] for the division in full.
 //!
 //! Every reading this check declines is a skip with a reason rather than a
 //! pass, which is what
@@ -62,82 +70,44 @@
 use crate::change::Prior;
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
+use crate::lifecycle_state::{StateFacet, Stood};
 use crate::scope::{DocumentCheck, DocumentView};
 use crate::shape::Shape;
-use headwater_yaml::Mapping;
 
 pub const RULE: &str = "lifecycle.transition.not_permitted";
-
-/// The state one version of a document stood in.
-///
-/// Three arms, and each one is a different fact. Folding the last two together
-/// would make a document that declares no state and a document whose state
-/// nothing declares one value, and the movement between them is exactly the
-/// pair this rule exists to separate.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Stood<'a> {
-    /// A state the vocabulary holds.
-    At(&'a str),
-    /// The document writes no value for the state facet. `facet.required.missing`
-    /// is the rule that reports it where the facet is required.
-    Undeclared,
-    /// The document writes a value the state facet does not admit.
-    /// `facet.value.not_permitted` is the rule that reports it.
-    NotAState(&'a str),
-}
 
 /// The check. It carries the shape, because the machine it reads is declared
 /// rather than known.
 pub struct Transition<'a> {
     shape: &'a Shape,
-    /// The name of the facet in the `state` role, resolved once. A taxonomy
-    /// that declares none generates no instance at all.
-    facet: Option<String>,
-    /// The values that facet admits, so a value outside them reads as
-    /// [`Stood::NotAState`] rather than as a state with no exits.
-    values: Vec<String>,
+    /// The facet in the `state` role and the values it admits, read by the one
+    /// component that owns that reading. A taxonomy that declares no such facet
+    /// generates no instance at all.
+    facet: StateFacet,
 }
 
 impl<'a> Transition<'a> {
     pub fn over(shape: &'a Shape) -> Self {
-        let facet = shape.facet_in_role("state");
         Transition {
             shape,
-            facet: facet.map(|facet| facet.name.clone()),
-            values: facet.map(|facet| facet.values.clone()).unwrap_or_default(),
-        }
-    }
-
-    /// What one version of a document reads as.
-    fn stood<'b>(&self, facets: &'b Mapping) -> Stood<'b> {
-        let Some(name) = self.facet.as_deref() else {
-            return Stood::Undeclared;
-        };
-        let Some(entry) = facets.entry(name) else {
-            return Stood::Undeclared;
-        };
-        // A value this engine cannot read as a scalar is the meta-schema's
-        // business, and it is not a state either way.
-        let Some(scalar) = entry.value.value.as_scalar() else {
-            return Stood::Undeclared;
-        };
-        match self.values.iter().any(|value| value == &scalar.text) {
-            true => Stood::At(&scalar.text),
-            false => Stood::NotAState(&scalar.text),
+            facet: StateFacet::of(shape),
         }
     }
 }
 
 impl DocumentCheck for Transition<'_> {
     const RULE: &'static str = self::RULE;
-    const VERSION: u32 = 1;
+    /// 2 with the fourth reading below: a movement whose end the regime does
+    /// not name now skips and names `lifecycle.state.not_admitted`, where it
+    /// used to be refused here as a movement out of a state with no exits.
+    const VERSION: u32 = 2;
     const NEEDS_PRIOR: bool = true;
 
     /// A kind that binds a lifecycle regime. A kind that binds none has no
     /// declared machine, so no movement of one of its documents is illegal and
     /// an instance over it could only ever pass.
     fn instantiates(&self, kind: &str) -> bool {
-        self.facet.is_some() && self.shape.lifecycle_of(kind).is_some()
+        self.facet.name.is_some() && self.shape.lifecycle_of(kind).is_some()
     }
 
     fn evaluate(&self, view: &DocumentView<'_>) -> Outcome {
@@ -155,7 +125,7 @@ impl DocumentCheck for Transition<'_> {
             return Outcome::Passed;
         };
 
-        let (before, after) = (self.stood(facets), self.stood(view.facets()));
+        let (before, after) = (self.facet.stood(facets), self.facet.stood(view.facets()));
         let (before, after) = match (before, after) {
             (Stood::At(before), Stood::At(after)) => (before, after),
             (Stood::Undeclared, _) | (_, Stood::Undeclared) => {
@@ -168,6 +138,24 @@ impl DocumentCheck for Transition<'_> {
                 ))
             }
         };
+        // The fourth reading: a value of the vocabulary that this regime does
+        // not name is not an end of any movement it can describe. The document
+        // standing there is what is wrong, and
+        // `lifecycle.state.not_admitted` reports it against the version that
+        // stands there. Refusing here as well would put two findings on one
+        // line, and the exits this rule would offer come from a state the
+        // machine never had.
+        let named = regime.states();
+        if let Some(unnamed) = [before, after]
+            .into_iter()
+            .find(|state| !named.contains(state))
+        {
+            return Outcome::Skipped(format!(
+                "one version of this document stands at `{unnamed}`, which the lifecycle regime \
+                 `{}` does not name, and `lifecycle.state.not_admitted` reports that",
+                regime.name
+            ));
+        }
         // Not a transition. A regime that declared a self edge would then not
         // be the thing that decides this, so it is stated here and read from
         // nowhere.
@@ -201,6 +189,7 @@ impl DocumentCheck for Transition<'_> {
         };
         let (line, column) = at(self
             .facet
+            .name
             .as_deref()
             .and_then(|name| view.facets().key_span(name)));
         Outcome::Failed(vec![Finding {
@@ -238,6 +227,7 @@ const UNDECLARED: &str =
 #[cfg(test)]
 mod tests {
     use super::*;
+    use headwater_yaml::Mapping;
 
     fn shape() -> Shape {
         let source = load(concat!(
@@ -290,17 +280,16 @@ mod tests {
         assert!(!check.instantiates("note"));
     }
 
-    /// The three readings of one version, kept apart.
+    /// The three readings of one version live in [`crate::lifecycle_state`],
+    /// which owns them, and this rule reads them through it.
     #[test]
-    fn a_state_a_document_does_not_declare_is_not_the_state_it_declares_wrongly() {
+    fn one_version_is_read_by_the_component_that_owns_the_state_facet() {
         let shape = shape();
         let check = Transition::over(&shape);
-        let facets = load;
-        assert_eq!(check.stood(&facets("status: draft\n")), Stood::At("draft"));
-        assert_eq!(check.stood(&facets("id: A\n")), Stood::Undeclared);
         assert_eq!(
-            check.stood(&facets("status: retired\n")),
-            Stood::NotAState("retired")
+            check.facet.stood(&load("status: draft\n")),
+            Stood::At("draft")
         );
+        assert_eq!(check.facet.stood(&load("id: A\n")), Stood::Undeclared);
     }
 }
