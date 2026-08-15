@@ -523,10 +523,11 @@ mod tests {
         assert!(!admits("{namespace}-SPEC-{slug}", "HW", "XX-SPEC-glossary"));
         assert!(!admits("{namespace}-SPEC-{slug}", "HW", "-SPEC-glossary"));
         // The same two under a type-first pattern, which this engine still
-        // reads and which no taxonomy of this repository writes.
-        assert!(admits("SPEC-{namespace}-{slug}", "HW", "SPEC-HW-glossary"));
-        assert!(!admits("SPEC-{namespace}-{slug}", "HW", "SPEC-XX-glossary"));
-        assert!(!admits("SPEC-{namespace}-{slug}", "HW", "SPEC--glossary"));
+        // reads and which no taxonomy of this repository writes. The namespace
+        // here is somebody else's for the same reason the pattern is.
+        assert!(admits("SPEC-{namespace}-{slug}", "XX", "SPEC-XX-glossary"));
+        assert!(!admits("SPEC-{namespace}-{slug}", "XX", "SPEC-YY-glossary"));
+        assert!(!admits("SPEC-{namespace}-{slug}", "XX", "SPEC--glossary"));
     }
 
     #[test]
