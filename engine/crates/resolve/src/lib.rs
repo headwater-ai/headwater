@@ -84,7 +84,7 @@ pub mod source;
 
 pub use error::{render as render_errors, ResolveError, ResolveErrorKind};
 pub use operation::{OpKind, Operation};
-pub use package::Consumer;
+pub use package::{Adopted, Consumer};
 pub use source::{Role, Source};
 
 use headwater_meta::MetaSchema;
@@ -104,6 +104,65 @@ pub struct Resolution {
     pub sources: Vec<String>,
     /// Every operation applied, in application order.
     pub operations: Vec<Operation>,
+    /// Every operation that made the declaration it addresses into, rather
+    /// than reaching into one that was there. See [`Founding`].
+    pub founded: Vec<Founding>,
+}
+
+/// An operation that creates the declaration its address reaches into.
+///
+/// An overlay addresses a path: `kinds.decision.facets` writes `facets` into
+/// the `decision` kind, and the author of that line believed a `decision` kind
+/// was there to write into. Nothing in the merge requires one. [`apply`] grafts
+/// through a missing key by creating it, so the same line against a base that
+/// declares no `decision` kind *makes* one, holding two keys and nothing else.
+///
+/// # Why it is a reading rather than a refusal
+///
+/// The state it names is the one an upgrade produces and nothing reports.
+/// [Spec 2](../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
+/// measures `addressability` by whether the adopter's overlay still resolves,
+/// and this case resolves: a base that renames `decision` to `ruling` leaves
+/// the overlay addressing a path that now has no base under it, and the
+/// operation puts the old name back. The resolver reports nothing, the
+/// candidate resolves, and the corpus is left holding a declaration its
+/// taxonomy removed.
+///
+/// So the resolver records it, `taxonomy diff` reads it as the `addressability`
+/// dimension, and no verb refuses on it yet.
+/// [#193](https://github.com/headwater-ai/headwater/issues/193) carries whether
+/// `taxonomy validate` should.
+///
+/// # It is derived from the merge and not from a second walk
+///
+/// The value is computed inside [`apply`], against the tree each operation is
+/// applied to at its own position in the application order. A second walk over
+/// the sources could disagree with the merge about which key was there, and the
+/// two answers would then differ on exactly the case this type is about: an
+/// address whose parent one earlier overlay supplies.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Founding {
+    /// Index into [`Resolution::sources`].
+    pub source: usize,
+    /// The operation as an overlay writes it: `add.kinds.decision.facets`.
+    pub at: String,
+    /// The address the operation names.
+    pub address: String,
+    /// The shallowest path this operation creates on the way to its address.
+    /// The operation makes this key and every key between it and the address.
+    pub founds: String,
+    pub span: Span,
+}
+
+impl Founding {
+    /// One line a reader acts on, without the source, which a caller prints.
+    pub fn sentence(&self) -> String {
+        format!(
+            "{} makes `{}` rather than reaching into it, so the address resolves because this \
+             operation creates what it addresses",
+            self.at, self.founds
+        )
+    }
 }
 
 impl Resolution {
@@ -218,7 +277,8 @@ pub fn resolve(sources: &[Source]) -> Result<Resolution, Vec<ResolveError>> {
         .as_map()
         .cloned()
         .expect("a validated taxonomy source is a mapping");
-    let merged = merge::canonical(Some(&start), &apply(&start, &operations, &names)?);
+    let (applied, founded) = apply(&start, &operations, &names)?;
+    let merged = merge::canonical(Some(&start), &applied);
 
     // A `remove` that left a reference reading nothing is reported against the
     // removal, because that is the edit a reader has to reconsider.
@@ -279,6 +339,7 @@ pub fn resolve(sources: &[Source]) -> Result<Resolution, Vec<ResolveError>> {
         taxonomy,
         sources: names,
         operations,
+        founded,
     })
 }
 
@@ -286,9 +347,19 @@ fn apply(
     start: &Mapping,
     operations: &[Operation],
     names: &[String],
-) -> Result<Mapping, Vec<ResolveError>> {
+) -> Result<(Mapping, Vec<Founding>), Vec<ResolveError>> {
     let mut tree = start.clone();
+    let mut founded = Vec::new();
     for operation in operations {
+        if let Some(founds) = makes(&tree, operation) {
+            founded.push(Founding {
+                source: operation.source,
+                at: operation.at(),
+                address: operation.address.to_string(),
+                founds,
+                span: operation.span,
+            });
+        }
         let path = operation.address.segments();
         let full = operation.address.to_string();
         // An `add` asserts its precondition about the base and not about
@@ -324,7 +395,27 @@ fn apply(
             }
         }
     }
-    Ok(tree)
+    Ok((tree, founded))
+}
+
+/// The shallowest key on the way to an operation's address that the tree does
+/// not hold, or `None` where every key above the address is there.
+///
+/// Read against the tree the operation is about to be applied to, which is what
+/// makes the answer the merge's own. An address of one segment names a whole
+/// block and reaches into nothing, so it never answers.
+///
+/// A `remove` is excluded, and it is the one operation for which a missing key
+/// above the address is already reported: `merge::prune` refuses a path it
+/// cannot walk. Everything else grafts a missing key into existence.
+fn makes(tree: &Mapping, operation: &Operation) -> Option<String> {
+    if operation.kind == OpKind::Remove {
+        return None;
+    }
+    let above = operation.reaches_into();
+    (1..=above.len())
+        .find(|depth| merge::lookup(tree, &above[..*depth]).is_none())
+        .map(|depth| above[..depth].join("."))
 }
 
 /// The `remove` whose address covers a path, if one does.

@@ -20,4 +20,5 @@ headwater-resolve = { path = "../resolve" }
 # migration payload names one value of it. Naming the loader here reads that
 # value; the alternative was a second accessor on `headwater-doc` that exists
 # for one caller.
+headwater-ref = { path = "../ref" }
 headwater-yaml = { path = "../yaml" }

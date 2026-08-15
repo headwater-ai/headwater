@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The third committed payload: one step over each of the two things a run
+# writes. The facet value reaches a document of the corpus and the address
+# reaches an entry of the adopter's overlay, so a run of `taxonomy migrate
+# --apply` over this payload writes two files that no one walk finds.
+
+migration:
+  format: 1
+  from: ">=1 <2"
+  to: ">=2 <3"
+
+steps:
+  - subject: facet_value
+    facet: status
+    from: draft
+    to: [outline]
+    because: >-
+      `draft` said both that nobody had finished the document and that nobody
+      had agreed with it, and a reader could not tell which one a record was.
+
+  # The subject whose `from` is a path rather than a value. Renaming the kind
+  # leaves every overlay entry addressed under the old name, and an `add` at
+  # such an address makes the old kind again rather than failing to address
+  # anything. That is the state this step exists to end.
+  - subject: overlay_address
+    from: kinds.specification
+    to: [kinds.standard]
+    because: >-
+      The kind named the document and the tradition it belongs to, and an
+      adopter with one specification per subsystem had no word for the second.

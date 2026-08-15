@@ -1305,6 +1305,25 @@ fn migrate(
         Err(code) => return code,
     };
 
+    // This repository's own overlay, which is the second file a step can name
+    // and the only one outside the corpus that this verb writes.
+    let consumer = match headwater_resolve::package::consumer(root) {
+        Ok(consumer) => consumer,
+        Err(errors) => {
+            eprintln!("headwater: the consumer declaration did not read");
+            eprint!("{}", indent(&render_errors(&errors)));
+            return ExitCode::FAILURE;
+        }
+    };
+    let overlay = match headwater_resolve::package::adopted(root, &consumer) {
+        Ok(overlay) => overlay,
+        Err(errors) => {
+            eprintln!("headwater: this repository's overlay did not read");
+            eprint!("{}", indent(&render_errors(&errors)));
+            return ExitCode::FAILURE;
+        }
+    };
+
     println!(
         "\nmigration  {}, from {from} to {to}\n  payload  {}\n",
         record.package, payload.at
@@ -1312,6 +1331,7 @@ fn migrate(
 
     // --- the half the engine writes ---------------------------------------
     let mut moves: Vec<headwater_scaffold::migrate::Move> = Vec::new();
+    let mut readdressed: Vec<headwater_scaffold::overlay::Move> = Vec::new();
     let mut placed: Vec<String> = Vec::new();
     let mut mechanical = 0;
     for step in &payload.steps {
@@ -1319,10 +1339,10 @@ fn migrate(
             continue;
         };
         mechanical += 1;
-        let sites = headwater_compat::migrate::sites(step, &taking.census);
+        let sites = headwater_compat::migrate::sites(step, &taking.census, &overlay);
         println!("  {}  becomes `{to}`", step.at());
         match sites.is_empty() {
-            true => println!("    no document of this corpus carries the old value"),
+            true => println!("    {}", step.subject.reached_nothing()),
             false => {
                 for site in &sites {
                     match site {
@@ -1339,6 +1359,34 @@ fn migrate(
                             let why = site.why().expect("a placement site states one");
                             println!("    {why}");
                             placed.push(why);
+                        }
+                        headwater_compat::migrate::Site::Overlay {
+                            path,
+                            at,
+                            address,
+                            span,
+                        } => {
+                            // The step's `from` is a prefix of this address, or
+                            // `sites` would not have named the entry. The
+                            // refusal is here anyway, because the alternative to
+                            // an answer is a rewrite of somebody's overlay into
+                            // a path nobody wrote.
+                            let Some(moved) =
+                                headwater_resolve::migration::readdressed(address, &step.from, to)
+                            else {
+                                return fail(&format!(
+                                    "{at} in {path} is not addressed under `{}`, so this run \
+                                     cannot say what it becomes",
+                                    step.from
+                                ));
+                            };
+                            println!("    {path}  {at}  becomes `{moved}`");
+                            readdressed.push(headwater_scaffold::overlay::Move {
+                                at: at.clone(),
+                                address: address.clone(),
+                                to: moved,
+                                span: *span,
+                            });
                         }
                     }
                 }
@@ -1370,12 +1418,12 @@ fn migrate(
             "      task  {}",
             step.apply.task().expect("a judgment step carries one")
         );
-        let sites = headwater_compat::migrate::sites(step, &taking.census);
+        let sites = headwater_compat::migrate::sites(step, &taking.census, &overlay);
         match sites.is_empty() {
-            true => println!("      no document of this corpus carries the old value"),
+            true => println!("      {}", step.subject.reached_nothing()),
             false => {
                 for site in &sites {
-                    println!("      {}", site.path());
+                    println!("      {}", site.key());
                 }
             }
         }
@@ -1407,7 +1455,7 @@ fn migrate(
         );
     }
 
-    let written = headwater_scaffold::migrate::compose(root, &moves);
+    let mut written = headwater_scaffold::migrate::compose(root, &moves);
     if !written.refused.is_empty() {
         eprintln!(
             "\nheadwater: {} document{} did not compose, and this run writes nothing",
@@ -1423,9 +1471,29 @@ fn migrate(
         return ExitCode::FAILURE;
     }
 
+    // The overlay joins the same set. An overlay re-addressed while a document
+    // it types keeps the old value is a corpus in neither state, so the two are
+    // one write or they are neither, which is what `tree::Reserved` takes.
+    let overlay_at = overlay.at().unwrap_or_default().to_string();
+    match headwater_scaffold::overlay::compose(root, &overlay_at, &readdressed) {
+        Err(refused) => {
+            eprintln!(
+                "\nheadwater: this repository's overlay did not compose, and this run \
+                       writes nothing"
+            );
+            eprintln!("{}", indent(&refused.to_string()));
+            return ExitCode::FAILURE;
+        }
+        Ok(None) => {}
+        Ok(Some((composed, count))) => {
+            written.files.push(composed);
+            written.replaced += count;
+        }
+    }
+
     if !applying {
         println!(
-            "\n  {} value{} in {} document{} would be written. Nothing was: pass `--apply`",
+            "\n  {} value{} in {} file{} would be written. Nothing was: pass `--apply`",
             written.replaced,
             match written.replaced {
                 1 => "",
@@ -1444,7 +1512,7 @@ fn migrate(
     let reserved = match headwater_scaffold::tree::Reserved::over(root, written.files) {
         Ok(reserved) => reserved,
         Err(unopened) => {
-            eprintln!("\nheadwater: a document of this migration cannot be written, so none was");
+            eprintln!("\nheadwater: a file of this migration cannot be written, so none was");
             eprintln!("{}", indent(&unopened.to_string()));
             return ExitCode::FAILURE;
         }
@@ -1452,7 +1520,7 @@ fn migrate(
     match reserved.commit() {
         Ok(paths) => {
             println!(
-                "\n  wrote {replaced} value{} in {} document{}",
+                "\n  wrote {replaced} value{} in {} file{}",
                 match replaced {
                     1 => "",
                     _ => "s",
@@ -1512,6 +1580,16 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
             return ExitCode::FAILURE;
         }
     };
+    // This repository's own overlay, read on its own. A step over an overlay
+    // address names entries of this file, and no census row covers it.
+    let overlay = match headwater_resolve::package::adopted(root, &consumer) {
+        Ok(overlay) => overlay,
+        Err(errors) => {
+            eprintln!("headwater: this repository's overlay did not read");
+            eprint!("{}", indent(&render_errors(&errors)));
+            return ExitCode::FAILURE;
+        }
+    };
     if record.package != lock.package {
         return fail(&format!(
             "this repository takes `{}` and the artifact publishes `{}`. Two packages are not \
@@ -1535,7 +1613,17 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     let candidate = headwater_resolve::package::sources_at(root, fetched, &manifest, &consumer)
         .and_then(|sources| headwater_resolve::resolve(&sources));
     let (resolution, addressability) = match candidate {
-        Ok(resolution) => (Some(resolution), headwater_compat::Outcome::Preserved),
+        Ok(resolution) => {
+            // The quiet half. The candidate resolved, and it may have resolved
+            // because an overlay `add` created the declaration the new base
+            // removed. See `headwater_compat::addressability`.
+            let outcome = headwater_compat::addressability(
+                &resolution.founded,
+                &resolution.sources,
+                Vec::new(),
+            );
+            (Some(resolution), outcome)
+        }
         Err(errors) => {
             let breaks: Vec<headwater_compat::Break> = errors
                 .iter()
@@ -1672,6 +1760,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
         fetched,
         &manifest,
         &taking,
+        &overlay,
         &lock_version,
         &record.version,
         &moved,
@@ -1721,6 +1810,7 @@ fn payload(
     fetched: &Path,
     manifest: &headwater_yaml::Mapping,
     taking: &Loaded,
+    overlay: &headwater_resolve::Adopted,
     from: &str,
     to: &str,
     moved: &std::collections::BTreeSet<String>,
@@ -1762,8 +1852,14 @@ fn payload(
                 selected += 1;
                 print!(
                     "{}",
-                    headwater_compat::payload::account(carried, &taking.census, declares, moved)
-                        .render()
+                    headwater_compat::payload::account(
+                        carried,
+                        &taking.census,
+                        overlay,
+                        declares,
+                        moved
+                    )
+                    .render()
                 );
             }
         }

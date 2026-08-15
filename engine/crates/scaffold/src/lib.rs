@@ -80,6 +80,7 @@
 pub mod declared;
 pub mod fix;
 pub mod migrate;
+pub mod overlay;
 pub mod reading;
 pub mod tree;
 pub mod write;

@@ -44,6 +44,7 @@ use headwater_check::Run;
 use headwater_generate::Plan;
 use headwater_graph::Graph;
 use headwater_resolve::migration::Step;
+use headwater_resolve::{Adopted, Founding};
 use std::collections::{BTreeMap, BTreeSet};
 
 pub mod migrate;
@@ -187,6 +188,49 @@ impl Measured {
             .iter()
             .any(|(_, outcome)| matches!(outcome, Outcome::NotMeasured(_)))
     }
+}
+
+/// `addressability`: does every overlay address still reach the declaration it
+/// was written against?
+///
+/// The dimension whose subject is the schema rather than the corpus, and the
+/// one whose failing case is quiet. A refusal that names an overlay address is
+/// the loud half and the caller passes it in, because only the caller holds the
+/// refusal. The quiet half is [`headwater_resolve::Founding`]: the candidate
+/// resolves, and it resolves because an `add` created the declaration the new
+/// base no longer carries.
+///
+/// # Why a founding is a break and not a warning beside one
+///
+/// The corpus then holds a declaration that no taxonomy declares. Every reader
+/// downstream — the census, the check runner, the generator — reads it and
+/// finds it there, so no other dimension can see it: `classification` reports
+/// the documents that moved kind and says nothing about the kind that came
+/// back. Spec 2 makes any broken dimension force a major version, and a base
+/// that removed a declaration an adopter addresses is exactly that.
+///
+/// The reading is quiet on a corpus that is right, and
+/// `headwater_resolve`'s `tests/founded.rs` is where that is a case rather than
+/// a sentence: every overlay this repository selects reaches a declaration that
+/// is there.
+pub fn addressability(founded: &[Founding], sources: &[String], refused: Vec<Break>) -> Outcome {
+    let mut breaks = refused;
+    breaks.extend(founded.iter().map(|founding| Break {
+        at: format!(
+            "{} in {}",
+            founding.at,
+            sources
+                .get(founding.source)
+                .map(String::as_str)
+                .unwrap_or("a source this resolution does not name")
+        ),
+        was: format!(
+            "an address into `{}`, which the taxonomy under it declared",
+            founding.founds
+        ),
+        now: founding.sentence(),
+    }));
+    Outcome::over(breaks)
 }
 
 /// `classification`: does every existing document still resolve to the same
@@ -364,10 +408,10 @@ pub fn instance_validity(before: &Run, after: &Run) -> (Outcome, BTreeSet<String
 /// grain a writer needs. Two readings of "which documents does this step name"
 /// is exactly where a report and a write start to disagree, and the report is
 /// the half nobody would notice going wrong.
-pub fn subjects(step: &Step, census: &Census) -> BTreeSet<String> {
-    migrate::sites(step, census)
+pub fn subjects(step: &Step, census: &Census, overlay: &Adopted) -> BTreeSet<String> {
+    migrate::sites(step, census, overlay)
         .into_iter()
-        .map(|site| site.path().to_string())
+        .map(|site| site.key())
         .collect()
 }
 

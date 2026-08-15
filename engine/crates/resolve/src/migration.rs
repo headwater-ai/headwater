@@ -69,16 +69,59 @@ pub enum Subject {
     FacetValue { facet: String },
     /// One kind. Every document the census typed as it is a subject.
     Kind,
+    /// One address into the taxonomy. Every operation of the adopter's overlay
+    /// whose own address is that path, or lies under it, is a subject.
+    ///
+    /// The subject whose `from` is a path rather than a value, and the only one
+    /// that names nothing in the corpus. See the module comment.
+    OverlayAddress,
 }
 
 impl Subject {
     /// The names a payload may write, in the message that refuses another one.
-    pub const NAMES: [&'static str; 2] = ["facet_value", "kind"];
+    pub const NAMES: [&'static str; 3] = ["facet_value", "kind", "overlay_address"];
 
     pub fn name(&self) -> &'static str {
         match self {
             Subject::FacetValue { .. } => "facet_value",
             Subject::Kind => "kind",
+            Subject::OverlayAddress => "overlay_address",
+        }
+    }
+
+    /// Whether the `from` and every `to` of a step over this subject is an
+    /// address rather than a value.
+    pub fn addressed(&self) -> bool {
+        matches!(self, Subject::OverlayAddress)
+    }
+
+    /// What a report says one step reaches, for a count it was handed.
+    ///
+    /// Here rather than in the report, because the noun is fixed by the subject
+    /// and a second table of nouns beside this enum would be a place for the
+    /// two to disagree. `count` of zero is the caller's to phrase: an empty
+    /// reach has two meanings and only the caller knows which.
+    pub fn reached(&self, count: usize) -> String {
+        match (self, count) {
+            (Subject::OverlayAddress, 1) => {
+                "1 entry of this repository's overlay is addressed at or under it".to_string()
+            }
+            (Subject::OverlayAddress, count) => {
+                format!("{count} entries of this repository's overlay are addressed at or under it")
+            }
+            (_, 1) => "1 document of this corpus carries the old value".to_string(),
+            (_, count) => format!("{count} documents of this corpus carry the old value"),
+        }
+    }
+
+    /// What a report says a step with no subject in this repository reaches.
+    pub fn reached_nothing(&self) -> &'static str {
+        match self {
+            Subject::OverlayAddress => {
+                "no entry of this repository's overlay is addressed at or under it, so this step \
+                 is a no-op here"
+            }
+            _ => "no document of this corpus carries the old value, so this step is a no-op here",
         }
     }
 
@@ -94,6 +137,7 @@ impl Subject {
         match self {
             Subject::FacetValue { .. } => &["instance_validity", "consequence"],
             Subject::Kind => &["classification"],
+            Subject::OverlayAddress => &["addressability"],
         }
     }
 
@@ -101,7 +145,7 @@ impl Subject {
     pub fn at(&self, value: &str) -> String {
         match self {
             Subject::FacetValue { facet } => format!("{facet}/{value}"),
-            Subject::Kind => value.to_string(),
+            Subject::Kind | Subject::OverlayAddress => value.to_string(),
         }
     }
 }
@@ -279,6 +323,13 @@ pub enum PayloadError {
         step: String,
         why: String,
     },
+    /// A step over an overlay address that names something that is not one.
+    Address {
+        at: String,
+        step: String,
+        found: String,
+        why: String,
+    },
     /// A version range this engine cannot read.
     Range {
         at: String,
@@ -323,6 +374,7 @@ impl PayloadError {
             | PayloadError::Format { at, .. }
             | PayloadError::Subject { at, .. }
             | PayloadError::Application { at, .. }
+            | PayloadError::Address { at, .. }
             | PayloadError::Range { at, .. }
             | PayloadError::NotThisVersion { at, .. }
             | PayloadError::FromItself { at, .. }
@@ -358,6 +410,16 @@ impl std::fmt::Display for PayloadError {
                 Subject::NAMES.join(", ")
             ),
             PayloadError::Application { at, step, why } => write!(f, "{at}, at {step}: {why}"),
+            PayloadError::Address {
+                at,
+                step,
+                found,
+                why,
+            } => write!(
+                f,
+                "{at}, at {step}: `{found}` is not an address into a taxonomy, and an \
+                 `overlay_address` step moves one: {why}"
+            ),
             PayloadError::Range { at, range, why } => write!(
                 f,
                 "{at} states the version range `{range}`, which this engine cannot read: {why}"
@@ -560,10 +622,11 @@ fn step(entry: &Mapping, at: &str) -> Result<Step, Vec<PayloadError>> {
             ))
         }
         ("kind", None) => Subject::Kind,
-        ("kind", Some(facet)) => {
+        ("overlay_address", None) => Subject::OverlayAddress,
+        ("kind" | "overlay_address", Some(facet)) => {
             return Err(malformed(format!(
-                "a `kind` step names no facet, and this one declares `facet: {facet}`. A key this \
-                 engine read and dropped is what a payload exists to stop"
+                "a `{named}` step names no facet, and this one declares `facet: {facet}`. A key \
+                 this engine read and dropped is what a payload exists to stop"
             )))
         }
         (other, _) => {
@@ -601,6 +664,23 @@ fn step(entry: &Mapping, at: &str) -> Result<Step, Vec<PayloadError>> {
                 .ok_or_else(|| malformed("a `to` entry is a scalar".to_string()))
         })
         .collect::<Result<Vec<String>, Vec<PayloadError>>>()?;
+
+    // A step over an address writes a path and never a value, and a path that
+    // does not parse is a rewrite of somebody's overlay into a key nothing can
+    // address. Both ends are held to it here, before an `Application` exists,
+    // so no arm of the writer meets an address it cannot read.
+    if subject.addressed() {
+        for value in std::iter::once(&from).chain(targets.iter()) {
+            if let Err(why) = headwater_ref::Address::parse(value) {
+                return Err(vec![PayloadError::Address {
+                    at: at.to_string(),
+                    step: format!("{} {}", subject.name(), subject.at(&from)),
+                    found: value.clone(),
+                    why: why.to_string(),
+                }]);
+            }
+        }
+    }
 
     let apply = Application::over(targets, text_of(entry, "task")).map_err(|why| {
         vec![PayloadError::Application {
@@ -680,6 +760,34 @@ pub fn holds(payload: &Payload, taxonomy: &Mapping, version: &str) -> Vec<Payloa
     refusals
 }
 
+/// The address one `overlay_address` step moves `address` to.
+///
+/// `None` where `from` is not a prefix of `address`, which is a caller holding
+/// a site the step does not cover, and `None` where any of the three does not
+/// parse. Both are refused before a writer runs, and answering rather than
+/// panicking keeps a hand-built [`Step`] out of an abort.
+///
+/// The substitution is over segments and never over text. `kinds.play` is a
+/// prefix of `kinds.playbook` as text and of neither address as an address, and
+/// a rewrite that worked on text would re-address a declaration nobody named.
+pub fn readdressed(address: &str, from: &str, to: &str) -> Option<String> {
+    let address = headwater_ref::Address::parse(address).ok()?;
+    let from = headwater_ref::Address::parse(from).ok()?;
+    let to = headwater_ref::Address::parse(to).ok()?;
+    if !from.is_prefix_of(&address) {
+        return None;
+    }
+    let rest = &address.segments()[from.segments().len()..];
+    Some(
+        to.segments()
+            .iter()
+            .chain(rest)
+            .cloned()
+            .collect::<Vec<String>>()
+            .join("."),
+    )
+}
+
 /// Whether a resolved taxonomy declares one value of one subject.
 ///
 /// Over a resolved taxonomy and never over a source, because
@@ -701,6 +809,14 @@ pub fn declares(taxonomy: &Mapping, subject: &Subject, value: &str) -> bool {
             .and_then(|node| node.value.as_seq())
             .map(|values| values.iter().any(|item| named(&item.value) == Some(value)))
             .unwrap_or(false),
+        // An address, so the question is whether the tree holds a node there.
+        // `crate::merge::lookup` is the reader the resolver walks addresses
+        // with, and a second walk here could answer differently about a path
+        // that runs through a sequence.
+        Subject::OverlayAddress => headwater_ref::Address::parse(value)
+            .ok()
+            .and_then(|address| crate::merge::lookup(taxonomy, address.segments()))
+            .is_some(),
     }
 }
 
@@ -820,6 +936,48 @@ mod tests {
                 "{count} targets and no task"
             );
         }
+    }
+
+    /// The rewrite is over segments, and a text-level prefix replace is the
+    /// defect this case names.
+    ///
+    /// `kinds.play` is a prefix of `kinds.playbook` as text and of neither
+    /// address as an address. A `replacen` over the string would re-address a
+    /// declaration that the step does not cover, and this repository's own
+    /// overlay holds pairs of that shape.
+    #[test]
+    fn an_address_is_moved_by_segment_and_never_by_text() {
+        assert_eq!(
+            readdressed("kinds.play.purpose", "kinds.play", "kinds.script"),
+            Some("kinds.script.purpose".to_string())
+        );
+        assert_eq!(
+            readdressed("kinds.play", "kinds.play", "kinds.script"),
+            Some("kinds.script".to_string()),
+            "the address that is the path itself moves whole"
+        );
+        assert_eq!(
+            readdressed("kinds.playbook.purpose", "kinds.play", "kinds.script"),
+            None,
+            "a text prefix that is not an address prefix moves nothing"
+        );
+        assert_eq!(
+            readdressed("regimes.language.ste_house", "kinds.play", "kinds.script"),
+            None
+        );
+    }
+
+    /// A step over an address is a remedy for the one dimension whose subject
+    /// is the schema.
+    #[test]
+    fn an_overlay_address_step_remedies_addressability() {
+        assert_eq!(Subject::OverlayAddress.remedies(), ["addressability"]);
+        assert!(Subject::OverlayAddress.addressed());
+        assert!(!Subject::Kind.addressed());
+        assert!(!Subject::FacetValue {
+            facet: "status".into()
+        }
+        .addressed());
     }
 
     /// A `facet` key on a `kind` step is a key this engine would read and drop.

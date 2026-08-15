@@ -107,6 +107,37 @@ const KIND: [(&[&str], &[&str]); 2] = [
     ),
 ];
 
+/// The candidate that renames a kind the adopter's overlay addresses.
+///
+/// The three `CANDIDATE` edits, and two more that rename the `specification`
+/// kind and the shelf that carries it. Every value the corpus reads still
+/// moves, so a run over this candidate writes a document and an overlay entry
+/// in one set.
+///
+/// The rename is of a kind the *base* declares, and that is a constraint rather
+/// than a preference: `headwater_resolve::migration::holds` checks a payload
+/// against the base taxonomy alone, so no step of a payload may name a
+/// declaration that one of the package's bundles makes
+/// ([#194](https://github.com/headwater-ai/headwater/issues/194)).
+fn address() -> Vec<(&'static [&'static str], &'static [&'static str])> {
+    let mut edits: Vec<(&[&str], &[&str])> = CANDIDATE.to_vec();
+    edits.push((&["  specification:"], &["  standard:"]));
+    edits.push((
+        &["  specifications: {path: docs/specifications/**, homogeneous: true, kind: specification}"],
+        &["  specifications: {path: docs/specifications/**, homogeneous: true, kind: standard}"],
+    ));
+    edits
+}
+
+/// The overlay entry every case in this file's last section is about.
+///
+/// This repository's own overlay addresses no kind that the base declares:
+/// every kind it writes into comes from a bundle, and a payload may not name
+/// one (see [`address`]). So the copied overlay gains one entry, and the entry
+/// is an ordinary one — a base kind with no identifier scheme, given the scheme
+/// the same overlay declares two blocks above.
+const ENTRY: &str = "\n  kinds.specification.identifier: {scheme: spec_id}\n";
+
 /// A repository root that removes itself.
 ///
 /// `label` names the case and not the target. Cargo runs the cases of one
@@ -239,6 +270,24 @@ impl Root {
         std::fs::read_to_string(self.at.join(path)).expect("the document reads")
     }
 
+    /// Add one `add` entry to the copied overlay, under the `add:` block it
+    /// already declares.
+    fn addresses(&self, entry: &str) {
+        let at = self.at.join(".headwater/overlay.yml");
+        let text = std::fs::read_to_string(&at).expect("the overlay reads");
+        assert!(text.starts_with("# SPDX"), "the overlay is the copied one");
+        let (before, after) = text
+            .split_once("\nadd:\n")
+            .expect("it declares an `add` block");
+        std::fs::write(&at, format!("{before}\nadd:\n{entry}{after}")).expect("the overlay writes");
+        let resolved = self.run(&["taxonomy", "resolve"]);
+        assert_eq!(
+            resolved.code,
+            Some(0),
+            "the overlay with the entry resolves against the base: {resolved:?}"
+        );
+    }
+
     /// Make one document of the corpus unwritable.
     ///
     /// A read-only file rather than a missing one, because a missing file is
@@ -295,6 +344,12 @@ fn copy(from: &Path, to: &Path) {
 /// format.
 fn payload() -> String {
     std::fs::read_to_string(fixtures().join("1-to-2.yml")).expect("the committed payload reads")
+}
+
+/// The committed payload that carries a step over an overlay address.
+fn addresses() -> String {
+    std::fs::read_to_string(fixtures().join("addresses-1-to-2.yml"))
+        .expect("the committed payload reads")
 }
 
 /// The one case the whole issue is about.
@@ -588,7 +643,7 @@ fn the_mechanical_step_writes_and_a_judgment_step_writes_nothing() {
 
     let ran = root.migrate("2.0.0", &["--apply"]);
     assert_eq!(ran.code, Some(0), "{ran:?}");
-    assert!(ran.out.contains("wrote 1 value in 1 document"), "{ran:?}");
+    assert!(ran.out.contains("wrote 1 value in 1 file"), "{ran:?}");
 
     assert!(
         root.read("docs/decisions/0003-the-document-still-being-written.md")
@@ -629,7 +684,7 @@ fn a_run_without_apply_writes_no_document() {
     assert_eq!(ran.code, Some(0), "{ran:?}");
     assert!(
         ran.out
-            .contains("1 value in 1 document would be written. Nothing was: pass `--apply`"),
+            .contains("1 value in 1 file would be written. Nothing was: pass `--apply`"),
         "{ran:?}"
     );
     assert_eq!(
@@ -660,9 +715,7 @@ fn a_document_that_cannot_be_written_leaves_every_other_document_as_it_was() {
     let planned = root.migrate("2.0.0", &[]);
     assert_eq!(planned.code, Some(0), "{planned:?}");
     assert!(
-        planned
-            .out
-            .contains("3 values in 3 documents would be written"),
+        planned.out.contains("3 values in 3 files would be written"),
         "{planned:?}"
     );
 
@@ -681,7 +734,7 @@ fn a_document_that_cannot_be_written_leaves_every_other_document_as_it_was() {
     );
     assert!(
         ran.err
-            .contains("a document of this migration cannot be written, so none was"),
+            .contains("a file of this migration cannot be written, so none was"),
         "{ran:?}"
     );
     assert_eq!(
@@ -717,7 +770,7 @@ fn a_kind_the_shelf_carries_is_named_and_no_document_is_written() {
         ),
         "{ran:?}"
     );
-    assert!(ran.out.contains("wrote 0 values in 0 documents"), "{ran:?}");
+    assert!(ran.out.contains("wrote 0 values in 0 files"), "{ran:?}");
     assert_eq!(
         root.read("docs/decisions/0001-the-live-document.md"),
         before
@@ -767,4 +820,247 @@ fn an_artifact_with_no_payload_for_the_transition_is_refused() {
             .contains("the artifact ships no migration payload for 1.0.0 to 2.0.0"),
         "{ran:?}"
     );
+}
+
+// ---------------------------------------------------------------------------
+// The overlay address: the subject that names no document, and the state that
+// nothing reported before it.
+// ---------------------------------------------------------------------------
+
+/// The case this whole issue is about, and the one that was silent.
+///
+/// A candidate renames a kind. This repository's overlay writes into that kind
+/// at an address the new base no longer declares — and the `add` puts the kind
+/// back. Every phase downstream reads a `kinds.specification` that no taxonomy
+/// declares: the candidate resolves, `classification` reports nothing, and
+/// before this measurement `addressability` said `preserved`.
+///
+/// The resolution assertion is deliberately the loose half. A candidate that
+/// failed to resolve would satisfy no reading of this case at all, and the
+/// dimension below it is where this case fails.
+#[test]
+fn an_add_over_a_path_the_new_base_dropped_is_named_with_the_entry_that_makes_it() {
+    let root = Root::new("resurrection-is-named");
+    root.addresses(ENTRY);
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate_of(&address(), None);
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let ran = root.diff("2.0.0");
+    assert_eq!(
+        ran.code,
+        Some(0),
+        "the candidate resolves, which is what makes the state quiet: {ran:?}"
+    );
+    assert_eq!(
+        ran.dimension("addressability"),
+        "BROKEN, 1 of them",
+        "{ran:?}"
+    );
+    for line in [
+        "add.kinds.specification.identifier in .headwater/overlay.yml",
+        "makes `kinds.specification` rather than reaching into it",
+        "an address into `kinds.specification`, which the taxonomy under it declared",
+    ] {
+        assert!(
+            ran.out.contains(line),
+            "the report states `{line}`: {ran:?}"
+        );
+    }
+    assert!(
+        ran.out.contains("this change requires a major version"),
+        "spec 2: any dimension broken forces a major: {ran:?}"
+    );
+}
+
+/// The direction that keeps the case above from passing against any reading.
+///
+/// The same overlay entry, the same corpus, and a candidate that renames
+/// nothing the entry addresses. The address still reaches the declaration it
+/// was written against, and the dimension says so.
+#[test]
+fn an_overlay_address_the_new_base_still_declares_is_preserved() {
+    let root = Root::new("address-still-reaches");
+    root.addresses(ENTRY);
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate(None);
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let ran = root.diff("2.0.0");
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert_eq!(
+        ran.dimension("addressability"),
+        "preserved",
+        "the candidate moves three facet values and no address: {ran:?}"
+    );
+    assert_eq!(
+        ran.dimension("instance_validity"),
+        "BROKEN, 3 of them",
+        "and the run did measure something, or this case proves nothing: {ran:?}"
+    );
+}
+
+/// A step over an address, accounted the way a step over a value is.
+///
+/// The reach line is the assertion. It counts entries of the overlay and not
+/// documents of the corpus, and the noun is what says the subject reached a
+/// file that no census walks.
+#[test]
+fn a_step_over_an_address_reports_the_overlay_entries_it_reaches() {
+    let root = Root::new("address-step-reports");
+    root.addresses(ENTRY);
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate_of(&address(), Some(&addresses()));
+    let published = root.publish("2.0.0");
+    assert_eq!(published.code, Some(0), "{published:?}");
+
+    let ran = root.diff("2.0.0");
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    for line in [
+        "overlay_address kinds.specification",
+        "mechanical, and it becomes `kinds.standard`",
+        "remedies addressability",
+        "1 entry of this repository's overlay is addressed at or under it",
+    ] {
+        assert!(
+            ran.out.contains(line),
+            "the report states `{line}`: {ran:?}"
+        );
+    }
+}
+
+/// A publisher that ships a step over an address it did not move.
+///
+/// The half of the payload check the publisher can make. `kinds.decision` is
+/// still declared in the taxonomy being published, so a step that re-addresses
+/// overlays away from it renames something that did not move, and the digest is
+/// never taken.
+#[test]
+fn a_step_over_an_address_the_new_taxonomy_still_declares_stops_the_publish() {
+    let root = Root::new("address-source-stands");
+    root.addresses(ENTRY);
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    let payload = addresses().replacen(
+        "    from: kinds.specification\n    to: [kinds.standard]",
+        "    from: kinds.decision\n    to: [kinds.standard]",
+        1,
+    );
+    root.candidate_of(&address(), Some(&payload));
+
+    let published = root.publish("2.0.0");
+    assert_eq!(published.code, Some(1), "{published:?}");
+    assert!(
+        published
+            .err
+            .contains("the taxonomy this publishes still declares that overlay_address"),
+        "{published:?}"
+    );
+}
+
+/// A `from` that is not an address at all.
+///
+/// The step is refused when the payload is read, before anything decides
+/// whether it is mechanical, so no writer ever meets an address it cannot
+/// parse.
+#[test]
+fn a_step_over_something_that_is_not_an_address_is_refused_when_the_payload_is_read() {
+    let root = Root::new("address-unparseable");
+    root.addresses(ENTRY);
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    let payload =
+        addresses().replacen("from: kinds.specification", "from: kinds..specification", 1);
+    root.candidate_of(&address(), Some(&payload));
+
+    let published = root.publish("2.0.0");
+    assert_eq!(published.code, Some(1), "{published:?}");
+    assert!(
+        published
+            .err
+            .contains("is not an address into a taxonomy, and an `overlay_address` step moves one"),
+        "{published:?}"
+    );
+}
+
+/// `--apply` over both subjects, and the write set that holds them together.
+///
+/// One step writes a document of the corpus and one writes the overlay beside
+/// it. The assertion is on the bytes of both files, because a run that wrote
+/// the document and reported the overlay would print the same two lines.
+#[test]
+fn apply_rewrites_the_overlay_address_beside_the_document() {
+    let root = Root::new("address-apply");
+    root.addresses(ENTRY);
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate_of(&address(), Some(&addresses()));
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    assert!(
+        root.read(".headwater/overlay.yml")
+            .contains("kinds.specification.identifier: {scheme: spec_id}"),
+        "the entry is the one the fixture added"
+    );
+
+    let ran = root.migrate("2.0.0", &["--apply"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(ran.out.contains("wrote 2 values in 2 files"), "{ran:?}");
+    assert!(
+        ran.out.contains(
+            ".headwater/overlay.yml  add.kinds.specification.identifier  becomes \
+                      `kinds.standard.identifier`"
+        ),
+        "{ran:?}"
+    );
+
+    let overlay = root.read(".headwater/overlay.yml");
+    assert!(
+        overlay.contains("kinds.standard.identifier: {scheme: spec_id}"),
+        "the address moved and the value beside it did not: {overlay}"
+    );
+    assert!(
+        !overlay.contains("kinds.specification"),
+        "no old address survives: {overlay}"
+    );
+    assert!(
+        overlay.contains("kinds.decision_register.identifier:"),
+        "an address the step does not reach is untouched: {overlay}"
+    );
+    assert!(
+        root.read("docs/decisions/0003-the-document-still-being-written.md")
+            .contains("status: outline"),
+        "the document half of the same write set landed"
+    );
+}
+
+/// The property #186 built, over a set that holds an overlay and a document.
+///
+/// The overlay is read-only. `headwater_scaffold::tree::Reserved` opens every
+/// target before a byte is written, so the run refuses there — and the
+/// assertion is on the *document*, which a writer that took the corpus first
+/// would already have written.
+#[test]
+fn an_unwritable_overlay_leaves_the_document_beside_it_untouched() {
+    let root = Root::new("address-apply-refuses");
+    root.addresses(ENTRY);
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate_of(&address(), Some(&addresses()));
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let document = root.read("docs/decisions/0003-the-document-still-being-written.md");
+    let overlay = root.read(".headwater/overlay.yml");
+    root.read_only(".headwater/overlay.yml");
+
+    let ran = root.migrate("2.0.0", &["--apply"]);
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(
+        ran.err
+            .contains("a file of this migration cannot be written, so none was"),
+        "{ran:?}"
+    );
+    assert!(ran.err.contains(".headwater/overlay.yml"), "{ran:?}");
+    assert_eq!(
+        root.read("docs/decisions/0003-the-document-still-being-written.md"),
+        document,
+        "the document is in the same write set as the overlay, so neither moved"
+    );
+    assert_eq!(root.read(".headwater/overlay.yml"), overlay);
 }
