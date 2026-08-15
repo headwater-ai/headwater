@@ -697,7 +697,10 @@ fn every_format_states_how_many_instances_reached_no_verdict() {
     let ran = fixture_run();
     let skipped = ran.run.coverage.skipped();
     let classes = ran.run.coverage.skips().len();
-    assert!(skipped > 0 && classes > 1, "the tree skips under more than one class");
+    assert!(
+        skipped > 0 && classes > 1,
+        "the tree skips under more than one class"
+    );
 
     for format in [Format::Json, Format::Sarif] {
         let block = coverage_block(format, &render(&ran, format));
@@ -710,9 +713,17 @@ fn every_format_states_how_many_instances_reached_no_verdict() {
             .iter()
             .map(|entry| entry.value.clone())
             .collect::<Vec<Value>>();
-        assert_eq!(skips.len(), classes, "one entry per class in {}", format.name());
+        assert_eq!(
+            skips.len(),
+            classes,
+            "one entry per class in {}",
+            format.name()
+        );
         let summed: usize = skips.iter().map(|entry| count(entry, "instances")).sum();
-        assert_eq!(summed, skipped, "the classes partition the skipped instances");
+        assert_eq!(
+            summed, skipped,
+            "the classes partition the skipped instances"
+        );
         for (entry, (reason, instances)) in skips.iter().zip(ran.run.coverage.skips()) {
             assert_eq!(&text(entry, "reason"), reason);
             assert_eq!(count(entry, "instances"), *instances);
@@ -734,9 +745,7 @@ fn every_format_states_how_many_instances_reached_no_verdict() {
     let text_report = render(&ran, Format::Text);
     let markdown = render(&ran, Format::Markdown);
     assert!(text_report.contains("266 check instances"));
-    assert!(markdown.contains(
-        "It created 266 check instances, and 66 of them reached no verdict."
-    ));
+    assert!(markdown.contains("It created 266 check instances, and 66 of them reached no verdict."));
     for (reason, instances) in ran.run.coverage.skips() {
         assert!(
             text_report.contains(&format!("{instances} skipped: {reason}")),
