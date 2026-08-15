@@ -760,6 +760,34 @@ pub fn holds(payload: &Payload, taxonomy: &Mapping, version: &str) -> Vec<Payloa
     refusals
 }
 
+/// The address one `overlay_address` step moves `address` to.
+///
+/// `None` where `from` is not a prefix of `address`, which is a caller holding
+/// a site the step does not cover, and `None` where any of the three does not
+/// parse. Both are refused before a writer runs, and answering rather than
+/// panicking keeps a hand-built [`Step`] out of an abort.
+///
+/// The substitution is over segments and never over text. `kinds.play` is a
+/// prefix of `kinds.playbook` as text and of neither address as an address, and
+/// a rewrite that worked on text would re-address a declaration nobody named.
+pub fn readdressed(address: &str, from: &str, to: &str) -> Option<String> {
+    let address = headwater_ref::Address::parse(address).ok()?;
+    let from = headwater_ref::Address::parse(from).ok()?;
+    let to = headwater_ref::Address::parse(to).ok()?;
+    if !from.is_prefix_of(&address) {
+        return None;
+    }
+    let rest = &address.segments()[from.segments().len()..];
+    Some(
+        to.segments()
+            .iter()
+            .chain(rest)
+            .cloned()
+            .collect::<Vec<String>>()
+            .join("."),
+    )
+}
+
 /// Whether a resolved taxonomy declares one value of one subject.
 ///
 /// Over a resolved taxonomy and never over a source, because
