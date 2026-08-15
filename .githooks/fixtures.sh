@@ -181,6 +181,45 @@ out=$(cd "$scratch" && ./engine/target/release/headwater check --change "$hold/o
 judge 'a document the change deleted is named, and the report says no row holds it' 0 "$status" \
     "$terminal" "$out"
 
+printf '# a document that left, and the three departures that are not one\n'
+
+# The gate rather than the verb, because this is the moment the rule exists
+# for. `$terminal` stands at `discharged`, which the `obligation` regime gives
+# no exit, and that regime declares `retain_terminal: true`.
+reset
+git -C "$scratch" rm -q "$terminal"
+out=$(gate); status=$?
+judge 'deleting a document at a terminal state of a retaining regime is refused' 1 "$status" \
+    'lifecycle.deletion.not_permitted (OB-LIFE-4): HW-OBL-0117 stood at `discharged`' "$out"
+
+# The instrument, on the terms the transition case above states. The same tree,
+# the same engine, and no manifest: the rule reports a skip and the gate exits
+# 0. So the refusal above comes from the producer and from nothing else.
+out=$(cd "$scratch" && ./engine/target/release/headwater check --strict 2>&1); status=$?
+judge 'the same deletion with no change described is not refused' 0 "$status" '' "$out"
+
+# The same file, moved rather than removed. Git reports a rename as one path
+# with a prior version, the census holds a row where it arrived, and the entry
+# binds. A rule that read a `prior` line as a departure refuses this.
+reset
+git -C "$scratch" mv "$terminal" "docs/obligations/0117-renamed.md" >/dev/null 2>&1
+out=$(gate); status=$?
+judge 'the same document renamed at the same state is not a deletion' 0 "$status" '' "$out"
+
+# A document that never reached a terminal state. `$draft` opens at `draft`,
+# which reaches `current` and `deprecated`, so nothing about it is retained.
+reset
+git -C "$scratch" rm -q "$draft"
+out=$(gate); status=$?
+judge 'deleting a document that stands at no terminal state is not refused' 0 "$status" '' "$out"
+
+# A file that is no document of this corpus. Its prior version does not parse as
+# one, so nothing is held against a regime.
+reset
+git -C "$scratch" rm -q "engine/crates/check/src/change.rs"
+out=$(gate); status=$?
+judge 'deleting a file that is no document of this corpus is not refused' 0 "$status" '' "$out"
+
 reset
 produce "0000000000000000000000000000000000000000"
 status=$?
