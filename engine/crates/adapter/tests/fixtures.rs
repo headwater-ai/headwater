@@ -1725,3 +1725,69 @@ fn results(document: &Value) -> Vec<Value> {
         .map(|spanned| spanned.value.clone())
         .collect()
 }
+
+/// A member of one artifact, by path.
+fn at<'a>(
+    value: &'a headwater_yaml::Spanned<headwater_yaml::Value>,
+    path: &[&str],
+) -> Option<&'a headwater_yaml::Spanned<headwater_yaml::Value>> {
+    let mut found = value;
+    for key in path {
+        found = found.value.as_map()?.get(key)?;
+    }
+    Some(found)
+}
+
+/// The members a run-level carrier names are the members the artifact writes.
+///
+/// The census holds the artifact to the declaration. Nothing held the
+/// declaration to the artifact, and without this a member could leave the list
+/// in silence: the audit would then ask for less, every count would still add
+/// up, and the entry would read as held. It is the same weakening that produced
+/// #233 one grain out, where the entry named a bag and the bag was there.
+///
+/// Derived rather than listed. Every entry of every loss set that names members
+/// is read out of the declaration, and the names are read out of the emitted
+/// bytes. An emitter that adds a member to a declared block fails this too,
+/// because a value that reaches an artifact and no declaration is a value the
+/// loss set does not account for.
+#[test]
+fn the_members_a_carrier_names_are_the_members_the_artifact_writes() {
+    let mut checked = 0;
+    for ran in [fixture_run(), scoped_run()] {
+        for format in Format::ALL {
+            let artifact = render(&ran, format);
+            let Ok(root) = headwater_yaml::load(&artifact) else {
+                continue;
+            };
+            let Some(runs) = at(&root, &["runs"]).and_then(|found| found.value.as_seq()) else {
+                continue;
+            };
+            let object = runs.first().expect("one run");
+            for entry in format.loss() {
+                let Carrier::Run { places, when } = entry.carrier else {
+                    continue;
+                };
+                if !when(&ran.run) {
+                    continue;
+                }
+                for place in places.iter().filter(|place| !place.members.is_empty()) {
+                    let block = at(object, place.at).expect("the block the entry names");
+                    let written: BTreeSet<&str> = block
+                        .value
+                        .as_map()
+                        .expect("a mapping")
+                        .iter()
+                        .map(|member| member.key.value.as_str())
+                        .collect();
+                    let declared: BTreeSet<&str> = place.members.iter().copied().collect();
+                    assert_eq!(declared, written, "{} in {}", entry.field, format.name());
+                    checked += 1;
+                }
+            }
+        }
+    }
+    // Two entries over the full-corpus run and the scoped one, minus the change
+    // entry that a full-corpus run does not write.
+    assert_eq!(checked, 3);
+}
