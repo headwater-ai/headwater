@@ -1128,7 +1128,10 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     let record = match headwater_resolve::release::at(fetched) {
         Ok(record) => record,
         Err(error) => {
-            eprintln!("headwater: {fetched:?} is not a published artifact this engine can read");
+            eprintln!(
+                "headwater: {} is not a published artifact this engine can read",
+                fetched.display()
+            );
             eprintln!("{}", indent(&error.to_string()));
             return ExitCode::FAILURE;
         }
