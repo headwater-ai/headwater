@@ -279,7 +279,7 @@ Two rules above disagree, and this section states which one wins. Coverage recor
 
 The run therefore reports the cache accounting on a second channel. The verdict goes to standard output, and the corpus, the lock and the injected values decide every byte of it. The hit count goes to standard error, which a differential over the verdict does not read.
 
-A cache also never makes a run partial. The run creates every instance, every instance carries an outcome, and coverage counts what it counts without a cache. A run that evaluates part of a corpus is change-scoped evaluation, and that one owes an answer about coverage over a partial pass.
+A cache also never makes a run partial. The run creates every instance, every instance carries an outcome, and coverage counts what it counts without a cache. Change-scoped evaluation is not a partial run either. It reads the same corpus and creates the same instances. The manifest decides which of them reach a verdict, and never which documents a run visits. Every instance that a full-corpus run skips for want of a prior version reaches one there, so a scoped run evaluates more and never less.
 
 ## The plugin interface
 

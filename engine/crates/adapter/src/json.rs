@@ -28,7 +28,7 @@
 
 use crate::{reported, Reported, Subject};
 use headwater_check::register::Bound;
-use headwater_check::Run;
+use headwater_check::{Run, Scoped};
 use headwater_yaml::json::Json;
 
 /// The version of this document's own shape.
@@ -36,15 +36,55 @@ use headwater_yaml::json::Json;
 /// A consumer outside the repository reads these bytes and holds no clone, so
 /// the shape has to name itself. It is not the engine's version: two engines
 /// that write one shape should not make a reader re-read it.
-pub const VERSION: &str = "1.0";
+///
+/// `1.1` added [`change`], and the bump is what makes its absence a statement.
+/// The member is written for a change-scoped run and for no other, so a reader
+/// of a `1.1` document that carries none knows the run read the whole corpus. A
+/// reader of a `1.0` document knows only that this producer had no such member
+/// to write, and those two are exactly the pair the member exists to separate.
+pub const VERSION: &str = "1.1";
 
 /// One run as JSON.
 pub fn render(run: &Run, subject: &Subject<'_>) -> String {
     document(run, subject).render_pretty()
 }
 
-fn document(run: &Run, subject: &Subject<'_>) -> Json {
+/// The change a run was scoped to, in the shape this document and the SARIF
+/// property bag both write.
+///
+/// One shape with two readers rather than two shapes that agree until somebody
+/// edits one of them. [`crate::sarif`] calls this: a consumer that holds both
+/// artifacts of one run should not have to learn the same six values twice.
+///
+/// The `Option` is the caller's and never this function's. Nothing reaches here
+/// except a run that was scoped, so a full-corpus run writes no member at all,
+/// which is the statement [`Scoped`]'s own declaration makes.
+pub fn change(scoped: &Scoped) -> Json {
     Json::object([
+        ("documents", number(scoped.named.documents)),
+        ("added", number(scoped.named.added)),
+        ("carried", number(scoped.named.carried)),
+        ("unreadable", number(scoped.named.unreadable)),
+        // The paths, and not the count that `Named` holds beside them. A caller
+        // who mistyped one character needs the path, and a count sends them to
+        // read their own manifest against a census by hand. The length is the
+        // count, so the two cannot disagree here.
+        (
+            "unmatched",
+            Json::Array(
+                scoped
+                    .unmatched
+                    .iter()
+                    .map(|path| Json::string(path.clone()))
+                    .collect(),
+            ),
+        ),
+        ("promotions", number(scoped.promotions)),
+    ])
+}
+
+fn document(run: &Run, subject: &Subject<'_>) -> Json {
+    let mut members: Vec<(&'static str, Json)> = vec![
         ("version", Json::string(VERSION)),
         ("tool", Json::string(crate::TOOL)),
         (
@@ -56,6 +96,14 @@ fn document(run: &Run, subject: &Subject<'_>) -> Json {
             ]),
         ),
         ("clock", Json::string(subject.now)),
+    ];
+    // Above coverage, for the reason the text report puts it above coverage: it
+    // is the input that decides which instances reached a verdict at all, and
+    // the counts below count the ones that did not.
+    if let Some(scoped) = &run.change {
+        members.push(("change", change(scoped)));
+    }
+    members.extend([
         (
             "coverage",
             Json::object([
@@ -98,7 +146,8 @@ fn document(run: &Run, subject: &Subject<'_>) -> Json {
                     .collect(),
             ),
         ),
-    ])
+    ]);
+    Json::object(members)
 }
 
 fn rule(served: &headwater_check::Serves) -> Json {

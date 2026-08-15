@@ -7,10 +7,23 @@
     "lock": "0d5deef4f0b065206f6e33e9641af29c0de5411b4e8c5d9eedaf22d68f04c746"
   },
   "clock": "2026-08-12",
+  "change": {
+    "documents": 10,
+    "added": 2,
+    "carried": 1,
+    "unreadable": 3,
+    "unmatched": [
+      "./check/evaluations/delta.md",
+      "README.md",
+      "check/spec/00-both-halves.markdown",
+      "engine/crates/check/src/change.rs"
+    ],
+    "promotions": 0
+  },
   "coverage": {
     "seen": 25,
     "classified": 23,
-    "checked": 22,
+    "checked": 23,
     "instances": 266
   },
   "rules": [
@@ -282,17 +295,6 @@
       "column": 151,
       "message": "`ste_house` holds prose to 25 words a sentence, and this one has 34",
       "remediation": "split the sentence, or move a clause into its own sentence",
-      "fixable": false,
-      "escape": "none"
-    },
-    {
-      "rule": "coverage.document_unchecked",
-      "severity": "warn",
-      "path": "check/spec/03-no-instance.md",
-      "line": 0,
-      "column": 0,
-      "message": "this document is classified and all 3 of its check instances were skipped",
-      "remediation": "check that the shelf pattern claims the right files, and that the kind declares something a check reads",
       "fixable": false,
       "escape": "none"
     },
