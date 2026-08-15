@@ -938,6 +938,48 @@ mod tests {
         }
     }
 
+    /// The rewrite is over segments, and a text-level prefix replace is the
+    /// defect this case names.
+    ///
+    /// `kinds.play` is a prefix of `kinds.playbook` as text and of neither
+    /// address as an address. A `replacen` over the string would re-address a
+    /// declaration that the step does not cover, and this repository's own
+    /// overlay holds pairs of that shape.
+    #[test]
+    fn an_address_is_moved_by_segment_and_never_by_text() {
+        assert_eq!(
+            readdressed("kinds.play.purpose", "kinds.play", "kinds.script"),
+            Some("kinds.script.purpose".to_string())
+        );
+        assert_eq!(
+            readdressed("kinds.play", "kinds.play", "kinds.script"),
+            Some("kinds.script".to_string()),
+            "the address that is the path itself moves whole"
+        );
+        assert_eq!(
+            readdressed("kinds.playbook.purpose", "kinds.play", "kinds.script"),
+            None,
+            "a text prefix that is not an address prefix moves nothing"
+        );
+        assert_eq!(
+            readdressed("regimes.language.ste_house", "kinds.play", "kinds.script"),
+            None
+        );
+    }
+
+    /// A step over an address is a remedy for the one dimension whose subject
+    /// is the schema.
+    #[test]
+    fn an_overlay_address_step_remedies_addressability() {
+        assert_eq!(Subject::OverlayAddress.remedies(), ["addressability"]);
+        assert!(Subject::OverlayAddress.addressed());
+        assert!(!Subject::Kind.addressed());
+        assert!(!Subject::FacetValue {
+            facet: "status".into()
+        }
+        .addressed());
+    }
+
     /// A `facet` key on a `kind` step is a key this engine would read and drop.
     #[test]
     fn a_key_a_subject_does_not_take_is_refused() {
