@@ -21,11 +21,14 @@
 //! constraint the specification states.
 //!
 //! * `{namespace}` is the declared `namespace`, exactly. That is the one
-//!   lexical requirement the invariant core makes: an adopter "may change
-//!   identifier patterns except the namespace"
-//!   ([spec 2](../../../../docs/spec/02-taxonomy-model.md#the-immutable-core)),
-//!   because a namespace is cheap at minting and unrecoverable once the
-//!   identifier is in somebody else's ticket.
+//!   lexical requirement of a pattern, and `identifier integrity` on the
+//!   resolved taxonomy is what makes it
+//!   ([spec 2](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema)).
+//!   The invariant core cannot: its identifier form names a scheme rather
+//!   than a property of one. A namespace is cheap at minting and
+//!   unrecoverable once the identifier is in somebody else's ticket, and
+//!   [Q25](../../../../docs/spec/09-decisions.md#q25--where-the-namespace-goes-in-an-identifier-and-who-declares-it)
+//!   puts it first in the rendered form.
 //! * `{seq:04d}` is exactly four decimal digits, and `{seq:0Nd}` is exactly N.
 //!   The width is in the declaration, so the check reads it rather than
 //!   assuming one.
@@ -46,7 +49,7 @@
 //!
 //! # The prefix is a literal, and that is a gap this check reports around
 //!
-//! `SPEC-` is a run of literal characters inside the `pattern` string, and no
+//! `-SPEC-` is a run of literal characters inside the `pattern` string, and no
 //! field names it. So this check can say that an identifier does not match its
 //! template, and it can say which segment of the template stopped the match,
 //! and it cannot say that two schemes mint disjoint identifiers — that is
@@ -515,9 +518,15 @@ mod tests {
     #[test]
     fn a_namespace_placeholder_is_the_declared_namespace_and_no_other_string() {
         assert!(admits("{namespace}-SPEC-{slug}", "HW", "HW-SPEC-glossary"));
-        // The one lexical requirement the invariant core makes.
-        assert!(!admits("{namespace}-SPEC-{slug}", "HW", "SPEC-XX-glossary"));
-        assert!(!admits("{namespace}-SPEC-{slug}", "HW", "SPEC--glossary"));
+        // The one lexical requirement, and `identifier integrity` is what makes
+        // it. Another owner's namespace, and no namespace at all.
+        assert!(!admits("{namespace}-SPEC-{slug}", "HW", "XX-SPEC-glossary"));
+        assert!(!admits("{namespace}-SPEC-{slug}", "HW", "-SPEC-glossary"));
+        // The same two under a type-first pattern, which this engine still
+        // reads and which no taxonomy of this repository writes.
+        assert!(admits("SPEC-{namespace}-{slug}", "HW", "SPEC-HW-glossary"));
+        assert!(!admits("SPEC-{namespace}-{slug}", "HW", "SPEC-XX-glossary"));
+        assert!(!admits("SPEC-{namespace}-{slug}", "HW", "SPEC--glossary"));
     }
 
     #[test]
