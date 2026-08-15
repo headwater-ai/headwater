@@ -629,20 +629,193 @@ fn a_scoped_run_checks_a_document_a_full_corpus_run_cannot() {
     assert!(unchecked(&full) > unchecked(&scoped));
 }
 
-/// The text report states the scoping a second way, and the other three have no
-/// member for it.
+/// Every format states the scoping a second way, and this test asserted the
+/// opposite until #233.
 ///
-/// A full-corpus run skips every instance of the two `needs_prior` rules, and
-/// the text report names that skip with its reason. The three translations
-/// carry four coverage counts and a list of read inputs, so an outcome per
-/// instance reaches none of them. The block is what a consumer of those has.
+/// A full-corpus run skips every instance of the two `needs_prior` rules with
+/// the reason `change-scoped-only`, and a scoped run skips none of them. That is
+/// the same difference #230 closed, read off the outcome of the instances rather
+/// than off the manifest, and it is the second thing a consumer can now hold one
+/// run against another with.
+///
+/// The committed form of this test named the drop and required it: it asserted
+/// that the three translations carry no `change-scoped` anywhere. A test that
+/// holds a defect in place passes for as long as the defect stands, which is
+/// what it did.
 #[test]
-fn the_text_report_states_the_scoping_a_second_way() {
-    let full = render(&fixture_run(), Format::Text);
-    assert!(full.contains("change-scoped-only"));
-    for format in [Format::Json, Format::Sarif, Format::Markdown] {
-        assert!(!render(&fixture_run(), format).contains("change-scoped"));
+fn every_format_states_the_scoping_a_second_way() {
+    for format in Format::ALL {
+        let full = render(&fixture_run(), format);
+        assert!(
+            full.contains("change-scoped-only"),
+            "the {} artifact of a full-corpus run names no change-scoped-only skip",
+            format.name()
+        );
+        let scoped = render(&scoped_run(), format);
+        assert!(
+            !scoped.contains("change-scoped-only"),
+            "the {} artifact of a scoped run names a change-scoped-only skip, and a scoped run \
+             reaches a verdict on every one of them",
+            format.name()
+        );
     }
+}
+
+/// The coverage block of one artifact, in the two formats that carry data.
+fn coverage_block(format: Format, artifact: &str) -> Value {
+    let document = parse(artifact);
+    let holder = match format {
+        Format::Json => document,
+        Format::Sarif => member(&runs(&document)[0], "properties")
+            .and_then(|properties| member(&properties, "headwater"))
+            .expect("the property bag"),
+        _ => panic!("{} carries no parseable coverage", format.name()),
+    };
+    member(&holder, "coverage").expect("the coverage block")
+}
+
+/// One member of the coverage block, as a number.
+fn count(block: &Value, key: &str) -> usize {
+    text(block, key).parse().expect("a whole number")
+}
+
+/// Every format states how many of the run's instances reached no verdict, and
+/// under which class.
+///
+/// [Spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+/// asks OB-COV-3 for the skips with their reasons, and three of the four formats
+/// carried the instance total and nothing else. A consumer read `266 instances`
+/// off a run where 66 of them decided nothing.
+///
+/// The two data formats are parsed and the member read. The two prose formats
+/// assert a whole sentence, because every artifact of this engine carries a
+/// sha256 in hexadecimal and a finding carries a line number, so an assertion
+/// that one of them contains a short run of digits is true whatever the emitter
+/// wrote.
+#[test]
+fn every_format_states_how_many_instances_reached_no_verdict() {
+    let ran = fixture_run();
+    let skipped = ran.run.coverage.skipped();
+    let classes = ran.run.coverage.skips().len();
+    assert!(skipped > 0 && classes > 1, "the tree skips under more than one class");
+
+    for format in [Format::Json, Format::Sarif] {
+        let block = coverage_block(format, &render(&ran, format));
+        assert_eq!(count(&block, "instances"), ran.run.coverage.instances);
+        assert_eq!(count(&block, "skipped"), skipped);
+        let skips = member(&block, "skips")
+            .expect("the skip classes")
+            .as_seq()
+            .expect("an array")
+            .iter()
+            .map(|entry| entry.value.clone())
+            .collect::<Vec<Value>>();
+        assert_eq!(skips.len(), classes, "one entry per class in {}", format.name());
+        let summed: usize = skips.iter().map(|entry| count(entry, "instances")).sum();
+        assert_eq!(summed, skipped, "the classes partition the skipped instances");
+        for (entry, (reason, instances)) in skips.iter().zip(ran.run.coverage.skips()) {
+            assert_eq!(&text(entry, "reason"), reason);
+            assert_eq!(count(entry, "instances"), *instances);
+        }
+        // Present and empty rather than absent. No check of this engine reads
+        // outside the census today, so the empty list is the only state a
+        // fixture can hold, and a member that appeared only when it was
+        // non-empty would make a reader tell "none" from "not reported".
+        assert_eq!(
+            member(&block, "unaccounted")
+                .expect("the unaccounted paths")
+                .as_seq()
+                .expect("an array")
+                .len(),
+            0
+        );
+    }
+
+    let text_report = render(&ran, Format::Text);
+    let markdown = render(&ran, Format::Markdown);
+    assert!(text_report.contains("266 check instances"));
+    assert!(markdown.contains(
+        "It created 266 check instances, and 66 of them reached no verdict."
+    ));
+    for (reason, instances) in ran.run.coverage.skips() {
+        assert!(
+            text_report.contains(&format!("{instances} skipped: {reason}")),
+            "the text report states no `{reason}` class"
+        );
+        assert!(
+            markdown.contains(&format!("- {instances} — {reason}")),
+            "the markdown report states no `{reason}` class"
+        );
+    }
+}
+
+/// No two counts of the coverage block the recorded fixtures carry are equal.
+///
+/// The same property [`no_two_counts_of_the_scoped_fixture_are_equal`] holds for
+/// the change block, and for the same reason: seven independent reads of one
+/// structure, and an emitter that wrote any of them where it meant another moves
+/// no recorded byte when two of them are equal.
+///
+/// Over the **full-corpus** fixture, because a scoped run of this tree checks
+/// every document it classified, so `classified` and `checked` are equal there by
+/// construction. Both artifacts are recorded, so a swap of those two still fails
+/// this crate.
+#[test]
+fn no_two_counts_of_the_coverage_block_are_equal() {
+    let coverage = fixture_run().run.coverage;
+    let counts = [
+        ("seen", coverage.seen()),
+        ("classified", coverage.classified()),
+        ("checked", coverage.checked()),
+        ("generated", coverage.generated()),
+        ("instances", coverage.instances),
+        ("skipped", coverage.skipped()),
+        ("the unaccounted paths", coverage.unaccounted.len()),
+    ];
+    for (one, left) in counts {
+        for (two, right) in counts {
+            assert!(
+                one == two || left != right,
+                "`{one}` and `{two}` are both {left}, so an emitter that wrote one where it \
+                 means the other moves no recorded byte"
+            );
+        }
+    }
+}
+
+/// A run that skipped nothing says so, and it is not a run that reports no
+/// skips.
+///
+/// The empty arm, and it has a location. A coverage block stands on every run,
+/// so absence cannot be its statement the way it is the change block's, and
+/// `"skipped": 0` with an empty class list is what "every instance this run
+/// created reached a verdict" looks like. What separates that from a producer
+/// with no such member to write is the shape version, which is why #233 moved it.
+#[test]
+fn a_run_that_skipped_nothing_is_not_a_run_that_reports_no_skips() {
+    let ran = fixture_run();
+    let nothing = headwater_check::Coverage::of(&ran.census, &[]);
+    assert_eq!(nothing.skipped(), 0);
+    let block = parse(&headwater_adapter::json::coverage(&nothing).render_pretty());
+    assert_eq!(count(&block, "skipped"), 0);
+    assert_eq!(
+        member(&block, "skips")
+            .expect("the skip classes")
+            .as_seq()
+            .expect("an array")
+            .len(),
+        0
+    );
+    let skipping = parse(&headwater_adapter::json::coverage(&ran.run.coverage).render_pretty());
+    assert_ne!(
+        headwater_adapter::json::coverage(&nothing).render_pretty(),
+        headwater_adapter::json::coverage(&ran.run.coverage).render_pretty(),
+        "a run that skipped nothing and a run that skipped 66 write one block"
+    );
+    assert!(count(&skipping, "skipped") > 0);
+    // And the shape version is what dates the member, so a reader of a document
+    // that carries no `skipped` knows which of the two it is holding.
+    assert_eq!(headwater_adapter::json::VERSION, "1.2");
 }
 
 /// A change that named nothing is not a full-corpus run, in any of the four.

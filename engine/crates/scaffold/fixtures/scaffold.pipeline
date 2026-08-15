@@ -5,9 +5,9 @@ touched corpus/decisions/a-second-successor.md
 touched corpus/decisions/an-earlier-decision.md
 
 9 seen, 9 classified, 9 checked, 118 check instances
+      4 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       9 skipped: this document writes no fragment into itself
      18 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
-      4 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
 9 documents in the read set, and 1 barrier that no gate carries across a merge
       9 instances of facet.required.missing
       9 instances of facet.value.not_permitted

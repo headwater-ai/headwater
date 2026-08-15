@@ -1,12 +1,12 @@
 25 seen, 23 classified, 22 checked, 266 check instances
       1 generated, held to regeneration by `headwater generate --check`
-     21 skipped: this document writes no fragment into itself
-     23 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+      1 skipped: no `id` facet, which is the key this engine reads an identifier from and which no declaration states
+      1 skipped: the `id` facet is a sequence, and an identifier is a word
      16 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: `guarded` forbids hedging, and this engine has no pattern set for it
       2 skipped: `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
-      1 skipped: no `id` facet, which is the key this engine reads an identifier from and which no declaration states
-      1 skipped: the `id` facet is a sequence, and an identifier is a word
+     21 skipped: this document writes no fragment into itself
+     23 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 24 documents in the read set, and 1 barrier that no gate carries across a merge
      22 instances of facet.required.missing
      22 instances of facet.value.not_permitted

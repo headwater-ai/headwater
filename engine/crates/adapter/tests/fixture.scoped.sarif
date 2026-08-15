@@ -2118,6 +2118,7 @@
       ],
       "properties": {
         "headwater": {
+          "shape": "1.2",
           "taxonomy": {
             "package": "headwater/fixture",
             "version": "1.0.0",
@@ -2141,7 +2142,40 @@
             "seen": 25,
             "classified": 23,
             "checked": 23,
-            "instances": 266
+            "generated": 1,
+            "instances": 266,
+            "skipped": 46,
+            "skips": [
+              {
+                "reason": "no `id` facet, which is the key this engine reads an identifier from and which no declaration states",
+                "instances": 1
+              },
+              {
+                "reason": "the `id` facet is a sequence, and an identifier is a word",
+                "instances": 1
+              },
+              {
+                "reason": "the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it",
+                "instances": 16
+              },
+              {
+                "reason": "`guarded` forbids hedging, and this engine has no pattern set for it",
+                "instances": 2
+              },
+              {
+                "reason": "`ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it",
+                "instances": 2
+              },
+              {
+                "reason": "this document writes no fragment into itself",
+                "instances": 21
+              },
+              {
+                "reason": "the prior version at `a prior version that no tree holds` did not open: no prior version stands at this name",
+                "instances": 3
+              }
+            ],
+            "unaccounted": []
           },
           "escaped": {
             "waived": "no waiver reaches a check finding",
@@ -2170,7 +2204,7 @@
             },
             {
               "field": "coverage",
-              "reason": "a `kind: \"pass\"` result would count check instances, and the census counts documents, including the ones no check classified",
+              "reason": "a `kind: \"pass\"` result would count check instances, and the census counts documents, including the ones no check classified. What is carried is every number the text report writes: the counts, the skip classes with their reasons, and the paths no census row accounts for",
               "carried_in": "run.properties.headwater.coverage"
             },
             {

@@ -167,7 +167,9 @@ pub const LOSS: &[Loss] = &[
     Loss {
         field: "coverage",
         reason: "a `kind: \"pass\"` result would count check instances, and the census counts \
-                 documents, including the ones no check classified",
+                 documents, including the ones no check classified. What is carried is every \
+                 number the text report writes: the counts, the skip classes with their reasons, \
+                 and the paths no census row accounts for",
         carried_in: "run.properties.headwater.coverage",
     },
     Loss {
@@ -520,6 +522,13 @@ fn run_properties(run: &Run, subject: &Subject<'_>) -> Json {
             .count()
     };
     let mut headwater: Vec<(&'static str, Json)> = vec![
+        // The version of the two shapes this bag shares with `--format json`.
+        // Without it the statement each of them makes is available to a reader
+        // of one artifact and not to a reader of the other: an absent `change`
+        // means a full-corpus run only to a reader who knows the producer would
+        // have written one, and `"skipped": 0` means every instance reached a
+        // verdict only to a reader who knows this producer counts them.
+        ("shape", Json::string(crate::json::VERSION)),
         (
             "taxonomy",
             Json::object([
@@ -537,15 +546,7 @@ fn run_properties(run: &Run, subject: &Subject<'_>) -> Json {
         headwater.push(("change", crate::json::change(scoped)));
     }
     headwater.extend([
-        (
-            "coverage",
-            Json::object([
-                ("seen", number(run.coverage.seen())),
-                ("classified", number(run.coverage.classified())),
-                ("checked", number(run.coverage.checked())),
-                ("instances", number(run.coverage.instances)),
-            ]),
-        ),
+        ("coverage", crate::json::coverage(&run.coverage)),
         (
             "escaped",
             Json::object([

@@ -64,6 +64,23 @@
 //! front matter. Counting the read would have deleted the failing fixture of
 //! this rule while the instance count went up, which reads in every report as
 //! an improvement.
+//!
+//! # A skip is counted once, and the routing is the reason that had to be said
+//!
+//! [`Coverage::skips`] reads the instance record and [`Document::skipped`]
+//! reads the routing, and the two are different populations. An edge-scoped
+//! instance is routed to both of its endpoints, so a count taken off the
+//! documents holds one skip twice. A corpus-scoped one is routed to no document
+//! at all, so a count taken off the documents never sees it. Only the first of
+//! those two is comparable with [`Coverage::instances`], which is the number
+//! every artifact of this engine prints beside it.
+//!
+//! The report used to take that count off the documents. On the corpus of this
+//! repository it said `4 skipped` of a class that holds **two** instances of an
+//! edge-scoped rule, and the cache's own count of what it cannot key — which is
+//! a skipped instance or an input with no digest — said 585 where the report's
+//! classes summed to 587. Two surfaces counted one population and disagreed by
+//! the routing, and neither said which of the two it meant.
 
 use crate::finding::{Finding, Severity};
 use crate::instance::{Instance, Outcome as InstanceOutcome};
@@ -118,6 +135,17 @@ pub struct Coverage {
     /// without meaning it: such an instance is a check reading outside the
     /// denominator, which is the silent pass one level up.
     pub unaccounted: Vec<String>,
+    /// Each reason an instance reached no verdict, with the number of
+    /// **instances** it covers, in the order the reasons first appear.
+    ///
+    /// Read off the instance record and never off [`Document::skipped`], which
+    /// holds the same skips routed. An edge-scoped instance is routed to both
+    /// its endpoints, so a sum over the documents counts it twice, and a
+    /// corpus-scoped one is routed to no document at all, so a sum over the
+    /// documents never sees it. Neither of those is a number a reader can hold
+    /// against [`Coverage::instances`], and this one is: `instances` less
+    /// [`Coverage::skipped`] is what reached a verdict.
+    skips: Vec<(String, usize)>,
 }
 
 impl Coverage {
@@ -136,8 +164,18 @@ impl Coverage {
             })
             .collect();
         let mut unaccounted = Vec::new();
+        let mut skips: Vec<(String, usize)> = Vec::new();
 
         for instance in instances {
+            // Once per instance, before the routing loop below and outside it,
+            // because this is the count of instances that reached no verdict
+            // and the loop below is the count of documents one fell on.
+            if let InstanceOutcome::Skipped(ref reason) = instance.outcome {
+                match skips.iter_mut().find(|(known, _)| known == reason) {
+                    Some((_, count)) => *count += 1,
+                    None => skips.push((reason.clone(), 1)),
+                }
+            }
             for path in instance.paths() {
                 let Some(document) = documents.iter_mut().find(|d| d.path == path) else {
                     // Recorded whatever the grain, because this is a statement
@@ -171,6 +209,7 @@ impl Coverage {
             documents,
             instances: instances.len(),
             unaccounted,
+            skips,
         }
     }
 
@@ -216,20 +255,22 @@ impl Coverage {
 
     /// Each skip reason, with the number of instances it covers, in the order
     /// the reasons first appear.
-    pub fn skips(&self) -> Vec<(&str, usize)> {
-        let mut reasons: Vec<(&str, usize)> = Vec::new();
-        for document in &self.documents {
-            for (_, reason) in &document.skipped {
-                match reasons
-                    .iter_mut()
-                    .find(|(known, _)| *known == reason.as_str())
-                {
-                    Some((_, count)) => *count += 1,
-                    None => reasons.push((reason.as_str(), 1)),
-                }
-            }
-        }
-        reasons
+    ///
+    /// The classes partition the skipped instances, so the counts sum to
+    /// [`Coverage::skipped`] and never to anything else.
+    pub fn skips(&self) -> &[(String, usize)] {
+        &self.skips
+    }
+
+    /// Instances that reached no verdict.
+    ///
+    /// A run states this in every format it writes, because
+    /// [spec 4](../../../../docs/spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)
+    /// asks OB-COV-3 for the skips as well as the three counts, and an artifact
+    /// that carried the instance total alone would report a run that decided
+    /// nothing as a run that decided everything.
+    pub fn skipped(&self) -> usize {
+        self.skips.iter().map(|(_, count)| count).sum()
     }
 
     /// The coverage rule, as findings.
@@ -295,5 +336,107 @@ impl Coverage {
             let _ = writeln!(out, "  a check read {path}, which the census never walked");
         }
         out
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::instance::Input;
+    use crate::scope::Grain;
+    use headwater_census::census::{Outcome as Walked, Row};
+
+    fn row(path: &str) -> Row {
+        Row {
+            path: path.to_string(),
+            outcome: Walked::NotADocument,
+            document: None,
+            digest: None,
+        }
+    }
+
+    fn input(path: &str) -> Input {
+        Input {
+            path: path.to_string(),
+            digest: None,
+        }
+    }
+
+    fn over(rows: Vec<Row>, instances: Vec<Instance>) -> Coverage {
+        Coverage::of(&Census { rows }, &instances)
+    }
+
+    /// One edge-scoped skip is one instance, and the routing holds it twice.
+    ///
+    /// The two accounts are both here, so the test fails whichever of them the
+    /// count is taken from by mistake. No fixture tree of this repository
+    /// reaches this state: an edge-scoped rule that skips has to meet a corpus
+    /// that declares the relation and an endpoint that is missing the facet, and
+    /// [`crate::dependency`] over `HW-REG-open-questions` is the only place it
+    /// happens. So the state is built here rather than found.
+    #[test]
+    fn an_edge_scoped_skip_is_one_instance_and_two_routed_documents() {
+        let coverage = over(
+            vec![row("source.md"), row("target.md")],
+            vec![Instance::skipped(
+                "dependency.terminal",
+                Grain::Edge,
+                vec![input("source.md"), input("target.md")],
+                "no state to read at the target end",
+            )],
+        );
+        assert_eq!(coverage.instances, 1);
+        assert_eq!(coverage.skipped(), 1, "one instance reached no verdict");
+        assert_eq!(
+            coverage.skips(),
+            &[("no state to read at the target end".to_string(), 1)]
+        );
+        let routed: usize = coverage
+            .documents
+            .iter()
+            .map(|document| document.skipped.len())
+            .sum();
+        assert_eq!(routed, 2, "and the routing accounts for it at both ends");
+    }
+
+    /// A corpus-scoped skip is routed to no document and is still an instance
+    /// that reached no verdict.
+    ///
+    /// The other direction of the same distinction, and the one a count off the
+    /// documents loses altogether rather than doubles.
+    #[test]
+    fn a_skip_routed_to_no_document_is_still_a_skip() {
+        let coverage = over(
+            vec![row("source.md")],
+            vec![Instance::skipped(
+                "coverage.document_unchecked",
+                Grain::Corpus,
+                vec![input("source.md")],
+                "the census carries no row this rule can read",
+            )],
+        );
+        assert_eq!(coverage.skipped(), 1);
+        let routed: usize = coverage
+            .documents
+            .iter()
+            .map(|document| document.skipped.len())
+            .sum();
+        assert_eq!(routed, 0, "and the routing sees none of it");
+    }
+
+    /// A run that skipped nothing reports zero rather than reporting nothing.
+    #[test]
+    fn a_run_that_skipped_nothing_has_a_number_for_it() {
+        let coverage = over(
+            vec![row("source.md")],
+            vec![Instance::of(
+                "facet.required.missing",
+                Grain::Document,
+                vec![input("source.md")],
+                InstanceOutcome::Passed,
+            )],
+        );
+        assert_eq!(coverage.skipped(), 0);
+        assert!(coverage.skips().is_empty());
     }
 }

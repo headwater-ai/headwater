@@ -28,7 +28,7 @@
 
 use crate::{reported, Reported, Subject};
 use headwater_check::register::Bound;
-use headwater_check::{Run, Scoped};
+use headwater_check::{Coverage, Run, Scoped};
 use headwater_yaml::json::Json;
 
 /// The version of this document's own shape.
@@ -42,7 +42,18 @@ use headwater_yaml::json::Json;
 /// of a `1.1` document that carries none knows the run read the whole corpus. A
 /// reader of a `1.0` document knows only that this producer had no such member
 /// to write, and those two are exactly the pair the member exists to separate.
-pub const VERSION: &str = "1.1";
+///
+/// `1.2` added the skip accounting to [`coverage`], and the bump does the same
+/// work for a value that is present on every run rather than absent on most.
+/// `"skipped": 0` at `1.2` says every instance of the run reached a verdict. The
+/// same document at `1.1` says only that this producer had no member for the
+/// ones that did not, and a consumer that read the four counts alone read
+/// `3498 instances` off a run where 585 of them decided nothing.
+///
+/// Two of the shapes here have a second reader: [`change`] and [`coverage`] are
+/// what the SARIF property bag carries, so this constant versions them for that
+/// artifact too and [`crate::sarif`] writes it there.
+pub const VERSION: &str = "1.2";
 
 /// One run as JSON.
 pub fn render(run: &Run, subject: &Subject<'_>) -> String {
@@ -83,6 +94,70 @@ pub fn change(scoped: &Scoped) -> Json {
     ])
 }
 
+/// What a run looked at, in the shape this document and the SARIF property bag
+/// both write.
+///
+/// One shape with two readers, for the reason [`change`] is one. The four counts
+/// were the whole of it until #233: a consumer read `3498 instances` and could
+/// not see that 585 of them reached no verdict, which crosses spec 4's rule that
+/// a skip is visible rather than silent.
+///
+/// **Every member is written on every run, including a zero and an empty list.**
+/// The absence of a member is [`change`]'s statement and it cannot be this one's:
+/// coverage stands on every run, so a reader that met no `skipped` member could
+/// not tell a run that skipped nothing from a producer that does not report
+/// skips. [`VERSION`] is what separates those two, and the value separates
+/// nothing on its own.
+///
+/// The one value of [`Coverage`] that no member here carries is which document
+/// each skipped instance fell on. No format of this engine carries it and no
+/// flag of `headwater check` prints it, so it is not a loss of this target
+/// against another: `Detail::EveryInstance` is the one renderer that holds it and
+/// nothing wires it to a surface.
+pub fn coverage(coverage: &Coverage) -> Json {
+    Json::object([
+        ("seen", number(coverage.seen())),
+        ("classified", number(coverage.classified())),
+        ("checked", number(coverage.checked())),
+        ("generated", number(coverage.generated())),
+        ("instances", number(coverage.instances)),
+        // The count that is comparable with `instances` above: an instance that
+        // reached no verdict, counted once whatever it was routed to. See
+        // `Coverage::skips` for the two ways a count read off the documents is
+        // not that number.
+        ("skipped", number(coverage.skipped())),
+        (
+            "skips",
+            Json::Array(
+                coverage
+                    .skips()
+                    .iter()
+                    .map(|(reason, instances)| {
+                        Json::object([
+                            ("reason", Json::string(reason.clone())),
+                            ("instances", number(*instances)),
+                        ])
+                    })
+                    .collect(),
+            ),
+        ),
+        // The paths, and not the count of them, for the reason `change` names
+        // its unmatched paths: a check that read outside the census read
+        // outside the set every guarantee here is computed over, and the reader
+        // who can act on that needs the path.
+        (
+            "unaccounted",
+            Json::Array(
+                coverage
+                    .unaccounted
+                    .iter()
+                    .map(|path| Json::string(path.clone()))
+                    .collect(),
+            ),
+        ),
+    ])
+}
+
 fn document(run: &Run, subject: &Subject<'_>) -> Json {
     let mut members: Vec<(&'static str, Json)> = vec![
         ("version", Json::string(VERSION)),
@@ -104,15 +179,7 @@ fn document(run: &Run, subject: &Subject<'_>) -> Json {
         members.push(("change", change(scoped)));
     }
     members.extend([
-        (
-            "coverage",
-            Json::object([
-                ("seen", number(run.coverage.seen())),
-                ("classified", number(run.coverage.classified())),
-                ("checked", number(run.coverage.checked())),
-                ("instances", number(run.coverage.instances)),
-            ]),
-        ),
+        ("coverage", coverage(&run.coverage)),
         ("rules", Json::Array(run.served.iter().map(rule).collect())),
         (
             "findings",
