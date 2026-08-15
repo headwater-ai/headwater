@@ -138,13 +138,15 @@ fn address() -> Vec<(&'static [&'static str], &'static [&'static str])> {
 
 /// The overlay entry every case in this file's last section is about.
 ///
-/// This repository's own overlay addresses one kind that the base declares,
-/// which is `kinds.decision.language` and which [Q27](../../../../docs/spec/09-decisions.md#q27--whether-a-decision-record-is-governed-prose)
-/// added. It addresses no other, and a payload may not name a kind that a
-/// bundle declares (see [`address`]). So the copied overlay gains one entry
-/// rather than reusing the one it has, and the entry
-/// is an ordinary one — a base kind with no identifier scheme, given the scheme
-/// the same overlay declares two blocks above.
+/// This repository's own overlay addresses exactly one kind that the base
+/// declares. It is `kinds.decision.language`, which
+/// [Q27](../../../../docs/spec/09-decisions.md#q27--whether-a-decision-record-is-governed-prose)
+/// added, and `specification` is the base kind it does not reach. A payload may
+/// not name a kind that a bundle declares (see [`address`]), so this section
+/// needs an entry over a base kind and the overlay's one entry is over the
+/// wrong member. The copied overlay therefore gains this one, and it is an
+/// ordinary entry — a base kind with no identifier scheme, given the scheme the
+/// same overlay declares two blocks above.
 const ENTRY: &str = "\n  kinds.specification.identifier: {scheme: spec_id}\n";
 
 /// A repository root that removes itself.
