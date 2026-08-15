@@ -130,7 +130,7 @@ pub struct Resolution {
 ///
 /// So the resolver records it, `taxonomy diff` reads it as the `addressability`
 /// dimension, and no verb refuses on it yet.
-/// [#191](https://github.com/headwater-ai/headwater/issues/191) carries whether
+/// [#193](https://github.com/headwater-ai/headwater/issues/193) carries whether
 /// `taxonomy validate` should.
 ///
 /// # It is derived from the merge and not from a second walk

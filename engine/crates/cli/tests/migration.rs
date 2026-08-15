@@ -118,7 +118,7 @@ const KIND: [(&[&str], &[&str]); 2] = [
 /// than a preference: `headwater_resolve::migration::holds` checks a payload
 /// against the base taxonomy alone, so no step of a payload may name a
 /// declaration that one of the package's bundles makes
-/// ([#192](https://github.com/headwater-ai/headwater/issues/192)).
+/// ([#194](https://github.com/headwater-ai/headwater/issues/194)).
 fn address() -> Vec<(&'static [&'static str], &'static [&'static str])> {
     let mut edits: Vec<(&[&str], &[&str])> = CANDIDATE.to_vec();
     edits.push((&["  specification:"], &["  standard:"]));
@@ -276,9 +276,10 @@ impl Root {
         let at = self.at.join(".headwater/overlay.yml");
         let text = std::fs::read_to_string(&at).expect("the overlay reads");
         assert!(text.starts_with("# SPDX"), "the overlay is the copied one");
-        let (before, after) = text.split_once("\nadd:\n").expect("it declares an `add` block");
-        std::fs::write(&at, format!("{before}\nadd:\n{entry}{after}"))
-            .expect("the overlay writes");
+        let (before, after) = text
+            .split_once("\nadd:\n")
+            .expect("it declares an `add` block");
+        std::fs::write(&at, format!("{before}\nadd:\n{entry}{after}")).expect("the overlay writes");
         let resolved = self.run(&["taxonomy", "resolve"]);
         assert_eq!(
             resolved.code,
@@ -714,9 +715,7 @@ fn a_document_that_cannot_be_written_leaves_every_other_document_as_it_was() {
     let planned = root.migrate("2.0.0", &[]);
     assert_eq!(planned.code, Some(0), "{planned:?}");
     assert!(
-        planned
-            .out
-            .contains("3 values in 3 files would be written"),
+        planned.out.contains("3 values in 3 files would be written"),
         "{planned:?}"
     );
 
@@ -968,7 +967,8 @@ fn a_step_over_something_that_is_not_an_address_is_refused_when_the_payload_is_r
     let root = Root::new("address-unparseable");
     root.addresses(ENTRY);
     assert_eq!(root.publish("1.0.0").code, Some(0));
-    let payload = addresses().replacen("from: kinds.specification", "from: kinds..specification", 1);
+    let payload =
+        addresses().replacen("from: kinds.specification", "from: kinds..specification", 1);
     root.candidate_of(&address(), Some(&payload));
 
     let published = root.publish("2.0.0");
@@ -1004,9 +1004,10 @@ fn apply_rewrites_the_overlay_address_beside_the_document() {
     assert_eq!(ran.code, Some(0), "{ran:?}");
     assert!(ran.out.contains("wrote 2 values in 2 files"), "{ran:?}");
     assert!(
-        ran.out
-            .contains(".headwater/overlay.yml  add.kinds.specification.identifier  becomes \
-                      `kinds.standard.identifier`"),
+        ran.out.contains(
+            ".headwater/overlay.yml  add.kinds.specification.identifier  becomes \
+                      `kinds.standard.identifier`"
+        ),
         "{ran:?}"
     );
 

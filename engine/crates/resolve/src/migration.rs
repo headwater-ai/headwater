@@ -106,9 +106,9 @@ impl Subject {
             (Subject::OverlayAddress, 1) => {
                 "1 entry of this repository's overlay is addressed at or under it".to_string()
             }
-            (Subject::OverlayAddress, count) => format!(
-                "{count} entries of this repository's overlay are addressed at or under it"
-            ),
+            (Subject::OverlayAddress, count) => {
+                format!("{count} entries of this repository's overlay are addressed at or under it")
+            }
             (_, 1) => "1 document of this corpus carries the old value".to_string(),
             (_, count) => format!("{count} documents of this corpus carry the old value"),
         }

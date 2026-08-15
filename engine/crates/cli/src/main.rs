@@ -1371,9 +1371,9 @@ fn migrate(
                             // refusal is here anyway, because the alternative to
                             // an answer is a rewrite of somebody's overlay into
                             // a path nobody wrote.
-                            let Some(moved) = headwater_resolve::migration::readdressed(
-                                address, &step.from, to,
-                            ) else {
+                            let Some(moved) =
+                                headwater_resolve::migration::readdressed(address, &step.from, to)
+                            else {
                                 return fail(&format!(
                                     "{at} in {path} is not addressed under `{}`, so this run \
                                      cannot say what it becomes",
@@ -1477,8 +1477,10 @@ fn migrate(
     let overlay_at = overlay.at().unwrap_or_default().to_string();
     match headwater_scaffold::overlay::compose(root, &overlay_at, &readdressed) {
         Err(refused) => {
-            eprintln!("\nheadwater: this repository's overlay did not compose, and this run \
-                       writes nothing");
+            eprintln!(
+                "\nheadwater: this repository's overlay did not compose, and this run \
+                       writes nothing"
+            );
             eprintln!("{}", indent(&refused.to_string()));
             return ExitCode::FAILURE;
         }

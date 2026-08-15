@@ -96,7 +96,9 @@ impl std::fmt::Display for Refused {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Refused::Unreadable { path, why } => write!(f, "{path} did not read: {why}"),
-            Refused::Unparsed { path, why } => write!(f, "{path} did not read as an overlay: {why}"),
+            Refused::Unparsed { path, why } => {
+                write!(f, "{path} did not read as an overlay: {why}")
+            }
             Refused::Unquotable {
                 path,
                 address,
@@ -151,7 +153,10 @@ pub fn compose(
                 address: moving.address.clone(),
                 found: found.to_string(),
             })?;
-        patched.replace_range(moving.span.start.offset..moving.span.end.offset, &replacement);
+        patched.replace_range(
+            moving.span.start.offset..moving.span.end.offset,
+            &replacement,
+        );
     }
 
     recognizable(path, &before, &patched, moves)?;
@@ -329,9 +334,14 @@ mod tests {
             .expect("it composes")
             .expect("there is a file");
         assert_eq!(count, 3);
-        assert!(composed.text.contains("kinds.ruling.facets:"), "{composed:?}");
         assert!(
-            composed.text.contains("kinds.ruling.identifier: {scheme: decision_id}"),
+            composed.text.contains("kinds.ruling.facets:"),
+            "{composed:?}"
+        );
+        assert!(
+            composed
+                .text
+                .contains("kinds.ruling.identifier: {scheme: decision_id}"),
             "the value beside a moved key is untouched: {composed:?}"
         );
         assert!(
@@ -356,7 +366,12 @@ mod tests {
     fn a_quoted_address_keeps_its_quotes() {
         let text = "add:\n  \"kinds.decision.facets\":\n    require: [title]\n";
         let dir = Dir::with("quoted", text);
-        let moves = vec![moving(text, "add", "kinds.decision.facets", "kinds.ruling.facets")];
+        let moves = vec![moving(
+            text,
+            "add",
+            "kinds.decision.facets",
+            "kinds.ruling.facets",
+        )];
         let (composed, _) = compose(dir.path(), "overlay.yml", &moves)
             .expect("it composes")
             .expect("there is a file");

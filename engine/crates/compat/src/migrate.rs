@@ -163,7 +163,11 @@ fn addressed(step: &Step, overlay: &Adopted) -> Vec<Site> {
         // hand-built `Step` out of an abort.
         return Vec::new();
     };
-    let Adopted::Declared { at: file, operations } = overlay else {
+    let Adopted::Declared {
+        at: file,
+        operations,
+    } = overlay
+    else {
         return Vec::new();
     };
     let mut sites: Vec<Site> = operations
