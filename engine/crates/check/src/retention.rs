@@ -62,22 +62,25 @@
 //! `false`; the fixture taxonomy under `engine/crates/check/fixtures/` does,
 //! and it is what holds that arm to a behavior.
 //!
-//! # Terminal is read off the machine and never off a list
+//! # Terminal is the role and the machine, and they name one set
 //!
 //! A state is terminal when the regime names it and it reaches nothing, which
 //! is [`crate::shape::LifecycleRegime::terminal`] and the same reading
-//! [`crate::transition`] takes.
+//! [`crate::transition`] takes. [`crate::dependency`] takes the other reading:
+//! the `terminal-` role that the state vocabulary gives the value, which is
+//! [`crate::lifecycle_state::StateFacet::standing`].
 //!
-//! `regimes.lifecycle` also declares a `terminal` member, and one component
-//! reads it: `lifecycle soundness` in the resolver accepts a state with no exit
-//! where either that list or a `terminal-` role on the value declares it. So
-//! there are two readings of the word. The resolver asks whether a corpus
-//! *declared* the state terminal, and this layer asks whether the machine can
-//! leave it. They cannot disagree in one direction, because the resolver
-//! refuses a lock whose regime gives a reached state no exit and declares
-//! nothing about it. They can in the other: a state declared `terminal` that
-//! the machine does give an exit is not terminal here, and it is not terminal
-//! in fact. No governed document states the pair.
+//! The two name one set over every taxonomy the resolver accepts. `lifecycle
+//! soundness` refuses a regime that reaches a state with no exit and no such
+//! role, and it refuses a regime that reaches a role-terminal state and gives
+//! it an exit. [Spec
+//! 3](../../../../docs/spec/03-authoring-and-lifecycle.md#lifecycle) states the
+//! pair, and `regimes.lifecycle` declares no `terminal` member for a third way
+//! to say it.
+//!
+//! A shape built from source rather than resolved still holds two readings that
+//! differ, and `lifecycle_state.rs` carries the case that says so. This layer
+//! re-runs no resolver rule over the lock it reads.
 //!
 //! # The severity is an error, and the finding carries no patch
 //!

@@ -56,6 +56,10 @@ obligation  draft ──┬──▶ current ──┬──▶ superseded
 
 The three terminal states answer three different questions. `superseded` names a successor. `deprecated` says that nothing replaced this one. `discharged` says that the document recorded something the corpus owed, and that the corpus paid it.
 
+**What makes a state terminal is the role on its value.** A state ends a regime when the vocabulary gives its value a `terminal-` role, and when the machine gives it no exit. The two readings name one set, because `lifecycle soundness` refuses a regime where they differ. A regime that reaches a state with no exit and no such role is refused. A regime that reaches a role-terminal state and gives it an exit is refused too. A regime declares no list of terminal states of its own.
+
+Both readings are read. `lifecycle.dependency.on_terminal` asks the role, and `lifecycle.deletion.not_permitted` and `lifecycle.transition.not_permitted` ask the machine. The role is one word for the whole state vocabulary, and no rule that reads it asks which regime. So a state that one regime ends and another lets move on is refused. Terminality is a property of a state, and never of a state and a regime together.
+
 **A regime is where a kind says which states it means.** The state vocabulary is one list for a whole taxonomy, and a machine names the part of that list its own documents move through. `standard` names four of the five states and `obligation` names all five, so only a kind that binds `obligation` stands at `discharged`. That is the whole of the per-kind restriction, and no member on `kinds` carries it.
 
 Rules that the engine enforces from the declaration alone:
