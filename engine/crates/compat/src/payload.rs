@@ -36,7 +36,7 @@ pub struct Accounting {
     pub from: String,
     pub to: String,
     pub steps: Vec<Accounted>,
-    /// Every document whose document-grained verdict moved and which no step of
+    /// Every document that a dimension reports as moved and that no step of
     /// this payload names.
     pub unaccounted: Vec<String>,
     /// How many documents moved in all, which is the denominator of the line
@@ -61,9 +61,11 @@ pub struct Accounted {
 
 /// Account one payload against one corpus.
 ///
-/// `moved` is the set that [`crate::instance_validity`] answered with, so this
+/// `moved` is the union of the sets that [`crate::classification`] and
+/// [`crate::instance_validity`] answered with. Those two are the dimensions
+/// that a subject names, and both answer at the grain of one document. So this
 /// function performs no comparison of its own and cannot disagree with the
-/// dimension it reports beside.
+/// dimensions it prints under.
 pub fn account(
     payload: &Payload,
     census: &Census,
@@ -105,7 +107,7 @@ impl Accounting {
         self.steps.iter().filter(|step| step.task.is_none()).count()
     }
 
-    /// Whether every document whose validity moved lies under a step.
+    /// Whether every document that moved lies under a step.
     pub fn complete(&self) -> bool {
         self.unaccounted.is_empty()
     }
@@ -139,14 +141,15 @@ impl Accounting {
         out.push('\n');
         match self.complete() {
             true => out.push_str(&format!(
-                "  {} of the {} documents whose validity moved lie under a step of this payload\n",
+                "  {} of the {} documents a dimension reports as moved lie under a step of \
+                 this payload\n",
                 self.moved - self.unaccounted.len(),
                 self.moved
             )),
             false => {
                 out.push_str(&format!(
-                    "  {} of the {} documents whose validity moved lie under no step of this \
-                     payload\n",
+                    "  {} of the {} documents a dimension reports as moved lie under no step \
+                     of this payload\n",
                     self.unaccounted.len(),
                     self.moved
                 ));

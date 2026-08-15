@@ -1299,9 +1299,18 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     let after = run_of(&against, &ctx);
     let identity = taking.identity();
 
-    let (validity, moved) = headwater_compat::instance_validity(&before, &after);
+    // The two dimensions a migration step is a remedy for, and each one answers
+    // with the documents it moved beside its verdict. The union is the
+    // denominator the payload is accounted against, and it is built from the
+    // comparisons that decided the dimensions rather than from a second reading
+    // of them.
+    let (classification, reclassified) =
+        headwater_compat::classification(&taking.census, &against.census);
+    let (validity, invalidated) = headwater_compat::instance_validity(&before, &after);
+    let moved: std::collections::BTreeSet<String> =
+        reclassified.union(&invalidated).cloned().collect();
     let measured = headwater_compat::Measured {
-        classification: headwater_compat::classification(&taking.census, &against.census),
+        classification,
         instance_validity: validity,
         consequence: headwater_compat::consequence(&before, &after),
         // Both plans are built under one identity, and it is the identity of

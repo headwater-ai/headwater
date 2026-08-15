@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The second committed payload: one step over the other subject a step can name.
+# It rides with a candidate that renames the kind and moves no facet value, so
+# `classification` is the only dimension that reports a document and the
+# accounting has to come from that half alone.
+
+migration:
+  format: 1
+  from: ">=1 <2"
+  to: ">=2 <3"
+
+steps:
+  - subject: kind
+    from: decision
+    to: [ruling]
+    because: >-
+      The kind held the record of a choice and the choice itself, and a reader
+      of the shelf could not tell which one a document was.

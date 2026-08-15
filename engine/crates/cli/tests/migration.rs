@@ -19,7 +19,7 @@
 //! measures it. So the first case publishes a candidate that moves three
 //! lifecycle values, runs `taxonomy diff` over a corpus that carries all three,
 //! and asserts that the documents the payload names are exactly the documents
-//! whose validity moved. The second case removes one step and asserts that the
+//! that moved. The second case removes one step and asserts that the
 //! document it covered is now named as covered by nothing, which is what stops
 //! the first case from passing against an accounting that says "all of them"
 //! whatever it is handed.
@@ -88,6 +88,22 @@ const CANDIDATE: [(&[&str], &[&str]); 3] = [
             "      initial: outline",
             "      transitions: {outline: [provisional, settled], provisional: [settled, superseded], settled: [superseded]}",
         ],
+    ),
+];
+
+/// The candidate that renames a kind and moves no facet value.
+///
+/// The bundle of this package addresses `kinds.decision.facets`, and that
+/// address survives the rename: an overlay entry over a kind the base no longer
+/// declares adds the kind back rather than failing to address anything. So
+/// `addressability` stays preserved, the candidate resolves, and
+/// `classification` is the one dimension that reports a document. That was
+/// measured rather than assumed, and the opposite was written down first.
+const KIND: [(&[&str], &[&str]); 2] = [
+    (&["  decision:"], &["  ruling:"]),
+    (
+        &["  decisions:      {path: docs/decisions/**,      homogeneous: true, kind: decision, layout: \"{seq:04d}-{slug}.md\"}"],
+        &["  decisions:      {path: docs/decisions/**,      homogeneous: true, kind: ruling, layout: \"{seq:04d}-{slug}.md\"}"],
     ),
 ];
 
@@ -161,9 +177,13 @@ impl Root {
     /// consumer is in: the lock names the version this repository took, and the
     /// artifact names the version somebody is proposing.
     fn candidate(&self, payload: Option<&str>) {
+        self.candidate_of(&CANDIDATE, payload)
+    }
+
+    fn candidate_of(&self, edits: &[(&[&str], &[&str])], payload: Option<&str>) {
         let taxonomy = self.at.join("packages/headwater-standard/taxonomy.yml");
         let mut text = std::fs::read_to_string(&taxonomy).expect("the taxonomy reads");
-        for (from, to) in CANDIDATE {
+        for (from, to) in edits {
             let (from, to) = (from.join("\n"), to.join("\n"));
             assert!(text.contains(&from), "the base still carries `{from}`");
             text = text.replacen(&from, &to, 1);
@@ -268,8 +288,9 @@ fn the_payload_names_every_document_whose_validity_moved() {
     assert_eq!(ran.code, Some(0), "{ran:?}");
     assert_eq!(ran.dimension("instance_validity"), "BROKEN, 3 of them");
     assert!(
-        ran.out
-            .contains("3 of the 3 documents whose validity moved lie under a step of this payload"),
+        ran.out.contains(
+            "3 of the 3 documents a dimension reports as moved lie under a step of this payload"
+        ),
         "{ran:?}"
     );
 
@@ -331,7 +352,7 @@ fn a_document_no_step_names_is_named() {
     );
     assert!(
         ran.out.contains(
-            "1 of the 3 documents whose validity moved lie under no step of this payload"
+            "1 of the 3 documents a dimension reports as moved lie under no step of this payload"
         ),
         "{ran:?}"
     );
@@ -452,4 +473,42 @@ fn a_major_upgrade_with_no_payload_is_reported() {
         ),
         "{ran:?}"
     );
+}
+
+/// The other subject a step can name, over the dimension it is a remedy for.
+///
+/// This candidate renames a kind and moves no facet value, so
+/// `instance_validity` is preserved and `classification` is the only dimension
+/// that reports a document. The accounting therefore comes from the
+/// classification half alone, which no other case reaches.
+#[test]
+fn a_kind_step_is_accounted_against_classification() {
+    let root = Root::new("kind-step");
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    let payload =
+        std::fs::read_to_string(fixtures().join("kinds-1-to-2.yml")).expect("the payload reads");
+    root.candidate_of(&KIND, Some(&payload));
+    let published = root.publish("2.0.0");
+    assert_eq!(published.code, Some(0), "{published:?}");
+
+    let ran = root.diff("2.0.0");
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert_eq!(ran.dimension("classification"), "BROKEN, 3 of them");
+    assert_eq!(
+        ran.dimension("instance_validity"),
+        "preserved",
+        "the other half contributes nothing here, or this case proves neither: {ran:?}"
+    );
+    for line in [
+        "kind decision",
+        "mechanical, and it becomes `ruling`",
+        "remedies classification",
+        "3 documents of this corpus carry the old value",
+        "3 of the 3 documents a dimension reports as moved lie under a step of this payload",
+    ] {
+        assert!(
+            ran.out.contains(line),
+            "the report states `{line}`: {ran:?}"
+        );
+    }
 }

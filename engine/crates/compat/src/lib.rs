@@ -196,12 +196,22 @@ impl Measured {
 /// most about, and a comparison over typed rows alone would drop exactly that
 /// case: the row is absent on one side and the two lists still agree on every
 /// row they share.
-pub fn classification(before: &Census, after: &Census) -> Outcome {
-    Outcome::over(compare(
+///
+/// # It answers with the documents beside the verdict
+///
+/// For the reason [`instance_validity`] does, and more directly: the key of
+/// this comparison is a path already, so the set is the break list read at its
+/// own grain. A `kind` step of a migration payload is a remedy for this
+/// dimension, and a remedy that nothing held against a measurement would be a
+/// claim.
+pub fn classification(before: &Census, after: &Census) -> (Outcome, BTreeSet<String>) {
+    let breaks = compare(
         &keyed(before, classified),
         &keyed(after, classified),
         "no such file",
-    ))
+    );
+    let moved = breaks.iter().map(|entry| entry.at.clone()).collect();
+    (Outcome::over(breaks), moved)
 }
 
 /// `identifier`: does every identifier still resolve to the same document?
