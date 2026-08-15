@@ -73,6 +73,7 @@ pub mod confluence;
 pub mod core;
 pub mod error;
 pub mod merge;
+pub mod migration;
 pub mod operation;
 pub mod package;
 pub mod references;

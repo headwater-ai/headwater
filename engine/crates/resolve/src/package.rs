@@ -330,6 +330,15 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
 /// **A record is written.** [`release::compute`] takes the digest of every file
 /// in the artifact, and the digest over that list is the number the publisher
 /// states in its release notes and the consumer pins.
+///
+/// **The migration payload is read before a byte is written.** A `contents`
+/// key that nothing reads is a claim a publisher makes and a consumer never
+/// sees, which is the defect `requires_engine` exists to refuse from the other
+/// side. So [`crate::migration::at`] reads every payload the manifest declares
+/// and [`crate::migration::holds`] checks each one against the taxonomy being
+/// published and the version it is published as. A payload the publisher cannot
+/// ship correctly stops the publish, rather than reaching a digest that makes it
+/// permanent.
 pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<ResolveError>> {
     let (directory, manifest) = find(root, name)?;
 
@@ -341,6 +350,9 @@ pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<Resol
              under its root. Publish into a directory that does not exist yet",
         ));
     }
+
+    migrations(root, &directory, &manifest)?;
+
     copy_tree(&directory, out).map_err(|why| refusal(&display(root, &directory), &why))?;
 
     // The bundles path, where the manifest states one that leaves the package.
@@ -377,6 +389,45 @@ pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<Resol
     std::fs::write(out.join(release::RECORD), release::render(&record))
         .map_err(|error| refusal(release::RECORD, &format!("cannot write it: {error}")))?;
     Ok(record)
+}
+
+/// Every migration payload the manifest declares, read and held to the taxonomy
+/// this publish ships.
+///
+/// It resolves the package's own taxonomy source and nothing else. The base
+/// alone is what the publisher is shipping: a bundle is an overlay a consumer
+/// selects and an adopter overlay is not the publisher's at all, so a step
+/// checked against either would be checked against a taxonomy that this
+/// artifact does not carry.
+///
+/// The resolution happens only where a payload exists, so a package that has
+/// published no major version pays nothing for this.
+fn migrations(root: &Path, directory: &Path, manifest: &Mapping) -> Result<(), Vec<ResolveError>> {
+    let name = manifest_name(root, directory);
+    let payloads =
+        crate::migration::at(directory, manifest).map_err(|errors| crate::migration::as_errors(&name, &errors))?;
+    if payloads.is_empty() {
+        return Ok(());
+    }
+
+    let contents = manifest
+        .get("contents")
+        .and_then(|node| node.value.as_map())
+        .cloned()
+        .unwrap_or_default();
+    let taxonomy = directory.join(text(&contents, "taxonomy").unwrap_or_default());
+    let source = Source::read(&taxonomy, &display(root, &taxonomy), Role::Taxonomy)?;
+    let resolution = crate::resolve(&[source])?;
+    let version = text(manifest, "version").unwrap_or_default();
+
+    let refusals: Vec<crate::migration::PayloadError> = payloads
+        .iter()
+        .flat_map(|payload| crate::migration::holds(payload, &resolution.taxonomy, &version))
+        .collect();
+    match refusals.is_empty() {
+        true => Ok(()),
+        false => Err(crate::migration::as_errors(&name, &refusals)),
+    }
 }
 
 /// Where a published package keeps the bundles it ships.

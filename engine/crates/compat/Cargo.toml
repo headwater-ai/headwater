@@ -16,3 +16,8 @@ headwater-check = { path = "../check" }
 headwater-census = { path = "../census" }
 headwater-graph = { path = "../graph" }
 headwater-resolve = { path = "../resolve" }
+# The front matter of a document is a `headwater_yaml` mapping, and a step of a
+# migration payload names one value of it. Naming the loader here reads that
+# value; the alternative was a second accessor on `headwater-doc` that exists
+# for one caller.
+headwater-yaml = { path = "../yaml" }

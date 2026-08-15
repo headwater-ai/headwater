@@ -96,6 +96,7 @@ dependencies = [
  "headwater-generate",
  "headwater-graph",
  "headwater-resolve",
+ "headwater-yaml",
 ]
 
 [[package]]

@@ -1265,6 +1265,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     };
     let package = record.package.clone();
     let from = lock.version.clone();
+    let lock_version = lock.version.clone();
     let to = record.version.clone();
 
     let taking = match load_against(root, Bound::of(lock)) {
@@ -1293,9 +1294,10 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     let after = run_of(&against, &ctx);
     let identity = taking.identity();
 
+    let (validity, moved) = headwater_compat::instance_validity(&before, &after);
     let measured = headwater_compat::Measured {
         classification: headwater_compat::classification(&taking.census, &against.census),
-        instance_validity: headwater_compat::instance_validity(&before, &after),
+        instance_validity: validity,
         consequence: headwater_compat::consequence(&before, &after),
         // Both plans are built under one identity, and it is the identity of
         // the lock. Two projections carry the package, the version and the
@@ -1334,6 +1336,17 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     };
     print!("{}", report.render());
 
+    if let Err(code) = payload(
+        fetched,
+        &manifest,
+        &taking,
+        &lock_version,
+        &record.version,
+        &moved,
+    ) {
+        return code;
+    }
+
     if !refusals.is_empty() {
         println!(
             "\nthe candidate resolves under this overlay and {} rule{} of `taxonomy validate` \
@@ -1352,6 +1365,88 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     // is the ordinary case rather than an error ([spec 7](../../../../docs/spec/07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)).
     // What does fail is a run that could not measure, which is above.
     ExitCode::SUCCESS
+}
+
+/// What the artifact's migration payload says about the breaks measured above.
+///
+/// **It reports and it never gates.** The verb measures a version that nobody
+/// has taken yet, and the payload is the publisher's account of what the
+/// upgrade costs. A missing payload for a major upgrade is a finding a consumer
+/// acts on, and [spec 2](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
+/// makes it a hard failure of `migrate` rather than of the measurement that
+/// precedes it.
+///
+/// **A step whose source this repository does not hold is reported, not
+/// refused.** The old taxonomy a consumer holds is the base under its own
+/// overlays, and an overlay may have removed the value a step renames. What is
+/// refused, and at the other end where the publisher can act on it, is a step
+/// whose source is still declared in the taxonomy it ships. See
+/// [`headwater_resolve::migration`].
+///
+/// The error arm is a payload the artifact carries and this engine cannot read,
+/// which is the one state that says nothing about the corpus at all.
+fn payload(
+    fetched: &Path,
+    manifest: &headwater_yaml::Mapping,
+    taking: &Loaded,
+    from: &str,
+    to: &str,
+    moved: &std::collections::BTreeSet<String>,
+) -> Result<(), ExitCode> {
+    let payloads = match headwater_resolve::migration::at(fetched, manifest) {
+        Ok(payloads) => payloads,
+        Err(refusals) => {
+            eprintln!("headwater: the artifact carries a migration payload this engine cannot read");
+            eprint!(
+                "{}",
+                indent(&render_errors(&headwater_resolve::migration::as_errors(
+                    &fetched.display().to_string(),
+                    &refusals,
+                )))
+            );
+            return Err(ExitCode::FAILURE);
+        }
+    };
+
+    let taxonomy = &taking.bound.taxonomy;
+    let declares = |step: &headwater_resolve::migration::Step| {
+        headwater_resolve::migration::declares(taxonomy, &step.subject, &step.from)
+    };
+
+    let mut selected = 0;
+    for carried in &payloads {
+        match carried.covers(from, to) {
+            Err(why) => {
+                println!(
+                    "\n{} states a version range this engine cannot read, so nothing selected it: \
+                     {why}",
+                    carried.at
+                );
+            }
+            Ok(false) => {}
+            Ok(true) => {
+                selected += 1;
+                print!(
+                    "{}",
+                    headwater_compat::payload::account(carried, &taking.census, declares, moved)
+                        .render()
+                );
+            }
+        }
+    }
+
+    if selected == 0 && !moved.is_empty() {
+        println!(
+            "\nthe artifact ships no migration payload for {from} to {to}, and {} document{} \
+             stopped validating. Spec 2 makes a major version ship one",
+            moved.len(),
+            match moved.len() {
+                1 => "",
+                _ => "s",
+            }
+        );
+    }
+    Ok(())
 }
 
 /// One run of the check layer, with the cache off.
