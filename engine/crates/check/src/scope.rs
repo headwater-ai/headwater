@@ -105,7 +105,7 @@
 //! it.
 
 use crate::cache::Cache;
-use crate::change::Prior;
+use crate::change::{Departed, Prior};
 use crate::context::{Context, Date};
 use crate::instance::{Input, Instance, Outcome};
 use headwater_census::census::{Census, Outcome as Classification};
@@ -245,13 +245,13 @@ impl Scope {
         }
     }
 
-    pub(crate) const fn corpus(needs_phase_a: bool) -> Self {
+    pub(crate) const fn corpus(needs_phase_a: bool, needs_prior: bool) -> Self {
         Scope {
             grain: Grain::Corpus,
             needs_body: false,
             needs_phase_a,
             needs_clock: false,
-            needs_prior: false,
+            needs_prior,
         }
     }
 
@@ -333,9 +333,15 @@ impl Scope {
         // The other temporal input, named on the same terms. A reader who asks
         // why every instance of one rule skipped over a whole corpus reads the
         // answer here: this scope is available only in change-scoped evaluation.
-        let prior = match self.needs_prior {
-            true => ", and the version of it that stood before the change",
-            false => "",
+        // The two grains that declare it read two different things, and one
+        // sentence for both would tell a reader of a corpus-scoped rule that it
+        // was handed one document.
+        let prior = match (self.needs_prior, self.grain) {
+            (false, _) => "",
+            (true, Grain::Corpus) => {
+                ", and the version of each path the change named that no row of this corpus holds"
+            }
+            (true, _) => ", and the version of it that stood before the change",
         };
         // Spec 12 calls the corpus-scoped checks the barriers, and the word is
         // last so that it reads as a statement about the scope rather than
@@ -500,6 +506,17 @@ pub trait CorpusCheck {
     /// receives is the corpus-wide one.
     const NEEDS_PHASE_A: bool = false;
 
+    /// Whether the view carries the paths the change named that no row of this
+    /// corpus holds, and the version of each one.
+    ///
+    /// [`DocumentCheck::NEEDS_PRIOR`] hands one document the version of
+    /// itself, which no rule about a document that left can use: there is no
+    /// row to instantiate over, so there is no such instance. This flag is the
+    /// corpus-grained half of the same input, and it carries the same
+    /// consequence — an instance of a rule that declares it skips in a run that
+    /// names no change, because that run has no change to take one from.
+    const NEEDS_PRIOR: bool = false;
+
     fn evaluate(&self, view: &CorpusView<'_>) -> Outcome;
 }
 
@@ -545,7 +562,7 @@ pub fn neighbourhood_scope<C: NeighbourhoodCheck>() -> Scope {
 
 /// The scope of a corpus-scoped check, derived from its trait.
 pub fn corpus_scope<C: CorpusCheck>() -> Scope {
-    Scope::corpus(C::NEEDS_PHASE_A)
+    Scope::corpus(C::NEEDS_PHASE_A, C::NEEDS_PRIOR)
 }
 
 /// The edition of a document-scoped check, derived from its trait.
@@ -990,6 +1007,7 @@ impl<'a> NeighbourhoodView<'a> {
 /// corpus that changes what this rule decides and leaves its key where it was.
 pub struct CorpusView<'a> {
     identity: Option<&'a [headwater_graph::index::Reported]>,
+    departed: &'a [Departed<'a>],
     reads: Vec<Input>,
 }
 
@@ -1005,6 +1023,17 @@ impl<'a> CorpusView<'a> {
     /// which of the two the graph already bound every edge to.
     pub fn identity(&self) -> Option<&'a [headwater_graph::index::Reported]> {
         self.identity
+    }
+
+    /// What the change named that no row of this corpus holds, and only for a
+    /// check that declared `NEEDS_PRIOR`.
+    ///
+    /// Empty is a real answer for a run whose change named no such path. A run
+    /// that has no change at all never reaches a view: the runner skips the
+    /// instance with the reason, the way it does for a document-scoped rule
+    /// that declared the same input.
+    pub fn departed(&self) -> &[Departed<'a>] {
+        self.departed
     }
 
     /// Every document this view was built over. See the type comment for why
@@ -1354,26 +1383,65 @@ pub fn over_corpus<C: CorpusCheck>(
     check: &C,
     census: &Census,
     graph: &Graph,
+    ctx: &Context,
     cache: &mut Cache,
 ) -> Vec<Instance> {
     let scope = corpus_scope::<C>();
-    let reads: Vec<Input> = census
+    let mut reads: Vec<Input> = census
         .rows
         .iter()
         .filter(|row| row.document.is_some())
         .map(|row| Input::new(&row.path, row.digest.as_deref()))
         .collect();
+    // The corpus-grained half of `prior_for`, and the same three answers. A
+    // rule that did not declare the input receives nothing and pays nothing. A
+    // rule that declared it and met a run with no change reports the skip
+    // rather than an empty set, because "the change named no departed path" and
+    // "there is no change" are the two readings that must not become one.
+    let departed = match (C::NEEDS_PRIOR, ctx.change()) {
+        (false, _) => Vec::new(),
+        (true, Some(change)) => change.departed(),
+        (true, None) => {
+            cache.undecided();
+            return vec![Instance::skipped(
+                C::RULE,
+                Grain::Corpus,
+                reads,
+                &format!(
+                    "{CHANGE_SCOPED_ONLY}: the prior version is available only in change-scoped \
+                     evaluation, and this run carries no change"
+                ),
+            )];
+        }
+    };
+    // The prior bytes of a departed path are an input this instance reads, so
+    // they are in the read set and therefore in the key. Without them a verdict
+    // about a document that left would survive the change that put it back.
+    // The digest is over the version the caller named, which is the only
+    // version of it this run ever saw.
+    reads.extend(
+        departed
+            .iter()
+            .map(|entry| Input::new(entry.path, Some(entry.digest))),
+    );
     let view = CorpusView {
         identity: match C::NEEDS_PHASE_A {
             true => Some(&graph.index.defects),
             false => None,
         },
+        departed: &departed,
         reads: reads.clone(),
     };
     // No clock. `CorpusCheck` declares none, so `clock_for` would have nothing
     // to bind and the key would carry nothing about a day. The first
     // corpus-scoped rule that reads a date brings the declaration with it, on
     // the terms the other three traits already state.
+    //
+    // No `prior` argument either, and this is the one place the two grains key
+    // differently. A document-scoped instance is held against one version and
+    // writes that one hash. A corpus-scoped one is held against a set, and the
+    // set is in the read set above, where every input of this engine already
+    // keys. A second component here would hash the same bytes twice.
     let outcome = cache.outcome(
         C::RULE,
         C::VERSION,

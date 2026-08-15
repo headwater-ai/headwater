@@ -91,7 +91,7 @@ pub const RULE: &str = "coverage.document_unchecked";
 
 /// The grain this rule has. See the module comment for why it is stated here
 /// rather than derived from a trait: this rule receives no view.
-pub const SCOPE: Scope = Scope::corpus(false);
+pub const SCOPE: Scope = Scope::corpus(false, false);
 
 /// Which edition of this rule reached a verdict, stated here for the reason
 /// [`SCOPE`] is: no trait carries it. It is published in the read set beside

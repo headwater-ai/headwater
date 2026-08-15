@@ -97,9 +97,10 @@ pub struct VoiceRegime {
 ///
 /// `transitions` is held as declared, from-state to the states it may reach. A
 /// state the map does not name reaches nothing, and that absence is what makes
-/// a state terminal. `retain_terminal` is not read here: it says whether a
-/// document in a terminal state may be deleted, which is a rule about a change
-/// to the corpus and not about a movement of one document.
+/// a state terminal. `retain_terminal` says whether a document standing at one
+/// of those states may leave the corpus, which is a rule about a change to the
+/// corpus rather than about a movement of one document. It is read here, and
+/// [`crate::retention`] is the rule that reads it.
 #[derive(Clone, Debug)]
 pub struct LifecycleRegime {
     pub name: String,
@@ -107,6 +108,14 @@ pub struct LifecycleRegime {
     pub initial: String,
     /// From-state to the states it may reach, in declaration order.
     pub transitions: Vec<(String, Vec<String>)>,
+    /// Whether a document standing at a terminal state of this regime is kept.
+    ///
+    /// Three answers, and the `Option` holds them apart at the parse rather
+    /// than at the consumer. `Some(true)` retains, `Some(false)` permits the
+    /// deletion, and `None` is a regime that says nothing. A reader that
+    /// folded the last two together would turn silence into a permission, and
+    /// the corpus that meant to say nothing would read as one that had ruled.
+    pub retain_terminal: Option<bool>,
     pub span: Span,
 }
 
@@ -121,6 +130,18 @@ impl LifecycleRegime {
             .find(|(state, _)| state == from)
             .map(|(_, targets)| targets.as_slice())
             .unwrap_or_default()
+    }
+
+    /// Whether a state of this regime is terminal: named by the machine, and
+    /// reaching nothing.
+    ///
+    /// Both halves are required. A state the machine never names is not a
+    /// terminal state of it, it is a state this regime has no place for, and
+    /// [`crate::lifecycle_state`] is what reports a document standing there.
+    /// Reading the second half alone would call every such value terminal,
+    /// because [`Self::exits`] answers nothing for a state it does not hold.
+    pub fn terminal(&self, state: &str) -> bool {
+        self.states().contains(&state) && self.exits(state).is_empty()
     }
 
     /// Whether this regime declares an edge from one state to another.
@@ -489,6 +510,14 @@ impl Shape {
                         name: entry.key.value.clone(),
                         initial: scalar(map, "initial").unwrap_or_default(),
                         transitions: transitions(map),
+                        // `flag` is the one reader of a declared boolean in
+                        // this engine, and the `Option` it returns is kept.
+                        // The meta-schema declares the member `boolean`, so a
+                        // value that is not one never reaches a resolved lock:
+                        // `taxonomy validate` refuses it at the source. What
+                        // reaches here is a declared `true`, a declared
+                        // `false`, or nothing at all.
+                        retain_terminal: headwater_yaml::core_schema::flag(map, "retain_terminal"),
                         span: entry.key.span,
                     });
                 }

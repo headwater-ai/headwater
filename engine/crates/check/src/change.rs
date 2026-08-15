@@ -103,10 +103,25 @@ enum Held {
     /// The caller named a prior version that this engine could not read. See
     /// the module comment: it never reaches a check.
     Unreadable { why: String },
-    /// The caller named a path that the corpus of this run does not hold. No
-    /// instance exists over it, so nothing about it is checked, and the report
-    /// names it rather than absorbing it.
-    Unmatched,
+    /// The caller named a path that the corpus of this run does not hold, and
+    /// the version that stood at it, where the caller named one and this
+    /// engine read it.
+    ///
+    /// No document-scoped instance exists over such a path, because there is
+    /// no row to instantiate over. The prior version is kept rather than
+    /// dropped, because a path that carried one and holds no row is the shape
+    /// a deletion takes, and those bytes are the only evidence left of what
+    /// stood there. Until [`Change::departed`] they were read, hashed, and
+    /// then thrown away here.
+    ///
+    /// It is not a deletion by itself. A manifest writes `prior` for an edit
+    /// as well as for a deletion, so an edit to a Markdown file that carries
+    /// front matter and stands outside the corpus root reaches this arm
+    /// holding one. What separates the two is the content, and
+    /// [`crate::retention`] is the rule that reads it. A source file reaches
+    /// this arm holding nothing, because bytes that are no document do not
+    /// parse as one and [`read_prior`] has already said so.
+    Unmatched { prior: Option<(String, Document)> },
 }
 
 /// The version of one document that stood before the change, as a check reads
@@ -274,9 +289,21 @@ impl Unbound {
             entries: self
                 .entries
                 .into_iter()
-                .map(|(path, held)| match holds(&path) {
-                    true => (path, held),
-                    false => (path, Held::Unmatched),
+                .map(|(path, held)| match (holds(&path), held) {
+                    (true, held) => (path, held),
+                    // The path binds to no row, and what the caller named it
+                    // as decides what is left of it. A `prior` line carried
+                    // bytes, and they are held. An `added` line carried none,
+                    // and a prior version this engine could not read leaves
+                    // nothing to hold either: the reason it names is about a
+                    // file no check will be handed.
+                    (false, Held::Committed { digest, document }) => (
+                        path,
+                        Held::Unmatched {
+                            prior: Some((digest, document)),
+                        },
+                    ),
+                    (false, _) => (path, Held::Unmatched { prior: None }),
                 })
                 .collect(),
         }
@@ -303,7 +330,7 @@ impl Change {
                 Held::Added => named.added += 1,
                 Held::Committed { .. } => named.carried += 1,
                 Held::Unreadable { .. } => named.unreadable += 1,
-                Held::Unmatched => named.unmatched += 1,
+                Held::Unmatched { .. } => named.unmatched += 1,
             }
         }
         named
@@ -318,8 +345,42 @@ impl Change {
     pub fn unmatched(&self) -> Vec<&str> {
         self.entries
             .iter()
-            .filter(|(_, held)| matches!(held, Held::Unmatched))
+            .filter(|(_, held)| matches!(held, Held::Unmatched { .. }))
             .map(|(path, _)| path.as_str())
+            .collect()
+    }
+
+    /// Every path this change named that no row of this corpus holds, and
+    /// whose prior version this run read, in path order.
+    ///
+    /// This is what a document leaving the corpus looks like from inside the
+    /// engine, and it is the only reading of one available: the working tree
+    /// holds no file there, so the census has no row and no document-scoped
+    /// instance exists. It is deliberately not called a deletion. A rename
+    /// inside the corpus never reaches it, because the manifest names the path
+    /// the document arrived at and the census holds a row there. A file whose
+    /// prior bytes are no document never reaches it either, because they did
+    /// not parse. What does reach it beside a deletion is a document that
+    /// moved out of the corpus root, and that is a departure by every reading
+    /// this engine has.
+    ///
+    /// A governed document whose *prior* front matter did not parse is absent
+    /// here, and this is the one reading that could hide a deletion. It costs
+    /// nothing to accept: a document whose committed front matter does not
+    /// parse fails the run that committed it.
+    pub fn departed(&self) -> Vec<Departed<'_>> {
+        self.entries
+            .iter()
+            .filter_map(|(path, held)| match held {
+                Held::Unmatched {
+                    prior: Some((digest, document)),
+                } => Some(Departed {
+                    path: path.as_str(),
+                    digest: digest.as_str(),
+                    facets: &document.facets,
+                }),
+                _ => None,
+            })
             .collect()
     }
 
@@ -346,9 +407,29 @@ impl Change {
             // exists to ask. It is an arm rather than a fallthrough because the
             // day an instance does exist over an unmatched path, the answer has
             // to be the one below and never a silent `Unchanged`.
-            Held::Unmatched => Err(UNMATCHED),
+            Held::Unmatched { .. } => Err(UNMATCHED),
         }
     }
+}
+
+/// One path a change named that this corpus holds no row at, and the version
+/// of it the caller supplied.
+///
+/// Borrowed from the [`Change`], the way [`Prior::Committed`] is, and for the
+/// same reason: the bytes were read once and no phase of a run holds a second
+/// copy of them.
+#[derive(Clone, Copy, Debug)]
+pub struct Departed<'a> {
+    /// As the manifest wrote it. Nothing normalizes a path here, on the terms
+    /// the module comment states.
+    pub path: &'a str,
+    /// Over the prior bytes, by the function the census hashes a document
+    /// with, so a key built from it is comparable with every other input.
+    pub digest: &'a str,
+    /// The front matter of the version that stood there. A file that is no
+    /// document carries an empty mapping rather than nothing, which is what
+    /// makes the reading of it a judgment the caller states.
+    pub facets: &'a Mapping,
 }
 
 /// The reason an instance over an unmatched path would carry. See

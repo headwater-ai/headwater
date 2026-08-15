@@ -123,7 +123,7 @@ use crate::context::Date;
 use crate::finding::{Finding, Severity};
 use crate::instance::{Input, Outcome};
 use crate::patch::Patch;
-use crate::scope::Scope;
+use crate::scope::{Grain, Scope};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
@@ -352,7 +352,16 @@ impl Cache {
         // input". The three states of the input write three different lines,
         // and a scope that declares the input and was handed nothing is not
         // keyed at all, which is the same refusal the clock takes one line up.
-        if scope.needs_prior() {
+        //
+        // The corpus grain declares the same input and is held against a set
+        // rather than against one version, so there is no single `Prior` to
+        // name here. That set is in the read set below, where every input of
+        // this engine already keys, and a component here would hash the same
+        // bytes a second time. The grain is read rather than the argument,
+        // because a `None` argument is also what an unkeyable document-scoped
+        // instance looks like, and folding the two would leave that one keyed
+        // on nothing.
+        if scope.needs_prior() && scope.grain() != Grain::Corpus {
             text.push_str(&format!("prior {}\n", prior?.key()));
         }
         // Escaped for the reason a record is: a target or a path is corpus
