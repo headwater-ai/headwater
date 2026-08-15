@@ -33,6 +33,10 @@ Report only these five classes:
 - **audience_mismatch** — the audience the document declares could not act on what it says.
 - **unwritten_section** — a heading the kind requires, over prose that says nothing about it. [OBL-repo-0113](../../../docs/obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md) is why this class exists: a decision record whose sections each read the scaffolder's own prompt passed every check.
 
+**Readability is not one of them, and no sixth class is coming.** [Q24](../../../docs/decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md) rules that every class above names two things that do not fit, and that a finding about prose being hard to read names one. With no second term the quotation is the finding rather than evidence for it, so the intake would confirm what `grep` confirms. That work is a hand pass with the `ste-editor` skill.
+
+**A source file is not a slice member either.** The same ruling: `--under engine` names nothing because the census types documents, and `intake` refuses a path that is not a typed row of it. That refusal is what catches a model inventing a path, and over a tree where any file may be a member it weakens to "the file exists".
+
 Two rules bound what you may report.
 
 **Never report an edge the briefing already lists.** A finding that restates the graph is a defect in the sweep rather than a fact about the corpus. The intake refuses one whether or not you read the briefing, so this rule costs you a finding rather than catching one.

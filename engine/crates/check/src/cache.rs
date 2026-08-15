@@ -4,10 +4,10 @@
 //! [Spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
 //! states the key in one sentence: "the content hashes of the in-scope inputs,
 //! the taxonomy lock hash, the check version, and the injected values. A key
-//! that omits an input is a correctness bug, not a performance bug." It also
-//! names the cache a
-//! [correctness root](../../../../docs/spec/12-check-layer.md#the-correctness-roots):
-//! "a cache that can change a verdict is a store under another name."
+//! that omits an input is a correctness bug, not a performance bug." It names
+//! the cache a
+//! [correctness root](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
+//! as well: "a cache that can change a verdict is a store under another name."
 //!
 //! So the standing test is a differential rather than a benchmark.
 //! `tests/cache.rs` runs one corpus with no cache, cold, and warm, and holds
@@ -19,96 +19,96 @@
 //! Spec 12 asks a run to record, per document, "which instances were created,
 //! which ran, which were served from cache, and which were skipped with a
 //! reason". It also fixes the verdict: "same corpus, same lock, same injected
-//! clock, byte-identical output". A hit count in the report would break the
-//! second ask to satisfy the first, because it is a function of what is on
-//! this machine's disk and of nothing the first sentence names. Two people
-//! with one tree would then read two reports.
+//! clock, byte-identical output". A hit count in the report would satisfy the
+//! first ask and break the second. A hit is a function of what is on this
+//! machine's disk, and of nothing that fixes the verdict, so two people with
+//! one tree would read two reports.
 //!
-//! The two are kept apart rather than traded off. The cache accounting is a
-//! [`Report`] on the run, and the CLI writes one line of it to standard error,
-//! which is not the verdict stream. What goes to standard output is what the
-//! corpus, the lock and the injected values decide, and a cache moves none of
-//! them.
+//! The engine keeps the two apart rather than trading them off. The cache
+//! accounting is a [`Report`] on the run, and the CLI writes one line of it to
+//! standard error, which is not the verdict stream. Standard output carries
+//! what the corpus, the lock and the injected values decide, and a cache moves
+//! none of them.
 //!
-//! For the same reason a cache does not make a run partial. Every instance is
-//! created, every instance has an outcome, and coverage counts what it counted
-//! before. That is the whole of what a partial run would have had to decide,
-//! and [#58](https://github.com/headwater-ai/headwater/issues/58) found that
-//! there is nothing left for one to do: the work a `--changed-only` flag would
-//! scope is the work this module already skips, and it derives what moved from
+//! A cache does not make a run partial either, for the same reason. Every
+//! instance is created, every instance has an outcome, and coverage counts what
+//! it counted before. That is the whole of what a partial run would have had to
+//! decide, and [#58](https://github.com/headwater-ai/headwater/issues/58) found
+//! nothing left for one to do. The work a `--changed-only` flag would scope is
+//! the work this module already skips, and this module derives what moved from
 //! the bytes rather than from a list that a caller supplies.
 //!
-//! # What the key covers, and how the fourth component arrived
+//! # What the key covers, and the trap in the fourth component
 //!
-//! Four components, and all four are here now. The in-scope inputs arrive as
+//! Four components, and all four are here. The in-scope inputs arrive as
 //! [`Input`]s carrying the census digest of each file. The lock digest is
 //! [`headwater_lock::digest`], through the caller. The check version is a
 //! constant on the scope trait.
 //!
-//! **The injected values used to have no instance**, and
+//! **The injected values are the fourth component.**
 //! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md)
-//! carried the trap that left for whoever added the first one. The clock is
-//! that first one. A windowed participation expectation reads `ctx.now`, and a
-//! key without it serves yesterday's verdict today — invisibly, because the
-//! `--no-cache` differential holds one value of the clock on both sides of the
-//! comparison.
+//! carried the trap that a component with no instance leaves for whoever adds
+//! the first one. The clock is that first one. A windowed participation
+//! expectation reads `ctx.now`, and a key without it serves yesterday's verdict
+//! today. It does so invisibly: the `--no-cache` differential holds one value
+//! of the clock on both sides of the comparison.
 //!
 //! The key carries the clock **exactly when the scope declares it**, and the
 //! declaration is the one [`crate::scope`] already enforces on the view. So the
-//! date joins the key of an instance that could read it and stays out of the
-//! key of every instance that could not, which is what keeps a warm run warm
-//! for the rules that no calendar can move. A scope that declares the clock and
-//! reaches this function without one is not keyed at all, on the rule the rest
-//! of this module follows: fail toward re-running.
+//! date joins the key of an instance that could read it, and stays out of the
+//! key of every instance that could not. That is what keeps a warm run warm for
+//! the rules no calendar can move. A scope that declares the clock and reaches
+//! this function without one is not keyed at all, on the rule the rest of this
+//! module follows: fail toward re-running.
 //!
 //! **The prior version is the second injected value**, and it arrives on the
 //! same terms. Spec 12: "the content hash of that version joins the cache key
 //! like any other input." A key without it would serve the verdict of a run
-//! whose change carried a different version of the document, and the
-//! `--no-cache` differential cannot see that either, because both sides of that
-//! comparison hold one change. The three states of the input write three
-//! different lines, so an added document, an unchanged one and a modified one
-//! never share an entry.
+//! whose change carried a different version of the document. The `--no-cache`
+//! differential cannot see that either, because both sides of that comparison
+//! hold one change. The three states of the input write three different lines,
+//! so an added document, an unchanged one and a modified one never share an
+//! entry.
 //!
-//! Two further components are in the key that spec 12's sentence does not
-//! name, and both are identity rather than input. The **rule** and the
-//! **target** tell two instances apart that read the same documents: one pair
-//! of documents can carry two relations, so their read sets are equal and
-//! their results are not.
+//! Two further components sit in the key that spec 12's sentence does not name,
+//! and both are identity rather than input. The **rule** and the **target**
+//! tell two instances apart that read the same documents. One pair of documents
+//! can carry two relations, so their read sets are equal and their results are
+//! not.
 //!
 //! # The sixth component: what a resolver said, for an instance that asked one
 //!
 //! A read set is a list of corpus paths and their hashes. An **external
 //! anchor** names something that is not a corpus path, so no entry of that list
 //! moves when the thing an anchor points at moves. The identity does not move
-//! either, and that is the part that is easy to miss: a path anchor normalizes
-//! to the text its author wrote, an unbound target falls back to that same
-//! text, so the file's deletion leaves every component of the key where it was.
-//! A cached run then reports zero unresolved targets over a tree that an
-//! uncached run reports two on, which is
+//! either, and that is the part that is easy to miss. A path anchor normalizes
+//! to the text its author wrote and an unbound target falls back to that same
+//! text, so deleting the file leaves every component of the key where it was. A
+//! cached run then reports zero unresolved targets over a tree that an uncached
+//! run reports two on, which is
 //! [OBL-repo-0117](../../../../docs/obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md).
 //!
 //! So an instance whose subject is a resolved target keys on
-//! [`headwater_graph::Target::resolution`] beside the identity. The two
-//! candidate shapes were **refuse the key** and **let the resolver state a
-//! digest**, and this is the second one at the grain of one anchor: what the
-//! run read is the answer a resolver gave about *this* string, rather than the
-//! state of a tree that string could have named. The resolvers run in phase A
-//! on every run and phase A is never cached, so that answer is already in hand
-//! when the key is computed and it costs nothing to name.
+//! [`headwater_graph::Target::resolution`] beside the identity. Two shapes were
+//! candidates: **refuse the key**, and **let the resolver state a digest**.
+//! This is the second one at the grain of one anchor. What the run read is the
+//! answer a resolver gave about *this* string, rather than the state of a tree
+//! that string could have named. The resolvers run in phase A on every run and
+//! phase A is never cached, so that answer is already in hand when the key is
+//! computed, and it costs nothing to name.
 //!
 //! **Nothing loses a key over this, and that distinction matters.** Refusing
 //! the key is the branch below for an input with no digest, and it makes an
 //! instance permanently unkeyed and permanently re-evaluated. This component
-//! only ever *divides* a key, so a rule stays as keyed as it was: what changes
+//! only ever *divides* a key, so a rule stays as keyed as it was. What changes
 //! is that two states of one anchor stop sharing an entry.
 //!
 //! # Why a skipped instance is never stored
 //!
 //! A cache holds verdicts. [`Outcome::Skipped`] is the statement that no
-//! verdict was reached, and spec 4 wants the reason visible on every run. So a
-//! skip is decided again each time, which costs one evaluation and can never
-//! serve a stale reason from a disk.
+//! verdict was reached, and spec 4 wants the reason visible on every run. So
+//! the engine decides a skip again each time. That costs one evaluation, and it
+//! can never serve a stale reason from a disk.
 //!
 //! # Failing toward re-running
 //!
@@ -262,11 +262,10 @@ impl Cache {
 
     /// The outcome of one instance, from this cache or from the check.
     ///
-    /// The closure is what runs when the cache cannot answer, and it is the
-    /// only place a check is called. So the cached path and the fresh path
-    /// produce one value of one type, and a difference between them is a
-    /// difference this function makes rather than one two call sites drifted
-    /// into.
+    /// The closure runs when the cache cannot answer, and it is the only place
+    /// a check is called. So the cached path and the fresh path produce one
+    /// value of one type. A difference between them is a difference this
+    /// function made, and never one that two call sites drifted into.
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn outcome<F>(
         &mut self,
@@ -399,15 +398,18 @@ impl Cache {
 
 /// One outcome as a record, and nothing for an outcome a cache does not hold.
 ///
-/// The rule is not written, because the key already fixes it and a record that
-/// carried it could disagree with the key that found it. The obligation is not
-/// written for a stronger reason: `crate::run` stamps it from the control that
-/// names the rule, so a record that carried one would be a second place the
-/// binding lives, which is the drift [`crate::register`] exists to prevent.
-/// A verdict may hold several findings, so the record states how many and then
-/// writes six fields for each, and the patch after them. The count is what lets
-/// a reader tell a truncated record from a complete one without a second
-/// separator character that every field would then have to escape.
+/// The rule is not written. The key already fixes it, and a record that
+/// carried it could disagree with the key that found it.
+///
+/// The obligation is not written for a stronger reason. `crate::run` stamps it
+/// from the control that names the rule, so a record that carried one would be
+/// a second place the binding lives. That is the drift [`crate::register`]
+/// exists to prevent.
+///
+/// A verdict may hold several findings, so the record states how many, then
+/// writes six fields for each, then the patch. The count lets a reader tell a
+/// truncated record from a complete one. The alternative is a second separator
+/// character that every field would then have to escape.
 ///
 /// The patch opens with a word that says its shape, and each shape has a fixed
 /// number of fields after that word. So the reader knows how far the finding

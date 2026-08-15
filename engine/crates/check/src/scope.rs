@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Scope: what one check may read, carried by the type it receives.
 //!
-//! A view exposes only what the scope declared, and a `Document`-scoped check
-//! physically cannot read a sibling.
 //! [Spec 12](../../../../docs/spec/12-check-layer.md#scope--the-declaration-everything-else-rests-on)
-//! states the cost of the alternative: a scope that nothing enforces "would
-//! silently corrupt every cache key derived from it". Spec 12 lists scope
+//! states what the declaration buys: "the view exposes *only* what the scope
+//! declared. A `Document`-scoped check physically cannot read a sibling." It
+//! states the cost of the alternative too. A scope that nothing enforces "would
+//! silently corrupt every cache key derived from it", so spec 12 lists scope
 //! enforcement as a
-//! [correctness root](../../../../docs/spec/12-check-layer.md#the-correctness-roots)
-//! for that reason.
+//! [correctness root](../../../../docs/spec/12-check-layer.md#the-correctness-roots).
 //!
 //! # The declaration is a type, and this module is where that holds
 //!
@@ -453,12 +452,12 @@ pub trait EdgeCheck {
     const NEEDS_CLOCK: bool = false;
     /// What one instance of this check covers. See [`EdgeUnit`].
     ///
-    /// It is a declaration on the trait rather than an argument that the runner
-    /// passes, for the reason the grain is a trait rather than a returned
-    /// value: a unit that the caller chose is a second fact beside the check,
-    /// and nothing holds the two together. It stays off [`Scope`] because it
-    /// selects which instances exist rather than what one instance may read,
-    /// and what one instance may read is the whole of what a scope states and
+    /// The trait declares it, and the runner does not pass it. The reason is
+    /// the reason the grain is a trait: a unit the caller chose is a second
+    /// fact beside the check, and nothing holds the two together.
+    ///
+    /// It stays off [`Scope`] because it selects which instances exist. A
+    /// scope states what one instance may read, and that is also the whole of
     /// what a cache key covers.
     const UNIT: EdgeUnit = EdgeUnit::Pair;
 
@@ -739,16 +738,16 @@ pub struct EdgeView<'a> {
 }
 
 impl<'a> EdgeView<'a> {
-    /// Build the view over the halves of one pair, or nothing when no half
-    /// carries a direction. Nothing is what an empty group would produce, and
-    /// this returns rather than panics for the reason a check never panics:
-    /// one bad group must not silence the rest of the corpus.
+    /// Build the view over the halves of one pair. It returns nothing when no
+    /// half carries a direction, which is what an empty group produces. It
+    /// returns rather than panics for the reason a check never panics: one bad
+    /// group must not silence the rest of the corpus.
     ///
-    /// The digests come from the census, because the digest of a document is
-    /// what the walk that read it recorded. An edge carries no bytes of its
-    /// own: it is declared inside the front matter of one of its endpoints, so
-    /// hashing both endpoints covers the relation name, the target and every
-    /// instance attribute on it.
+    /// The digests come from the census, because the walk that read a document
+    /// is what recorded its digest. An edge carries no bytes of its own. It is
+    /// declared inside the front matter of one of its endpoints, so hashing
+    /// both endpoints covers the relation name, the target and every instance
+    /// attribute on it.
     fn over(halves: &[&'a Edge], digests: &Digests, clock: Option<Date>) -> Option<Self> {
         let declared = halves
             .iter()
@@ -978,13 +977,13 @@ impl Digests {
 /// has no kind and so no document instance, and the census already reports it
 /// with its own outcome.
 ///
-/// The graph is here for one reason: a check that declared `NEEDS_PHASE_A`
+/// The graph is here for one reason. A check that declared `NEEDS_PHASE_A`
 /// receives what the build could not make of *its* document. A row the census
 /// classified as generated is not a typed row, so no instance is created over
 /// one and no phase-A report about one reaches a rule. That is spec 6's
-/// exemption holding at this grain rather than a second decision here: the
+/// exemption holding at this grain, and not a second decision here: the
 /// content of a generated file is a function of its emitter, and
-/// `generate --check` is what holds it.
+/// `generate --check` holds it.
 pub fn over_documents<C: DocumentCheck>(
     check: &C,
     census: &Census,
