@@ -10,7 +10,7 @@ relations:
 
 # decisions
 
-27 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+28 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -119,3 +119,7 @@ relations:
 ## Q27 — Whether a decision record is governed prose
 
 [HW-DR-0027](../decisions/0027-q27-whether-a-decision-record-is-governed-prose.md) — A decision record is governed prose, and the overlay binds the house language regime to it. The shelf carries a prose problem rather than a quotation problem, and collapsing all 37 inline quotations moves 64 findings to 63. (asserted, and no human has accepted it)
+
+## Q28 — Whether an evaluation is governed prose
+
+[HW-DR-0028](../decisions/0028-q28-whether-an-evaluation-is-governed-prose.md) — An evaluation is governed prose, and the overlay binds the house language regime to it. The shelf carries 432 advisory findings, and the measurement that explains them is whether a rule was reading the prose when it was written rather than who wrote it. (asserted, and no human has accepted it)

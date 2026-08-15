@@ -69,6 +69,6 @@ Neither is worked around. Hand both to the `headwater-taxonomy` skill, which own
 
 Errors must reach zero, which is what the commit gate holds. `headwater check --fix` writes the corrections the engine derives without judgment — a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal half — and it leaves every finding whose remedy is a rewrite. Read the diff.
 
-Prose under `docs/spec/`, `docs/decisions/` and `docs/obligations/` answers to the `ste_house` language regime. Invoke the `ste-editor` skill for the rules that no check reads.
+Prose under `docs/spec/`, `docs/decisions/`, `docs/evaluations/` and `docs/obligations/` answers to the `ste_house` language regime. Invoke the `ste-editor` skill for the rules that no check reads.
 
 Adding or removing a document under `docs/` moves three recorded fixtures. Run `cargo test --workspace --manifest-path engine/Cargo.toml`, re-record with `HEADWATER_BLESS=1`, and read the diff: `check --strict` and `generate --check` both pass while all three are stale.
