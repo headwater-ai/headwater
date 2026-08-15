@@ -1,4 +1,4 @@
 the resolved taxonomy `anchors.build_file.resolver`: anchor integrity: claims the resolver namespace `source-tree`, and `anchors.code_path` already claims it. One string would then resolve two ways
-the resolved taxonomy `identifier_schemes.decision_id.pattern`: identifier integrity: and `identifier_schemes.draft_id.pattern` are both in namespace `repo` and neither literal prefix rules the other out, so one string can satisfy both
+the resolved taxonomy `identifier_schemes.decision_id.pattern`: identifier integrity: and `identifier_schemes.draft_id.pattern` are both in namespace `repo` and one string satisfies both
 the resolved taxonomy `shelves.decisions.path`: determinism: `docs/*/**` and `shelves.records.path` `docs/**/*` can match one path and neither is more specific, so the kind of that path is a coin flip
 the resolved taxonomy `facets.stage.role`: role uniqueness: claims `state`, and `facets.status` already claims it

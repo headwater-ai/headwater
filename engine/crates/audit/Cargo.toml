@@ -18,6 +18,9 @@ headwater-graph = { path = "../graph" }
 # names, so this crate depends on the one that exists.
 headwater-check = { path = "../check" }
 
+# The identifier template language, for the schemes this verb reports on.
+headwater-meta = { path = "../meta" }
+
 # The default nuclearity of each relation family, which `taxonomy validate`
 # already applies. The override reading compares a declaration against that
 # table, and a second copy of it here would be a table that could disagree with

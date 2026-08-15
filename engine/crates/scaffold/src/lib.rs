@@ -88,12 +88,12 @@ pub mod write;
 use headwater_census::census::Census;
 use headwater_census::resolve::{shelf_for, ShelfMatch};
 use headwater_census::shelves::{Shelf, ShelfBody, Taxonomy};
-use headwater_check::identifier::{Needs, Template};
 use headwater_check::shape::Shape;
 use headwater_check::Date;
 use headwater_graph::declarations::{Declarations, Direction, Reciprocal};
 use headwater_graph::index::Index;
 use headwater_graph::Config;
+use headwater_meta::identifier::{Needs, Template};
 use headwater_yaml::Mapping;
 
 /// What a caller asks for.

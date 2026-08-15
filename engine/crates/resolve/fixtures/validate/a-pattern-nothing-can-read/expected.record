@@ -1,0 +1,1 @@
+the resolved taxonomy `identifier_schemes.unreadable_id.pattern`: identifier integrity: cannot be read, so nothing can be said about what it admits: the pattern `{namespace}-{slug}-END` writes `{slug}` before another segment, and a free token has no stated end

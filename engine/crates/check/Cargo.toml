@@ -25,6 +25,12 @@ headwater-doc = { path = "../doc" }
 # A finding anchors at a line, and a span is where the line comes from.
 headwater-yaml = { path = "../yaml" }
 
+# The identifier template language. One reader of it, shared with the resolver:
+# a scheme's `pattern` says what a document's identifier has to look like here
+# and what two schemes have to be disjoint over there, and two readings of one
+# grammar would disagree the day a placeholder form is added.
+headwater-meta = { path = "../meta" }
+
 [dev-dependencies]
 # The run over this repository needs this repository's taxonomy resolved. The
 # runner takes an already-resolved one.

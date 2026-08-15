@@ -6,11 +6,13 @@ edition.workspace = true
 publish.workspace = true
 
 [dependencies]
-# The kind, facet and identifier-scheme declarations, and the identifier
-# template. The template is the one that matters: `headwater new` mints an
-# identifier that `identifier.pattern.not_met` then reads, and both go through
-# `headwater_check::identifier::Template`.
+# The kind, facet and identifier-scheme declarations.
 headwater-check = { path = "../check" }
+
+# The identifier template language. `headwater new` mints an identifier that
+# `identifier.pattern.not_met` then reads, and both go through
+# `headwater_meta::identifier::Template`, which is the one reader of a pattern.
+headwater-meta = { path = "../meta" }
 
 # The shelves, and the classifier. A proposed path is held against
 # `headwater_census::resolve::shelf_for`, so the placement this crate derives is

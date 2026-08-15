@@ -96,9 +96,8 @@ rule by rule
     on the result: every name a declaration reads is declared, every relation endpoint is a kind or an anchor kind, and every control discharges a declared obligation. The `$`-reference half runs at merge time, because a reference that reads nothing stops the merge
   anchor integrity
     on the result: one resolver per anchor kind, and no two anchor kinds share a namespace
-  identifier integrity (in part)
-    on the result: every scheme carries a namespace, and no two schemes in one namespace share a literal prefix
-    not decided: the prefix is a literal inside the `pattern` string. The engine expands the declared namespace and compares the text up to the first placeholder left, so it decides a pattern whose literal segment follows the namespace and still cannot decide two whose free placeholders meet. Spec 13 carries the grammar
+  identifier integrity
+    on the result: every scheme carries a namespace, every pattern reads as a template, and no two schemes admit one string. The last is decided out of the parsed segments and not out of the pattern text: a `{slug}` is terminal, so a template is a fixed run of literal and digit positions with an optional free tail, and whether two such runs meet is a comparison rather than an estimate
   coverage
     on the result: every shelf reaches a kind, every concrete kind is reached by a shelf, and an abstract kind is reached by none
   kind inheritance

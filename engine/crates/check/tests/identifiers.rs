@@ -22,7 +22,7 @@
 //! Read the diff before committing it. A line that moves here is an identifier
 //! that moves.
 
-use headwater_check::identifier::{Needs, Template};
+use headwater_meta::identifier::{Needs, Template};
 use std::path::{Path, PathBuf};
 
 /// The slug and the sequence value every scheme is minted with. Constants,
