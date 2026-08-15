@@ -260,6 +260,10 @@ jobs:
           manifest=$(sh .githooks/change-manifest "${{ github.event.pull_request.base.sha }}" "$RUNNER_TEMP/change")
           ./engine/target/release/headwater check --no-cache --now "$HEADWATER_NOW" \
             --change "$manifest" > change.txt
+          # Onto the step log as well as into the summary. A step that writes
+          # only into a file reads as a step that did nothing, and the two lines
+          # this prints are the two numbers the reading is for.
+          grep -E 'scoped to a change:|promoted from' change.txt
           {
             echo '## The change this pull request carries'
             echo
