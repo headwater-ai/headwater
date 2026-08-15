@@ -690,11 +690,7 @@ fn read_facet(name: &str, value: &Value, span: Span) -> Result<Facet, Declaratio
     Ok(Facet {
         name: name.to_string(),
         role: scalar(map, "role"),
-        required: map
-            .get("required")
-            .and_then(|node| node.value.as_scalar())
-            .and_then(headwater_yaml::core_schema::as_bool)
-            .unwrap_or(false),
+        required: headwater_yaml::core_schema::flag(map, "required").unwrap_or(false),
         values: read_values(map),
         stale_after_days: scalar(map, "stale_after_days")
             .as_deref()

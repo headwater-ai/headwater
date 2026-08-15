@@ -141,9 +141,7 @@ impl Taxonomy {
 fn is_abstract(value: &Value) -> bool {
     value
         .as_map()
-        .and_then(|map| map.get("abstract"))
-        .and_then(|flag| flag.value.as_scalar())
-        .and_then(core_schema::as_bool)
+        .and_then(|map| core_schema::flag(map, "abstract"))
         .unwrap_or(false)
 }
 
@@ -165,10 +163,7 @@ fn read_shelf(name: &str, value: &Value, span: Span) -> Result<Shelf, Declaratio
     // body is what decides the meaning: a shelf that says it is homogeneous and
     // names no kind has said nothing. Reading the flag and then requiring the
     // matching body reports the disagreement instead of resolving it silently.
-    let declared = map
-        .get("homogeneous")
-        .and_then(|flag| flag.value.as_scalar())
-        .and_then(core_schema::as_bool);
+    let declared = core_schema::flag(map, "homogeneous");
     let homogeneous = declared.unwrap_or_else(|| map.get("kind").is_some());
 
     let body = if homogeneous {

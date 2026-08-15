@@ -103,13 +103,7 @@ pub fn read(tree: &Mapping) -> Vec<Requirement> {
             // of them as false, which turns a stated requirement into an
             // unstated one, and it read the quoted string `"true"` — which the
             // meta-schema refuses — as the boolean.
-            let flag = |name: &str| {
-                entry
-                    .get(name)
-                    .and_then(|value| value.value.as_scalar())
-                    .and_then(headwater_yaml::core_schema::as_bool)
-                    .unwrap_or(false)
-            };
+            let flag = |name: &str| headwater_yaml::core_schema::flag(entry, name).unwrap_or(false);
             let kind = if let Some(role) = field("facet_role") {
                 Kind::FacetRole(role)
             } else if let Some(purpose) = field("purpose") {
@@ -148,8 +142,14 @@ pub fn satisfiers(tree: &Mapping, requirement: &Requirement) -> Vec<Vec<String>>
                 return Vec::new();
             }
             let mut found = vec![vec!["purposes".to_string(), purpose.clone()]];
+            // `abstract` is a declared boolean and it is read through the
+            // core schema, never off the text of the scalar. The text
+            // comparison this replaces read `True` and `TRUE` as false, which
+            // let an abstract kind stand as a concrete satisfier: a purpose
+            // that no document can ever answer would have been reported as
+            // answered, and nothing else here would have said so.
             found.extend(named_with(tree, "kinds", |body| {
-                scalar(body, "abstract").as_deref() != Some("true")
+                !headwater_yaml::core_schema::flag(body, "abstract").unwrap_or(false)
                     && serves(tree, body) == Some(purpose.clone())
             }));
             // A purpose that no concrete kind serves is not served at all, and
@@ -376,6 +376,41 @@ core:
                 ),
         );
         assert!(check(&base, &quoted, &[], &[]).is_empty());
+    }
+
+    /// The other direction of the same defect, and the silent one.
+    ///
+    /// A purpose is satisfied by a concrete kind that serves it, and an
+    /// abstract kind is filtered out because no document is ever one. The
+    /// reading here compared the text of the scalar, so `abstract: True` made
+    /// the abstract kind count as a concrete satisfier and a purpose that no
+    /// document can answer resolved clean. Nothing downstream reports that: a
+    /// satisfied core requirement produces no message at all.
+    #[test]
+    fn an_abstract_kind_satisfies_no_purpose_whatever_the_boolean_is_spelled() {
+        let base = tree(BASE);
+        for spelling in ["true", "True", "TRUE"] {
+            // The only kind left that serves `rationale` is the abstract one.
+            let stated = BASE.replace(
+                "  governed_document: {abstract: true}\n",
+                &format!("  governed_document: {{abstract: {spelling}, purpose: rationale}}\n"),
+            );
+            // and the concrete kind that also serves it is gone.
+            let stated = stated.replace(
+                "  decision: {is_a: governed_document, purpose: rationale}\n",
+                "",
+            );
+            let after = tree(&stated);
+            let found = check(&base, &after, &[], &[]);
+            assert_eq!(
+                found.len(),
+                1,
+                "`abstract: {spelling}` keeps the kind out of the satisfiers of `rationale`, \
+                 and instead: {}",
+                crate::render_errors(&found)
+            );
+            assert!(found[0].to_string().contains("purpose: rationale"));
+        }
     }
 
     #[test]
