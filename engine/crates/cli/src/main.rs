@@ -413,6 +413,7 @@ fn main() -> ExitCode {
     let mut strict = false;
     let mut check_only = false;
     let mut fixing = false;
+    let mut applying = false;
     let mut cached = true;
     let mut now: Option<Date> = None;
     let mut read_set: Option<PathBuf> = None;
@@ -447,6 +448,7 @@ fn main() -> ExitCode {
             "--strict" => strict = true,
             "--check" => check_only = true,
             "--fix" => fixing = true,
+            "--apply" => applying = true,
             "--no-cache" => cached = false,
             "--now" => match arguments.next().as_deref().map(Date::parse) {
                 Some(Some(date)) => now = Some(date),
@@ -688,7 +690,7 @@ fn main() -> ExitCode {
         }
         ["taxonomy"] => fail(
             "`taxonomy` takes a second word: `validate`, `resolve`, `audit`, `publish`, \
-             `vendor` or `diff`",
+             `vendor`, `diff` or `migrate`",
         ),
         ["taxonomy", "diff"] => fail(
             "`taxonomy diff` takes the path of a published artifact somebody already fetched. \
@@ -696,22 +698,18 @@ fn main() -> ExitCode {
              `--to <version>` states which version that directory is expected to be",
         ),
         ["taxonomy", "diff", fetched] => diff(&root, Path::new(fetched), to.as_deref(), now),
-        // `migrate` is named in spec 6's grammar and it does not run. The
-        // grammar holds a declared name to running or to a named wait, so it
-        // says what it waits on rather than reading as a verb this binary
-        // forgot.
-        ["taxonomy", "migrate", ..] => fail(
-            "`taxonomy migrate` waits on the half of a migration that writes. Spec 7 states the \
-             form of the payload, `taxonomy publish` carries it and refuses one it cannot, and \
-             `taxonomy diff <artifact>` reads it and reports what each step reaches in this \
-             corpus. What no verb does is apply a step: nothing rewrites the facet value of a \
-             document, nothing rewrites an overlay address, and nothing writes the open task set \
-             into the lock. Until one of the three runs, this verb would print what `diff` \
-             already prints. See `docs/spec/07-distribution-and-federation.md`",
+        ["taxonomy", "migrate"] => fail(
+            "`taxonomy migrate` takes the path of a published artifact somebody already fetched. \
+             This engine opens no socket, so it applies a payload it is handed, and `--to \
+             <version>` states which version that directory is expected to be. Without `--apply` \
+             it reports what it would write and writes nothing",
         ),
+        ["taxonomy", "migrate", fetched] => {
+            migrate(&root, Path::new(fetched), to.as_deref(), now, applying)
+        }
         ["taxonomy", other, ..] => fail(&format!(
             "`taxonomy {other}` is not a verb this binary carries yet. \
-             It carries `validate`, `resolve`, `audit`, `publish`, `vendor` and `diff`"
+             It carries `validate`, `resolve`, `audit`, `publish`, `vendor`, `diff` and `migrate`"
         )),
         [] => fail("no verb. Try `headwater check`"),
         // The list below is hand-maintained beside the arms above, and nothing
@@ -1117,19 +1115,16 @@ fn vendor(root: &Path, fetched: &Path, expect: Option<&str>) -> ExitCode {
 /// publishes of an unchanged package differ in a timestamp, a path and a
 /// digest, and a report that fired on those would fire on every release. See
 /// [`headwater_compat`].
-fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> ExitCode {
-    // The clock, read once and before anything is walked, on the same terms
-    // `check` reads it: two windowed expectations evaluated a second apart
-    // would be a difference this verb attributed to the taxonomy.
-    let Some(ctx) = now.map(Context::at).or_else(Context::from_system_clock) else {
-        eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
-        return ExitCode::FAILURE;
-    };
-
-    // The artifact, held to its own release record before a declaration inside
-    // it is read. A directory somebody edited after it was published is not the
-    // version it says it is, and every dimension below would then measure
-    // against a taxonomy that no publisher shipped.
+/// A published artifact, held to its own release record and to `--to`.
+///
+/// One reader, because `taxonomy diff` and `taxonomy migrate` both take a
+/// directory somebody fetched and both have to know that it is the version it
+/// says it is. Two readings would be two answers about one directory, and the
+/// one that migrates is the one that writes.
+fn artifact(
+    fetched: &Path,
+    to: Option<&str>,
+) -> Result<headwater_resolve::release::Release, ExitCode> {
     let record = match headwater_resolve::release::at(fetched) {
         Ok(record) => record,
         Err(error) => {
@@ -1138,7 +1133,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
                 fetched.display()
             );
             eprintln!("{}", indent(&error.to_string()));
-            return ExitCode::FAILURE;
+            return Err(ExitCode::FAILURE);
         }
     };
     if let Err(error) = headwater_resolve::release::diverged(fetched, &record)
@@ -1154,27 +1149,341 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     {
         eprintln!("headwater: the artifact is not what its own release record says it is");
         eprintln!("{}", indent(&error));
-        return ExitCode::FAILURE;
+        return Err(ExitCode::FAILURE);
     }
 
     if let Some(range) = to {
         match headwater_resolve::release::satisfies(range, &record.version) {
             Err(why) => {
-                return fail(&format!(
+                return Err(fail(&format!(
                     "`--to {range}` states no version comparison this engine reads: {why}"
-                ))
+                )))
             }
             Ok(false) => {
-                return fail(&format!(
+                return Err(fail(&format!(
                     "`--to {range}` and the artifact declares {}. The flag names the version the \
                      caller expected, and this engine fetches nothing, so a mismatch is a wrong \
                      directory rather than a wrong number",
                     record.version
-                ))
+                )))
             }
             Ok(true) => {}
         }
     }
+    Ok(record)
+}
+
+/// `taxonomy migrate`: the half of a migration that writes.
+///
+/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
+/// splits a payload into "what the engine can apply mechanically
+/// (`headwater migrate --apply`) and what needs human or agent judgment
+/// (emitted as a task list with the affected documents attached)". Both halves
+/// are below, and the split is not this function's to make: it is derived from
+/// the target list by
+/// [`headwater_resolve::migration::Application::over`], which is the only
+/// constructor of it.
+///
+/// # A judgment step reaches no writer, structurally
+///
+/// The mechanical half is built by matching `Application::Mechanical` and
+/// taking the one target off that arm. A choice and a re-statement carry no
+/// such field, so there is no value a write could be composed from and no arm
+/// in which one is. That is the whole guard, and it is worth more than a check
+/// that a task list is non-empty.
+///
+/// # This run does not write the lock, and that is a decision
+///
+/// [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)
+/// records the migration state in the lock. Writing it here would put a verb
+/// into `adoption:`, and [#61 left the seam under that block
+/// unstated](../../../../docs/spec/13-open-obligations.md): no document says
+/// whether `taxonomy resolve --check` may pass while the authored half of the
+/// lock is stale. A verb that wrote there would settle that by precedent
+/// instead of by a decision. So the run reports the state it would have
+/// written and writes none of it, and it says so on every run rather than only
+/// in a commit message.
+fn migrate(
+    root: &Path,
+    fetched: &Path,
+    to: Option<&str>,
+    now: Option<Date>,
+    applying: bool,
+) -> ExitCode {
+    let Some(_ctx) = now.map(Context::at).or_else(Context::from_system_clock) else {
+        eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
+        return ExitCode::FAILURE;
+    };
+    let record = match artifact(fetched, to) {
+        Ok(record) => record,
+        Err(code) => return code,
+    };
+
+    let lock = match headwater_lock::at(root) {
+        Ok(lock) => lock,
+        Err(error) => {
+            eprintln!("headwater: {error}");
+            return ExitCode::FAILURE;
+        }
+    };
+    if record.package != lock.package {
+        return fail(&format!(
+            "this repository takes `{}` and the artifact publishes `{}`. Two packages are not \
+             two versions of one, and a migration between them is not a rename of anything",
+            lock.package, record.package
+        ));
+    }
+    let from = lock.version.clone();
+    let to = record.version.clone();
+
+    let manifest = match headwater_resolve::package::manifest_at(fetched) {
+        Ok(manifest) => manifest,
+        Err(errors) => {
+            eprintln!("headwater: the artifact manifest did not read");
+            eprint!("{}", indent(&render_errors(&errors)));
+            return ExitCode::FAILURE;
+        }
+    };
+    let payloads = match headwater_resolve::migration::at(fetched, &manifest) {
+        Ok(payloads) => payloads,
+        Err(refusals) => {
+            eprintln!("headwater: the artifact carries a migration payload this engine cannot read");
+            eprint!(
+                "{}",
+                indent(&render_errors(&headwater_resolve::migration::as_errors(
+                    &fetched.display().to_string(),
+                    &refusals,
+                )))
+            );
+            return ExitCode::FAILURE;
+        }
+    };
+
+    let mut selected: Vec<&headwater_resolve::migration::Payload> = Vec::new();
+    for carried in &payloads {
+        match carried.covers(&from, &to) {
+            Err(why) => {
+                return fail(&format!(
+                    "{} states a version range this engine cannot read: {why}",
+                    carried.at
+                ))
+            }
+            Ok(false) => {}
+            Ok(true) => selected.push(carried),
+        }
+    }
+    let payload = match selected.len() {
+        1 => selected[0],
+        0 => {
+            return fail(&format!(
+                "the artifact ships no migration payload for {from} to {to}. Spec 2 makes a major \
+                 version ship one, and this verb applies a payload rather than deriving one. \
+                 `headwater taxonomy diff {}` reports what moved",
+                fetched.display()
+            ))
+        }
+        count => {
+            return fail(&format!(
+                "{count} payloads of the artifact cover {from} to {to}, and a migration is not a \
+                 choice of route: {}",
+                selected
+                    .iter()
+                    .map(|payload| payload.at.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ))
+        }
+    };
+
+    // The census of the taxonomy this repository takes, which is the taxonomy
+    // every `from` of the payload was written against. A census under the
+    // candidate would answer no documents for every step.
+    let taking = match load_against(root, Bound::of(lock)) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+
+    println!(
+        "\nmigration  {}, from {from} to {to}\n  payload  {}\n",
+        record.package, payload.at
+    );
+
+    // --- the half the engine writes ---------------------------------------
+    let mut moves: Vec<headwater_scaffold::migrate::Move> = Vec::new();
+    let mut placed: Vec<String> = Vec::new();
+    let mut mechanical = 0;
+    for step in &payload.steps {
+        let headwater_resolve::migration::Application::Mechanical { to } = &step.apply else {
+            continue;
+        };
+        mechanical += 1;
+        let sites = headwater_compat::migrate::sites(step, &taking.census);
+        println!("  {}  becomes `{to}`", step.at());
+        match sites.is_empty() {
+            true => println!("    no document of this corpus carries the old value"),
+            false => {
+                for site in &sites {
+                    match site {
+                        headwater_compat::migrate::Site::Front { path, key } => {
+                            println!("    {path}  `{key}`");
+                            moves.push(headwater_scaffold::migrate::Move {
+                                path: path.clone(),
+                                key: key.clone(),
+                                from: step.from.clone(),
+                                to: to.clone(),
+                            });
+                        }
+                        headwater_compat::migrate::Site::Placement { .. } => {
+                            let why = site.why().expect("a placement site states one");
+                            println!("    {why}");
+                            placed.push(why);
+                        }
+                    }
+                }
+            }
+        }
+        println!();
+    }
+    if mechanical == 0 {
+        println!("  no step of this payload applies mechanically\n");
+    }
+
+    // --- the half an author settles ---------------------------------------
+    let judgment: Vec<&headwater_resolve::migration::Step> = payload
+        .steps
+        .iter()
+        .filter(|step| !step.apply.mechanical())
+        .collect();
+    println!(
+        "  {} task{} for an author, and no run writes any of them",
+        judgment.len(),
+        match judgment.len() {
+            1 => "",
+            _ => "s",
+        }
+    );
+    for step in &judgment {
+        println!("\n    {}  {}", step.at(), step.apply.sentence());
+        println!(
+            "      task  {}",
+            step.apply.task().expect("a judgment step carries one")
+        );
+        let sites = headwater_compat::migrate::sites(step, &taking.census);
+        match sites.is_empty() {
+            true => println!("      no document of this corpus carries the old value"),
+            false => {
+                for site in &sites {
+                    println!("      {}", site.path());
+                }
+            }
+        }
+    }
+    println!();
+
+    // --- what the lock is owed, and does not get --------------------------
+    println!(
+        "  the lock is not written. Spec 7 records the migration state in it — {from} to {to}, an \
+         owner, an expiry and the open task set above — and that state lives in `adoption:`, whose \
+         seam #61 left unstated. A verb that wrote there would settle by precedent whether a \
+         reviewed artifact may hold a part no digest verifies. `headwater infer --owner <name> \
+         --write` is the one writer of that block today"
+    );
+
+    if !placed.is_empty() {
+        println!(
+            "\n  {} document{} take{} a kind this payload renames from a homogeneous shelf, so no \
+             byte of the document holds it and the remedy is a file move",
+            placed.len(),
+            match placed.len() {
+                1 => "",
+                _ => "s",
+            },
+            match placed.len() {
+                1 => "s",
+                _ => "",
+            }
+        );
+    }
+
+    let written = headwater_scaffold::migrate::compose(root, &moves);
+    if !written.refused.is_empty() {
+        eprintln!("\nheadwater: {} document{} did not compose, and this run writes nothing", written.refused.len(), match written.refused.len() { 1 => "", _ => "s" });
+        for refused in &written.refused {
+            eprintln!("{}", indent(&refused.to_string()));
+        }
+        return ExitCode::FAILURE;
+    }
+
+    if !applying {
+        println!(
+            "\n  {} value{} in {} document{} would be written. Nothing was: pass `--apply`",
+            written.replaced,
+            match written.replaced {
+                1 => "",
+                _ => "s",
+            },
+            written.files.len(),
+            match written.files.len() {
+                1 => "",
+                _ => "s",
+            }
+        );
+        return ExitCode::SUCCESS;
+    }
+
+    let replaced = written.replaced;
+    let reserved = match headwater_scaffold::tree::Reserved::over(root, written.files) {
+        Ok(reserved) => reserved,
+        Err(unopened) => {
+            eprintln!("\nheadwater: a document of this migration cannot be written, so none was");
+            eprintln!("{}", indent(&unopened.to_string()));
+            return ExitCode::FAILURE;
+        }
+    };
+    match reserved.commit() {
+        Ok(paths) => {
+            println!(
+                "\n  wrote {replaced} value{} in {} document{}",
+                match replaced {
+                    1 => "",
+                    _ => "s",
+                },
+                paths.len(),
+                match paths.len() {
+                    1 => "",
+                    _ => "s",
+                }
+            );
+            for path in &paths {
+                println!("    {path}");
+            }
+            ExitCode::SUCCESS
+        }
+        Err(halted) => {
+            eprintln!("\nheadwater: the migration stopped part way");
+            eprintln!("{}", indent(&halted.to_string()));
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> ExitCode {
+    // The clock, read once and before anything is walked, on the same terms
+    // `check` reads it: two windowed expectations evaluated a second apart
+    // would be a difference this verb attributed to the taxonomy.
+    let Some(ctx) = now.map(Context::at).or_else(Context::from_system_clock) else {
+        eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
+        return ExitCode::FAILURE;
+    };
+
+    // The artifact, held to its own release record before a declaration inside
+    // it is read. A directory somebody edited after it was published is not the
+    // version it says it is, and every dimension below would then measure
+    // against a taxonomy that no publisher shipped.
+    let record = match artifact(fetched, to) {
+        Ok(record) => record,
+        Err(code) => return code,
+    };
 
     // What this repository takes today. The lock and not the sources: spec 6
     // fixes the lock as the one thing downstream reads, and a comparison

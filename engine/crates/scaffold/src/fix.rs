@@ -197,14 +197,26 @@ pub fn compose(root: &Path, patches: &[Patch]) -> Composed {
     out
 }
 
-/// Write what [`compose`] produced.
+/// Write what [`compose`] produced, all of it or none of it.
+///
+/// The batch goes through [`crate::tree::Reserved`], which is the one writer in
+/// this crate that puts a set of files on a tree. A loop of `std::fs::write`
+/// here would stop on the first failure with every file before it written, and
+/// `--fix` would then have applied part of a corrections patch with nothing
+/// saying which part.
 pub fn apply(root: &Path, files: &[Fixed]) -> Result<(), Refused> {
-    for file in files {
-        std::fs::write(root.join(&file.path), &file.text).map_err(|error| Refused::Unreadable {
+    let composed = files
+        .iter()
+        .map(|file| crate::tree::Composed {
             path: file.path.clone(),
-            why: error.to_string(),
-        })?;
-    }
+            text: file.text.clone(),
+        })
+        .collect();
+    let unreadable = |path: String, why: String| Refused::Unreadable { path, why };
+    crate::tree::Reserved::over(root, composed)
+        .map_err(|unopened| unreadable(unopened.path, unopened.why))?
+        .commit()
+        .map_err(|halted| unreadable(halted.path.clone(), halted.to_string()))?;
     Ok(())
 }
 
