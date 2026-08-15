@@ -52,6 +52,7 @@ Add these amendments every time:
 - **An honest split is a success condition, not a failure to hide.** If the issue is more than lands in one pull request, split it on the board, take the first sound piece, file the remainder, and return `Refs #N`. In the last run five of nine iterations did this and every one was right.
 - **State each write-back as you land it and then verify it took.** An agent once wrote "removing the label from this issue" in an otherwise flawless adjudication and the label was still attached.
 - **Every "not made here" in your report needs a tracker.** Scoping something out is often right; leaving it untracked never is.
+- **Every issue you file or edit opens with an `## ELI5` section.** `.github/ISSUE_TEMPLATE/issue.md` is the shape and the only copy of it; `gh` does not apply it, so read it and follow it. Two to five sentences of plain language before the dense lede, for a reader who has never opened this repository. An issue whose ELI5 cannot be written without the jargon is usually an issue that is not yet understood, and that is worth saying in the body rather than papering over.
 
 ### 2. The environment traps
 

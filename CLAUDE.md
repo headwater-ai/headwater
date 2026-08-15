@@ -79,4 +79,12 @@ The last one is the only mechanism here that no engine performs. `headwater swee
 
 `.claude/agents/headwater-maintainer.md` is the maintainer subagent: hand it a change and it reports what the change touched, what is now stale, what the corpus is owed, and what it could not decide. It proposes and never accepts.
 
+## Filing an issue
+
+`.github/ISSUE_TEMPLATE/issue.md` is the shape, and it is the only copy of it. GitHub offers it in the web form and nowhere else, so anything filing through `gh` reads that file first and follows it by hand.
+
+**An issue opens with an `## ELI5` section.** Two to five sentences of plain language, for a reader who has never opened this repository: what is wrong, what a person would notice because of it, and what the fix looks like from outside. No spec numbers, no rule identifiers, no verb or crate name that the same sentence does not define. The rest of the body then addresses a reader who does know the repository, which is what the bodies here have always done. The ELI5 is the part that was missing, and it is written last and read first.
+
+Nothing checks this. No hook, no rule and no CI job reads an issue body, so the template and this paragraph are the whole mechanism.
+
 `sh .claude/skills/fixtures.sh` holds every claim these files make about the engine. It is a blocking CI step, half of its cases are derived from the skill files rather than listed, and it writes only into a scratch copy of the corpus.
