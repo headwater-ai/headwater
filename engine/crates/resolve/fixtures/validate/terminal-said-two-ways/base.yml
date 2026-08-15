@@ -13,6 +13,11 @@
 #   calls it terminal. The role reading does not, so a live document may rest on
 #   a sealed one and nothing reports it.
 #
+#   `frozen` reaches nothing and its value carries the `live` role. It is the
+#   same half as `sealed` and it separates a value that carries a role from a
+#   value that carries a terminal one, which is the prefix `role_is_terminal`
+#   reads.
+#
 # The second one is why the `terminal` member left this meta-schema. A list
 # beside the machine suppressed the refusal below and reached no other reader,
 # so it bought a state terminality under one rule and not under the other.
@@ -32,6 +37,7 @@ facets:
       - {value: deprecated, role: terminal-retained}
       - {value: superseded, role: terminal-retained}
       - {value: sealed}
+      - {value: frozen, role: live}
     required: true
     volatility: mutable
     guidance:
@@ -40,6 +46,7 @@ facets:
       deprecated: it is kept and no longer current
       superseded: a later document took its place
       sealed: nothing further happens to it
+      frozen: it is read and it does not move
 
 regimes:
   lifecycle:
@@ -47,7 +54,7 @@ regimes:
       initial: draft
       transitions:
         draft: [current]
-        current: [deprecated, sealed]
+        current: [deprecated, sealed, frozen]
         deprecated: [superseded]
       retain_terminal: true
 

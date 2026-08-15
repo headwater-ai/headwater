@@ -1,2 +1,3 @@
 the resolved taxonomy `regimes.lifecycle.standard.transitions`: lifecycle soundness: gives `deprecated` an exit, and the `terminal-retained` role on its value names it terminal. One rule reads the role and another reads the machine, so a state is terminal to both or to neither
+the resolved taxonomy `regimes.lifecycle.standard.transitions`: lifecycle soundness: gives `frozen` no exit and nothing declares it terminal. A terminal state is named by a `terminal-` role on its value
 the resolved taxonomy `regimes.lifecycle.standard.transitions`: lifecycle soundness: gives `sealed` no exit and nothing declares it terminal. A terminal state is named by a `terminal-` role on its value
