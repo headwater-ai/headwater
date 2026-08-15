@@ -3,7 +3,7 @@ id: HW-OBL-0086
 title: "An inline quotation reaches every lexical rule as this author's prose"
 status: current
 status_since: 2026-08-13
-last_verified: 2026-08-13
+last_verified: 2026-08-15
 summary: "The parser marks a block quotation and a code span, and an inline quotation is marked as nothing."
 provenance:
   warrant: accepted
@@ -28,6 +28,8 @@ The parser supplies three of the four. It marks a block quotation as another aut
 ## Obligation
 
 Two of the four suppressions over this corpus exist for that one reason, and each names `false_positive` rather than an accepted deviation.
+
+**The size of the reading is measured on one shelf, and it is small there.** [Q27](../spec/09-decisions.md#q27--whether-a-decision-record-is-governed-prose) bound the house language regime to `decision`, which is the kind that quotes prior art most heavily here. Every inline quotation of five characters or more on that shelf was replaced by one word, which is 37 quotations across 26 files. The finding count moved from 64 to 63. Five of the 64 findings fall on a sentence that carries a quotation mark of any kind. So this reading is a real defect of the parser and a small share of one shelf. A count of findings there is close to a count of defects.
 
 ## Discharge
 

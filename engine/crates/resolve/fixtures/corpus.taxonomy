@@ -250,6 +250,7 @@ kinds:
     facets:
       require:
         - title
+    language: ste_house
   specification:
     is_a: governed_document
     purpose: behavior

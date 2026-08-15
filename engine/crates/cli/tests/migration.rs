@@ -138,11 +138,15 @@ fn address() -> Vec<(&'static [&'static str], &'static [&'static str])> {
 
 /// The overlay entry every case in this file's last section is about.
 ///
-/// This repository's own overlay addresses no kind that the base declares:
-/// every kind it writes into comes from a bundle, and a payload may not name
-/// one (see [`address`]). So the copied overlay gains one entry, and the entry
-/// is an ordinary one — a base kind with no identifier scheme, given the scheme
-/// the same overlay declares two blocks above.
+/// This repository's own overlay addresses exactly one kind that the base
+/// declares. It is `kinds.decision.language`, which
+/// [Q27](../../../../docs/spec/09-decisions.md#q27--whether-a-decision-record-is-governed-prose)
+/// added, and `specification` is the base kind it does not reach. A payload may
+/// not name a kind that a bundle declares (see [`address`]), so this section
+/// needs an entry over a base kind and the overlay's one entry is over the
+/// wrong member. The copied overlay therefore gains this one, and it is an
+/// ordinary entry — a base kind with no identifier scheme, given the scheme the
+/// same overlay declares two blocks above.
 const ENTRY: &str = "\n  kinds.specification.identifier: {scheme: spec_id}\n";
 
 /// A repository root that removes itself.
@@ -294,6 +298,27 @@ impl Root {
             resolved.code,
             Some(0),
             "the overlay with the entry resolves against the base: {resolved:?}"
+        );
+    }
+
+    /// Drop one line from the copied overlay, and re-resolve.
+    ///
+    /// The one case that needs this is the kind rename. This repository's
+    /// overlay binds a language regime to `decision`, and the base is what
+    /// declares that kind, so a rename of it takes three document rules off
+    /// three documents. `instance_validity` then reports the same documents
+    /// that `classification` does, and a case meant to reach one half reaches
+    /// both. The assertion fails loudly if the line ever goes away.
+    fn without(&self, line: &str) {
+        let at = self.at.join(".headwater/overlay.yml");
+        let text = std::fs::read_to_string(&at).expect("the overlay reads");
+        assert!(text.contains(line), "the overlay still carries `{line}`");
+        std::fs::write(&at, text.replacen(line, "", 1)).expect("the overlay writes");
+        let resolved = self.run(&["taxonomy", "resolve"]);
+        assert_eq!(
+            resolved.code,
+            Some(0),
+            "the overlay without the line resolves: {resolved:?}"
         );
     }
 
@@ -585,9 +610,15 @@ fn a_major_upgrade_with_no_payload_is_reported() {
 /// `instance_validity` is preserved and `classification` is the only dimension
 /// that reports a document. The accounting therefore comes from the
 /// classification half alone, which no other case reaches.
+///
+/// The isolation is built rather than assumed. [Q27](../../../../docs/spec/09-decisions.md#q27--whether-a-decision-record-is-governed-prose)
+/// binds the house language regime to `decision`, and that kind comes from the
+/// base, so the copied overlay is what takes three rules off three documents
+/// when the rename lands. [`Root::without`] removes the line first.
 #[test]
 fn a_kind_step_is_accounted_against_classification() {
     let root = Root::new("kind-step");
+    root.without("  kinds.decision.language:            ste_house\n");
     assert_eq!(root.publish("1.0.0").code, Some(0));
     let payload =
         std::fs::read_to_string(fixtures().join("kinds-1-to-2.yml")).expect("the payload reads");

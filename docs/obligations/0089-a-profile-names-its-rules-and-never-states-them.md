@@ -3,7 +3,7 @@ id: HW-OBL-0089
 title: "A profile names its rules and never states them"
 status: current
 status_since: 2026-08-13
-last_verified: 2026-08-13
+last_verified: 2026-08-15
 summary: "`ste_house` names a controlled language and a profile, and four of its rules are constants in a Rust file."
 provenance:
   warrant: accepted
@@ -26,6 +26,8 @@ relations:
 ## Obligation
 
 So an adopter who wants 20 words has no declaration to write. One who wants the semicolon rule without the spelling rule waits for a build.
+
+**The spelling rule is also smaller than the sentence it prints.** The finding says that the regime declares the tag `en-US`. The rule is a table of 24 words, built from the seven stems that `CLAUDE.md` names. So `colour`, `centre`, `analyse`, `recognise`, `defence` and `whilst` all pass a governed document. This corpus writes none of them outside a fenced code block, measured over the three governed shelves. The gap costs this repository nothing today, and it costs an adopter the difference between a tag and a list.
 
 ## Discharge
 
