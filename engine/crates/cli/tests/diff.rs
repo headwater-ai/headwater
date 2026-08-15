@@ -359,6 +359,13 @@ fn an_overlay_address_the_new_base_takes_is_the_addressability_dimension() {
             .contains("five of the six dimensions were not measured"),
         "{ran:?}"
     );
+    // A base that nobody could read is neither the same text nor different
+    // text, and the report says the third thing rather than pick one.
+    assert!(
+        ran.out
+            .contains("the base did not resolve, so there is no second text to compare"),
+        "{ran:?}"
+    );
 }
 
 /// `--to` is the assertion and never the address.

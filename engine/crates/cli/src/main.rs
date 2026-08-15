@@ -1239,7 +1239,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
             package: record.package.clone(),
             from: lock.version.clone(),
             to: record.version.clone(),
-            base_moved: true,
+            base: headwater_compat::Base::Unresolved,
             measured: headwater_compat::Measured::against_nothing(
                 addressability,
                 "the candidate taxonomy did not resolve under this repository's overlays, so no \
@@ -1259,7 +1259,10 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     // core under the local overlay", and this is that question.
     let refusals = resolution.validate();
 
-    let base_moved = headwater_lock::digest(&resolution.render()) != lock.digest;
+    let base = match headwater_lock::digest(&resolution.render()) == lock.digest {
+        true => headwater_compat::Base::Same,
+        false => headwater_compat::Base::Moved,
+    };
     let package = record.package.clone();
     let from = lock.version.clone();
     let to = record.version.clone();
@@ -1326,7 +1329,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
         package,
         from,
         to,
-        base_moved,
+        base,
         measured,
     };
     print!("{}", report.render());

@@ -381,6 +381,16 @@ fn claimed(graph: &Graph) -> BTreeMap<String, String> {
         .collect()
 }
 
+/// Every output a plan produced, and every declaration that produced none.
+///
+/// A declaration that stopped emitting is a projection change, and a comparison
+/// of written bytes alone would report it as nothing at all. So the reason an
+/// unwritten declaration states is compared beside the bytes of a written one,
+/// under the path each names.
+///
+/// Gathered rather than inserted, for the reason [`verdicts`] gathers: two
+/// declarations can name one path, and a map that kept the last would drop the
+/// other on both sides at once.
 fn emitted(plan: &Plan) -> BTreeMap<String, String> {
     let written = plan
         .outputs
@@ -392,7 +402,17 @@ fn emitted(plan: &Plan) -> BTreeMap<String, String> {
             format!("nothing: {}", unwritten.reason),
         )
     });
-    written.chain(unwritten).collect()
+    let mut gathered: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for (at, reading) in written.chain(unwritten) {
+        gathered.entry(at).or_default().push(reading);
+    }
+    gathered
+        .into_iter()
+        .map(|(at, mut readings)| {
+            readings.sort();
+            (at, readings.join("\n---\n"))
+        })
+        .collect()
 }
 
 /// Every instance the filter admits, keyed by the rule and what it read.
@@ -481,14 +501,14 @@ pub struct Report {
     pub from: String,
     /// The version the artifact declares.
     pub to: String,
-    /// Whether the two resolved to the same canonical taxonomy text.
+    /// What became of the base.
     ///
     /// This is the "what changed in the base" line of
     /// [spec 7](../../../../docs/spec/07-distribution-and-federation.md#upgrading),
     /// and it is reported and never gated on. Two publishes of one package
     /// resolve identically and two that differ in a description do not, and
     /// neither fact decides a dimension. See the module comment.
-    pub base_moved: bool,
+    pub base: Base,
     pub measured: Measured,
 }
 
@@ -511,10 +531,8 @@ impl Report {
         out.push_str(&format!("package  {}\n", self.package));
         out.push_str(&format!("taking   {} (the lock)\n", self.from));
         out.push_str(&format!("against  {} (the artifact)\n\n", self.to));
-        out.push_str(match self.base_moved {
-            true => "the base resolved to different text\n\n",
-            false => "the base resolved to the same text, byte for byte\n\n",
-        });
+        out.push_str(self.base.sentence());
+        out.push_str("\n\n");
         for (name, outcome) in self.measured.dimensions() {
             out.push_str(&format!("  {name:<18} {}\n", outcome.word()));
         }
@@ -532,6 +550,30 @@ impl Report {
         }
         out.push_str(&format!("\n{}\n", self.bump().sentence()));
         out
+    }
+}
+
+/// What became of the base, as three states rather than two.
+///
+/// A candidate that did not resolve has no canonical text, so "it resolved to
+/// different text" is a sentence about a resolution that did not happen. The
+/// third arm is the difference between a base that moved and a base nobody
+/// could read, and a boolean loses it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Base {
+    /// The two resolved to the same canonical taxonomy text, byte for byte.
+    Same,
+    Moved,
+    Unresolved,
+}
+
+impl Base {
+    pub fn sentence(self) -> &'static str {
+        match self {
+            Base::Same => "the base resolved to the same text, byte for byte",
+            Base::Moved => "the base resolved to different text",
+            Base::Unresolved => "the base did not resolve, so there is no second text to compare",
+        }
     }
 }
 
@@ -682,7 +724,7 @@ mod tests {
             package: "acme/fixture".into(),
             from: "1.0.0".into(),
             to: "2.0.0".into(),
-            base_moved: true,
+            base: Base::Unresolved,
             measured: Measured::against_nothing(Outcome::Preserved, "nothing resolved"),
         };
         assert!(!report.measured.complete());
