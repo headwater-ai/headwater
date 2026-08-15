@@ -188,11 +188,16 @@ jobs:
         # reading this path exists to avoid. Every step below writes a report
         # into the workspace, and each one would then be named as a file this
         # pull request adds.
-        # The text report and not the markdown adapter, which is the opposite
-        # of the step above and is a defect rather than a preference: the block
-        # that states what a run was scoped to is written by `text` and by none
-        # of the other three formats, so the adapter this job would rather use
-        # renders a scoped run as an unscoped one. #230 records that.
+        # `--format markdown`, which is the adapter a job summary is for. Until
+        # #230 this step pasted the whole text report into a fenced block,
+        # because the block that states what a run was told about was written by
+        # `text` and by none of the other three. All four write it now.
+        #
+        # The findings in it are the findings of the step below, because a
+        # change-scoped run reads the same corpus and narrows nothing. The
+        # difference is the block, and the block is the reason this step exists,
+        # so the report goes inside a `details` element and the step below keeps
+        # the summary a reviewer reads first.
         #
         # A producer that refuses fails this step. It is not a finding about the
         # corpus: it says the change could not be described, and a step that
@@ -202,19 +207,17 @@ jobs:
         run: |
           manifest=$(sh .githooks/change-manifest "${{ github.event.pull_request.base.sha }}" "$RUNNER_TEMP/change")
           ./engine/target/release/headwater check --no-cache --now "$HEADWATER_NOW" \
-            --change "$manifest" > change.txt
+            --change "$manifest" --format markdown > change.md
           # Onto the step log as well as into the summary. A step that writes
           # only into a file reads as a step that did nothing, and the two lines
           # this prints are the two numbers the reading is for.
-          grep -E 'scoped to a change:|promoted from' change.txt
+          grep -E '^\*\*Scoped to a change\.\*\*|promoted from' change.md
           {
             echo '## The change this pull request carries'
             echo
             echo '<details><summary>the run, scoped to the change</summary>'
             echo
-            echo '```'
-            cat change.txt
-            echo '```'
+            cat change.md
             echo
             echo '</details>'
           } >> "$GITHUB_STEP_SUMMARY"
