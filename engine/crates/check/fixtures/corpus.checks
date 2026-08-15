@@ -1,7 +1,7 @@
-233 seen, 190 classified, 190 checked, 3105 check instances
+233 seen, 190 classified, 190 checked, 3295 check instances
       3 generated, held to regeneration by `headwater generate --check`
     178 skipped: this document writes no fragment into itself
-    190 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+    380 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
 adoption
   1 pairs open, 0 closed, holding 1 finding, in 1 task
@@ -26,6 +26,7 @@ adoption
     154 instances of section.required.missing
     190 instances of link.fragment.unresolved
     190 instances of warrant.promoted
+    190 instances of lifecycle.transition.not_permitted
 suppressions
   4 findings hidden by 4 directives
       4 false_positive
@@ -69,6 +70,8 @@ rules, and for each the scope that binds it
     document scope, one document, its front matter and its body
   warrant.promoted
     document scope, one document and its front matter, and the version of it that stood before the change
+  lifecycle.transition.not_permitted
+    document scope, one document and its front matter, and the version of it that stood before the change
   coverage.document_unchecked
     corpus scope, every row of the census, and it is a barrier
   obligation.disposition.not_one
@@ -95,4 +98,4 @@ register
       3 permanently advisory
       2 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 1 migration-pending, 4 suppressed
-  every rule this engine carries reaches one obligation
+  lifecycle.transition.not_permitted reaches no obligation, so it names none

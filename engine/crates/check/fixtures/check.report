@@ -73,6 +73,8 @@ rules, and for each the scope that binds it
     document scope, one document, its front matter and its body
   warrant.promoted
     document scope, one document and its front matter, and the version of it that stood before the change
+  lifecycle.transition.not_permitted
+    document scope, one document and its front matter, and the version of it that stood before the change
   coverage.document_unchecked
     corpus scope, every row of the census, and it is a barrier
   obligation.disposition.not_one
@@ -108,6 +110,7 @@ register
   relation.endpoint.not_permitted reaches OB-FIX-5, OB-FIX-17, and a finding names one obligation, so it names none
   identifier.claimed_twice reaches no obligation, so it names none
   warrant.promoted reaches no obligation, so it names none
+  lifecycle.transition.not_permitted reaches no obligation, so it names none
   coverage.document_unchecked reaches no obligation, so it names none
 43 findings
      25 error

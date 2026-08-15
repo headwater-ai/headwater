@@ -1457,9 +1457,10 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             Grain::Document,
             Grain::Document,
             Grain::Document,
-            // The one rule that declares the prior version. It is document
-            // grained like every rule above it, and what separates it is the
-            // input rather than the unit: a change names documents.
+            // The two rules that declare the prior version. Both are document
+            // grained like every rule above them, and what separates them is
+            // the input rather than the unit: a change names documents.
+            Grain::Document,
             Grain::Document,
             Grain::Corpus,
             // The two register rules, which read the taxonomy and no document.

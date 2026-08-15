@@ -50,6 +50,11 @@ pub struct Shape {
     pub voice: Vec<VoiceRegime>,
     /// `regimes.language`, on the same terms.
     pub language: Vec<LanguageRegime>,
+    /// `regimes.lifecycle`, which a Document check reads through the kind that
+    /// binds it. The state machine a taxonomy declares had one reader before
+    /// this, in `taxonomy validate`, and that reader decides the soundness of
+    /// the declaration rather than the movement of a document.
+    pub lifecycle: Vec<LifecycleRegime>,
     /// `identifier_schemes`, which a kind reaches through `identifier.scheme`.
     pub identifier_schemes: Vec<IdentifierScheme>,
 }
@@ -85,6 +90,47 @@ pub struct VoiceRegime {
     pub name: String,
     pub forbid: Vec<String>,
     pub span: Span,
+}
+
+/// One lifecycle regime: the state machine the documents of a kind move
+/// through.
+///
+/// `transitions` is held as declared, from-state to the states it may reach. A
+/// state the map does not name reaches nothing, and that absence is what makes
+/// a state terminal. `retain_terminal` is not read here: it says whether a
+/// document in a terminal state may be deleted, which is a rule about a change
+/// to the corpus and not about a movement of one document.
+#[derive(Clone, Debug)]
+pub struct LifecycleRegime {
+    pub name: String,
+    /// The state a new document opens in.
+    pub initial: String,
+    /// From-state to the states it may reach, in declaration order.
+    pub transitions: Vec<(String, Vec<String>)>,
+    pub span: Span,
+}
+
+impl LifecycleRegime {
+    /// The states one state may move to.
+    ///
+    /// An absent entry and an empty list are one answer: neither reaches
+    /// anything, and a regime that wrote the second meant the first.
+    pub fn exits(&self, from: &str) -> &[String] {
+        self.transitions
+            .iter()
+            .find(|(state, _)| state == from)
+            .map(|(_, targets)| targets.as_slice())
+            .unwrap_or_default()
+    }
+
+    /// Whether this regime declares an edge from one state to another.
+    ///
+    /// It answers about a declared edge and never about a document that did
+    /// not move. A caller that folded the two together would make a regime
+    /// with no self edge refuse every document it carries unchanged.
+    pub fn admits(&self, from: &str, to: &str) -> bool {
+        self.exits(from).iter().any(|state| state == to)
+    }
 }
 
 /// One term a corpus retired.
@@ -182,6 +228,10 @@ pub struct Kind {
     pub voice: Option<String>,
     /// The name of the language regime, on the same terms.
     pub language: Option<String>,
+    /// The name of the lifecycle regime, on the same terms. A kind that names
+    /// none, and whose ancestors name none, has no declared state machine and
+    /// no movement of its documents is illegal.
+    pub lifecycle: Option<String>,
     /// `sections.require`, as this kind declares it. [`Shape::required_sections`]
     /// is the inherited set.
     /// `identifier.scheme`, the name of the scheme a document of this kind is
@@ -352,6 +402,22 @@ impl Shape {
                     });
                 }
             }
+            if let Some(lifecycle) = regimes
+                .get("lifecycle")
+                .and_then(|node| node.value.as_map())
+            {
+                for entry in lifecycle {
+                    let Some(map) = entry.value.value.as_map() else {
+                        continue;
+                    };
+                    shape.lifecycle.push(LifecycleRegime {
+                        name: entry.key.value.clone(),
+                        initial: scalar(map, "initial").unwrap_or_default(),
+                        transitions: transitions(map),
+                        span: entry.key.span,
+                    });
+                }
+            }
         }
 
         if errors.is_empty() {
@@ -392,6 +458,20 @@ impl Shape {
         self.identifier_schemes
             .iter()
             .find(|scheme| scheme.name == name)
+    }
+
+    /// The lifecycle regime a kind is held to, through the chain that binds
+    /// it.
+    ///
+    /// A kind that binds none, and whose ancestors bind none, answers to no
+    /// transition rule. That is an absence rather than a machine that admits
+    /// everything, which is the same reading [`Shape::voice_of`] takes.
+    pub fn lifecycle_of(&self, kind: &str) -> Option<&LifecycleRegime> {
+        let name = self
+            .ancestry(kind)
+            .iter()
+            .find_map(|step| step.lifecycle.clone())?;
+        self.lifecycle.iter().find(|regime| regime.name == name)
     }
 
     /// The language regime a kind is held to, on the same terms.
@@ -589,6 +669,7 @@ fn read_kind(name: &str, value: &Value, span: Span) -> Result<Kind, DeclarationE
             .unwrap_or_default(),
         voice: scalar(map, "voice"),
         language: scalar(map, "language"),
+        lifecycle: scalar(map, "lifecycle"),
         identifier_scheme: map
             .get("identifier")
             .and_then(|node| node.value.as_map())
@@ -601,6 +682,34 @@ fn read_kind(name: &str, value: &Value, span: Span) -> Result<Kind, DeclarationE
         expectations: read_expectations(map),
         span,
     })
+}
+
+/// The `transitions` map of one regime, as declared.
+///
+/// A member whose value is not a list of scalars is dropped rather than
+/// guessed at. The meta-schema owns the shape of a declaration, and a state
+/// invented here would be an edge no source wrote.
+fn transitions(regime: &Mapping) -> Vec<(String, Vec<String>)> {
+    let Some(map) = regime
+        .get("transitions")
+        .and_then(|node| node.value.as_map())
+    else {
+        return Vec::new();
+    };
+    map.iter()
+        .map(|entry| {
+            let targets = entry
+                .value
+                .value
+                .as_seq()
+                .unwrap_or_default()
+                .iter()
+                .filter_map(|item| item.value.as_scalar())
+                .map(|scalar| scalar.text.clone())
+                .collect();
+            (entry.key.value.clone(), targets)
+        })
+        .collect()
 }
 
 fn read_expectations(kind: &Mapping) -> Vec<Expectation> {
