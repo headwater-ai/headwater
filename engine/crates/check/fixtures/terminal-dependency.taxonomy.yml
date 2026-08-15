@@ -1,0 +1,109 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the terminal-dependency tree is checked against. It is the
+# smallest shape the question needs, and every declaration here is one the rule
+# reads.
+#
+# `core.requires` is where `lifecycle_sensitive` is written, on a relation
+# *family*, because the meta-schema puts it nowhere else. `succession` carries
+# the flag and `association` does not, so `mentions` reaches no instance of this
+# rule and a corpus that only mentioned a retired document is silent.
+#
+# Two succession relations, and the difference between them is the whole of the
+# exemption. `supersedes` declares `on_target: {set_state: superseded}`, so an
+# edge of it is what put its target in that state. `revises` declares none, so
+# an edge of it rests on whatever state some other history left behind. The
+# core requirement is satisfied by the first, which is why the second may
+# declare nothing and still be a sound taxonomy.
+#
+# Two regimes over one vocabulary, on the terms `admitted-state.taxonomy.yml`
+# states. `wide` names `discharged` and `narrow` does not, which is what makes
+# a receipt at `discharged` a terminal document and a record at `discharged` a
+# defect of that record.
+#
+# `stub` requires no state, so a document of it declares none. That is the
+# absence the rule keeps apart from a state it read as not terminal.
+
+facets:
+  status:
+    role: state
+    values:
+      - {value: draft,      role: initial}
+      - {value: current,    role: live}
+      - {value: superseded, role: terminal-retained}
+      - {value: deprecated, role: terminal-retained}
+      - {value: discharged, role: terminal-retained}
+  status_since:
+    role: state_entered
+  summary:
+    role: scent
+
+regimes:
+  lifecycle:
+    narrow:
+      initial: draft
+      transitions: {draft: [current, deprecated], current: [superseded, deprecated]}
+      retain_terminal: true
+    wide:
+      initial: draft
+      transitions: {draft: [current, deprecated], current: [superseded, deprecated, discharged]}
+      retain_terminal: true
+
+identifier_schemes:
+  note_id: {pattern: "NOTE-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+relations:
+  supersedes:
+    family: succession
+    from: [record, receipt]
+    to:   [record, receipt, stub]
+    inverse: superseded_by
+    on_target: {set_state: superseded}
+    created_by: author
+  revises:
+    family: succession
+    from: [record, receipt]
+    to:   [record, receipt, stub]
+    created_by: author
+  mentions:
+    family: association
+    from: [record, receipt]
+    to:   [record, receipt, stub]
+    created_by: author
+
+core:
+  requires:
+    - facet_role: state
+    - relation_family: succession
+      lifecycle_sensitive: true
+    - relation_family: association
+
+kinds:
+  record:
+    identifier: {scheme: note_id}
+    lifecycle: narrow
+    facets: {require: [status]}
+  receipt:
+    identifier: {scheme: note_id}
+    lifecycle: wide
+    facets: {require: [status]}
+  stub:
+    identifier: {scheme: note_id}
+
+shelves:
+  live:
+    path: terminal-dependency/live/**
+    homogeneous: true
+    kind: record
+  records:
+    path: terminal-dependency/records/**
+    homogeneous: true
+    kind: record
+  receipts:
+    path: terminal-dependency/receipts/**
+    homogeneous: true
+    kind: receipt
+  stubs:
+    path: terminal-dependency/stubs/**
+    homogeneous: true
+    kind: stub

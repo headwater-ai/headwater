@@ -870,7 +870,9 @@ fn front_matter(
     for name in required.iter().cloned() {
         let facet = sources.shape.facet(&name);
         let role = facet.and_then(|facet| facet.role.as_deref());
-        let values: &[String] = facet.map(|facet| facet.values.as_slice()).unwrap_or(&[]);
+        let values: Vec<String> = facet
+            .map(|facet| facet.admitted().into_iter().map(str::to_string).collect())
+            .unwrap_or_default();
         let declared_type = declared::facet_type(sources.resolved, &name);
 
         // The discriminator first. A heterogeneous shelf reads the kind out of
@@ -904,7 +906,7 @@ fn front_matter(
                 return Err(Refusal::FacetNotPermitted {
                     facet: name,
                     found: value.clone(),
-                    values: values.to_vec(),
+                    values: values.clone(),
                 });
             }
             fields.push(Field {

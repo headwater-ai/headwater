@@ -68,7 +68,7 @@
 use crate::finding::{at, Finding, Severity};
 use crate::instance::Outcome;
 use crate::scope::{DocumentCheck, DocumentView};
-use crate::shape::Shape;
+use crate::shape::{FacetValue, Shape};
 use headwater_yaml::Mapping;
 
 pub const RULE: &str = "lifecycle.state.not_admitted";
@@ -99,10 +99,41 @@ pub(crate) struct StateFacet {
     /// The name of the facet in the `state` role. A taxonomy that declares none
     /// generates no instance of either rule that reads this.
     pub(crate) name: Option<String>,
-    /// The values that facet admits, so a value outside them reads as
-    /// [`Stood::NotAState`] rather than as a state.
-    pub(crate) values: Vec<String>,
+    /// The values that facet admits, with the role the vocabulary gives each
+    /// one. A value outside them reads as [`Stood::NotAState`] rather than as a
+    /// state, and the role is what [`StateFacet::standing`] folds.
+    pub(crate) values: Vec<FacetValue>,
 }
+
+/// What spec 3 asks of a state, which is neither the value nor the machine.
+///
+/// [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#lifecycle):
+/// "a live document may not depend on a terminal one". The sentence needs the
+/// five values of this repository's vocabulary folded into two answers, and
+/// the fold is a reading of the `role` beside each value rather than a list of
+/// state names in this engine. A taxonomy that renames every state keeps the
+/// roles, and this reading moves with it — which is spec 2's worked overlay
+/// holding at the check layer.
+///
+/// Three arms, and the third is the one that keeps the rule honest. `draft`
+/// carries the role `initial`: a document being argued over is not live, so
+/// nothing it points at is spec 3's finding, and it is not terminal either.
+/// A role this engine does not know lands here too, and deciding nothing about
+/// it is the same posture the rest of the check layer takes toward a value the
+/// meta-schema owns.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Standing {
+    /// `role: live`. A reader may rely on this document.
+    Live,
+    /// A `terminal-` role. The document is kept as a record and nothing new
+    /// may rest on it.
+    Terminal,
+    /// Neither, including a state whose value declares no role at all.
+    Neither,
+}
+
+/// The role that names a state a reader may rely on.
+const LIVE: &str = "live";
 
 impl StateFacet {
     pub(crate) fn of(shape: &Shape) -> Self {
@@ -110,6 +141,26 @@ impl StateFacet {
         StateFacet {
             name: facet.map(|facet| facet.name.clone()),
             values: facet.map(|facet| facet.values.clone()).unwrap_or_default(),
+        }
+    }
+
+    /// What one state is, in the two terms spec 3 states its rule in.
+    ///
+    /// The one reader of the role, so that no rule holds a second list of
+    /// which states end a lifecycle. `terminal` is [`headwater_resolve::core::role_is_terminal`],
+    /// which is the same predicate `lifecycle soundness` asks of a declaration,
+    /// so a taxonomy cannot be sound under one reading and checked under
+    /// another.
+    pub(crate) fn standing(&self, state: &str) -> Standing {
+        match self
+            .values
+            .iter()
+            .find(|held| held.value == state)
+            .and_then(|held| held.role.as_deref())
+        {
+            Some(role) if headwater_resolve::core::role_is_terminal(role) => Standing::Terminal,
+            Some(LIVE) => Standing::Live,
+            _ => Standing::Neither,
         }
     }
 
@@ -126,7 +177,7 @@ impl StateFacet {
         let Some(scalar) = entry.value.value.as_scalar() else {
             return Stood::Undeclared;
         };
-        match self.values.iter().any(|value| value == &scalar.text) {
+        match self.values.iter().any(|held| held.value == scalar.text) {
             true => Stood::At(&scalar.text),
             false => Stood::NotAState(&scalar.text),
         }
@@ -248,7 +299,12 @@ mod tests {
             "facets:\n",
             "  status:\n",
             "    role: state\n",
-            "    values: [draft, current, superseded, deprecated, discharged]\n",
+            "    values:\n",
+            "      - {value: draft, role: initial}\n",
+            "      - {value: current, role: live}\n",
+            "      - {value: superseded, role: terminal-retained}\n",
+            "      - {value: deprecated, role: terminal-retained}\n",
+            "      - {value: discharged, role: terminal-retained}\n",
             "regimes:\n",
             "  lifecycle:\n",
             "    narrow:\n",
@@ -310,6 +366,39 @@ mod tests {
         assert!(check.instantiates("decision"));
         assert!(check.instantiates("obligation_record"));
         assert!(!check.instantiates("note"));
+    }
+
+    /// The fold spec 3's rule needs, and the arm that is neither.
+    #[test]
+    fn a_role_says_whether_a_state_is_live_or_terminal_and_a_draft_is_neither() {
+        let facet = StateFacet::of(&shape());
+        assert_eq!(facet.standing("current"), Standing::Live);
+        assert_eq!(facet.standing("superseded"), Standing::Terminal);
+        assert_eq!(facet.standing("deprecated"), Standing::Terminal);
+        assert_eq!(facet.standing("discharged"), Standing::Terminal);
+        assert_eq!(facet.standing("draft"), Standing::Neither);
+        // A value the facet does not admit has no role, and a value with no
+        // role decides nothing either.
+        assert_eq!(facet.standing("retired"), Standing::Neither);
+    }
+
+    /// A taxonomy may rename every state, and the roles are what survives. This
+    /// is spec 2's worked overlay, read at the check layer.
+    #[test]
+    fn a_renamed_vocabulary_that_keeps_its_roles_reads_the_same() {
+        let source = load(concat!(
+            "facets:\n",
+            "  phase:\n",
+            "    role: state\n",
+            "    values:\n",
+            "      - {value: opened, role: initial}\n",
+            "      - {value: ratified, role: live}\n",
+            "      - {value: withdrawn, role: terminal-retained}\n",
+        ));
+        let facet = StateFacet::of(&Shape::read(&source).expect("a shape"));
+        assert_eq!(facet.standing("ratified"), Standing::Live);
+        assert_eq!(facet.standing("withdrawn"), Standing::Terminal);
+        assert_eq!(facet.standing("current"), Standing::Neither);
     }
 
     /// The three readings of a document's state, kept apart.

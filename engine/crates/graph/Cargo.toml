@@ -17,9 +17,12 @@ headwater-doc = { path = "../doc" }
 # reports at the line that declared it.
 headwater-yaml = { path = "../yaml" }
 
-[dev-dependencies]
-# The graph of this repository needs this repository's taxonomy resolved. The
-# build itself takes an already-resolved one.
+# `core.requires` is where `lifecycle_sensitive` is declared, and this crate
+# reads the flag onto the relations of the family a requirement names. The
+# resolver owns the meaning of a core requirement, so the join is made by
+# calling its reader rather than by parsing the block a second time here. The
+# build still takes an already-resolved taxonomy: this is a dependency on what
+# a declaration means and never on the act of resolving one.
 headwater-resolve = { path = "../resolve" }
 
 [lints]

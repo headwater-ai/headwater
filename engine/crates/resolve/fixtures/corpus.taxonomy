@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 3.0.0
+version: 3.1.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -759,6 +759,12 @@ obligations:
     class: cohesion
     prevents: content.inconsistent
     severity: medium
+  OB-LIFE-3:
+    statement: "A live document does not depend on a terminal one through a relation whose family this taxonomy declares lifecycle-sensitive"
+    rationale: "A retired document is kept so that the record of what it said survives, not so that new work can rest on it. A live document that leans on one states a claim the corpus has withdrawn, and the reader who follows the link has no way to tell a citation of the record from a reliance on it. The relation whose declaration writes a state onto its target is exempt, because that edge is what put the target where it stands"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
   OB-REG-1:
     statement: "Every obligation this taxonomy declares carries exactly one disposition"
     rationale: "An obligation that no control discharges and that states neither a gap nor an acceptance reads from outside like one that is met, and that silence is how an assurance model decays into a list of good intentions"
@@ -979,6 +985,16 @@ controls:
     promotion:
       final_posture:
         reasoning: "The same reading CT-LIFE-1 takes, and the input is narrower still. This rule reads one declared value against one declared state set, both of which the corpus itself resolved, so an advisory period would measure a false-positive rate that the construction fixes at zero. What it cannot decide is which admitted state the document belongs in, and that is why the finding carries no patch rather than why it should not block"
+  CT-LIFE-3:
+    mechanism: "check:lifecycle.dependency.on_terminal"
+    discharges:
+      - OB-LIFE-3
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      permanently_advisory:
+        reasoning: "The two rules above it read declared values and refuse what the declaration refuses, and this one reads the same values and cannot say what to do about them. A live document resting on a retired one is repaired by pointing at the successor, by retiring the citing document, or by a judgment that the citation stands as a citation of the record. There is no fourth answer and the engine cannot pick among the three, so a posture that stopped a merge would stop it on a question only an author can settle"
   CT-LANG-1:
     mechanism: "check:language.controlled.not_met"
     discharges:

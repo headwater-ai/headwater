@@ -72,6 +72,12 @@
       ]
     },
     {
+      "rule": "lifecycle.dependency.on_terminal",
+      "scope": "edge",
+      "version": 1,
+      "obligations": []
+    },
+    {
       "rule": "relation.participation.overdue",
       "scope": "neighbourhood",
       "version": 1,

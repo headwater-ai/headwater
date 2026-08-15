@@ -29,11 +29,14 @@
 //! which is the distinction the two lists have always drawn: the origin is what
 //! a rule reads a declaration from, and the grain is what one instance covers.
 //!
-//! Two of the Graph-origin rules are **document-grained**, which the other
-//! three are not. [`declaration`] and [`identity`] route the phase-A defects
-//! that stop an edge from existing: an edge-scoped instance exists per edge, so
-//! no edge-scoped rule reaches a block whose entries produced none. The origin
-//! is what a rule reads and the grain is what one instance covers, and the two
+//! The eight Graph-origin rules span all four grains. [`target`],
+//! [`reciprocity`], [`endpoint`] and [`dependency`] are edge-grained,
+//! [`participation`] is neighbourhood-grained, [`duplicate`] is corpus-grained,
+//! and [`declaration`] and [`identity`] are **document-grained**. The last two
+//! are the ones worth stating: they route the phase-A defects that stop an edge
+//! from existing, and an edge-scoped instance exists per edge, so no
+//! edge-scoped rule reaches a block whose entries produced none. The origin is
+//! what a rule reads and the grain is what one instance covers, and the two
 //! were never one statement.
 //!
 //! The four Document-origin rules are generated from a declaration in the same
@@ -133,6 +136,7 @@ pub mod change;
 pub mod context;
 pub mod coverage;
 pub mod declaration;
+pub mod dependency;
 pub mod duplicate;
 pub mod endpoint;
 pub mod facet_required;
@@ -194,7 +198,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 23] = [
+pub const RULES: [&str; 24] = [
     facet_required::RULE,
     facet_value::RULE,
     identifier::RULE,
@@ -202,6 +206,7 @@ pub const RULES: [&str; 23] = [
     target::RULE,
     reciprocity::RULE,
     endpoint::RULE,
+    dependency::RULE,
     participation::RULE,
     declaration::RULE,
     identity::RULE,
@@ -377,6 +382,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::edge_exports::<endpoint::Endpoints<'_>>(),
         ),
         (
+            dependency::RULE,
+            scope::edge_scope::<dependency::Dependency<'_>>(),
+            scope::edge_version::<dependency::Dependency<'_>>(),
+            scope::edge_exports::<dependency::Dependency<'_>>(),
+        ),
+        (
             participation::RULE,
             scope::neighbourhood_scope::<participation::Participation<'_>>(),
             scope::neighbourhood_version::<participation::Participation<'_>>(),
@@ -530,6 +541,11 @@ pub fn run(
     let targets = target::Targets::over(declared.relations);
     let reciprocity = reciprocity::Reciprocity::over(declared.relations);
     let endpoints = endpoint::Endpoints::over(declared.relations, declared.shape);
+    // A live document resting on a terminal one, over the relations whose
+    // family a core requirement declares `lifecycle_sensitive`. Edge-scoped
+    // because the unit is the pair: one endpoint decides nothing here. See
+    // [`dependency`].
+    let dependency = dependency::Dependency::over(declared.relations, declared.shape);
     let participation = participation::Participation::over(declared.shape, declared.relations);
     let declarations = declaration::Unusable::over(declared.relations, declared.shape);
     let identities = identity::Identity::over(
@@ -568,9 +584,28 @@ pub fn run(
         cache,
     ));
     instances.extend(scope::over_documents(&placement, census, graph, ctx, cache));
-    instances.extend(scope::over_edges(&targets, graph, &digests, ctx, cache));
-    instances.extend(scope::over_edges(&reciprocity, graph, &digests, ctx, cache));
-    instances.extend(scope::over_edges(&endpoints, graph, &digests, ctx, cache));
+    instances.extend(scope::over_edges(
+        &targets, census, graph, &digests, ctx, cache,
+    ));
+    instances.extend(scope::over_edges(
+        &reciprocity,
+        census,
+        graph,
+        &digests,
+        ctx,
+        cache,
+    ));
+    instances.extend(scope::over_edges(
+        &endpoints, census, graph, &digests, ctx, cache,
+    ));
+    instances.extend(scope::over_edges(
+        &dependency,
+        census,
+        graph,
+        &digests,
+        ctx,
+        cache,
+    ));
     instances.extend(scope::over_neighbourhoods(
         &participation,
         census,

@@ -34,6 +34,19 @@
 //! so the declared value is the whole input to it. Resolution never consults
 //! it, because a half that nobody wrote is a missing edge rather than a
 //! mis-resolved one.
+//!
+//! **`lifecycle_sensitive`** is on the same terms, and it is the one member
+//! here that no `relations:` block writes. The word is declared on a *family*,
+//! in `core.requires`, and [`headwater_resolve::core`] is the reader of that
+//! block. This module calls it rather than reading the block a second time:
+//! the family a relation names and the families a core requirement marks are
+//! one join, and two crates that each did it their own way would answer one
+//! question twice. [Spec 3](../../../../docs/spec/03-authoring-and-lifecycle.md#lifecycle)
+//! is the rule that reads it.
+//!
+//! **`sets_target_state`** is `on_target.set_state`, the one declaration in the
+//! language that makes a relation act on the state of its target. A rule about
+//! the state a target stands in has to know which relation *put* it there.
 
 use headwater_census::shelves::DeclarationError;
 use headwater_yaml::{Mapping, Span, Value};
@@ -61,6 +74,21 @@ pub struct Relation {
     /// meta-schema owns the value set, and a family this engine does not know
     /// derives no reading order rather than an invented one.
     pub family: Option<String>,
+    /// Whether the lifecycle of the two ends is part of what this relation
+    /// means, from the `lifecycle_sensitive` flag a `core.requires` entry
+    /// writes on this relation's family.
+    ///
+    /// It is derived rather than declared here, because no relation may write
+    /// the word: the meta-schema puts `lifecycle_sensitive` on a core
+    /// requirement over a family and nowhere else. A relation that names no
+    /// family is never sensitive, because the requirement names families.
+    pub lifecycle_sensitive: bool,
+    /// The state an edge of this relation writes onto its target, from
+    /// `on_target.set_state`.
+    ///
+    /// It is the declaration that separates a target this relation *put* in a
+    /// state from one that some other history left there.
+    pub sets_target_state: Option<String>,
     /// `nuclearity`, and `nucleus` beside it: which end stands alone.
     pub nuclearity: Option<String>,
     pub nucleus: Option<String>,
@@ -188,12 +216,20 @@ impl Declarations {
         let mut errors = Vec::new();
         let mut declarations = Declarations::default();
 
+        let sensitive = lifecycle_sensitive_families(root);
+
         if let Some(relations) = root.get("relations") {
             match &relations.value {
                 Value::Map(map) => {
                     for entry in map {
                         match read_relation(&entry.key.value, &entry.value.value, entry.key.span) {
-                            Ok(relation) => declarations.relations.push(relation),
+                            Ok(mut relation) => {
+                                relation.lifecycle_sensitive = relation
+                                    .family
+                                    .as_deref()
+                                    .is_some_and(|family| sensitive.iter().any(|f| f == family));
+                                declarations.relations.push(relation);
+                            }
                             Err(error) => errors.push(error),
                         }
                     }
@@ -288,6 +324,16 @@ fn read_relation(name: &str, value: &Value, span: Span) -> Result<Relation, Decl
         from: sequence(map, "from").unwrap_or_default(),
         to,
         family: scalar("family"),
+        // Set by [`Declarations::read`], which is the one place the core
+        // requirements are in reach. A relation read on its own is not
+        // sensitive, because nothing it declares says so.
+        lifecycle_sensitive: false,
+        sets_target_state: map
+            .get("on_target")
+            .and_then(|value| value.value.as_map())
+            .and_then(|on_target| on_target.get("set_state"))
+            .and_then(|value| value.value.as_scalar())
+            .map(|scalar| scalar.text.clone()),
         nuclearity: scalar("nuclearity"),
         nucleus: scalar("nucleus"),
         created_by: scalar("created_by"),
@@ -307,6 +353,25 @@ fn read_relation(name: &str, value: &Value, span: Span) -> Result<Relation, Decl
         },
         span,
     })
+}
+
+/// The relation families that a core requirement marks `lifecycle_sensitive`.
+///
+/// [`headwater_resolve::core::read`] is the reader, so the flag is parsed once
+/// in the engine and the meaning of a `core.requires` entry is stated in one
+/// place. A requirement shape that reader does not know carries no family, so
+/// it marks nothing.
+fn lifecycle_sensitive_families(root: &Mapping) -> Vec<String> {
+    headwater_resolve::core::read(root)
+        .into_iter()
+        .filter_map(|requirement| match requirement.kind {
+            headwater_resolve::core::Kind::RelationFamily {
+                family,
+                lifecycle_sensitive: true,
+            } => Some(family),
+            _ => None,
+        })
+        .collect()
 }
 
 fn read_anchor(name: &str, value: &Value, span: Span) -> Result<AnchorKind, DeclarationError> {
@@ -411,6 +476,49 @@ anchors:
             invented.relations[0].reciprocal,
             Reciprocal::Unknown("mutual".into())
         );
+    }
+
+    /// The flag is on a family in `core.requires` and never on a relation, so
+    /// every relation of the named family carries it and no relation of
+    /// another family does. A taxonomy that states no such requirement marks
+    /// nothing, which is the arm that keeps the fixture trees of this engine
+    /// silent.
+    #[test]
+    fn a_core_requirement_marks_the_relations_of_the_family_it_names() {
+        let source = concat!(
+            "relations:\n",
+            "  supersedes: {family: succession, to: [d], on_target: {set_state: superseded}}\n",
+            "  refines:    {family: derivation, to: [d]}\n",
+            "core:\n",
+            "  requires:\n",
+            "    - relation_family: succession\n",
+            "      lifecycle_sensitive: true\n",
+        );
+        let marked = read(source).expect("the declarations read");
+        let flag = |declarations: &Declarations, name: &str| {
+            declarations
+                .named(name)
+                .expect("declared")
+                .relation
+                .lifecycle_sensitive
+        };
+        assert!(flag(&marked, "supersedes"));
+        assert!(!flag(&marked, "refines"));
+        assert_eq!(
+            marked.relations[0].sets_target_state.as_deref(),
+            Some("superseded")
+        );
+        assert_eq!(marked.relations[1].sets_target_state, None);
+
+        // The same relations, with the requirement stating nothing about the
+        // lifecycle. Nothing is sensitive, and the inverse name reads the same
+        // flag as the name it inverts.
+        let quiet = read(&source.replace("      lifecycle_sensitive: true\n", "")).expect("reads");
+        assert!(!flag(&quiet, "supersedes"));
+
+        // And with no `core` block at all.
+        let none = read(SOURCE).expect("reads");
+        assert!(none.relations.iter().all(|r| !r.lifecycle_sensitive));
     }
 
     #[test]

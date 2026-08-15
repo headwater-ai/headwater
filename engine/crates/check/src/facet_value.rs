@@ -91,7 +91,7 @@ impl Values {
                             .filter(|facet| !forbidden.contains(&facet.name.as_str()))
                             .map(|facet| Enumerated {
                                 facet: facet.name.clone(),
-                                values: facet.values.clone(),
+                                values: facet.admitted().into_iter().map(str::to_string).collect(),
                             })
                             .collect(),
                     }

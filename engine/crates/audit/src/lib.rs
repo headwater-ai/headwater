@@ -1242,7 +1242,7 @@ fn dwell(classified: &[&Row], shape: &Shape, now: Date) -> Vec<DwellReading> {
         .values
         .iter()
         .map(|value| DwellReading {
-            state: value.clone(),
+            state: value.value.clone(),
             documents: 0,
             days: Vec::new(),
             undated: 0,
