@@ -142,10 +142,16 @@ fn read_by_instances(run: &Run) -> Vec<&str> {
 fn a_live_document_resting_on_a_terminal_one_is_reported() {
     let run = run();
     let message = about(&run, "NOTE-FIX-rests-on-retired").expect("the decisive finding");
-    assert!(message.contains("NOTE-FIX-retired"), "the target: {message}");
+    assert!(
+        message.contains("NOTE-FIX-retired"),
+        "the target: {message}"
+    );
     assert!(message.contains("`revises`"), "the relation: {message}");
     assert!(message.contains("`deprecated`"), "the state: {message}");
-    assert!(message.contains("`current`"), "the source's state: {message}");
+    assert!(
+        message.contains("`current`"),
+        "the source's state: {message}"
+    );
 
     let reported: Vec<&str> = refusals(&run).into_iter().map(|(path, _)| path).collect();
     assert!(
@@ -353,7 +359,10 @@ fn the_direction_comes_from_the_relation_and_never_from_the_file_that_wrote_it()
     // Source first, target second, whichever end held the pen.
     let source_at = message.find("NOTE-FIX-successor").expect("the source");
     let target_at = message.find("NOTE-FIX-half-written").expect("the target");
-    assert!(source_at < target_at, "the ends are the wrong way round: {message}");
+    assert!(
+        source_at < target_at,
+        "the ends are the wrong way round: {message}"
+    );
 
     let reported: Vec<&str> = refusals(&run).into_iter().map(|(path, _)| path).collect();
     assert!(

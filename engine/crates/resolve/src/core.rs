@@ -351,7 +351,10 @@ core:
     fn a_boolean_is_read_as_the_core_schema_resolves_it_and_never_as_its_text() {
         let base = tree(BASE);
         for spelling in ["true", "True", "TRUE"] {
-            let stated = BASE.replace("lifecycle_sensitive: true", &format!("lifecycle_sensitive: {spelling}"));
+            let stated = BASE.replace(
+                "lifecycle_sensitive: true",
+                &format!("lifecycle_sensitive: {spelling}"),
+            );
             let inert = tree(&stated.replace(
                 "  supersedes: {family: succession, on_target: {set_state: superseded}}",
                 "  supersedes: {family: succession}",

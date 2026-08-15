@@ -156,11 +156,7 @@ impl EdgeCheck for Dependency<'_> {
     /// `state` role. A taxonomy with no state facet has no live and no terminal
     /// document, and an instance over one could only ever pass.
     fn instantiates(&self, relation: &str) -> bool {
-        self.facet.name.is_some()
-            && self
-                .sensitive
-                .iter()
-                .any(|known| known.name == relation)
+        self.facet.name.is_some() && self.sensitive.iter().any(|known| known.name == relation)
     }
 
     fn evaluate(&self, view: &EdgeView<'_>) -> Outcome {
