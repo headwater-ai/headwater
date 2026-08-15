@@ -44,7 +44,9 @@ pub const LOSS: &[Loss] = &[
         field: "the read set",
         reason: "a digest for each of the inputs is the artifact a gate reads, and a summary a \
                  person reads cannot hold one line per document",
-        carrier: Carrier::Elsewhere("the count alone, and `--read-set` or `--format json` for the rest"),
+        carrier: Carrier::Elsewhere(
+            "the count alone, and `--read-set` or `--format json` for the rest",
+        ),
     },
     Loss {
         field: "the check editions and scopes",

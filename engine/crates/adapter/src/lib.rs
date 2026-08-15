@@ -488,7 +488,9 @@ struct Objects<'a> {
 fn objects<'a>(format: Format, root: &'a Spanned<Value>) -> Option<Objects<'a>> {
     let empty: &'a [Spanned<Value>] = &[];
     let seq = |value: Option<&'a Spanned<Value>>| {
-        value.and_then(|found| found.value.as_seq()).unwrap_or(empty)
+        value
+            .and_then(|found| found.value.as_seq())
+            .unwrap_or(empty)
     };
     match format {
         Format::Sarif => {
@@ -550,9 +552,12 @@ fn against(object: &Spanned<Value>, places: &[Place], written: bool) -> Vec<Stri
         .iter()
         .filter_map(|place| match written {
             true => holds(object, place).err(),
-            false => member(object, place.at)
-                .is_some()
-                .then(|| format!("`{}` is there and this run carries no value for it", place.path())),
+            false => member(object, place.at).is_some().then(|| {
+                format!(
+                    "`{}` is there and this run carries no value for it",
+                    place.path()
+                )
+            }),
         })
         .collect()
 }
@@ -666,9 +671,7 @@ pub fn census_with(run: &Run, format: Format, artifact: &str, loss: &[Loss]) -> 
             (Carrier::Run { .. } | Carrier::PerFinding { .. }, None) => {
                 vec![unread.to_string()]
             }
-            (Carrier::Run { places, when }, Some(read)) => {
-                against(read.run, places, when(run))
-            }
+            (Carrier::Run { places, when }, Some(read)) => against(read.run, places, when(run)),
             (Carrier::PerFinding { places, when }, Some(read)) => {
                 per_finding(read, places, when, &all, run)
             }
