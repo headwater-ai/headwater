@@ -51,6 +51,8 @@ rules, and for each the scope that binds it
     edge scope, one relation instance and both endpoints
   relation.endpoint.not_permitted
     edge scope, one relation instance and both endpoints
+  lifecycle.dependency.on_terminal
+    edge scope, one relation instance and both endpoints
   relation.participation.overdue
     neighbourhood scope, one document and the documents one relation away from it, and the injected clock
   relation.declaration.unusable
@@ -110,6 +112,7 @@ register
       1 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 2 suppressed
   relation.endpoint.not_permitted reaches OB-FIX-5, OB-FIX-17, and a finding names one obligation, so it names none
+  lifecycle.dependency.on_terminal reaches no obligation, so it names none
   identifier.claimed_twice reaches no obligation, so it names none
   warrant.promoted reaches no obligation, so it names none
   lifecycle.transition.not_permitted reaches no obligation, so it names none
