@@ -21,6 +21,10 @@
 # The second one is why the `terminal` member left this meta-schema. A list
 # beside the machine suppressed the refusal below and reached no other reader,
 # so it bought a state terminality under one rule and not under the other.
+#
+# The arm that survives is the refusal, and all three lines below are recorded.
+# [HW-DR-0026](../../../../../../docs/decisions/0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md)
+# is the ruling, and `terminality-by-rename/` is what an adopter writes instead.
 
 taxonomy: acme/fixture
 version: 1.0.0
