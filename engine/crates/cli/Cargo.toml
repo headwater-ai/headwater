@@ -43,6 +43,11 @@ headwater-audit = { path = "../audit" }
 headwater-census = { path = "../census" }
 headwater-check = { path = "../check" }
 
+# `taxonomy diff`. The six dimensions of spec 2, and the crate runs no phase: it
+# takes two censuses, two runs, two plans and two graphs, and says where they
+# differ. Nothing else names it, so no phase can read a compatibility verdict.
+headwater-compat = { path = "../compat" }
+
 # `headwater conformance`. The rule set reader, the waiver reader and every
 # reading sit in the library, so the verb is a shell over them and a test reads
 # a repository without starting a process.

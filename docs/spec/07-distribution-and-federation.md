@@ -160,7 +160,7 @@ Satisfaction is evaluated on the **resolved** taxonomy. The engine does not forb
 ## Upgrading
 
 ```
-headwater taxonomy diff --to 4.0.0
+headwater taxonomy diff <artifact> --to 4.0.0
 ```
 
 reports, against the *local* corpus rather than in the abstract:
@@ -172,9 +172,17 @@ reports, against the *local* corpus rather than in the abstract:
 - which local documents violate the new schema.
 - which migration steps apply, split into mechanical and judgment-bearing.
 
+**The verb takes a directory, and `--to` states which version that directory is expected to be.** This engine opens no socket, so the artifact is one the caller already fetched, the way [`taxonomy vendor`](#waivers) takes one. The flag is therefore the assertion rather than the address. A directory that declares another version is a wrong directory rather than a wrong number. The flag accepts a version or a range of them, through the one range reader the engine has.
+
+**The candidate resolves under the local overlays, and every phase then runs twice over one tree.** That is what makes a difference attributable to the schema. Two publishes of one package differ in a version string, in a digest and in a file timestamp. A report that read any of those would fire on every release, and would then carry no information at all. No dimension reads a published byte.
+
+**Two values are held constant across the two runs, because neither is a consequence of a taxonomy.** The first is the identity of the run. The corpus descriptor states the package, the version and the taxonomy digest that wrote it, and a probe result states the digest. A comparison that let those move would report the version number as a change that the version number caused. The second is the path the taxonomy was read from, which reaches a finding about the taxonomy. That path is the artifact directory on one side and the lock on the other. Everything a taxonomy decides about a projection still moves: the exclusions, the entry points, the exports and every declared output.
+
+**A candidate that does not resolve reports five dimensions as unmeasured, and never as preserved.** A refusal that names an overlay address is the `addressability` reading. There is no census, no run, no plan and no graph under a taxonomy that did not resolve. To report the other five as compatible would be the strongest available claim made out of a failure. The run then exits non-zero, because it could not measure rather than because it measured a break. A measured break exits zero, because an upgrade that needs a migration is the ordinary case ([below](#between-majors-the-corpus-is-legitimately-between-valid-states)).
+
 The publisher measures compatibility against its own reference corpora and reference overlays, and attaches the result to the release as a claim. The consumer's run **verifies that claim against documents that the publisher never saw**. A claim that holds upstream but fails locally is the interesting case, not an anomaly. It means that the local corpus exercises something that the reference corpora do not.
 
-`headwater migrate --to 4.0.0` applies the mechanical steps, and those include the overlay rewrite. Addresses that the payload renamed are rewritten in place, and each `add` collision with the new base becomes a judgment task ([spec 2](02-taxonomy-model.md#customization-by-composition)). It emits the rest as a task list with the affected documents attached, ready for a human or a coding agent. The distinction is the whole point. To move files is mechanical. To rewrite a document to fit the section contract of a new kind is not. To pretend that the second is automatable produces plausible, wrong documents at scale.
+`headwater taxonomy migrate --to 4.0.0` applies the mechanical steps, and those include the overlay rewrite. It waits on the payload that carries the rename map, which no publisher writes yet and no document gives a form ([spec 6](06-engine-architecture.md#the-cli-grammar)). Addresses that the payload renamed are rewritten in place, and each `add` collision with the new base becomes a judgment task ([spec 2](02-taxonomy-model.md#customization-by-composition)). It emits the rest as a task list with the affected documents attached, ready for a human or a coding agent. The distinction is the whole point. To move files is mechanical. To rewrite a document to fit the section contract of a new kind is not. To pretend that the second is automatable produces plausible, wrong documents at scale.
 
 ### Between majors, the corpus is legitimately between valid states
 

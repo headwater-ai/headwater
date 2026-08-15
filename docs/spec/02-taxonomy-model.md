@@ -831,7 +831,11 @@ So the engine evaluates compatibility along six dimensions. Five of them measure
 | `identifier` | Does every identifier still resolve to the same document? |
 | `addressability` | Does every path that an overlay can address still exist and mean the same thing? |
 
-`headwater taxonomy diff --to <version>` runs all six and reports per dimension. The required version bump is a *consequence* of the result: any dimension broken forces a major version.
+`headwater taxonomy diff <artifact>` runs all six and reports per dimension. The required version bump is a *consequence* of the result: any dimension broken forces a major version. A run in which a dimension did not happen decides nothing about the version. It says so, rather than report that no dimension is broken.
+
+**Two of the six ask a narrower question than the table's wording, and the engine measures the narrower one.** `projection` asks for identical output. Three fields of two projections carry the package, the version and the taxonomy digest of the run that wrote them. Those three are inputs of a run rather than consequences of a taxonomy. So both plans are built under one identity, and the question becomes whether the *taxonomy* moved a projection. `consequence` asks about every check. Two rules of the check layer reach a verdict over the resolved taxonomy and create no instance ([spec 12](12-check-layer.md#the-five-origins-of-a-check)). A comparison of instances alone is therefore silent about a control that names a mechanism the engine cannot run. So the findings of every rule that creates no instance are compared beside the instances.
+
+**`instance_validity` is the document-grained part of `consequence`, and never a second list of rules.** An instance whose grain is one document reads nothing else, so its verdict states whether that document validates. Every wider grain states something about the corpus between documents. The two dimensions therefore never disagree, because a broken `instance_validity` breaks `consequence` too. The split tells a reader whether the change reached documents or only the graph between them.
 
 **`addressability` is the one dimension whose subject is the schema.** The other five ask what happened to a corpus. This one asks what happened to the surface that an overlay addresses. A rename can leave every document classified, every check unchanged, and every projection identical. It still breaks every consumer overlay that addressed the old path, and all five corpus dimensions report compatible.
 

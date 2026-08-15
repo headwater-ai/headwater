@@ -550,6 +550,17 @@ fn split_operator(term: &str) -> (&str, &str) {
     ("=", term)
 }
 
+/// A version as three numbers.
+///
+/// Public because a caller that needs the major alone would otherwise write a
+/// second reading of a version string, and this crate exists partly so that the
+/// engine has one. [`satisfies`] is built on it, so a version this answers for
+/// is a version a range can be asked about, and a version it refuses is refused
+/// everywhere.
+pub fn parts(version: &str) -> Result<(u64, u64, u64), String> {
+    parse(version)
+}
+
 fn parse(version: &str) -> Result<(u64, u64, u64), String> {
     let mut parts = [0u64; 3];
     let trimmed = version.trim();

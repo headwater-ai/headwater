@@ -101,6 +101,7 @@ headwater taxonomy resolve   [--check] [--root <path>]
 headwater taxonomy audit     [--now <date>] [--root <path>]
 headwater taxonomy publish   [--package <name>] --out <dir> [--root <path>]
 headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
+headwater taxonomy diff      <dir> [--to <version>] [--now <date>] [--root <path>]
 
   check              run the pipeline over the corpus, against the taxonomy in
                      the committed lock.
@@ -231,6 +232,13 @@ headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
                      bytes, and one digest over that list. It prints the digest,
                      which is the number the release notes state and a consumer
                      pins.
+  taxonomy diff      measure what a published artifact would do to this corpus,
+                     across the six compatibility dimensions of spec 2. It
+                     resolves the artifact under this repository's own overlays
+                     and runs every phase twice over one tree, so a difference
+                     is attributable to the schema rather than to two publishes
+                     of one package differing in trivia. It writes nothing, and
+                     it fails only when it could not measure.
   taxonomy vendor    check an artifact that somebody already fetched against the
                      digest this repository pinned, and install it under
                      `packages/`. It refuses an artifact that is not the pinned
@@ -380,6 +388,13 @@ headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
                  directory must be empty or absent, because a published artifact
                  is every file under its root and a stray one would be a member
                  the publisher never shipped.
+  --to <version> `taxonomy diff` only: the version the artifact is expected to
+                 be, written as a version or as a range: `4.0.0`, or `>=4 <5`
+                 with the quoting your shell needs.
+                 This engine fetches nothing, so the directory decides which
+                 artifact is compared and this flag holds it to what the caller
+                 meant. It is read by the one range reader the engine has, which
+                 is what reads `requires_engine`.
   --expect <d>   `taxonomy vendor` only: the digest to check the artifact
                  against. It defaults to `taxonomy.digest` in
                  `.headwater/taxonomy.yml`, and the verb refuses when neither is
@@ -407,6 +422,7 @@ fn main() -> ExitCode {
     let mut package: Option<String> = None;
     let mut out: Option<PathBuf> = None;
     let mut expect: Option<String> = None;
+    let mut to: Option<String> = None;
     let mut profile: Option<String> = None;
     let mut format: Option<String> = None;
     let mut generated_at: Option<String> = None;
@@ -514,6 +530,10 @@ fn main() -> ExitCode {
             "--expect" => match arguments.next() {
                 Some(text) => expect = Some(text),
                 None => return fail("--expect names a digest and none followed it"),
+            },
+            "--to" => match arguments.next() {
+                Some(text) => to = Some(text),
+                None => return fail("--to names a version and none followed it"),
             },
             "--until" => match arguments.next().as_deref().map(Date::parse) {
                 Some(Some(date)) => until = Some(date),
@@ -662,26 +682,31 @@ fn main() -> ExitCode {
             vendor(&root, Path::new(fetched), expect.as_deref())
         }
         ["taxonomy"] => fail(
-            "`taxonomy` takes a second word: `validate`, `resolve`, `audit`, `publish` or \
-             `vendor`",
+            "`taxonomy` takes a second word: `validate`, `resolve`, `audit`, `publish`, \
+             `vendor` or `diff`",
         ),
-        // `diff` and `migrate` are named in spec 6's grammar and neither one
-        // runs. The grammar holds a declared name to running or to a named
-        // wait, so each one says what it waits on rather than reading as a
-        // verb this binary forgot.
-        ["taxonomy", "diff", ..] => fail(
-            "`taxonomy diff` waits on a second taxonomy to compare against. A release record \
-             names every file of a published artifact and its digest, and nothing yet reads two \
-             of them as one comparison. See `docs/spec/07-distribution-and-federation.md`",
+        ["taxonomy", "diff"] => fail(
+            "`taxonomy diff` takes the path of a published artifact somebody already fetched. \
+             This engine opens no socket, so it compares against a directory it is handed, and \
+             `--to <version>` states which version that directory is expected to be",
         ),
+        ["taxonomy", "diff", fetched] => diff(&root, Path::new(fetched), to.as_deref(), now),
+        // `migrate` is named in spec 6's grammar and it does not run. The
+        // grammar holds a declared name to running or to a named wait, so it
+        // says what it waits on rather than reading as a verb this binary
+        // forgot.
         ["taxonomy", "migrate", ..] => fail(
-            "`taxonomy migrate` waits on `taxonomy diff`. A migration payload names the version \
-             it came from, and no run can name one without a measured comparison against it. \
+            "`taxonomy migrate` waits on a published migration payload. Spec 2 makes the \
+             mechanical half of a migration the rename map that a major version ships, and \
+             `taxonomy publish` writes no `migrations/` because no document states that \
+             payload's form. Without the map there are no mechanical steps to apply. \
+             `headwater taxonomy diff <artifact>` measures the upgrade, and `headwater infer` \
+             writes a payload against no prior version. \
              See `docs/spec/07-distribution-and-federation.md`",
         ),
         ["taxonomy", other, ..] => fail(&format!(
             "`taxonomy {other}` is not a verb this binary carries yet. \
-             It carries `validate`, `resolve`, `audit`, `publish` and `vendor`"
+             It carries `validate`, `resolve`, `audit`, `publish`, `vendor` and `diff`"
         )),
         [] => fail("no verb. Try `headwater check`"),
         // The list below is hand-maintained beside the arms above, and nothing
@@ -839,9 +864,9 @@ fn audit(root: &Path, now: Option<Date>) -> ExitCode {
 
     let audit = headwater_audit::take(
         headwater_audit::Subject {
-            package: loaded.lock.package.clone(),
-            version: loaded.lock.version.clone(),
-            lock: loaded.lock.digest.clone(),
+            package: loaded.bound.package.clone(),
+            version: loaded.bound.version.clone(),
+            lock: loaded.bound.digest.clone(),
             now: context.now(),
         },
         &loaded.census,
@@ -851,7 +876,7 @@ fn audit(root: &Path, now: Option<Date>) -> ExitCode {
         &loaded.relations,
         // The resolved taxonomy, for the one member of a shelf that no typed
         // reader carries. See `headwater_scaffold::declared`.
-        &loaded.lock.taxonomy,
+        &loaded.bound.taxonomy,
     );
     print!("{}", audit.render());
     ExitCode::SUCCESS
@@ -904,9 +929,20 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>) -> ExitCode 
         }
     };
 
+    // `lock.current` asks whether the committed lock matches the sources on
+    // disk, so this verb reads the whole value rather than the taxonomy inside
+    // it. Nothing reaches here with a candidate, and the arm says so rather
+    // than assuming it.
+    let Some(lock) = &loaded.bound.lock else {
+        return fail(
+            "`headwater conformance` reads `.headwater/taxonomy.lock`, and this run holds a \
+             taxonomy that came out of a published artifact instead",
+        );
+    };
+
     // The projection plan, built the one way `generate` builds one. A second
     // builder here would be a second answer to the question that rule asks.
-    let projections = match headwater_generate::Projections::read(&loaded.lock.taxonomy) {
+    let projections = match headwater_generate::Projections::read(&loaded.bound.taxonomy) {
         Ok(projections) => projections,
         Err(errors) => return refused("the projections", &errors),
     };
@@ -925,7 +961,7 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>) -> ExitCode 
         &headwater_conformance::Subject {
             root,
             consumer: &loaded.consumer,
-            lock: &loaded.lock,
+            lock,
             census: &loaded.census,
             plan: &plan,
             now: context.now(),
@@ -1055,6 +1091,315 @@ fn vendor(root: &Path, fetched: &Path, expect: Option<&str>) -> ExitCode {
     ExitCode::SUCCESS
 }
 
+/// `headwater taxonomy diff`: measured compatibility between two versions, over
+/// this corpus.
+///
+/// **It takes a directory, for the reason [`vendor`] does.** Spec 7 writes the
+/// invocation as `taxonomy diff --to 4.0.0`, and no crate of this engine opens
+/// a socket, so the artifact is one the caller already fetched. `--to` is
+/// therefore the assertion rather than the address: the artifact says which
+/// version it is, and the flag holds it to what the caller expected. The range
+/// reader is [`headwater_resolve::release::satisfies`], which is the one piece
+/// of version arithmetic this engine has, so `--to 4.0.0` and `--to ">=4 <5"`
+/// are read by the same code that reads `requires_engine`.
+///
+/// **The candidate is resolved under this repository's own overlays**, which is
+/// what makes the report about this corpus rather than about the base. Spec 7:
+/// the consumer's run "verifies that claim against documents that the publisher
+/// never saw".
+///
+/// **The comparison runs each phase twice and compares nothing else.** Two
+/// publishes of an unchanged package differ in a timestamp, a path and a
+/// digest, and a report that fired on those would fire on every release. See
+/// [`headwater_compat`].
+fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> ExitCode {
+    // The clock, read once and before anything is walked, on the same terms
+    // `check` reads it: two windowed expectations evaluated a second apart
+    // would be a difference this verb attributed to the taxonomy.
+    let Some(ctx) = now.map(Context::at).or_else(Context::from_system_clock) else {
+        eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
+        return ExitCode::FAILURE;
+    };
+
+    // The artifact, held to its own release record before a declaration inside
+    // it is read. A directory somebody edited after it was published is not the
+    // version it says it is, and every dimension below would then measure
+    // against a taxonomy that no publisher shipped.
+    let record = match headwater_resolve::release::at(fetched) {
+        Ok(record) => record,
+        Err(error) => {
+            eprintln!(
+                "headwater: {} is not a published artifact this engine can read",
+                fetched.display()
+            );
+            eprintln!("{}", indent(&error.to_string()));
+            return ExitCode::FAILURE;
+        }
+    };
+    if let Err(error) = headwater_resolve::release::diverged(fetched, &record)
+        .map_err(|error| error.to_string())
+        .and_then(|diverged| match diverged.is_empty() {
+            true => Ok(()),
+            false => Err(diverged
+                .iter()
+                .map(|entry| entry.to_string())
+                .collect::<Vec<_>>()
+                .join("\n")),
+        })
+    {
+        eprintln!("headwater: the artifact is not what its own release record says it is");
+        eprintln!("{}", indent(&error));
+        return ExitCode::FAILURE;
+    }
+
+    if let Some(range) = to {
+        match headwater_resolve::release::satisfies(range, &record.version) {
+            Err(why) => {
+                return fail(&format!(
+                    "`--to {range}` states no version comparison this engine reads: {why}"
+                ))
+            }
+            Ok(false) => {
+                return fail(&format!(
+                    "`--to {range}` and the artifact declares {}. The flag names the version the \
+                     caller expected, and this engine fetches nothing, so a mismatch is a wrong \
+                     directory rather than a wrong number",
+                    record.version
+                ))
+            }
+            Ok(true) => {}
+        }
+    }
+
+    // What this repository takes today. The lock and not the sources: spec 6
+    // fixes the lock as the one thing downstream reads, and a comparison
+    // against unresolved sources would report the state of a working tree.
+    let lock = match headwater_lock::at(root) {
+        Ok(lock) => lock,
+        Err(error) => {
+            eprintln!("headwater: {error}");
+            return ExitCode::FAILURE;
+        }
+    };
+    let consumer = match headwater_resolve::package::consumer(root) {
+        Ok(consumer) => consumer,
+        Err(errors) => {
+            eprintln!("headwater: the consumer declaration did not read");
+            eprint!("{}", indent(&render_errors(&errors)));
+            return ExitCode::FAILURE;
+        }
+    };
+    if record.package != lock.package {
+        return fail(&format!(
+            "this repository takes `{}` and the artifact publishes `{}`. Two packages are not \
+             two versions of one, and none of the six dimensions is a question about them",
+            lock.package, record.package
+        ));
+    }
+
+    let manifest = match headwater_resolve::package::manifest_at(fetched) {
+        Ok(manifest) => manifest,
+        Err(errors) => {
+            eprintln!("headwater: the artifact manifest did not read");
+            eprint!("{}", indent(&render_errors(&errors)));
+            return ExitCode::FAILURE;
+        }
+    };
+
+    // The candidate, resolved under this repository's overlays. Every refusal
+    // that names an overlay address is the `addressability` dimension, and it
+    // is the one dimension whose subject is the schema rather than the corpus.
+    let candidate = headwater_resolve::package::sources_at(root, fetched, &manifest, &consumer)
+        .and_then(|sources| headwater_resolve::resolve(&sources));
+    let (resolution, addressability) = match candidate {
+        Ok(resolution) => (Some(resolution), headwater_compat::Outcome::Preserved),
+        Err(errors) => {
+            let breaks: Vec<headwater_compat::Break> = errors
+                .iter()
+                .filter(|error| error.kind.names_an_address())
+                .map(|error| headwater_compat::Break {
+                    at: format!("{} in {}", error.at, error.source),
+                    was: "an address this overlay resolves against".to_string(),
+                    now: error.to_string(),
+                })
+                .collect();
+            let outcome = match breaks.is_empty() {
+                true => headwater_compat::Outcome::NotMeasured(format!(
+                    "the candidate did not resolve, and no refusal named an overlay address: {}",
+                    render_errors(&errors).trim()
+                )),
+                false => headwater_compat::Outcome::over(breaks),
+            };
+            (None, outcome)
+        }
+    };
+
+    let Some(resolution) = resolution else {
+        let report = headwater_compat::Report {
+            package: record.package.clone(),
+            from: lock.version.clone(),
+            to: record.version.clone(),
+            base: headwater_compat::Base::Unresolved,
+            measured: headwater_compat::Measured::against_nothing(
+                addressability,
+                "the candidate taxonomy did not resolve under this repository's overlays, so no \
+                 phase ran against it",
+            ),
+        };
+        print!("{}", report.render());
+        eprintln!(
+            "headwater: the candidate did not resolve, so five of the six dimensions were not \
+             measured. The lines above are what this run does know"
+        );
+        return ExitCode::FAILURE;
+    };
+
+    // Every rule of `taxonomy validate`, over the resolved candidate. Spec 7
+    // asks the upgrade report for "whether the new base still satisfies the
+    // core under the local overlay", and this is that question.
+    let refusals = resolution.validate();
+
+    let base = match headwater_lock::digest(&resolution.render()) == lock.digest {
+        true => headwater_compat::Base::Same,
+        false => headwater_compat::Base::Moved,
+    };
+    let package = record.package.clone();
+    let from = lock.version.clone();
+    let to = record.version.clone();
+
+    let taking = match load_against(root, Bound::of(lock)) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+    let against = match load_against(
+        root,
+        Bound::candidate(
+            &package,
+            &to,
+            &resolution,
+            taking.bound.adoption.as_ref(),
+            &fetched.display().to_string(),
+        ),
+    ) {
+        Ok(loaded) => loaded,
+        Err(code) => return code,
+    };
+
+    // One run per side, and the two dimensions that read a verdict read these.
+    // A second run of either side would be a second reading of one question,
+    // and `consequence` and `instance_validity` would then be able to disagree
+    // about a corpus that changed between them.
+    let before = run_of(&taking, &ctx);
+    let after = run_of(&against, &ctx);
+    let identity = taking.identity();
+
+    let measured = headwater_compat::Measured {
+        classification: headwater_compat::classification(&taking.census, &against.census),
+        instance_validity: headwater_compat::instance_validity(&before, &after),
+        consequence: headwater_compat::consequence(&before, &after),
+        // Both plans are built under one identity, and it is the identity of
+        // the lock. Two projections carry the package, the version and the
+        // taxonomy digest of the run that wrote them: the corpus descriptor
+        // states all three and a probe result states the digest. Those are
+        // injected values rather than consequences of a taxonomy, so a
+        // comparison that let them move would report the version number as a
+        // change that the version number caused. It would then fire on every
+        // release, which is the one failure this dimension has to avoid.
+        // Everything a taxonomy decides about a projection still moves: the
+        // exclusions, the entry points, the exports and every declared output.
+        projection: match (
+            plan_of(root, &taking, &identity),
+            plan_of(root, &against, &identity),
+        ) {
+            (Ok(before), Ok(after)) => headwater_compat::projection(&before, &after),
+            (before, after) => headwater_compat::Outcome::NotMeasured(format!(
+                "a projection declaration did not read: {}",
+                [before.err(), after.err()]
+                    .into_iter()
+                    .flatten()
+                    .collect::<Vec<_>>()
+                    .join("; ")
+            )),
+        },
+        identifier: headwater_compat::identifier(&taking.graph, &against.graph),
+        addressability,
+    };
+
+    let report = headwater_compat::Report {
+        package,
+        from,
+        to,
+        base,
+        measured,
+    };
+    print!("{}", report.render());
+
+    if !refusals.is_empty() {
+        println!(
+            "\nthe candidate resolves under this overlay and {} rule{} of `taxonomy validate` \
+             refuses the result",
+            refusals.len(),
+            match refusals.len() {
+                1 => "",
+                _ => "s",
+            }
+        );
+        print!("{}", indent(&render_errors(&refusals)));
+    }
+
+    // A broken dimension is a report and never a failure. The verb measures a
+    // version that nobody has taken yet, and an upgrade that needs a migration
+    // is the ordinary case rather than an error ([spec 7](../../../../docs/spec/07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)).
+    // What does fail is a run that could not measure, which is above.
+    ExitCode::SUCCESS
+}
+
+/// One run of the check layer, with the cache off.
+///
+/// Off deliberately, and not as a precaution. The cache is keyed on the lock
+/// digest, so a candidate would take no hit and would write entries under a
+/// taxonomy that nobody committed. A later `headwater check` would then read a
+/// cache whose contents no lock accounts for.
+fn run_of(loaded: &Loaded, ctx: &Context) -> headwater_check::Run {
+    let mut cache = Cache::disabled();
+    headwater_check::run(
+        &loaded.census,
+        &loaded.graph,
+        &loaded.declared(),
+        ctx,
+        &mut cache,
+    )
+}
+
+/// The projection plan of one side, under an identity the caller supplies.
+///
+/// The identity is a parameter here and nowhere else. Every other caller builds
+/// the plan of the run it is in and takes the identity of that run, which is
+/// what makes a written projection a statement about the lock beside it. This
+/// caller is comparing two taxonomies over one repository, and the repository
+/// has one identity for the length of the comparison.
+fn plan_of(
+    root: &Path,
+    loaded: &Loaded,
+    identity: &headwater_generate::Identity,
+) -> Result<headwater_generate::Plan, String> {
+    let projections =
+        headwater_generate::Projections::read(&loaded.bound.taxonomy).map_err(|errors| {
+            errors
+                .iter()
+                .map(|error| error.to_string())
+                .collect::<Vec<_>>()
+                .join("; ")
+        })?;
+    Ok(headwater_generate::plan(
+        &loaded.surface(),
+        &loaded.census,
+        &projections,
+        identity,
+        &loaded.runs(root),
+    ))
+}
+
 /// Phase A, once, for every verb that reads a corpus.
 ///
 /// The taxonomy comes from the lock and the corpus block comes from the
@@ -1065,8 +1410,78 @@ fn vendor(root: &Path, fetched: &Path, expect: Option<&str>) -> ExitCode {
 /// One function rather than one per verb. A read that walked a different tree
 /// from the one `check` walks would answer about a corpus no run evaluated, and
 /// nothing in either report would say so.
+/// The taxonomy one load runs against, and where it came from.
+///
+/// Every verb but one takes this from `.headwater/taxonomy.lock`, which spec 6
+/// fixes as the one thing downstream reads. `taxonomy diff` takes a second one
+/// out of a published artifact, so that the same phases run twice over one tree
+/// and a difference is attributable to the schema. The type exists so that the
+/// second case is not a lock value that no lock file produced: a candidate
+/// carries no `lock` and therefore reaches no rule that reads one.
+struct Bound {
+    package: String,
+    version: String,
+    /// The digest of the canonical taxonomy text, which is a component of every
+    /// cache key a run writes.
+    digest: String,
+    taxonomy: headwater_yaml::Mapping,
+    adoption: Option<headwater_yaml::Mapping>,
+    /// Where the taxonomy came from, as a path a reader can open. It reaches a
+    /// finding, because two rules of the register are about the taxonomy rather
+    /// than about the corpus and a finding carries a path.
+    source: String,
+    /// The lock this was read from, and `None` for a candidate.
+    ///
+    /// One rule of `headwater conformance` asks whether the lock is current
+    /// against the sources on disk, which is a question about a committed file
+    /// and not about a taxonomy. So that verb needs the whole value and this is
+    /// where it says so.
+    lock: Option<headwater_lock::Lock>,
+}
+
+impl Bound {
+    /// What this repository committed.
+    fn of(lock: headwater_lock::Lock) -> Bound {
+        Bound {
+            package: lock.package.clone(),
+            version: lock.version.clone(),
+            digest: lock.digest.clone(),
+            taxonomy: lock.taxonomy.clone(),
+            adoption: lock.adoption.clone(),
+            source: headwater_lock::LOCK.to_string(),
+            lock: Some(lock),
+        }
+    }
+
+    /// A taxonomy out of a published artifact, carrying this repository's own
+    /// adoption payload.
+    ///
+    /// The payload rides along so that the two loads of a comparison differ in
+    /// the taxonomy and in nothing else. It reclassifies a finding and never an
+    /// instance, and the comparison reads instances, so it changes no dimension
+    /// either way. Passing it anyway means that no future reader of it has to
+    /// discover which of the two sides carried one.
+    fn candidate(
+        package: &str,
+        version: &str,
+        resolution: &headwater_resolve::Resolution,
+        adoption: Option<&headwater_yaml::Mapping>,
+        source: &str,
+    ) -> Bound {
+        Bound {
+            package: package.to_string(),
+            version: version.to_string(),
+            digest: headwater_lock::digest(&resolution.render()),
+            taxonomy: resolution.taxonomy.clone(),
+            adoption: adoption.cloned(),
+            source: source.to_string(),
+            lock: None,
+        }
+    }
+}
+
 struct Loaded {
-    lock: headwater_lock::Lock,
+    bound: Bound,
     /// What this repository takes and what it walks. Held because the corpus
     /// descriptor states the root and the exclusions, and re-reading the
     /// declaration to build one would be a second read that a later edit can
@@ -1093,6 +1508,15 @@ fn load(root: &Path) -> Result<Loaded, ExitCode> {
             return Err(ExitCode::FAILURE);
         }
     };
+    load_against(root, Bound::of(lock))
+}
+
+/// The same load, against a taxonomy the caller already holds.
+///
+/// One function rather than one per source of a taxonomy. `taxonomy diff` runs
+/// this twice over one tree, and a second walker built for the candidate would
+/// answer about a corpus that no run of `headwater check` evaluates.
+fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
     let consumer = match headwater_resolve::package::consumer(root) {
         Ok(consumer) => consumer,
         Err(errors) => {
@@ -1102,7 +1526,7 @@ fn load(root: &Path) -> Result<Loaded, ExitCode> {
         }
     };
     let corpus = Corpus::declared(root, &consumer.corpus_root, &consumer.exclusions);
-    let resolved = &lock.taxonomy;
+    let resolved = &bound.taxonomy;
     let taxonomy = match Taxonomy::read(resolved) {
         Ok(taxonomy) => taxonomy,
         Err(errors) => return Err(refused("the taxonomy", &errors)),
@@ -1150,7 +1574,7 @@ fn load(root: &Path) -> Result<Loaded, ExitCode> {
     let config = Config::default();
     let graph = Graph::build(&census, &relations, &resolvers, &corpus, &config);
     Ok(Loaded {
-        lock,
+        bound,
         consumer,
         census,
         graph,
@@ -1168,14 +1592,14 @@ impl Loaded {
     /// `check --fix` runs the checks twice on purpose.
     fn declared(&self) -> Declared<'_> {
         Declared {
-            lock: &self.lock.digest,
+            lock: &self.bound.digest,
             taxonomy: &self.taxonomy,
             shape: &self.shape,
             relations: &self.relations,
             config: &self.config,
             register: &self.register,
-            adoption: self.lock.adoption.as_ref(),
-            source: headwater_lock::LOCK,
+            adoption: self.bound.adoption.as_ref(),
+            source: &self.bound.source,
         }
     }
 
@@ -1248,7 +1672,7 @@ impl Loaded {
             &self.graph,
             &self.config,
             &budgets,
-            &self.lock.digest,
+            &self.bound.digest,
             headwater_probe::Tier::Regression,
             &headwater_probe::plan::Narrowing::default(),
         ));
@@ -1259,9 +1683,9 @@ impl Loaded {
         headwater_generate::Identity {
             corpus_root: self.consumer.corpus_root.clone(),
             exclusions: self.consumer.exclusions.clone(),
-            package: self.lock.package.clone(),
-            version: self.lock.version.clone(),
-            lock: self.lock.digest.clone(),
+            package: self.bound.package.clone(),
+            version: self.bound.version.clone(),
+            lock: self.bound.digest.clone(),
         }
     }
 }
@@ -1402,7 +1826,7 @@ fn scaffold(
 
     let index = headwater_graph::index::Index::build(&loaded.census, &loaded.config);
     let sources = headwater_scaffold::Sources {
-        resolved: &loaded.lock.taxonomy,
+        resolved: &loaded.bound.taxonomy,
         shape: &loaded.shape,
         shelves: &loaded.taxonomy,
         relations: &loaded.relations,
@@ -1426,7 +1850,7 @@ fn scaffold(
     headwater_scaffold::write::apply(root, &composed).map_err(|why| why.to_string())?;
 
     let reading =
-        headwater_scaffold::reading::Reading::of(&plan, &loaded.lock.digest, now, surface);
+        headwater_scaffold::reading::Reading::of(&plan, &loaded.bound.digest, now, surface);
     let recorded = headwater_scaffold::reading::append(root, &reading);
     Ok(Written {
         artifact: scaffold_report(&plan, &composed, recorded.is_ok()),
@@ -1943,7 +2367,7 @@ fn sweep_plan(root: &Path, under: Option<String>) -> ExitCode {
         &loaded.census,
         &loaded.graph,
         &loaded.config,
-        &loaded.lock.digest,
+        &loaded.bound.digest,
         under.as_deref().unwrap_or(""),
     );
     print!("{}", plan.render());
@@ -2001,7 +2425,7 @@ fn sweep_report(root: &Path, path: &Path, format: Option<String>) -> ExitCode {
         census: &loaded.census,
         graph: &loaded.graph,
         relations: &loaded.relations,
-        lock: &loaded.lock.digest,
+        lock: &loaded.bound.digest,
     };
     let report = headwater_sweep::Report::read(&source, &tree);
     match wants_json {
@@ -2105,7 +2529,7 @@ fn probe_plan(
         &loaded.graph,
         &loaded.config,
         &budgets,
-        &loaded.lock.digest,
+        &loaded.bound.digest,
         tier,
         &narrowing,
     );
@@ -2162,7 +2586,7 @@ fn probe_grade(root: &Path, path: &Path) -> ExitCode {
         &loaded.graph,
         &loaded.config,
         &budgets,
-        &loaded.lock.digest,
+        &loaded.bound.digest,
         headwater_probe::Tier::Regression,
         &headwater_probe::plan::Narrowing::default(),
     );
@@ -2184,7 +2608,7 @@ fn probe_grade(root: &Path, path: &Path) -> ExitCode {
     let tree = headwater_probe::intake::Tree {
         census: &loaded.census,
         config: &loaded.config,
-        lock: &loaded.lock.digest,
+        lock: &loaded.bound.digest,
     };
     let record = headwater_probe::Record::read(&source, &tree);
     let results = headwater_probe::Results::over(&record, selected);
@@ -2219,7 +2643,7 @@ fn probe_record(root: &Path, path: &Path) -> ExitCode {
     let tree = headwater_probe::intake::Tree {
         census: &loaded.census,
         config: &loaded.config,
-        lock: &loaded.lock.digest,
+        lock: &loaded.bound.digest,
     };
     let record = headwater_probe::Record::read(&source, &tree);
     print!("{}", record.render());
@@ -2271,7 +2695,7 @@ fn probe_stale(root: &Path) -> ExitCode {
         &loaded.graph,
         &loaded.config,
         &budgets,
-        &loaded.lock.digest,
+        &loaded.bound.digest,
         headwater_probe::Tier::Regression,
         &headwater_probe::plan::Narrowing::default(),
     );
@@ -2292,7 +2716,7 @@ fn probe_stale(root: &Path) -> ExitCode {
     let tree = headwater_probe::intake::Tree {
         census: &loaded.census,
         config: &loaded.config,
-        lock: &loaded.lock.digest,
+        lock: &loaded.bound.digest,
     };
     let mut seen = 0usize;
     let mut stale = 0usize;
@@ -2461,7 +2885,7 @@ fn generate(root: &Path, check_only: bool) -> ExitCode {
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
-    let projections = match headwater_generate::Projections::read(&loaded.lock.taxonomy) {
+    let projections = match headwater_generate::Projections::read(&loaded.bound.taxonomy) {
         Ok(projections) => projections,
         Err(errors) => return refused("the projections", &errors),
     };
@@ -2527,7 +2951,7 @@ fn export(
         Ok(loaded) => loaded,
         Err(code) => return code,
     };
-    let projections = match headwater_generate::Projections::read(&loaded.lock.taxonomy) {
+    let projections = match headwater_generate::Projections::read(&loaded.bound.taxonomy) {
         Ok(projections) => projections,
         Err(errors) => return refused("the projections", &errors),
     };
@@ -2702,8 +3126,8 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
         census: &loaded.census,
         graph: &loaded.graph,
         declared: loaded.declared(),
-        package: &loaded.lock.package,
-        version: &loaded.lock.version,
+        package: &loaded.bound.package,
+        version: &loaded.bound.version,
         now: ctx,
         writing: match writing {
             false => None,
@@ -2802,7 +3226,7 @@ fn gate(root: &Path, read_set: Option<PathBuf>, now: Option<Date>) -> ExitCode {
 fn fix(root: &Path, ctx: &Context, cached: bool) -> Result<Fixed, ExitCode> {
     let loaded = load(root)?;
     let mut cache = match cached {
-        true => Cache::at(root, &loaded.lock.digest),
+        true => Cache::at(root, &loaded.bound.digest),
         false => Cache::disabled(),
     };
     let run = headwater_check::run(
@@ -2915,9 +3339,9 @@ fn fix_over(root: &Path, ctx: &Context, format: Format) -> Result<Written, Strin
         &mut cache,
     );
     let subject = Subject {
-        package: &loaded.lock.package,
-        version: &loaded.lock.version,
-        lock: &loaded.lock.digest,
+        package: &loaded.bound.package,
+        version: &loaded.bound.version,
+        lock: &loaded.bound.digest,
         now: &ctx.now().render(),
     };
     let artifact = headwater_adapter::render(&run, &loaded.census, &loaded.graph, &subject, format);
@@ -3033,7 +3457,7 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
         Err(code) => return code,
     };
     let Loaded {
-        lock,
+        bound,
         consumer: _,
         census: taken,
         graph,
@@ -3055,7 +3479,7 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
     // taxonomy that moved invalidates every entry without anyone clearing a
     // directory.
     let mut cache = match cached {
-        true => Cache::at(root, &lock.digest),
+        true => Cache::at(root, &bound.digest),
         false => Cache::disabled(),
     };
     let run = headwater_check::run(taken, graph, &loaded.declared(), &ctx, &mut cache);
@@ -3072,9 +3496,9 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
     // standard error, and the two files below. A flag that moved a verdict
     // would be the second input to it that no reviewer sees.
     let subject = Subject {
-        package: &lock.package,
-        version: &lock.version,
-        lock: &lock.digest,
+        package: &bound.package,
+        version: &bound.version,
+        lock: &bound.digest,
         now: &ctx.now().render(),
     };
     let artifact = headwater_adapter::render(&run, taken, graph, &subject, format);
@@ -3186,7 +3610,7 @@ fn infer(
         &loaded.census,
         &loaded.graph,
         &Declared {
-            lock: &loaded.lock.digest,
+            lock: &loaded.bound.digest,
             taxonomy: &loaded.taxonomy,
             shape: &loaded.shape,
             relations: &loaded.relations,
