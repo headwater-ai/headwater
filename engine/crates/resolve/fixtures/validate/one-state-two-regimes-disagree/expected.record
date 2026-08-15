@@ -1,0 +1,1 @@
+the resolved taxonomy `regimes.lifecycle.continues.transitions`: lifecycle soundness: gives `superseded` an exit, and the `terminal-retained` role on its value names it terminal. One rule reads the role and another reads the machine, so a state is terminal to both or to neither

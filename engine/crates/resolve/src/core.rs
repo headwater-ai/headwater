@@ -38,9 +38,17 @@
 ///
 /// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the-immutable-core)
 /// writes the role as `terminal-retained`, and the hyphen carries what happens
-/// to the document rather than whether the state ends the machine. A taxonomy
-/// that declares a second terminal role writes a second `terminal-` name, so
-/// the prefix is the reading and the suffix is that taxonomy's business.
+/// to the document rather than whether the state ends the machine. So the
+/// prefix is the reading and the suffix is a taxonomy's business.
+///
+/// It reads a prefix and the meta-schema closes the set. `vocabulary_value.role`
+/// admits `initial`, `live` and `terminal-retained` and no fourth value, so no
+/// second terminal role reaches this function through a resolved taxonomy, and
+/// a role that begins `terminal` without the hyphen does not either. That set
+/// is one of the eight that
+/// [HW-OBL-0049](../../../../docs/obligations/0049-the-meta-schema-closes-eight-value-sets-that-nothing-states.md)
+/// records as closed on a guess. The prefix is what this reads if the set
+/// opens, and today it is one value.
 ///
 /// One function, because three components ask the question: `lifecycle
 /// soundness` asks it of a declaration, [`satisfiers`] states it in prose as
