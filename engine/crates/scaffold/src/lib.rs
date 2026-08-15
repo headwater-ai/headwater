@@ -79,7 +79,9 @@
 
 pub mod declared;
 pub mod fix;
+pub mod migrate;
 pub mod reading;
+pub mod tree;
 pub mod write;
 
 use headwater_census::census::Census;

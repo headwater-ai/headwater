@@ -43,9 +43,10 @@ use headwater_check::scope::Grain;
 use headwater_check::Run;
 use headwater_generate::Plan;
 use headwater_graph::Graph;
-use headwater_resolve::migration::{Step, Subject};
+use headwater_resolve::migration::Step;
 use std::collections::{BTreeMap, BTreeSet};
 
+pub mod migrate;
 pub mod payload;
 
 /// The six dimensions, in the order [spec 2](../../../../docs/spec/02-taxonomy-model.md#versioning-by-measured-compatibility)
@@ -359,43 +360,15 @@ pub fn instance_validity(before: &Run, after: &Run) -> (Outcome, BTreeSet<String
 
 /// The documents of this corpus that one step of a migration payload names.
 ///
-/// **Read off the census of the taxonomy this repository takes**, which is the
-/// taxonomy the step's `from` was written against. A reading taken under the
-/// candidate would ask a taxonomy that no longer declares the value which
-/// documents carry it, and would answer none of them for every step in the
-/// payload.
-///
-/// A facet value is matched in either spelling a document may write it: one
-/// scalar, or a sequence that holds it among others.
+/// Derived from [`migrate::sites`], which answers the same question at the
+/// grain a writer needs. Two readings of "which documents does this step name"
+/// is exactly where a report and a write start to disagree, and the report is
+/// the half nobody would notice going wrong.
 pub fn subjects(step: &Step, census: &Census) -> BTreeSet<String> {
-    census
-        .rows
-        .iter()
-        .filter(|row| match &step.subject {
-            Subject::Kind => matches!(
-                &row.outcome,
-                Row::Typed { kind, .. } if *kind == step.from
-            ),
-            Subject::FacetValue { facet } => row
-                .document
-                .as_ref()
-                .and_then(|document| document.facets.get(facet))
-                .map(|node| carries(&node.value, &step.from))
-                .unwrap_or(false),
-        })
-        .map(|row| row.path.clone())
+    migrate::sites(step, census)
+        .into_iter()
+        .map(|site| site.path().to_string())
         .collect()
-}
-
-/// Whether one front-matter value is, or holds, the value a step names.
-fn carries(value: &headwater_yaml::Value, wanted: &str) -> bool {
-    match value {
-        headwater_yaml::Value::Scalar(scalar) => scalar.text == wanted,
-        headwater_yaml::Value::Seq(items) => items
-            .iter()
-            .any(|item| matches!(&item.value, headwater_yaml::Value::Scalar(scalar) if scalar.text == wanted)),
-        headwater_yaml::Value::Map(_) => false,
-    }
 }
 
 /// Every key of either map, with the two readings under it.
