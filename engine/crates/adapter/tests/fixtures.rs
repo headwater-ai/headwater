@@ -797,7 +797,11 @@ fn a_path_the_census_never_walked_is_named_and_not_counted() {
         .iter()
         .map(|path| scalar(&path.value))
         .collect();
-    assert_eq!(named, [stray.to_string()], "the path, and not a count of them");
+    assert_eq!(
+        named,
+        [stray.to_string()],
+        "the path, and not a count of them"
+    );
     // And the empty case is a different artifact, so the member states which of
     // the two this run was.
     let clean = headwater_adapter::json::coverage(&ran.run.coverage).render_pretty();
