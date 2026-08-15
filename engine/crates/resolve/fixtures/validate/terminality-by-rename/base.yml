@@ -5,8 +5,8 @@
 #
 # The adopter of that case wants one word, `superseded`, to end a decision and
 # to be a stop a receipt comes back from. `lifecycle soundness` refuses it,
-# because the role is one word for the whole vocabulary and two shipping rules
-# read terminality without a regime. [HW-DR-0026](../../../../../../docs/decisions/0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md)
+# because the role is one word for the whole vocabulary and the two rules that
+# read terminality are held to one answer over it. [HW-DR-0026](../../../../../../docs/decisions/0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md)
 # is the ruling, and this file is the arm it sends such an adopter to.
 #
 # The rename is the whole repair. `withdrawn` carries the `live` role and
