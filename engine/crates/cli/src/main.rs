@@ -1247,7 +1247,9 @@ fn migrate(
     let payloads = match headwater_resolve::migration::at(fetched, &manifest) {
         Ok(payloads) => payloads,
         Err(refusals) => {
-            eprintln!("headwater: the artifact carries a migration payload this engine cannot read");
+            eprintln!(
+                "headwater: the artifact carries a migration payload this engine cannot read"
+            );
             eprint!(
                 "{}",
                 indent(&render_errors(&headwater_resolve::migration::as_errors(
@@ -1407,7 +1409,14 @@ fn migrate(
 
     let written = headwater_scaffold::migrate::compose(root, &moves);
     if !written.refused.is_empty() {
-        eprintln!("\nheadwater: {} document{} did not compose, and this run writes nothing", written.refused.len(), match written.refused.len() { 1 => "", _ => "s" });
+        eprintln!(
+            "\nheadwater: {} document{} did not compose, and this run writes nothing",
+            written.refused.len(),
+            match written.refused.len() {
+                1 => "",
+                _ => "s",
+            }
+        );
         for refused in &written.refused {
             eprintln!("{}", indent(&refused.to_string()));
         }

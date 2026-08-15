@@ -78,7 +78,11 @@ pub struct Unopened {
 
 impl std::fmt::Display for Unopened {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} could not be opened for writing: {}", self.path, self.why)
+        write!(
+            f,
+            "{} could not be opened for writing: {}",
+            self.path, self.why
+        )
     }
 }
 
@@ -100,7 +104,10 @@ impl std::fmt::Display for Halted {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} did not write: {}", self.path, self.why)?;
         match (self.restored.len(), self.lost.is_empty()) {
-            (0, true) => write!(f, ". No other file had been written, so the tree is as it was"),
+            (0, true) => write!(
+                f,
+                ". No other file had been written, so the tree is as it was"
+            ),
             (count, true) => write!(
                 f,
                 ". The {count} file{} already written {} put back, so the tree is as it was",
@@ -125,6 +132,16 @@ impl std::fmt::Display for Halted {
                 Ok(())
             }
         }
+    }
+}
+
+/// The paths, and never the handles or the bytes.
+///
+/// A reservation holds what every file held before the run, and a derived
+/// `Debug` would put a whole corpus into a panic message.
+impl std::fmt::Debug for Reserved {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Reserved{:?}", self.paths())
     }
 }
 
@@ -190,8 +207,7 @@ impl Reserved {
                 return Err(self.undo(
                     every,
                     path,
-                    "the bytes read back off the tree are not the bytes this run wrote"
-                        .to_string(),
+                    "the bytes read back off the tree are not the bytes this run wrote".to_string(),
                 ));
             }
         }
@@ -249,8 +265,8 @@ mod tests {
 
     impl Dir {
         fn with(label: &str, files: &[(&str, &str)]) -> Dir {
-            let root = std::env::temp_dir()
-                .join(format!("headwater-tree-{}-{label}", std::process::id()));
+            let root =
+                std::env::temp_dir().join(format!("headwater-tree-{}-{label}", std::process::id()));
             let _ = std::fs::remove_dir_all(&root);
             std::fs::create_dir_all(&root).expect("a scratch directory");
             for (path, text) in files {
@@ -306,8 +322,7 @@ mod tests {
             dir.path(),
             composed(&[("a.md", "ONE"), ("missing.md", "TWO")]),
         )
-        .err()
-        .expect("the second target does not open");
+        .expect_err("the second target does not open");
         assert_eq!(refused.path, "missing.md");
         assert_eq!(
             dir.read("a.md"),
@@ -327,8 +342,7 @@ mod tests {
         std::fs::set_permissions(&locked, permissions).expect("the file locks");
 
         let refused = Reserved::over(dir.path(), composed(&[("a.md", "ONE"), ("b.md", "TWO")]))
-            .err()
-            .expect("the read-only target does not open");
+            .expect_err("the read-only target does not open");
         assert_eq!(refused.path, "b.md");
         assert_eq!(dir.read("a.md"), "one");
         assert_eq!(dir.read("b.md"), "two");
@@ -347,7 +361,7 @@ mod tests {
             .expect("both open");
         std::fs::remove_file(dir.path().join("b.md")).expect("the second target goes away");
 
-        let halted = reserved.commit().err().expect("the read back fails");
+        let halted = reserved.commit().expect_err("the read back fails");
         assert_eq!(halted.path, "b.md");
         assert!(
             halted.restored.contains(&"a.md".to_string()),

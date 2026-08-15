@@ -176,7 +176,11 @@ pub fn compose(root: &Path, moves: &[Move]) -> Written {
 }
 
 /// One document, and every move that names it.
-fn one_file(root: &Path, path: &str, moves: &[&Move]) -> Result<Option<(Composed, usize)>, Refused> {
+fn one_file(
+    root: &Path,
+    path: &str,
+    moves: &[&Move],
+) -> Result<Option<(Composed, usize)>, Refused> {
     let source = std::fs::read_to_string(root.join(path)).map_err(|error| Refused::Unreadable {
         path: path.to_string(),
         why: error.to_string(),
@@ -206,11 +210,12 @@ fn one_file(root: &Path, path: &str, moves: &[&Move]) -> Result<Option<(Composed
                 path: path.to_string(),
                 why: "a value's span does not lie inside the file".to_string(),
             })?;
-        let replacement = shaped(found, &edit.from, &edit.to).ok_or_else(|| Refused::Unquotable {
-            path: path.to_string(),
-            key: edit.key.clone(),
-            found: found.to_string(),
-        })?;
+        let replacement =
+            shaped(found, &edit.from, &edit.to).ok_or_else(|| Refused::Unquotable {
+                path: path.to_string(),
+                key: edit.key.clone(),
+                found: found.to_string(),
+            })?;
         patched.replace_range(edit.at.start.offset..edit.at.end.offset, &replacement);
     }
 
@@ -257,9 +262,9 @@ fn sites_of(path: &str, document: &Document, moving: &Move) -> Result<Vec<Edit>,
         Value::Scalar(_) => Vec::new(),
         Value::Seq(items) => items
             .iter()
-            .filter(|item| {
-                matches!(&item.value, Value::Scalar(scalar) if scalar.text == moving.from)
-            })
+            .filter(
+                |item| matches!(&item.value, Value::Scalar(scalar) if scalar.text == moving.from),
+            )
             .map(|item| edit(item.span))
             .collect(),
         Value::Map(_) => Vec::new(),
@@ -317,7 +322,10 @@ fn recognizable(
     }
 
     // Every scalar of the front matter, by key path and in document order.
-    let moved: BTreeMap<usize, &Edit> = edits.iter().map(|edit| (edit.at.start.offset, edit)).collect();
+    let moved: BTreeMap<usize, &Edit> = edits
+        .iter()
+        .map(|edit| (edit.at.start.offset, edit))
+        .collect();
     let expected: Vec<(String, String)> = scalars(&before.facets, "")
         .into_iter()
         .map(|(at, text, span)| match moved.get(&span.start.offset) {
@@ -335,7 +343,10 @@ fn recognizable(
             .zip(read.iter())
             .find(|(expected, read)| expected != read)
             .map(|(expected, read)| {
-                format!("`{}` reads `{}` and `{}` was expected", read.0, read.1, expected.1)
+                format!(
+                    "`{}` reads `{}` and `{}` was expected",
+                    read.0, read.1, expected.1
+                )
             })
             .unwrap_or_else(|| {
                 format!(
@@ -485,7 +496,10 @@ mod tests {
     #[test]
     fn a_replacement_that_reads_as_a_second_key_is_refused() {
         let dir = Dir::with("second-key", &[("a.md", DOCUMENT)]);
-        let written = compose(dir.path(), &[moving("status", "draft", "outline\nowner: nobody")]);
+        let written = compose(
+            dir.path(),
+            &[moving("status", "draft", "outline\nowner: nobody")],
+        );
         assert!(written.files.is_empty(), "nothing is composed");
         assert!(
             matches!(&written.refused[0], Refused::Unrecognizable { .. }),

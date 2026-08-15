@@ -246,7 +246,9 @@ impl Root {
     /// document a run named and then could not write.
     fn read_only(&self, path: &str) {
         let at = self.at.join(path);
-        let mut permissions = std::fs::metadata(&at).expect("the document is there").permissions();
+        let mut permissions = std::fs::metadata(&at)
+            .expect("the document is there")
+            .permissions();
         permissions.set_readonly(true);
         std::fs::set_permissions(&at, permissions).expect("the document locks");
     }
@@ -608,7 +610,8 @@ fn the_mechanical_step_writes_and_a_judgment_step_writes_nothing() {
         "the judgment half is emitted as a task list: {ran:?}"
     );
     assert!(
-        ran.out.contains("Say whether the argument this document makes is closed"),
+        ran.out
+            .contains("Say whether the argument this document makes is closed"),
         "the task carries its own text: {ran:?}"
     );
 }
@@ -686,11 +689,7 @@ fn a_document_that_cannot_be_written_leaves_every_other_document_as_it_was() {
         before,
         "the document before the unwritable one is exactly what it was"
     );
-    assert_eq!(
-        root.read(third),
-        after,
-        "and so is the document after it"
-    );
+    assert_eq!(root.read(third), after, "and so is the document after it");
     assert!(
         root.read(second).contains("status: current"),
         "the unwritable document did not move either"
@@ -719,7 +718,10 @@ fn a_kind_the_shelf_carries_is_named_and_no_document_is_written() {
         "{ran:?}"
     );
     assert!(ran.out.contains("wrote 0 values in 0 documents"), "{ran:?}");
-    assert_eq!(root.read("docs/decisions/0001-the-live-document.md"), before);
+    assert_eq!(
+        root.read("docs/decisions/0001-the-live-document.md"),
+        before
+    );
 }
 
 /// The fourth Done-when clause, where a reader of the run will find it.
@@ -730,8 +732,8 @@ fn every_run_states_that_it_does_not_write_the_lock() {
     root.candidate(Some(&payload()));
     assert_eq!(root.publish("2.0.0").code, Some(0));
 
-    let before = std::fs::read_to_string(root.at.join(".headwater/taxonomy.lock"))
-        .expect("the lock reads");
+    let before =
+        std::fs::read_to_string(root.at.join(".headwater/taxonomy.lock")).expect("the lock reads");
     let ran = root.migrate("2.0.0", &["--apply"]);
     assert_eq!(ran.code, Some(0), "{ran:?}");
     assert!(
