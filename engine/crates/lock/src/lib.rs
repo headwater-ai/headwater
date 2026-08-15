@@ -306,18 +306,118 @@ pub fn read(text: &str) -> Result<Lock, LockError> {
     })
 }
 
-/// The payload the committed lock carries, for a rewrite to carry through.
+/// What the committed lock holds of its one authored block, and how well that
+/// is known.
 ///
 /// A rewrite of the lock is a rewrite of a resolution, and the payload is not
-/// part of one. Every caller that writes a lock over an existing one passes
+/// part of one. Every caller that writes a lock over an existing one reads
 /// this, so the rule lives in one place instead of in each caller.
 ///
-/// A lock that will not read carries nothing. The three ways that happens are a
-/// first resolve with no lock at all, a lock this engine is too old to read, and
-/// a lock somebody broke. In all three the caller is about to write a correct
-/// one, and refusing here would only move the report to the wrong verb.
-pub fn adoption_at(root: &Path) -> Option<Mapping> {
-    at(root).ok().and_then(|lock| lock.adoption)
+/// # Why this is not an `Option`
+///
+/// It was one, and [#213](https://github.com/headwater-ai/headwater/issues/213)
+/// is what that cost. The reading was that a lock which will not read carries
+/// nothing, over three ways that happens: no lock at all, a lock this engine is
+/// too old to read, and a lock somebody broke. The argument was that in all
+/// three "the caller is about to write a correct one".
+///
+/// The reasoning error is that those three are not the ways a lock does not
+/// read. A digest mismatch is a fourth, it is the common one, and in that one
+/// the caller is about to write a lock that has lost authored data. It is also
+/// the state that `headwater check` tells a person to run `taxonomy resolve`
+/// out of, so the printed remedy was the instruction that discarded the block.
+///
+/// So the states stay apart here, at the parse, and the caller decides.
+///
+/// - [`Authored::NoLock`] — no file. A first resolve, and nothing is at risk.
+/// - [`Authored::Nothing`] — the lock read and declares no block. Observed.
+/// - [`Authored::Payload`] — the lock read and carries one.
+/// - [`Authored::Salvaged`] — the lock did not read and the block was legible
+///   behind the refusal. **The digest covers the resolution and has never
+///   covered this block**, so a mismatch is no evidence about it, and a rewrite
+///   carries it through.
+/// - [`Authored::NothingBehind`] — the lock did not read, and it parsed far
+///   enough to show no block.
+/// - [`Authored::Opaque`] — the lock did not read and nothing can be seen of
+///   what it declares. **This is the one a rewrite refuses**, because replacing
+///   the file there discards authored data that this engine cannot name. The
+///   caller that writes is the caller that refuses, in `cli/src/main.rs`; a
+///   caller that only builds a text to compare reads what it can.
+#[derive(Clone, Debug)]
+pub enum Authored {
+    NoLock,
+    Nothing,
+    Payload(Mapping),
+    Salvaged { why: LockError, payload: Mapping },
+    NothingBehind { why: LockError },
+    Opaque { why: LockError },
+}
+
+impl Authored {
+    /// The block to write back, over every state in which one is known.
+    ///
+    /// [`Authored::Opaque`] answers `None` because nothing is known there, and
+    /// not because nothing is there. A caller that replaces the file decides on
+    /// the variant; a caller that only builds a text to compare reads this.
+    pub fn payload(&self) -> Option<&Mapping> {
+        match self {
+            Authored::Payload(payload) | Authored::Salvaged { payload, .. } => Some(payload),
+            Authored::NoLock
+            | Authored::Nothing
+            | Authored::NothingBehind { .. }
+            | Authored::Opaque { .. } => None,
+        }
+    }
+}
+
+/// Read the authored block of a repository's lock, whether or not the lock
+/// reads as a whole.
+pub fn authored_at(root: &Path) -> Authored {
+    let path = root.join(LOCK);
+    let text = match std::fs::read_to_string(&path) {
+        Ok(text) => text,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Authored::NoLock,
+        Err(error) => {
+            return Authored::Opaque {
+                why: LockError::Unreadable(format!("{}: {error}", path.display())),
+            }
+        }
+    };
+    match read(&text) {
+        Ok(lock) => match lock.adoption {
+            Some(payload) => Authored::Payload(payload),
+            None => Authored::Nothing,
+        },
+        Err(why) => behind(why, &text),
+    }
+}
+
+/// What is still legible of the authored block, behind a lock that did not read.
+fn behind(why: LockError, text: &str) -> Authored {
+    // A lock a newer engine wrote may declare its authored block in a shape
+    // this engine does not know, so this engine cannot say it has seen one.
+    // That is the refusal `FORMAT` already argues for, stated where it bites.
+    if matches!(why, LockError::Format { .. }) {
+        return Authored::Opaque { why };
+    }
+    let Ok(root) = headwater_yaml::load(text) else {
+        return Authored::Opaque { why };
+    };
+    let Some(map) = root.value.as_map() else {
+        return Authored::Opaque { why };
+    };
+    match map.get("adoption") {
+        None => Authored::NothingBehind { why },
+        Some(node) => match node.value.as_map() {
+            Some(payload) => Authored::Salvaged {
+                why,
+                payload: payload.clone(),
+            },
+            // Present and not a mapping. `read` calls that malformed, and here
+            // it is a block this engine can see and cannot carry.
+            None => Authored::Opaque { why },
+        },
+    }
 }
 
 /// Read the lock of a repository.

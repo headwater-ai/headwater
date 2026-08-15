@@ -145,7 +145,7 @@ fn the_digest_is_over_the_canonical_text_and_not_the_file() {
         &repository.consumer.version,
         &sources,
         &repository.resolution,
-        headwater_lock::adoption_at(&root).as_ref(),
+        headwater_lock::authored_at(&root).payload(),
     )
     .expect("it validates");
 
@@ -177,7 +177,7 @@ fn the_committed_lock_is_what_the_sources_resolve_to() {
         // Without this the assertion below would read as "the sources moved"
         // every time an adopter edited a task.
         &repository.resolution,
-        headwater_lock::adoption_at(&root).as_ref(),
+        headwater_lock::authored_at(&root).payload(),
     )
     .expect("it validates");
 

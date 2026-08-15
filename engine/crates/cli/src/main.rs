@@ -781,13 +781,13 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
     // off the committed file and writes it back. A resolve that dropped it
     // would delete an adopter's accounting as a side effect of a taxonomy edit,
     // and the run after it would report every pair the payload was holding.
-    let adoption = headwater_lock::adoption_at(root);
+    let authored = headwater_lock::authored_at(root);
     let text = match headwater_lock::write(
         &repository.consumer.package,
         &repository.consumer.version,
         &sources,
         &repository.resolution,
-        adoption.as_ref(),
+        authored.payload(),
     ) {
         Ok(text) => text,
         Err(findings) => {
@@ -822,6 +822,42 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
         return ExitCode::FAILURE;
     }
 
+    // This is the write path, so this is where the authored block is decided
+    // rather than read. Every state names the line the run will print, and the
+    // one state in which nothing is known about the block returns instead: a
+    // rewrite there replaces a file whose authored half this engine cannot see,
+    // and it would discard an owner, an expiry and every pair, without being
+    // able to say what it discarded. The other five proceed and report, because
+    // the caller was sent here by another verb's remedy and reads exit 0 as
+    // "nothing happened but success".
+    let note = match &authored {
+        headwater_lock::Authored::NoLock => {
+            "no lock was there, so there was no adoption block to carry".to_string()
+        }
+        headwater_lock::Authored::Nothing => {
+            "the lock that was there declared no adoption block".to_string()
+        }
+        headwater_lock::Authored::Payload(payload) => carried(payload),
+        headwater_lock::Authored::Salvaged { why, payload } => format!(
+            "{}, out of a lock that did not read. The digest covers the resolution \
+             and has never covered the adoption block\n  the lock said: {why}",
+            carried(payload)
+        ),
+        headwater_lock::Authored::NothingBehind { why } => format!(
+            "the lock that was there declared no adoption block, and it did not read \
+             either\n  the lock said: {why}"
+        ),
+        headwater_lock::Authored::Opaque { why } => {
+            eprintln!("headwater: {} did not read: {why}", headwater_lock::LOCK);
+            eprintln!(
+                "  Nothing can be seen of its adoption block, which is the one authored part \
+                 of the file, so this run will not replace it. Repair the file, or delete it \
+                 to resolve from the sources alone and write the block again"
+            );
+            return ExitCode::FAILURE;
+        }
+    };
+
     if let Some(parent) = path.parent() {
         if let Err(error) = std::fs::create_dir_all(parent) {
             return fail(&format!("cannot create {}: {error}", parent.display()));
@@ -834,7 +870,24 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
     for source in &repository.resolution.sources {
         println!("  from {source}");
     }
+    println!("  {note}");
     ExitCode::SUCCESS
+}
+
+/// What a run says it carried, counted in tasks rather than in pairs.
+///
+/// A task is the unit a person owns and dates, so the count that says the
+/// authored block survived is the count of those.
+fn carried(payload: &headwater_yaml::Mapping) -> String {
+    let tasks = payload
+        .get("tasks")
+        .and_then(|node| node.value.as_seq())
+        .map(|items| items.len())
+        .unwrap_or_default();
+    format!(
+        "carried the adoption block through, {tasks} task{}",
+        if tasks == 1 { "" } else { "s" }
+    )
 }
 
 /// `headwater taxonomy audit`.
