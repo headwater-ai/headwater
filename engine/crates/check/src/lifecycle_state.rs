@@ -151,6 +151,19 @@ impl StateFacet {
     /// which is the same predicate `lifecycle soundness` asks of a declaration,
     /// so a taxonomy cannot be sound under one reading and checked under
     /// another.
+    ///
+    /// **A regime is available at the one call site that reads this, and the
+    /// reading declines to take it.** [`crate::dependency`] holds the target's
+    /// kind and calls `Shape::lifecycle_of` on it eleven lines below, so a
+    /// per-regime reading is one line away. That reading was built and
+    /// measured, and it costs the deferral. A target standing at a state its
+    /// own regime never names reads as not terminal, the instance passes, and
+    /// the account naming `lifecycle.state.not_admitted` as the rule that owns
+    /// the defect is gone. Three facts fold into two, and the one that goes is
+    /// the decline to judge.
+    /// [Q26](../../../../docs/decisions/0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md)
+    /// is the ruling, and it carries the survey of published traditions behind
+    /// it.
     pub(crate) fn standing(&self, state: &str) -> Standing {
         match self
             .values

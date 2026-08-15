@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # One state that one regime ends and another lets move on, which is the shape
-# [spec 3](../../../../../../../docs/spec/03-authoring-and-lifecycle.md#lifecycle)
+# [spec 3](../../../../../../docs/spec/03-authoring-and-lifecycle.md#lifecycle)
 # says is refused rather than read two ways.
 #
 # `ends` reaches `superseded` and gives it no exit, which agrees with the

@@ -1,0 +1,78 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The repair of `one-state-two-regimes-disagree/` beside it, and the reason
+# that refusal costs an adopter a rename rather than a shape.
+#
+# The adopter of that case wants one word, `superseded`, to end a decision and
+# to be a stop a receipt comes back from. `lifecycle soundness` refuses it,
+# because the role is one word for the whole vocabulary and the two rules that
+# read terminality are held to one answer over it. [HW-DR-0026](../../../../../../docs/decisions/0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md)
+# is the ruling, and this file is the arm it sends such an adopter to.
+#
+# The rename is the whole repair. `withdrawn` carries the `live` role and
+# `continues` gives it exits, so a receipt at `withdrawn` is a document a live
+# document may still rest on. `superseded` keeps the `terminal-retained` role
+# and neither regime gives it an exit, so it ends both. Every value is reached
+# somewhere and no state is read two ways, so this resolves clean.
+#
+# What the rename buys past silence: the two words are not one word written
+# twice. One of them is an ending and the other is not, and every rule that
+# reads either gets the right answer without asking which regime the document
+# came from. `lifecycle.state.not_admitted` then holds the split, because
+# `ends` never names `withdrawn` and a decision authored there is reported.
+# `engine/crates/check/fixtures/admitted-state/records/authored-wrong.md` is
+# that refusal, over the same shape.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+facets:
+  status:
+    role: state
+    values:
+      - {value: draft,      role: initial}
+      - {value: current,    role: live}
+      - {value: withdrawn,  role: live}
+      - {value: superseded, role: terminal-retained}
+    required: true
+    volatility: mutable
+    guidance:
+      draft: it is being argued over
+      current: it states what holds now
+      withdrawn: it is out of service and it may come back
+      superseded: a later document replaced it
+
+regimes:
+  lifecycle:
+    ends:
+      initial: draft
+      transitions:
+        draft: [current]
+        current: [superseded]
+    continues:
+      initial: draft
+      transitions:
+        draft: [current]
+        current: [withdrawn, superseded]
+        withdrawn: [current, superseded]
+
+kinds:
+  decision:
+    purpose: rationale
+    lifecycle: ends
+    facets: {require: [status]}
+  receipt:
+    purpose: rationale
+    lifecycle: continues
+    facets: {require: [status]}
+
+shelves:
+  decisions: {path: "docs/decisions/**", homogeneous: true, kind: decision}
+  receipts:  {path: "docs/receipts/**",  homogeneous: true, kind: receipt}
+
+core:
+  requires:
+    - facet_role: state
