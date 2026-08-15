@@ -79,23 +79,25 @@ rules, and for each the scope that binds it
   control.mechanism.unimplemented
     taxonomy scope, the resolved taxonomy, and no document
 register
-  26 obligations: 23 verified, 2 gap, 1 unverifiable, 0 with no disposition
+  27 obligations: 24 verified, 2 gap, 1 unverifiable, 0 with no disposition
      12 high, 11 verified
-      9 medium, 7 verified
+     10 medium, 8 verified
       5 low, 5 verified
   OB-LANG-1 verified, 3 findings escaped under it
   OB-LANG-3 verified, 1 finding escaped under it, 1 finding is migration-pending under it
   OB-DR-1 gap, owner the decision-record entry, target a change-scoped rule that reads the prior version, which spec 12 already supplies as `needs_prior`
   OB-DR-2 gap, owner the decision-record entry, target a rule over state dwell time, which `taxonomy audit` already measures and no check reads
   OB-DR-3 unverifiable, To count the decisions in a document is to reason about what the prose asserts, which spec 1 forswears. The shelf is homogeneous and the section contract requires one `Decision` heading, and a second decision under that heading is invisible to both
-  23 controls
+  24 controls
      23 posture advisory
-     23 acts detective
-     21 name a rule this engine carries
+      1 posture blocking
+     24 acts detective
+     22 name a rule this engine carries
       2 name a phase this engine runs
      12 with no promotion record, so nothing states what would promote them
       6 with criteria
+      1 at a final posture
       3 permanently advisory
       2 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 1 migration-pending, 4 suppressed
-  lifecycle.transition.not_permitted reaches no obligation, so it names none
+  every rule this engine carries reaches one obligation
