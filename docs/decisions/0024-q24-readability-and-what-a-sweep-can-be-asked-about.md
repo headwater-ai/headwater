@@ -14,6 +14,8 @@ provenance:
 relations:
   governs:
     - engine/crates/sweep/src/lib.rs
+    - engine/crates/sweep/src/intake.rs
+    - .claude/skills/headwater-sweep/SKILL.md
 ---
 
 # Q24 — Readability, and what a sweep can be asked about

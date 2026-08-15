@@ -1,4 +1,4 @@
-232 seen, 189 classified, 189 checked, 3089 check instances
+232 seen, 189 classified, 189 checked, 3091 check instances
       3 generated, held to regeneration by `headwater generate --check`
     177 skipped: this document writes no fragment into itself
     189 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
@@ -12,7 +12,7 @@ adoption
     189 instances of facet.value.not_permitted
     189 instances of identifier.pattern.not_met
     189 instances of shelf.placement_is_primary
-    414 instances of relation.target.unresolved
+    416 instances of relation.target.unresolved
      86 instances of relation.reciprocity.missing
     312 instances of relation.endpoint.not_permitted
      15 instances of relation.participation.overdue
