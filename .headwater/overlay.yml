@@ -340,6 +340,19 @@ add:
   # names each one.
   kinds.decision.language:            ste_house
 
+  # An evaluation is this repository's own argument, and the specification cites
+  # it as evidence. 14 of the 15 records under `docs/evaluations/` declare
+  # `cited_by` and no review record and no probe declares one, which is the line
+  # between prose this repository wrote and text it recorded.
+  # [Q28](../docs/spec/09-decisions.md#q28--whether-an-evaluation-is-governed-prose)
+  # rules that an evaluation is governed prose, and it states what this line
+  # costs: 432 findings on the shelf when it was taken, every one of them
+  # advisory, 422 over the word limit and 10 on a semicolon. No adoption pair
+  # holds any of them and Q28 states the measured reason. Nothing works the 432
+  # down. What the line buys is the next evaluation, which arrives under the
+  # rule, and Q28 measures that effect on two shelves rather than asserting it.
+  kinds.evaluation.language:          ste_house
+
 # --- projections ------------------------------------------------------------
 # `projections` is a list in the base, so an `add` cannot reach it, and this is
 # the one operation in this file that is not an `add`. Spec 13 records that

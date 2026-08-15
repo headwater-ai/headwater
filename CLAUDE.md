@@ -26,7 +26,7 @@ Exception: documents under `docs/reviews/` are point-in-time review records and 
 
 Every rule above is a check that `headwater check` runs, and the taxonomy of this repository is where each one is declared. Nothing enforces them by memory, and no second copy of any rule lives in a script.
 
-**What declares them.** `.headwater/overlay.yml` binds `regimes.language.ste_house` to the kinds that carry this repository's own prose: `design_spec`, `decision`, `decision_register`, `obligation_register` and `obligation_record`. The regime names the controlled language and the profile, fixes the source form as `one_line_per_block`, and lists the stock phrasing under `retired_terms` with the reason each term is retired. The base package declares the voice regime that forbids future intent, change narration and phased rollout. A document under `docs/reviews/` answers to none of the language rules, which is the exemption the sections above state.
+**What declares them.** `.headwater/overlay.yml` binds `regimes.language.ste_house` to the kinds that carry this repository's own prose: `design_spec`, `decision`, `decision_register`, `evaluation`, `obligation_register` and `obligation_record`. The regime names the controlled language and the profile, fixes the source form as `one_line_per_block`, and lists the stock phrasing under `retired_terms` with the reason each term is retired. The base package declares the voice regime that forbids future intent, change narration and phased rollout. A document under `docs/reviews/` answers to none of the language rules, which is the exemption the sections above state.
 
 **What runs them.** Six rules read prose. `language.controlled.not_met` holds a sentence to 25 words and refuses a contraction, a British spelling and a semicolon in running prose. `language.source_form.not_met` reports a block written over more than one line. `language.retired_term.used` reports a term the regime retired. `voice.forbidden_construction` reports the three voice categories. `section.required.missing` and `link.fragment.unresolved` read the body for other reasons.
 
@@ -59,7 +59,7 @@ None of them binds. A `Bash` call that writes a file matches no matcher, `disabl
 
 The second hatch is for debt rather than for an exception. The `adoption` block of `.headwater/taxonomy.lock` holds `(document, rule)` pairs under a task with an owner and an expiry. A pending finding is reported with its task beside it and does not fail a strict run. `headwater infer --owner <name> --write` writes one, and `headwater check` reports how many pairs remain on every run. This repository declares one task, which carries the last entry of the linter baseline that the engine still reports.
 
-**Writing governed prose.** Invoke the `ste-editor` skill before you rewrite a document under `docs/spec/`, `docs/decisions/` or `docs/obligations/`, and run `headwater check` on the result. The skill carries the rules that no check reads: consistent terms, multi-word nouns kept to three words, and the judgment calls that a lexical rule cannot make.
+**Writing governed prose.** Invoke the `ste-editor` skill before you rewrite a document under `docs/spec/`, `docs/decisions/`, `docs/evaluations/` or `docs/obligations/`, and run `headwater check` on the result. The skill carries the rules that no check reads: consistent terms, multi-word nouns kept to three words, and the judgment calls that a lexical rule cannot make.
 
 **The seven skills, and when each one loads.** Nothing makes a skill load. A harness reads a description and a model picks, which [spec 5](docs/spec/05-ai-integration.md#how-a-skill-reaches-an-agent-and-what-nothing-does) states as a measurement rather than a property. This paragraph is the one mechanism stronger than a description, and it costs context on every session.
 
@@ -68,7 +68,7 @@ The second hatch is for debt rather than for an exception. The `adoption` block 
 | `headwater-orient` | you search `docs/` or open a specification part to find out what this repository already says |
 | `headwater-authoring` | you add or revise any document under `docs/`, and whenever `headwater new` refuses |
 | `headwater-taxonomy` | you touch `packages/`, `docs/taxonomies/` or `.headwater/overlay.yml` |
-| `ste-editor` | you rewrite prose under `docs/spec/`, `docs/decisions/` or `docs/obligations/` |
+| `ste-editor` | you rewrite prose under `docs/spec/`, `docs/decisions/`, `docs/evaluations/` or `docs/obligations/` |
 | `headwater-engine` | the first cargo or CLI command of a session, and whenever a build fails on the toolchain |
 | `repo-cleanup` | you retire a worktree, a local branch or a remote branch that a merged change left behind |
 | `headwater-sweep` | you are asked to read a slice of the corpus for what no check can see |
