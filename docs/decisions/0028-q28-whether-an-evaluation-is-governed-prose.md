@@ -36,16 +36,18 @@ The findings fall on running prose rather than on a table. 408 fall on a paragra
 
 **Third, the reading that explains the rate is not authorship, and this shelf is what shows it.** Q27 found 60 of its 64 findings on the five most recent records and read that as an era of authorship. This shelf refutes that reading directly. Every one of the 15 evaluations was drafted by an agent, and 14 of the 15 carry `accepted_by: j.baxter`, so a human read and accepted them. They still carry 432 findings.
 
-The measurement that separates every group in this corpus is whether a lexical rule was reading the prose when it was written. Each row below counts prose words as whitespace-separated tokens outside front matter and outside a fenced code block.
+The measurement that separates every group in this corpus is whether a lexical rule was reading the prose when it was written. Each row counts prose words as whitespace-separated tokens outside front matter, outside a fenced code block and not indented four spaces. No verb reports the figure, so the method is stated here and the table is a reading of the tree this record lands on.
 
 | group | documents | prose words | findings | per 1000 words | was a rule reading it |
 |---|---|---|---|---|---|
-| `docs/spec/` | 18 | 118,921 | 9 | 0.1 | yes, throughout |
-| `docs/obligations/` | 127 | 34,204 | 0 | 0.0 | yes, carried through the conversion |
+| `docs/spec/` | 18 | 119,133 | 9 | 0.1 | yes, throughout |
+| `docs/obligations/` | 127 | 34,511 | 0 | 0.0 | yes, carried through the conversion |
 | `docs/decisions/` 0001–0021 | 21 | 16,161 | 4 | 0.2 | yes, as prose of spec 9 |
-| `docs/decisions/` 0027 | 1 | 1,408 | 0 | 0.0 | yes, written under Q27 |
+| `docs/decisions/` 0027 | 1 | 1,462 | 0 | 0.0 | yes, written under Q27 |
 | `docs/decisions/` 0022–0026 | 5 | 5,872 | 60 | 10.2 | no |
 | `docs/evaluations/` | 15 | 68,266 | 432 | 6.3 | no |
+
+This record is a seventh row and it reports zero, which is the same reading as the fourth. A denominator for it is omitted, because a word count of this document inside this document moves whenever the sentence stating it moves.
 
 The four clean groups differ by a factor of 40 from the two dirty ones. Every document in every row was drafted by the same model family. Acceptance does not separate them either. Records 0001 to 0021 are accepted and clean, and 14 of the 15 evaluations are accepted and are not. What separates them is the history of the file. Records 0001 to 0021 were carried out of `docs/spec/09-open-questions.md`, which the editorial pass of 2026-08-09 rewrote under the regime. The obligation records carried their prose off a bound register, and the overlay moved the binding with it. Record 0027 was written after Q27 bound the kind. The two dirty groups were written where no rule was looking.
 
