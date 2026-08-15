@@ -46,7 +46,6 @@ regimes:
     standard:
       initial: draft
       transitions: {draft: [current, deprecated], current: [superseded]}
-      terminal: [superseded]
       retain_terminal: true
   language:
     default:

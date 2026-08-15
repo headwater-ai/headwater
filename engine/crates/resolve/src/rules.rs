@@ -967,7 +967,19 @@ fn role_uniqueness(view: &View, out: &mut Vec<ResolveError>) {
     }
 }
 
-/// Connected, with an initial state and declared terminals.
+/// The role the state vocabulary gives one value, for a message that names it.
+///
+/// An empty string where the value carries no role, because the one caller
+/// reads this only on the arm where a `terminal-` role is what it found.
+fn role_of(states: &[(String, Option<String>)], state: &str) -> String {
+    states
+        .iter()
+        .find(|(value, _)| value == state)
+        .and_then(|(_, role)| role.clone())
+        .unwrap_or_default()
+}
+
+/// Connected, with an initial state, and one reading of which states end it.
 fn lifecycle_soundness(view: &View, out: &mut Vec<ResolveError>) {
     const RULE: &str = "lifecycle soundness";
     let states = view.states();
@@ -1080,22 +1092,37 @@ fn lifecycle_soundness(view: &View, out: &mut Vec<ResolveError>) {
         }
         anywhere.extend(reached.iter().cloned());
 
-        // A terminal state is declared, either by the regime's own list or by
-        // the role that the vocabulary gives the value.
-        let declared: BTreeSet<String> = strings(body, "terminal").into_iter().collect();
+        // Terminality, said once. The `terminal-` role on the vocabulary value
+        // is the declaration and the machine is the derivation, and this engine
+        // reads both: `lifecycle.dependency.on_terminal` asks the role, and
+        // `lifecycle.deletion.not_permitted` and `lifecycle.transition
+        // .not_permitted` ask the machine. A state a regime reaches is
+        // therefore terminal to both readings or to neither, and each half of
+        // that is refused here.
+        //
+        // The `terminal` member this rule once read was the third way to say
+        // it. It reached no reader but the escape on the first half below, so a
+        // state it named was terminal to the machine and not to the role, and
+        // the two rules above then answered differently about one state.
         for state in &reached {
             let leaves = exits.get(state).is_some_and(|targets| !targets.is_empty());
-            if leaves || declared.contains(state) || retained.contains(state.as_str()) {
+            let terminal = retained.contains(state.as_str());
+            if leaves != terminal {
                 continue;
             }
-            out.push(refusal(
-                RULE,
-                &at("transitions"),
-                format!(
-                    "gives `{state}` no exit and nothing declares it terminal. A terminal state \
-                     is named, either in `terminal` here or by a `terminal-` role on the value"
+            let message = match leaves {
+                true => format!(
+                    "gives `{state}` an exit, and the `{}` role on its value names it terminal. \
+                     One rule reads the role and another reads the machine, so a state is \
+                     terminal to both or to neither",
+                    role_of(&states, state)
                 ),
-            ));
+                false => format!(
+                    "gives `{state}` no exit and nothing declares it terminal. A terminal state \
+                     is named by a `terminal-` role on its value"
+                ),
+            };
+            out.push(refusal(RULE, &at("transitions"), message));
         }
     }
 

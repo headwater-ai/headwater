@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# One state that one regime ends and another lets move on, which is the shape
+# [spec 3](../../../../../../../docs/spec/03-authoring-and-lifecycle.md#lifecycle)
+# says is refused rather than read two ways.
+#
+# `ends` reaches `superseded` and gives it no exit, which agrees with the
+# `terminal-retained` role on the value. `continues` reaches the same state and
+# gives it an exit back to `current`, which does not. The role is one word for
+# the whole vocabulary, so the second regime is the one refused and the first
+# one is silent.
+#
+# This is the case `two-regimes-over-one-vocabulary/` beside it does not make.
+# There each terminal state is reachable in exactly one regime, so no state is
+# read twice and the disagreement has nowhere to appear.
+#
+# What a taxonomy does instead is rename. `superseded` under one regime and a
+# second value under the other are two states with two roles, and the worked
+# overlay of spec 2 is what says a vocabulary may be renamed freely.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+facets:
+  status:
+    role: state
+    values:
+      - {value: draft,      role: initial}
+      - {value: current,    role: live}
+      - {value: superseded, role: terminal-retained}
+    required: true
+    volatility: mutable
+    guidance:
+      draft: it is being argued over
+      current: it states what holds now
+      superseded: a later document replaced it
+
+regimes:
+  lifecycle:
+    ends:
+      initial: draft
+      transitions:
+        draft: [current]
+        current: [superseded]
+    continues:
+      initial: draft
+      transitions:
+        draft: [current]
+        current: [superseded]
+        superseded: [current]
+
+kinds:
+  decision:
+    purpose: rationale
+    lifecycle: ends
+    facets: {require: [status]}
+  receipt:
+    purpose: rationale
+    lifecycle: continues
+    facets: {require: [status]}
+
+shelves:
+  decisions: {path: "docs/decisions/**", homogeneous: true, kind: decision}
+  receipts:  {path: "docs/receipts/**",  homogeneous: true, kind: receipt}
+
+core:
+  requires:
+    - facet_role: state

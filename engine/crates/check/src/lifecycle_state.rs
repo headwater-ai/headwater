@@ -401,6 +401,101 @@ mod tests {
         assert_eq!(facet.standing("current"), Standing::Neither);
     }
 
+    /// The two readings of "terminal", over the taxonomy this repository
+    /// resolves.
+    ///
+    /// The role on a state value is what [`StateFacet::standing`] reads, and
+    /// [`crate::dependency`] is the rule that reads it. The machine is what
+    /// [`crate::shape::LifecycleRegime::terminal`] reads, and
+    /// [`crate::retention`] and [`crate::transition`] are the rules that read
+    /// that one. `lifecycle soundness` refuses a regime where the two differ
+    /// over a state it reaches, so this holds for every taxonomy the resolver
+    /// accepts and not for this corpus alone.
+    ///
+    /// It re-resolves rather than reading the committed lock, because a lock is
+    /// an output of the rule this assertion rests on.
+    #[test]
+    fn the_role_and_the_machine_name_one_terminal_set_over_this_repository() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let repository = headwater_resolve::repository(&root).expect("this repository resolves");
+        let shape = Shape::read(&repository.resolution.taxonomy).expect("a shape");
+        let facet = StateFacet::of(&shape);
+
+        let mut read: Vec<(&str, &str, bool, bool)> = Vec::new();
+        for regime in &shape.lifecycle {
+            for state in regime.states() {
+                read.push((
+                    regime.name.as_str(),
+                    state,
+                    regime.terminal(state),
+                    facet.standing(state) == Standing::Terminal,
+                ));
+            }
+        }
+
+        let split: Vec<String> = read
+            .iter()
+            .filter(|(_, _, machine, role)| machine != role)
+            .map(|(regime, state, machine, role)| {
+                format!(
+                    "`{regime}` reaches `{state}`: the machine says {machine} and the role \
+                     says {role}"
+                )
+            })
+            .collect();
+        assert!(
+            split.is_empty(),
+            "two readings of terminal disagree over this repository:\n  {}",
+            split.join("\n  ")
+        );
+
+        // The denominator, and both arms. The same assertion over a shape that
+        // read no regime is silent, and one where every state answered the same
+        // way would be silent for a second reason.
+        assert_eq!(read.len(), 9, "the readings ran over {read:?}");
+        assert!(read.iter().any(|(_, _, machine, _)| *machine));
+        assert!(read.iter().any(|(_, _, machine, _)| !*machine));
+    }
+
+    /// The disagreement, built by hand, and what refuses it.
+    ///
+    /// This layer reads a lock and re-runs no resolver rule over one, so a
+    /// shape built from source still holds two readings that differ. That is
+    /// what `lifecycle soundness` buys and what nothing here would catch:
+    /// `leaves` is terminal to the rule that reads the role and not to the one
+    /// that reads the machine, and `sealed` is that the other way round.
+    #[test]
+    fn a_shape_built_by_hand_still_holds_two_readings_that_differ() {
+        let source = load(concat!(
+            "facets:\n",
+            "  status:\n",
+            "    role: state\n",
+            "    values:\n",
+            "      - {value: draft, role: initial}\n",
+            "      - {value: current, role: live}\n",
+            "      - {value: leaves, role: terminal-retained}\n",
+            "      - {value: sealed}\n",
+            "regimes:\n",
+            "  lifecycle:\n",
+            "    standard:\n",
+            "      initial: draft\n",
+            "      transitions: {draft: [current], current: [leaves, sealed], leaves: [sealed]}\n",
+            "kinds:\n",
+            "  decision: {lifecycle: standard}\n",
+        ));
+        let shape = Shape::read(&source).expect("a shape");
+        let facet = StateFacet::of(&shape);
+        let regime = shape.lifecycle_of("decision").expect("a regime");
+
+        // The role names it terminal and the machine gives it an exit.
+        assert_eq!(facet.standing("leaves"), Standing::Terminal);
+        assert!(!regime.terminal("leaves"));
+
+        // The machine gives it no exit and the value carries no role.
+        assert!(regime.terminal("sealed"));
+        assert_eq!(facet.standing("sealed"), Standing::Neither);
+    }
+
     /// The three readings of a document's state, kept apart.
     #[test]
     fn a_state_a_document_does_not_declare_is_not_the_state_it_declares_wrongly() {
