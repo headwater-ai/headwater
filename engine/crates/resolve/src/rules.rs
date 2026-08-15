@@ -690,14 +690,32 @@ fn identifier_integrity(view: &View, out: &mut Vec<ResolveError>) {
     const RULE: &str = "identifier integrity";
     let mut by_namespace: BTreeMap<&str, Vec<(&str, String)>> = BTreeMap::new();
     for (scheme, body) in view.members("identifier_schemes") {
-        let Some(namespace) = text(body, "namespace") else {
-            out.push(refusal(
-                RULE,
-                &format!("identifier_schemes.{scheme}"),
-                "carries no namespace, and the invariant core requires one on every scheme"
-                    .to_string(),
-            ));
-            continue;
+        // Three states and not two. The meta-schema lets a package omit
+        // `namespace`, so an absent key means the choice is open and an empty
+        // one means a consumer answered it with nothing. Collapsing them into
+        // one `Option` would report a package defect against a consumer.
+        let namespace = match text(body, "namespace") {
+            None => {
+                out.push(refusal(
+                    RULE,
+                    &format!("identifier_schemes.{scheme}"),
+                    "carries no namespace after resolution. A package leaves the namespace to \
+                     the corpus that adopts it, so an overlay of this corpus has to declare one"
+                        .to_string(),
+                ));
+                continue;
+            }
+            Some("") => {
+                out.push(refusal(
+                    RULE,
+                    &format!("identifier_schemes.{scheme}.namespace"),
+                    "is the empty string, which names nobody. The namespace is the part of an \
+                     identifier that tells this corpus's records from another corpus's"
+                        .to_string(),
+                ));
+                continue;
+            }
+            Some(found) => found,
         };
         let pattern = text(body, "pattern").unwrap_or_default();
         by_namespace

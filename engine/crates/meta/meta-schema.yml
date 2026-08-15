@@ -41,7 +41,12 @@
 # `gap:` marks a surface the specification requires and gives no form.
 
 meta_schema: headwater/taxonomy
-version: 0.1.0
+# 0.2.0 relaxes `identifier_scheme.namespace` from required to optional. Every
+# source that validated under 0.1.0 validates under this one, so it is a minor.
+# No consumer compares this value against anything. `fixtures/schema.record`
+# carries it, so a bump shows up in a diff, and nothing refuses a source for
+# the version it was written against.
+version: 0.2.0
 
 # --- the root of a taxonomy source ------------------------------------------
 #
@@ -315,7 +320,15 @@ definitions:
       # gap: the prefix that discriminates a kind is a literal inside this
       # string, so the engine cannot read the prefix it mints.
       pattern: {scalar: string, required: true}
-      namespace: {scalar: string, required: true}
+      # Required after resolution, and not in a source. A published package can
+      # declare neither its own namespace, which every adopter would inherit,
+      # nor a stand-in such as `repo`, which names every adopter at once. So it
+      # declares none and a consumer's overlay supplies one. `taxonomy
+      # validate` refuses a resolved scheme that carries none, and the two
+      # states are kept apart there: a key that is absent and a key written as
+      # the empty string get two messages, because one is a package leaving the
+      # choice open and the other is a consumer answering it with nothing.
+      namespace: {scalar: string}
       # gap: spec 2 writes `reconcile-first` and this repository's overlay
       # writes `minted-once`. No set is stated.
       allocation: {scalar: string, required: true}
