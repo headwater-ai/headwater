@@ -2,7 +2,7 @@
 
 # decisions
 
-26 documents on this shelf, in the reading order this corpus derives.
+27 documents on this shelf, in the reading order this corpus derives.
 
 - [HW-DR-0001](0001-implementation-language.md) — The language is Rust, with a WebAssembly build of the same crate for editor and browser embedding.
 - [HW-DR-0002](0002-schema-format.md) — YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema.
@@ -30,3 +30,4 @@
 - [HW-DR-0024](0024-q24-readability-and-what-a-sweep-can-be-asked-about.md) — Readability is not a sweep class and gets no verb, because every class of a sweep names two things that do not fit and a readability finding names one. A source file is not a slice member, because admitting one degrades the membership refusal for every class. (asserted, and no human has accepted it)
 - [HW-DR-0025](0025-q25-where-the-namespace-goes-in-an-identifier-and-who-declares-it.md) — The namespace opens every identifier, and a published source declares no namespace at all, because any constant it wrote would be minted by every adopter of it at once. (asserted, and no human has accepted it)
 - [HW-DR-0026](0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md) — Terminality stays a property of a state alone, because the per-regime reading is available at both call sites and costs the deferral that keeps one defect one finding. No published tradition wants the collision, and two that met it minted a second state name. (asserted, and no human has accepted it)
+- [HW-DR-0027](0027-q27-whether-a-decision-record-is-governed-prose.md) — A decision record is governed prose, and the overlay binds the house language regime to it. The shelf carries a prose problem rather than a quotation problem, and collapsing all 37 inline quotations moves 64 findings to 63. (asserted, and no human has accepted it)
