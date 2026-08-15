@@ -144,7 +144,7 @@
     {
       "rule": "link.fragment.unresolved",
       "scope": "document",
-      "version": 1,
+      "version": 2,
       "obligations": [
         "OB-FIX-10"
       ]
