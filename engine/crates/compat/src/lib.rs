@@ -407,20 +407,51 @@ fn emitted(plan: &Plan) -> BTreeMap<String, String> {
 /// does. That is what makes the comparison sensitive enough to catch a rule
 /// that started failing for a different reason at the same document.
 fn verdicts(instances: &[Instance], admit: impl Fn(&Instance) -> bool) -> BTreeMap<String, String> {
-    let mut out = BTreeMap::new();
+    let mut gathered: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for instance in instances.iter().filter(|instance| admit(instance)) {
-        let read: Vec<&str> = instance
-            .reads
-            .iter()
-            .map(|input| input.path.as_str())
-            .collect();
-        let at = match read.is_empty() {
-            true => format!("{} over the corpus", instance.rule),
-            false => format!("{} at {}", instance.rule, read.join(", ")),
-        };
-        out.insert(at, verdict(&instance.outcome));
+        gathered
+            .entry(key(instance))
+            .or_default()
+            .push(verdict(&instance.outcome));
     }
-    out
+    // Sorted, so that two instances under one key are compared as a set. The
+    // order the runner emits them in is fixed, and to depend on it here would
+    // make a dimension answer about the order of a list rather than about what
+    // the list holds.
+    gathered
+        .into_iter()
+        .map(|(at, mut readings)| {
+            readings.sort();
+            (at, readings.join(" + "))
+        })
+        .collect()
+}
+
+/// What one instance is told apart by.
+///
+/// **A key can hold more than one instance, and that is why the map above
+/// gathers rather than inserts.** Two edges between one pair of documents are
+/// two instances of an edge-scoped rule over one read set, so a key that
+/// carried the last one would drop the verdict of the first without saying so.
+///
+/// **A corpus-grained or taxonomy-grained instance is keyed by its rule alone.**
+/// Such an instance reads every row, so its read set is the corpus, and a key
+/// built from it would name every document of the repository. What that key
+/// would add is a report of the census under a rule name, and the census is
+/// what [`classification`] already compares.
+fn key(instance: &Instance) -> String {
+    if !instance.grain.routes() {
+        return format!("{} over the corpus", instance.rule);
+    }
+    let read: Vec<&str> = instance
+        .reads
+        .iter()
+        .map(|input| input.path.as_str())
+        .collect();
+    match read.is_empty() {
+        true => format!("{} over nothing it could read", instance.rule),
+        false => format!("{} at {}", instance.rule, read.join(", ")),
+    }
 }
 
 fn verdict(outcome: &Verdict) -> String {
@@ -532,5 +563,132 @@ impl Bump {
                  decides nothing about the version"
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use headwater_check::instance::Input;
+
+    fn edge(rule: &'static str, ends: [&str; 2], outcome: Verdict) -> Instance {
+        Instance {
+            rule,
+            grain: Grain::Edge,
+            reads: ends
+                .iter()
+                .map(|path| Input {
+                    path: (*path).to_string(),
+                    digest: None,
+                })
+                .collect(),
+            outcome,
+        }
+    }
+
+    /// Two edges between one pair of documents are two instances of one
+    /// edge-scoped rule over one read set.
+    ///
+    /// A map that inserted under that key would keep the last verdict and drop
+    /// the first, so a taxonomy change that flipped the dropped one would
+    /// report nothing at all. Nothing about that failure is visible in a count:
+    /// both sides lose the same instance, and the dimension says `preserved`.
+    #[test]
+    fn two_instances_over_one_read_set_are_both_compared() {
+        let rule = "relation.endpoint.not_permitted";
+        let was = [
+            edge(rule, ["a.md", "b.md"], Verdict::Passed),
+            edge(rule, ["a.md", "b.md"], Verdict::Skipped("no window".into())),
+        ];
+        // The second edge is the one that moves, and it is the one an insert
+        // would have kept, so this fails in the direction that hides a drop.
+        let now = [
+            edge(rule, ["a.md", "b.md"], Verdict::Skipped("no window".into())),
+            edge(rule, ["a.md", "b.md"], Verdict::Skipped("no window".into())),
+        ];
+        let breaks = compare(
+            &verdicts(&was, |_| true),
+            &verdicts(&now, |_| true),
+            "no instance",
+        );
+        assert_eq!(breaks.len(), 1, "{breaks:?}");
+        assert!(breaks[0].was.contains("passed"), "{breaks:?}");
+        assert!(!breaks[0].now.contains("passed"), "{breaks:?}");
+    }
+
+    /// The order the runner emits two instances in is not a dimension.
+    #[test]
+    fn the_order_of_two_instances_under_one_key_is_not_a_difference() {
+        let rule = "relation.endpoint.not_permitted";
+        let skipped = || Verdict::Skipped("no window".into());
+        let was = [
+            edge(rule, ["a.md", "b.md"], Verdict::Passed),
+            edge(rule, ["a.md", "b.md"], skipped()),
+        ];
+        let now = [
+            edge(rule, ["a.md", "b.md"], skipped()),
+            edge(rule, ["a.md", "b.md"], Verdict::Passed),
+        ];
+        assert!(compare(
+            &verdicts(&was, |_| true),
+            &verdicts(&now, |_| true),
+            "no instance",
+        )
+        .is_empty());
+    }
+
+    /// A corpus-grained instance reads every row, and its key names none of
+    /// them. See [`key`].
+    #[test]
+    fn a_corpus_grained_instance_is_keyed_by_its_rule_alone() {
+        let instance = Instance {
+            rule: "identifier.claimed_twice",
+            grain: Grain::Corpus,
+            reads: vec![
+                Input {
+                    path: "a.md".into(),
+                    digest: None,
+                },
+                Input {
+                    path: "b.md".into(),
+                    digest: None,
+                },
+            ],
+            outcome: Verdict::Passed,
+        };
+        assert_eq!(key(&instance), "identifier.claimed_twice over the corpus");
+    }
+
+    /// An empty break list is a preserved dimension and never a broken one with
+    /// nothing in it.
+    #[test]
+    fn a_dimension_with_no_break_is_preserved() {
+        assert!(matches!(Outcome::over(Vec::new()), Outcome::Preserved));
+        assert!(matches!(
+            Outcome::over(vec![Break {
+                at: "a".into(),
+                was: "b".into(),
+                now: "c".into(),
+            }]),
+            Outcome::Broken(_)
+        ));
+    }
+
+    /// A report whose candidate did not resolve decides nothing about a
+    /// version, and it never reads as compatible.
+    #[test]
+    fn an_unmeasured_run_decides_nothing_about_the_version() {
+        let report = Report {
+            package: "acme/fixture".into(),
+            from: "1.0.0".into(),
+            to: "2.0.0".into(),
+            base_moved: true,
+            measured: Measured::against_nothing(Outcome::Preserved, "nothing resolved"),
+        };
+        assert!(!report.measured.complete());
+        assert_eq!(report.bump(), Bump::Undecided);
+        assert!(report
+            .render()
+            .contains("decides nothing about the version"));
     }
 }
