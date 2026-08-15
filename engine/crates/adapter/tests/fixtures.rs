@@ -758,6 +758,56 @@ fn every_format_states_how_many_instances_reached_no_verdict() {
     }
 }
 
+/// A path that no census row accounts for is named in the artifact.
+///
+/// **The one member of the coverage block that a recorded artifact cannot hold.**
+/// `Coverage::unaccounted` is written when an instance reads a file the census
+/// never walked, and no check of this engine does that today, so every fixture
+/// tree of this repository produces an empty list. A probe that emptied the
+/// member in the emitter therefore moved no recorded byte and failed no test,
+/// which is what this test is here to stop.
+///
+/// The state is built rather than found: one instance over a path that is on no
+/// row of a real census. What it proves is what the block is for — a check that
+/// read outside the denominator read outside the set every coverage guarantee is
+/// computed over, and the reader who can act on that needs the path rather than a
+/// count of them.
+#[test]
+fn a_path_the_census_never_walked_is_named_and_not_counted() {
+    let ran = fixture_run();
+    let stray = "check/spec/a-file-no-walk-of-this-tree-reaches.md";
+    let outside = headwater_check::Coverage::of(
+        &ran.census,
+        &[headwater_check::instance::Instance::of(
+            "duplicate.identifier",
+            headwater_check::scope::Grain::Document,
+            vec![headwater_check::instance::Input {
+                path: stray.to_string(),
+                digest: None,
+            }],
+            headwater_check::instance::Outcome::Passed,
+        )],
+    );
+    assert_eq!(outside.unaccounted, [stray]);
+    let block = parse(&headwater_adapter::json::coverage(&outside).render_pretty());
+    let named: Vec<String> = member(&block, "unaccounted")
+        .expect("the unaccounted paths")
+        .as_seq()
+        .expect("an array")
+        .iter()
+        .map(|path| scalar(&path.value))
+        .collect();
+    assert_eq!(named, [stray.to_string()], "the path, and not a count of them");
+    // And the empty case is a different artifact, so the member states which of
+    // the two this run was.
+    let clean = headwater_adapter::json::coverage(&ran.run.coverage).render_pretty();
+    assert!(ran.run.coverage.unaccounted.is_empty());
+    assert_ne!(
+        clean,
+        headwater_adapter::json::coverage(&outside).render_pretty()
+    );
+}
+
 /// No two counts of the coverage block the recorded fixtures carry are equal.
 ///
 /// The same property [`no_two_counts_of_the_scoped_fixture_are_equal`] holds for
