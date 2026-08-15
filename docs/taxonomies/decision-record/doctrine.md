@@ -59,7 +59,7 @@ A tradition whose whole point is a readable log has to answer this, so `facets.t
 
 ## The lifecycle ladder maps, and two of its rungs do not
 
-The tradition's ladder is the reason this entry was chosen second. Proposed, then accepted, then superseded or deprecated, is what an ADR log is for. The base declares four states in `vocabularies.lifecycle_state`, and the transitions of `regimes.lifecycle.standard` are the same graph.
+The tradition's ladder is the reason this entry was chosen second. Proposed, then accepted, then superseded or deprecated, is what an ADR log is for. The base declares five states in `vocabularies.lifecycle_state`, and the four that `regimes.lifecycle.standard` names are the same graph. The fifth is `discharged`, which the base names in `regimes.lifecycle.obligation` and which `kinds.decision` therefore cannot reach.
 
 | The tradition | The base state | What it means here |
 |---|---|---|
@@ -69,6 +69,8 @@ The tradition's ladder is the reason this entry was chosen second. Proposed, the
 | Deprecated | `deprecated` | The decision no longer holds, and nothing replaced it |
 
 **This entry adds no lifecycle state and no lifecycle regime**, for the reason the [design-spec entry](../design-spec/doctrine.md#the-lifecycle-ladder-maps-onto-the-base) found first. The states are a list under `vocabularies.lifecycle_state`, and an `add` introduces a key rather than an element. Two rungs pay for that.
+
+**It binds a second regime that the base declares, on one kind.** `kinds.obligation_record` names `regimes.lifecycle.obligation`, which is `standard` and one edge into `discharged`. A record here is a debt the corpus wrote down, and it has an ending that a decision does not: the corpus paid it, and the record is kept as the receipt. To bind a declared regime is not to add one, so the add-only rule is untouched.
 
 **The names are the tradition's and the corpus cannot write them.** A team that keeps ADRs writes `proposed` and `accepted`. Under this entry it writes `draft` and `current`. The core is satisfied either way, because the core is semantic and the roles survive the renaming ([spec 2](../../spec/02-taxonomy-model.md#the-immutable-core)). What is lost is recognition, which is criterion 1 of the [admission criteria](../README.md#admission-criteria): somebody who works in the tradition is meant to recognize it.
 
