@@ -414,12 +414,6 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::corpus_exports::<duplicate::Duplicate>(),
         ),
         (
-            retention::RULE,
-            scope::corpus_scope::<retention::Retention<'_>>(),
-            scope::corpus_version::<retention::Retention<'_>>(),
-            scope::corpus_exports::<retention::Retention<'_>>(),
-        ),
-        (
             voice::RULE,
             scope::document_scope::<voice::Voice>(),
             scope::document_version::<voice::Voice>(),
@@ -472,6 +466,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::document_scope::<lifecycle_state::StateAdmitted<'_>>(),
             scope::document_version::<lifecycle_state::StateAdmitted<'_>>(),
             scope::document_exports::<lifecycle_state::StateAdmitted<'_>>(),
+        ),
+        (
+            retention::RULE,
+            scope::corpus_scope::<retention::Retention<'_>>(),
+            scope::corpus_version::<retention::Retention<'_>>(),
+            scope::corpus_exports::<retention::Retention<'_>>(),
         ),
         (
             coverage::RULE,

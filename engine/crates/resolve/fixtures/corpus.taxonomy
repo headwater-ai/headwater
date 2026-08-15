@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 3.1.0
+version: 3.2.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -765,6 +765,12 @@ obligations:
     class: cohesion
     prevents: content.inconsistent
     severity: medium
+  OB-LIFE-4:
+    statement: "A document standing at a terminal state of a regime that declares `retain_terminal` is not deleted from the corpus"
+    rationale: "A terminal state is where a document is kept rather than where it stops mattering, and `retain_terminal` is the member that says so. A corpus that deletes the record loses the only account of what it once said, and every citation of it then resolves to nothing. No standing reading of the corpus can report the loss, because a document that left leaves no row to report about, so the change that removes it is the one moment the claim is checkable"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
   OB-REG-1:
     statement: "Every obligation this taxonomy declares carries exactly one disposition"
     rationale: "An obligation that no control discharges and that states neither a gap nor an acceptance reads from outside like one that is met, and that silence is how an assurance model decays into a list of good intentions"
@@ -995,6 +1001,16 @@ controls:
     promotion:
       permanently_advisory:
         reasoning: "The two rules above it read declared values and refuse what the declaration refuses, and this one reads the same values and cannot say what to do about them. A live document resting on a retired one is repaired by pointing at the successor, by retiring the citing document, or by a judgment that the citation stands as a citation of the record. There is no fourth answer and the engine cannot pick among the three, so a posture that stopped a merge would stop it on a question only an author can settle"
+  CT-LIFE-4:
+    mechanism: "check:lifecycle.deletion.not_permitted"
+    discharges:
+      - OB-LIFE-4
+    trigger: pull_request
+    posture: blocking
+    acts: detective
+    promotion:
+      final_posture:
+        reasoning: "The reading CT-LIFE-1 takes, and the remedy is narrower still. The rule reads one declared member, one declared state and one declared machine, all of which the corpus itself resolved, so an advisory period would measure a false-positive rate that the construction fixes at zero. What it refuses is repaired by putting the file back, which is mechanical and total, so there is no judgment for an author to make and nothing for a posture to soften. A corpus that means to delete the record declares that member false on that regime, which is the escape this rule reads rather than one it overrides"
   CT-LANG-1:
     mechanism: "check:language.controlled.not_met"
     discharges:

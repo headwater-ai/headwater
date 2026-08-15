@@ -25,7 +25,7 @@
     "classified": 23,
     "checked": 23,
     "generated": 1,
-    "instances": 266,
+    "instances": 267,
     "skipped": 46,
     "skips": [
       {
@@ -57,7 +57,10 @@
         "instances": 3
       }
     ],
-    "unaccounted": []
+    "unaccounted": [
+      "./check/evaluations/delta.md",
+      "check/spec/00-both-halves.markdown"
+    ]
   },
   "rules": [
     {
@@ -216,6 +219,12 @@
     {
       "rule": "lifecycle.state.not_admitted",
       "scope": "document",
+      "version": 1,
+      "obligations": []
+    },
+    {
+      "rule": "lifecycle.deletion.not_permitted",
+      "scope": "corpus",
       "version": 1,
       "obligations": []
     },
@@ -792,6 +801,10 @@
   ],
   "read_set": [
     {
+      "path": "./check/evaluations/delta.md",
+      "digest": "sha256:fbf9f2c834c8821f3c7780f97e6b8e054c94475a3f4b49d2380e7f4383b21c83"
+    },
+    {
       "path": "check/evaluations/alpha.md",
       "digest": "sha256:e651a58ed6489f388954343391d6321a708a2b7492bb4dc1386699a8bf65cc7b"
     },
@@ -818,6 +831,10 @@
     {
       "path": "check/evaluations/zeta.md",
       "digest": "sha256:78ec68e48f9e8e1f8826c1280bdb523820556b14e2ac375f21cf8c1915240964"
+    },
+    {
+      "path": "check/spec/00-both-halves.markdown",
+      "digest": "sha256:fbf9f2c834c8821f3c7780f97e6b8e054c94475a3f4b49d2380e7f4383b21c83"
     },
     {
       "path": "check/spec/00-both-halves.md",

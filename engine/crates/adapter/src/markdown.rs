@@ -246,8 +246,8 @@ fn coverage_of(coverage: &Coverage) -> String {
     if !coverage.unaccounted.is_empty() {
         let _ = writeln!(
             out,
-            "{} instances read a path that the census never walked, so the coverage above is \
-             computed over a set that does not hold them:\n",
+            "{} readings of a path the census never walked, so the coverage above is computed \
+             over a set that does not hold them:\n",
             coverage.unaccounted.len()
         );
         for path in &coverage.unaccounted {
