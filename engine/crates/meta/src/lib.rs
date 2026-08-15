@@ -67,6 +67,7 @@
 //! ```
 
 pub mod error;
+pub mod identifier;
 pub mod pattern;
 pub mod schema;
 pub mod shape;

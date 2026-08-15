@@ -31,12 +31,12 @@
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
-use headwater_check::identifier::Template;
 use headwater_check::shape::Shape;
 use headwater_check::Date;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::index::Index;
 use headwater_graph::Config;
+use headwater_meta::identifier::Template;
 use headwater_scaffold::{propose, write, Plan, Refusal, Request, Sources};
 use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};

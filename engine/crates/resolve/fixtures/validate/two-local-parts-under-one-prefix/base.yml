@@ -1,0 +1,93 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Two schemes whose patterns agree on every literal character and differ only
+# in the width of their sequence. `HW-DR-0042` is four digits and
+# `HW-DR-000042` is six, so no string is admitted by both, and this taxonomy is
+# valid.
+#
+# It is the accepting arm of the disjointness rule, and it is the case a
+# comparison of literal prefixes could not reach: both patterns yield
+# `HW-DR-`, neither rules the other out, and the pair was refused. Whether two
+# schemes are disjoint is a question about the strings they admit, and the
+# widths are where the answer is.
+#
+# `namespace-first-schemes-collide/` is the refusing arm, and one of its pairs
+# also differs only in its local part — a slug beside a sequence, which do
+# overlap, because a free token admits `0042` like any other string.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+vocabularies:
+  lifecycle_state:
+    - {value: draft,      role: initial}
+    - {value: current,    role: live}
+    - {value: superseded, role: terminal-retained}
+
+facets:
+  status:
+    role: state
+    values: $vocabularies.lifecycle_state
+    required: true
+    volatility: mutable
+    guidance:
+      draft: it is being argued over, and nothing may rely on it
+      current: it states what holds now
+      superseded: a later decision replaced it
+  sequence:
+    type: integer
+    required: true
+    volatility: stable
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current], current: [superseded]}
+      retain_terminal: true
+
+identifier_schemes:
+  decision_id:    {pattern: "{namespace}-DR-{seq:04d}",     namespace: HW, allocation: reconcile-first}
+  wide_decision_id: {pattern: "{namespace}-DR-{seq:06d}",   namespace: HW, allocation: reconcile-first}
+  obligation_id:  {pattern: "{namespace}-OBL-{seq:04d}",    namespace: HW, allocation: reconcile-first}
+  spec_id:        {pattern: "{namespace}-SPEC-{slug}",      namespace: HW, allocation: minted-once}
+  register_id:    {pattern: "{namespace}-REG-{slug}",       namespace: HW, allocation: minted-once}
+  evaluation_id:  {pattern: "{namespace}-EVAL-{slug}",      namespace: HW, allocation: minted-once}
+  review_id:      {pattern: "{namespace}-REV-{slug}",       namespace: HW, allocation: minted-once}
+  probe_id:       {pattern: "{namespace}-PROBE-{slug}",     namespace: HW, allocation: minted-once}
+  run_id:         {pattern: "{namespace}-RUN-{slug}",       namespace: HW, allocation: minted-once}
+  result_id:      {pattern: "{namespace}-RESULT-{slug}",    namespace: HW, allocation: minted-once}
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status]}
+  decision:
+    is_a: governed_document
+    purpose: rationale
+    lifecycle: standard
+    identifier: {scheme: decision_id}
+    facets: {require: [sequence]}
+
+relations:
+  supersedes:
+    family: succession
+    from: [decision]
+    to: [decision]
+    reciprocal: required
+    on_target: {set_state: superseded}
+    created_by: scaffold
+
+shelves:
+  decisions:
+    path: docs/decisions/**
+    homogeneous: true
+    kind: decision
+    layout: "{sequence:02d}-{slug}.md"
+
+core:
+  requires:
+    - facet_role: state

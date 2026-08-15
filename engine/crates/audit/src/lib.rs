@@ -1030,7 +1030,7 @@ fn scalar(document: &headwater_doc::Document, facet: &str) -> Option<String> {
 fn sequence(path: &str, kind: &str, graph: &Graph, shape: &Shape) -> Option<u64> {
     let node = graph.index.typed.iter().find(|node| node.path == path)?;
     let scheme = shape.identifier_scheme_of(kind)?;
-    headwater_check::identifier::Template::parse(&scheme.pattern, &scheme.namespace)
+    headwater_meta::identifier::Template::parse(&scheme.pattern, &scheme.namespace)
         .ok()?
         .sequence_of(&node.id)
 }

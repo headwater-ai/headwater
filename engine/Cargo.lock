@@ -34,6 +34,7 @@ dependencies = [
  "headwater-doc",
  "headwater-graph",
  "headwater-lock",
+ "headwater-meta",
  "headwater-resolve",
  "headwater-scaffold",
  "headwater-yaml",
@@ -60,6 +61,7 @@ dependencies = [
  "headwater-graph",
  "headwater-hash",
  "headwater-lock",
+ "headwater-meta",
  "headwater-resolve",
  "headwater-yaml",
 ]
@@ -236,6 +238,7 @@ dependencies = [
  "headwater-graph",
  "headwater-hash",
  "headwater-lock",
+ "headwater-meta",
  "headwater-resolve",
  "headwater-yaml",
 ]

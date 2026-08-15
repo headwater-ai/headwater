@@ -1,0 +1,88 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# One scheme whose pattern writes a free token before another segment. Nothing
+# states where the token ends, so no reader here can say what the scheme
+# admits — and a rule about whether two schemes admit one string cannot answer
+# for a scheme whose admitting set is unknown.
+#
+# So the scheme is refused rather than skipped. The generated check
+# `identifier.pattern.not_met` skips a document under such a scheme, and
+# `headwater new` refuses to mint one, and both of those report around a
+# taxonomy that a validator let through. This is where it stops.
+
+taxonomy: acme/fixture
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+vocabularies:
+  lifecycle_state:
+    - {value: draft,      role: initial}
+    - {value: current,    role: live}
+    - {value: superseded, role: terminal-retained}
+
+facets:
+  status:
+    role: state
+    values: $vocabularies.lifecycle_state
+    required: true
+    volatility: mutable
+    guidance:
+      draft: it is being argued over, and nothing may rely on it
+      current: it states what holds now
+      superseded: a later decision replaced it
+  sequence:
+    type: integer
+    required: true
+    volatility: stable
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current], current: [superseded]}
+      retain_terminal: true
+
+identifier_schemes:
+  decision_id:    {pattern: "{namespace}-DR-{seq:04d}",     namespace: HW, allocation: reconcile-first}
+  obligation_id:  {pattern: "{namespace}-OBL-{seq:04d}",    namespace: HW, allocation: reconcile-first}
+  spec_id:        {pattern: "{namespace}-SPEC-{slug}",      namespace: HW, allocation: minted-once}
+  register_id:    {pattern: "{namespace}-REG-{slug}",       namespace: HW, allocation: minted-once}
+  evaluation_id:  {pattern: "{namespace}-EVAL-{slug}",      namespace: HW, allocation: minted-once}
+  review_id:      {pattern: "{namespace}-REV-{slug}",       namespace: HW, allocation: minted-once}
+  probe_id:       {pattern: "{namespace}-PROBE-{slug}",     namespace: HW, allocation: minted-once}
+  run_id:         {pattern: "{namespace}-RUN-{slug}",       namespace: HW, allocation: minted-once}
+  result_id:      {pattern: "{namespace}-RESULT-{slug}",    namespace: HW, allocation: minted-once}
+  unreadable_id:  {pattern: "{namespace}-{slug}-END",       namespace: HW, allocation: minted-once}
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status]}
+  decision:
+    is_a: governed_document
+    purpose: rationale
+    lifecycle: standard
+    identifier: {scheme: decision_id}
+    facets: {require: [sequence]}
+
+relations:
+  supersedes:
+    family: succession
+    from: [decision]
+    to: [decision]
+    reciprocal: required
+    on_target: {set_state: superseded}
+    created_by: scaffold
+
+shelves:
+  decisions:
+    path: docs/decisions/**
+    homogeneous: true
+    kind: decision
+    layout: "{sequence:02d}-{slug}.md"
+
+core:
+  requires:
+    - facet_role: state

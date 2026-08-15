@@ -29,6 +29,7 @@
 //! to the operation that caused it.
 
 use crate::error::{ResolveError, ResolveErrorKind};
+use headwater_meta::identifier::Template;
 use headwater_meta::Pattern;
 use headwater_yaml::{Mapping, Span, Value};
 use std::collections::{BTreeMap, BTreeSet};
@@ -80,15 +81,13 @@ pub const RULES: [(&str, Ran); 23] = [
     ),
     (
         "identifier integrity",
-        Ran::Partly {
-            decides: "every scheme carries a namespace, and no two schemes in one namespace \
-                      share a literal prefix",
-            waits: "the prefix is a literal inside the `pattern` string. The engine expands the \
-                    declared namespace and compares the text up to the first placeholder left, \
-                    so it decides a pattern whose literal segment follows the namespace and \
-                    still cannot decide two whose free placeholders meet. Spec 13 carries the \
-                    grammar",
-        },
+        Ran::Resolved(
+            "every scheme carries a namespace, every pattern reads as a template, and no two \
+             schemes admit one string. The last is decided out of the parsed segments and not \
+             out of the pattern text: a `{slug}` is terminal, so a template is a fixed run of \
+             literal and digit positions with an optional free tail, and whether two such runs \
+             meet is a comparison rather than an estimate",
+        ),
     ),
     (
         "coverage",
@@ -686,11 +685,20 @@ fn anchor_integrity(view: &View, out: &mut Vec<ResolveError>) {
     }
 }
 
-/// A namespace on every scheme, and no two schemes in one namespace that admit
-/// one string.
+/// A namespace on every scheme, a readable pattern on every scheme, and no two
+/// schemes that admit one string.
+///
+/// The disjointness half is [`Template::disjoint`], which is exact over the
+/// grammar spec 2 writes. It replaced a comparison of the text before each
+/// pattern's first placeholder, which was sound and incomplete: it refused
+/// `{namespace}-DR-{seq:04d}` beside `{namespace}-DR-{seq:06d}`, where no string
+/// is both exactly four digits and exactly six. The parse that decides it was
+/// already in this engine, one crate away, and this rule carrying a second and
+/// weaker reading of one grammar is what
+/// [#210](https://github.com/headwater-ai/headwater/issues/210) reports.
 fn identifier_integrity(view: &View, out: &mut Vec<ResolveError>) {
     const RULE: &str = "identifier integrity";
-    let mut by_namespace: BTreeMap<&str, Vec<(&str, String)>> = BTreeMap::new();
+    let mut by_namespace: BTreeMap<&str, Vec<(&str, Template)>> = BTreeMap::new();
     for (scheme, body) in view.members("identifier_schemes") {
         // Three states and not two. The meta-schema lets a package omit
         // `namespace`, so an absent key means the choice is open and an empty
@@ -719,25 +727,39 @@ fn identifier_integrity(view: &View, out: &mut Vec<ResolveError>) {
             }
             Some(found) => found,
         };
+        // A pattern this engine cannot read is a scheme it can say nothing
+        // about: not what it admits, and so not whether another scheme admits
+        // the same string. The generated check skips such a scheme and
+        // `headwater new` refuses to mint under it, and this is the third
+        // reader of the same fact, at the one moment where a taxonomy is
+        // refused rather than reported around.
         let pattern = text(body, "pattern").unwrap_or_default();
-        by_namespace
-            .entry(namespace)
-            .or_default()
-            .push((scheme, literal_prefix(pattern, namespace)));
+        match Template::parse(pattern, namespace) {
+            Ok(template) => by_namespace
+                .entry(namespace)
+                .or_default()
+                .push((scheme, template)),
+            Err(why) => out.push(refusal(
+                RULE,
+                &format!("identifier_schemes.{scheme}.pattern"),
+                format!("cannot be read, so nothing can be said about what it admits: {why}"),
+            )),
+        }
     }
+    // Grouping by namespace is a shortcut and never the rule. Two schemes in
+    // two namespaces are disjoint because the namespace is a run of literal
+    // characters in both patterns, which `disjoint` reads for itself; the
+    // grouping only saves the comparison.
     for (namespace, schemes) in by_namespace {
-        for (index, (scheme, prefix)) in schemes.iter().enumerate() {
-            for (other, other_prefix) in &schemes[index + 1..] {
-                if prefix.starts_with(other_prefix.as_str())
-                    || other_prefix.starts_with(prefix.as_str())
-                {
+        for (index, (scheme, template)) in schemes.iter().enumerate() {
+            for (other, other_template) in &schemes[index + 1..] {
+                if !template.disjoint(other_template) {
                     out.push(refusal(
                         RULE,
                         &format!("identifier_schemes.{scheme}.pattern"),
                         format!(
                             "and `identifier_schemes.{other}.pattern` are both in namespace \
-                             `{namespace}` and neither literal prefix rules the other out, so \
-                             one string can satisfy both"
+                             `{namespace}` and one string satisfies both"
                         ),
                     ));
                 }
@@ -1566,29 +1588,6 @@ fn placeholders(text: &str) -> BTreeSet<String> {
         rest = &rest[open + close + 1..];
     }
     out
-}
-
-/// The text every identifier of a scheme begins with: the pattern up to its
-/// first placeholder, after `{namespace}` is expanded to the declared constant.
-///
-/// The expansion is what lets the comparison above decide a namespace-first
-/// pattern. `{namespace}-DR-{seq:04d}` and `{namespace}-SPEC-{slug}` can never
-/// admit one string, and a scan that stops at the first `{` reads the empty
-/// string from both and refuses the pair. `{namespace}` is a constant of the
-/// scheme and not a free token, so reading it costs no soundness: the result is
-/// still a string that every admitted identifier starts with, and it is a
-/// longer one. A type-first pattern improves for the same reason: a scheme
-/// written `SPEC-{namespace}-{slug}` is compared on its type and its namespace
-/// together, and was compared on the four characters before the placeholder.
-///
-/// Two schemes can still expand to one prefix. That is the refusing direction:
-/// the pair is reported, and it is never admitted.
-fn literal_prefix(pattern: &str, namespace: &str) -> String {
-    let expanded = pattern.replace("{namespace}", namespace);
-    match expanded.find('{') {
-        Some(at) => expanded[..at].to_string(),
-        None => expanded,
-    }
 }
 
 /// Every declared value of a facet, whether the value set was written out or
