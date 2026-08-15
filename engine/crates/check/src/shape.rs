@@ -67,7 +67,7 @@ pub struct IdentifierScheme {
     /// as written rather than as parsed.
     pub pattern: String,
     /// The one part of the template that an overlay may not change
-    /// ([spec 2](../../../../docs/spec/02-taxonomy-model.md#the-core-is-semantic-not-lexical)).
+    /// ([spec 2](../../../../docs/spec/02-taxonomy-model.md#the-immutable-core)).
     pub namespace: String,
     pub span: Span,
 }

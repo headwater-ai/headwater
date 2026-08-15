@@ -2,14 +2,14 @@
 //! The meta-schema of the taxonomy language, and what it decides over one
 //! source.
 //!
-//! [Spec 2](../../../docs/spec/02-taxonomy-model.md#the-meta-schema) says that
+//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema) says that
 //! the taxonomy language has a formal schema, published with the engine and
 //! versioned with it. [`meta-schema.yml`](../../meta-schema.yml) is that schema
 //! and this crate is its reader.
 //!
 //! # Expressed in its own dialect
 //!
-//! The meta-schema is a YAML source on the [Q2](../../../docs/spec/09-decisions.md#q2--schema-format)
+//! The meta-schema is a YAML source on the [Q2](../../../../docs/spec/09-decisions.md#q2--schema-format)
 //! loader rulings, read by `headwater-yaml` exactly as a taxonomy source is.
 //! That is not a stylistic choice. Q2 rules that JSON Schema is an emitted
 //! export and never the validator, and the reason is visible in spec 2 itself:
@@ -36,7 +36,7 @@
 //!
 //! [`validate::skipped`] names the rest, each with the reason it needs a
 //! resolved tree. A validator that reported a pass over rules it never ran would
-//! be the silent pass that [spec 4](../../../docs/spec/04-assurance-model.md)
+//! be the silent pass that [spec 4](../../../../docs/spec/04-assurance-model.md)
 //! exists to remove, so the list is data rather than a paragraph in a comment.
 //! `headwater_resolve::rules` runs those rules and holds the other half of the
 //! same accounting.

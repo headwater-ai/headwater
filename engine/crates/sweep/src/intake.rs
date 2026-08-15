@@ -440,6 +440,19 @@ fn ids(graph: &Graph, from: &str, to: &str) -> Option<(String, String)> {
     Some((from, to))
 }
 
+/// Whether one path is a classified document of this corpus.
+///
+/// This is the refusal that catches a model inventing a path, and it is
+/// stronger than a test that the file exists.
+/// [Q24](../../../../docs/decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md)
+/// asked whether a source file could be a slice member without becoming a
+/// document, and refused it here rather than in the plan. Relaxing this to
+/// `Path::exists` would let a model satisfy membership by naming any file in
+/// the tree, and the cost would fall on the four classes that asked for
+/// nothing. Two smaller costs ride with it: [`crate::plan::Plan`] reports its
+/// extent as classified documents over classified documents, so a slice that
+/// may hold unclassified files makes one ratio out of two populations, and
+/// [`crate::plan::Member`] has no `Option` around its kind.
 fn classified(census: &Census, path: &str) -> bool {
     census
         .rows

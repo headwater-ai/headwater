@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Reading taxonomy sources, on the [Q2](../../../docs/spec/09-decisions.md#q2--schema-format)
+//! Reading taxonomy sources, on the [Q2](../../../../docs/spec/09-decisions.md#q2--schema-format)
 //! dialect rules.
 //!
 //! YAML 1.2 is the concrete syntax, and this crate is the only place that knows

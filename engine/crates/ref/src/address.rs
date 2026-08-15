@@ -84,7 +84,7 @@ impl Address {
     /// This is the predicate the confluence check runs. Two `add` operations at
     /// disjoint addresses commute, so a resolver that can decide this can prove
     /// that every subset of an add-only bundle set resolves
-    /// ([spec 7](../../../docs/spec/07-distribution-and-federation.md)).
+    /// ([spec 7](../../../../docs/spec/07-distribution-and-federation.md)).
     pub fn is_disjoint_from(&self, other: &Address) -> bool {
         !self.is_prefix_of(other) && !other.is_prefix_of(self)
     }
@@ -107,7 +107,7 @@ impl std::fmt::Display for Address {
 /// [#52](https://github.com/headwater-ai/headwater/issues/52) is what needed it:
 /// `obligations` and `controls` are keyed by the identifier, and every
 /// identifier that spec 4 writes holds a hyphen. Relaxing the rule is the free
-/// direction that [Q2](../../../docs/spec/09-decisions.md#q2--schema-format)
+/// direction that [Q2](../../../../docs/spec/09-decisions.md#q2--schema-format)
 /// settles. Adding one later would be a finding against every source that had
 /// already used the form.
 fn is_segment_character(found: char) -> bool {

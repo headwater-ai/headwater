@@ -362,7 +362,7 @@ fn a_paraphrase_is_not_a_quotation() {
 // --- what a control cannot say about a sweep --------------------------------
 
 /// The measurement behind
-/// [OBL-repo-0114](../../../../docs/obligations/0114-a-control-that-names-the-sweep-marks-its-obligation-verified-with-nothing-run.md).
+/// [OBL-repo-0114](../../../../docs/obligations/0114-a-control-that-names-a-sweep-marks-its-obligation-verified-with-nothing-run.md).
 ///
 /// `sweep.taxonomy.yml` declares one coherence obligation and one control whose
 /// mechanism is `sweep:undeclared_conflict`. The engine reads two mechanism

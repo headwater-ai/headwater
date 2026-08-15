@@ -3,7 +3,7 @@ id: REG-HW-decisions
 status: current
 status_since: 2026-08-11
 last_verified: 2026-08-13
-summary: An index of the twenty-one design decisions and the one that the build raised, where the record of each one lives, and the evidence that closed it.
+summary: An index of the twenty-one design decisions and the two that the build raised, where the record of each one lives, and the evidence that closed it.
 doc_type: decision_register
 sequence: 9
 provenance:
@@ -149,3 +149,9 @@ A package digest checks a fetched artifact against a pin that a person committed
 A published Rust guideline set is not installed as a skill, because a skill carries no rule of its own. Twenty-two lints are declared once in the workspace manifest, and each was chosen by measuring the corpus rather than by adopting a list. The record is [DR-repo-0023](../decisions/0023-the-engine-lint-floor.md).
 
 **This question also arrived from outside the design phase, and it was asked as a question about a skill.** Two agent-facing Rust guideline sets were offered for installation. [Spec 5](05-ai-integration.md#how-a-skill-reaches-an-agent-and-what-nothing-does) already refuses that shape, so the answer was available. What the question found is that the rule the guidance points at had nowhere to live. The workspace manifest declared no lint, and the continuous integration job ran the default set alone.
+
+## Q24 — Readability, and what a sweep can be asked about
+
+Readability is not a class of the assisted sweep, and it gets no verb. Every class of a sweep names two things that do not fit, and a readability finding names one. A source file is not a slice member either. The record is [DR-repo-0024](../decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md).
+
+**This question arrived from the build as well, and it was asked about a body of prose that no rule reads.** [#191](https://github.com/headwater-ai/headwater/issues/191) measured the engine's comment prose at about 179,000 words, which is more than the governed prose under `docs/spec/`. Every prose rule here was run over it. It found zero contractions and zero British spellings, so the two rules that block already pass by habit. What makes the prose hard to read is a habit that no lexical rule reaches, and the question is which mechanism performs the pass.

@@ -1,6 +1,6 @@
-188 nodes, 412 declared edge halves
-    397 to a document
-     15 to an anchor
+190 nodes, 416 declared edge halves
+    398 to a document
+     18 to an anchor
 0 prose links that did not resolve
 
 anchors
@@ -11,9 +11,12 @@ anchors
       1 code_path `.claude/hooks/write.sh` via source-tree
       1 code_path `.claude/skills/fixtures.sh` via source-tree
       2 code_path `.claude/skills/headwater-authoring/SKILL.md` via source-tree
+      1 code_path `.claude/skills/headwater-sweep/SKILL.md` via source-tree
       1 code_path `.claude/skills/headwater-taxonomy/SKILL.md` via source-tree
       1 code_path `engine/Cargo.toml` via source-tree
       1 code_path `engine/crates/check/src/language.rs` via source-tree
       2 code_path `engine/crates/scaffold/src/reading.rs` via source-tree
+      1 code_path `engine/crates/sweep/src/intake.rs` via source-tree
+      1 code_path `engine/crates/sweep/src/lib.rs` via source-tree
       1 code_path `spike` via source-tree
       1 code_path `tools/rdf-probe/emit.py` via source-tree

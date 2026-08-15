@@ -41,6 +41,8 @@ Under equality, an author pays one edge for every file that a document governs. 
 
 The failure mode is silence rather than error. A hook that finds no governing document exits 0 and reports nothing. A rename inside a governed directory produces an unresolved anchor, which a check does report, but a *new* file in that directory produces nothing anywhere. Impact detection is then green over code that a document governs in every sense except the one the engine reads.
 
+**The same silence covers a set that names no directory at all.** [DR-repo-0024](../decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md) rules over three files, and the agent that drafted it named one. Nothing reported the two it left out. The anchor resolved, every check passed, and a document that governs one of three reads exactly like a document that governs one. So the gap is wider than the directory case above. A `governs` set has no denominator, and the author is the only reader who knows the full set.
+
 The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md) calls impact detection the most valuable thing the corpus does for a coding agent. Spec 5 makes the same claim in the same words. A mechanism that reaches one file for each declared edge is a smaller claim, and no document states which one holds.
 
 ## Discharge

@@ -63,7 +63,7 @@
 //! carried finding that proposes one prints the front matter that declares it.
 //! Nothing here writes it. A proposal an agent applies to itself is the same
 //! act as an agent accepting its own work, which is what
-//! [OBL-repo-0108](../../../../docs/obligations/0108-every-agent-drafted-document-carries-an-accepted-by-the-drafting-agent-typed.md)
+//! [OBL-repo-0108](../../../../docs/obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md)
 //! records, so the verb has no `--write` and this crate opens no file for
 //! writing.
 
@@ -80,6 +80,24 @@ pub use plan::Plan;
 /// nobody declared is a class no reader can act on and no report can total. A
 /// return file that names one outside this set is refused with the set printed
 /// beside it.
+///
+/// # What a sixth class has to be, and why readability is not one
+///
+/// Every class below names **two things and says they do not fit**. Two
+/// documents. A newer claim against an older one. A term against the place its
+/// definition is owed. A document against its declared audience. A heading
+/// against the prose beneath it. A reader holds one against the other and
+/// adjudicates in seconds, which is the standard spec 4 sets, and
+/// [`Class::remediation`] reads the same way: every remedy declares an edge,
+/// defines a term, narrows an audience or writes a section.
+///
+/// A finding that names one thing fails that test whatever the intake can
+/// confirm about it. [Q24](../../../../docs/decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md)
+/// refused readability on exactly this ground, and it refused the easier
+/// argument with it: three of the five below already return `None` from
+/// [`Class::implies`], so a vacuous novelty leg disqualifies nothing. With no
+/// second term the quotation is the finding rather than evidence for it, and
+/// [`crate::intake`] then confirms what `grep` confirms.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Class {
     /// Two documents that contradict each other while both remain current, and

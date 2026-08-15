@@ -23,7 +23,7 @@
 //! * `{namespace}` is the declared `namespace`, exactly. That is the one
 //!   lexical requirement the invariant core makes: an adopter "may change
 //!   identifier patterns except the namespace"
-//!   ([spec 2](../../../../docs/spec/02-taxonomy-model.md#the-core-is-semantic-not-lexical)),
+//!   ([spec 2](../../../../docs/spec/02-taxonomy-model.md#the-immutable-core)),
 //!   because a namespace is cheap at minting and unrecoverable once the
 //!   identifier is in somebody else's ticket.
 //! * `{seq:04d}` is exactly four decimal digits, and `{seq:0Nd}` is exactly N.

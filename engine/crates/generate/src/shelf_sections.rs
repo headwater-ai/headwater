@@ -19,7 +19,7 @@
 //!
 //! A heading is prose, and this module writes none of it. The text is the value
 //! of the facet in the `name` role, which
-//! [spec 2](../../../../docs/spec/02-taxonomy-model.md#validation-rules-taxonomy-integrity)
+//! [spec 2](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema)
 //! carries in the closed role registry. Three candidates were argued and two
 //! are refused.
 //!

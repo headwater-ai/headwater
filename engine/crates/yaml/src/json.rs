@@ -18,7 +18,7 @@
 //! sequences, double-quoted strings, and plain scalars for numbers. It refuses
 //! a duplicate key, which JSON permits and no protocol message needs, and it
 //! carries no `null` or boolean type of its own
-//! ([Q2](../../../docs/spec/09-decisions.md#q2--schema-format)), so a caller
+//! ([Q2](../../../../docs/spec/09-decisions.md#q2--schema-format)), so a caller
 //! reads those through [`crate::core_schema`]. Both limits are stated
 //! here because they are the whole of the difference from a JSON library.
 

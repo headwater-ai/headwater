@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The `$`-reference sublanguage of the taxonomy language.
 //!
-//! [Spec 2](../../../docs/spec/02-taxonomy-model.md#the--reference-sublanguage)
+//! [Spec 2](../../../../docs/spec/02-taxonomy-model.md#the--reference-sublanguage)
 //! is the definition, and this crate is the definition made executable. Both
 //! close the obligation that
-//! [13 — Open obligations](../../../docs/spec/13-open-obligations.md) carried:
+//! [13 — Open obligations](../../../../docs/spec/13-open-obligations.md) carried:
 //! three uses, written three ways, and no grammar.
 //!
 //! # The grammar

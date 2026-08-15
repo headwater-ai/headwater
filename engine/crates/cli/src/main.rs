@@ -2919,7 +2919,7 @@ fn sweep_plan(root: &Path, under: Option<String>) -> ExitCode {
 /// The report prints the front matter that would declare a proposed edge and
 /// never writes it. A proposal an agent applies to itself is the same act as an
 /// agent accepting its own draft, which is what
-/// [OBL-repo-0108](../../../../docs/obligations/0108-every-agent-drafted-document-carries-an-accepted-by-the-drafting-agent-typed.md)
+/// [OBL-repo-0108](../../../../docs/obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md)
 /// records. So there is no `--write`, and this is the one verb of the write
 /// path that has none.
 fn sweep_report(root: &Path, path: &Path, format: Option<String>) -> ExitCode {
