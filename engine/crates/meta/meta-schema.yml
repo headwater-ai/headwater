@@ -317,8 +317,16 @@ definitions:
 
   identifier_scheme:
     members:
-      # gap: the prefix that discriminates a kind is a literal inside this
-      # string, so the engine cannot read the prefix it mints.
+      # The template, in the three placeholder forms spec 2 writes.
+      # `headwater_meta::identifier` is the one reader of it. `taxonomy
+      # validate` decides disjointness out of the segments it produces, and
+      # `identifier.pattern.not_met` holds a document to the same segments.
+      #
+      # gap: the prefix that discriminates a kind is a literal run inside this
+      # string rather than a member of its own. No rule here waits on that. An
+      # RDF projection does: it has no declared name to build a document IRI
+      # out of, so the worked example derives one from a repository path and a
+      # rename breaks it. HW-OBL-0046 carries the rest.
       pattern: {scalar: string, required: true}
       # Required after resolution, and not in a source. A published package can
       # declare neither its own namespace, which every adopter would inherit,

@@ -4,7 +4,7 @@ title: "The identifier scheme grammar"
 status: current
 status_since: 2026-08-12
 last_verified: 2026-08-15
-summary: "A scheme holds the prefix that discriminates a kind as a literal inside a pattern string, so no engine can decide that two schemes mint disjoint identifiers."
+summary: "A scheme holds the prefix that discriminates a kind as a literal inside a pattern string, so no declaration names the prefix that a document IRI would carry."
 provenance:
   warrant: accepted
   agency: mixed
@@ -26,10 +26,14 @@ The same review closed the namespace gap in place, so `taxonomy validate` refuse
 
 ## Obligation
 
-So the engine cannot read the prefix that it mints, and [identifier integrity](../spec/02-taxonomy-model.md#the-thirteen-declarations) validates the whole pattern rather than its parts. It expands the declared namespace and compares the text up to the first placeholder left. That decides a pattern whose literal segment follows the namespace. It still cannot decide two patterns whose free placeholders meet. A grammar that declares the prefix, the namespace, and the local part as separate fields makes disjointness decidable by construction.
+So no member of a scheme names the prefix. `pattern` holds it as a run of literal characters between the namespace and the local part.
+
+Disjointness is not what this costs. [Identifier integrity](../spec/02-taxonomy-model.md#the-thirteen-declarations) reads each pattern into its segments and compares the two sets of strings, which is exact. The reader is `headwater_meta::identifier`, and both `taxonomy validate` and the generated check take a pattern through it.
+
+What the missing member costs is a name. An RDF or SKOS projection has no declared part to build a document IRI out of. The [worked example](../evaluations/owl-skos-worked-example.md#the-method) derives an IRI from a repository path instead, and a rename of the file breaks every reference to it. A grammar that declares the prefix, the namespace and the local part as separate members gives that projection the parts it needs.
 
 ## Discharge
 
-The generated check `identifier.pattern.not_met` reads the same string and reports around the gap. It parses the pattern into literal runs and placeholders. So it names the segment that stopped a match, and it still cannot decide that two schemes mint disjoint identifiers.
+A meta-schema that declares `prefix`, `namespace` and the local-part form as three members, and nine schemes that write them, discharge this. The rendered form of every identifier stays as it is, which `engine/crates/check/fixtures/identifiers.mint` records scheme by scheme.
 
-A declared grammar also lets an RDF projection derive a document IRI rather than invent one. The [worked example](../evaluations/owl-skos-worked-example.md#the-method) derives one from a file path today. That is a meta-schema change, and the meta-schema has shipped at `engine/crates/meta/meta-schema.yml`. So the grammar now costs a major version of the meta-schema and of the package that reads it. [Spec 3](../spec/03-authoring-and-lifecycle.md#identifiers) is where the grammar belongs.
+The meta-schema has shipped at `engine/crates/meta/meta-schema.yml`. So the change costs a major version of the meta-schema and of the package that reads it. The cost buys a projection that nobody has asked for yet. [Q13](../spec/09-decisions.md#q13--linkml-and-shacl-as-substrate) puts each unbuilt format behind a named external consumer, and none exists. [Spec 3](../spec/03-authoring-and-lifecycle.md#identifiers) is where the grammar belongs.
