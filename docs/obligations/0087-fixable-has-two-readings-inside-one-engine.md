@@ -1,8 +1,8 @@
 ---
 id: HW-OBL-0087
 title: "`fixable` has two readings inside one engine"
-status: current
-status_since: 2026-08-13
+status: discharged
+status_since: 2026-08-15
 last_verified: 2026-08-14
 summary: "One reading says what is true of the defect and the other says what the engine will do about it."
 provenance:

@@ -46,8 +46,10 @@ purposes:
 #
 # The vocabulary is one list for every kind that runs a lifecycle regime, so a
 # kind whose documents are never owed anything can reach `discharged` as well.
-# Nothing in the language restricts a state to a kind, and the transition rule
-# reads the regime rather than the kind. HW-OBL-0127 carries that.
+# Nothing in the language restricts a state to a kind. A second regime that
+# admitted the state for one kind alone would leave it unreachable in `standard`,
+# and `lifecycle soundness` refuses a state that the regime it reads cannot
+# reach. Spec 13 carries the gap.
 
 vocabularies:
   lifecycle_state:

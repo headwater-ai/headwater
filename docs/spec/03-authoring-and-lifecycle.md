@@ -44,13 +44,17 @@ Everything else — owner, scope, audience, domain — is a taxonomy choice.
 The lifecycle is a state machine, declared in the taxonomy and interpreted by the engine. The default taxonomy uses:
 
 ```
-draft ──▶ current ──┬──▶ superseded
-                    └──▶ deprecated
+draft ──┬──▶ current ──┬──▶ superseded
+        │              ├──▶ deprecated
+        │              └──▶ discharged
+        └──▶ deprecated
 ```
+
+The three terminal states answer three different questions. `superseded` names a successor. `deprecated` says that nothing replaced this one. `discharged` says that the document recorded something the corpus owed, and that the corpus paid it.
 
 Rules that the engine enforces from the declaration alone:
 
-- the engine rejects transitions that are not in the declared machine **when they land**. An illegal transition is only visible against the prior state, and the prior state lives in the diff, not in the graph. Thus hooks and change-scoped CI receive the prior version as a declared check input ([spec 12](12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version)). A full-corpus run sees only current states. It reports transition instances as change-scoped, and it does not silently pass them.
+- the engine rejects transitions that are not in the declared machine **when they land**. `lifecycle.transition.not_permitted` is the rule, and it reads the machine that the resolved taxonomy declares rather than a set of states written into the engine. An illegal transition is only visible against the prior state, and the prior state lives in the diff, not in the graph. Thus hooks and change-scoped CI receive the prior version as a declared check input ([spec 12](12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version)). A full-corpus run sees only current states. It reports transition instances as change-scoped, and it does not silently pass them.
 - terminal states marked `retain: true` may never be deleted. Lineage is the point.
 - a live document may not depend on a terminal one through a relation declared `lifecycle_sensitive`. Thus a current specification that cites a superseded decision is a finding, automatically, for each such relation.
 - entry into a state can require facets (a `superseded` document must name its successor). Entry can also cause reciprocal updates on the target.
