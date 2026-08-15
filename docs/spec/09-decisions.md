@@ -161,3 +161,9 @@ Readability is not a class of the assisted sweep, and it gets no verb. Every cla
 The namespace goes first, so every scheme renders `{namespace}-<TYPE>-<local part>`. A published source declares no namespace, and the corpus that adopts it declares one in its overlay. The record is [HW-DR-0025](../decisions/0025-q25-where-the-namespace-goes-in-an-identifier-and-who-declares-it.md).
 
 **This question came from the build, and it was asked about the two schemes that ship.** [#207](https://github.com/headwater-ai/headwater/issues/207) found `namespace: repo` on `decision_id` and on `obligation_record_id`, which are the only two schemes that a published source declares. `repo` is a word every adopter also writes, so two adopters who take the base unchanged both mint the same identifier. A package has no value it can honestly write there, so it writes none. The order was settled in the same change, because a rendered identifier travels into a ticket and cannot be recalled from one.
+
+## Q26 — Whether terminality belongs to a state, or to a state and a regime
+
+Terminality stays a property of a state alone. A regime that ends one state where another continues past it is refused, and the remedy is a second state value. The record is [HW-DR-0026](../decisions/0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md).
+
+**This question came from the build, and the change that made the narrowing is what raised it.** [#241](https://github.com/headwater-ai/headwater/issues/241) made the two readings of terminal name one set, and [#242](https://github.com/headwater-ai/headwater/issues/242) says what that costs. The reason both of those gave was wrong. They state that a per-regime reading has no regime at the call site, and both readers of terminality hold one. A per-regime reading was built here, and it turns a deferral into a pass. No published tradition asks for one word to end one lifecycle and to continue another.

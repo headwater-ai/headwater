@@ -10,7 +10,7 @@ relations:
 
 # decisions
 
-25 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+26 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -111,3 +111,7 @@ relations:
 ## Q25 — Where the namespace goes in an identifier, and who declares it
 
 [HW-DR-0025](../decisions/0025-q25-where-the-namespace-goes-in-an-identifier-and-who-declares-it.md) — The namespace opens every identifier, and a published source declares no namespace at all, because any constant it wrote would be minted by every adopter of it at once. (asserted, and no human has accepted it)
+
+## Q26 — Whether terminality belongs to a state, or to a state and a regime
+
+[HW-DR-0026](../decisions/0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md) — Terminality stays a property of a state alone, because the per-regime reading is available at both call sites and costs the deferral that keeps one defect one finding. No published tradition wants the collision, and two that met it minted a second state name. (asserted, and no human has accepted it)
