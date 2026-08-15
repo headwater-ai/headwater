@@ -329,6 +329,17 @@ add:
   # paragraphs of this repository's own writing out of every language rule.
   kinds.obligation_record.language:   ste_house
 
+  # A decision record is a normative statement that this repository makes about
+  # itself. It stands to `docs/spec/09-decisions.md` as an obligation record
+  # stands to its own register, and the register was bound where the record was
+  # not. No document stated why. [Q27](../docs/spec/09-decisions.md#q27--whether-a-decision-record-is-governed-prose)
+  # rules that a decision record is governed prose, and it states what this line
+  # costs: 64 findings on the shelf when it was taken, every one of them
+  # advisory, and one of them caused by an inline quotation. The kinds that stay
+  # unbound carry text that this repository recorded rather than wrote, and Q27
+  # names each one.
+  kinds.decision.language:            ste_house
+
 # --- projections ------------------------------------------------------------
 # `projections` is a list in the base, so an `add` cannot reach it, and this is
 # the one operation in this file that is not an `add`. Spec 13 records that
