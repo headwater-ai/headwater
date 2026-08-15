@@ -79,6 +79,21 @@ pub fn read(tree: &Mapping) -> Vec<Requirement> {
                     .and_then(|value| value.value.as_scalar())
                     .map(|scalar| scalar.text.clone())
             };
+            // A boolean is read through the core schema and never off the
+            // text of the scalar. The meta-schema declares this member
+            // `boolean` and validates it with the same function, so `True` and
+            // `TRUE` arrive here as declarations that already passed
+            // validation. A comparison against the literal `"true"` read both
+            // of them as false, which turns a stated requirement into an
+            // unstated one, and it read the quoted string `"true"` — which the
+            // meta-schema refuses — as the boolean.
+            let flag = |name: &str| {
+                entry
+                    .get(name)
+                    .and_then(|value| value.value.as_scalar())
+                    .and_then(headwater_yaml::core_schema::as_bool)
+                    .unwrap_or(false)
+            };
             let kind = if let Some(role) = field("facet_role") {
                 Kind::FacetRole(role)
             } else if let Some(purpose) = field("purpose") {
@@ -86,7 +101,7 @@ pub fn read(tree: &Mapping) -> Vec<Requirement> {
             } else if let Some(family) = field("relation_family") {
                 Kind::RelationFamily {
                     family,
-                    lifecycle_sensitive: field("lifecycle_sensitive").as_deref() == Some("true"),
+                    lifecycle_sensitive: flag("lifecycle_sensitive"),
                 }
             } else if let Some(scheme) = field("identifier_scheme") {
                 Kind::IdentifierScheme(scheme)
@@ -308,6 +323,40 @@ core:
             "  supersedes: {family: succession}",
         ));
         assert_eq!(check(&base, &inert, &[], &[]).len(), 1);
+    }
+
+    /// `True` is the boolean the core schema resolves, so a requirement that
+    /// spells it that way is the same requirement. The reading here was a
+    /// comparison against the text `true`, which read the two other spellings
+    /// of the boolean as false and so stopped asking for the thing the
+    /// requirement asks for. The failure is silent by construction: a weaker
+    /// requirement is satisfied by more taxonomies, not by fewer.
+    #[test]
+    fn a_boolean_is_read_as_the_core_schema_resolves_it_and_never_as_its_text() {
+        let base = tree(BASE);
+        for spelling in ["true", "True", "TRUE"] {
+            let stated = BASE.replace("lifecycle_sensitive: true", &format!("lifecycle_sensitive: {spelling}"));
+            let inert = tree(&stated.replace(
+                "  supersedes: {family: succession, on_target: {set_state: superseded}}",
+                "  supersedes: {family: succession}",
+            ));
+            assert_eq!(
+                check(&base, &inert, &[], &[]).len(),
+                1,
+                "`lifecycle_sensitive: {spelling}` states the requirement"
+            );
+        }
+        // The quoted form is a string and the meta-schema refuses it, so it
+        // states no requirement here either.
+        let quoted = tree(
+            &BASE
+                .replace("lifecycle_sensitive: true", "lifecycle_sensitive: \"true\"")
+                .replace(
+                    "  supersedes: {family: succession, on_target: {set_state: superseded}}",
+                    "  supersedes: {family: succession}",
+                ),
+        );
+        assert!(check(&base, &quoted, &[], &[]).is_empty());
     }
 
     #[test]
