@@ -67,6 +67,7 @@ operations
   add.kinds.obligation_register.language (.headwater/overlay.yml)
   add.kinds.obligation_record.language (.headwater/overlay.yml)
   add.kinds.decision.language (.headwater/overlay.yml)
+  add.kinds.evaluation.language (.headwater/overlay.yml)
   add_to.projections (.headwater/overlay.yml)
 
 declarations, by member count

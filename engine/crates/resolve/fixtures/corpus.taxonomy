@@ -291,6 +291,7 @@ kinds:
     identifier:
       scheme: evaluation_id
     is_a: governed_document
+    language: ste_house
     lifecycle: standard
     purpose: evidence
     relations:
