@@ -128,22 +128,28 @@ impl Application {
     /// are two different refusals.
     pub fn over(targets: Vec<String>, task: Option<String>) -> Result<Application, String> {
         match (targets.len(), task) {
-            (1, Some(_)) => Err("a step with one target applies with no judgment, and the `task` \
+            (1, Some(_)) => Err(
+                "a step with one target applies with no judgment, and the `task` \
                                  beside it names a question that nothing would ever ask. Drop one \
                                  of the two"
-                .to_string()),
+                    .to_string(),
+            ),
             (1, None) => Ok(Application::Mechanical {
                 to: targets.into_iter().next().expect("one target"),
             }),
-            (0, None) => Err("a step with no target states that nothing replaces the old value, \
+            (0, None) => Err(
+                "a step with no target states that nothing replaces the old value, \
                               so the author has to re-state the subject. That needs a `task` \
                               saying what to re-state"
-                .to_string()),
+                    .to_string(),
+            ),
             (0, Some(task)) => Ok(Application::Restatement { task }),
-            (_, None) => Err("a step with more than one target leaves a choice the author \
+            (_, None) => Err(
+                "a step with more than one target leaves a choice the author \
                               settles, and a choice with no `task` beside it is a question \
                               nobody was asked. Add `task`"
-                .to_string()),
+                    .to_string(),
+            ),
             (_, Some(task)) => Ok(Application::Choice {
                 among: targets,
                 task,
@@ -241,19 +247,44 @@ impl Payload {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PayloadError {
     /// The declared directory is not one, or is not there.
-    NoDirectory { at: String, why: String },
+    NoDirectory {
+        at: String,
+        why: String,
+    },
     /// The declared path climbs out of the package that names it.
-    Leaves { at: String },
-    Unreadable { at: String, why: String },
-    Malformed { at: String, what: String },
+    Leaves {
+        at: String,
+    },
+    Unreadable {
+        at: String,
+        why: String,
+    },
+    Malformed {
+        at: String,
+        what: String,
+    },
     /// A later format than this engine knows.
-    Format { at: String, found: String },
+    Format {
+        at: String,
+        found: String,
+    },
     /// A step that names a subject outside the closed set.
-    Subject { at: String, found: String },
+    Subject {
+        at: String,
+        found: String,
+    },
     /// A step whose target list and task do not make a legal application.
-    Application { at: String, step: String, why: String },
+    Application {
+        at: String,
+        step: String,
+        why: String,
+    },
     /// A version range this engine cannot read.
-    Range { at: String, range: String, why: String },
+    Range {
+        at: String,
+        range: String,
+        why: String,
+    },
     /// The payload does not carry the version it was published in.
     NotThisVersion {
         at: String,
@@ -477,7 +508,9 @@ pub fn read(text: &str, at: &str) -> Result<Payload, Vec<PayloadError>> {
     let declared = root
         .get("steps")
         .and_then(|node| node.value.as_seq())
-        .ok_or_else(|| malformed("no `steps` sequence, and a payload with no step migrates nothing"))?;
+        .ok_or_else(|| {
+            malformed("no `steps` sequence, and a payload with no step migrates nothing")
+        })?;
     if declared.is_empty() {
         return Err(malformed(
             "`steps` is empty, and a payload that moves nothing is a file a consumer would apply \
@@ -577,8 +610,9 @@ fn step(entry: &Mapping, at: &str) -> Result<Step, Vec<PayloadError>> {
         }]
     })?;
 
-    let because = text_of(entry, "because")
-        .ok_or_else(|| malformed("a step states `because`, which is why the publisher moved it".to_string()))?;
+    let because = text_of(entry, "because").ok_or_else(|| {
+        malformed("a step states `because`, which is why the publisher moved it".to_string())
+    })?;
 
     Ok(Step {
         subject,
@@ -704,7 +738,6 @@ fn text_of(map: &Mapping, key: &str) -> Option<String> {
         .map(|scalar| scalar.text.clone())
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -730,9 +763,8 @@ mod tests {
     /// silently become a re-statement task over the documents that carry it.
     #[test]
     fn an_absent_target_list_is_not_an_empty_one() {
-        let absent = one(
-            "  - subject: facet_value\n    facet: status\n    from: draft\n    because: why\n",
-        );
+        let absent =
+            one("  - subject: facet_value\n    facet: status\n    from: draft\n    because: why\n");
         assert!(
             matches!(&absent, PayloadError::Malformed { what, .. } if what.contains("did not say")),
             "{absent}"
@@ -793,8 +825,10 @@ mod tests {
     /// A `facet` key on a `kind` step is a key this engine would read and drop.
     #[test]
     fn a_key_a_subject_does_not_take_is_refused() {
-        let refused = one("  - subject: kind\n    facet: status\n    from: decision\n    to: \
-                           [ruling]\n    because: why\n");
+        let refused = one(
+            "  - subject: kind\n    facet: status\n    from: decision\n    to: \
+                           [ruling]\n    because: why\n",
+        );
         assert!(
             matches!(&refused, PayloadError::Malformed { what, .. } if what.contains("read and dropped")),
             "{refused}"
@@ -804,13 +838,18 @@ mod tests {
     /// A subject outside the closed set names the set it is outside of.
     #[test]
     fn a_subject_outside_the_set_names_the_set() {
-        let refused = one("  - subject: shelf\n    from: decisions\n    to: [rulings]\n    \
-                           because: why\n");
+        let refused = one(
+            "  - subject: shelf\n    from: decisions\n    to: [rulings]\n    \
+                           because: why\n",
+        );
         assert!(
             matches!(&refused, PayloadError::Subject { found, .. } if found == "shelf"),
             "{refused}"
         );
-        assert!(refused.to_string().contains("facet_value, kind"), "{refused}");
+        assert!(
+            refused.to_string().contains("facet_value, kind"),
+            "{refused}"
+        );
     }
 
     /// A later format is refused rather than read as this one.
@@ -821,7 +860,10 @@ mod tests {
             "migrations/1-to-2.yml",
         )
         .expect_err("it refuses");
-        assert!(matches!(refused[0], PayloadError::Format { .. }), "{refused:?}");
+        assert!(
+            matches!(refused[0], PayloadError::Format { .. }),
+            "{refused:?}"
+        );
     }
 
     /// The subject fixes the dimension, and no payload can vary it.

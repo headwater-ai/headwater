@@ -63,11 +63,53 @@ Publishing is a release: a semantic version, a changelog, an integrity digest, a
 
 `headwater taxonomy publish` writes the artifact. It is a directory, because the engine carries no archive format and needs none: whatever moves a directory in the organization moves this one. Beside the manifest it writes a **release record**. The record names every file in the artifact with the digest of its bytes, and it carries one digest over that list. The record does not cover itself, so the digest is over what the artifact holds rather than over the file that states it.
 
+**Every `contents` path a publisher writes is read.** `taxonomy`, `bundles`, `conformance` and `migrations` each reach a verb. A key that no verb reads is a claim that a publisher makes and a consumer never sees. That is the defect `requires_engine` refuses from the other side, and `contents.migrations` was it until [the payload](#the-migration-payload) had a reader.
+
 **Publication is where a `contents` path stops leaving the package.** A manifest may point `contents.bundles` outside the package directory while the package and its bundle library sit in one repository. `publish` copies the bundles into the artifact and rewrites that one scalar. So the escape is a property of a source layout, and no published artifact carries one.
 
 **`requires_engine` is read, and a package outside the range is refused before a source is loaded.** The range is a list of comparators over the engine version, written as `">=1.4 <2"`. A range that the engine cannot read is refused rather than ignored. An unreadable range that reads as no range is a claim that the publisher made and the consumer dropped. An engine that resolved a package built for a later one would produce a lock that nobody can reproduce.
 
 **A package imposes nothing on a derived taxonomy, and that is a constraint rather than a courtesy.** An overlay is a patch, so a consumer's resolved taxonomy and lock contain the base content of the package. Terms on the package that a derived work inherits therefore reach an artifact that [spec 0](00-vision-and-scope.md#who-this-is-for) promises is the adopter's own. So the terms of a `taxonomy`, `bundles` or `profiles` path may not condition what a consumer does with the resolved result. The `doctrine` path is prose that a consumer vendors, and it takes its own terms. Headwater checks none of this, and [spec 6](06-engine-architecture.md#what-a-filtered-export-claims-and-what-it-does-not) already states that it checks nothing about a license. What the specification states is the requirement that a publisher must meet ([Q11](09-decisions.md#q11--license-and-distribution-posture)).
+
+### The migration payload
+
+`contents.migrations` names a directory inside the package, and each file in it is one transition. A file states the versions it moves between as two ranges, which the one range reader of this engine reads. `headwater taxonomy diff` selects the file whose two ranges hold the version this repository takes and the version the artifact declares.
+
+```yaml
+migration:
+  format: 1
+  from: ">=1 <2"
+  to: ">=2 <3"
+
+steps:
+  - subject: facet_value
+    facet: status
+    from: current
+    to: [settled, provisional]
+    task: Say whether the argument of this document is closed.
+    because: One live state held two states that a reader acts on differently.
+```
+
+**No key states whether a step is mechanical, and the target list decides it.** The apparent shape of a payload is a rename map with a list of judgment tasks beside it. [The schema-format walkthrough](../evaluations/schema-format-walkthrough.md) found the case that breaks that shape: "one old value maps to a set, and the author chooses". Such a step is a rename in every respect but the one that decides whether a program may apply it. So the split of [spec 2](02-taxonomy-model.md#versioning-by-measured-compatibility) runs through a step, and never between two lists.
+
+One target is mechanical, and the engine applies it. Two or more are a closed choice, and the author picks one value out of the set that the publisher closed. No target is a re-statement, and nothing replaces the old value. A step that leaves a choice or that asks for a re-statement carries a `task`, which is the question the author answers. A `task` beside one target is refused, because a mechanical step asks nobody anything. A key that this engine reads and drops is the defect that a payload exists to stop.
+
+An absent `to` and `to: []` are two different statements. A reader that made them one would turn a forgotten target into a re-statement task. An absent `to` is a publisher that did not say, and it is refused. `to: []` is a publisher that says that nothing replaces the value.
+
+**A step declares no dimension, and its subject fixes one.** A `remedies` key would be a claim that a publisher writes and that nothing measures. The engine holds the mapping instead, and no payload may vary it.
+
+| subject | what it moves | the dimension it is a remedy for |
+|---|---|---|
+| `facet_value` | one value of one facet, and every document that carries it | `instance_validity`, and `consequence` with it |
+| `kind` | one kind, and every document that the census typed as it | `classification` |
+
+`consequence` stands in the first row because [spec 2](02-taxonomy-model.md#versioning-by-measured-compatibility) rules that one dimension holds the other: "a broken `instance_validity` breaks `consequence` too".
+
+**Three of the six dimensions have no subject, and each absence is a statement.** No rename is a remedy for `projection`, because a projection that moved is written again by `headwater generate` rather than edited. No rename is a remedy for `identifier`. [Spec 3](03-authoring-and-lifecycle.md#identifiers) makes an identifier a stable name that survives a move and a rename. A payload that renamed one would move the thing the identifier holds still. `addressability` is the third, and the rename map that a step already carries is what an overlay rewrite reads. Nothing rewrites an overlay, so no subject names that dimension.
+
+**The two ends of the wire check different halves, and neither one can check both.** `headwater taxonomy publish` reads every payload before it writes a file. It refuses a step whose source the taxonomy under publication still declares, because such a step renames something that did not move. It refuses a step whose target that taxonomy does not declare, and a payload whose ranges do not hold the version under publication. `headwater taxonomy diff` reads the payload out of the artifact and reports what it means for this corpus. A step that names a value which this repository does not hold is reported and never refused. The old taxonomy a consumer holds is the base under its own overlays, and an overlay may have removed that value.
+
+**What the report states is measured, and never asserted.** The documents that a step names come from the census of the taxonomy this repository takes. The documents whose validity moved come from the comparison that decided `instance_validity`, and out of that one comparison rather than a second pass over it. So the report says how many of the documents that stopped validating lie under a step, and it names every document that lies under none. So a payload that names all of them answers to a corpus that its publisher never saw.
 
 ## Consuming
 
@@ -170,7 +212,7 @@ reports, against the *local* corpus rather than in the abstract:
 - which overlay entries the change invalidates (an override that addresses a removed path is an error, not a silent no-op). This is the `addressability` dimension, reported here at the grain that a consumer can act on.
 - whether the new base still satisfies the core under the local overlay.
 - which local documents violate the new schema.
-- which migration steps apply, split into mechanical and judgment-bearing.
+- which migration steps apply, split into mechanical and judgment-bearing, with the documents that each step names and every document that no step names.
 
 **The verb takes a directory, and `--to` states which version that directory is expected to be.** This engine opens no socket, so the artifact is one the caller already fetched, the way [`taxonomy vendor`](#waivers) takes one. The flag is therefore the assertion rather than the address. A directory that declares another version is a wrong directory rather than a wrong number. The flag accepts a version or a range of them, through the one range reader the engine has.
 
@@ -182,7 +224,7 @@ reports, against the *local* corpus rather than in the abstract:
 
 The publisher measures compatibility against its own reference corpora and reference overlays, and attaches the result to the release as a claim. The consumer's run **verifies that claim against documents that the publisher never saw**. A claim that holds upstream but fails locally is the interesting case, not an anomaly. It means that the local corpus exercises something that the reference corpora do not.
 
-`headwater taxonomy migrate --to 4.0.0` applies the mechanical steps, and those include the overlay rewrite. It waits on the payload that carries the rename map, which no publisher writes yet and no document gives a form ([spec 6](06-engine-architecture.md#the-cli-grammar)). Addresses that the payload renamed are rewritten in place, and each `add` collision with the new base becomes a judgment task ([spec 2](02-taxonomy-model.md#customization-by-composition)). It emits the rest as a task list with the affected documents attached, ready for a human or a coding agent. The distinction is the whole point. To move files is mechanical. To rewrite a document to fit the section contract of a new kind is not. To pretend that the second is automatable produces plausible, wrong documents at scale.
+`headwater taxonomy migrate --to 4.0.0` applies the mechanical steps, and those include the overlay rewrite. [The payload](#the-migration-payload) has a form and a reader. What the verb waits on is the half that writes. Nothing applies a step to a document, to an overlay or to the lock ([spec 6](06-engine-architecture.md#the-cli-grammar)). Addresses that the payload renamed are rewritten in place, and each `add` collision with the new base becomes a judgment task ([spec 2](02-taxonomy-model.md#customization-by-composition)). It emits the rest as a task list with the affected documents attached, ready for a human or a coding agent. The distinction is the whole point. To move files is mechanical. To rewrite a document to fit the section contract of a new kind is not. To pretend that the second is automatable produces plausible, wrong documents at scale.
 
 ### Between majors, the corpus is legitimately between valid states
 

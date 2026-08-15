@@ -84,10 +84,7 @@ pub fn account(
         })
         .collect();
 
-    let named: BTreeSet<&String> = steps
-        .iter()
-        .flat_map(|step| step.subjects.iter())
-        .collect();
+    let named: BTreeSet<&String> = steps.iter().flat_map(|step| step.subjects.iter()).collect();
     Accounting {
         at: payload.at.clone(),
         from: payload.from.clone(),
@@ -105,10 +102,7 @@ pub fn account(
 impl Accounting {
     /// How many steps the engine applies with no judgment.
     pub fn mechanical(&self) -> usize {
-        self.steps
-            .iter()
-            .filter(|step| step.task.is_none())
-            .count()
+        self.steps.iter().filter(|step| step.task.is_none()).count()
     }
 
     /// Whether every document whose validity moved lies under a step.

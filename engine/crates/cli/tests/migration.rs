@@ -169,8 +169,11 @@ impl Root {
             text = text.replacen(&from, &to, 1);
         }
         assert!(text.contains("version: 1.0.0"), "the base is at 1.0.0");
-        std::fs::write(&taxonomy, text.replacen("version: 1.0.0", "version: 2.0.0", 1))
-            .expect("the taxonomy writes");
+        std::fs::write(
+            &taxonomy,
+            text.replacen("version: 1.0.0", "version: 2.0.0", 1),
+        )
+        .expect("the taxonomy writes");
 
         let manifest = self.at.join("packages/headwater-standard/package.yml");
         let mut text = std::fs::read_to_string(&manifest).expect("the manifest reads");
@@ -283,7 +286,10 @@ fn the_payload_names_every_document_whose_validity_moved() {
         "3 steps, 1 mechanical and 2 judgment-bearing",
         "remedies instance_validity, consequence",
     ] {
-        assert!(ran.out.contains(line), "the report states `{line}`: {ran:?}");
+        assert!(
+            ran.out.contains(line),
+            "the report states `{line}`: {ran:?}"
+        );
     }
 }
 
@@ -324,8 +330,9 @@ fn a_document_no_step_names_is_named() {
         "the corpus and the candidate are the ones the case above measured: {ran:?}"
     );
     assert!(
-        ran.out
-            .contains("1 of the 3 documents whose validity moved lie under no step of this payload"),
+        ran.out.contains(
+            "1 of the 3 documents whose validity moved lie under no step of this payload"
+        ),
         "{ran:?}"
     );
     assert!(
@@ -359,7 +366,8 @@ fn a_closed_choice_with_no_task_stops_the_publish() {
     assert_eq!(ran.code, Some(1), "{ran:?}");
     assert!(ran.err.contains("nothing was published"), "{ran:?}");
     assert!(
-        ran.err.contains("a choice with no `task` beside it is a question nobody was asked"),
+        ran.err
+            .contains("a choice with no `task` beside it is a question nobody was asked"),
         "{ran:?}"
     );
     assert!(
@@ -389,9 +397,10 @@ fn a_source_the_taxonomy_still_declares_stops_the_publish() {
     let ran = root.publish("2.0.0");
     assert_eq!(ran.code, Some(1), "{ran:?}");
     assert!(
-        ran.err
-            .contains("still declares that facet_value, so the step renames something that did \
-                      not move"),
+        ran.err.contains(
+            "still declares that facet_value, so the step renames something that did \
+                      not move"
+        ),
         "{ran:?}"
     );
 }

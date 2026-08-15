@@ -404,8 +404,8 @@ pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<Resol
 /// published no major version pays nothing for this.
 fn migrations(root: &Path, directory: &Path, manifest: &Mapping) -> Result<(), Vec<ResolveError>> {
     let name = manifest_name(root, directory);
-    let payloads =
-        crate::migration::at(directory, manifest).map_err(|errors| crate::migration::as_errors(&name, &errors))?;
+    let payloads = crate::migration::at(directory, manifest)
+        .map_err(|errors| crate::migration::as_errors(&name, &errors))?;
     if payloads.is_empty() {
         return Ok(());
     }

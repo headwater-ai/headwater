@@ -231,13 +231,18 @@ headwater taxonomy diff      <dir> [--to <version>] [--now <date>] [--root <path
                      release record over it: every file, the digest of its
                      bytes, and one digest over that list. It prints the digest,
                      which is the number the release notes state and a consumer
-                     pins.
+                     pins. It reads every migration payload the manifest
+                     declares before it writes a file, and refuses one that the
+                     taxonomy under publication contradicts.
   taxonomy diff      measure what a published artifact would do to this corpus,
                      across the six compatibility dimensions of spec 2. It
                      resolves the artifact under this repository's own overlays
                      and runs every phase twice over one tree, so a difference
                      is attributable to the schema rather than to two publishes
-                     of one package differing in trivia. It writes nothing, and
+                     of one package differing in trivia. Where the artifact
+                     ships a migration payload for the move, it reports what
+                     each step reaches in this corpus and every document that
+                     stopped validating under no step. It writes nothing, and
                      it fails only when it could not measure.
   taxonomy vendor    check an artifact that somebody already fetched against the
                      digest this repository pinned, and install it under
@@ -696,13 +701,13 @@ fn main() -> ExitCode {
         // says what it waits on rather than reading as a verb this binary
         // forgot.
         ["taxonomy", "migrate", ..] => fail(
-            "`taxonomy migrate` waits on a published migration payload. Spec 2 makes the \
-             mechanical half of a migration the rename map that a major version ships, and \
-             `taxonomy publish` writes no `migrations/` because no document states that \
-             payload's form. Without the map there are no mechanical steps to apply. \
-             `headwater taxonomy diff <artifact>` measures the upgrade, and `headwater infer` \
-             writes a payload against no prior version. \
-             See `docs/spec/07-distribution-and-federation.md`",
+            "`taxonomy migrate` waits on the half of a migration that writes. Spec 7 states the \
+             form of the payload, `taxonomy publish` carries it and refuses one it cannot, and \
+             `taxonomy diff <artifact>` reads it and reports what each step reaches in this \
+             corpus. What no verb does is apply a step: nothing rewrites the facet value of a \
+             document, nothing rewrites an overlay address, and nothing writes the open task set \
+             into the lock. Until one of the three runs, this verb would print what `diff` \
+             already prints. See `docs/spec/07-distribution-and-federation.md`",
         ),
         ["taxonomy", other, ..] => fail(&format!(
             "`taxonomy {other}` is not a verb this binary carries yet. \
@@ -1396,7 +1401,9 @@ fn payload(
     let payloads = match headwater_resolve::migration::at(fetched, manifest) {
         Ok(payloads) => payloads,
         Err(refusals) => {
-            eprintln!("headwater: the artifact carries a migration payload this engine cannot read");
+            eprintln!(
+                "headwater: the artifact carries a migration payload this engine cannot read"
+            );
             eprint!(
                 "{}",
                 indent(&render_errors(&headwater_resolve::migration::as_errors(
