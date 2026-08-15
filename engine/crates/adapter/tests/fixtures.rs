@@ -162,25 +162,46 @@ const PRIOR: &str = "the prior version of ";
 /// `Held` has four arms and three of them are reachable in no recorded artifact
 /// of this crate: a document the change adds, one whose prior version this run
 /// read, and one whose prior version it could not. The fourth is a path that
-/// binds to no row of the corpus, and two lines reach it here, because a real
-/// change carries files that are no document of anything and a mistyped path
-/// looks exactly the same from inside the engine.
+/// binds to no row of the corpus, and four lines reach it here, because a real
+/// change carries files that are no document of anything, a mistyped path looks
+/// exactly the same from inside the engine, and `./` in front of a real path is
+/// a spelling this module refuses to normalize.
 ///
-/// The three real paths are read off the census in walk order rather than
-/// written here, for the reason the adoption pair above is: a fixture that
-/// pinned a name would stop describing the tree the day somebody renamed a
-/// document.
+/// **The counts are pairwise distinct, and that is the point of the line
+/// counts below rather than an accident of them.** Reaching all four states is
+/// not what a recorded artifact pins. An earlier version of this manifest
+/// reached all four and produced `added: 1, carried: 1, unreadable: 1`, so an
+/// emitter that wrote any one of those three where it meant another moved no
+/// recorded byte and failed no test. [`no_two_counts_of_the_scoped_fixture_are_equal`]
+/// is what holds the property now.
+///
+/// The real paths are read off the census in walk order rather than written
+/// here, for the reason the adoption pair above is: a fixture that pinned a
+/// name would stop describing the tree the day somebody renamed a document.
 fn manifest_over(taken: &Census) -> Change {
     let paths: Vec<&str> = taken.rows.iter().map(|row| row.path.as_str()).collect();
-    let (added, carried, unreadable) = (paths[0], paths[1], paths[2]);
-    let manifest = format!(
-        "{FORMAT}\n\
-         added\t{added}\n\
-         prior\t{carried}\t{PRIOR}{carried}\n\
-         prior\t{unreadable}\ta prior version that no tree holds\n\
-         added\tREADME.md\n\
-         prior\tcheck/spec/00-both-halves.markdown\t{PRIOR}{carried}\n"
-    );
+    let (added, carried, unreadable) = (&paths[0..2], paths[2], &paths[3..6]);
+    let mut manifest = String::from(FORMAT);
+    manifest.push('\n');
+    for path in added {
+        manifest.push_str(&format!("added\t{path}\n"));
+    }
+    manifest.push_str(&format!("prior\t{carried}\t{PRIOR}{carried}\n"));
+    for path in unreadable {
+        manifest.push_str(&format!(
+            "prior\t{path}\ta prior version that no tree holds\n"
+        ));
+    }
+    // Four paths that bind to nothing. The last two name a prior version that
+    // does read, because `Unbound::read` opens it before `Unbound::bind` ever
+    // holds the path against the corpus, and the state a line ends in is the
+    // binding rather than the read.
+    manifest.push_str(&format!(
+        "added\tREADME.md\n\
+         added\tengine/crates/check/src/change.rs\n\
+         prior\tcheck/spec/00-both-halves.markdown\t{PRIOR}{carried}\n\
+         prior\t./{carried}\t{PRIOR}{carried}\n"
+    ));
     bound(&manifest, taken)
 }
 
@@ -423,22 +444,65 @@ fn the_scoped_fixture_reaches_every_state_a_manifest_line_can() {
     let run = scoped_run().run;
     let scoped = run.change.expect("the run was scoped");
     let named = &scoped.named;
-    assert_eq!(named.documents, 5);
-    assert_eq!(named.added, 1, "one document the change adds");
+    assert_eq!(named.documents, 10);
+    assert_eq!(named.added, 2, "two documents the change adds");
     assert_eq!(named.carried, 1, "one prior version this run read");
-    assert_eq!(named.unreadable, 1, "one prior version it could not");
-    assert_eq!(named.unmatched, 2, "two paths that bind to no row");
+    assert_eq!(named.unreadable, 3, "three prior versions it could not");
+    assert_eq!(named.unmatched, 4, "four paths that bind to no row");
     // The list and the count are two readings of one set, and an artifact that
     // wrote the list while a consumer read the count would put the two at odds.
     assert_eq!(scoped.unmatched.len(), named.unmatched);
-    // A file that is no document of anything, and a document path with one
-    // character wrong. Those are the two reasons a real manifest names a path
-    // that binds to nothing, and they are indistinguishable from inside the
-    // engine, which is why the report names the path rather than counting it.
+    // In path order. A real path with `./` in front of it, a file that is no
+    // document of anything, a document path with one character wrong, and a
+    // source file the change carried. Those are the reasons a manifest names a
+    // path that binds to nothing, and they are indistinguishable from inside
+    // the engine, which is why the report names the path rather than counting
+    // it.
     assert_eq!(
         scoped.unmatched,
-        ["README.md", "check/spec/00-both-halves.markdown"]
+        [
+            "./check/evaluations/delta.md",
+            "README.md",
+            "check/spec/00-both-halves.markdown",
+            "engine/crates/check/src/change.rs",
+        ]
     );
+}
+
+/// No two values of the block the recorded scoped fixtures carry are equal.
+///
+/// The four states a manifest line can reach are not the property a recorded
+/// artifact pins. The counts are. An earlier version of this manifest reached
+/// all four states and produced `added: 1, carried: 1, unreadable: 1`, and two
+/// deliberate swaps of those members — `carried` written from `added`, and
+/// `carried` written from `unreadable` — passed all 24 tests of this file and
+/// moved no recorded byte.
+///
+/// Every scalar of the block is distinct here, and the length of the unmatched
+/// list is distinct from all of them, so a member written in the wrong place
+/// changes the three recorded artifacts.
+#[test]
+fn no_two_counts_of_the_scoped_fixture_are_equal() {
+    let run = scoped_run().run;
+    let scoped = run.change.expect("the run was scoped");
+    let named = &scoped.named;
+    let counts = [
+        ("documents", named.documents),
+        ("added", named.added),
+        ("carried", named.carried),
+        ("unreadable", named.unreadable),
+        ("promotions", scoped.promotions),
+        ("the unmatched paths", scoped.unmatched.len()),
+    ];
+    for (one, left) in counts {
+        for (two, right) in counts {
+            assert!(
+                one == two || left != right,
+                "`{one}` and `{two}` are both {left}, so an emitter that wrote one where it \
+                 means the other moves no recorded byte"
+            );
+        }
+    }
 }
 
 /// A full-corpus run says nothing about a change, in any of the four.
@@ -664,7 +728,7 @@ fn the_change_rides_in_the_runs_property_bag() {
         .and_then(|properties| member(&properties, "headwater"))
         .and_then(|headwater| member(&headwater, "change"))
         .expect("the change is in the run's property bag");
-    assert_eq!(text(&bag, "documents"), "5");
+    assert_eq!(text(&bag, "documents"), "10");
     assert!(
         member(&run, "change").is_none(),
         "an invented member of the run object"

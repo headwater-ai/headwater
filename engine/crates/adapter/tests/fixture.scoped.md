@@ -2,14 +2,16 @@
 
 41 findings, 24 of them errors across 23 of 25 documents, against `headwater/fixture` 1.0.0 at `0d5deef4f0b065206f6e33e9641af29c0de5411b4e8c5d9eedaf22d68f04c746`, evaluated at 2026-08-12.
 
-**Scoped to a change.** This run was told what one change carries, so the checks that read the version a document stood at before it could run at all. 5 documents were named: 1 that the change adds, 1 with a prior version this run read, and 1 whose prior version did not read, so every check that needed one was skipped over it. The findings above are over the whole corpus, as they are in a run that names no change.
+**Scoped to a change.** This run was told what one change carries, so the checks that read the version a document stood at before it could run at all. 10 documents were named: 2 that the change adds, 1 with a prior version this run read, and 3 whose prior version did not read, so every check that needed one was skipped over it. The findings above are over the whole corpus, as they are in a run that names no change.
 
 0 promoted from `asserted` to `accepted` in this change. Nothing declares how many promotions in one change is too many.
 
-2 of those paths named no row of this corpus, so nothing was checked over them:
+4 of those paths named no row of this corpus, so nothing was checked over them:
 
+- `./check/evaluations/delta.md`
 - `README.md`
 - `check/spec/00-both-halves.markdown`
+- `engine/crates/check/src/change.rs`
 
 | Severity | Where | Rule | Finding |
 |---|---|---|---|

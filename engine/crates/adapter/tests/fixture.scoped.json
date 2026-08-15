@@ -8,13 +8,15 @@
   },
   "clock": "2026-08-12",
   "change": {
-    "documents": 5,
-    "added": 1,
+    "documents": 10,
+    "added": 2,
     "carried": 1,
-    "unreadable": 1,
+    "unreadable": 3,
     "unmatched": [
+      "./check/evaluations/delta.md",
       "README.md",
-      "check/spec/00-both-halves.markdown"
+      "check/spec/00-both-halves.markdown",
+      "engine/crates/check/src/change.rs"
     ],
     "promotions": 0
   },
