@@ -59,7 +59,7 @@ None of them binds. A `Bash` call that writes a file matches no matcher, `disabl
 
 The second hatch is for debt rather than for an exception. The `adoption` block of `.headwater/taxonomy.lock` holds `(document, rule)` pairs under a task with an owner and an expiry. A pending finding is reported with its task beside it and does not fail a strict run. `headwater infer --owner <name> --write` writes one, and `headwater check` reports how many pairs remain on every run. This repository declares one task, `AD-1`, and its one pair is closed. The pair carried the last entry of the retired linter's baseline, and that sentence was rewritten rather than waited out, so `headwater check` now reports the task as holding 0 findings.
 
-**Writing governed prose.** Invoke the `ste-editor` skill before you rewrite a document under `docs/spec/`, `docs/decisions/`, `docs/evaluations/` or `docs/obligations/`, and run `headwater check` on the result. The skill carries the rules that no check reads: consistent terms, multi-word nouns kept to three words, and the judgment calls that a lexical rule cannot make.
+**Writing governed prose.** Invoke the `ste-editor` skill before you rewrite a document under `docs/spec/`, `docs/decisions/`, `docs/evaluations/`, `docs/obligations/` or `docs/interfaces/`, and run `headwater check` on the result. The skill carries the rules that no check reads: consistent terms, multi-word nouns kept to three words, and the judgment calls that a lexical rule cannot make.
 
 **The seven skills, and when each one loads.** Nothing makes a skill load. A harness reads a description and a model picks, which [spec 5](docs/spec/05-ai-integration.md#how-a-skill-reaches-an-agent-and-what-nothing-does) states as a measurement rather than a property. This paragraph is the one mechanism stronger than a description, and it costs context on every session.
 
@@ -68,7 +68,7 @@ The second hatch is for debt rather than for an exception. The `adoption` block 
 | `headwater-orient` | you search `docs/` or open a specification part to find out what this repository already says |
 | `headwater-authoring` | you add or revise any document under `docs/`, and whenever `headwater new` refuses |
 | `headwater-taxonomy` | you touch `packages/`, `docs/taxonomies/` or `.headwater/overlay.yml` |
-| `ste-editor` | you rewrite prose under `docs/spec/`, `docs/decisions/`, `docs/evaluations/` or `docs/obligations/` |
+| `ste-editor` | you rewrite prose under `docs/spec/`, `docs/decisions/`, `docs/evaluations/`, `docs/obligations/` or `docs/interfaces/` |
 | `headwater-engine` | the first cargo or CLI command of a session, and whenever a build fails on the toolchain |
 | `repo-cleanup` | you retire a worktree, a local branch or a remote branch that a merged change left behind |
 | `headwater-sweep` | you are asked to read a slice of the corpus for what no check can see |

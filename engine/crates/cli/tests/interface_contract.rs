@@ -68,6 +68,42 @@ const SECTIONS: [&str; 8] = [
 /// by.
 const OMITTED: &str = "Exit status";
 
+/// The declaration, read back out of the lock the sources resolve to.
+///
+/// This is the one reading in the file that goes to the lock rather than to a
+/// document or to a report, so a change to `sections.require` reaches it and
+/// nothing else. The comparison is against [`SECTIONS`], which is the pinned
+/// expectation, so the pair asserts something that neither half asserts alone.
+fn declared_sections(lock: &str) -> Vec<String> {
+    let loaded = headwater_yaml::load(lock).expect("the lock is YAML this engine reads");
+    let mut at = loaded
+        .value
+        .as_map()
+        .expect("the lock is a mapping")
+        .get("resolved")
+        .expect("the lock carries a resolved taxonomy");
+    for key in ["kinds", "interface_contract", "sections", "require"] {
+        at = at
+            .value
+            .as_map()
+            .unwrap_or_else(|| panic!("`{key}` sits under a mapping"))
+            .get(key)
+            .unwrap_or_else(|| panic!("the resolved taxonomy declares `{key}`"));
+    }
+    at.value
+        .as_seq()
+        .expect("`sections.require` is a sequence")
+        .iter()
+        .map(|item| {
+            item.value
+                .as_scalar()
+                .expect("a required section is a scalar")
+                .text
+                .clone()
+        })
+        .collect()
+}
+
 fn repository() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../..")
@@ -222,6 +258,79 @@ fn copy(from: &Path, to: &Path) {
             }
         }
     }
+}
+
+/// The eight headings, held against the declaration that carries them.
+///
+/// # Why this case exists beside the four below
+///
+/// The heading list was already pinned before this case arrived, by
+/// `assert_eq!(written, SECTIONS)` inside the constructor case. Dropping one
+/// heading from `sections.require` turns that assertion red, so the list was
+/// covered. **The attribution was wrong.** A later reader who trims the
+/// contract fails a case named for `headwater new`, and goes to read the
+/// scaffolder rather than the declaration that moved.
+///
+/// So this case reads the declaration and nothing else. It runs before the
+/// scaffolder, before any document exists and before any rule fires, and the
+/// only input it can fail on is `sections.require` in `.headwater/overlay.yml`.
+///
+/// # What it reads, and why it resolves first
+///
+/// The lock, written by the `taxonomy resolve` that [`Root::new`] runs. Not the
+/// committed lock: `headwater check` reads the lock and never the sources, so a
+/// case that compared against what is committed would pass over a heading
+/// removed from the overlay until somebody resolved. The resolve inside the
+/// fixture is what closes that gap.
+///
+/// # The order is asserted, and no rule reads it
+///
+/// `section.required.missing` reads no order, which
+/// `the_contract_reads_a_heading_and_never_its_order_or_its_content` measures.
+/// The order still matters here, because `headwater new` writes the headings in
+/// the order the declaration lists them, and a contract a reader opens is read
+/// top to bottom. So the order is a property of the declaration that no check
+/// defends, and this is where it is defended.
+#[test]
+fn the_declaration_requires_eight_headings_in_the_order_it_writes_them() {
+    let root = Root::new("eight-headings");
+
+    let lock = std::fs::read_to_string(root.at.join(".headwater/taxonomy.lock"))
+        .expect("the resolve wrote a lock");
+    let declared = declared_sections(&lock);
+
+    // Named one way each, so a failure says which heading left and which
+    // arrived rather than printing two lists for a reader to difference.
+    let left: Vec<&str> = SECTIONS
+        .iter()
+        .copied()
+        .filter(|section| !declared.iter().any(|held| held == section))
+        .collect();
+    let arrived: Vec<&str> = declared
+        .iter()
+        .map(String::as_str)
+        .filter(|section| !SECTIONS.contains(section))
+        .collect();
+    assert!(
+        left.is_empty(),
+        "`interface_contract` no longer requires {}. Eight headings are declared in \
+         `.headwater/overlay.yml`, seven of them from man-pages(7) and `Preconditions` from \
+         Design by Contract, and every contract under `docs/interfaces/` is written to them. \
+         Removing one is a change to what this kind promises a reader, and it belongs in the \
+         pull request that makes it rather than here",
+        left.join(", ")
+    );
+    assert!(
+        arrived.is_empty(),
+        "`interface_contract` now requires {}, which this case does not know about. A heading \
+         added to the contract is owed by every document already on the shelf, so add it to \
+         `SECTIONS` in the same change that adds it to the declaration",
+        arrived.join(", ")
+    );
+    assert_eq!(
+        declared, SECTIONS,
+        "the eight headings are declared in the order a contract is read in"
+    );
 }
 
 /// A kind with no document of it is invisible to every check, so the

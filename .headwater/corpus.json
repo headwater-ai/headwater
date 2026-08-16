@@ -27,6 +27,11 @@
           "id": "HW-EVAL-default-taxonomy-first-run"
         },
         {
+          "shelf": "interfaces",
+          "path": "docs/interfaces/headwater-check.md",
+          "id": "HW-IFACE-headwater-check"
+        },
+        {
           "shelf": "obligations",
           "path": "docs/obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md",
           "id": "HW-OBL-0001"
