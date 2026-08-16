@@ -1,0 +1,120 @@
+---
+id: HW-IFACE-headwater-sweep
+status: draft
+status_since: 2026-08-16
+summary: "Why no result of headwater sweep can move an exit status, and the three caller errors that move one anyway."
+last_verified: 2026-08-16
+title: "headwater sweep"
+provenance:
+  warrant: asserted
+  agency: agent
+  drafted_by: claude-opus-5
+  activity: measure+draft
+  evidence_basis: evidenced
+relations:
+  governs:
+    - engine/crates/cli/src/main.rs
+    - engine/crates/sweep/src/lib.rs
+---
+
+# headwater sweep
+
+## Synopsis
+
+    headwater sweep plan   [--under <path>] [--root <path>]
+    headwater sweep report <path> [--format text|json] [--root <path>]
+
+`plan` takes no operand. `report` takes exactly one, which is the path of the file an agent wrote back. Four inputs are refused. A bare `sweep`. A `sweep report` with no path. A second word that is neither `plan` nor `report`. A `report` with more than one path, which the message calls a verb the binary does not carry.
+
+## Description
+
+The coherence sweep is a sampler and never a check. It reports the five classes below, and no rule of the check layer reads any of them.
+
+- `undeclared_conflict`: two documents contradict each other, both are current, and neither says so
+- `quiet_supersession`: a newer document has quietly overtaken an older claim
+- `undefined_concept`: a term is used across the slice and defined in none of it
+- `audience_mismatch`: the audience the document declares could not act on what it says
+- `unwritten_section`: a heading the kind requires, over prose that says nothing about it
+
+**The verb is two halves with a model between them, and no code here performs the middle part.** `plan` writes the briefing an agent reads. A person or an agent then reads the documents and writes one file. `report` reads that file and states what this engine could confirm about it.
+
+**`plan` is deterministic and states its own extent.** Two runs over one tree write the same bytes. There is no sampling rule, because a slice this engine picked would be an unreproducible sample dressed as a reproducible one. The briefing names six things.
+
+- the slice, as the prefix a caller passed
+- the count of documents in the slice, against the count in the corpus
+- the digest of the lock the plan was taken under
+- what the graph already declares between two members of the slice
+- the shape of the file to write back, as a YAML skeleton
+- the five classes, each with the sentence that defines it
+
+**`report` confirms and never believes.** Every quotation is located in the document it names, and a finding whose quotation is not there is refused. A paraphrase is not a quotation. Three more findings are refused. One names a path that is not a classified document. One names a class outside the five. One proposes an edge the graph already carries. A file whose `taxonomy:` digest is not the digest of the lock is refused whole. A sweep planned against one taxonomy and read back against another compares two corpora.
+
+**Nothing gates on any of it.** [Spec 12](../spec/12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) names four mechanisms, and only one of them is an exit status. The sampler is its own crate, and that crate names `headwater-check` for the finding shape. So `headwater-check` can never name the sampler, and the compiler refuses the cycle. No commit gate and no continuous-integration job runs either half. No crate of this engine depends on a network client, so no build waits for a model.
+
+**Neither half writes a byte.** `report` prints the front matter that would declare a proposed edge and writes none of it. There is no `--write`, and this is the one verb of the write path that has none. A proposal an agent applies to itself is the act that [HW-OBL-0108](../obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md) records at the scale of a whole corpus.
+
+## Preconditions
+
+**`.headwater/taxonomy.lock` is there, for both halves.** `headwater taxonomy resolve` writes it. Both halves load the corpus through the lock, so a repository that never resolved gets 1 from either one.
+
+**`.headwater/taxonomy.yml` reads, and it names the corpus root and the exclusions.**
+
+**For `report`, the file an agent wrote is readable.** It is YAML, and a file that is not parses into a refusal rather than into an error.
+
+**For `report`, the `taxonomy:` line of that file holds the digest the lock holds.** A file written against another taxonomy is refused whole, and the run still exits 0.
+
+There is no precondition about a model, about a network, or about a plan having been run. `report` reads the file it is handed and asks the tree in front of it about the claims in that file.
+
+## Options
+
+| Option | Half | What it does |
+|---|---|---|
+| `--under <path>` | `plan` | The slice, as a path prefix under the repository root. The whole corpus by default. |
+| `--format text\|json` | `report` | The vocabulary. `text` is the default and the one a person reads. `json` is the finding shape that [spec 4](../spec/04-assurance-model.md) declares, with the provenance and the evidence a sweep adds. |
+| `--root <path>` | both | The repository to read. It defaults to the working directory. |
+
+**There is no `--strict`, and the parser accepts one.** Every flag of this binary is parsed before the verb is decided, so `headwater sweep report <path> --strict` exits 0 and writes what `headwater sweep report <path>` writes. The absence of a `--strict` that does anything is the property spec 12 states. The absence of a `--strict` the parser refuses is not.
+
+## Exit status
+
+**0 for every fact this verb states about a corpus, a file or a model.** That is the constraint rather than a leniency. `report` exits 0 with findings, exits 0 with every finding refused, and exits 0 when it refuses the whole file. `plan` exits 0 over a slice that holds no document. An exit status that carried any of those would put the output of a model on a build.
+
+**1 for three reasons, and every one of them belongs to the caller.**
+
+| The reason | Half | When it is decided |
+|---|---|---|
+| A flag that names a value has none after it. Or a word that opens with `-` is not a flag this binary knows. Or the words after `sweep` are not `plan`, `report <path>` | both | in `main`, before the verb is entered |
+| `--format` names a target that is neither `text` nor `json` | `report` | first thing in the verb, before the file is opened |
+| The file at the given path did not read | `report` | after the format is decided, before the corpus is loaded |
+| The lock is absent, or a declaration under it did not read | both | after the file is read, before the file is parsed |
+
+**Spec 12 names two of those and the ordering of both is stated wrongly.** Its sentence reads: *"The two non-zero exits are the caller's: a path that the process cannot read, and a `--format` that names no target. Both are decided before any file is parsed."* The third reason is the lock, and a repository that never ran `headwater taxonomy resolve` gets 1 out of either half. It is a caller's error on the same reading as the other two. So the property spec 12 defends survives, and the count in the sentence does not. The ordering claim holds for `--format` and fails for the unreadable path. That path is opened after the format is decided and before the corpus is loaded.
+
+**`plan` has a non-zero exit as well**, which [spec 6](../spec/06-engine-architecture.md) states as *"Both exit 0 whatever they find"*. That sentence is true about what a sweep finds and silent about a corpus that does not load.
+
+**No test asserts any of this.** `engine/crates/sweep/tests/fixtures.rs` covers the intake as a library, which is where the refusals are decided, and it starts no process. The exit statuses above were read from `sweep_plan` and `sweep_report` in `engine/crates/cli/src/main.rs` and confirmed by running the binary.
+
+## Environment
+
+**No environment variable reaches either half.** No crate under `engine/crates/` calls `std::env::var` outside a test target. The slice is `--under`, the repository is `--root`, and the taxonomy is the lock.
+
+There is no variable that names a model, a key or an endpoint, and there is nowhere for one to be read. No crate of this engine depends on a network client.
+
+## Files
+
+| Path | How this verb treats it |
+|---|---|
+| `.headwater/taxonomy.lock` | read, by both halves. |
+| `.headwater/taxonomy.yml` | read, by both halves. |
+| the corpus | read, by both halves. |
+| the path `report` is handed | read. |
+
+**Neither half writes a file.** The briefing and the report both go to standard output, and standard error carries nothing on a run that reaches a report. There is no cache, so two runs of `plan` over one tree do the same work twice and write the same bytes.
+
+## See also
+
+[`headwater check`](headwater-check.md) is the deterministic half of the same reporting pipeline. It shares the finding shape and shares nothing else. No finding of this verb reaches a rule, a cache, a read set or an exit status of that one.
+
+`.claude/skills/headwater-sweep/SKILL.md` is the instruction a model reads between the two halves in this repository.
+
+[Spec 12](../spec/12-check-layer.md#where-the-llm-coherence-sweep-fits) states where the sweep sits and what stops it from gating. [Spec 4](../spec/04-assurance-model.md#discharging-coherence-obligations-the-assisted-sweep) states the obligations a sweep discharges and the finding shape it borrows. [Spec 6](../spec/06-engine-architecture.md) states the grammar of both halves.
