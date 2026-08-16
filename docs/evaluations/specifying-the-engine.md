@@ -1,11 +1,12 @@
 ---
 id: HW-EVAL-specifying-the-engine
-status: draft
-status_since: 2026-08-15
+status: current
+status_since: 2026-08-16
 summary: "`docs/spec/` is a design-spec series and nothing types the engine as a thing under test, and three traditions each supply one part of what would."
-last_verified: 2026-08-15
+last_verified: 2026-08-16
 provenance:
-  warrant: asserted
+  warrant: accepted
+  accepted_by: j.baxter
   agency: mixed
   drafted_by: claude-opus-5
   activity: evaluate+draft
@@ -141,7 +142,7 @@ Two more projections fall out of the same graph at no extra declaration. A verb 
 
 It declares nothing, and it is not a bundle doctrine. It proposes no `add` to `.headwater/overlay.yml`, no kind, no facet, no shelf, no relation, no regime member and no projection. Every mapping above is a candidate with a stated reason and an estimated cost, and each one would go through the [headwater-taxonomy](../../.claude/skills/headwater-taxonomy/SKILL.md) route with a failing fixture before it shipped.
 
-It also carries the warrant `asserted`. An agent drafted it, the external citations are real and checkable, and no human has accepted the reading of them.
+It also carries the warrant `accepted`. An agent drafted it, the external citations are real and checkable, and a human accepted the reading of them.
 
 ## Sources
 
