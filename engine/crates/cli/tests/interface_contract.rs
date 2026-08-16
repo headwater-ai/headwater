@@ -246,7 +246,9 @@ fn the_constructor_writes_a_contract_that_a_strict_run_passes() {
         wrote.err
     );
     assert!(
-        wrote.out.contains("wrote docs/interfaces/headwater-check.md"),
+        wrote
+            .out
+            .contains("wrote docs/interfaces/headwater-check.md"),
         "the shelf and the layout name the file:\n{}",
         wrote.out
     );
@@ -287,9 +289,9 @@ fn the_constructor_writes_a_contract_that_a_strict_run_passes() {
     let explained = root.run(&["explain", "docs/interfaces/headwater-check.md"]);
     assert!(
         explained.out.contains("kind interface_contract")
-            && explained
-                .out
-                .contains("requires the facets status, status_since, summary, last_verified, title")
+            && explained.out.contains(
+                "requires the facets status, status_since, summary, last_verified, title"
+            )
             && explained.out.contains(
                 "requires the sections Synopsis, Description, Preconditions, Options, \
                  Exit status, Environment, Files, See also"
@@ -466,14 +468,18 @@ fn a_governs_edge_binds_on_existence_and_reports_a_path_that_is_not_there() {
     // source kind reached this one. A rule that resolved `from: [...]` by name
     // alone would report both halves here.
     assert!(
-        !checked.out.contains("relation.endpoint.not_permitted (OB-REL-2)"),
+        !checked
+            .out
+            .contains("relation.endpoint.not_permitted (OB-REL-2)"),
         "`governs` admits an `interface_contract` as its source:\n{}",
         checked.out
     );
 
     // No reciprocal half is owed, and none is reported missing.
     assert!(
-        !checked.out.contains("relation.reciprocity.missing (OB-REL-1)"),
+        !checked
+            .out
+            .contains("relation.reciprocity.missing (OB-REL-1)"),
         "`governs` declares no reciprocal, so neither end owes one:\n{}",
         checked.out
     );
@@ -492,8 +498,10 @@ fn a_governs_edge_binds_on_existence_and_reports_a_path_that_is_not_there() {
         checked.out
     );
     assert!(
-        unresolved[0].contains("`HW-IFACE-headwater-route` declares `governs: \
-                                engine/crates/route/src/nowhere.rs`"),
+        unresolved[0].contains(
+            "`HW-IFACE-headwater-route` declares `governs: \
+                                engine/crates/route/src/nowhere.rs`"
+        ),
         "the finding names the edge that resolved to nothing:\n{}",
         unresolved[0]
     );
