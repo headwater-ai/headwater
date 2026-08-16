@@ -586,7 +586,7 @@ The identifier namespace is the one lexical requirement, and the core does not c
 
 The value is the adopter's and no package states it. A package that named a namespace would give one to every corpus that adopts it, and a stand-in such as `repo` names nobody at all. So a package declares none, and the consumer's overlay declares one. The namespace opens the pattern, because a rendered identifier reads outermost part first, as `PROJ-123` and `owner/repo#n` do. [Q25](09-decisions.md#q25--where-the-namespace-goes-in-an-identifier-and-who-declares-it) is the ruling on both halves.
 
-That is the boundary-object property stated precisely: plastic enough to adapt to local practice, robust enough to keep a common identity across sites. Local form is entirely negotiable. Shared meaning is not.
+That is the boundary-object property stated precisely. The form is plastic enough to adapt to local practice, and the core survives every rename, so a common identity holds across sites. Local form is entirely negotiable. Shared meaning is not.
 
 Core satisfaction is checked **after** overlay resolution, against the resolved taxonomy. The check does not forbid particular operations. An overlay is rejected when the *result* fails to satisfy a core requirement. The error names the requirement and the operation that removed its last satisfier. Conformance ([spec 7](07-distribution-and-federation.md)) checks the core, not the whole taxonomy.
 
