@@ -27,13 +27,13 @@ relations:
 
 The question is structural rather than editorial. [Spec 5 stop rule 3](../spec/05-ai-integration.md#the-stop-rules) forbids the invention of a shelf or a kind in place. A corpus root is the same class of fact. A root settled inside an implementation diff is a root settled by precedent.
 
-**The specification already puts five classes of file outside the root, and not one of them is code.** [Spec 3](../spec/03-authoring-and-lifecycle.md#templates-and-scaffolding) puts a taxonomy source outside it, and [spec 3](../spec/03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) puts the capture-cost store outside it. [Spec 5](../spec/05-ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind) puts `.claude/hooks/` outside it, and [spec 5](../spec/05-ai-integration.md#how-a-skill-reaches-an-agent-and-what-nothing-does) puts a skill outside it. [Spec 6](../spec/06-engine-architecture.md#cli) puts the probe budget outside it. Each passage states the same three consequences. No census row covers the file, no language regime binds it, and no rule reads its links.
+**The specification already puts five classes of file outside the root, and not one of them is code.** [Spec 3](../spec/03-authoring-and-lifecycle.md#templates-and-scaffolding) puts a taxonomy source outside it, and [spec 3](../spec/03-authoring-and-lifecycle.md#capture-cost-is-a-tracked-metric) puts the capture-cost store outside it. [Spec 5](../spec/05-ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind) puts `.claude/hooks/` outside it, and [spec 5](../spec/05-ai-integration.md#how-a-skill-reaches-an-agent-and-what-nothing-does) puts a skill outside it. [Spec 6](../spec/06-engine-architecture.md#cli) puts the probe budget outside it. Two of the five state the same three consequences. No census row covers the file, no language regime binds it, and no rule reads it. The hooks passage states two of the three and says nothing about a language regime. The skill passage states one. It raises the language regime as a reason not to move a skill inside, rather than as a consequence of its position. The probe-budget passage states none of the three and gives a different test, which the ruling below has to answer.
 
-**The exclusion this corpus already declares carries the test that decides the question.** The reason on `docs/taxonomies/**` in `.headwater/taxonomy.yml` ends with one sentence. "A fixture corpus under an entry is package content twice over, because it is a corpus that another root is meant to walk." That exclusion covers 36 files, and 23 of the 36 are such a corpus.
+**The exclusion this corpus already declares carries the test that decides the question.** The reason on `docs/taxonomies/**` in `.headwater/taxonomy.yml` ends with one sentence. "A fixture corpus under an entry is package content twice over, because it is a corpus that another root is meant to walk." That exclusion covers 36 files. 23 of the 36 sit under a `fixtures/` directory, and 21 of those 23 are the corpus itself. That is 10 files for one entry and 11 for the other. The other two are each a `fixtures/README.md` that documents the set, which is prose a person reads.
 
 **The engine tree is that same sentence at eight times the scale.** `git ls-files engine` reports 608 files on this tree. 186 of them are Markdown. One is `engine/README.md` and the other 185 are inputs to the suite. `engine/crates/census/fixtures/walk/` alone holds `no-front-matter.md`, `unterminated.md`, `invalid-utf8.md` and `not-a-mapping.md`, which the census walker exists to report. [Spec 12](../spec/12-check-layer.md#the-correctness-roots) names that tree as the standing test of the walker.
 
-**The mechanism a narrow reading needs is bound, and it already reaches the engine.** `headwater check` reports 25 distinct `code_path` anchor targets over 29 bindings on the tree this record ships on. Ten of the 25 sit under `engine/` and nine under `.claude/`. Two of the ten are the edges this record declares. The evaluation reports 20 targets, and a claim has to say whether it counts a target or a binding, because those are different denominators.
+**The mechanism a narrow reading needs is bound, and it already reaches the engine.** `headwater check` reports 25 distinct `code_path` anchor targets over 29 bindings on the tree this record ships on. Ten of the 25 sit under `engine/` and nine under `.claude/`. One of the ten is an edge this record declares, which is `engine/README.md`. The record's other edge names `.headwater/taxonomy.yml` and sits under neither. The evaluation reports 20 targets, and a claim has to say whether it counts a target or a binding, because those are different denominators.
 
 ## Decision
 
@@ -41,9 +41,11 @@ The question is structural rather than editorial. [Spec 5 stop rule 3](../spec/0
 
 **First, widening the root to `engine/` admits 185 files that exist in order to be wrong.** The two trees do not compare.
 
-| tree | files | Markdown | Markdown that is a suite input | Markdown a person reads |
+Both rows count the tree this record ships on, which holds this record and the two obligation records it files. The `docs/` row is the census figure of the same run.
+
+| tree | files | Markdown | Markdown that is an input rather than prose of this corpus | Markdown a person reads for what it says |
 |---|---|---|---|---|
-| `docs/` | 238 | 234 | 23, and all 23 are excluded by name | 211 |
+| `docs/` | 241 | 237 | 21, and every one of them is excluded by name | 216 |
 | `engine/` | 608 | 186 | 185 | 1 |
 
 Under a widened root, `engine/crates/census/fixtures/walk/spec/no-front-matter.md` becomes a document of this corpus with no front matter. The census reports it as untyped, against the walker that the file exists to prove. The remedy is an exclusion for every fixture directory of every one of the 22 crates, which is a root defined by what it removes.
@@ -68,7 +70,17 @@ Under a widened root, `engine/crates/census/fixtures/walk/spec/no-front-matter.m
 | `.headwater/capture-cost.jsonl` | ordinary | outside | spec 3 states it |
 | `docs/probe-runs/<name>.md` | a defect, because the shelf types a transcript | inside | spec 5 rules a transcript corpus content, on the test of what regenerates it |
 
-The last row is the one that shows the test is not a restatement of the root path. A probe transcript is machine-recorded rather than authored, and it is corpus content. A file arriving on that shelf without front matter is a defect that the census reports.
+The last row is the one that shows the test is not a restatement of the root path. A probe transcript is machine-recorded rather than authored, and it is corpus content.
+
+**What reports such a file, measured rather than assumed.** A Markdown file with no front matter was put on `docs/probe-runs/` in a scratch copy of this corpus. The census counts it and names it, and `headwater conformance` moves `corpus.classified` from a two-file gap to a three-file gap and names it there too. No check finding moves at all, the count holds at 523, and `headwater check --strict` exits 0. So "a defect" above is what this corpus declares about such a file, and the enforcement is a report rather than a refusal. That is the shape [OB-COV-1](../../packages/headwater-standard/taxonomy.yml) asks for. Its statement is that every file is classified **or reported as unclassifiable**, and the control that discharges it produces facts rather than findings. [HW-OBL-0129](../obligations/0129-spec-12-calls-two-phase-a-outcomes-structural-findings-and-the-engine-emits-none.md) records the one place that reading is not written down.
+
+**This corpus already carries a second test, and this ruling says how the two stand.** [Spec 5](../spec/05-ai-integration.md#a-probe-result-is-citable-because-each-of-its-three-inputs-is-a-committed-artifact) states it in one sentence. "The test is whether anything regenerates the artifact from a committed source." [Spec 6](../spec/06-engine-architecture.md#cli) then puts the probe budget outside the root on that same test, so it is cited and used twice. The `docs/probe-runs/` row above reaches its verdict by it.
+
+The two agree on every path either one was written for. A probe result and the transcript under it are inside. The capture-cost store and the probe budget are outside.
+
+**They part on two paths, and the older sentence is the one that fails.** `.headwater/taxonomy.lock` is regenerated from a committed source by `taxonomy resolve`, and `taxonomy resolve --check` holds it. `.headwater/corpus.json` is written by `headwater generate`, and `generate --check` holds it. Both are regenerated from a committed source, both sit outside the root, and neither is corpus content. Read as a test of membership, the older sentence pulls both inside. The test above puts both outside, because a file arriving in `.headwater/` with no front matter is no defect of anything.
+
+**So the regeneration test is not a membership test, and this record fixes its reading.** It decides, for an artifact whose kind a shelf already declares, whether that artifact is committed content or a fact about a run that ended. Spec 5 asks it of a probe result against a capture-cost reading, which are two artifacts of settled kinds. The test above is asked one step earlier, of a directory, before any kind is in play. Where a later reader has to choose, the test above governs, and nothing in spec 5 or spec 6 is edited to say so.
 
 ## Consequences
 

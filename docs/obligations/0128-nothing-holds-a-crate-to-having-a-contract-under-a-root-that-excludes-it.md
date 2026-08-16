@@ -36,6 +36,12 @@ The corpus owes a mechanism that names an undescribed subject, rather than only 
 
 **A rule that reads the bytes of an anchor target would also close this, and it costs more.** It would make an anchor a subject rather than a name, which is the second reopening condition Q29 records. That reading exists in this tree today as a test rather than as a rule. `engine/crates/check/src/fragment.rs` holds a `comment_links` module that walks the comments of every source file of the engine.
 
+**The cheapest candidate is in the tree already, and it is declined rather than unnoticed.** The `comment_links` module above needs no taxonomy change, no specification change and no ruling. It walks the workspace, it holds what it finds against the corpus, and it fails `cargo test` in continuous integration. A sibling of it could enumerate the 22 crates, or the verbs of the command surface, and fail when one carries no contract. That would hold this engine today.
+
+It is declined for one reason, and the reason is what this record is about. A suite test produces no finding, reaches no obligation, and changes no verdict of `headwater check`. It holds the engine of this repository and it holds no adopter's corpus, because an adopter runs the binary rather than the suite. So it would answer the question for the one reader who is this repository, and leave every reader outside it exactly where they are. That is the split the value rule already names. A mechanism on the wrong side of it is a reason to record the gap rather than to close it.
+
+**What that changes for the projection.** [#257](https://github.com/headwater-ai/headwater/issues/257) does not have to argue that no mechanism exists. It has to argue that the mechanism must ship in the binary, and the paragraph above is the argument.
+
 ## Discharge
 
 Nothing here is discharged. Q29 is the ruling that produced this record, and the record is the thing Q29 declines to settle in prose.
