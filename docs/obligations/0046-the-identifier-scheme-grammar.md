@@ -34,7 +34,7 @@ What the missing member costs is a name. An RDF or SKOS projection has no declar
 
 ## Discharge
 
-A meta-schema that declares `prefix`, `namespace` and the local-part form as three members, and nine schemes that write them, discharge this. The rendered form of every identifier stays as it is, which `engine/crates/check/fixtures/identifiers.mint` records scheme by scheme.
+A meta-schema that declares `prefix`, `namespace` and the local-part form as three members, and every scheme of the lock writing them, discharge this. The rendered form of every identifier stays as it is, which `engine/crates/check/fixtures/identifiers.mint` records scheme by scheme.
 
 This record stays at `current` and it does not reach `discharged`. Half of what it asks for is met. `taxonomy validate` decides disjointness out of the parsed segments, so `identifier integrity` is decided in whole. The half that stays open is the name, and [#217](https://github.com/headwater-ai/headwater/issues/217) tracks it.
 

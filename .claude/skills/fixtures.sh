@@ -219,11 +219,40 @@ if [ -x "$engine" ]; then
     cp -r "$root/docs" "$scratch/docs"
     cp -r "$root/.headwater" "$scratch/.headwater"
 
-    claim 'the kind list the skill prints is the kind list the verb admits' \
-        headwater-authoring/SKILL.md \
-        '`decision`, `decision_register`, `design_spec`, `evaluation`, `obligation_record`, `obligation_register`, `review_prompt`, `review_record` and `specification`' \
-        1 'no kind is named `nonesuch`' \
-        "$engine" new nonesuch --title 'A kind nobody declared' --root "$scratch"
+    # The kind list, read out of both sides rather than carried here.
+    #
+    # This case was a `claim` with the list written into this file, so it held
+    # two texts together and neither of them against the engine. Both were the
+    # same wrong list: the taxonomy declared `probe`, `probe_result` and
+    # `probe_transcript`, and the skill named none of the three, and the case
+    # passed on every run. That is the defect #211 is about, in this suite.
+    #
+    # The refusal message is the only surface that prints the admitted kinds, so
+    # it is the derivation. `sort` on both sides, because neither the verb nor
+    # the sentence promises an order.
+    refused=$("$engine" new nonesuch --title 'A kind nobody declared' --root "$scratch" 2>&1)
+    if [ $? -eq 1 ] && [ "${refused#*no kind is named}" != "$refused" ]; then
+        pass 'an unknown kind is refused, and the refusal names the kinds there are'
+    else
+        fail 'an unknown kind is refused, and the refusal names the kinds there are' \
+            "$refused"
+    fi
+
+    admits=$(printf '%s\n' "$refused" |
+        sed -n 's/.*This taxonomy declares //p' |
+        tr -d '`' | tr ',' '\n' | sed 's/^ *//; s/ *$//' | sort)
+    names=$(sed -n 's/.*The concrete kinds are \(.*\)\./\1/p' \
+        "$skills/headwater-authoring/SKILL.md" |
+        sed 's/ and /, /' | tr -d '`' | tr ',' '\n' | sed 's/^ *//; s/ *$//' | sort)
+    if [ -n "$admits" ] && [ "$admits" = "$names" ]; then
+        pass 'the kind list the skill prints is the kind list the verb admits'
+    else
+        fail 'the kind list the skill prints is the kind list the verb admits' \
+            "the verb admits:
+$admits
+the skill names:
+$names"
+    fi
 
     claim 'a kind that a relation may name and that mints nothing is refused' \
         headwater-authoring/SKILL.md \
