@@ -2,7 +2,7 @@
 id: HW-IFACE-headwater-check
 status: draft
 status_since: 2026-08-16
-summary: "What headwater check reads, what goes to each of its two streams, and the ten causes behind its one non-zero exit."
+summary: "What headwater check reads, what goes to each of its two streams, and the eleven causes behind its one non-zero exit."
 last_verified: 2026-08-16
 title: "headwater check"
 provenance:
@@ -58,7 +58,7 @@ The verb takes no operand. A word after `check` is refused, and the message name
 | `--fix` | Write the patch that rides with a finding, in this working tree, before the report is composed. A finding carries a patch only where the remedy is mechanical and total, and a suppressed finding carries none. The report is the state after the write, so a patch that produced a document the checks reject is reported on the same run. |
 | `--no-cache` | Read and write no cache, and evaluate every instance. Standard output is the same either way, and a difference is a defect in the cache rather than a result. |
 | `--now <date>` | The date to evaluate against, as `YYYY-MM-DD`. It defaults to the system clock. |
-| `--change <manifest>` | The manifest of the change this run is scoped to. Each line is `added\t<path>` or `prior\t<path>\t<file>`, and the second form names a file holding the bytes that stood before the change. A document the manifest omits did not move. Without the flag, every rule that reads a transition reports each of its instances as skipped rather than as passed. `.githooks/change-manifest` is the producer this repository uses. |
+| `--change <manifest>` | The manifest of the change this run is scoped to. Each line is `added<TAB><path>` or `prior<TAB><path><TAB><file>`, and the second form names a file holding the bytes that stood before the change. A document the manifest omits did not move. Without the flag, every rule that reads a transition reports each of its instances as skipped rather than as passed. `.githooks/change-manifest` is the producer this repository uses. |
 | `--read-set <path>` | Write the read set of this run to a file as well as into the report. `headwater gate` is the reader. |
 | `--register <path>` | Write the obligation and control register of this run to a file as well as into the report. The bytes are the bytes already in the report. |
 | `--format text\|json\|sarif\|markdown` | The vocabulary the report is written in. `text` is the default and the one a person reads. `sarif` is what a forge ingests, `markdown` is a job summary or a review comment, and `json` is the finding shape that [spec 4](../spec/04-assurance-model.md) declares. Each target states what it could not carry. The flag moves no verdict and no exit status. |
@@ -70,7 +70,7 @@ The verb takes no operand. A word after `check` is refused, and the message name
 
 **0** where the run completed and no reason below applied. A finding of any severity, including an error, leaves the status at 0 unless `--strict` was passed.
 
-**1** for each of the ten reasons below. There is no third status, so a caller reads the message to tell them apart.
+**1** for each of the eleven reasons below. There is no third status, so a caller reads the message to tell them apart.
 
 | The reason | Where it is decided |
 |---|---|
@@ -86,7 +86,7 @@ The verb takes no operand. A word after `check` is refused, and the message name
 | `--fix` was passed and a file refused its patch | after the report is written |
 | `--strict` was passed and at least one finding is an error | the last reading of the verb |
 
-Two of those are worth separating. **A refused patch is not a finding**, so no absence of `--strict` softens it. The verb was asked to write and did not, and a caller who read a 0 would believe a corpus was fixed. And **the report is written before the four reasons under it**. A run that exits 1 for one of those four still put a complete report on standard output.
+Two of those are worth separating. **A refused patch is not a finding**, so no absence of `--strict` softens it. The verb was asked to write and did not, and a caller who read a 0 would believe a corpus was fixed. And **the report is written before the last five rows are decided**. A run that exits 1 for one of those five still put a complete report on standard output.
 
 ## Environment
 

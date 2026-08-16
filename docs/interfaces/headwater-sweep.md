@@ -2,7 +2,7 @@
 id: HW-IFACE-headwater-sweep
 status: draft
 status_since: 2026-08-16
-summary: "Why no result of headwater sweep can move an exit status, and the three caller errors that move one anyway."
+summary: "Why no result of headwater sweep can move an exit status, and the four caller errors that move one anyway."
 last_verified: 2026-08-16
 title: "headwater sweep"
 provenance:
@@ -79,20 +79,20 @@ There is no precondition about a model, about a network, or about a plan having 
 
 **0 for every fact this verb states about a corpus, a file or a model.** That is the constraint rather than a leniency. `report` exits 0 with findings, exits 0 with every finding refused, and exits 0 when it refuses the whole file. `plan` exits 0 over a slice that holds no document. An exit status that carried any of those would put the output of a model on a build.
 
-**1 for three reasons, and every one of them belongs to the caller.**
+**1 for four reasons, and every one of them belongs to the caller.**
 
 | The reason | Half | When it is decided |
 |---|---|---|
 | A flag that names a value has none after it. Or a word that opens with `-` is not a flag this binary knows. Or the words after `sweep` are not `plan`, `report <path>` | both | in `main`, before the verb is entered |
 | `--format` names a target that is neither `text` nor `json` | `report` | first thing in the verb, before the file is opened |
 | The file at the given path did not read | `report` | after the format is decided, before the corpus is loaded |
-| The lock is absent, or a declaration under it did not read | both | after the file is read, before the file is parsed |
+| The lock is absent, or a declaration under it did not read | both | for `report`, after the return file is read and before it is parsed. For `plan`, before anything |
 
-**Spec 12 names two of those and the ordering of both is stated wrongly.** Its sentence reads: *"The two non-zero exits are the caller's: a path that the process cannot read, and a `--format` that names no target. Both are decided before any file is parsed."* The third reason is the lock, and a repository that never ran `headwater taxonomy resolve` gets 1 out of either half. It is a caller's error on the same reading as the other two. So the property spec 12 defends survives, and the count in the sentence does not. The ordering claim holds for `--format` and fails for the unreadable path. That path is opened after the format is decided and before the corpus is loaded.
+**The order of the three reasons inside `report` matters to a caller who reads a message.** `--format` is decided first, the path second, and the lock last. A `report` over an unreadable path in a repository that never resolved therefore names the path. [Spec 12](../spec/12-check-layer.md#four-things-stop-a-sweep-from-gating-and-none-of-them-is-a-rule-that-somebody-keeps) carries the same three, and [spec 6](../spec/06-engine-architecture.md) carries the same statement about `plan`.
 
-**`plan` has a non-zero exit as well**, which [spec 6](../spec/06-engine-architecture.md) states as *"Both exit 0 whatever they find"*. That sentence is true about what a sweep finds and silent about a corpus that does not load.
+**The lock is the reason a reader is most likely to be surprised by.** The other two are errors a caller made in the command line. This one is a fact about the repository, and it reaches a caller who typed a command with nothing wrong in it.
 
-**No test asserts any of this.** `engine/crates/sweep/tests/fixtures.rs` covers the intake as a library, which is where the refusals are decided, and it starts no process. The exit statuses above were read from `sweep_plan` and `sweep_report` in `engine/crates/cli/src/main.rs` and confirmed by running the binary.
+**Where each status is asserted.** `engine/crates/cli/tests/sweep.rs` starts the binary and holds all four rows above, including the third non-zero reason and the `--strict` that changes nothing. `engine/crates/sweep/tests/fixtures.rs` covers the intake as a library, which is where a refusal is decided, and it starts no process. So the refusal and the status it does not move are asserted in two places, one either side of the process boundary.
 
 ## Environment
 
