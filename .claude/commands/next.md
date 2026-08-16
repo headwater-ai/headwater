@@ -7,6 +7,8 @@ Work one iteration of the Headwater build order (org project "Headwater build or
 
 **The procedure is part 1 of `.claude/commands/next-run.md`** — read it there rather than from memory. It holds the canonical statement of how to read the board, pick an issue, check its premise, do the work, write back, and report. That file is the single definition; this one exists because a single iteration is often worth running by hand, and it states only what differs.
 
+**The value rule binds here too.** `.claude/commands/next-run.md` states it once, under *The value rule*, and this file does not restate it. Before you start, name the reader who is not this repository. An issue labeled `self-audit` is not eligible for an iteration, and one labeled `adopter-blocking` sorts above everything else.
+
 ## What differs when you run one iteration yourself
 
 **You are the doer and there is no parent to adjudicate for you.** In `/next-run` a subagent that meets a stale premise is told to adjudicate and keep going, because the parent will verify the result and can redirect. Here nobody will.

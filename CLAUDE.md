@@ -79,6 +79,10 @@ The last one is the only mechanism here that no engine performs. `headwater swee
 
 `.claude/agents/headwater-maintainer.md` is the maintainer subagent: hand it a change and it reports what the change touched, what is now stale, what the corpus is owed, and what it could not decide. It proposes and never accepts.
 
+`.claude/agents/headwater-product-owner.md` is the product-owner subagent, and it reads the board rather than a change: which open work names a reader outside this repository, what an adopter still cannot do, how the issue count is trending, and which milestone has stopped serving its own bar. Run it at the top of a build-order run and every fifth iteration inside one, never in the context of the agent doing the building. It proposes and never accepts.
+
+**The value rule that both of them serve.** Work must name a reader who is not this repository. `.claude/commands/next-run.md` states it once, under *The value rule*, and every other file cites it rather than restating it. Two labels carry it on the issue tracker: `self-audit` for work found by running the engine over this corpus with no reader outside it, and `adopter-blocking` for work an outside adopter cannot proceed without. `self-audit` means the work waits, not that it is wrong.
+
 ## Filing an issue
 
 `.github/ISSUE_TEMPLATE/issue.md` is the shape, and it is the only copy of it. GitHub offers it in the web form and nowhere else, so anything filing through `gh` reads that file first and follows it by hand.

@@ -7,6 +7,18 @@ Run `$ARGUMENTS` iterations (default 20) of the Headwater build order, one Opus 
 
 You are the parent. The subagents do the volume. Your job is judgment: what to merge, what a stale premise means, which of the agent's surprises is a lesson and which is noise. Almost everything you control sits in two places — **what you put in the next prompt, and what you refuse to take on trust.**
 
+## The value rule
+
+This is the canonical statement. Every other part of this file cites it rather than restating it, and so do `.claude/commands/next.md` and `.claude/agents/headwater-product-owner.md`.
+
+**Before any work starts, name the reader who is not this repository.** If the only party better off is Headwater's own corpus, the work is not eligible for an iteration. Label it `self-audit`, leave it open, and pick something else.
+
+The rule exists because this command is an issue generator by construction. Part 1 tells the agent to file a tracker for everything it scopes out, part 4 hands it the open findings, part 6 hands it pre-work, and part 7 tells it to harvest its own report. All four are right and all four push in one direction. Nothing in the selection rules ever pushed back, and on 2026-08-15 the board took 45 new issues and closed 16 — 23 of them unplanned findings from running the engine over this repository. Part 3 already calls a register with an inflow and no sink a finding when it meets one anywhere else. This is that register, and the value rule is its sink.
+
+Two labels carry it. `self-audit` is work found by running the engine on this repository with no reader outside it. `adopter-blocking` is work an outside adopter cannot proceed without, and it sorts above everything in the selection rules below.
+
+`self-audit` does not mean wrong, and it does not mean never. Most of those findings are real defects and some are excellent. It means the work waits until an adopter path needs it, because a defect nobody outside this repository can reach is a defect that costs nothing to hold.
+
 ## Keep going
 
 **Do not stop between iterations.** The most common failure of this command is a parent that merges, writes a paragraph about what happened, and waits. Nobody asked for a status report. When an iteration merges, pick the next issue and launch the next agent **in the same turn**. Report when the run ends, when something needs a human ruling, or when the user asks.
@@ -21,7 +33,7 @@ Keep a running ledger at `~/.claude/headwater-build-order-ledger.md`, **on disk,
 - **Open findings.** Entries filed in [13 — Open obligations](docs/spec/13-open-obligations.md), issues you opened, and any defect you are handing forward.
 - **Decisions needing an owner.** What you merged but would not merge again without a human ruling. Write it when it happens — the reason is legible then and paraphrased later.
 - **Milestone status.** Which milestones closed, whose bar you verified, what the next one assumes.
-- **Log.** One line per iteration: issue, pull request, merge commit, verdict, and **what your own verification proved** rather than what the agent claimed.
+- **Log.** One line per iteration: issue, pull request, merge commit, verdict, **what your own verification proved** rather than what the agent claimed, and **the net issue delta — opened minus closed, with the `self-audit` share called out**. A run that nets positive for three iterations is a run building faster than it is deciding, and the delta is the only place that is visible while it is happening rather than in a review a week later.
 
 ## Each iteration's prompt
 
@@ -35,7 +47,9 @@ Subagents do not get slash commands, so paste this in full. An agent told to "ru
 >
 > **Read the board first**, because it moves under you: `gh project item-list 1 --owner headwater-ai --format json` for status, `gh issue list --milestone "<lowest M with open issues>" --state open`, the milestone epic, and any issue the candidate says it depends on.
 >
-> **The issue is already picked for you** (see below). For the record, the selection rules are: anything already In Progress and unfinished; then anything labeled `correctness-root`, because [spec 12](docs/spec/12-check-layer.md) says every check trusts it silently; then the item that unblocks the most others; otherwise the lowest issue number in the milestone.
+> **The issue is already picked for you** (see below). For the record, the selection rules are: **first, the issue must name a reader who is not this repository — an issue labeled `self-audit` is not eligible, and one labeled `adopter-blocking` sorts above everything else**; then anything already In Progress and unfinished; then anything labeled `correctness-root`, because [spec 12](docs/spec/12-check-layer.md) says every check trusts it silently; then the item that unblocks the most others; otherwise the lowest issue number in the milestone.
+>
+> Every rule after the first is an internal ordering, and an internal ordering cannot tell you whether the work was worth doing. That is what the first rule is for.
 >
 > **Check the issue against reality before building.** The body was written at a point in time. Confirm its premise still holds against `docs/spec/`, [9 — The decision register](docs/spec/09-decisions.md) and [13 — Open obligations](docs/spec/13-open-obligations.md). If it does not, say what changed, adjudicate it yourself, and say plainly in the pull request what you decided — do not halt, and do not implement a stale ask.
 >
@@ -51,7 +65,8 @@ Add these amendments every time:
 
 - **An honest split is a success condition, not a failure to hide.** If the issue is more than lands in one pull request, split it on the board, take the first sound piece, file the remainder, and return `Refs #N`. In the last run five of nine iterations did this and every one was right.
 - **State each write-back as you land it and then verify it took.** An agent once wrote "removing the label from this issue" in an otherwise flawless adjudication and the label was still attached.
-- **Every "not made here" in your report needs a tracker.** Scoping something out is often right; leaving it untracked never is.
+- **Every "not made here" in your report needs a tracker, and every tracker names its reader.** Scoping something out is often right; leaving it untracked never is. But a tracker whose only beneficiary is this repository's own corpus is filed with the `self-audit` label, and it is not work the next iteration may pick. Keep the honesty and drop the automatic promotion to work.
+- **Cap the self-audit intake.** If one iteration's discoveries would file more than three `self-audit` issues, file one umbrella issue that lists them instead. A single iteration once put 23 unplanned findings on this board, and no reader outside this repository was waiting on any of them.
 - **Every issue you file or edit opens with an `## ELI5` section.** `.github/ISSUE_TEMPLATE/issue.md` is the shape and the only copy of it; `gh` does not apply it, so read it and follow it. Two to five sentences of plain language before the dense lede, for a reader who has never opened this repository. An issue whose ELI5 cannot be written without the jargon is usually an issue that is not yet understood, and that is worth saying in the body rather than papering over.
 
 ### 2. The environment traps
@@ -145,7 +160,8 @@ Spend it where a second reading changes what you do: a ruling you are about to m
 - **A recorded blocker is not a measured one.** Three times in one run a milestone or an issue was parked on an assessment nobody had re-taken — a register that counted unresolved citations for several iterations, a denominator recorded as zero that was six, and a whole milestone closed as "externally blocked" six iterations before the verbs that dissolved the blocker shipped. **Re-measure a blocker before inheriting it.**
 - **A milestone can run out of buildable work without being finished, and that is a finding rather than a scheduling problem.** Say so plainly, name what each remaining issue waits on, leave the epic open, and move to the next milestone rather than manufacturing work the dependency cannot support.
 - **Check the board the next iteration will read.** Close any epic whose children are all done, after verifying its Done-when clause by clause against the merged tree. **Close an issue that has become an empty shell** — every deliverable dispersed elsewhere — with a table saying where each piece went; an open issue holding nothing captures the selection rule and misdirects the next pick. **If a bar names work no open issue carries, file that issue yourself.**
-- **Harvest the report.** Promote anything actionable into Lessons, add findings to Open findings, and watch the net. A register with an inflow and no sink is itself a finding.
+- **Harvest the report.** Promote anything actionable into Lessons, add findings to Open findings, and watch the net. A register with an inflow and no sink is itself a finding — and that applies to the issue board, not only to the two registers in this ledger. The value rule above is the board's sink; the net delta in the Log is how you read whether it is working.
+- **Run the product owner at the top of every run, and every fifth iteration inside one.** `.claude/agents/headwater-product-owner.md` reads the board rather than the branch, and it answers the one question your per-iteration verification cannot: whether the run is still building for somebody. Do not run it in the builder's context — the agent doing the work has every reason to find the next thing to build, which is the same argument part 7 already makes for taking a second opinion from Fable.
 - If CI goes red after a merge, fix it in the next iteration's branch before that iteration's own work. Do not leave a red `main` behind you.
 - **If an agent dies mid-iteration**, check its worktree, then **resume it rather than replacing it** — `SendMessage` to its agent id replays its transcript with context intact, where a fresh agent throws away a settled design. Both agents that died in one run resumed and finished their own work correctly, one mid-sentence. Only pushed commits survive.
 - **An agent can state a write-back and not land it.** Read what it did, not what it said it would do. Check the board after every iteration, and after every resume especially.
