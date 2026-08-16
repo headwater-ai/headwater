@@ -1,35 +1,35 @@
-238 seen, 195 classified, 195 checked, 3686 check instances
+240 seen, 197 classified, 197 checked, 3720 check instances
       3 generated, held to regeneration by `headwater generate --check`
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: the document at the target end, `HW-REG-open-questions`, declares no value for the state facet, so there is no state to read there
-    183 skipped: this document writes no fragment into itself
-    391 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+    185 skipped: this document writes no fragment into itself
+    395 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 adoption
-  1 pairs open, 0 closed, holding 1 finding, in 1 task
-  AD-1 1 open, 0 closed, holding 1 finding, owner the specification authors, until 2027-06-30
+  0 pairs open, 1 closed, holding 0 findings, in 1 task
+  AD-1 0 open, 1 closed, holding 0 findings, owner the specification authors, until 2027-06-30
     The one entry of `.ste-lint-baseline.json` that this corpus still owes. The baseline held two when the linter retired. The other named a semicolon inside a block quotation, which the engine does not report at all, because the parser hands a quoted block to no lexical rule
-196 documents in the read set, and 2 barriers that no gate carries across a merge
-    195 instances of facet.required.missing
-    195 instances of facet.value.not_permitted
-    195 instances of identifier.pattern.not_met
-    195 instances of shelf.placement_is_primary
-    426 instances of relation.target.unresolved
+198 documents in the read set, and 2 barriers that no gate carries across a merge
+    197 instances of facet.required.missing
+    197 instances of facet.value.not_permitted
+    197 instances of identifier.pattern.not_met
+    197 instances of shelf.placement_is_primary
+    429 instances of relation.target.unresolved
      86 instances of relation.reciprocity.missing
-    313 instances of relation.endpoint.not_permitted
+    314 instances of relation.endpoint.not_permitted
       2 instances of lifecycle.dependency.on_terminal
      16 instances of relation.participation.overdue
-    195 instances of relation.declaration.unusable
-    195 instances of identifier.unusable
+    197 instances of relation.declaration.unusable
+    197 instances of identifier.unusable
       1 instances of identifier.claimed_twice
-    175 instances of voice.forbidden_construction
-    186 instances of language.controlled.not_met
-    186 instances of language.retired_term.used
-    186 instances of language.source_form.not_met
-    158 instances of section.required.missing
-    195 instances of link.fragment.unresolved
-    195 instances of warrant.promoted
-    195 instances of lifecycle.transition.not_permitted
-    195 instances of lifecycle.state.not_admitted
+    177 instances of voice.forbidden_construction
+    188 instances of language.controlled.not_met
+    188 instances of language.retired_term.used
+    188 instances of language.source_form.not_met
+    160 instances of section.required.missing
+    197 instances of link.fragment.unresolved
+    197 instances of warrant.promoted
+    197 instances of lifecycle.transition.not_permitted
+    197 instances of lifecycle.state.not_admitted
       1 instances of lifecycle.deletion.not_permitted
 suppressions
   4 findings hidden by 4 directives
@@ -94,7 +94,7 @@ register
      13 medium, 11 verified
       5 low, 5 verified
   OB-LANG-1 verified, 3 findings escaped under it
-  OB-LANG-3 verified, 1 finding escaped under it, 1 finding is migration-pending under it
+  OB-LANG-3 verified, 1 finding escaped under it
   OB-DR-1 gap, owner the decision-record entry, target a change-scoped rule that reads the prior version, which spec 12 already supplies as `needs_prior`
   OB-DR-2 gap, owner the decision-record entry, target a rule over state dwell time, which `taxonomy audit` already measures and no check reads
   OB-DR-3 unverifiable, To count the decisions in a document is to reason about what the prose asserts, which spec 1 forswears. The shelf is homogeneous and the section contract requires one `Decision` heading, and a second decision under that heading is invisible to both
@@ -109,5 +109,5 @@ register
       3 at a final posture
       4 permanently advisory
       2 producing facts rather than findings
-  escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 1 migration-pending, 4 suppressed
+  escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 4 suppressed
   every rule this engine carries reaches one obligation
