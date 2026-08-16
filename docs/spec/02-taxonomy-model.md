@@ -605,7 +605,7 @@ mappings:
       status.current: {relation: exactMatch, target: state.active}
 ```
 
-Four relations, with their standard meanings: `exactMatch` (interchangeable in practice), `closeMatch` (interchangeable for retrieval, not for inference), `broadMatch` / `narrowMatch` (one is wider than the other), `relatedMatch` (associated, neither wider nor equivalent).
+Five relations in four glosses, because `broadMatch` and `narrowMatch` are one gloss read in two directions: `exactMatch` (interchangeable in practice), `closeMatch` (interchangeable for retrieval, not for inference), `broadMatch` / `narrowMatch` (one is wider than the other), `relatedMatch` (associated, neither wider nor equivalent).
 
 Mappings are what let a cross-repository aggregator answer "show me every decision in the organization" across taxonomies that share no vocabulary. Whoever needs the correspondence declares them, and they are directional, versioned, and validated. A mapping that names a kind that neither taxonomy has is a finding.
 
