@@ -22,9 +22,11 @@ add:
   # and the decision-record bundle both leave `decision_id` and
   # `obligation_record_id` without one, because a constant either of them wrote
   # would be minted by every adopter at once. The two lines below are this
-  # corpus answering that question for itself, and they are the reason
-  # `taxonomy validate` finds nine namespaced schemes where the sources declare
-  # seven. [Q25](../docs/decisions/0025-q25-where-the-namespace-goes-in-an-identifier-and-who-declares-it.md)
+  # corpus answering that question for itself, and they are the reason the
+  # resolved taxonomy carries a namespace on every scheme where this file
+  # declares one on eight. `.headwater/taxonomy.lock` is where the resolved set
+  # is counted, and it holds ten schemes today.
+  # [Q25](../docs/decisions/0025-q25-where-the-namespace-goes-in-an-identifier-and-who-declares-it.md)
   # is the ruling on both halves.
   #
   # The local part is a minted slug and not the file name. A slug that a path
@@ -352,6 +354,92 @@ add:
   # down. What the line buys is the next evaluation, which arrives under the
   # rule, and Q28 measures that effect on two shelves rather than asserting it.
   kinds.evaluation.language:          ste_house
+
+  # --- the interface contract -----------------------------------------------
+  # One kind, and one document per verb of this engine. The tradition is
+  # man-pages(7), which has fixed the headings of a command description since
+  # the 1970s, plus one heading that the man tradition has no slot for.
+  # [HW-EVAL-specifying-the-engine](../docs/evaluations/specifying-the-engine.md)
+  # measured the gap that asks for it. The exit-status contract of a verb is
+  # prose spread over five specification parts, and no document states, for one
+  # verb, its inputs, its flags, its exit codes, the split between its two
+  # streams, and the errors it can return.
+  #
+  # **It is in this overlay and not in `docs/taxonomies/`, and criterion 4 of
+  # the library index is the reason.** An entry is admitted when it "carries a
+  # worked instance corpus", and no document of this kind exists yet. A
+  # taxonomy that never met a document is a guess about a tradition, which is
+  # what that criterion refuses. [#255](https://github.com/headwater-ai/headwater/issues/255)
+  # writes the first two contracts, and an entry can be proposed on the day
+  # there is a corpus to admit it with. This is the reading
+  # [HW-OBL-0025](../docs/obligations/0025-where-the-probe-kind-ships-is-an-unsettled-clustering-question.md)
+  # already took for `probe`: a kind this repository holds is a different claim
+  # from a kind every adopter of the package gets.
+  #
+  # **What it may reach is settled and not restated here.**
+  # [Q29](../docs/decisions/0029-q29-whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach.md)
+  # rules that the corpus root stays `docs`, so a contract sits on the shelf
+  # below and reaches its crate by the `governs` edge of the base package onto a
+  # `code_path`. Nothing about `governs` is declared here and nothing needs to
+  # be: its source is `governed_document`, which this kind is one of, and its
+  # target is already `code_path`. It declares no inverse and no reciprocal, and
+  # it cannot declare either. The far end is an anchor rather than a node, so
+  # there is no document there to write the other half onto, and
+  # `SourceTree::resolve` binds the edge on existence alone. Q29 concedes the
+  # consequence and
+  # [HW-OBL-0128](../docs/obligations/0128-nothing-holds-a-crate-to-having-a-contract-under-a-root-that-excludes-it.md)
+  # holds it: nothing holds a crate to having a contract, and this declaration
+  # does not change that.
+  #
+  # **The section contract.** man-pages(7) fixes an order and makes NAME,
+  # SYNOPSIS and DESCRIPTION mandatory. Seven of its headings are below. NAME is
+  # not one of them, because the `title` facet carries the name and spec 2
+  # refuses a second copy of a value the front matter already holds. That is
+  # also why `title` is the one facet this kind adds to the four that
+  # `governed_document` requires: a verb index has to print a name, and this
+  # kind is the only end of that index. `Preconditions` is the eighth heading
+  # and the man tradition has no slot for it. Meyer's Design by Contract
+  # supplies it, and the precondition of `headwater check` is that
+  # `.headwater/taxonomy.lock` exists and that `taxonomy resolve` wrote it,
+  # which the engine enforces and no document states. There is no DIAGNOSTICS
+  # heading, because that is the BSD mdoc convention rather than the Linux list.
+  #
+  # **`section.required.missing` reads a heading and never what is under it.**
+  # The rule matches the text of a heading at any level, case-insensitively, and
+  # it reads no word below one. So a contract that writes all eight headings in
+  # any order passes, and so does one that writes `TODO` under every one of
+  # them. The order below is the order man-pages(7) fixes, and it is a rule for
+  # a person and for the scaffolder, which writes the headings in this order.
+  # No check reads it. A kind whose whole purpose is a description must not
+  # imply that a check read the description, and this is where a reader meets
+  # that. `engine/crates/cli/tests/interface_contract.rs` is the fixture that
+  # holds both halves.
+
+  identifier_schemes.interface_contract_id:
+    pattern: "{namespace}-IFACE-{slug}"
+    namespace: HW
+    allocation: minted-once
+
+  kinds.interface_contract:
+    is_a: governed_document
+    purpose: behavior
+    voice: declarative
+    lifecycle: standard
+    language: ste_house
+    identifier: {scheme: interface_contract_id}
+    facets:
+      require: [title]
+    sections:
+      require: [Synopsis, Description, Preconditions, Options, Exit status, Environment, Files, See also]
+
+  # Disjoint from every shelf above it. `docs/interfaces/**` claims no path that
+  # another pattern claims, so no document resolves to a kind by accident. No
+  # `layout`, because nothing numbers a verb: the file is named from the title,
+  # the way an evaluation is.
+  shelves.interfaces:
+    path: docs/interfaces/**
+    homogeneous: true
+    kind: interface_contract
 
 # --- projections ------------------------------------------------------------
 # `projections` is a list in the base, so an `add` cannot reach it, and this is
