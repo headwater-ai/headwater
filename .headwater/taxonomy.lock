@@ -16,7 +16,7 @@
 
 lock:
   format: 2
-  digest: sha256:56b38f7619e66ff9e10af36409f9bc8938abf01a7c0148988a68353424802dc5
+  digest: sha256:489e49da07f5cbe54be65221a0de4e30323ccb502ec0bb7b53cc359d1111c3df
   package: headwater/standard
   version: 3.2.0
   sources:
@@ -27,7 +27,7 @@ lock:
     - path: docs/taxonomies/decision-record/bundle.yml
       digest: sha256:38111c63de87aa562a70b288f5c1c1317bcc6b751fc00b67d29538dac92ec7da
     - path: .headwater/overlay.yml
-      digest: sha256:2f39f05b2675146a9c4c6a8ad4bb3838af5fc78c80241a51d6bf237cb1d5bbb5
+      digest: sha256:b31bbe13306ab73061ecd2661a7b10d1ae1d09824e7a4ff71ff3c08d63f19288
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -360,6 +360,27 @@ resolved:
             severity: warn
             rationale: "an evaluation that no register cites closed nothing"
       voice: narrative
+    interface_contract:
+      facets:
+        require:
+          - title
+      identifier:
+        scheme: interface_contract_id
+      is_a: governed_document
+      language: ste_house
+      lifecycle: standard
+      purpose: behavior
+      sections:
+        require:
+          - Synopsis
+          - Description
+          - Preconditions
+          - Options
+          - "Exit status"
+          - Environment
+          - Files
+          - "See also"
+      voice: declarative
     obligation_record:
       facets:
         require:
@@ -575,6 +596,10 @@ resolved:
       homogeneous: true
       kind: evaluation
       path: "docs/evaluations/**"
+    interfaces:
+      homogeneous: true
+      kind: interface_contract
+      path: "docs/interfaces/**"
     obligations:
       homogeneous: true
       kind: obligation_record
@@ -617,6 +642,10 @@ resolved:
       allocation: minted-once
       namespace: HW
       pattern: "{namespace}-EVAL-{slug}"
+    interface_contract_id:
+      allocation: minted-once
+      namespace: HW
+      pattern: "{namespace}-IFACE-{slug}"
     obligation_record_id:
       allocation: reconcile-first
       namespace: HW

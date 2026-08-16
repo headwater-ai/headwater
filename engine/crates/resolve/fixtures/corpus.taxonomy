@@ -306,6 +306,27 @@ kinds:
           severity: warn
           rationale: "an evaluation that no register cites closed nothing"
     voice: narrative
+  interface_contract:
+    facets:
+      require:
+        - title
+    identifier:
+      scheme: interface_contract_id
+    is_a: governed_document
+    language: ste_house
+    lifecycle: standard
+    purpose: behavior
+    sections:
+      require:
+        - Synopsis
+        - Description
+        - Preconditions
+        - Options
+        - "Exit status"
+        - Environment
+        - Files
+        - "See also"
+    voice: declarative
   obligation_record:
     facets:
       require:
@@ -521,6 +542,10 @@ shelves:
     homogeneous: true
     kind: evaluation
     path: "docs/evaluations/**"
+  interfaces:
+    homogeneous: true
+    kind: interface_contract
+    path: "docs/interfaces/**"
   obligations:
     homogeneous: true
     kind: obligation_record
@@ -563,6 +588,10 @@ identifier_schemes:
     allocation: minted-once
     namespace: HW
     pattern: "{namespace}-EVAL-{slug}"
+  interface_contract_id:
+    allocation: minted-once
+    namespace: HW
+    pattern: "{namespace}-IFACE-{slug}"
   obligation_record_id:
     allocation: reconcile-first
     namespace: HW

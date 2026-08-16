@@ -43,7 +43,7 @@ The cost is real and small. In a single-corpus corpus the namespace is a constan
 
 **A published source declares no namespace. The corpus that adopts it declares one in its overlay.**
 
-This is forced rather than chosen, for the reason the context gives: a package has no value it can honestly write. So the base package and the decision-record bundle declare a pattern and an allocation and nothing else, and `.headwater/overlay.yml` declares `HW` for all nine schemes.
+This is forced rather than chosen, for the reason the context gives: a package has no value it can honestly write. So the base package and the decision-record bundle declare a pattern and an allocation and nothing else. `.headwater/overlay.yml` declares `HW` for every scheme the lock holds, which is ten of them today.
 
 **The requirement moves from the source to the result.** `engine/crates/meta/meta-schema.yml` marked `namespace` required on an `identifier_scheme`, and one meta-schema serves the taxonomy root and the overlay root, so a package had no way to omit it. It is optional in a source now, and `taxonomy validate` refuses a resolved scheme that carries none.
 

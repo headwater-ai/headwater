@@ -1,4 +1,4 @@
-9 schemes
+10 schemes
 
 decision_id
   pattern    {namespace}-DR-{seq:04d}
@@ -16,6 +16,16 @@ evaluation_id
   render     HW-EVAL-<slug>
   needs      slug
   mint       HW-EVAL-a-name
+  admits     true
+  sequence   -
+  refuses    false
+
+interface_contract_id
+  pattern    {namespace}-IFACE-{slug}
+  namespace  HW
+  render     HW-IFACE-<slug>
+  needs      slug
+  mint       HW-IFACE-a-name
   admits     true
   sequence   -
   refuses    false
