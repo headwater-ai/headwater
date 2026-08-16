@@ -68,6 +68,9 @@ operations
   add.kinds.obligation_record.language (.headwater/overlay.yml)
   add.kinds.decision.language (.headwater/overlay.yml)
   add.kinds.evaluation.language (.headwater/overlay.yml)
+  add.identifier_schemes.interface_contract_id (.headwater/overlay.yml)
+  add.kinds.interface_contract (.headwater/overlay.yml)
+  add.shelves.interfaces (.headwater/overlay.yml)
   add_to.projections (.headwater/overlay.yml)
 
 declarations, by member count
@@ -78,10 +81,10 @@ declarations, by member count
   facets: 12 members
   regimes: 3 members
   anchors: 1 member
-  kinds: 13 members
+  kinds: 14 members
   relations: 11 members
-  shelves: 9 members
-  identifier_schemes: 9 members
+  shelves: 10 members
+  identifier_schemes: 10 members
   core: 1 member
   projections: 4 items
   obligations: 30 members
