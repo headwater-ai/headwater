@@ -530,10 +530,15 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
 ///    `..`.
 /// 2. Write. [`put`] creates `out` and writes the staged set.
 /// 3. Undo. A failure in phase 2 — a full disk, a permission, a race — returns
-///    `out` to the state phase 1 found it in. [`Found`] is what carries that
-///    state, and the `--out` precondition is what makes the undo total: a
-///    directory that held anything was refused, so nothing removed here
-///    belonged to anybody else.
+///    `out` to the state phase 1 found it in. [`found::observe`] is what reads
+///    that state and the only thing that can make one, and the `--out`
+///    precondition is what makes the undo total. A directory that holds
+///    anything, a directory this process cannot read, and a symlink that leads
+///    nowhere are all refused before a byte is staged, so every state the undo
+///    can return to is one the run observed and nothing it removes belonged to
+///    anybody else. The undo takes `out` and every directory above it that this
+///    run made on the way to it, and it stops climbing at the first directory
+///    that is not empty.
 ///
 /// **This is [`headwater_scaffold::tree::Reserved`]'s shape and not its code.**
 /// `headwater-scaffold` depends on `headwater-check`, which depends on this
@@ -551,21 +556,7 @@ pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<Resol
     let source = taxonomy_source(root, &directory, &contents)?;
     agrees(&manifest_name(root, &directory), &manifest, &source)?;
 
-    let found =
-        match std::fs::read_dir(out) {
-            Ok(mut entries) => match entries.next() {
-                Some(_) => return Err(refusal(
-                    &display(root, out),
-                    "the output directory holds files already, and a published artifact is every \
-                     file under its root. Publish into a directory that does not exist yet",
-                )),
-                None => Found::Empty,
-            },
-            // An unreadable directory reaches the write below and fails there, which
-            // is the arm the undo covers. Reporting it here would turn one refusal
-            // into two readings of one path.
-            Err(_) => Found::Absent,
-        };
+    let found = found::observe(out).map_err(|why| refusal(&display(root, out), &why))?;
 
     migrations(root, &directory, &manifest, source)?;
 
@@ -590,41 +581,146 @@ pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<Resol
     }
 }
 
-/// What a publish found at `--out` before it wrote anything.
+/// What a publish found at `--out`, and the only thing that can find it out.
 ///
-/// There are two states and no third, because the precondition in [`publish`]
-/// refuses a directory that holds anything. That is what makes [`Found::unwind`]
-/// a statement rather than a best effort.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Found {
-    /// Nothing was there, so the undo removes the directory itself.
-    Absent,
-    /// A directory was there and it was empty, so the undo empties it again.
-    Empty,
-}
+/// The module is the whole point of the module. [`Found`] carries a state that
+/// decides whether an undo removes `--out` itself, so a caller that could name
+/// that state could assert absence rather than observe it. Nothing outside these
+/// lines can make a `Found`: the variants are private to the module and
+/// [`observe`] is the one function that returns one. That is the shape [#271]
+/// went looking for, because the first reading of this took *did not observe*
+/// for *observed nothing* and the undo then removed a path the run had never
+/// seen.
+///
+/// [#271]: https://github.com/headwater-ai/headwater/issues/271
+mod found {
+    use std::io::ErrorKind;
+    use std::path::{Path, PathBuf};
 
-impl Found {
-    /// Put `out` back the way the run found it.
+    /// The state `--out` was in before anything was written.
+    pub(super) struct Found(State);
+
+    enum State {
+        /// Nothing was there, so the undo removes the directory itself, and
+        /// every directory above it that was not there either. [`put`] reaches
+        /// `--out` with `create_dir_all`, so `--out nested/a/b/c` under an
+        /// absent `nested` is four directories that the run made and that a
+        /// failed run has no reason to leave standing.
+        ///
+        /// The list is deepest first, and it is what this run *saw* to be
+        /// absent rather than what it later created. Everything above the first
+        /// directory that already existed is somebody else's and is not in it.
+        ///
+        /// [`put`]: super::put
+        Absent(Vec<PathBuf>),
+        /// A directory was there and it was empty, so the undo empties it again.
+        Empty,
+    }
+
+    /// `out` and every directory above it that is not there either, deepest
+    /// first.
     ///
-    /// Every error is dropped. This runs on the way out of a failure that is
-    /// already being reported, and a second message about the cleanup would
-    /// displace the one a reader needs. What a caller is owed is the property,
-    /// and the property is what the fixture asserts.
-    fn unwind(self, out: &Path) {
-        match self {
-            Found::Absent => {
-                let _ = std::fs::remove_dir_all(out);
+    /// The walk stops at the first path that exists, and `symlink_metadata` is
+    /// what asks, so a link above `out` stops it rather than being read through.
+    fn absent_above(out: &Path) -> Vec<PathBuf> {
+        let mut chain = vec![out.to_path_buf()];
+        let mut at = out.parent();
+        while let Some(parent) = at {
+            if parent.as_os_str().is_empty() {
+                break;
             }
-            Found::Empty => {
-                let Ok(entries) = std::fs::read_dir(out) else {
-                    return;
-                };
-                for entry in entries.filter_map(Result::ok) {
-                    let at = entry.path();
-                    let _ = match at.is_dir() {
-                        true => std::fs::remove_dir_all(&at),
-                        false => std::fs::remove_file(&at),
+            match std::fs::symlink_metadata(parent) {
+                Err(error) if error.kind() == ErrorKind::NotFound => {
+                    chain.push(parent.to_path_buf());
+                    at = parent.parent();
+                }
+                _ => break,
+            }
+        }
+        chain
+    }
+
+    /// Read `--out`, or say why a publish cannot start.
+    ///
+    /// # Only `NotFound` can mean absent, and on its own it does not mean it
+    ///
+    /// `read_dir` reports *the path is not there* and *this process cannot read
+    /// what is there* through one `Err`, and [`State::Absent`] is the state
+    /// whose undo removes `--out`. So every error that is not
+    /// [`ErrorKind::NotFound`] is refused here, before a byte is staged. A
+    /// directory this run could not inspect is one whose contents a publisher
+    /// never agreed to interleave an artifact with, and a state the run did not
+    /// observe is one the undo has no way back to. Letting it reach the write
+    /// is what put a whole artifact into a `0300` directory beside somebody's
+    /// file, under a verb that then printed `nothing was published`.
+    ///
+    /// # A dangling symlink is a path, and `NotFound` does not see it
+    ///
+    /// `read_dir` follows a symlink, so a link whose target does not exist
+    /// reports `NotFound` while a path very much exists under that name.
+    /// `symlink_metadata` is the call that does not follow, and it is what
+    /// separates the two. The link is then refused rather than published into:
+    /// a publisher who asked for a link's target got a name whose target is not
+    /// there, which is a mistake worth reading about, and the alternative is a
+    /// failed publish whose undo removes a link that the run did not make and
+    /// that nothing in the artifact records.
+    pub(super) fn observe(out: &Path) -> Result<Found, String> {
+        match std::fs::read_dir(out) {
+            Ok(mut entries) => match entries.next() {
+                Some(_) => Err("the output directory holds files already, and a published \
+                                artifact is every file under its root. Publish into a directory \
+                                that does not exist yet"
+                    .to_string()),
+                None => Ok(Found(State::Empty)),
+            },
+            Err(error) if error.kind() == ErrorKind::NotFound => {
+                match std::fs::symlink_metadata(out) {
+                    Err(error) if error.kind() == ErrorKind::NotFound => {
+                        Ok(Found(State::Absent(absent_above(out))))
+                    }
+                    Ok(_) => Err("there is a symlink at the output path and it leads nowhere. \
+                                  Publish into a path that does not exist yet"
+                        .to_string()),
+                    Err(error) => Err(format!("the output path cannot be read: {error}")),
+                }
+            }
+            Err(error) => Err(format!("the output directory cannot be read: {error}")),
+        }
+    }
+
+    impl Found {
+        /// Put `out` back the way the run found it.
+        ///
+        /// Every error is dropped. This runs on the way out of a failure that is
+        /// already being reported, and a second message about the cleanup would
+        /// displace the one a reader needs. What a caller is owed is the
+        /// property, and the property is what the fixture asserts.
+        pub(super) fn unwind(self, out: &Path) {
+            match self.0 {
+                State::Absent(chain) => {
+                    let _ = std::fs::remove_dir_all(out);
+                    // Everything above `out` goes with `remove_dir`, which
+                    // takes an empty directory and nothing else. A directory
+                    // that somebody filled while this run was writing therefore
+                    // stops the climb by refusing to go, which is the answer a
+                    // race is owed.
+                    for above in chain.into_iter().skip(1) {
+                        if std::fs::remove_dir(&above).is_err() {
+                            break;
+                        }
+                    }
+                }
+                State::Empty => {
+                    let Ok(entries) = std::fs::read_dir(out) else {
+                        return;
                     };
+                    for entry in entries.filter_map(Result::ok) {
+                        let at = entry.path();
+                        let _ = match at.is_dir() {
+                            true => std::fs::remove_dir_all(&at),
+                            false => std::fs::remove_file(&at),
+                        };
+                    }
                 }
             }
         }
@@ -667,8 +763,22 @@ fn reachable(
 ) -> Result<(), Vec<ResolveError>> {
     for entry in contents {
         let key = entry.key.value.as_str();
+        // A value that is not a scalar used to be skipped here, and skipping it
+        // meant neither rule below ran over it. A sequence holding `../../x`
+        // reached a published manifest with the `..` in it, and one naming a
+        // file that is not there published an artifact with a hole where the key
+        // points, both at exit 0. Nothing downstream reads it either: `stage`
+        // rewrites `bundles` alone, so there is no reader for whom a list of
+        // paths under any key would mean anything.
         let Some(scalar) = entry.value.value.as_scalar() else {
-            continue;
+            return Err(refusal(
+                manifest,
+                &format!(
+                    "`contents.{key}` is not a path. Every value under `contents` names one file \
+                     or one directory inside the package, and a publish reads each one before it \
+                     writes anything"
+                ),
+            ));
         };
         let declared = scalar.text.as_str();
         let escapes = leaves(declared);
@@ -766,8 +876,20 @@ fn read_tree(from: &Path, prefix: &str, into: &mut Vec<Staged>) -> Result<(), St
         .collect();
     entries.sort();
     for entry in entries {
+        // A name that is not UTF-8 used to be skipped, and the file then left no
+        // trace anywhere: not in the artifact, not in the record, not in the
+        // count the verb prints, and not in the exit code. A publisher whose
+        // claim is that everything is read before anything is written cannot
+        // drop a file it did not read, and the release record has nowhere to put
+        // a path that is not text. `to_string_lossy` is good enough for a
+        // message and is not good enough for a member path, which is the whole
+        // asymmetry.
         let Some(name) = entry.file_name().and_then(|name| name.to_str()) else {
-            continue;
+            return Err(format!(
+                "cannot carry {}: the name is not UTF-8, and every path in a release record is \
+                 text. Rename it, or take it out of the package",
+                entry.display()
+            ));
         };
         let path = match prefix.is_empty() {
             true => name.to_string(),

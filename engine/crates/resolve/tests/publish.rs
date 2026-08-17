@@ -595,6 +595,334 @@ fn the_package_in_this_repository_publishes_and_its_digest_covers_what_is_on_dis
     );
 }
 
+/// A mode, set on a path.
+#[cfg(unix)]
+fn mode(at: &Path, bits: u32) {
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::set_permissions(at, std::fs::Permissions::from_mode(bits)).expect("the mode is set");
+}
+
+/// Whether a mode can stop this process.
+///
+/// Root reads and writes through every bit, so under root the four cases that
+/// set one are unreachable rather than failing, and they say so and stop. The
+/// answer is a probe rather than a user id, because the question is what the
+/// file system does to this process and no dependency of this crate can ask for
+/// a uid. `engine/README.md` says why the container half of the toolchain runs
+/// with `--user` for the same reason.
+#[cfg(unix)]
+fn modes_hold(scratch: &Scratch) -> bool {
+    let at = scratch.path().join("mode-probe");
+    std::fs::create_dir_all(&at).expect("the probe is made");
+    std::fs::write(at.join("held"), "x").expect("the probe holds a file");
+    mode(&at, 0o300);
+    let held = std::fs::read_dir(&at).is_err();
+    mode(&at, 0o700);
+    std::fs::remove_dir_all(&at).expect("the probe goes");
+    held
+}
+
+/// An `--out` that this run cannot read is refused, and the file in it is still
+/// there.
+///
+/// # Why the destructive reading was the one that was easy to write
+///
+/// `read_dir` reports *did not observe* and *observed nothing* through one
+/// `Err`, and the first reading of that error read every failure as absence.
+/// Absence is the state whose undo removes `--out` itself. So a directory
+/// holding a person's file, unreadable and writable, was recorded as absent: the
+/// precondition never saw the file, the write phase put a whole artifact in
+/// beside it, `release::compute` then could not read the directory back, and the
+/// verb printed `nothing was published` over the files it had just written. The
+/// undo it ran on the way out was `remove_dir_all` against the caller's own
+/// directory, which fails on this mode and would have taken the file with it on
+/// any other.
+///
+/// Mode `0300` is what makes both halves reachable at once: no `r`, so the
+/// precondition is blind, and `w` and `x`, so every write below it succeeds.
+#[cfg(unix)]
+#[test]
+fn an_output_directory_that_cannot_be_read_is_refused_and_nothing_is_written() {
+    let scratch = Scratch::new("unreadable-out");
+    if !modes_hold(&scratch) {
+        eprintln!("skipped: this process is root, and root reads through mode 0300");
+        return;
+    }
+    let root = publisher(&scratch, None);
+    let out = scratch.path().join("artifact");
+    std::fs::create_dir_all(&out).expect("the caller's directory is made");
+    std::fs::write(out.join("theirs.txt"), "the caller's own file").expect("their file is written");
+    mode(&out, 0o300);
+
+    let refused = package::publish(&root, "acme/fixture", &out).expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    mode(&out, 0o700);
+
+    let left: Vec<String> = std::fs::read_dir(&out)
+        .expect("it reads once the mode is back")
+        .filter_map(Result::ok)
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .collect();
+    assert_eq!(
+        left,
+        vec!["theirs.txt".to_string()],
+        "the publish wrote into a directory it could not read, or removed what was in it"
+    );
+    assert_eq!(
+        std::fs::read_to_string(out.join("theirs.txt")).expect("their file reads"),
+        "the caller's own file"
+    );
+    assert!(
+        message.contains("artifact"),
+        "the refusal does not name the output path: {message}"
+    );
+    assert!(
+        message.contains("the output directory cannot be read"),
+        "the refusal is not the one the precondition owes a reader: {message}"
+    );
+}
+
+/// A dangling symlink at `--out` is refused, and the link is still there.
+///
+/// `read_dir` follows a symlink, so a link with nothing at the other end reports
+/// `NotFound` while a path very much exists under that name. Read as absence,
+/// the undo of a failed write then removes a link that the run did not make and
+/// nothing in the corpus records. The publisher of this fixture is one that
+/// publishes, so the run reaches the write phase and comes back through the
+/// undo, which is where the link used to go.
+#[cfg(unix)]
+#[test]
+fn a_dangling_symlink_at_the_output_path_is_refused_and_is_still_there() {
+    let scratch = Scratch::new("dangling-out");
+    let root = publisher(&scratch, None);
+    let out = scratch.path().join("artifact");
+    std::os::unix::fs::symlink(scratch.path().join("nowhere"), &out).expect("the link is made");
+
+    let refused = package::publish(&root, "acme/fixture", &out).expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("artifact"),
+        "the refusal does not name the output path: {message}"
+    );
+    assert!(
+        std::fs::symlink_metadata(&out).is_ok(),
+        "the publish removed a symlink that was there before it started: {message}"
+    );
+    assert!(
+        !out.exists(),
+        "the refusal followed the link and made something at the other end"
+    );
+}
+
+/// A publisher that reaches the write phase and fails inside it, with files
+/// already on disk.
+///
+/// # Why this shape, and why the suite needed one
+///
+/// Every other refusal `publish` makes fires in phase 1, so before this the undo
+/// was unreachable from any test in the workspace: an inspection that replaced
+/// `unwind` with an early return left 851 tests passing. *`--out` untouched* is
+/// the ambient outcome of a phase-1 refusal, and a case built on one asserts
+/// that an untouched directory is untouched.
+///
+/// The provocation is a regular file named `bundles` at the package root, beside
+/// a `contents.bundles` that points outside the package. Both are legal to read:
+/// the staged set holds a file at `bundles` and a file under `bundles/extra/`,
+/// in that order. `put` then writes three files and cannot make a directory
+/// where it has just written a file. Three files on disk, a failure, and an undo
+/// with something to do — and no mode and no race anywhere in it.
+fn publisher_that_fails_inside_the_write(scratch: &Scratch) -> PathBuf {
+    let root = publisher(scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/bundles",
+        "a regular file where the artifact needs a directory\n",
+    );
+    root
+}
+
+/// A write that fails takes `--out` with it, and every directory it made to
+/// reach it.
+///
+/// This is the undo's first state. `--out` is three levels below a directory
+/// that is not there either, which `put` reaches with `create_dir_all`, so a run
+/// that says it published nothing would otherwise leave three directories it
+/// made standing.
+#[test]
+fn a_write_that_fails_takes_the_output_directory_and_what_it_made_to_reach_it() {
+    let scratch = Scratch::new("failed-write-absent");
+    let root = publisher_that_fails_inside_the_write(&scratch);
+    let nested = scratch.path().join("nested");
+    let out = nested.join("a/b/c");
+
+    let refused = package::publish(&root, "acme/fixture", &out).expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("bundles"),
+        "this case is not failing inside the write phase any more: {message}"
+    );
+    assert!(!out.exists(), "the output directory is still there: {message}");
+    assert!(
+        !nested.exists(),
+        "the undo left the directories the run made to reach --out"
+    );
+    assert!(
+        scratch.path().is_dir(),
+        "the undo climbed past what the run created"
+    );
+}
+
+/// The same failure, into an empty `--out` that the caller made: the directory
+/// stays and the files the write phase put in it go.
+///
+/// This is the undo's second state and the one the arm above must not be taken
+/// for. A person who ran `mkdir release` first gets their directory back, empty.
+#[test]
+fn a_write_that_fails_empties_the_output_directory_the_caller_made() {
+    let scratch = Scratch::new("failed-write-empty");
+    let root = publisher_that_fails_inside_the_write(&scratch);
+    let out = scratch.path().join("artifact");
+    std::fs::create_dir_all(&out).expect("the caller makes it");
+
+    let refused = package::publish(&root, "acme/fixture", &out).expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        out.is_dir(),
+        "the caller's own directory was removed: {message}"
+    );
+    assert_eq!(
+        walk_files(&out),
+        0,
+        "the files the write phase put in the caller's directory are still there"
+    );
+}
+
+/// A `contents` value that is not a path is refused, and nothing is published.
+///
+/// A sequence under `contents` used to be skipped by the reachability check with
+/// no reading at all: not for existence and not for escape. So a manifest could
+/// carry `../../secrets.yml` under any key and publish at exit 0, with the `..`
+/// verbatim in the manifest an adopter reads. Spec 7 (Publishing) says `bundles`
+/// is the only key whose path is rewritten and that no published artifact
+/// carries a path that leaves the package.
+#[test]
+fn a_contents_value_that_is_not_a_path_is_refused() {
+    let scratch = Scratch::new("contents-sequence");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/package.yml",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: \
+         ../../library\n  conformance: [\"../../secrets.yml\", \"nosuch.yml\"]\n",
+    );
+
+    let refused = package::publish(&root, "acme/fixture", &out_of(&scratch))
+        .expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("`contents.conformance`"),
+        "the refusal does not name the key: {message}"
+    );
+    assert!(!out_of(&scratch).exists(), "an artifact was written anyway");
+}
+
+/// A `contents` path that leaves the package under any key but `bundles` is
+/// refused, and the file it names is there.
+///
+/// The refusal existed before this and nothing in the workspace failed when it
+/// was deleted, which is the same gap the case above was found through. The file
+/// exists on disk, so the existence check cannot be what refuses it and the
+/// escape rule is the only thing under test. `bundles` is the one key publishing
+/// rewrites, and every other key would reach a consumer with the `..` in it.
+#[test]
+fn a_contents_path_that_leaves_the_package_is_refused_under_every_key_but_bundles() {
+    let scratch = Scratch::new("contents-escape");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/package.yml",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: \
+         ../../library\n  conformance: ../../library/extra/bundle.yml\n",
+    );
+    assert!(
+        root.join("packages/acme-fixture/../../library/extra/bundle.yml")
+            .exists(),
+        "the case is testing the existence check rather than the escape rule"
+    );
+
+    let refused = package::publish(&root, "acme/fixture", &out_of(&scratch))
+        .expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("`contents.conformance`") && message.contains("outside the package"),
+        "the refusal is not the escape rule: {message}"
+    );
+    assert!(!out_of(&scratch).exists(), "an artifact was written anyway");
+}
+
+/// A file whose name is not UTF-8 stops the publish, rather than falling out of
+/// the artifact without a word.
+///
+/// It used to be skipped by the read of the package tree, so the file was in the
+/// package, absent from the artifact, absent from the release record, absent
+/// from the count the verb prints, and absent from the exit code. A publisher
+/// whose claim is that everything is read before anything is written cannot drop
+/// a file it never read. The positive half of the case is the same publisher
+/// with the file removed, which publishes.
+#[cfg(unix)]
+#[test]
+fn a_file_whose_name_is_not_utf8_is_refused_rather_than_dropped() {
+    use std::os::unix::ffi::OsStrExt;
+
+    let scratch = Scratch::new("not-utf8");
+    let root = publisher(&scratch, None);
+    let name = std::ffi::OsStr::from_bytes(b"bad\xffname.yml");
+    let at = root.join("packages/acme-fixture").join(name);
+    std::fs::write(&at, "x").expect("the file is written");
+
+    let refused = package::publish(&root, "acme/fixture", &out_of(&scratch))
+        .expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("not UTF-8"),
+        "the refusal does not say what is wrong with the name: {message}"
+    );
+    assert!(!out_of(&scratch).exists(), "an artifact was written anyway");
+
+    std::fs::remove_file(&at).expect("the file goes");
+    package::publish(&root, "acme/fixture", &out_of(&scratch))
+        .expect("the same package without it publishes");
+}
+
+/// The output path each case above hands the verb.
+fn out_of(scratch: &Scratch) -> PathBuf {
+    scratch.path().join("artifact")
+}
+
+/// An `--out` that holds a file is refused, with the message it has always had,
+/// and the file is untouched.
+///
+/// The precondition is what makes the undo total, so it is the one thing here
+/// that a fix to the undo must not weaken. A publish into a directory somebody
+/// else is using is refused before anything is read.
+#[test]
+fn an_output_directory_that_holds_a_file_is_refused_and_the_file_survives() {
+    let scratch = Scratch::new("occupied-out");
+    let root = publisher(&scratch, None);
+    let out = scratch.path().join("artifact");
+    std::fs::create_dir_all(&out).expect("the caller's directory is made");
+    std::fs::write(out.join("theirs.txt"), "the caller's own file").expect("their file is written");
+
+    let refused = package::publish(&root, "acme/fixture", &out).expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("the output directory holds files already"),
+        "the precondition's message moved: {message}"
+    );
+    assert_eq!(
+        std::fs::read_to_string(out.join("theirs.txt")).expect("their file reads"),
+        "the caller's own file"
+    );
+    assert_eq!(walk_files(&out), 1, "the publish wrote beside the file");
+}
+
 /// Every file under a directory, counted.
 fn walk_files(at: &Path) -> usize {
     std::fs::read_dir(at)
