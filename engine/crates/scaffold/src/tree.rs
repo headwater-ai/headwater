@@ -215,7 +215,11 @@ pub struct Halted {
     /// `None` is a run that created nothing, which is every `--fix` run and
     /// every import, and it prints no clause at all. That is why every message
     /// this type wrote before the create existed is the message it writes now.
-    created: Option<Created>,
+    ///
+    /// Behind a `Box` so that the ordinary case — a run that finished — carries
+    /// eight bytes of this and not fifty-six. `commit` returns this type in its
+    /// `Err`, and `clippy::result_large_err` reads that size on every call.
+    created: Option<Box<Created>>,
 }
 
 impl Halted {
@@ -269,7 +273,7 @@ impl Halted {
     /// document it created, the clause before this one already named it, and
     /// naming it twice would read as two files.
     fn made(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let Some(created) = &self.created else {
+        let Some(created) = self.created.as_deref() else {
             return Ok(());
         };
         let named = |path: &String| match path == &self.path {
@@ -294,7 +298,10 @@ impl Halted {
     /// facts the clauses above it printed.
     fn damaged(&self) -> usize {
         usize::from(matches!(self.failed, Failed::Damaged { .. }))
-            + usize::from(matches!(self.created, Some(Created::NotRemoved { .. })))
+            + usize::from(matches!(
+                self.created.as_deref(),
+                Some(Created::NotRemoved { .. })
+            ))
     }
 }
 
@@ -499,7 +506,11 @@ impl Reserved {
     ///
     /// The read back is off the tree rather than out of the handle: what a
     /// caller needs to know is what the next reader of that path will get.
-    pub fn commit(self) -> Result<Vec<String>, Halted> {
+    /// The report is boxed because it is a failure path and a wide type: it
+    /// carries four observations off the tree, and `clippy::result_large_err`
+    /// reads that width on every call of this function rather than on the runs
+    /// that stop.
+    pub fn commit(self) -> Result<Vec<String>, Box<Halted>> {
         self.commit_with(&mut |held: &mut Held, text: &str| -> Result<(), String> {
             put_text(&mut held.file, text)
         })
@@ -532,7 +543,7 @@ impl Reserved {
     fn commit_with(
         mut self,
         write: &mut dyn FnMut(&mut Held, &str) -> Result<(), String>,
-    ) -> Result<Vec<String>, Halted> {
+    ) -> Result<Vec<String>, Box<Halted>> {
         for index in 0..self.held.len() {
             let now = self.held[index].now.clone();
             if let Err(why) = write(&mut self.held[index], &now) {
@@ -606,7 +617,7 @@ impl Reserved {
         path: String,
         why: String,
         write: &mut dyn FnMut(&mut Held, &str) -> Result<(), String>,
-    ) -> Halted {
+    ) -> Box<Halted> {
         let made = self.made.take();
         let created_index = made.as_ref().map(|made| made.index);
 
@@ -646,7 +657,7 @@ impl Reserved {
             None => None,
             Some(made) => {
                 self.held.truncate(made.index);
-                Some(made.unmake())
+                Some(Box::new(made.unmake()))
             }
         };
 
@@ -664,14 +675,14 @@ impl Reserved {
             Some(Ok(())) => Failed::PutBack,
             Some(Err(why)) => Failed::Damaged { why },
         };
-        Halted {
+        Box::new(Halted {
             path,
             why,
             failed: fate,
             restored,
             lost,
             created,
-        }
+        })
     }
 }
 
@@ -1218,17 +1229,17 @@ mod tests {
     #[test]
     fn a_created_document_that_would_not_go_is_never_called_an_intact_tree() {
         let removed = || {
-            Some(Created::Removed {
+            Some(Box::new(Created::Removed {
                 path: "new.md".to_string(),
-            })
+            }))
         };
         let stuck = |path: &str| {
-            Some(Created::NotRemoved {
+            Some(Box::new(Created::NotRemoved {
                 path: path.to_string(),
                 why: "permission denied".to_string(),
-            })
+            }))
         };
-        let halted = |failed: Failed, path: &str, created: Option<Created>| Halted {
+        let halted = |failed: Failed, path: &str, created: Option<Box<Created>>| Halted {
             path: path.to_string(),
             why: "no space left on device".to_string(),
             failed,
@@ -1386,15 +1397,51 @@ mod tests {
         );
     }
 
+    /// A mode, set on a path.
+    #[cfg(unix)]
+    fn mode(at: &Path, bits: u32) {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(at, std::fs::Permissions::from_mode(bits))
+            .expect("the mode is set");
+    }
+
+    /// Whether a mode can stop this process.
+    ///
+    /// Root unlinks through every bit, so under root the case below is
+    /// unreachable rather than failing, and it says so and stops. The answer is
+    /// a probe rather than a user id, because the question is what the file
+    /// system does to this process.
+    #[cfg(unix)]
+    fn modes_hold(dir: &Dir) -> bool {
+        let at = dir.path().join("mode-probe");
+        std::fs::create_dir_all(&at).expect("the probe is made");
+        std::fs::write(at.join("held"), "x").expect("the probe holds a file");
+        mode(&at, 0o555);
+        let held = std::fs::remove_file(at.join("held")).is_err();
+        mode(&at, 0o755);
+        std::fs::remove_dir_all(&at).expect("the probe goes");
+        held
+    }
+
     /// An unlink that will not go is named, and the report may not say the tree
     /// is as it was.
     ///
     /// This is the terminal arm of the ruling. The rollback did everything it
     /// could and one file of this run is still there, so the sentence that says
     /// otherwise is the one thing the report is not allowed to print.
+    ///
+    /// Mode `0555` is what makes both halves reachable at once: no `w`, so no
+    /// name can leave the directory, and `r` and `x`, so every read the
+    /// rollback makes still answers and the other file goes back as it would
+    /// have.
+    #[cfg(unix)]
     #[test]
     fn a_created_file_that_will_not_go_is_named_rather_than_claimed_removed() {
         let dir = Dir::with("will-not-go", &[("a.md", "one")]);
+        if !modes_hold(&dir) {
+            eprintln!("skipped: this process is root, and root unlinks through mode 0555");
+            return;
+        }
         let reserved = Reserved::over(dir.path(), composed(&[("a.md", "ONE")]))
             .expect("the one target opens")
             .making(dir.path(), "new.md", "NEW".to_string())
@@ -1405,14 +1452,7 @@ mod tests {
             .commit_with(&mut |held: &mut Held, text: &str| -> Result<(), String> {
                 match (held.path.as_str(), text) {
                     ("a.md", "ONE") => {
-                        // No write permission on the directory, so the unlink
-                        // below cannot take a name out of it. Reads still work,
-                        // which is what leaves the rollback's other half intact.
-                        let mut permissions = std::fs::metadata(&root)
-                            .expect("the directory is there")
-                            .permissions();
-                        permissions.set_readonly(true);
-                        std::fs::set_permissions(&root, permissions).expect("the directory locks");
+                        mode(&root, 0o555);
                         fails_part_way(&mut held.file, "O")
                     }
                     _ => put_text(&mut held.file, text),
@@ -1420,11 +1460,7 @@ mod tests {
             })
             .expect_err("the first write fails part way");
 
-        let mut permissions = std::fs::metadata(&root)
-            .expect("the directory is there")
-            .permissions();
-        permissions.set_readonly(false);
-        std::fs::set_permissions(&root, permissions).expect("the directory unlocks");
+        mode(&root, 0o755);
 
         assert!(
             dir.path().join("new.md").exists(),

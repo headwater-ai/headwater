@@ -180,9 +180,7 @@ pub fn compose(root: &Path, plan: &Plan) -> Result<Vec<Composed>, Refusal> {
 pub fn apply(root: &Path, composed: &[Composed]) -> Result<(), Refusal> {
     let new: Vec<&Composed> = composed.iter().filter(|file| file.created).collect();
     let [new] = new[..] else {
-        return Err(Refusal::NotOneDocument {
-            created: new.len(),
-        });
+        return Err(Refusal::NotOneDocument { created: new.len() });
     };
     let editing = composed
         .iter()
