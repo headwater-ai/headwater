@@ -553,8 +553,20 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
 pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<ResolveError>> {
     let (directory, manifest) = find(root, name)?;
     let contents = contents_of(&manifest);
+    let declared = manifest_name(root, &directory);
+
+    // Every declared path is held to the tree here, before the first reader of
+    // one runs. `taxonomy_source` reads `contents.taxonomy` for the resolver,
+    // and while this ran inside `stage` that one key never reached the refusal
+    // below: a missing taxonomy source came back as `cannot read
+    // …/packages/x/../../elsewhere/taxonomy.yml: No such file or directory`,
+    // which names neither the manifest nor the key and carries the `..` that
+    // publication exists to remove. One position for one rule, and `stage` no
+    // longer holds a second copy of the call.
+    reachable(&declared, &directory, &contents)?;
+
     let source = taxonomy_source(root, &directory, &contents)?;
-    agrees(&manifest_name(root, &directory), &manifest, &source)?;
+    agrees(&declared, &manifest, &source)?;
 
     let found = found::observe(out).map_err(|why| refusal(&display(root, out), &why))?;
 
@@ -824,6 +836,9 @@ fn reachable(
 /// outside it, then the manifest with that one scalar rewritten. The rewrite
 /// replaces the staged bytes rather than writing over a file that was just
 /// copied, so the manifest reaches the tree once.
+///
+/// [`reachable`] ran here and now runs in [`publish`], above the first reader of
+/// a declared path. Nothing calls this without that call before it.
 fn stage(
     root: &Path,
     directory: &Path,
@@ -831,7 +846,6 @@ fn stage(
     contents: &Mapping,
 ) -> Result<Vec<Staged>, Vec<ResolveError>> {
     let name = manifest_name(root, directory);
-    reachable(&name, directory, contents)?;
 
     let mut staged = Vec::new();
     read_tree(directory, "", &mut staged)

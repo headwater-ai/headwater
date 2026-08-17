@@ -860,6 +860,57 @@ fn a_contents_path_that_leaves_the_package_is_refused_under_every_key_but_bundle
     assert!(!out_of(&scratch).exists(), "an artifact was written anyway");
 }
 
+/// A `contents.taxonomy` that is not there meets the refusal every other key
+/// meets, in both of its forms.
+///
+/// `taxonomy_source` reads that one key for the resolver, and while the
+/// reachability check ran inside `stage` the resolver answered first. The
+/// publisher got `cannot read …/packages/acme-fixture/../../elsewhere/taxonomy.yml:
+/// No such file or directory`: a file system error that names neither the
+/// manifest nor the key, and that carries the `..` publication exists to remove.
+/// Spec 7 says the refusal names the manifest, the key and the declared value,
+/// and this was the one key for which that sentence was false.
+///
+/// Both arms of the check are here because a declared path can be missing in two
+/// ways, and only the second one existed as a case: a path that leaves the
+/// package is refused for leaving it, and a path that stays inside is refused
+/// for not being there.
+#[test]
+fn a_missing_taxonomy_source_is_refused_by_the_manifest_rather_than_by_the_resolver() {
+    for declared in ["../../elsewhere/taxonomy.yml", "nosuch.yml"] {
+        let scratch = Scratch::new("missing-taxonomy");
+        let root = publisher(&scratch, None);
+        scratch.write(
+            "publisher/packages/acme-fixture/package.yml",
+            &format!(
+                "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: {declared}\n  \
+                 bundles: ../../library\n"
+            ),
+        );
+
+        let refused = package::publish(&root, "acme/fixture", &out_of(&scratch))
+            .expect_err("it does not publish");
+        let message = headwater_resolve::render_errors(&refused);
+        assert!(
+            message.contains(package::MANIFEST),
+            "the refusal does not name the manifest: {message}"
+        );
+        assert!(
+            message.contains("`contents.taxonomy`"),
+            "the refusal does not name the key: {message}"
+        );
+        assert!(
+            message.contains(declared),
+            "the refusal does not name the declared value: {message}"
+        );
+        assert!(
+            !message.contains("No such file or directory"),
+            "a file system error reached the publisher instead: {message}"
+        );
+        assert!(!out_of(&scratch).exists(), "an artifact was written anyway");
+    }
+}
+
 /// A file whose name is not UTF-8 stops the publish, rather than falling out of
 /// the artifact without a word.
 ///
