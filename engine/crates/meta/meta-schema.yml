@@ -403,8 +403,15 @@ definitions:
       # descriptor of Q14. Neither takes its output path from a declaration, and
       # a taxonomy that named either here would put a second copy of one
       # artifact at a path the engine did not fix. So the enum below is the
-      # declarable nine, and `headwater generate` writes the other two whether
+      # declarable ten, and `headwater generate` writes the other two whether
       # or not any taxonomy mentions a projection at all.
+      #
+      # `verb_index` is the tenth, and #257 added it. Its rows are not the
+      # graph: they are the dispatch table of the binary, and its empty cell is
+      # a verb that no document of the corpus describes. It is declarable
+      # because whether a corpus commits one, and where, is a schema decision
+      # like every other output path. `for` names the one shelf that holds the
+      # documents which describe a verb.
       kind:
         enum:
           - shelf_index
@@ -416,6 +423,7 @@ definitions:
           - template
           - transcription
           - probe_result
+          - verb_index
         required: true
       for: {seq: {scalar: string}}
       output: {scalar: string, required: true}

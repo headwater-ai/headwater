@@ -3,7 +3,7 @@ id: HW-OBL-0128
 status: draft
 status_since: 2026-08-16
 summary: "Q29 keeps the engine outside the corpus root, so a contract may name a crate and nothing names a crate that has no contract. A participation expectation runs between documents, and an anchor target is no node with a kind."
-last_verified: 2026-08-16
+last_verified: 2026-08-17
 title: "Nothing holds a crate to having a contract under a root that excludes it"
 provenance:
   warrant: asserted
@@ -47,6 +47,10 @@ It is declined for one reason, and the reason is what this record is about. A su
 Nothing here is discharged. Q29 is the ruling that produced this record, and the record is the thing Q29 declines to settle in prose.
 
 **What would move it, in the order the corpus would meet it.** [#254](https://github.com/headwater-ai/headwater/issues/254) declares the `interface_contract` kind, which gives the far end of the relation a name. [#257](https://github.com/headwater-ai/headwater/issues/257) asks for a generated verb index, and the shape of that index decides this record. An index derived from the contracts alone lists what exists and closes nothing here. An index derived from the crate tree and the contracts together writes the empty cell, and it discharges this.
+
+**#257 shipped the mechanism and it indexes the other subject, so this record stands.** The `verb_index` projection writes `docs/interfaces/README.md` with one row for every verb the binary dispatches. Fifteen of the seventeen rows carry a mark rather than a link. `generate --check` holds every one of them in a file that a reviewer reads. So the mechanism this record asked for is in the binary rather than in a suite test, and it reaches an adopter. It answers the command surface, which is the subject the paragraph above names second. It says nothing about a crate, which is the subject this record is titled after.
+
+**What is left is the row source, and it is the harder half.** The rows of the verb index are a compile-time list inside the engine. That projection reads no directory, and it asks no new question of [spec 6](../spec/06-engine-architecture.md#a-verb-index-reads-the-command-surface-of-the-engine). A crate has no such list. Its rows are the directories under `engine/crates/`, which is a read outside the corpus root. Whether a projection may take one is still the question nobody has asked. [#188](https://github.com/headwater-ai/headwater/issues/188) is where that index is filed.
 
 **The reciprocal direction was measured, and no declaration expresses it either.** This record owns the direction from a crate to a contract. The other direction holds a contract to declaring `governs`, and it reads like the one that a participation expectation covers. It does not. Three refusals were taken against this repository's own taxonomy, one for each form the declaration could take. A `relations.expect` entry with no `to_kind` is refused by the meta-schema, which requires the member. `to_kind: code_path` is refused by referential integrity, because an anchor is not a kind and no kind of that name is declared. `to_kind` naming any real kind is refused by expectation well-formedness, because `governs` admits no document at its target end. So neither direction of the pair is expressible, and the two are short for different reasons. The engine reads `to_kind` as an option and treats an absent one as "any neighbour", which is a decline point no declaration can reach.
 

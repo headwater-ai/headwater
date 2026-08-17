@@ -96,12 +96,15 @@ headwater init               [--corpus <dir>] [--package <name>] [--root <path>]
 headwater infer              [--owner <name>] [--until <date>] [--write]
                              [--now <date>] [--root <path>]
 headwater conformance        [--level <name>] [--now <date>] [--root <path>]
+headwater query              <expression>
 headwater taxonomy validate  [--root <path>]
 headwater taxonomy resolve   [--check] [--root <path>]
 headwater taxonomy audit     [--now <date>] [--root <path>]
 headwater taxonomy publish   [--package <name>] --out <dir> [--root <path>]
 headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
 headwater taxonomy diff      <dir> [--to <version>] [--now <date>] [--root <path>]
+headwater taxonomy migrate   <dir> [--to <version>] [--apply] [--now <date>]
+                             [--root <path>]
 
   check              run the pipeline over the corpus, against the taxonomy in
                      the committed lock.
@@ -215,6 +218,11 @@ headwater taxonomy diff      <dir> [--to <version>] [--now <date>] [--root <path
                      the level. A rule this engine holds no reading for ends the
                      run rather than being skipped. Without `--level` it exits 0
                      whatever it finds.
+  query              listed in spec 6, and no document states what an
+                     expression is, so this engine implements none. It states
+                     that wait and exits non-zero. It is here because a wait a
+                     caller cannot discover is a wait nobody reads. `route` and
+                     `explain` are the reads that exist.
   taxonomy validate  resolve the sources and report every rule of spec 2's
                      list, and what each one did not decide. Writes nothing.
   taxonomy resolve   write `.headwater/taxonomy.lock`. It is written only when
@@ -251,6 +259,11 @@ headwater taxonomy diff      <dir> [--to <version>] [--now <date>] [--root <path
                      fetches: no crate of this engine depends on the network, so
                      the verb takes the path of a directory and never a
                      location.
+  taxonomy migrate   apply the migration payload a published artifact ships, to
+                     this corpus. It takes the path of a directory somebody
+                     already fetched, for the reason above. Without `--apply` it
+                     reports every file each step would write and writes
+                     nothing.
 
   --strict       `check` only: exit non-zero when a finding is an error. Without
                  it the run is advisory and always exits 0, which is the default
@@ -603,6 +616,30 @@ fn main() -> ExitCode {
     };
 
     let verb: Vec<&str> = words.iter().map(String::as_str).collect();
+
+    // The dispatch table is `headwater_verbs::VERBS`, and this is where it
+    // decides. A first word the table does not carry is refused here, so an arm
+    // below that the table does not name is unreachable and the verb it claims
+    // to add does not run. That is the property #257 asked for: the list was
+    // downstream of the arms and drifted from them in three places, and the
+    // arms are now downstream of the list. `crates/cli/tests/verbs.rs` reads the
+    // arms out of this file and holds them against the table, which closes the
+    // other direction.
+    //
+    // The message keeps its wording. It names the first word of the command
+    // line rather than the verb it dispatched to, so `headwater check docs/`
+    // still answers that `check` is not a verb this binary carries. Two
+    // interface contracts state that behavior, because a contract states what
+    // the binary does.
+    if let [first, ..] = verb.as_slice() {
+        if headwater_verbs::parse(first).is_none() {
+            return fail(&format!(
+                "`{first}` is not a verb this binary carries yet. It carries {}",
+                headwater_verbs::listed()
+            ));
+        }
+    }
+
     match verb.as_slice() {
         ["check"] => check(
             &root,
@@ -628,7 +665,10 @@ fn main() -> ExitCode {
         ),
         ["new", kind] => new(&root, kind, title, &relates, &facets, now),
         ["capture"] => capture(&root, format),
-        ["sweep"] => fail("`sweep` takes a second word: `plan` or `report`"),
+        ["sweep"] => fail(&format!(
+            "`sweep` takes a second word: {}",
+            headwater_verbs::words_of("sweep")
+        )),
         ["sweep", "plan"] => sweep_plan(&root, under),
         ["sweep", "report"] => fail(
             "`sweep report` takes the path of the file an agent wrote back. \
@@ -636,9 +676,13 @@ fn main() -> ExitCode {
         ),
         ["sweep", "report", path] => sweep_report(&root, Path::new(path), format),
         ["sweep", other, ..] => fail(&format!(
-            "`sweep {other}` is not a verb this binary carries. It carries `plan` and `report`"
+            "`sweep {other}` is not a verb this binary carries. It carries {}",
+            headwater_verbs::words_of("sweep")
         )),
-        ["probe"] => fail("`probe` takes a second word: `plan`, `record`, `grade` or `stale`"),
+        ["probe"] => fail(&format!(
+            "`probe` takes a second word: {}",
+            headwater_verbs::words_of("probe")
+        )),
         ["probe", "plan"] => probe_plan(
             &root,
             tier.as_deref(),
@@ -658,8 +702,8 @@ fn main() -> ExitCode {
         ["probe", "grade", path] => probe_grade(&root, Path::new(path)),
         ["probe", "stale"] => probe_stale(&root),
         ["probe", other, ..] => fail(&format!(
-            "`probe {other}` is not a verb this binary carries. It carries `plan`, `record` and \
-             `grade` and `stale`"
+            "`probe {other}` is not a verb this binary carries. It carries {}",
+            headwater_verbs::words_of("probe")
         )),
         ["generate"] => generate(&root, check_only),
         ["import"] => import(&root, None, expect.as_deref(), write),
@@ -688,10 +732,10 @@ fn main() -> ExitCode {
         ["taxonomy", "vendor", fetched] => {
             vendor(&root, Path::new(fetched), expect.as_deref())
         }
-        ["taxonomy"] => fail(
-            "`taxonomy` takes a second word: `validate`, `resolve`, `audit`, `publish`, \
-             `vendor`, `diff` or `migrate`",
-        ),
+        ["taxonomy"] => fail(&format!(
+            "`taxonomy` takes a second word: {}",
+            headwater_verbs::words_of("taxonomy")
+        )),
         ["taxonomy", "diff"] => fail(
             "`taxonomy diff` takes the path of a published artifact somebody already fetched. \
              This engine opens no socket, so it compares against a directory it is handed, and \
@@ -708,20 +752,17 @@ fn main() -> ExitCode {
             migrate(&root, Path::new(fetched), to.as_deref(), now, applying)
         }
         ["taxonomy", other, ..] => fail(&format!(
-            "`taxonomy {other}` is not a verb this binary carries yet. \
-             It carries `validate`, `resolve`, `audit`, `publish`, `vendor`, `diff` and `migrate`"
+            "`taxonomy {other}` is not a verb this binary carries yet. It carries {}",
+            headwater_verbs::words_of("taxonomy")
         )),
         [] => fail("no verb. Try `headwater check`"),
-        // The list below is hand-maintained beside the arms above, and nothing
-        // holds the two together, so a new verb needs an edit in both places.
-        // Spec 6 keeps a third copy as the CLI grammar. #138 removed a name
-        // from that grammar which no arm here carries, and found this message
-        // one verb short of the arms in the same reading.
+        // Reached by a first word the table carries and an operand count no arm
+        // takes. The list is the table's, so it can no longer be short of the
+        // arms: it was fifteen names against seventeen arms until #257, and it
+        // omitted `probe` and `query`.
         [other, ..] => fail(&format!(
-            "`{other}` is not a verb this binary carries yet. \
-             It carries `check`, `gate`, `route`, `explain`, `mcp`, `new`, `capture`, \
-             `sweep`, `generate`, `import`, `export`, `init`, `infer`, `conformance` and \
-             `taxonomy`"
+            "`{other}` is not a verb this binary carries yet. It carries {}",
+            headwater_verbs::listed()
         )),
     }
 }
@@ -1009,6 +1050,7 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>) -> ExitCode 
         &projections,
         &loaded.identity(),
         &loaded.runs(root),
+        headwater_verbs::VERBS,
     );
 
     let report = match headwater_conformance::evaluate(
@@ -1975,6 +2017,7 @@ fn plan_of(
         &projections,
         identity,
         &loaded.runs(root),
+        headwater_verbs::VERBS,
     ))
 }
 
@@ -3474,6 +3517,7 @@ fn generate(root: &Path, check_only: bool) -> ExitCode {
         &projections,
         &loaded.identity(),
         &loaded.runs(root),
+        headwater_verbs::VERBS,
     );
     let report = match check_only {
         true => headwater_generate::check(root, &plan),

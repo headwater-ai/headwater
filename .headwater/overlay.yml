@@ -496,3 +496,30 @@ add_to:
       identity:
         id: "HW-RESULT-{run}"
         kind: probe_result
+
+    # The verb index, and the shelf above is the one end of it. Every verb the
+    # binary dispatches gets a row, and a verb that no contract describes gets a
+    # mark rather than a missing row. That cell is the deliverable:
+    # [#257](https://github.com/headwater-ai/headwater/issues/257) states that an
+    # index of the contracts that exist is a list of work already done.
+    #
+    # **It is not a `shelf_index`, and the difference is which end supplies the
+    # rows.** A shelf index reads the documents that are there, so `interfaces`
+    # on that declaration would write a table of two contracts and say nothing
+    # about the fifteen verbs nobody has described.
+    # [HW-OBL-0128](../docs/obligations/0128-nothing-holds-a-crate-to-having-a-contract-under-a-root-that-excludes-it.md)
+    # calls that the reading which closes nothing.
+    #
+    # **No `identity`, so the file is no node.** Nothing cites a row of it, and
+    # the two scalars an identity block carries would put an identifier on an
+    # artifact that no edge names. A shelf index of this repository takes the
+    # same shape for the same reason.
+    #
+    # The output lands on the shelf it describes, so a reader who opens
+    # `docs/interfaces/` meets the whole surface rather than the described part
+    # of it. The census reads the marker on the first line and excuses the file
+    # from every document rule, which is why a file with no front matter may sit
+    # on a homogeneous shelf.
+    - kind: verb_index
+      for: [interfaces]
+      output: docs/interfaces/README.md

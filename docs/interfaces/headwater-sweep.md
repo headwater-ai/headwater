@@ -117,4 +117,6 @@ There is no variable that names a model, a key or an endpoint, and there is nowh
 
 `.claude/skills/headwater-sweep/SKILL.md` is the instruction a model reads between the two halves in this repository.
 
+[The command surface](README.md) lists every verb this binary dispatches, and it marks the ones that no contract describes. `headwater generate` writes it.
+
 [Spec 12](../spec/12-check-layer.md#where-the-llm-coherence-sweep-fits) states where the sweep sits and what stops it from gating. [Spec 4](../spec/04-assurance-model.md#discharging-coherence-obligations-the-assisted-sweep) states the obligations a sweep discharges and the finding shape it borrows. [Spec 6](../spec/06-engine-architecture.md) states the grammar of both halves.

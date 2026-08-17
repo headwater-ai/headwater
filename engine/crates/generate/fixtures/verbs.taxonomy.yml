@@ -1,0 +1,64 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the verb index is tested against. It is the smallest shape that
+# holds every branch of that emitter: a shelf whose documents describe a verb, a
+# facet in the `name` role that carries the whole command line, and a second
+# shelf whose documents describe nothing, so that a test can edit a document the
+# index must not move.
+#
+# It is not a resolved package, for the reason the other fixture taxonomies here
+# are not: a fixture that depended on the base package would move whenever the
+# base does.
+
+purposes:
+  behavior:
+    intent: state what a command does, and what it exits
+    answers: ["what does this command do", "what does it exit"]
+  rationale:
+    intent: explain why a choice was made and what it forecloses
+    answers: ["why is it this way", "what was rejected"]
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft, role: initial}
+      - {value: current, role: live}
+  status_since:
+    role: state_entered
+    required: true
+  summary:
+    role: scent
+    required: true
+  # The join. A verb index matches this value against the command line of a
+  # verb, so `headwater check` names the verb `check` and the bare word names
+  # nothing. Not required, because one test writes a document that leaves it
+  # empty: that is the branch where the emitter declines the whole file.
+  title:
+    role: name
+    required: false
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status, status_since, summary]}
+  contract:
+    is_a: governed_document
+    purpose: behavior
+    identifier: {scheme: contract_id}
+  note:
+    is_a: governed_document
+    purpose: rationale
+    identifier: {scheme: note_id}
+
+identifier_schemes:
+  contract_id: {pattern: "IF-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+  note_id: {pattern: "NT-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+shelves:
+  interfaces: {path: "verbs/interfaces/**", homogeneous: true, kind: contract}
+  notes: {path: "verbs/notes/**", homogeneous: true, kind: note}
+
+projections:
+  - {kind: verb_index, for: [interfaces], output: "verbs/interfaces/README.md"}

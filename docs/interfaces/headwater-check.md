@@ -118,6 +118,8 @@ Without `--fix`, this verb writes no byte of the corpus. The cache is outside th
 
 [`headwater sweep`](headwater-sweep.md) reports what no check can see. Its findings reach no rule and no exit status of this verb.
 
+[The command surface](README.md) lists every verb this binary dispatches, and it marks the ones that no contract describes. `headwater generate` writes it.
+
 [Spec 12](../spec/12-check-layer.md) declares the check layer: the scopes, the cache, the read set, and the [fixability](../spec/12-check-layer.md#fixability) bar that decides which findings `--fix` acts on. [Spec 4](../spec/04-assurance-model.md) declares the finding shape and the register. [Spec 6](../spec/06-engine-architecture.md#exit-codes) declares the exit-code convention this verb follows.
 
 The commit gate of this repository is `.githooks/pre-commit`, and it runs `headwater check --strict` after `.githooks/change-manifest` writes the manifest that `--change` reads.

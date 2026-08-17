@@ -72,6 +72,12 @@ headwater-resolve = { path = "../resolve" }
 # derived value and the assisted count are decided in the library.
 headwater-scaffold = { path = "../scaffold" }
 
+# The dispatch table. The arms below it are entered only for a first word this
+# crate carries, so an arm this list does not name never runs. `headwater
+# generate` reads the same list to write the verb index, which is why the list
+# is a crate under both rather than a constant in this one.
+headwater-verbs = { path = "../verbs" }
+
 # `headwater infer` builds an adoption payload as text and loads it back before
 # it goes into the lock, so what the verb prints and what it stores are one
 # artifact that went through one reader.

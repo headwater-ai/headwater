@@ -1,6 +1,6 @@
-243 files under the corpus root
+244 files under the corpus root
     200 typed
-      3 generated
+      4 generated
       2 untyped
      36 excluded
       2 not a document
@@ -25,6 +25,8 @@ docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
   untyped: no shelf pattern claims this path
+docs/interfaces/README.md
+  generated: `verb_index`, and `headwater generate --check` holds it rather than this census
 docs/spec/09-open-questions.md
   generated: `shelf_sections`, and `headwater generate --check` holds it rather than this census
 docs/spec/README.md

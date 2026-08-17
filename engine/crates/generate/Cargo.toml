@@ -39,6 +39,11 @@ headwater-check = { path = "../check" }
 # and never this crate, and no crate in this workspace opens a socket.
 headwater-probe = { path = "../probe" }
 
+# The dispatch table of the binary. A verb index is a projection over it, and
+# the crate sits below both this one and the binary so that one list serves the
+# emitter and the arms. See `crates/verbs` for why it is not a module of either.
+headwater-verbs = { path = "../verbs" }
+
 [dev-dependencies]
 # A fixture corpus needs a taxonomy resolved from sources, in the way every
 # other crate's fixture tree does.

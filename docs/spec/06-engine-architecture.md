@@ -110,9 +110,9 @@ headwater generate            # write
 headwater generate --check    # fail if any committed output differs
 ```
 
-The engine implements these projection kinds: shelf indexes, shelf sections, relation views (decision lineage, traceability matrices), agent rule files, site navigation, graph export, coverage reports, and templates. A transcription of a pinned external snapshot is one more ([Q19](09-decisions.md#q19--inbound-integration-an-external-system-of-record)). A probe result is the last one, and [spec 5](05-ai-integration.md#a-run-produces-a-snapshot-and-a-document) declares it.
+The engine implements these projection kinds: shelf indexes, shelf sections, relation views (decision lineage, traceability matrices), agent rule files, site navigation, graph export, coverage reports, and templates. A transcription of a pinned external snapshot is one more ([Q19](09-decisions.md#q19--inbound-integration-an-external-system-of-record)). A probe result is another, and [spec 5](05-ai-integration.md#a-run-produces-a-snapshot-and-a-document) declares it. A verb index is the last one, and [the paragraph below](#a-verb-index-reads-the-command-surface-of-the-engine) declares it.
 
-**Nine of the eleven are declarable, and two are not.** A taxonomy names the kind and the output path, and [principle 1](00-vision-and-scope.md#design-principles) makes that path a schema decision. The coverage report and the corpus descriptor are the exceptions. [Spec 4](04-assurance-model.md#every-obligation-has-exactly-one-disposition) makes the register engine-defined and non-optional, and [Q20](09-decisions.md#q20--where-scent-lives) fixes the descriptor at `.headwater/corpus.json`. Both hold that standing for one reason. A reader who must consult the taxonomy to find an artifact already knows what it would tell them. So a declaration of either would put a second copy of one artifact at a path the engine did not fix. The meta-schema therefore closes the declarable nine as a value set, and `headwater generate` writes the other two under no declaration at all.
+**Ten of the twelve are declarable, and two are not.** A taxonomy names the kind and the output path, and [principle 1](00-vision-and-scope.md#design-principles) makes that path a schema decision. The coverage report and the corpus descriptor are the exceptions. [Spec 4](04-assurance-model.md#every-obligation-has-exactly-one-disposition) makes the register engine-defined and non-optional, and [Q20](09-decisions.md#q20--where-scent-lives) fixes the descriptor at `.headwater/corpus.json`. Both hold that standing for one reason. A reader who must consult the taxonomy to find an artifact already knows what it would tell them. So a declaration of either would put a second copy of one artifact at a path the engine did not fix. The meta-schema therefore closes the declarable nine as a value set, and `headwater generate` writes the other two under no declaration at all.
 
 **A shelf index writes a bullet for each document, and a shelf sections file writes a heading.** A bullet carries no anchor, so nothing outside the index cites one row of it. A heading is an address, so a reader, an evaluation and an agent each cite the row rather than the file. That is the whole of the difference between the two kinds, and it is the reason they are two kinds. A member that changed the shape of one output would be read by one kind and ignored by the rest.
 
@@ -147,6 +147,20 @@ The engine implements these projection kinds: shelf indexes, shelf sections, rel
 **A generated file in another format stays outside this rule.** The census reads a marker on a Markdown file, and it already accounts for every other file as one that is not a document. To read a marker in any format asks the walk to open every image and every archive under the corpus root. The answer would change no verdict.
 
 **No generated file states when it was generated.** `generate --check` compares bytes. A timestamp inside an output makes every run differ from the last one, so the gate would report drift over a corpus that nobody touched. [Q17](09-decisions.md#q17--governed-access-and-the-solution-layer) asks a filtered export to state when it ran, and the two rules cannot both hold for an artifact this gate covers. [Spec 13](13-open-obligations.md) carries the conflict.
+
+### A verb index reads the command surface of the engine
+
+A verb index carries one row for every verb the binary dispatches. It names the document that describes each verb, and a verb that no document describes carries a mark in place of a link. That cell is the reason the artifact exists. An index of the descriptions that exist reports work already done, and the missing description is what a reader acts on.
+
+**The rows come from the engine and not from the graph.** The rule above closes the sources a projection may interpolate, and it closes them against a taxonomy source and against authored prose. The dispatch table is neither. It is data of the engine, in the class the register and the corpus descriptor already project. No reader has to consult a taxonomy to learn what the binary carries. This projection reads no path outside the corpus root, so [Q29](09-decisions.md#q29--whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach) decides nothing here.
+
+**The join is the whole command line.** A declaration names one shelf, and the emitter matches the facet in the `name` role against the name of a verb. `headwater check` names the verb `check`. The bare word names nothing, because a description of a command is titled by the command line.
+
+**Two states decline the whole file, in the way every other decline here is whole.** A document on the shelf that answers to no verb would be dropped from the index. A document with no name could not be joined to a verb at all. Either one loses a description that somebody wrote.
+
+**An empty shelf is not a decline, and that is the difference from a shelf index.** An index of verbs that nobody has described is this artifact at its strongest. An index of no documents is a file that asserts a shelf is there.
+
+**What no projection holds is a crate.** [HW-OBL-0128](../obligations/0128-nothing-holds-a-crate-to-having-a-contract-under-a-root-that-excludes-it.md) records that gap. A verb index answers the half of it that the command surface carries, and it leaves the crate tree where that record found it.
 
 ### An export is a projection, and it declares what it dropped
 

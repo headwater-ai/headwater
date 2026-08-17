@@ -1,5 +1,5 @@
-243 seen, 200 classified, 200 checked, 3773 check instances
-      3 generated, held to regeneration by `headwater generate --check`
+244 seen, 200 classified, 200 checked, 3773 check instances
+      4 generated, held to regeneration by `headwater generate --check`
      22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: the document at the target end, `HW-REG-open-questions`, declares no value for the state facet, so there is no state to read there
     188 skipped: this document writes no fragment into itself
