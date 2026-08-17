@@ -48,8 +48,9 @@
 //! block. A corpus that already declared a task lost it — its statement, its
 //! owner and its expiry — at exit 0, with nothing on either stream.
 //!
-//! The three cases below are the three separable failures, and each one runs the
-//! built binary over a scratch repository **whose lock declares a task and whose
+//! Three of the four cases below are the three separable failures, and the
+//! fourth is the refusal that replaces none of them. Each one runs the built
+//! binary over a scratch repository **whose lock declares a task and whose
 //! corpus raises a finding**. Both halves are needed: over an empty `adoption`
 //! block no case can tell a merge from a replacement, and over a corpus that
 //! raises nothing the verb writes no payload at all.
