@@ -318,3 +318,19 @@ jobs:
         # It writes only into a scratch copy of the corpus under the temporary
         # directory, so it may run after the step above with nothing between.
         run: sh .claude/skills/fixtures.sh
+      - name: The tutorial says what a reader will see, and this sees it
+        # `docs/tutorials/your-first-governed-corpus.md` states, after every one
+        # of its sixteen steps, what the reader should now see. Each of those is
+        # a claim about this engine, copied into prose, and prose does not
+        # re-derive. This step is the verb that produces them: it reads the
+        # commands out of the document, runs them against a scratch repository,
+        # and diffs each result against the block the document prints.
+        #
+        # It blocks. A newcomer who follows a page that no longer matches the
+        # engine concludes that the tool is broken rather than the page, and the
+        # on-ramp is the one document with no earlier document to fall back to.
+        #
+        # It writes nothing inside the checkout: the scratch repository is a
+        # temporary directory, `HOME` is redirected into it, and it is removed
+        # at the end.
+        run: sh .claude/tutorial/fixtures.sh
