@@ -103,6 +103,11 @@ pub enum Failed {
     PutBack,
     /// Not put back. This file holds neither what it held nor what the run
     /// asked for.
+    ///
+    /// Not back for either of two reasons: the restore could not be written, or
+    /// it was written, returned `Ok`, and the path does not hold it — the state
+    /// a handle whose path was unlinked or replaced under it produces. `why`
+    /// says which.
     Damaged { why: String },
 }
 
@@ -123,11 +128,19 @@ pub struct Halted {
     /// The *other* files the rollback put back as they were, in the order
     /// written. The file the run failed on is never here — it is `failed` —
     /// which keeps this list meaning the files this run wrote in full.
+    ///
+    /// A path is here only when a read *of that path*, off the tree and after
+    /// every restore of the run had run, returned the bytes the file held
+    /// before the run. It is a list of files somebody looked at, and not a list
+    /// of writes that returned `Ok`.
     restored: Vec<String>,
     /// The other files the rollback could not put back. Empty is the ordinary
     /// case and a reader has to be told when it is not, because this and
     /// `Failed::Damaged` are the states in which the tree is neither what it
     /// was nor what was asked for.
+    ///
+    /// A path is here when the restore could not be written, **or** when it was
+    /// written and the path does not hold it. `why` tells the two apart.
     lost: Vec<Unopened>,
 }
 
@@ -184,6 +197,13 @@ impl Halted {
 /// document and stopped printed *the tree is as it was* over it — on a
 /// single-file run, the ordinary shape of `--fix` over one document, through
 /// the arm that also said *no other file had been written*.
+///
+/// Both of those keys are observations off the tree rather than return values.
+/// `failed` is [`Failed::PutBack`] only when a read of that path returned the
+/// bytes the file held, and `lost` carries every other file whose restore did
+/// not reach the path it names — see [`reads_back`]. The sentence therefore
+/// stopped being printable over a file that vanished under its own handle
+/// without any arm of this match moving.
 impl std::fmt::Display for Halted {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} did not write: {}", self.path, self.why)?;
@@ -207,13 +227,21 @@ impl std::fmt::Display for Halted {
                 Failed::Damaged { .. } => write!(f, ", so this run's damage is that one file"),
             };
         }
+        // `lost` is printed as its path and its reason rather than through
+        // `Unopened`'s own `Display`, which says *could not be opened for
+        // writing* over a file that opened perfectly well: every member of
+        // `lost` came out of `Reserved::over` successfully and failed later.
+        // The lead-in says the files did not go back rather than what they hold
+        // now, because the three ways in are a restore that failed part way, a
+        // path that was unlinked, and a path someone else replaced, and only
+        // the first of them holds any of this run's bytes.
         write!(
             f,
-            ". The tree is now neither what it was nor what was asked for, and these files hold \
-             this run's write with no other file beside them:"
+            ". The tree is now neither what it was nor what was asked for, and these files did \
+             not go back:"
         )?;
         for lost in &self.lost {
-            write!(f, "\n  {lost}")?;
+            write!(f, "\n  {}: {}", lost.path, lost.why)?;
         }
         Ok(())
     }
@@ -358,6 +386,19 @@ impl Reserved {
     /// the write did — an `ENOSPC` that stopped `TWO` stops `two` — and that is
     /// the state [`Failed::Damaged`] carries out to the report.
     ///
+    /// **A restore that returns `Ok` is not a file that went back.** The write
+    /// goes through the handle [`Reserved::over`] opened, and a handle keeps
+    /// working after its path is unlinked or replaced, so the bytes can land
+    /// where no reader of that path will find them. Every restore is therefore
+    /// read back off the tree by [`reads_back`] and downgraded to an error when
+    /// the path does not hold them. That is the same mechanism, and the same
+    /// argument, as [`Reserved::commit_with`]'s read back of the run's own
+    /// writes, and it runs in the same order: restore everything, then read
+    /// everything, so a path two files of one run both name is seen in its
+    /// final state.
+    ///
+    /// The cost is one read per file of the run, on a failure path only.
+    ///
     /// `failed` indexes `held` at both call sites, which are the only two.
     fn undo(
         mut self,
@@ -367,26 +408,39 @@ impl Reserved {
         why: String,
         write: &mut dyn FnMut(&mut Held, &str) -> Result<(), String>,
     ) -> Halted {
-        let mut restored = Vec::new();
-        let mut lost = Vec::new();
+        let mut done: Vec<(usize, Result<(), String>)> = Vec::new();
         for index in 0..upto.min(self.held.len()) {
             if index == failed {
                 continue;
             }
             let was = self.held[index].was.clone();
-            let held = &mut self.held[index];
-            match write(held, &was) {
-                Ok(()) => restored.push(held.path.clone()),
-                Err(error) => lost.push(Unopened {
-                    path: held.path.clone(),
-                    why: error,
-                }),
-            }
+            let outcome = write(&mut self.held[index], &was);
+            done.push((index, outcome));
         }
         let was = self.held[failed].was.clone();
-        let fate = match write(&mut self.held[failed], &was) {
+        let mut fate_of_failed = write(&mut self.held[failed], &was);
+
+        for (index, outcome) in &mut done {
+            if outcome.is_ok() && !reads_back(&self.held[*index]) {
+                *outcome = Err(NOT_READ_BACK.to_string());
+            }
+        }
+        if fate_of_failed.is_ok() && !reads_back(&self.held[failed]) {
+            fate_of_failed = Err(NOT_READ_BACK.to_string());
+        }
+
+        let mut restored = Vec::new();
+        let mut lost = Vec::new();
+        for (index, outcome) in done {
+            let path = self.held[index].path.clone();
+            match outcome {
+                Ok(()) => restored.push(path),
+                Err(why) => lost.push(Unopened { path, why }),
+            }
+        }
+        let fate = match fate_of_failed {
             Ok(()) => Failed::PutBack,
-            Err(error) => Failed::Damaged { why: error },
+            Err(why) => Failed::Damaged { why },
         };
         Halted {
             path,
@@ -396,6 +450,32 @@ impl Reserved {
             lost,
         }
     }
+}
+
+/// Why a restore that returned `Ok` is nevertheless not back.
+const NOT_READ_BACK: &str =
+    "the bytes read back off the tree are not the bytes this rollback wrote";
+
+/// Does this path hold what the file held before the run?
+///
+/// The read is off the tree and never through [`Held::file`], which is the only
+/// reason a path replaced under the open handle is detectable at all: the write
+/// through such a handle returns `Ok` and reaches an inode no reader of that
+/// path will ever open. A comparison rather than a test for existence, for the
+/// same reason — an unlinked path stops existing, and a replaced one exists and
+/// reads. A read error counts as not back, exactly as it does in
+/// [`Reserved::commit_with`]'s own read back.
+///
+/// This is the rollback's only comparison. The loop and the file the run failed
+/// on both come through here, so there is no second copy to drift and one
+/// change to it moves every case.
+///
+/// A path replaced by a file that happens to hold exactly [`Held::was`] reads
+/// back and is counted as restored. That is this module's own principle rather
+/// than a gap in it: what a caller needs to know is what the next reader of
+/// that path will get, and the next reader gets the bytes the file held.
+fn reads_back(held: &Held) -> bool {
+    matches!(std::fs::read_to_string(&held.at), Ok(text) if text == held.was)
 }
 
 fn put_text(file: &mut std::fs::File, text: &str) -> Result<(), String> {
@@ -509,6 +589,14 @@ mod tests {
     /// after the reservation: the handle still writes, and the read back at the
     /// path finds nothing, which is the second of the two failure points. `a.md`
     /// is the assertion, because it wrote before the run reached the read back.
+    ///
+    /// `b.md` is the second assertion, and it is the one this case was blind to
+    /// for as long as the rollback trusted its own `Ok`. That path is gone, so
+    /// the restore through the stale handle lands on an inode with no links and
+    /// returns `Ok`; the fate is [`Failed::Damaged`] only because the rollback
+    /// reads the path back. The disk truth beside it is context and passes
+    /// either way, so it is placed after the fate to keep the failure that
+    /// fires attributable to the fate.
     #[test]
     fn a_write_that_does_not_read_back_off_the_tree_undoes_the_run() {
         let dir = Dir::with("read-back", &[("a.md", "one"), ("b.md", "two")]);
@@ -527,6 +615,15 @@ mod tests {
             dir.read("a.md"),
             "one",
             "the file that did write was put back"
+        );
+        assert!(
+            matches!(halted.failed(), Failed::Damaged { .. }),
+            "the restore of the failing file returned Ok into a path that is gone, so it is \
+             damaged rather than put back: {halted}"
+        );
+        assert!(
+            !dir.path().join("b.md").exists(),
+            "and the path really is gone, which is the fact the fate above reports"
         );
     }
 
@@ -660,6 +757,84 @@ mod tests {
         assert_eq!(dir.read("a.md"), "one", "the file that did write is back");
     }
 
+    /// A file whose path was unlinked under the handle is lost, not restored.
+    ///
+    /// `a.md` goes away after the reservation, and the run then fails on `b.md`,
+    /// so `a.md` is an ordinary member of the rollback loop rather than the file
+    /// the run failed on. The restore writes through the handle and returns
+    /// `Ok`, and the bytes reach an inode with no links. Nothing in the return
+    /// value says so, and a read of the path does.
+    ///
+    /// The two assertions are one property. Whether the report may still say
+    /// the tree is as it was is a different property, held over all eight of its
+    /// states by `the_tree_is_as_it_was_is_printed_only_when_it_is`.
+    #[test]
+    fn a_file_unlinked_under_its_handle_is_lost_rather_than_restored() {
+        let dir = Dir::with("unlinked", &[("a.md", "one"), ("b.md", "two")]);
+        let reserved = Reserved::over(dir.path(), composed(&[("a.md", "ONE"), ("b.md", "TWO")]))
+            .expect("both open");
+        std::fs::remove_file(dir.path().join("a.md")).expect("the first target goes away");
+
+        let halted = reserved
+            .commit_with(&mut |held: &mut Held, text: &str| -> Result<(), String> {
+                match (held.path.as_str(), text) {
+                    ("b.md", "TWO") => fails_part_way(&mut held.file, "TW"),
+                    _ => put_text(&mut held.file, text),
+                }
+            })
+            .expect_err("the second write fails part way");
+
+        assert!(
+            halted.lost.iter().any(|lost| lost.path == "a.md"),
+            "the rollback wrote this file back through a handle whose path is gone: {halted}"
+        );
+        assert!(
+            halted.restored.is_empty(),
+            "nothing of this run was observed back on the tree: {halted}"
+        );
+    }
+
+    /// A file whose path was replaced under the handle is lost, not restored.
+    ///
+    /// The same shape, and the arm that proves the instrument. An unlinked path
+    /// stops existing, so a read back written as a test for existence would
+    /// catch it. A replaced path exists and reads, holding a third party's
+    /// bytes, and only a comparison against what the file held before the run
+    /// tells the difference.
+    #[test]
+    fn a_file_replaced_under_its_handle_is_lost_rather_than_restored() {
+        let dir = Dir::with("replaced", &[("a.md", "one"), ("b.md", "two")]);
+        let reserved = Reserved::over(dir.path(), composed(&[("a.md", "ONE"), ("b.md", "TWO")]))
+            .expect("both open");
+        let other = dir.path().join("other");
+        std::fs::write(&other, "SOMEONE ELSE").expect("a third party writes its own file");
+        std::fs::rename(&other, dir.path().join("a.md")).expect("and moves it over the target");
+
+        let halted = reserved
+            .commit_with(&mut |held: &mut Held, text: &str| -> Result<(), String> {
+                match (held.path.as_str(), text) {
+                    ("b.md", "TWO") => fails_part_way(&mut held.file, "TW"),
+                    _ => put_text(&mut held.file, text),
+                }
+            })
+            .expect_err("the second write fails part way");
+
+        assert!(
+            halted.lost.iter().any(|lost| lost.path == "a.md"),
+            "the rollback wrote this file back through a handle the path no longer names: {halted}"
+        );
+        assert!(
+            halted.restored.is_empty(),
+            "nothing of this run was observed back on the tree: {halted}"
+        );
+        assert_eq!(
+            dir.read("a.md"),
+            "SOMEONE ELSE",
+            "the path exists and reads, so only a comparison of the bytes can tell it apart \
+             from a file that went back"
+        );
+    }
+
     /// Every arm of the redrawn message, and the sentence none of them may fake.
     ///
     /// The old match was keyed on `(restored.len(), lost.is_empty())` and had
@@ -702,11 +877,11 @@ mod tests {
             (halted(damaged(), &["a.md"], Vec::new()),
              "b.md did not write: no space left on device. It could not be put back and now holds neither what it held nor what this run asked for (no space left on device), and the 1 file already written was put back, so this run's damage is that one file"),
             (halted(Failed::PutBack, &["a.md"], vec![unopened("c.md")]),
-             "b.md did not write: no space left on device. It was put back, and the 1 file already written was put back too. The tree is now neither what it was nor what was asked for, and these files hold this run's write with no other file beside them:\n  c.md could not be opened for writing: no space left on device"),
+             "b.md did not write: no space left on device. It was put back, and the 1 file already written was put back too. The tree is now neither what it was nor what was asked for, and these files did not go back:\n  c.md: no space left on device"),
             (halted(Failed::PutBack, &[], vec![unopened("c.md")]),
-             "b.md did not write: no space left on device. It was put back. The tree is now neither what it was nor what was asked for, and these files hold this run's write with no other file beside them:\n  c.md could not be opened for writing: no space left on device"),
+             "b.md did not write: no space left on device. It was put back. The tree is now neither what it was nor what was asked for, and these files did not go back:\n  c.md: no space left on device"),
             (halted(damaged(), &[], vec![unopened("c.md")]),
-             "b.md did not write: no space left on device. It could not be put back and now holds neither what it held nor what this run asked for (no space left on device). The tree is now neither what it was nor what was asked for, and these files hold this run's write with no other file beside them:\n  c.md could not be opened for writing: no space left on device"),
+             "b.md did not write: no space left on device. It could not be put back and now holds neither what it held nor what this run asked for (no space left on device). The tree is now neither what it was nor what was asked for, and these files did not go back:\n  c.md: no space left on device"),
         ];
 
         for (halted, expected) in &table {
