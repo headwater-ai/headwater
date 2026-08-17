@@ -13,7 +13,7 @@
       "taxonomy": {
         "package": "headwater/standard",
         "version": "3.2.0",
-        "lock": "sha256:17083558d3f99080868a5d8ab42e20532b84ae3ca8e63062fde9e226d88a743d"
+        "lock": "sha256:3f29829581b856c760b2e5624931b6b9d60d98ad5956bef386041e76f8169585"
       },
       "entry_points": [
         {
@@ -50,6 +50,11 @@
           "shelf": "spec_series",
           "path": "docs/spec/00-vision-and-scope.md",
           "id": "HW-SPEC-vision-and-scope"
+        },
+        {
+          "shelf": "tutorials",
+          "path": "docs/tutorials/your-first-governed-corpus.md",
+          "id": "HW-TUT-your-first-governed-corpus"
         }
       ],
       "exports": []
