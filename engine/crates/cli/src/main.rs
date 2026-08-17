@@ -4170,11 +4170,34 @@ const DEFAULT_WINDOW: i64 = 90;
 /// in it is trivially valid, and the findings the first taxonomy raises are that
 /// taxonomy's migration payload.
 ///
-/// **The run that computes a payload ignores the payload.** It is the diff
-/// between nothing and one, and a run that read the committed block would
-/// compute the diff between the debt already declared and one. Re-running would
-/// then propose an empty payload, and the second run would report the whole of
-/// the debt as new findings.
+/// **The run that computes a payload reads the payload, and the write adds to
+/// it.** It computed the diff between nothing and one until
+/// [#249](https://github.com/headwater-ai/headwater/issues/249), on the stated
+/// reasoning that a run which read the committed block would propose an empty
+/// payload on the second run, "and the second run would report the whole of the
+/// debt as new findings". That last step only follows where the write is a
+/// *replacement*: an empty payload written over the block is the block deleted,
+/// and the check after it reports everything the block was holding. The
+/// replacement was the defect. Once the write adds, an empty proposal writes
+/// nothing and the declared debt stands, which is what makes a second run and a
+/// third run cost nothing.
+///
+/// So this run holds three things it did not hold before, and each one is one of
+/// the three failures #249 separates:
+///
+/// - The checks run **against the declared block**, so a finding an open task
+///   already accounts for is not proposed a second time.
+/// - An identifier is minted **past every identifier the block declares**, by
+///   the same code in the run that prints a proposal and the run that writes
+///   one, so the two cannot disagree.
+/// - The write **merges** into the declared `tasks` and says on standard output
+///   what it did to the block that was there. `taxonomy resolve` is the
+///   precedent and prints `carried the adoption block through, 1 task`.
+///
+/// A block this engine cannot merge into stops the write rather than replacing
+/// it, for the reason `resolve` refuses an unreadable lock: a rewrite there
+/// discards an owner, an expiry and every pair, and cannot say what it
+/// discarded.
 ///
 /// It writes nothing without `--write`. A payload is a commitment with a name
 /// and a date on it, so it is printed for a person to read before it is a file
@@ -4200,6 +4223,11 @@ fn infer(
         ));
     }
 
+    // The one authored part of the lock, read before anything is computed. It
+    // decides three things below: which findings are already accounted for,
+    // which identifiers are taken, and what the write adds to.
+    let declared = loaded.bound.adoption.clone();
+
     let run = headwater_check::run(
         &loaded.census,
         &loaded.graph,
@@ -4210,7 +4238,7 @@ fn infer(
             relations: &loaded.relations,
             config: &loaded.config,
             register: &loaded.register,
-            adoption: None,
+            adoption: declared.as_ref(),
             source: headwater_lock::LOCK,
         },
         &ctx,
@@ -4247,18 +4275,42 @@ fn infer(
             (None, false) => "TODO name a person or a team".to_string(),
         };
 
+    // Identifiers the block already declares, read off the block as written
+    // rather than through `adoption::read`. A task that fails to parse still
+    // holds its identifier, and a run that minted over it would write a lock
+    // naming one task twice.
+    let mut taken = claimed(declared.as_ref());
+    // Held before anything is minted into `taken`, because the report names
+    // what was there and `mint` appends to the same list.
+    let named = taken.clone();
+    // Counted off the sequence rather than off the identifiers, because a task
+    // that names no `id` is still a task in the block and still something a
+    // write adds beside. The two numbers differ exactly where a task is
+    // malformed, and reporting the identifier count as the task count would
+    // undercount what is at risk.
+    let standing = standing(declared.as_ref());
+
     let mut payload = String::new();
     payload.push_str("tasks:\n");
-    for (index, (rule, held)) in tasks.iter().enumerate() {
-        payload.push_str(&format!("  - id: AD-{}\n", index + 1));
+    for (rule, held) in &tasks {
+        payload.push_str(&format!("  - id: {}\n", mint(&mut taken)));
         payload.push_str(&format!(
             "    statement: {}\n",
             quoted(&format!(
-                "{} {} of {rule}, raised when this taxonomy first reached this corpus",
+                "{} {} of {rule}, {}",
                 held.len(),
                 match held.len() {
                     1 => "finding",
                     _ => "findings",
+                },
+                match standing {
+                    // The wording of first contact, which is what Q12 makes
+                    // this verb about.
+                    0 => "raised when this taxonomy first reached this corpus",
+                    // And what is true instead once a block is there. The
+                    // corpus has met this taxonomy already, and these are the
+                    // findings no task the lock declares accounts for.
+                    _ => "held by no task this lock declared",
                 }
             ))
         ));
@@ -4278,8 +4330,44 @@ fn infer(
     }
 
     let pairs: usize = payload.matches("      - {path: ").count();
+    // Said in every run, before anything else this verb prints, and said the
+    // same whether the run writes or not. A reader who is about to hand this
+    // verb a `--write` is a reader who needs to know there is something there
+    // to write beside.
+    match standing {
+        0 => println!("the lock declares no adoption block, so this run writes the first one"),
+        _ => {
+            println!(
+                "the lock declares {standing} adoption {}, and a run with --write adds beside {}",
+                match standing {
+                    1 => "task",
+                    _ => "tasks",
+                },
+                match standing {
+                    1 => "it",
+                    _ => "them",
+                }
+            );
+            if !named.is_empty() {
+                println!("  {}", named.join(", "));
+            }
+            if named.len() < standing {
+                println!(
+                    "  and {} that name no `id`, which `headwater check` refuses and this run \
+                     carries through as it found them",
+                    standing - named.len()
+                );
+            }
+        }
+    }
     match tasks.is_empty() {
-        true => println!("no finding, so no debt to declare"),
+        true => match standing {
+            0 => println!("no finding, so no debt to declare"),
+            _ => println!(
+                "no finding this run raised is outside those tasks, so there is no new debt to \
+                 declare"
+            ),
+        },
         false => println!(
             "{pairs} pairs of debt, in {} {}, expiring {until}",
             tasks.len(),
@@ -4411,13 +4499,32 @@ fn infer(
     // same result as a taxonomy that touches nothing. Those are the two
     // outcomes of first contact and they are opposite ones.
     if tasks.is_empty() {
-        println!("\nthis corpus raises no finding against this taxonomy, so it declares no debt");
-        if !unexplained.is_empty() {
-            println!(
-                "  read that with the {} unclassified files above. A taxonomy that classifies \
-                 nothing raises nothing",
-                unexplained.len()
-            );
+        match standing {
+            0 => {
+                println!(
+                    "\nthis corpus raises no finding against this taxonomy, so it declares no debt"
+                );
+                if !unexplained.is_empty() {
+                    println!(
+                        "  read that with the {} unclassified files above. A taxonomy that \
+                         classifies nothing raises nothing",
+                        unexplained.len()
+                    );
+                }
+            }
+            // The idempotent run. There is nothing to add, so nothing is
+            // written and the declared block is reported untouched rather than
+            // left unmentioned. A run that said nothing here is a run a reader
+            // cannot tell from one that wrote.
+            _ => println!(
+                "\nevery finding this run raised is held by a task the lock declares, so there is \
+                 nothing to add. {} is left as it was, with its {standing} {}",
+                headwater_lock::LOCK,
+                match standing {
+                    1 => "task",
+                    _ => "tasks",
+                }
+            ),
         }
         return ExitCode::SUCCESS;
     }
@@ -4432,7 +4539,7 @@ fn infer(
         return ExitCode::SUCCESS;
     }
 
-    let block = match headwater_yaml::load(&payload) {
+    let fresh = match headwater_yaml::load(&payload) {
         Ok(node) => match node.value.as_map() {
             Some(map) => map.clone(),
             None => return fail("the payload this run built is not a mapping, which is a defect"),
@@ -4442,6 +4549,25 @@ fn infer(
                 "the payload this run built does not load: {}",
                 headwater_yaml::error::render(&errors)
             ))
+        }
+    };
+
+    // The merge, and the one state it refuses. Everything above this line is a
+    // proposal; this is where a file that somebody authored is at risk.
+    let block = match merged(declared.as_ref(), &fresh) {
+        Ok(block) => block,
+        Err(why) => {
+            eprintln!(
+                "headwater: {} declares an adoption block this run cannot add to",
+                headwater_lock::LOCK
+            );
+            eprintln!("  {why}");
+            eprintln!(
+                "  A payload written over it would discard an owner, an expiry and every pair, \
+                 and this run cannot say what it discarded. Repair the block, or remove it to \
+                 write a first payload"
+            );
+            return ExitCode::FAILURE;
         }
     };
 
@@ -4482,7 +4608,125 @@ fn infer(
     }
     println!("\nwrote the payload into {}", headwater_lock::LOCK);
     println!("  {pairs} pairs, owner {owner}, until {until}");
+    // What became of the block that was there, in the run that did it. The
+    // count is of tasks rather than of pairs, because a task is the unit a
+    // person owns and dates.
+    match declared.as_ref() {
+        Some(block) => println!(
+            "  {}, and added {} beside {}",
+            carried(block),
+            match tasks.len() {
+                1 => "1 task".to_string(),
+                other => format!("{other} tasks"),
+            },
+            match standing {
+                1 => "it",
+                _ => "them",
+            }
+        ),
+        None => println!("  there was no adoption block, and this payload is the whole of it"),
+    }
     ExitCode::SUCCESS
+}
+
+/// The task identifiers an authored block declares, as written.
+///
+/// Read off the block rather than through [`headwater_check::adoption::read`],
+/// which refuses a task it cannot parse. A refused task still occupies its
+/// identifier, and a run that minted over it would write a lock naming one task
+/// twice — which is the defect this function exists to stop, one layer down.
+fn claimed(block: Option<&headwater_yaml::Mapping>) -> Vec<String> {
+    block
+        .and_then(|block| block.get("tasks"))
+        .and_then(|node| node.value.as_seq())
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| item.value.as_map())
+                .filter_map(|task| task.get("id"))
+                .filter_map(|node| node.value.as_scalar())
+                .map(|scalar| scalar.text.clone())
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// How many tasks an authored block declares, whatever state each one is in.
+///
+/// The count a write reports as carried, and the count [`carried`] renders. A
+/// task that fails to parse is one of these and is not one of [`claimed`].
+fn standing(block: Option<&headwater_yaml::Mapping>) -> usize {
+    block
+        .and_then(|block| block.get("tasks"))
+        .and_then(|node| node.value.as_seq())
+        .map(|items| items.len())
+        .unwrap_or_default()
+}
+
+/// The next `AD-` identifier no name in `taken` holds, added to `taken`.
+///
+/// One function, called by the run that prints a proposal and by the run that
+/// writes one, which is what makes #249's fourth clause true by construction
+/// rather than by two implementations agreeing.
+fn mint(taken: &mut Vec<String>) -> String {
+    let mut counter = 1;
+    loop {
+        let id = format!("AD-{counter}");
+        if !taken.iter().any(|held| held == &id) {
+            taken.push(id.clone());
+            return id;
+        }
+        counter += 1;
+    }
+}
+
+/// The declared block with this run's tasks added to it.
+///
+/// The declared items are carried as they were loaded rather than re-rendered
+/// from a reading of them, so a key this engine does not know about survives a
+/// merge. Where there is no block, the fresh payload is the whole of it.
+///
+/// The error is the state where a merge is not possible: a block that declares
+/// no `tasks` sequence. It is returned rather than resolved by replacing the
+/// block, because replacing it is the defect.
+fn merged(
+    declared: Option<&headwater_yaml::Mapping>,
+    fresh: &headwater_yaml::Mapping,
+) -> Result<headwater_yaml::Mapping, String> {
+    let Some(declared) = declared else {
+        return Ok(fresh.clone());
+    };
+    let Some(entry) = declared.entry("tasks") else {
+        return Err("it declares no `tasks` key".to_string());
+    };
+    let Some(standing) = entry.value.value.as_seq() else {
+        return Err(format!(
+            "its `tasks` is {} rather than a sequence",
+            entry.value.value.kind_name()
+        ));
+    };
+    let added = fresh
+        .get("tasks")
+        .and_then(|node| node.value.as_seq())
+        .ok_or_else(|| "the payload this run built declares no `tasks` sequence".to_string())?;
+
+    let mut items = standing.to_vec();
+    items.extend(added.iter().cloned());
+    let entries = declared
+        .entries()
+        .iter()
+        .map(|entry| match entry.key.value == "tasks" {
+            true => headwater_yaml::Entry {
+                key: entry.key.clone(),
+                value: headwater_yaml::Spanned::new(
+                    headwater_yaml::Value::Seq(items.clone()),
+                    entry.value.span,
+                ),
+            },
+            false => entry.clone(),
+        })
+        .collect();
+    Ok(headwater_yaml::Mapping::new(entries))
 }
 
 /// `headwater init`: the consumer declaration and the overlay, scaffolded.

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-//! What `taxonomy resolve` does to the one authored block of the lock.
+//! What `taxonomy resolve` and `infer --write` do to the one authored block of
+//! the lock.
 //!
 //! # The defect this target exists for
 //!
@@ -37,6 +38,22 @@
 //!   format number exists.
 //! - **No lock at all.** A first resolve writes one. That is the case the
 //!   fall-back exists for and it stays.
+//!
+//! # The same class, one verb along: `headwater infer --write`
+//!
+//! [#249](https://github.com/headwater-ai/headwater/issues/249) measured the
+//! same loss on the verb `CLAUDE.md` names as *the* escape hatch for debt.
+//! `infer --write` built a payload from a counter that starts at `AD-1` and
+//! reads nothing, and handed it to the lock writer as the whole `adoption`
+//! block. A corpus that already declared a task lost it — its statement, its
+//! owner and its expiry — at exit 0, with nothing on either stream.
+//!
+//! Three of the four cases below are the three separable failures, and the
+//! fourth is the refusal that replaces none of them. Each one runs the built
+//! binary over a scratch repository **whose lock declares a task and whose
+//! corpus raises a finding**. Both halves are needed: over an empty `adoption`
+//! block no case can tell a merge from a replacement, and over a corpus that
+//! raises nothing the verb writes no payload at all.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -125,12 +142,51 @@ impl Root {
     /// It goes in front of the `resolved` body, which is where `render` puts
     /// one, so the file the cases start from is the file a real resolve writes.
     fn author(&self) {
+        self.author_as("AD-9");
+    }
+
+    /// The same block under an identifier the case chooses.
+    ///
+    /// `AD-1` is the identifier a counter that reads nothing mints first, so a
+    /// case that wants the collision asks for it by name rather than relying on
+    /// which identifier the fixture happens to carry.
+    fn author_as(&self, id: &str) {
         let text = self.text();
         assert!(
             !text.contains("\nadoption:\n"),
             "the fixture starts with no authored block"
         );
-        self.write(&text.replacen("\nresolved:\n", &format!("{PAYLOAD}\nresolved:\n"), 1));
+        let payload = PAYLOAD.replace("AD-9", id);
+        self.write(&text.replacen("\nresolved:\n", &format!("{payload}\nresolved:\n"), 1));
+    }
+
+    /// A corpus of one document that raises exactly one finding.
+    ///
+    /// The document is scaffolded rather than written out here, so a taxonomy
+    /// that adds a required facet fails this fixture rather than typing the
+    /// document as nothing and raising no finding — which is the shape in which
+    /// a case passes for the opposite of its reason.
+    fn corpus(&self) {
+        let made = self.run(&["new", "design_spec", "--title", "A scratch part"]);
+        assert_eq!(
+            made.code,
+            Some(0),
+            "the corpus document scaffolds\n{}{}",
+            made.out,
+            made.err
+        );
+        let at = std::fs::read_dir(self.at.join("docs/spec"))
+            .expect("the spec shelf is there")
+            .map(|entry| entry.expect("the entry reads").path())
+            .next()
+            .expect("the scaffolder wrote a document");
+        let mut text = std::fs::read_to_string(&at).expect("the document reads");
+        text.push_str(
+            "\n## A scratch section\n\nThis document is scratch and it does not meet the \
+             controlled language, because the sentence is deliberately long enough to pass the \
+             twenty five word limit that the regime sets for a sentence of running prose.\n",
+        );
+        std::fs::write(&at, text).expect("the document writes");
     }
 
     fn run(&self, arguments: &[&str]) -> Ran {
@@ -300,4 +356,270 @@ fn a_lock_a_newer_engine_wrote_stops_a_resolve() {
         resolved.err
     );
     assert_eq!(root.text(), ahead, "the file the run refused is untouched");
+}
+
+/// The task identifiers the `adoption` block declares, in file order.
+///
+/// Scoped to that block on purpose. The resolved taxonomy below it states `id`
+/// keys of its own, and a reading that swept the whole file would count a
+/// control identifier as an adoption task.
+fn ids(text: &str) -> Vec<String> {
+    let block = match text.split_once("\nadoption:\n") {
+        Some((_, rest)) => rest.split("\nresolved:\n").next().unwrap_or_default(),
+        None => return Vec::new(),
+    };
+    block
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("- id: "))
+        .map(|id| id.trim().to_string())
+        .collect()
+}
+
+/// An expiry no run of this suite reaches, so no case here reads a clock.
+const FAR: &str = "2035-01-01";
+
+/// #249's first failure: a task the lock declared is gone after the write.
+///
+/// This is the data loss. The fixture's task names an owner and an expiry that
+/// no source and no run can reconstruct, which is the whole reason the block is
+/// the authored part of a generated file.
+#[test]
+fn an_infer_write_keeps_every_task_the_lock_already_declared() {
+    let root = Root::new("infer-keeps-the-task");
+    root.author();
+    root.corpus();
+
+    let ran = root.run(&[
+        "infer",
+        "--owner",
+        "a parent test",
+        "--until",
+        FAR,
+        "--write",
+    ]);
+    assert_eq!(
+        ran.code,
+        Some(0),
+        "the documented remedy runs\n{}{}",
+        ran.out,
+        ran.err
+    );
+
+    let after = root.text();
+    assert!(
+        after.contains("id: AD-9")
+            && after.contains("owner: \"a person\"")
+            && after.contains("until: 2027-06-30"),
+        "the task the lock declared survived `infer --write`:\n{after}"
+    );
+    // And the payload landed. A run that refused to write anything would pass
+    // the assertion above for the opposite reason.
+    assert!(
+        after.contains("owner: \"a parent test\""),
+        "the new payload is in the lock as well:\n{after}"
+    );
+
+    // #249's third failure: the verb reported what it wrote and never what it
+    // did to the block that was there. `taxonomy resolve` is the precedent.
+    assert!(
+        ran.out
+            .contains("carried the adoption block through, 1 task"),
+        "standard output says what became of the authored block:\n{}",
+        ran.out
+    );
+}
+
+/// #249's second failure: the identifier is minted from a counter that reads
+/// nothing, so it collides with whatever the lock already holds.
+///
+/// The proposal is the arm that matters as much as the write, because #249's
+/// fourth clause is that the two cannot disagree: the identifier printed by a
+/// run without `--write` is the identifier the write uses.
+#[test]
+fn the_identifier_a_run_mints_is_one_no_declared_task_holds() {
+    let root = Root::new("identifier-not-taken");
+    root.author_as("AD-1");
+    root.corpus();
+
+    let proposed = root.run(&["infer", "--until", FAR]);
+    assert_eq!(
+        proposed.code,
+        Some(0),
+        "the proposal runs\n{}{}",
+        proposed.out,
+        proposed.err
+    );
+    // Vacuity guard: a taxonomy under which this document raises nothing would
+    // pass every assertion below by proposing nothing at all.
+    assert!(
+        proposed
+            .out
+            .contains("the payload, which --write puts in the lock"),
+        "the corpus of this fixture raises a finding to declare:\n{}",
+        proposed.out
+    );
+    assert!(
+        !proposed.out.contains("- id: AD-1\n"),
+        "the proposal mints no identifier the lock already declares:\n{}",
+        proposed.out
+    );
+
+    let ran = root.run(&[
+        "infer",
+        "--owner",
+        "a parent test",
+        "--until",
+        FAR,
+        "--write",
+    ]);
+    assert_eq!(ran.code, Some(0), "the write runs\n{}{}", ran.out, ran.err);
+    let after = ids(&root.text());
+    assert_eq!(
+        after.len(),
+        2,
+        "the write added a task beside the declared one: {after:?}"
+    );
+    assert_eq!(after[0], "AD-1", "the declared task keeps its identifier");
+    assert_ne!(
+        after[1], "AD-1",
+        "and the new one does not take it: {after:?}"
+    );
+
+    // The two runs agree. The proposal printed the identifier the write used.
+    assert!(
+        proposed.out.contains(&format!("- id: {}\n", after[1])),
+        "the proposal printed {}, which is what the write used:\n{}",
+        after[1],
+        proposed.out
+    );
+}
+
+/// A second and a third `--write` add nothing and remove nothing.
+///
+/// This is the case that separates a fix from a half-fix. A verb that merges
+/// but re-proposes the debt it already declared grows the block without bound,
+/// and a verb that refuses the second run after clobbering on the first passes
+/// every single-run assertion above.
+#[test]
+fn a_second_and_a_third_infer_write_change_nothing() {
+    let root = Root::new("infer-run-twice");
+    root.author();
+    root.corpus();
+
+    let first = root.run(&[
+        "infer",
+        "--owner",
+        "a parent test",
+        "--until",
+        FAR,
+        "--write",
+    ]);
+    assert_eq!(
+        first.code,
+        Some(0),
+        "the first write runs\n{}{}",
+        first.out,
+        first.err
+    );
+    let after_first = ids(&root.text());
+    assert_eq!(
+        after_first.len(),
+        2,
+        "the first write added one task beside the declared one: {after_first:?}"
+    );
+
+    let second = root.run(&[
+        "infer",
+        "--owner",
+        "a parent test",
+        "--until",
+        FAR,
+        "--write",
+    ]);
+    assert_eq!(
+        second.code,
+        Some(0),
+        "the second write runs\n{}{}",
+        second.out,
+        second.err
+    );
+    assert_eq!(
+        ids(&root.text()),
+        after_first,
+        "the second run declares nothing new and removes nothing\n{}",
+        second.out
+    );
+
+    let third = root.run(&[
+        "infer",
+        "--owner",
+        "a parent test",
+        "--until",
+        FAR,
+        "--write",
+    ]);
+    assert_eq!(
+        third.code,
+        Some(0),
+        "the third write runs\n{}{}",
+        third.out,
+        third.err
+    );
+    assert_eq!(
+        ids(&root.text()),
+        after_first,
+        "and so does the third\n{}",
+        third.out
+    );
+
+    let after = root.text();
+    assert!(
+        after.contains("id: AD-9") && after.contains("until: 2027-06-30"),
+        "the declared task survived all three runs:\n{after}"
+    );
+}
+
+/// A block this run cannot add to stops the write rather than replacing it.
+///
+/// The state is a block with no `tasks` sequence, which `headwater check`
+/// already refuses to read as debt. A run that resolved the refusal by writing
+/// its own block over it would be the defect of #249 wearing an error message,
+/// so the file is left exactly as it was.
+#[test]
+fn an_adoption_block_with_no_tasks_stops_an_infer_write() {
+    let root = Root::new("no-tasks-sequence");
+    root.author();
+    root.corpus();
+    let broken = root.text().replacen(
+        PAYLOAD,
+        "\nadoption:\n  note: this block declares no tasks\n",
+        1,
+    );
+    assert!(
+        broken.contains("\nadoption:\n") && !broken.contains("tasks:"),
+        "the block is there and its tasks sequence is not:\n{broken}"
+    );
+    root.write(&broken);
+
+    let ran = root.run(&[
+        "infer",
+        "--owner",
+        "a parent test",
+        "--until",
+        FAR,
+        "--write",
+    ]);
+    assert_ne!(
+        ran.code,
+        Some(0),
+        "a block this run cannot add to stops the write\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert_eq!(root.text(), broken, "the file the run refused is untouched");
+    assert!(
+        ran.err.contains("adoption"),
+        "the refusal names what a write would have discarded:\n{}",
+        ran.err
+    );
 }
