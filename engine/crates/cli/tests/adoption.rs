@@ -388,7 +388,14 @@ fn an_infer_write_keeps_every_task_the_lock_already_declared() {
     root.author();
     root.corpus();
 
-    let ran = root.run(&["infer", "--owner", "a parent test", "--until", FAR, "--write"]);
+    let ran = root.run(&[
+        "infer",
+        "--owner",
+        "a parent test",
+        "--until",
+        FAR,
+        "--write",
+    ]);
     assert_eq!(
         ran.code,
         Some(0),
@@ -414,7 +421,8 @@ fn an_infer_write_keeps_every_task_the_lock_already_declared() {
     // #249's third failure: the verb reported what it wrote and never what it
     // did to the block that was there. `taxonomy resolve` is the precedent.
     assert!(
-        ran.out.contains("carried the adoption block through, 1 task"),
+        ran.out
+            .contains("carried the adoption block through, 1 task"),
         "standard output says what became of the authored block:\n{}",
         ran.out
     );
@@ -443,7 +451,9 @@ fn the_identifier_a_run_mints_is_one_no_declared_task_holds() {
     // Vacuity guard: a taxonomy under which this document raises nothing would
     // pass every assertion below by proposing nothing at all.
     assert!(
-        proposed.out.contains("the payload, which --write puts in the lock"),
+        proposed
+            .out
+            .contains("the payload, which --write puts in the lock"),
         "the corpus of this fixture raises a finding to declare:\n{}",
         proposed.out
     );
@@ -453,14 +463,15 @@ fn the_identifier_a_run_mints_is_one_no_declared_task_holds() {
         proposed.out
     );
 
-    let ran = root.run(&["infer", "--owner", "a parent test", "--until", FAR, "--write"]);
-    assert_eq!(
-        ran.code,
-        Some(0),
-        "the write runs\n{}{}",
-        ran.out,
-        ran.err
-    );
+    let ran = root.run(&[
+        "infer",
+        "--owner",
+        "a parent test",
+        "--until",
+        FAR,
+        "--write",
+    ]);
+    assert_eq!(ran.code, Some(0), "the write runs\n{}{}", ran.out, ran.err);
     let after = ids(&root.text());
     assert_eq!(
         after.len(),
@@ -468,7 +479,10 @@ fn the_identifier_a_run_mints_is_one_no_declared_task_holds() {
         "the write added a task beside the declared one: {after:?}"
     );
     assert_eq!(after[0], "AD-1", "the declared task keeps its identifier");
-    assert_ne!(after[1], "AD-1", "and the new one does not take it: {after:?}");
+    assert_ne!(
+        after[1], "AD-1",
+        "and the new one does not take it: {after:?}"
+    );
 
     // The two runs agree. The proposal printed the identifier the write used.
     assert!(
@@ -491,7 +505,14 @@ fn a_second_and_a_third_infer_write_change_nothing() {
     root.author();
     root.corpus();
 
-    let first = root.run(&["infer", "--owner", "a parent test", "--until", FAR, "--write"]);
+    let first = root.run(&[
+        "infer",
+        "--owner",
+        "a parent test",
+        "--until",
+        FAR,
+        "--write",
+    ]);
     assert_eq!(
         first.code,
         Some(0),
@@ -506,7 +527,14 @@ fn a_second_and_a_third_infer_write_change_nothing() {
         "the first write added one task beside the declared one: {after_first:?}"
     );
 
-    let second = root.run(&["infer", "--owner", "a parent test", "--until", FAR, "--write"]);
+    let second = root.run(&[
+        "infer",
+        "--owner",
+        "a parent test",
+        "--until",
+        FAR,
+        "--write",
+    ]);
     assert_eq!(
         second.code,
         Some(0),
@@ -521,7 +549,14 @@ fn a_second_and_a_third_infer_write_change_nothing() {
         second.out
     );
 
-    let third = root.run(&["infer", "--owner", "a parent test", "--until", FAR, "--write"]);
+    let third = root.run(&[
+        "infer",
+        "--owner",
+        "a parent test",
+        "--until",
+        FAR,
+        "--write",
+    ]);
     assert_eq!(
         third.code,
         Some(0),
@@ -565,7 +600,14 @@ fn an_adoption_block_with_no_tasks_stops_an_infer_write() {
     );
     root.write(&broken);
 
-    let ran = root.run(&["infer", "--owner", "a parent test", "--until", FAR, "--write"]);
+    let ran = root.run(&[
+        "infer",
+        "--owner",
+        "a parent test",
+        "--until",
+        FAR,
+        "--write",
+    ]);
     assert_ne!(
         ran.code,
         Some(0),

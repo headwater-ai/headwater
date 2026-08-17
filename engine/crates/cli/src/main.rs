@@ -4290,7 +4290,7 @@ fn infer(
 
     let mut payload = String::new();
     payload.push_str("tasks:\n");
-    for (rule, held) in tasks.iter() {
+    for (rule, held) in &tasks {
         payload.push_str(&format!("  - id: {}\n", mint(&mut taken)));
         payload.push_str(&format!(
             "    statement: {}\n",
@@ -4555,7 +4555,10 @@ fn infer(
     let block = match merged(declared.as_ref(), &fresh) {
         Ok(block) => block,
         Err(why) => {
-            eprintln!("headwater: {} declares an adoption block this run cannot add to", headwater_lock::LOCK);
+            eprintln!(
+                "headwater: {} declares an adoption block this run cannot add to",
+                headwater_lock::LOCK
+            );
             eprintln!("  {why}");
             eprintln!(
                 "  A payload written over it would discard an owner, an expiry and every pair, \
