@@ -184,6 +184,22 @@ def main():
         whole('step 4: the first refusal', result.stdout + result.stderr, 8)
         assert_true('step 4: exit status 1', result.returncode == 1)
 
+        # One `match` arm of `headwater init` emits two messages under the same
+        # condition: the report line that step 2 above compares whole, and the
+        # comment it writes above `version: 0.0.0`. #276 found them drifted apart
+        # — the printed one naming two routes and the written one naming a route
+        # an adopter cannot take — because the printed one is held here and the
+        # written one was held by nothing. The page now says what the comment
+        # says, so these hold the half that had no reader. Their proper home is a
+        # test of the CLI crate, which has none: #174.
+        declaration = open(os.path.join(cwd['at'], '.headwater/taxonomy.yml')).read()
+        for claim, token in [
+                ('the copy route', 'Copy a package directory into `packages/`'),
+                ('the vendor route', '`headwater taxonomy vendor <dir>`'),
+                ('where the version comes from',
+                 'the version that the package itself declares')]:
+            assert_true('step 4: what init wrote names ' + claim, token in declaration)
+
         # Step 5. The tutorial names the line to change rather than a command.
         path = os.path.join(cwd['at'], '.headwater/taxonomy.yml')
         source = open(path).read()

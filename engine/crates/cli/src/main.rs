@@ -4800,9 +4800,21 @@ taxonomy:
     ));
     match &found {
         Some(version) => declaration_text.push_str(&format!("  version: {version}\n")),
+        // **The same ruling as the printed line below, and for the same reason.**
+        // This arm writes a second message under the identical condition, and it
+        // said "Vendor the package, then pin the version it declares" until
+        // [#276](https://github.com/headwater-ai/headwater/issues/276). That was
+        // the single-route wording, and it was worse here than in the report: an
+        // adopter who copied a package directory cannot vendor, and the version
+        // they pin comes from the package they copied rather than from an
+        // artifact. So it named a dead end in the file they then edit and commit.
+        // It names both routes now, and says where the number comes from either
+        // way.
         None => declaration_text.push_str(
             "  # INTERVIEW: no package of this name is under `packages/`, and nothing in this\n\
-             \x20 # engine fetches one. Vendor the package, then pin the version it declares.\n\
+             \x20 # engine fetches one. Copy a package directory into `packages/`, or run\n\
+             \x20 # `headwater taxonomy vendor <dir>` on a published artifact. Either way, pin\n\
+             \x20 # the version that the package itself declares.\n\
              \x20 version: 0.0.0\n",
         ),
     }

@@ -131,7 +131,7 @@ headwater: the taxonomy did not resolve, so no lock is possible
 
 **Check.** `echo $?` prints `1`.
 
-`headwater init` wrote `version: 0.0.0`, because it had no package in front of it to read a number from. A refusal here is the design and not a fault. A **lock** is a validated taxonomy, so a taxonomy that does not validate produces no lock at all.
+`headwater init` wrote `version: 0.0.0`, because it had no package in front of it to read a number from. The comment it left above that line names the two ways a package arrives, a copy or a vendored artifact. It also says the version comes from the package itself, which is where the number in the next step comes from. A refusal here is the design and not a fault. A **lock** is a validated taxonomy, so a taxonomy that does not validate produces no lock at all.
 
 ### Step 5 — Pin the version, and meet the second refusal
 
