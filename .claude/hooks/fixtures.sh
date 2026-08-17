@@ -130,8 +130,126 @@ if [ -x "$engine" ]; then
     expect 'a path under a governed directory is silent, which HW-OBL-0104 holds' \
         write.sh 0 '' \
         '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/nothing-governs-this.sh"}}'
+
+    # An `interface_contract` over a crate. This is the same position reaching a
+    # document whose subject is the code being edited rather than a document
+    # that happens to name the file.
+    expect 'an edit to a crate a contract governs names the contract' \
+        write.sh 0 'docs/interfaces/headwater-check.md' \
+        '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}'
+
+    # The parenthesized span, and not the bare words. The contract's summary
+    # holds `headwater check` in its own prose, so a case asserting that alone
+    # would pass whether the name was read or not. Only `Pointer::render` writes
+    # the parentheses, and what it puts inside them is the facet in the `name`
+    # role.
+    expect 'the contract is named by the command it describes' \
+        write.sh 0 '(headwater check)' \
+        '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}'
+
+    # Two contracts govern `main.rs`, because that file holds the flag parsing
+    # and the exit statuses of every verb. Both are named. The fan-in is a fact
+    # about the file rather than about the relation, and naming one of the two
+    # would be a rule this position does not have.
+    expect 'a file two contracts govern names both of them' \
+        write.sh 0 'docs/interfaces/headwater-sweep.md' \
+        '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/cli/src/main.rs"}}'
+
+    # HW-OBL-0104 over a crate. `runner.rs` sits in the directory of a file a
+    # contract governs and no edge reaches it, so it answers nothing. This is
+    # the same silence the case above records, at the place a reader is most
+    # likely to expect containment.
+    expect 'a file beside a governed crate file is silent, which HW-OBL-0104 holds' \
+        write.sh 0 '' \
+        '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/runner.rs"}}'
 else
     skip 'write.sh PostToolUse cases' 'no built engine'
+fi
+
+printf '\n# write.sh, on PostToolUse: it fails open, and the control says so\n'
+# Three sabotages, one per thing a hook cannot assume it has. Each one must let
+# the edit proceed: exit 0, and not one byte written.
+#
+# The trap this block is built around is that *silence is the ambient outcome*.
+# An edit proceeds when the hook is broken, when the hook is absent, when the
+# payload is malformed and when nothing governs the path, so a case that only
+# asserts silence passes without testing anything at all. Every sabotage below
+# therefore runs twice over one scratch root and one payload: once intact, where
+# the hook must name the contract, and once sabotaged, where it must say
+# nothing. The control is what makes the silence mean something, and a control
+# that goes quiet is reported as a failure of the case rather than of the hook.
+if [ -x "$engine" ]; then
+    # A root the sabotage can act on. The corpus is shared with the real tree by
+    # symlink, because a copy of it would be a second corpus that drifts, and
+    # `engine/crates` is shared too because a `code_path` anchor binds on the
+    # file existing. What is not shared is `engine/target/release`, which is the
+    # one directory a sabotage has to own.
+    open_root=$(mktemp -d "${TMPDIR:-/tmp}/headwater-failopen-XXXXXX")
+    for shared in docs packages .headwater .githooks .claude; do
+        [ -e "$root/$shared" ] && ln -s "$root/$shared" "$open_root/$shared"
+    done
+    mkdir -p "$open_root/engine/target/release" "$open_root/bin"
+    ln -s "$root/engine/crates" "$open_root/engine/crates"
+    open_payload='{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}'
+    deny_payload='{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"docs/obligations/9999-a-record-nobody-scaffolded.md"}}'
+
+    # Every case below runs against the scratch root and with the scratch `bin`
+    # ahead of the real one. Both are restored at the end of the block. The
+    # assignment is made here rather than in front of each call, because a
+    # variable assignment in front of a shell function persists in some shells
+    # and not in others, and a suite that leaked either one would run the cases
+    # after it against a root nobody chose.
+    real_path=$PATH
+    HEADWATER_HOOK_ROOT="$open_root"
+    PATH="$open_root/bin:$real_path"
+    export HEADWATER_HOOK_ROOT PATH
+
+    # One sabotage, twice: the control, then the broken run. The second argument
+    # runs between them and the third puts the root back. The arguments are read
+    # positionally rather than into names, because `expect` assigns to `name`
+    # and nothing here is local to a function.
+    fails_open() {
+        expect "the control for: $1" write.sh 0 '(headwater check)' "$open_payload"
+        eval "$2"
+        expect "$1" write.sh 0 '' "$open_payload"
+        eval "$3"
+    }
+
+    cp "$engine" "$open_root/engine/target/release/headwater"
+
+    fails_open 'no built engine at all, and the edit proceeds in silence' \
+        'rm -f "$open_root/engine/target/release/headwater"' \
+        'cp "$engine" "$open_root/engine/target/release/headwater"'
+
+    fails_open 'a built engine nobody may execute, and the edit proceeds in silence' \
+        'chmod a-x "$open_root/engine/target/release/headwater"' \
+        'chmod u+x "$open_root/engine/target/release/headwater"'
+
+    # `python3` is not the engine. The hook reads the harness's own wire format
+    # with it and reaches no verb without it, so an interpreter that answers
+    # non-zero has to be the same silence as a missing binary.
+    fails_open 'a python3 that answers non-zero, and the edit proceeds in silence' \
+        'printf "#!/bin/sh\nexit 1\n" > "$open_root/bin/python3"; chmod u+x "$open_root/bin/python3"' \
+        'rm -f "$open_root/bin/python3"'
+
+    # The refusal position on the same terms, and this is the case that would
+    # make a clean clone unusable if it were ever inverted: a `PreToolUse` that
+    # cannot read its input has to let the write land rather than deny it. The
+    # control is the deny, over the same root and the same payload.
+    expect 'the control for: a PreToolUse that cannot read its input' \
+        write.sh 0 '"permissionDecision":"deny"' "$deny_payload"
+    printf '#!/bin/sh\nexit 1\n' > "$open_root/bin/python3"
+    chmod u+x "$open_root/bin/python3"
+    expect 'a PreToolUse that cannot read its input denies nothing' \
+        write.sh 0 '' "$deny_payload"
+    rm -f "$open_root/bin/python3"
+
+    PATH=$real_path
+    HEADWATER_HOOK_ROOT="$root"
+    export HEADWATER_HOOK_ROOT PATH
+    rm -rf "$open_root"
+else
+    skip 'write.sh fail-open cases' 'no built engine'
 fi
 
 printf '\n# review.sh, on Stop\n'

@@ -268,6 +268,74 @@ fn a_pointer_carries_the_declared_summary_and_no_body() {
     }
 }
 
+/// A pointer says what the document is called, and it reads that from the facet
+/// in the `name` role rather than from the path or the identifier.
+///
+/// The distinction is the whole point of the field. A path and an identifier
+/// are conventions an author followed, and a reader who is told
+/// `docs/interfaces/headwater-check.md` has been told a file name. The `name`
+/// role is a declaration, and for an `interface_contract` its value is the
+/// command a caller types.
+///
+/// The second assertion is the one that would catch a name derived from the
+/// path: `headwater check` carries a space where the file name carries a dash,
+/// so a derivation from either string cannot produce it.
+#[test]
+fn a_pointer_names_the_document_from_the_facet_in_the_name_role() {
+    let built = this_repository();
+    let surface = built.surface();
+    for document in surface.documents() {
+        let pointer = surface.pointer(&document);
+        assert_eq!(pointer.name, surface.name(&document), "{}", document.path);
+    }
+
+    let contract = surface
+        .find("docs/interfaces/headwater-check.md")
+        .expect("the contract for `headwater check`");
+    let pointer = surface.pointer(&contract);
+    assert_eq!(pointer.name.as_deref(), Some("headwater check"));
+    assert!(
+        pointer.render().contains("(headwater check)"),
+        "{}",
+        pointer.render()
+    );
+}
+
+/// An edit to a crate a contract governs routes to that contract, and the route
+/// says which command the contract describes.
+///
+/// This is what the `PostToolUse` position of `.claude/hooks/write.sh` prints,
+/// asserted against the engine rather than against the hook, because the hook
+/// carries no rule of its own and this is the rule.
+///
+/// The assertion is not the substring `headwater check`, which the contract's
+/// own summary also holds and which would pass whether the name was read or
+/// not. It is the parenthesized form, which only [`Pointer::render`] writes.
+#[test]
+fn an_edit_to_a_governed_crate_routes_to_the_contract_and_names_its_verb() {
+    let built = this_repository();
+    let surface = built.surface();
+    let route = surface.route("engine/crates/check/src/lib.rs", Budget::default());
+    assert_eq!(
+        route.anchors,
+        vec!["engine/crates/check/src/lib.rs".to_string()],
+        "{}",
+        route.render()
+    );
+    let contract = route
+        .pointers
+        .iter()
+        .find(|pointer| pointer.path == "docs/interfaces/headwater-check.md")
+        .unwrap_or_else(|| panic!("{}", route.render()));
+    assert_eq!(contract.kind, "interface_contract");
+    assert_eq!(contract.name.as_deref(), Some("headwater check"));
+    assert!(
+        route.render().contains("(headwater check)"),
+        "{}",
+        route.render()
+    );
+}
+
 /// The route over this repository's own corpus finds its own specification.
 ///
 /// A read that never returns anything is indistinguishable from one that does
