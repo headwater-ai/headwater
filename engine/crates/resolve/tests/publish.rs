@@ -760,7 +760,10 @@ fn a_write_that_fails_takes_the_output_directory_and_what_it_made_to_reach_it() 
         message.contains("bundles"),
         "this case is not failing inside the write phase any more: {message}"
     );
-    assert!(!out.exists(), "the output directory is still there: {message}");
+    assert!(
+        !out.exists(),
+        "the output directory is still there: {message}"
+    );
     assert!(
         !nested.exists(),
         "the undo left the directories the run made to reach --out"

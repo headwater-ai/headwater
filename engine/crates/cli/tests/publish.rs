@@ -312,7 +312,10 @@ fn a_failed_write_leaves_neither_the_output_directory_nor_the_path_to_it() {
         message.contains("headwater: nothing was published"),
         "{message}"
     );
-    assert!(!out.exists(), "the output directory is still there: {message}");
+    assert!(
+        !out.exists(),
+        "the output directory is still there: {message}"
+    );
     assert!(
         !nested.exists(),
         "the run that published nothing left the directories it made: {message}"

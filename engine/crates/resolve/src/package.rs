@@ -678,9 +678,11 @@ mod found {
                     Err(error) if error.kind() == ErrorKind::NotFound => {
                         Ok(Found(State::Absent(absent_above(out))))
                     }
-                    Ok(_) => Err("there is a symlink at the output path and it leads nowhere. \
+                    Ok(_) => Err(
+                        "there is a symlink at the output path and it leads nowhere. \
                                   Publish into a path that does not exist yet"
-                        .to_string()),
+                            .to_string(),
+                    ),
                     Err(error) => Err(format!("the output path cannot be read: {error}")),
                 }
             }
