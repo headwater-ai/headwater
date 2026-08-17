@@ -21,7 +21,7 @@ lock:
   version: 3.2.0
   sources:
     - path: packages/headwater-standard/taxonomy.yml
-      digest: sha256:c8f6c2ab8c5b34872dbabb158fdec5851f4485b162bee1737ebd3fbc174fc9bd
+      digest: sha256:0921aefe5c73e9738084ed6a070b572a29f9d7c0b3df8c526ac185fae9408d0d
     - path: docs/taxonomies/design-spec/bundle.yml
       digest: sha256:0dd73708d7200b7b02389a7dc8811ddc80ab61ece7892efd7391cdf504d6bda0
     - path: docs/taxonomies/decision-record/bundle.yml

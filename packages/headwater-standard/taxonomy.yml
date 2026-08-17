@@ -53,6 +53,12 @@ taxonomy: headwater/standard
 # longer declares a namespace, so a consumer that declared none resolves to a
 # refusal until it does, and the pattern renders the namespace first, so an
 # identifier already minted under 1.0.0 no longer matches.
+#
+# This number stands in two files. `package.yml` beside this one declares it as
+# well, and that file is the one every consumer-facing reader takes it from.
+# The two are required to agree: `resolve::package::agrees` refuses the package
+# on load where they differ, and it names both files and both numbers. A bump
+# moves both or neither. `package.yml` states why the value is declared twice.
 version: 3.2.0
 
 purposes:
