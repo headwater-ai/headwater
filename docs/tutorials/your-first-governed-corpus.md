@@ -528,4 +528,4 @@ It reports the files that classify as nothing, and the documents that state no s
 
 **Read `headwater check` next.** [The verb contract](../interfaces/headwater-check.md) states what it reads, what goes to each of its two streams, and the eleven causes behind its one non-zero exit.
 
-**Three things on this page are not solid, and you should know which.** `headwater route` truncates its anchored set on one branch and carries it whole on the other. It says nothing about what it dropped, and issue 269 is open on that. No level of the conformance ladder is reachable from a package directory that you copied by hand, for the reason step 16 states. And nobody has accepted this document, which the front matter says and the top of this page repeats.
+**Two things on this page are not solid, and you should know which.** No level of the conformance ladder is reachable from a package directory that you copied by hand, for the reason step 16 states. And nobody has accepted this document, which the front matter says and the top of this page repeats.

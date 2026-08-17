@@ -283,8 +283,9 @@ fn a_route_ranks_no_more_than_its_budget_and_never_cuts_an_anchor() {
 
 /// A pointer carries a path and a cue, and never content.
 ///
-/// Spec 5: "A task description resolves to a ranked, budget-capped set of
-/// pointers: paths and one-line summaries, never content." The property that
+/// Spec 5: "A task description resolves to a ranked set of pointers: a path,
+/// the name the document declares, a one-line summary, and never content." The
+/// property that
 /// makes it checkable is that every string a pointer carries is one the
 /// document declared in its front matter, so no line of any body reaches a
 /// caller. This asserts the observable half: a summary that is not the

@@ -591,7 +591,7 @@ A kind is rigid, because a document cannot lose it and stay the same document. A
 
 ### Routing
 
-The intent-time match of a task description against declared purposes, before any match on text. It returns a ranked, budget-capped set of [pointers](#pointer), and it fails open below its confidence gate. See [spec 5](05-ai-integration.md#intent-time-routing).
+The intent-time match of a task description against declared purposes, before any match on text. It returns a ranked set of [pointers](#pointer), and it fails open below its confidence gate. The budget caps the ranked list and never the documents that govern a path the task named. A route reports how many ranked pointers the budget withheld. See [spec 5](05-ai-integration.md#intent-time-routing).
 
 ### Run identity
 
