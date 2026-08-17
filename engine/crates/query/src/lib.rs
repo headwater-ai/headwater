@@ -44,8 +44,9 @@
 //!
 //! # A read never returns content
 //!
-//! Spec 5: "A task description resolves to a ranked, budget-capped set of
-//! **pointers**: paths and one-line summaries, never content." So [`Pointer`]
+//! Spec 5: "A task description resolves to a ranked set of **pointers**: a
+//! path, the name the document declares, a one-line summary, and never
+//! content." So [`Pointer`]
 //! carries a path, a summary and the facts a reader needs to decide whether to
 //! open the document, and no body ever crosses this boundary.
 
