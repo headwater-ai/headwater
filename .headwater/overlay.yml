@@ -441,6 +441,102 @@ add:
     homogeneous: true
     kind: interface_contract
 
+  # --- the on-ramp ----------------------------------------------------------
+  # A tutorial teaches the model of this system to somebody who holds none of
+  # it. #102 says why that is a gap rather than a nicety, and it names three
+  # questions to settle before anything is written. All three are settled here,
+  # because this file is where a later reader meets the answer.
+  #
+  # **Which corpus does the tutorial use?** A throwaway one that the reader
+  # makes in an empty directory, and then the reader's own repository. The
+  # order is not a preference. A tutorial over the reader's own tree cannot
+  # state what the reader should now see, because nobody but the reader knows
+  # what is in it, and #102 requires every step to end in a state that is
+  # checkable rather than judged. So the scratch corpus carries the steps, and
+  # `headwater infer` carries the handover to the reader's own tree.
+  #
+  # **Does the tutorial ship inside the package, or beside the engine?** Beside
+  # the engine, which is why this declaration is in the adopter overlay and not
+  # in a bundle. The two are different documents that share a name. A tutorial
+  # for a *package* teaches the kinds that package declares, and a third-party
+  # publisher owes one for its own bundles as doctrine prose, which spec 7
+  # already provides for. A tutorial for the *engine* teaches `check`, `new`,
+  # `explain` and the lock, and none of those is package data. This corpus
+  # holds the second kind. When the base package gains one of the first kind,
+  # it declares its own kind and this declaration is not in its way.
+  #
+  # **Is a tutorial a Diátaxis kind here?** No, and this declaration decides
+  # nothing about that. #6 holds two live proposals: Diátaxis as a facet over
+  # existing kinds, and Diátaxis as the kind set of a documentation-site
+  # bundle. Neither is resolved, and #6 records that a facet-only bundle cannot
+  # reach `kinds.<k>.facets.require` on another entry's kinds at all. Waiting
+  # for that resolution would mean writing the on-ramp as an untyped file,
+  # which is the fourth clause of #102 unmet. So the kind below is this
+  # repository's own, in this repository's own overlay, on the reading that
+  # spec 10 already settled: Diátaxis classifies by reader mode and Headwater
+  # organizes by authority and lifecycle, so a reader mode is not a kind here
+  # even when its name matches one. If #6 later ships the kind set, a document
+  # of that kind is a different thing from this one and the two do not collide.
+  #
+  # **The purpose is `procedure`, and it is declared here rather than found.**
+  # The base package declares `rationale` and `behavior`, the two the core
+  # requires. Neither answers "how do I start". Spec 2 names `procedure` in the
+  # derivation of the small-team column, and spec 7's interview names it as the
+  # question an adopter is asked, so the word is this project's own rather than
+  # a coinage. The `answers` phrases are what a newcomer types, because routing
+  # matches them before it matches any text and a tutorial that no route
+  # reaches is a document nobody arrives at.
+  #
+  # **The house language regime binds this kind too.** That is the hard choice
+  # and it is deliberate. Teaching prose fights a 25-word sentence limit, and
+  # the sentence limit wins, because a reader who holds none of the model is
+  # the reader least able to carry a long sentence. Exempting the most
+  # reader-facing prose in the corpus from the rules the corpus applies to
+  # itself would be the exemption this project would least be able to defend.
+  #
+  # **The section contract carries the argument of #102.** `Before you start`
+  # states what the reader must already have, because a step that fails on a
+  # missing precondition teaches nothing. `Steps` holds the numbered sequence.
+  # `The words this teaches` is the glossary, and it is required because a
+  # tutorial that walks a reader through the verbs without leaving the model
+  # behind has built the thing #102 says already exists. `Where to go next`
+  # hands the reader to their own repository. `section.required.missing` reads
+  # a heading and never a word under it, so all four could hold `TODO` and
+  # pass. The contract is a rule for a person and for the scaffolder, and this
+  # is where a reader meets that.
+
+  purposes.procedure:
+    intent: "state the steps a reader follows, and the state each step reaches"
+    answers:
+      - "how do I start"
+      - "how do I set this up"
+      - "what are the steps"
+
+  identifier_schemes.tutorial_id:
+    pattern: "{namespace}-TUT-{slug}"
+    namespace: HW
+    allocation: minted-once
+
+  kinds.tutorial:
+    is_a: governed_document
+    purpose: procedure
+    voice: declarative
+    lifecycle: standard
+    language: ste_house
+    identifier: {scheme: tutorial_id}
+    facets:
+      require: [title]
+    sections:
+      require: [Before you start, Steps, The words this teaches, Where to go next]
+
+  # Disjoint from every shelf above it, and from `docs/taxonomies/**`, which the
+  # corpus declaration excludes. No `layout`, because nothing numbers a
+  # tutorial: the file is named from the title, the way a verb contract is.
+  shelves.tutorials:
+    path: docs/tutorials/**
+    homogeneous: true
+    kind: tutorial
+
 # --- projections ------------------------------------------------------------
 # `projections` is a list in the base, so an `add` cannot reach it, and this is
 # the one operation in this file that is not an `add`. Spec 13 records that
