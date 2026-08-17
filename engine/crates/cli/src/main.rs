@@ -4280,12 +4280,14 @@ fn infer(
     // holds its identifier, and a run that minted over it would write a lock
     // naming one task twice.
     let mut taken = claimed(declared.as_ref());
+    // Held before anything is minted into `taken`, because the report names
+    // what was there and `mint` appends to the same list.
+    let named = taken.clone();
     // Counted off the sequence rather than off the identifiers, because a task
     // that names no `id` is still a task in the block and still something a
     // write adds beside. The two numbers differ exactly where a task is
     // malformed, and reporting the identifier count as the task count would
     // undercount what is at risk.
-    let named = taken.clone();
     let standing = standing(declared.as_ref());
 
     let mut payload = String::new();
