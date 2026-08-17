@@ -118,6 +118,15 @@ impl Root {
     /// The lock is not re-resolved afterwards, and that is the state a real
     /// consumer is in: the lock names the version this repository took, and the
     /// artifact names the version somebody is proposing.
+    ///
+    /// **Both declarations of the version move.** A package states its version
+    /// in the manifest and again at the root of its taxonomy source, and this
+    /// moved only the manifest until
+    /// [#212](https://github.com/headwater-ai/headwater/issues/212) gave the two
+    /// a reader. Every case in this target therefore published a package that
+    /// stated two versions of itself, which is the defect the issue is about,
+    /// standing inside the harness written to test the verb that ships it. The
+    /// sibling helper in `migration.rs` moved both from the day it was written.
     fn edit(&self, version: &str, edits: &[(&str, &str)]) {
         let taxonomy = self.at.join("packages/headwater-standard/taxonomy.yml");
         let mut text = std::fs::read_to_string(&taxonomy).expect("the taxonomy reads");
@@ -125,7 +134,9 @@ impl Root {
             assert!(text.contains(from), "the fixture still carries `{from}`");
             text = text.replacen(from, to, 1);
         }
-        std::fs::write(&taxonomy, text).expect("the taxonomy writes");
+        assert!(text.contains("version: 1.0.0"), "the source is at 1.0.0");
+        std::fs::write(&taxonomy, text.replacen("version: 1.0.0", version, 1))
+            .expect("the taxonomy writes");
 
         let manifest = self.at.join("packages/headwater-standard/package.yml");
         let text = std::fs::read_to_string(&manifest).expect("the manifest reads");

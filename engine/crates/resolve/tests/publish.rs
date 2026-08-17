@@ -357,6 +357,40 @@ fn a_publish_of_a_package_that_states_two_versions_is_refused() {
     );
 }
 
+/// An artifact that already carries two versions is refused on the path
+/// `taxonomy diff` and `taxonomy migrate` reach a fetched directory by.
+///
+/// This engine cannot publish such an artifact any more, so the only publisher
+/// that can hand one over is a publisher on some other engine. That is the case
+/// that matters: an adopter fetches a directory, the release digest covers both
+/// files, and the digest proves the bytes rather than that they agree. So the
+/// refusal has to sit on the reading of the fetched directory and not only on
+/// the writing of one.
+#[test]
+fn a_fetched_artifact_that_states_two_versions_is_refused() {
+    let scratch = Scratch::new("two-versions-fetched");
+    let root = publisher(&scratch, None);
+    let out = scratch.path().join("artifact");
+    package::publish(&root, "acme/fixture", &out).expect("the honest artifact publishes");
+
+    // What another publisher's engine could have written: the manifest at
+    // 1.0.0 and the taxonomy source beside it at 2.0.0.
+    let source = out.join("taxonomy.yml");
+    let text = std::fs::read_to_string(&source).expect("it is there");
+    std::fs::write(&source, text.replace("version: 1.0.0", "version: 2.0.0")).expect("it writes");
+
+    consumer(&scratch, "sha256:0");
+    let consumer_root = scratch.path().join("consumer");
+    let declaration = package::consumer(&consumer_root).expect("it reads");
+    let manifest = package::manifest_at(&out).expect("the manifest reads");
+    let refused = package::sources_at(&consumer_root, &out, &manifest, &declaration)
+        .expect_err("the fetched artifact does not load");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(message.contains("1.0.0"), "{message}");
+    assert!(message.contains("2.0.0"), "{message}");
+    assert!(message.contains("taxonomy.yml"), "{message}");
+}
+
 /// The two declarations of this repository's own package agree.
 ///
 /// The case above proves the refusal fires. This one proves it is not firing on

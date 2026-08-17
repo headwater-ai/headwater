@@ -154,6 +154,14 @@ pub fn consumer(root: &Path) -> Result<Consumer, Vec<ResolveError>> {
 pub fn sources(root: &Path, consumer: &Consumer) -> Result<Vec<Source>, Vec<ResolveError>> {
     let (directory, manifest) = find(root, &consumer.package)?;
 
+    // The package is held to itself before it is held to the pin, and the order
+    // is the whole point. A package that states two versions of itself is
+    // malformed whichever number a consumer wrote down, so a comparison against
+    // the consumer's pin cannot be what decides it: pinning the manifest number
+    // hid the disagreement completely and pinning the other one reported it as
+    // a wrong pin. See [`agrees`].
+    let (base, contents) = base(root, &directory, &manifest, &consumer.package)?;
+
     let declared = text(&manifest, "version").unwrap_or_default();
     if declared != consumer.version {
         return Err(refusal(
@@ -165,7 +173,7 @@ pub fn sources(root: &Path, consumer: &Consumer) -> Result<Vec<Source>, Vec<Reso
         ));
     }
 
-    sources_at(root, &directory, &manifest, consumer)
+    selected(root, &directory, &contents, consumer, base)
 }
 
 /// The same sources, out of a package directory the caller already holds.
@@ -174,42 +182,133 @@ pub fn sources(root: &Path, consumer: &Consumer) -> Result<Vec<Source>, Vec<Reso
 /// to the version the consumer pinned. A comparison of two versions needs the
 /// second half of that dropped and nothing else: the artifact under comparison
 /// is by definition not the version this repository takes, and the overlays it
-/// is resolved under are this repository's own. So the version check lives in
-/// the caller above and every other step is here, in one copy. A second reader
-/// of a `contents` block would be a second answer to "what does this package
-/// ship", and the two could then disagree about a bundle path.
+/// is resolved under are this repository's own. So the pin comparison lives in
+/// the caller above and every other step is in [`base`] and [`selected`], in one
+/// copy. A second reader of a `contents` block would be a second answer to
+/// "what does this package ship", and the two could then disagree about a
+/// bundle path.
+///
+/// The version a package declares of *itself*, twice, is a different question,
+/// and it is not dropped here. An artifact whose two files disagree is refused
+/// on this path as well, which is what puts `taxonomy diff` and
+/// `taxonomy migrate` behind the same refusal as a resolve. See [`agrees`].
 pub fn sources_at(
     root: &Path,
     directory: &Path,
     manifest: &Mapping,
     consumer: &Consumer,
 ) -> Result<Vec<Source>, Vec<ResolveError>> {
+    let (base, contents) = base(root, directory, manifest, &consumer.package)?;
+    selected(root, directory, &contents, consumer, base)
+}
+
+/// The package's own taxonomy source, and the `contents` block it was found
+/// through.
+///
+/// Everything here is a question about the package alone, so nothing in it
+/// reads the consumer beyond the name a message calls the package by. The
+/// caller then asks the questions about the pairing: which version this
+/// repository pinned, and which bundles it selected.
+fn base(
+    root: &Path,
+    directory: &Path,
+    manifest: &Mapping,
+    package: &str,
+) -> Result<(Source, Mapping), Vec<ResolveError>> {
     // The engine range the package declares, checked before a single source is
     // read. A package that needs a later engine resolves into a taxonomy this
     // engine reads with whatever it does not understand dropped, and that is a
     // lock nobody can reproduce. The refusal names both numbers.
-    if let Err(refused) = release::engine_range(
-        &consumer.package,
-        text(manifest, REQUIRES_ENGINE).as_deref(),
-    ) {
+    if let Err(refused) = release::engine_range(package, text(manifest, REQUIRES_ENGINE).as_deref())
+    {
         return Err(release::as_error(&manifest_name(root, directory), &refused));
     }
 
-    let contents = manifest
+    let contents = contents_of(manifest);
+    let source = taxonomy_source(root, directory, &contents)?;
+    agrees(&manifest_name(root, directory), manifest, &source)?;
+    Ok((source, contents))
+}
+
+/// The taxonomy source a manifest's `contents.taxonomy` points at.
+fn taxonomy_source(
+    root: &Path,
+    directory: &Path,
+    contents: &Mapping,
+) -> Result<Source, Vec<ResolveError>> {
+    let taxonomy = directory.join(text(contents, "taxonomy").unwrap_or_default());
+    Source::read(&taxonomy, &display(root, &taxonomy), Role::Taxonomy)
+}
+
+/// The `contents` block of a manifest, empty where it declares none.
+fn contents_of(manifest: &Mapping) -> Mapping {
+    manifest
         .get("contents")
         .and_then(|node| node.value.as_map())
         .cloned()
-        .unwrap_or_default();
+        .unwrap_or_default()
+}
 
-    let taxonomy = directory.join(text(&contents, "taxonomy").unwrap_or_default());
-    let mut out = vec![Source::read(
-        &taxonomy,
-        &display(root, &taxonomy),
-        Role::Taxonomy,
-    )?];
+/// A package declares its version twice, and this is the only thing that holds
+/// the two together.
+///
+/// [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#publishing)
+/// gives the manifest a `version` key, and the meta-schema requires a `version`
+/// at the root of a taxonomy source. The split above says why the two files are
+/// two files, and it left one value declared in both of them. Nothing compared
+/// them until [#212](https://github.com/headwater-ai/headwater/issues/212), so a
+/// package could ship with the two apart and pass every gate this repository
+/// runs.
+///
+/// **The manifest decides, and this is what makes that statement true.** Every
+/// consumer-facing reader takes the manifest number: the pin comparison in
+/// [`sources`], [`find_version`], and the release record that
+/// `taxonomy diff` reads a version out of. The taxonomy source's copy reaches
+/// the lock, where `taxonomy.version` sits beside `package.version` — so before
+/// this the committed lock could state two versions of one taxonomy in two of
+/// its own blocks. Rather than pick a winner and leave the loser writable, the
+/// two are required to agree, and the refusal names both files and both
+/// numbers.
+///
+/// Whether a taxonomy source should carry a version at all is a meta-schema
+/// question, and #212 does not answer it. This holds the declarations that
+/// exist to each other and rules on neither.
+fn agrees(manifest: &str, declaration: &Mapping, source: &Source) -> Result<(), Vec<ResolveError>> {
+    let Some(root) = source.root.value.as_map() else {
+        // Not a mapping, so it declares nothing at all. `validate` refuses it
+        // against the meta-schema with a message about its shape, which is the
+        // finding a reader needs rather than one about a missing key.
+        return Ok(());
+    };
+    let declared = text(declaration, "version").unwrap_or_default();
+    let carried = text(root, "version").unwrap_or_default();
+    if declared == carried {
+        return Ok(());
+    }
+    Err(refusal(
+        manifest,
+        &format!(
+            "this declares version `{declared}` and the taxonomy source it names, {}, declares \
+             `{carried}`. One package states two versions of itself, and each of them is what \
+             some reader downstream takes the package to be",
+            source.name
+        ),
+    ))
+}
+
+/// The bundles the consumer selected and the overlay it declares, on top of the
+/// package's own source.
+fn selected(
+    root: &Path,
+    directory: &Path,
+    contents: &Mapping,
+    consumer: &Consumer,
+    base: Source,
+) -> Result<Vec<Source>, Vec<ResolveError>> {
+    let mut out = vec![base];
 
     if !consumer.bundles.is_empty() {
-        let bundles = text(&contents, "bundles").ok_or_else(|| {
+        let bundles = text(contents, "bundles").ok_or_else(|| {
             refusal(
                 CONSUMER,
                 &format!(
@@ -402,8 +501,18 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
 /// published and the version it is published as. A payload the publisher cannot
 /// ship correctly stops the publish, rather than reaching a digest that makes it
 /// permanent.
+///
+/// **The two version declarations are held to each other before a byte is
+/// copied.** A publish does not resolve for a consumer, so it does not pass
+/// through the comparison [`sources`] makes. It copies both files into the
+/// artifact and [`release::compute`] takes a digest over both, so a package that
+/// states two versions of itself would reach an adopter with the disagreement
+/// sealed under one number. See [`agrees`].
 pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<ResolveError>> {
     let (directory, manifest) = find(root, name)?;
+    let contents = contents_of(&manifest);
+    let source = taxonomy_source(root, &directory, &contents)?;
+    agrees(&manifest_name(root, &directory), &manifest, &source)?;
 
     let occupied = std::fs::read_dir(out).map(|mut entries| entries.next().is_some());
     if occupied.unwrap_or(false) {
@@ -414,7 +523,7 @@ pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<Resol
         ));
     }
 
-    migrations(root, &directory, &manifest)?;
+    migrations(root, &directory, &manifest, source)?;
 
     copy_tree(&directory, out).map_err(|why| refusal(&display(root, &directory), &why))?;
 
@@ -465,7 +574,16 @@ pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<Resol
 ///
 /// The resolution happens only where a payload exists, so a package that has
 /// published no major version pays nothing for this.
-fn migrations(root: &Path, directory: &Path, manifest: &Mapping) -> Result<(), Vec<ResolveError>> {
+///
+/// The source is handed in rather than read here. [`publish`] holds the two
+/// version declarations to each other and needs the same file to do it, and two
+/// reads of one path is the shape of the defect that check exists for.
+fn migrations(
+    root: &Path,
+    directory: &Path,
+    manifest: &Mapping,
+    source: Source,
+) -> Result<(), Vec<ResolveError>> {
     let name = manifest_name(root, directory);
     let payloads = crate::migration::at(directory, manifest)
         .map_err(|errors| crate::migration::as_errors(&name, &errors))?;
@@ -473,13 +591,6 @@ fn migrations(root: &Path, directory: &Path, manifest: &Mapping) -> Result<(), V
         return Ok(());
     }
 
-    let contents = manifest
-        .get("contents")
-        .and_then(|node| node.value.as_map())
-        .cloned()
-        .unwrap_or_default();
-    let taxonomy = directory.join(text(&contents, "taxonomy").unwrap_or_default());
-    let source = Source::read(&taxonomy, &display(root, &taxonomy), Role::Taxonomy)?;
     let resolution = crate::resolve(&[source])?;
     let version = text(manifest, "version").unwrap_or_default();
 
