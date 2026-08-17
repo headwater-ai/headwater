@@ -33,6 +33,8 @@ You need four things.
 - A checkout of the Headwater repository. The repository is private today, so you need access to it.
 - About twenty minutes.
 
+Step 10 makes a commit, and git refuses a commit from an author it cannot name. `git config user.name` prints yours. If it prints nothing, run `git config --global user.name "Your Name"` and then `git config --global user.email "you@example.com"` with your own values.
+
 Three facts about the blocks below.
 
 - **A block is a command or it is output, and the two look the same.** Every step gives the command first and what it printed after. Nothing marks the difference, so read the sentence above a block before you paste it.
@@ -98,7 +100,7 @@ Answer them in .headwater/overlay.yml, then run `headwater taxonomy resolve` and
 
 Read the two headings in that output. The first names what a tree states about itself: the **corpus** is `docs`, because that directory holds the most Markdown. The second names what no tree states, and those three questions are the interview. The verb asks about your documents and never about the model, which is the difference that [spec 7](../spec/07-distribution-and-federation.md) draws and the reason this tutorial exists.
 
-### Step 3 — Vendor the package
+### Step 3 — Copy the package into your tree
 
 ```
 cp -r "$HEADWATER_SRC/packages" .
@@ -113,6 +115,8 @@ taxonomy.yml
 ```
 
 A **package** carries a taxonomy: the kinds, the facets, the shelves and the rules. `headwater/standard` is the base package, and it is deliberately small. Nothing in this engine fetches a package over a network, so a package arrives in your tree by a copy that you can read.
+
+The refusal in step 2 said *vendor it*, and this step used `cp`. Those are two different things, and the difference returns in step 16. `headwater taxonomy vendor` installs a **published artifact**, which is what `headwater taxonomy publish` writes. It refuses a directory that somebody maintains by hand. What you copied is a package source directory, so no verb of this engine vendored anything.
 
 ### Step 4 — Meet the first refusal
 
@@ -164,6 +168,8 @@ add:
 ```
 
 **Check.** `tail -2 .headwater/overlay.yml` prints those two lines back.
+
+Resolve again, now that the overlay answers the question the refusal asked.
 
 ```
 headwater taxonomy resolve
@@ -376,7 +382,7 @@ Trimmed to the head of the register and to its last line. The same run printed b
     every rule this engine carries reaches one obligation
 ```
 
-**Check.** `headwater check 2>/dev/null | grep 'obligations:'` prints the second line of the first block.
+**Check.** `headwater check 2>/dev/null | grep 'obligations:'` prints the `27 obligations:` line of the register block above, and nothing else.
 
 **One of those readings is about the package and one is about your run.** The twenty-seven obligations and their severities come from `headwater/standard`, so they read the same on your first day and your thousandth. The last line is derived from the run in front of you. It says that no rule fired at you without an obligation behind it, and that is what makes the identifier in your finding worth reading.
 
@@ -511,7 +517,7 @@ Four more words earn their place beside those five.
 
 ## Where to go next
 
-**Point the engine at your own repository.** The steps above used a corpus made for the purpose. A tutorial cannot state what you should now see about a tree it has never read. Your own tree is the one that answers whether this is worth adopting. Run `headwater init` in it, vendor the package, resolve, and then run this:
+**Point the engine at your own repository.** The steps above used a corpus made for the purpose. A tutorial cannot state what you should now see about a tree it has never read. Your own tree is the one that answers whether this is worth adopting. Run `headwater init` in it, copy the package in as step 3 did, resolve, and then run this:
 
 ```
 headwater infer
@@ -521,4 +527,4 @@ It reports the files that classify as nothing, and the documents that state no s
 
 **Read `headwater check` next.** [The verb contract](../interfaces/headwater-check.md) states what it reads, what goes to each of its two streams, and the eleven causes behind its one non-zero exit.
 
-**Three things on this page are not solid, and you should know which.** `headwater route` truncates its anchored set on one branch and carries it whole on the other. It says nothing about what it dropped, and issue 269 is open on that. No level of the conformance ladder is reachable from a vendored package directory, for the reason step 16 states. And nobody has accepted this document, which the front matter says and the top of this page repeats.
+**Three things on this page are not solid, and you should know which.** `headwater route` truncates its anchored set on one branch and carries it whole on the other. It says nothing about what it dropped, and issue 269 is open on that. No level of the conformance ladder is reachable from a package directory that you copied by hand, for the reason step 16 states. And nobody has accepted this document, which the front matter says and the top of this page repeats.
