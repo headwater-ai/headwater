@@ -57,7 +57,7 @@ These are the behaviors that pressure to be helpful breaks first, and spec 5 sta
 
 ## A refusal is a declaration to add, and never a retry
 
-`headwater new` decides everything before it writes anything, and it carries nineteen refusals. Two of them are the taxonomy telling you that a declaration is missing.
+`headwater new` decides everything before it writes anything, and it carries twenty-three refusals: nineteen from the decision, and four from the write, which puts every file on the tree or none of them. Two of the nineteen are the taxonomy telling you that a declaration is missing.
 
 `Unnameable` means the kind names no identifier scheme and a relation may name a document of it, so the document would be neither end of any edge. `FacetUndeterminable` means a required facet declares a closed value set, an integer or a date that no role determines, and a prompt in that field is a value the checks refuse.
 
