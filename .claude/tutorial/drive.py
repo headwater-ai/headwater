@@ -262,7 +262,8 @@ def main():
         cut('step 12: the finding', result.stdout, 31)
         cut('step 12: the head of the register', result.stdout, 32)
         cut('step 12: every rule reaches one obligation', result.stdout, 33)
-        # The page's own check names the second line of the register block.
+        # The page's own check names the `27 obligations:` line of the register block,
+        # which is the second line of it.
         compare('step 12: grep obligations:',
                 run("headwater check 2>/dev/null | grep 'obligations:'").stdout,
                 blocks[32].strip('\n').split('\n')[1], today)

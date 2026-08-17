@@ -508,59 +508,437 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
 /// artifact and [`release::compute`] takes a digest over both, so a package that
 /// states two versions of itself would reach an adopter with the disagreement
 /// sealed under one number. See [`agrees`].
+///
+/// # Everything is read before anything is written
+///
+/// The three paragraphs above each say *before a byte is written* about one
+/// input, and until [#271] the whole of the rest of the artifact was read by the
+/// write loop itself. A manifest whose `contents.bundles` climbed out of a
+/// package directory that somebody had copied — which is what `headwater init`
+/// invites and what a reader of the tutorial does — reached
+/// [`copy_tree`]'s `ENOENT` with `package.yml`, `taxonomy.yml`,
+/// `conformance.yml` and an empty `bundles/` already under `out`. The verb then
+/// printed `nothing was published`, and the next run was refused by the
+/// `--out` precondition catching the leftovers of the first.
+///
+/// So this is now three phases and the order is the guarantee.
+///
+/// 1. Read. [`reachable`] holds every path the manifest's `contents` declares
+///    to the tree, and [`stage`] reads every byte of the artifact into memory.
+///    Nothing under `out` exists yet, and a refusal here names the manifest, the
+///    key and the declared value rather than a file system error carrying a
+///    `..`.
+/// 2. Write. [`put`] creates `out` and writes the staged set.
+/// 3. Undo. A failure in phase 2 — a full disk, a permission, a race — returns
+///    `out` to the state phase 1 found it in. [`found::observe`] is what reads
+///    that state and the only thing that can make one, and the `--out`
+///    precondition is what makes the undo total. A directory that holds
+///    anything, a directory this process cannot read, and a symlink that leads
+///    nowhere are all refused before a byte is staged, so every state the undo
+///    can return to is one the run observed and nothing it removes belonged to
+///    anybody else. The undo takes `out` and every directory above it that this
+///    run made on the way to it, and it stops climbing at the first directory
+///    that is not empty.
+///
+/// **This is [`headwater_scaffold::tree::Reserved`]'s shape and not its code.**
+/// `headwater-scaffold` depends on `headwater-check`, which depends on this
+/// crate, so a dependency the other way is a cycle the compiler refuses. The
+/// technique does not transfer either: `Reserved` opens every target for writing
+/// and holds the handle, which is a fact rather than a probe, and it can do that
+/// only because its targets already exist. Every target of a publish is a file
+/// that must not exist yet. Reading every *input* fully into memory is the
+/// nearest thing to holding a handle that a writer of new files has.
+///
+/// [#271]: https://github.com/headwater-ai/headwater/issues/271
 pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<ResolveError>> {
     let (directory, manifest) = find(root, name)?;
     let contents = contents_of(&manifest);
-    let source = taxonomy_source(root, &directory, &contents)?;
-    agrees(&manifest_name(root, &directory), &manifest, &source)?;
+    let declared = manifest_name(root, &directory);
 
-    let occupied = std::fs::read_dir(out).map(|mut entries| entries.next().is_some());
-    if occupied.unwrap_or(false) {
-        return Err(refusal(
-            &display(root, out),
-            "the output directory holds files already, and a published artifact is every file \
-             under its root. Publish into a directory that does not exist yet",
-        ));
-    }
+    // Every declared path is held to the tree here, before the first reader of
+    // one runs. `taxonomy_source` reads `contents.taxonomy` for the resolver,
+    // and while this ran inside `stage` that one key never reached the refusal
+    // below: a missing taxonomy source came back as `cannot read
+    // …/packages/x/../../elsewhere/taxonomy.yml: No such file or directory`,
+    // which names neither the manifest nor the key and carries the `..` that
+    // publication exists to remove. One position for one rule, and `stage` no
+    // longer holds a second copy of the call.
+    reachable(&declared, &directory, &contents)?;
+
+    let source = taxonomy_source(root, &directory, &contents)?;
+    agrees(&declared, &manifest, &source)?;
+
+    let found = found::observe(out).map_err(|why| refusal(&display(root, out), &why))?;
 
     migrations(root, &directory, &manifest, source)?;
 
-    copy_tree(&directory, out).map_err(|why| refusal(&display(root, &directory), &why))?;
+    let staged = stage(root, &directory, &manifest)?;
 
-    // The bundles path, where the manifest states one that leaves the package.
-    // A path that stays inside was copied with everything else.
-    if let Some(bundles) = manifest
-        .get("contents")
-        .and_then(|node| node.value.as_map())
-        .and_then(|contents| contents.get("bundles"))
-    {
-        let Some(scalar) = bundles.value.as_scalar() else {
-            return Err(refusal(
-                &display(root, &directory.join(MANIFEST)),
-                "`contents.bundles` is not a path",
-            ));
-        };
-        if leaves(&scalar.text) {
-            copy_tree(&directory.join(&scalar.text), &out.join(BUNDLES))
-                .map_err(|why| refusal(&display(root, &directory), &why))?;
-            let source = std::fs::read_to_string(directory.join(MANIFEST))
-                .map_err(|error| refusal(MANIFEST, &format!("cannot read it: {error}")))?;
-            let rewritten = splice(&source, bundles.span, BUNDLES).ok_or_else(|| {
-                refusal(
-                    &display(root, &directory.join(MANIFEST)),
-                    "`contents.bundles` does not lie inside the manifest it was read from",
-                )
-            })?;
-            std::fs::write(out.join(MANIFEST), rewritten)
-                .map_err(|error| refusal(MANIFEST, &format!("cannot write it: {error}")))?;
+    let written = put(out, &staged)
+        .map_err(|why| refusal(&display(root, out), &why))
+        .and_then(|()| {
+            let record = release::compute(out, &manifest)
+                .map_err(|error| release::as_error(&display(root, out), &error))?;
+            std::fs::write(out.join(release::RECORD), release::render(&record))
+                .map_err(|error| refusal(release::RECORD, &format!("cannot write it: {error}")))?;
+            Ok(record)
+        });
+
+    match written {
+        Ok(record) => Ok(record),
+        Err(errors) => {
+            found.unwind(out);
+            Err(errors)
+        }
+    }
+}
+
+/// What a publish found at `--out`, and the only thing that can find it out.
+///
+/// The module is the whole point of the module. [`Found`] carries a state that
+/// decides whether an undo removes `--out` itself, so a caller that could name
+/// that state could assert absence rather than observe it. Nothing outside these
+/// lines can make a `Found`: the variants are private to the module and
+/// [`observe`] is the one function that returns one. That is the shape [#271]
+/// went looking for, because the first reading of this took *did not observe*
+/// for *observed nothing* and the undo then removed a path the run had never
+/// seen.
+///
+/// [#271]: https://github.com/headwater-ai/headwater/issues/271
+mod found {
+    use std::io::ErrorKind;
+    use std::path::{Path, PathBuf};
+
+    /// The state `--out` was in before anything was written.
+    pub(super) struct Found(State);
+
+    enum State {
+        /// Nothing was there, so the undo removes the directory itself, and
+        /// every directory above it that was not there either. [`put`] reaches
+        /// `--out` with `create_dir_all`, so `--out nested/a/b/c` under an
+        /// absent `nested` is four directories that the run made and that a
+        /// failed run has no reason to leave standing.
+        ///
+        /// The list is deepest first, and it is what this run *saw* to be
+        /// absent rather than what it later created. Everything above the first
+        /// directory that already existed is somebody else's and is not in it.
+        ///
+        /// [`put`]: super::put
+        Absent(Vec<PathBuf>),
+        /// A directory was there and it was empty, so the undo empties it again.
+        Empty,
+    }
+
+    /// `out` and every directory above it that is not there either, deepest
+    /// first.
+    ///
+    /// The walk stops at the first path that exists, and `symlink_metadata` is
+    /// what asks, so a link above `out` stops it rather than being read through.
+    fn absent_above(out: &Path) -> Vec<PathBuf> {
+        let mut chain = vec![out.to_path_buf()];
+        let mut at = out.parent();
+        while let Some(parent) = at {
+            if parent.as_os_str().is_empty() {
+                break;
+            }
+            match std::fs::symlink_metadata(parent) {
+                Err(error) if error.kind() == ErrorKind::NotFound => {
+                    chain.push(parent.to_path_buf());
+                    at = parent.parent();
+                }
+                _ => break,
+            }
+        }
+        chain
+    }
+
+    /// Read `--out`, or say why a publish cannot start.
+    ///
+    /// # Only `NotFound` can mean absent, and on its own it does not mean it
+    ///
+    /// `read_dir` reports *the path is not there* and *this process cannot read
+    /// what is there* through one `Err`, and [`State::Absent`] is the state
+    /// whose undo removes `--out`. So every error that is not
+    /// [`ErrorKind::NotFound`] is refused here, before a byte is staged. A
+    /// directory this run could not inspect is one whose contents a publisher
+    /// never agreed to interleave an artifact with, and a state the run did not
+    /// observe is one the undo has no way back to. Letting it reach the write
+    /// is what put a whole artifact into a `0300` directory beside somebody's
+    /// file, under a verb that then printed `nothing was published`.
+    ///
+    /// # A dangling symlink is a path, and `NotFound` does not see it
+    ///
+    /// `read_dir` follows a symlink, so a link whose target does not exist
+    /// reports `NotFound` while a path very much exists under that name.
+    /// `symlink_metadata` is the call that does not follow, and it is what
+    /// separates the two. The link is then refused rather than published into:
+    /// a publisher who asked for a link's target got a name whose target is not
+    /// there, which is a mistake worth reading about, and the alternative is a
+    /// failed publish whose undo removes a link that the run did not make and
+    /// that nothing in the artifact records.
+    pub(super) fn observe(out: &Path) -> Result<Found, String> {
+        match std::fs::read_dir(out) {
+            Ok(mut entries) => match entries.next() {
+                Some(_) => Err("the output directory holds files already, and a published \
+                                artifact is every file under its root. Publish into a directory \
+                                that does not exist yet"
+                    .to_string()),
+                None => Ok(Found(State::Empty)),
+            },
+            Err(error) if error.kind() == ErrorKind::NotFound => {
+                match std::fs::symlink_metadata(out) {
+                    Err(error) if error.kind() == ErrorKind::NotFound => {
+                        Ok(Found(State::Absent(absent_above(out))))
+                    }
+                    Ok(_) => Err(
+                        "there is a symlink at the output path and it leads nowhere. \
+                                  Publish into a path that does not exist yet"
+                            .to_string(),
+                    ),
+                    Err(error) => Err(format!("the output path cannot be read: {error}")),
+                }
+            }
+            Err(error) => Err(format!("the output directory cannot be read: {error}")),
         }
     }
 
-    let record = release::compute(out, &manifest)
-        .map_err(|error| release::as_error(&display(root, out), &error))?;
-    std::fs::write(out.join(release::RECORD), release::render(&record))
-        .map_err(|error| refusal(release::RECORD, &format!("cannot write it: {error}")))?;
-    Ok(record)
+    impl Found {
+        /// Put `out` back the way the run found it.
+        ///
+        /// Every error is dropped. This runs on the way out of a failure that is
+        /// already being reported, and a second message about the cleanup would
+        /// displace the one a reader needs. What a caller is owed is the
+        /// property, and the property is what the fixture asserts.
+        pub(super) fn unwind(self, out: &Path) {
+            match self.0 {
+                State::Absent(chain) => {
+                    let _ = std::fs::remove_dir_all(out);
+                    // Everything above `out` goes with `remove_dir`, which
+                    // takes an empty directory and nothing else. A directory
+                    // that somebody filled while this run was writing therefore
+                    // stops the climb by refusing to go, which is the answer a
+                    // race is owed.
+                    for above in chain.into_iter().skip(1) {
+                        if std::fs::remove_dir(&above).is_err() {
+                            break;
+                        }
+                    }
+                }
+                State::Empty => {
+                    let Ok(entries) = std::fs::read_dir(out) else {
+                        return;
+                    };
+                    for entry in entries.filter_map(Result::ok) {
+                        let at = entry.path();
+                        let _ = match at.is_dir() {
+                            true => std::fs::remove_dir_all(&at),
+                            false => std::fs::remove_file(&at),
+                        };
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// One file of an artifact, read off the publisher's tree.
+struct Staged {
+    /// Relative to the artifact root, with `/` separators.
+    path: String,
+    bytes: Vec<u8>,
+    /// What the source file carried. `std::fs::copy` took these across before
+    /// staging did, and a publish is not the place to start normalizing them.
+    mode: std::fs::Permissions,
+}
+
+/// Every path the manifest's `contents` declares, held to the tree.
+///
+/// [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#publishing):
+/// *"Every `contents` path a publisher writes is read. `taxonomy`, `bundles`,
+/// `conformance` and `migrations` each reach a verb. A key that no verb reads is
+/// a claim that a publisher makes and a consumer never sees."* This is that
+/// sentence, and it reads the keys the manifest declares rather than a list
+/// written here, so a key added to a manifest is covered on the day it arrives.
+///
+/// **The escape is checked as well as the existence.** `contents.bundles` may
+/// name a path outside the package, because [`publish`] carries what it points
+/// at inside and rewrites the scalar. No other key has a rewrite, so a `..`
+/// under any other key would reach a consumer in the published manifest, which
+/// is the one thing spec 7 says no artifact carries.
+///
+/// `contents.migrations` is read twice over, here for existence and by
+/// [`crate::migration::at`] for its payloads. That one runs first, so its
+/// refusal is the one a publisher sees and this is a second reading of a path
+/// rather than a second definition of a rule.
+fn reachable(
+    manifest: &str,
+    directory: &Path,
+    contents: &Mapping,
+) -> Result<(), Vec<ResolveError>> {
+    for entry in contents {
+        let key = entry.key.value.as_str();
+        // A value that is not a scalar used to be skipped here, and skipping it
+        // meant neither rule below ran over it. A sequence holding `../../x`
+        // reached a published manifest with the `..` in it, and one naming a
+        // file that is not there published an artifact with a hole where the key
+        // points, both at exit 0. Nothing downstream reads it either: `stage`
+        // rewrites `bundles` alone, so there is no reader for whom a list of
+        // paths under any key would mean anything.
+        let Some(scalar) = entry.value.value.as_scalar() else {
+            return Err(refusal(
+                manifest,
+                &format!(
+                    "`contents.{key}` is not a path. Every value under `contents` names one file \
+                     or one directory inside the package, and a publish reads each one before it \
+                     writes anything"
+                ),
+            ));
+        };
+        let declared = scalar.text.as_str();
+        let escapes = leaves(declared);
+        if escapes && key != BUNDLES {
+            return Err(refusal(
+                manifest,
+                &format!(
+                    "`contents.{key}` names {declared}, which is outside the package. Only \
+                     `contents.{BUNDLES}` may name a path outside the package, because publishing \
+                     carries what that one points at inside the artifact and rewrites the scalar. \
+                     Every other key would reach a consumer with the `..` in it"
+                ),
+            ));
+        }
+        if directory.join(declared).exists() {
+            continue;
+        }
+        let outside = match escapes {
+            true => {
+                " A package directory copied out of the tree that holds its bundle library is not \
+                 that tree. Publish from the tree the manifest was written for, or take a \
+                 published artifact with `headwater taxonomy vendor`."
+            }
+            false => "",
+        };
+        return Err(refusal(
+            manifest,
+            &format!(
+                "`contents.{key}` names {declared}, and it is not there. Every path a manifest \
+                 declares reaches the artifact, so a publish cannot ship the key without the \
+                 file.{outside}"
+            ),
+        ));
+    }
+    Ok(())
+}
+
+/// The whole artifact, in memory, before `out` exists.
+///
+/// The package directory, then the bundles where the manifest points them
+/// outside it, then the manifest with that one scalar rewritten. The rewrite
+/// replaces the staged bytes rather than writing over a file that was just
+/// copied, so the manifest reaches the tree once.
+///
+/// [`reachable`] ran here and now runs in [`publish`], above the first reader of
+/// a declared path. Nothing calls this without that call before it.
+fn stage(
+    root: &Path,
+    directory: &Path,
+    manifest: &Mapping,
+) -> Result<Vec<Staged>, Vec<ResolveError>> {
+    let name = manifest_name(root, directory);
+
+    let mut staged = Vec::new();
+    read_tree(directory, "", &mut staged)
+        .map_err(|why| refusal(&display(root, directory), &why))?;
+
+    let Some(bundles) = manifest
+        .get("contents")
+        .and_then(|node| node.value.as_map())
+        .and_then(|contents| contents.get(BUNDLES))
+    else {
+        return Ok(staged);
+    };
+    let Some(scalar) = bundles.value.as_scalar() else {
+        return Err(refusal(&name, "`contents.bundles` is not a path"));
+    };
+    if !leaves(&scalar.text) {
+        // A path that stays inside was read with everything else.
+        return Ok(staged);
+    }
+
+    read_tree(&directory.join(&scalar.text), BUNDLES, &mut staged)
+        .map_err(|why| refusal(&name, &why))?;
+
+    let Some(at) = staged.iter().position(|file| file.path == MANIFEST) else {
+        return Err(refusal(&name, "the package carries no manifest to rewrite"));
+    };
+    let source = String::from_utf8(staged[at].bytes.clone())
+        .map_err(|_| refusal(&name, "the manifest is not text"))?;
+    let rewritten = splice(&source, bundles.span, BUNDLES).ok_or_else(|| {
+        refusal(
+            &name,
+            "`contents.bundles` does not lie inside the manifest it was read from",
+        )
+    })?;
+    staged[at].bytes = rewritten.into_bytes();
+    Ok(staged)
+}
+
+/// Read a directory tree into the staged set, under a prefix inside the artifact.
+fn read_tree(from: &Path, prefix: &str, into: &mut Vec<Staged>) -> Result<(), String> {
+    let mut entries: Vec<PathBuf> = std::fs::read_dir(from)
+        .map_err(|error| format!("cannot read {}: {error}", from.display()))?
+        .filter_map(|entry| entry.ok().map(|entry| entry.path()))
+        .collect();
+    entries.sort();
+    for entry in entries {
+        // A name that is not UTF-8 used to be skipped, and the file then left no
+        // trace anywhere: not in the artifact, not in the record, not in the
+        // count the verb prints, and not in the exit code. A publisher whose
+        // claim is that everything is read before anything is written cannot
+        // drop a file it did not read, and the release record has nowhere to put
+        // a path that is not text. `to_string_lossy` is good enough for a
+        // message and is not good enough for a member path, which is the whole
+        // asymmetry.
+        let Some(name) = entry.file_name().and_then(|name| name.to_str()) else {
+            return Err(format!(
+                "cannot carry {}: the name is not UTF-8, and every path in a release record is \
+                 text. Rename it, or take it out of the package",
+                entry.display()
+            ));
+        };
+        let path = match prefix.is_empty() {
+            true => name.to_string(),
+            false => format!("{prefix}/{name}"),
+        };
+        if entry.is_dir() {
+            read_tree(&entry, &path, into)?;
+            continue;
+        }
+        let bytes = std::fs::read(&entry)
+            .map_err(|error| format!("cannot read {}: {error}", entry.display()))?;
+        let mode = std::fs::metadata(&entry)
+            .map_err(|error| format!("cannot read {}: {error}", entry.display()))?
+            .permissions();
+        into.push(Staged { path, bytes, mode });
+    }
+    Ok(())
+}
+
+/// Write the staged set into `out`, creating what it needs.
+fn put(out: &Path, staged: &[Staged]) -> Result<(), String> {
+    std::fs::create_dir_all(out).map_err(|error| format!("cannot create it: {error}"))?;
+    for file in staged {
+        let at = out.join(&file.path);
+        if let Some(parent) = at.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|error| format!("cannot create {}: {error}", parent.display()))?;
+        }
+        std::fs::write(&at, &file.bytes)
+            .map_err(|error| format!("cannot write {}: {error}", file.path))?;
+        std::fs::set_permissions(&at, file.mode.clone())
+            .map_err(|error| format!("cannot write {}: {error}", file.path))?;
+    }
+    Ok(())
 }
 
 /// Every migration payload the manifest declares, read and held to the taxonomy
