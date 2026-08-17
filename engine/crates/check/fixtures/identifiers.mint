@@ -1,4 +1,4 @@
-10 schemes
+11 schemes
 
 decision_id
   pattern    {namespace}-DR-{seq:04d}
@@ -96,6 +96,16 @@ spec_id
   render     HW-SPEC-<slug>
   needs      slug
   mint       HW-SPEC-a-name
+  admits     true
+  sequence   -
+  refuses    false
+
+tutorial_id
+  pattern    {namespace}-TUT-{slug}
+  namespace  HW
+  render     HW-TUT-<slug>
+  needs      slug
+  mint       HW-TUT-a-name
   admits     true
   sequence   -
   refuses    false

@@ -24,6 +24,12 @@ purposes:
       - "which claim is unmeasured"
       - "what waits on whom"
     intent: "state what the corpus still owes, and who owes it"
+  procedure:
+    answers:
+      - "how do I start"
+      - "how do I set this up"
+      - "what are the steps"
+    intent: "state the steps a reader follows, and the state each step reaches"
 vocabularies:
   lifecycle_state:
     - value: draft
@@ -424,6 +430,23 @@ kinds:
     lifecycle: standard
     purpose: evidence
     voice: narrative
+  tutorial:
+    facets:
+      require:
+        - title
+    identifier:
+      scheme: tutorial_id
+    is_a: governed_document
+    language: ste_house
+    lifecycle: standard
+    purpose: procedure
+    sections:
+      require:
+        - "Before you start"
+        - Steps
+        - "The words this teaches"
+        - "Where to go next"
+    voice: declarative
 relations:
   supersedes:
     family: succession
@@ -579,6 +602,10 @@ shelves:
       - obligation_register
     layout: "{sequence:02d}-{slug}.md"
     path: "docs/spec/**"
+  tutorials:
+    homogeneous: true
+    kind: tutorial
+    path: "docs/tutorials/**"
 identifier_schemes:
   decision_id:
     pattern: "{namespace}-DR-{seq:04d}"
@@ -620,6 +647,10 @@ identifier_schemes:
     allocation: minted-once
     namespace: HW
     pattern: "{namespace}-SPEC-{slug}"
+  tutorial_id:
+    allocation: minted-once
+    namespace: HW
+    pattern: "{namespace}-TUT-{slug}"
 core:
   requires:
     - facet_role: state

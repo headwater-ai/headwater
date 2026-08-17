@@ -1,5 +1,5 @@
-244 files under the corpus root
-    200 typed
+245 files under the corpus root
+    201 typed
       4 generated
       2 untyped
      36 excluded
@@ -14,6 +14,7 @@
       3 typed probe
       1 typed review_prompt
       5 typed review_record
+      1 typed tutorial
 
 exclusions
      36 `docs/taxonomies/**`
