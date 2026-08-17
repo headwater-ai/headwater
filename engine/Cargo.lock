@@ -86,6 +86,7 @@ dependencies = [
  "headwater-resolve",
  "headwater-scaffold",
  "headwater-sweep",
+ "headwater-verbs",
  "headwater-yaml",
 ]
 
@@ -134,6 +135,7 @@ dependencies = [
  "headwater-probe",
  "headwater-query",
  "headwater-resolve",
+ "headwater-verbs",
  "headwater-yaml",
 ]
 
@@ -252,6 +254,10 @@ dependencies = [
  "headwater-graph",
  "headwater-yaml",
 ]
+
+[[package]]
+name = "headwater-verbs"
+version = "0.1.0"
 
 [[package]]
 name = "headwater-yaml"

@@ -24,8 +24,11 @@
 //! the artifact would tell them. A declaration of either would put a second copy
 //! of one artifact at a path the engine did not fix.
 //!
-//! So [`Kind`] carries all eleven and [`Kind::declarable`] separates them. The
-//! meta-schema's enum holds the nine.
+//! So [`Kind`] carries all twelve and [`Kind::declarable`] separates them. The
+//! meta-schema's enum holds the ten. The tenth is `verb_index`, and
+//! [#257](https://github.com/headwater-ai/headwater/issues/257) added it: its
+//! rows are the dispatch table of this binary and its empty cell is a verb that
+//! no document describes.
 //!
 //! # The marker is the record of the previous run
 //!
@@ -100,6 +103,7 @@ mod probe_result;
 pub mod profile;
 mod shelf_index;
 mod shelf_sections;
+mod verb_index;
 
 pub use profile::{Admission, Clause, Emitter, Filter, Grain, Profile};
 
@@ -215,7 +219,7 @@ pub struct Transcript {
 
 /// A projection kind.
 ///
-/// Eleven of them. Nine a taxonomy declares, and two the engine defines. See
+/// Twelve of them. Ten a taxonomy declares, and two the engine defines. See
 /// the module header for why that split exists.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kind {
@@ -231,6 +235,10 @@ pub enum Kind {
     /// Spec 5: the verdicts the grader returned over one committed transcript,
     /// written as a document of the corpus.
     ProbeResult,
+    /// #257: every verb the binary dispatches, and the contract that describes
+    /// it where one exists. The rows come from the engine rather than from the
+    /// graph, and the empty cell is the point of the artifact.
+    VerbIndex,
     /// Spec 4: the register, engine-defined and non-optional.
     CoverageReport,
     /// Q14: `.headwater/corpus.json`, engine-defined and non-optional.
@@ -250,6 +258,7 @@ impl Kind {
             Kind::Template => "template",
             Kind::Transcription => "transcription",
             Kind::ProbeResult => "probe_result",
+            Kind::VerbIndex => "verb_index",
             Kind::CoverageReport => "coverage_report",
             Kind::CorpusDescriptor => "corpus_descriptor",
         }
@@ -263,7 +272,7 @@ impl Kind {
     }
 
     /// The declarable kinds, in the order the meta-schema lists them.
-    pub const DECLARABLE: [Kind; 9] = [
+    pub const DECLARABLE: [Kind; 10] = [
         Kind::ShelfIndex,
         Kind::ShelfSections,
         Kind::RelationView,
@@ -273,6 +282,7 @@ impl Kind {
         Kind::Template,
         Kind::Transcription,
         Kind::ProbeResult,
+        Kind::VerbIndex,
     ];
 
     fn parse(text: &str) -> Option<Kind> {
@@ -578,6 +588,7 @@ pub fn plan(
     projections: &Projections,
     identity: &Identity,
     runs: &Runs,
+    verbs: &[headwater_verbs::Verb],
 ) -> Plan {
     let mut plan = Plan::default();
     for declaration in &projections.declared {
@@ -588,6 +599,7 @@ pub fn plan(
             Kind::ProbeResult => {
                 probe_result::emit(surface, census, declaration, runs, identity, &mut plan);
             }
+            Kind::VerbIndex => verb_index::emit(surface, declaration, verbs, &mut plan),
             other => plan.unwritten.push(Unwritten {
                 at: declaration.output.clone(),
                 kind: other,
@@ -759,6 +771,7 @@ fn unbuilt(kind: Kind) -> &'static str {
         | Kind::ShelfSections
         | Kind::GraphExport
         | Kind::ProbeResult
+        | Kind::VerbIndex
         | Kind::CoverageReport
         | Kind::CorpusDescriptor => "this engine emits it",
     }

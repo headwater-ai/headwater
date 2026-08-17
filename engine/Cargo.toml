@@ -22,6 +22,7 @@ members = [
     "crates/resolve",
     "crates/scaffold",
     "crates/sweep",
+    "crates/verbs",
     "crates/yaml",
 ]
 resolver = "2"
