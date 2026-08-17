@@ -401,8 +401,8 @@ fn a_fetched_artifact_that_states_two_versions_is_refused() {
 fn the_package_in_this_repository_states_one_version_in_both_files() {
     let root = Path::new("../../..");
     let directory = root.join(package::PACKAGES).join("headwater-standard");
-    let manifest = std::fs::read_to_string(directory.join(package::MANIFEST))
-        .expect("the manifest is there");
+    let manifest =
+        std::fs::read_to_string(directory.join(package::MANIFEST)).expect("the manifest is there");
     let source =
         std::fs::read_to_string(directory.join("taxonomy.yml")).expect("the source is there");
 
