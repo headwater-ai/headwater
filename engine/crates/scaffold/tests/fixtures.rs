@@ -273,6 +273,10 @@ fn variant(refusal: &Refusal) -> &'static str {
         Refusal::EndpointNotPermitted { .. } => "EndpointNotPermitted",
         Refusal::TargetUnresolved { .. } => "TargetUnresolved",
         Refusal::ReciprocalUnwritable { .. } => "ReciprocalUnwritable",
+        Refusal::TargetUnopened { .. } => "TargetUnopened",
+        Refusal::DocumentUncreated { .. } => "DocumentUncreated",
+        Refusal::WriteHalted { .. } => "WriteHalted",
+        Refusal::NotOneDocument { .. } => "NotOneDocument",
     }
 }
 
@@ -388,14 +392,12 @@ fn what_the_minter_writes_the_rule_admits() {
 /// Every branch of `Refusal` is reached by a case of the transcript.
 ///
 /// The rule this enforces is the one spec 12 states about a check: a refusal
-/// with no fixture does not ship. `ReciprocalUnwritable` is the one branch no
-/// case above reaches, because it fires on a document whose front matter the
-/// splice could not read. [`the_splice_refuses_rather_than_corrupts`] is its
-/// fixture, and this list names it so that the gap is stated rather than left
-/// for a reader to notice.
+/// with no fixture does not ship. Five branches no `propose` case reaches are
+/// named below with the file that holds each one, so that the gap is stated
+/// rather than left for a reader to notice.
 #[test]
 fn every_refusal_branch_has_a_case() {
-    const BRANCHES: [&str; 19] = [
+    const BRANCHES: [&str; 23] = [
         "KindUnknown",
         "KindAbstract",
         "KindUnshelved",
@@ -415,6 +417,10 @@ fn every_refusal_branch_has_a_case() {
         "EndpointNotPermitted",
         "TargetUnresolved",
         "ReciprocalUnwritable",
+        "TargetUnopened",
+        "DocumentUncreated",
+        "WriteHalted",
+        "NotOneDocument",
     ];
 
     let loaded = Loaded::over(
@@ -436,8 +442,17 @@ fn every_refusal_branch_has_a_case() {
             reached.push(variant(&refusal));
         }
     }
-    // The one branch that no `propose` case reaches, and its own test.
+    // The branches no `propose` case reaches, and the file that holds each.
+    // `ReciprocalUnwritable` fires on a document whose front matter the splice
+    // could not read, which is [`the_splice_refuses_rather_than_corrupts`]
+    // below. The other four are the write phase, and every one of them has a
+    // case in `tests/writing.rs` — named here rather than counted, so a branch
+    // that arrives with no fixture is a failure of this test.
     reached.push("ReciprocalUnwritable");
+    reached.push("TargetUnopened");
+    reached.push("DocumentUncreated");
+    reached.push("WriteHalted");
+    reached.push("NotOneDocument");
 
     let missing: Vec<&&str> = BRANCHES
         .iter()

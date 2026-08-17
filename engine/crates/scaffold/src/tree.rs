@@ -34,6 +34,29 @@
 //! the case a run can see and report: a write that fails while the run is still
 //! there to undo it.
 //!
+//! # The one file a run may create, and why its undo is an unlink
+//!
+//! [`Reserved::over`] cannot open a file that is not there, so a writer that
+//! makes a new document needs a second step: [`Reserved::making`]. The order is
+//! the whole of its safety. `over` runs first and changes no byte, so the state
+//! it refuses in — a target that cannot be opened for writing, which is the
+//! failure that actually happens — has nothing to undo. `making` runs only
+//! after every one of those obstacles is past, and the file it makes is the
+//! only thing a rollback here can have to remove.
+//!
+//! Undoing a create is a delete, and a delete of the wrong file is worse than
+//! the mess it cleans up. Two rules keep it honest. The create is
+//! `create_new`, so `Ok` is the kernel saying *this call made this file*: the
+//! test and the create are one syscall, there is no window between them, and no
+//! error is ever read as absence. That is the lesson of the refused `publish`
+//! change, whose `Err(_) => Found::Absent` put `remove_dir_all` behind every
+//! failure it could not read. And the removal is `remove_file` followed by a
+//! `symlink_metadata` of that path, so [`Halted`] says the document went only
+//! when a reader of the path would find nothing. `remove_dir_all` appears
+//! nowhere on this path; the directories the create made go with `remove_dir`,
+//! which refuses a directory somebody else filled, and that refusal is the
+//! answer a race is owed.
+//!
 //! # Why the handles are held rather than the paths re-opened
 //!
 //! A probe that opened each file and closed it would answer about a moment that
@@ -60,6 +83,42 @@ pub struct Composed {
 /// caller holds one of these and a target is unwritable.
 pub struct Reserved {
     held: Vec<Held>,
+    /// The one file this run made, when [`Reserved::making`] made one.
+    made: Option<Made>,
+}
+
+/// The file this run created, and the directories it created above it.
+///
+/// The type and its fields are private and [`Reserved::making`] is its only
+/// constructor, so nothing outside this module can hand a rollback a claim that
+/// a file was created. The claim licenses an unlink, and the only thing allowed
+/// to make it is the `create_new` that returned `Ok`.
+struct Made {
+    /// Where in `held` the created file sits. `making` pushes it last and
+    /// nothing removes an entry, so it stays the entry it named.
+    index: usize,
+    path: String,
+    at: PathBuf,
+    /// The directories that were not on the tree before the create, deepest
+    /// first. Observed before `create_dir_all` ran, because afterwards there is
+    /// nothing left to see.
+    dirs: Vec<PathBuf>,
+}
+
+/// What became of the file the run created.
+///
+/// Both arms are observations off the tree. [`Created::Removed`] is written
+/// only when a `symlink_metadata` of that path reported nothing there, for the
+/// same reason a restore is read back: an unlink that returns `Ok` is a return
+/// value, and what a caller needs to know is what the next reader of the path
+/// will get.
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum Created {
+    /// Unlinked, and the path holds nothing.
+    Removed { path: String },
+    /// Still there. `why` is the unlink's own error, or the read back that
+    /// found something at the path after it.
+    NotRemoved { path: String, why: String },
 }
 
 struct Held {
@@ -109,6 +168,15 @@ pub enum Failed {
     /// a handle whose path was unlinked or replaced under it produces. `why`
     /// says which.
     Damaged { why: String },
+    /// The file the run failed on is the file this run created, so it has no
+    /// bytes to be put back to.
+    ///
+    /// Its fate is an unlink and it is reported in one place, the created
+    /// clause of [`Halted`], rather than told twice in two idioms. This arm
+    /// exists so that clause is the only thing that speaks for it: *it was put
+    /// back* over a file that never existed would be the same class of untrue
+    /// sentence this module was built to stop printing.
+    Unmade,
 }
 
 /// A run that stopped part way, and what it did about it.
@@ -142,6 +210,16 @@ pub struct Halted {
     /// A path is here when the restore could not be written, **or** when it was
     /// written and the path does not hold it. `why` tells the two apart.
     lost: Vec<Unopened>,
+    /// What became of the file this run created, when it created one.
+    ///
+    /// `None` is a run that created nothing, which is every `--fix` run and
+    /// every import, and it prints no clause at all. That is why every message
+    /// this type wrote before the create existed is the message it writes now.
+    ///
+    /// Behind a `Box` so that the ordinary case — a run that finished — carries
+    /// eight bytes of this and not fifty-six. `commit` returns this type in its
+    /// `Err`, and `clippy::result_large_err` reads that size on every call.
+    created: Option<Box<Created>>,
 }
 
 impl Halted {
@@ -185,46 +263,95 @@ impl Halted {
             }
         )
     }
+
+    /// The clause about the document this run created, and nothing when it
+    /// created none.
+    ///
+    /// A run that created nothing writes no clause here at all, which is why
+    /// every message this type printed before the create exists is the message
+    /// it prints now. The path is named once: when the run failed on the very
+    /// document it created, the clause before this one already named it, and
+    /// naming it twice would read as two files.
+    fn made(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let Some(created) = self.created.as_deref() else {
+            return Ok(());
+        };
+        let named = |path: &String| match path == &self.path {
+            true => "it".to_string(),
+            false => format!("the document this run created at {path}"),
+        };
+        match created {
+            Created::Removed { path } => write!(f, ", and {} was removed", named(path)),
+            Created::NotRemoved { path, why } => {
+                write!(f, ", and {} could not be removed: {why}", named(path))
+            }
+        }
+    }
+
+    /// How many files of this run hold neither what they held nor what was
+    /// asked for.
+    ///
+    /// The failing file is one when it could not be put back, and the created
+    /// document is one when it would not go. Both are observations off the
+    /// tree, made in [`Reserved::undo`], and this is the only place that counts
+    /// them — so the sentence *the tree is as it was* is keyed on the same
+    /// facts the clauses above it printed.
+    fn damaged(&self) -> usize {
+        usize::from(matches!(self.failed, Failed::Damaged { .. }))
+            + usize::from(matches!(
+                self.created.as_deref(),
+                Some(Created::NotRemoved { .. })
+            ))
+    }
 }
 
 /// The report, and the one sentence it may not print falsely.
 ///
 /// **The words *the tree is as it was* appear only when the file the run failed
-/// on was put back and `lost` is empty.** Every arm below is keyed on
-/// `(failed, restored, lost)` and there is no arm that omits the fate of the
+/// on was put back, `lost` is empty, and the document this run created is off
+/// the tree.** Every arm below is keyed on `(failed, restored, lost, created)`
+/// and there is no arm that omits the fate of the
 /// failing file, which is what the old two-key match did: it read
 /// `(restored.len(), lost.is_empty())` alone, so a run that emptied one
 /// document and stopped printed *the tree is as it was* over it — on a
 /// single-file run, the ordinary shape of `--fix` over one document, through
 /// the arm that also said *no other file had been written*.
 ///
-/// Both of those keys are observations off the tree rather than return values.
-/// `failed` is [`Failed::PutBack`] only when a read of that path returned the
-/// bytes the file held, and `lost` carries every other file whose restore did
-/// not reach the path it names — see [`reads_back`]. The sentence therefore
-/// stopped being printable over a file that vanished under its own handle
-/// without any arm of this match moving.
+/// All three of those keys are observations off the tree rather than return
+/// values. `failed` is [`Failed::PutBack`] only when a read of that path
+/// returned the bytes the file held, `lost` carries every other file whose
+/// restore did not reach the path it names — see [`reads_back`] — and `created`
+/// is [`Created::Removed`] only when a `symlink_metadata` of that path found
+/// nothing. The sentence therefore stopped being printable over a file that
+/// vanished under its own handle without any arm of this match moving, and it
+/// is not printable over a document this run made and could not unlink.
 impl std::fmt::Display for Halted {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} did not write: {}", self.path, self.why)?;
         match &self.failed {
-            Failed::PutBack => {
-                write!(f, ". It was put back")?;
-                self.others(f, " too")?;
-            }
-            Failed::Damaged { why } => {
-                write!(
-                    f,
-                    ". It could not be put back and now holds neither what it held nor what this \
-                     run asked for ({why})"
-                )?;
-                self.others(f, "")?;
-            }
+            Failed::PutBack => write!(f, ". It was put back")?,
+            Failed::Damaged { why } => write!(
+                f,
+                ". It could not be put back and now holds neither what it held nor what this run \
+                 asked for ({why})"
+            )?,
+            Failed::Unmade => write!(f, ". It is the document this run created")?,
         }
+        self.made(f)?;
+        // *too* joins the other files to a failing file that went back, and is
+        // false of a file that did not go back and of one that never existed.
+        self.others(
+            f,
+            match &self.failed {
+                Failed::PutBack => " too",
+                Failed::Damaged { .. } | Failed::Unmade => "",
+            },
+        )?;
         if self.lost.is_empty() {
-            return match &self.failed {
-                Failed::PutBack => write!(f, ", so the tree is as it was"),
-                Failed::Damaged { .. } => write!(f, ", so this run's damage is that one file"),
+            return match self.damaged() {
+                0 => write!(f, ", so the tree is as it was"),
+                1 => write!(f, ", so this run's damage is that one file"),
+                _ => write!(f, ", so this run's damage is those two files"),
             };
         }
         // `lost` is printed as its path and its reason rather than through
@@ -262,10 +389,12 @@ impl Reserved {
     ///
     /// **Every target must already exist.** The open below carries `.read(true)`
     /// and `.write(true)` and no `.create(true)`, so a path that is missing
-    /// fails here exactly as a read-only one does, and a writer whose job is to
-    /// create the files it writes cannot use this one. That is the reason
-    /// `headwater_resolve::package::publish` copied this module's shape
-    /// rather than calling it, and its own comment carries the argument.
+    /// fails here exactly as a read-only one does. A writer that also makes a
+    /// new file calls [`Reserved::making`] after this, and never instead of it:
+    /// this call changes no byte, so putting it first is what leaves the
+    /// ordinary failure with nothing to undo.
+    /// `headwater_resolve::package::publish` copied this module's shape rather
+    /// than calling it, and its own comment carries the argument.
     ///
     /// The handles opened before a failing one are dropped on the way out. A
     /// handle that was only opened has changed no byte, so the tree after a
@@ -295,7 +424,77 @@ impl Reserved {
                 now: file.text,
             });
         }
-        Ok(Reserved { held })
+        Ok(Reserved { held, made: None })
+    }
+
+    /// Create the one file this run makes, after every file it will overwrite
+    /// is already held open.
+    ///
+    /// **The order is the guarantee.** [`Reserved::over`] changes no byte, so
+    /// its refusal needs no undo, and the failure that actually happens — a
+    /// reciprocal end nobody can write — is refused there with the tree exactly
+    /// as it was. By the time this runs, every foreseeable obstacle is past and
+    /// the only thing a rollback can have to remove is the file below.
+    ///
+    /// **`create_new` is what licenses the removal.** `Ok` means the kernel
+    /// made this file for this call: the test for an existing file and the
+    /// create are one syscall, so there is no window between them and no error
+    /// is read as absence. `AlreadyExists` is a refusal like every other error,
+    /// which is the shape a `publish` change was refused for missing when it
+    /// read every `Err` as *nothing was there* and unlinked on the strength of
+    /// it.
+    ///
+    /// A caller may not pass its own belief that a file is new. The path is an
+    /// argument, the create is the answer, and a `Composed::created` set three
+    /// functions upstream never reaches this decision.
+    pub fn making(mut self, root: &Path, path: &str, text: String) -> Result<Reserved, Unopened> {
+        let at = root.join(path);
+        let refuse = |why: String| Unopened {
+            path: path.to_string(),
+            why,
+        };
+        // Observed before `create_dir_all` runs, because afterwards there is
+        // nothing left to see.
+        let dirs = match at.parent() {
+            Some(parent) => {
+                let dirs = absent_above(parent);
+                if let Err(error) = std::fs::create_dir_all(parent) {
+                    unmake_dirs(&dirs);
+                    return Err(refuse(error.to_string()));
+                }
+                dirs
+            }
+            None => Vec::new(),
+        };
+        let file = match std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create_new(true)
+            .open(&at)
+        {
+            Ok(file) => file,
+            Err(error) => {
+                unmake_dirs(&dirs);
+                return Err(refuse(error.to_string()));
+            }
+        };
+        let index = self.held.len();
+        self.held.push(Held {
+            path: path.to_string(),
+            at: at.clone(),
+            file,
+            // A file that did not exist has no bytes to be put back to, which is
+            // why the undo below is an unlink and never a write of this field.
+            was: String::new(),
+            now: text,
+        });
+        self.made = Some(Made {
+            index,
+            path: path.to_string(),
+            at,
+            dirs,
+        });
+        Ok(self)
     }
 
     /// What this run will write, for a report that runs without `--apply`.
@@ -307,7 +506,11 @@ impl Reserved {
     ///
     /// The read back is off the tree rather than out of the handle: what a
     /// caller needs to know is what the next reader of that path will get.
-    pub fn commit(self) -> Result<Vec<String>, Halted> {
+    /// The report is boxed because it is a failure path and a wide type: it
+    /// carries four observations off the tree, and `clippy::result_large_err`
+    /// reads that width on every call of this function rather than on the runs
+    /// that stop.
+    pub fn commit(self) -> Result<Vec<String>, Box<Halted>> {
         self.commit_with(&mut |held: &mut Held, text: &str| -> Result<(), String> {
             put_text(&mut held.file, text)
         })
@@ -340,7 +543,7 @@ impl Reserved {
     fn commit_with(
         mut self,
         write: &mut dyn FnMut(&mut Held, &str) -> Result<(), String>,
-    ) -> Result<Vec<String>, Halted> {
+    ) -> Result<Vec<String>, Box<Halted>> {
         for index in 0..self.held.len() {
             let now = self.held[index].now.clone();
             if let Err(why) = write(&mut self.held[index], &now) {
@@ -400,6 +603,13 @@ impl Reserved {
     /// The cost is one read per file of the run, on a failure path only.
     ///
     /// `failed` indexes `held` at both call sites, which are the only two.
+    ///
+    /// **The file this run created is never written back.** It has no bytes to
+    /// be put back to, so it is skipped by the loop and by the restore after it,
+    /// and it leaves through [`Made::unmake`] instead. It is unlinked whatever
+    /// `upto` says: a run that failed before reaching it created it all the
+    /// same, and an empty document declaring one half of an edge is the state
+    /// this whole change exists to stop leaving behind.
     fn undo(
         mut self,
         upto: usize,
@@ -407,27 +617,49 @@ impl Reserved {
         path: String,
         why: String,
         write: &mut dyn FnMut(&mut Held, &str) -> Result<(), String>,
-    ) -> Halted {
+    ) -> Box<Halted> {
+        let made = self.made.take();
+        let created_index = made.as_ref().map(|made| made.index);
+
         let mut done: Vec<(usize, Result<(), String>)> = Vec::new();
         for index in 0..upto.min(self.held.len()) {
-            if index == failed {
+            if index == failed || Some(index) == created_index {
                 continue;
             }
             let was = self.held[index].was.clone();
             let outcome = write(&mut self.held[index], &was);
             done.push((index, outcome));
         }
-        let was = self.held[failed].was.clone();
-        let mut fate_of_failed = write(&mut self.held[failed], &was);
+        let mut fate_of_failed = match Some(failed) == created_index {
+            true => None,
+            false => {
+                let was = self.held[failed].was.clone();
+                Some(write(&mut self.held[failed], &was))
+            }
+        };
 
         for (index, outcome) in &mut done {
             if outcome.is_ok() && !reads_back(&self.held[*index]) {
                 *outcome = Err(NOT_READ_BACK.to_string());
             }
         }
-        if fate_of_failed.is_ok() && !reads_back(&self.held[failed]) {
-            fate_of_failed = Err(NOT_READ_BACK.to_string());
+        if let Some(fate) = &mut fate_of_failed {
+            if fate.is_ok() && !reads_back(&self.held[failed]) {
+                *fate = Err(NOT_READ_BACK.to_string());
+            }
         }
+
+        // The handle goes before the unlink, so that nothing of this run is
+        // still holding the file open when the path is read back. `making`
+        // pushes last and nothing removes an entry, so this truncation drops
+        // that one entry and leaves every index `done` names where it was.
+        let created = match made {
+            None => None,
+            Some(made) => {
+                self.held.truncate(made.index);
+                Some(Box::new(made.unmake()))
+            }
+        };
 
         let mut restored = Vec::new();
         let mut lost = Vec::new();
@@ -439,15 +671,103 @@ impl Reserved {
             }
         }
         let fate = match fate_of_failed {
-            Ok(()) => Failed::PutBack,
-            Err(why) => Failed::Damaged { why },
+            None => Failed::Unmade,
+            Some(Ok(())) => Failed::PutBack,
+            Some(Err(why)) => Failed::Damaged { why },
         };
-        Halted {
+        Box::new(Halted {
             path,
             why,
             failed: fate,
             restored,
             lost,
+            created,
+        })
+    }
+}
+
+impl Made {
+    /// Unlink the file, and read the path back before saying it went.
+    ///
+    /// `remove_file` returning `Ok` is a return value, exactly as a restore's
+    /// `Ok` was, and the question is what the next reader of the path gets. So
+    /// the answer comes from `symlink_metadata`, which does not follow a link
+    /// and does not swallow an error the way `Path::exists` does: only
+    /// [`std::io::ErrorKind::NotFound`] licenses [`Created::Removed`].
+    ///
+    /// A `NotFound` out of the unlink itself is not a failure. Somebody else
+    /// removed the path, which is the state this call wanted, and the read back
+    /// below is what decides either way.
+    ///
+    /// The directories go only after the file is observed gone, with
+    /// `remove_dir`, which takes an empty directory and nothing else. A
+    /// directory somebody filled while this run was writing therefore stops the
+    /// climb by refusing to go. **`remove_dir_all` appears nowhere here**, for
+    /// the reason `publish`'s own unwind gives: it is the call that turns a
+    /// misread state into somebody else's lost work.
+    fn unmake(self) -> Created {
+        if let Err(error) = std::fs::remove_file(&self.at) {
+            if error.kind() != std::io::ErrorKind::NotFound {
+                return Created::NotRemoved {
+                    path: self.path,
+                    why: error.to_string(),
+                };
+            }
+        }
+        match std::fs::symlink_metadata(&self.at) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                unmake_dirs(&self.dirs);
+                Created::Removed { path: self.path }
+            }
+            Ok(_) => Created::NotRemoved {
+                path: self.path,
+                why: "the unlink returned no error and the path still holds a file".to_string(),
+            },
+            Err(error) => Created::NotRemoved {
+                path: self.path,
+                why: error.to_string(),
+            },
+        }
+    }
+}
+
+/// `dir` and every directory above it that is not on the tree either, deepest
+/// first.
+///
+/// The walk stops at the first path that exists, and `symlink_metadata` is what
+/// asks, so a link above `dir` stops it rather than being read through. This is
+/// the shape `headwater_resolve::package`'s own climb reached, and the argument
+/// there is the argument here.
+fn absent_above(dir: &Path) -> Vec<PathBuf> {
+    let mut chain = Vec::new();
+    let mut at = Some(dir);
+    while let Some(path) = at {
+        if path.as_os_str().is_empty() {
+            break;
+        }
+        match std::fs::symlink_metadata(path) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                chain.push(path.to_path_buf());
+                at = path.parent();
+            }
+            _ => break,
+        }
+    }
+    chain
+}
+
+/// Take back the directories a create made, deepest first, and stop at the
+/// first one that will not go.
+///
+/// Every error is dropped. This runs on the way out of a failure that is
+/// already being reported, and the fact a reader needs — whether the *document*
+/// is gone — is the one [`Made::unmake`] observed and [`Halted`] prints. An
+/// empty directory is no document, no rule reads one, and nothing about a
+/// corpus's checks turns on it.
+fn unmake_dirs(dirs: &[PathBuf]) {
+    for dir in dirs {
+        if std::fs::remove_dir(dir).is_err() {
+            return;
         }
     }
 }
@@ -863,6 +1183,7 @@ mod tests {
             failed,
             restored: restored.iter().map(|path| path.to_string()).collect(),
             lost,
+            created: None,
         };
 
         let table = [
@@ -886,13 +1207,275 @@ mod tests {
 
         for (halted, expected) in &table {
             assert_eq!(&halted.to_string(), expected);
-            let intact = halted.failed() == &Failed::PutBack && halted.lost.is_empty();
+            let intact = halted.damaged() == 0 && halted.lost.is_empty();
             assert_eq!(
                 halted.to_string().contains("the tree is as it was"),
                 intact,
                 "the sentence is printed exactly when the tree is as it was: {halted}"
             );
         }
+    }
+
+    /// Every state the created document adds, and the sentence none of them may
+    /// fake.
+    ///
+    /// A run that created nothing carries `created: None` and prints no clause
+    /// at all, which is why every string the table above records is the string
+    /// this type still writes. The states below are the ones a create adds: the
+    /// document went or it did not, and the run failed on it or on something
+    /// else. The invariant is the same one, read through [`Halted::damaged`],
+    /// and it is checked against all of them rather than against the two a
+    /// fixture happens to reach.
+    #[test]
+    fn a_created_document_that_would_not_go_is_never_called_an_intact_tree() {
+        let removed = || {
+            Some(Box::new(Created::Removed {
+                path: "new.md".to_string(),
+            }))
+        };
+        let stuck = |path: &str| {
+            Some(Box::new(Created::NotRemoved {
+                path: path.to_string(),
+                why: "permission denied".to_string(),
+            }))
+        };
+        let halted = |failed: Failed, path: &str, created: Option<Box<Created>>| Halted {
+            path: path.to_string(),
+            why: "no space left on device".to_string(),
+            failed,
+            restored: vec!["a.md".to_string()],
+            lost: Vec::new(),
+            created,
+        };
+
+        let table = [
+            (halted(Failed::PutBack, "b.md", removed()),
+             "b.md did not write: no space left on device. It was put back, and the document this run created at new.md was removed, and the 1 file already written was put back too, so the tree is as it was"),
+            (halted(Failed::PutBack, "b.md", stuck("new.md")),
+             "b.md did not write: no space left on device. It was put back, and the document this run created at new.md could not be removed: permission denied, and the 1 file already written was put back too, so this run's damage is that one file"),
+            (halted(Failed::Damaged { why: "no space left on device".to_string() }, "b.md", stuck("new.md")),
+             "b.md did not write: no space left on device. It could not be put back and now holds neither what it held nor what this run asked for (no space left on device), and the document this run created at new.md could not be removed: permission denied, and the 1 file already written was put back, so this run's damage is those two files"),
+            // The run failed on the document it created. The clause about the
+            // failing file already named the path, so the created clause says
+            // *it* rather than naming a second file that is the same file.
+            (halted(Failed::Unmade, "new.md", removed()),
+             "new.md did not write: no space left on device. It is the document this run created, and it was removed, and the 1 file already written was put back, so the tree is as it was"),
+            (halted(Failed::Unmade, "new.md", stuck("new.md")),
+             "new.md did not write: no space left on device. It is the document this run created, and it could not be removed: permission denied, and the 1 file already written was put back, so this run's damage is that one file"),
+        ];
+
+        for (halted, expected) in &table {
+            assert_eq!(&halted.to_string(), expected);
+            let intact = halted.damaged() == 0 && halted.lost.is_empty();
+            assert_eq!(
+                halted.to_string().contains("the tree is as it was"),
+                intact,
+                "the sentence is printed exactly when the tree is as it was: {halted}"
+            );
+        }
+    }
+
+    /// The create lands, and so does the directory it needed.
+    ///
+    /// `making` is the only way a shelf's first document reaches the tree, so
+    /// the absent parent is the ordinary case rather than an edge of it.
+    #[test]
+    fn a_created_document_lands_under_a_directory_that_was_not_there() {
+        let dir = Dir::with("making", &[("a.md", "one")]);
+        let reserved = Reserved::over(dir.path(), composed(&[("a.md", "ONE")]))
+            .expect("the one target opens")
+            .making(dir.path(), "shelf/new.md", "NEW".to_string())
+            .expect("the new document is created");
+
+        assert_eq!(reserved.paths(), vec!["a.md", "shelf/new.md"]);
+        assert_eq!(reserved.commit().expect("both write").len(), 2);
+        assert_eq!(dir.read("a.md"), "ONE");
+        assert_eq!(dir.read("shelf/new.md"), "NEW");
+    }
+
+    /// A path that is already taken refuses, and takes its directory back.
+    ///
+    /// `create_new` is what answers, and its `AlreadyExists` is a refusal like
+    /// every other error rather than a state to reason about. The second
+    /// assertion is the one about the undo of the refusal itself: the directory
+    /// this call made on the way to a create that did not happen does not stay.
+    #[test]
+    fn a_created_document_whose_path_is_taken_refuses_and_leaves_no_directory() {
+        let dir = Dir::with("already-there", &[("a.md", "one")]);
+        std::fs::create_dir_all(dir.path().join("shelf")).expect("a shelf");
+        std::fs::write(dir.path().join("shelf/new.md"), "SOMEBODY ELSE").expect("a file there");
+
+        let refused = Reserved::over(dir.path(), composed(&[("a.md", "ONE")]))
+            .expect("the one target opens")
+            .making(dir.path(), "shelf/new.md", "NEW".to_string())
+            .expect_err("the path is taken");
+        assert_eq!(refused.path, "shelf/new.md");
+        assert_eq!(
+            dir.read("shelf/new.md"),
+            "SOMEBODY ELSE",
+            "the file at the path is somebody else's and this call never opened it for writing"
+        );
+        assert_eq!(dir.read("a.md"), "one", "and nothing else moved");
+        assert!(
+            dir.path().join("shelf").exists(),
+            "a directory this call did not make is not one it may remove"
+        );
+    }
+
+    /// The test the ruling turns on: a run that stops leaves no new document.
+    ///
+    /// The reciprocal's write fails part way, which is one write before the
+    /// created document's own. So at the moment of the failure `shelf/new.md`
+    /// is on disk and empty — a document declaring one half of an edge, which
+    /// is the exact state `relation.reciprocity.missing` reports over the
+    /// author's whole corpus. A loop of `std::fs::write` leaves it there, and
+    /// leaves the shelf directory it made for it. This asserts both are gone.
+    #[test]
+    fn a_commit_that_fails_removes_the_document_this_run_created() {
+        let dir = Dir::with("commit-fails", &[("a.md", "one")]);
+        let reserved = Reserved::over(dir.path(), composed(&[("a.md", "ONE")]))
+            .expect("the one target opens")
+            .making(dir.path(), "shelf/new.md", "NEW".to_string())
+            .expect("the new document is created");
+        assert!(
+            dir.path().join("shelf/new.md").exists(),
+            "the create really did make a file, which is what the rollback below has to remove"
+        );
+
+        let halted = reserved
+            .commit_with(&mut |held: &mut Held, text: &str| -> Result<(), String> {
+                match (held.path.as_str(), text) {
+                    ("a.md", "ONE") => fails_part_way(&mut held.file, "O"),
+                    _ => put_text(&mut held.file, text),
+                }
+            })
+            .expect_err("the first write fails part way");
+
+        assert!(
+            !dir.path().join("shelf/new.md").exists(),
+            "the document this run created is off the tree: {halted}"
+        );
+        assert!(
+            !dir.path().join("shelf").exists(),
+            "and so is the directory the create made for it: {halted}"
+        );
+        assert_eq!(dir.read("a.md"), "one", "and the file it edited is back");
+        assert!(
+            halted
+                .to_string()
+                .contains("the document this run created at shelf/new.md was removed"),
+            "and the report says so rather than leaving the author to look: {halted}"
+        );
+        assert!(
+            halted.to_string().contains("the tree is as it was"),
+            "everything went back and the new document went, so this run may say so: {halted}"
+        );
+    }
+
+    /// The same property one phase later, and with no seam at all.
+    ///
+    /// `a.md` is unlinked under its handle after the reservation, so every write
+    /// of the run returns `Ok` and the read back off the tree is what fails.
+    /// By then `new.md` holds this run's bytes rather than nothing, so *absent*
+    /// is the opposite of what a writer without a rollback leaves in both of
+    /// this file's create cases and not only in the empty one.
+    #[test]
+    fn a_read_back_that_fails_removes_the_document_this_run_created() {
+        let dir = Dir::with("read-back-create", &[("a.md", "one")]);
+        let reserved = Reserved::over(dir.path(), composed(&[("a.md", "ONE")]))
+            .expect("the one target opens")
+            .making(dir.path(), "new.md", "NEW".to_string())
+            .expect("the new document is created");
+        std::fs::remove_file(dir.path().join("a.md")).expect("the edited target goes away");
+
+        let halted = reserved.commit().expect_err("the read back fails");
+
+        assert_eq!(halted.path, "a.md");
+        assert!(
+            !dir.path().join("new.md").exists(),
+            "the document this run created is off the tree: {halted}"
+        );
+    }
+
+    /// A mode, set on a path.
+    #[cfg(unix)]
+    fn mode(at: &Path, bits: u32) {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(at, std::fs::Permissions::from_mode(bits))
+            .expect("the mode is set");
+    }
+
+    /// Whether a mode can stop this process.
+    ///
+    /// Root unlinks through every bit, so under root the case below is
+    /// unreachable rather than failing, and it says so and stops. The answer is
+    /// a probe rather than a user id, because the question is what the file
+    /// system does to this process.
+    #[cfg(unix)]
+    fn modes_hold(dir: &Dir) -> bool {
+        let at = dir.path().join("mode-probe");
+        std::fs::create_dir_all(&at).expect("the probe is made");
+        std::fs::write(at.join("held"), "x").expect("the probe holds a file");
+        mode(&at, 0o555);
+        let held = std::fs::remove_file(at.join("held")).is_err();
+        mode(&at, 0o755);
+        std::fs::remove_dir_all(&at).expect("the probe goes");
+        held
+    }
+
+    /// An unlink that will not go is named, and the report may not say the tree
+    /// is as it was.
+    ///
+    /// This is the terminal arm of the ruling. The rollback did everything it
+    /// could and one file of this run is still there, so the sentence that says
+    /// otherwise is the one thing the report is not allowed to print.
+    ///
+    /// Mode `0555` is what makes both halves reachable at once: no `w`, so no
+    /// name can leave the directory, and `r` and `x`, so every read the
+    /// rollback makes still answers and the other file goes back as it would
+    /// have.
+    #[cfg(unix)]
+    #[test]
+    fn a_created_file_that_will_not_go_is_named_rather_than_claimed_removed() {
+        let dir = Dir::with("will-not-go", &[("a.md", "one")]);
+        if !modes_hold(&dir) {
+            eprintln!("skipped: this process is root, and root unlinks through mode 0555");
+            return;
+        }
+        let reserved = Reserved::over(dir.path(), composed(&[("a.md", "ONE")]))
+            .expect("the one target opens")
+            .making(dir.path(), "new.md", "NEW".to_string())
+            .expect("the new document is created");
+
+        let root = dir.path().to_path_buf();
+        let halted = reserved
+            .commit_with(&mut |held: &mut Held, text: &str| -> Result<(), String> {
+                match (held.path.as_str(), text) {
+                    ("a.md", "ONE") => {
+                        mode(&root, 0o555);
+                        fails_part_way(&mut held.file, "O")
+                    }
+                    _ => put_text(&mut held.file, text),
+                }
+            })
+            .expect_err("the first write fails part way");
+
+        mode(&root, 0o755);
+
+        assert!(
+            dir.path().join("new.md").exists(),
+            "the unlink could not go, which is the state this case is about"
+        );
+        assert!(
+            halted
+                .to_string()
+                .contains("the document this run created at new.md could not be removed"),
+            "the file that is still there is named: {halted}"
+        );
+        assert!(
+            !halted.to_string().contains("the tree is as it was"),
+            "one file of this run is still on the tree: {halted}"
+        );
     }
 
     #[test]
