@@ -216,7 +216,7 @@ pub fn apply(root: &Path, files: &[Fixed]) -> Result<(), Refused> {
     crate::tree::Reserved::over(root, composed)
         .map_err(|unopened| unreadable(unopened.path, unopened.why))?
         .commit()
-        .map_err(|halted| unreadable(halted.path.clone(), halted.to_string()))?;
+        .map_err(|halted| unreadable(halted.path().to_string(), halted.to_string()))?;
     Ok(())
 }
 
