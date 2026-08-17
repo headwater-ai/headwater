@@ -542,3 +542,41 @@ fn a_second_and_a_third_infer_write_change_nothing() {
         "the declared task survived all three runs:\n{after}"
     );
 }
+
+/// A block this run cannot add to stops the write rather than replacing it.
+///
+/// The state is a block with no `tasks` sequence, which `headwater check`
+/// already refuses to read as debt. A run that resolved the refusal by writing
+/// its own block over it would be the defect of #249 wearing an error message,
+/// so the file is left exactly as it was.
+#[test]
+fn an_adoption_block_with_no_tasks_stops_an_infer_write() {
+    let root = Root::new("no-tasks-sequence");
+    root.author();
+    root.corpus();
+    let broken = root.text().replacen(
+        PAYLOAD,
+        "\nadoption:\n  note: this block declares no tasks\n",
+        1,
+    );
+    assert!(
+        broken.contains("\nadoption:\n") && !broken.contains("tasks:"),
+        "the block is there and its tasks sequence is not:\n{broken}"
+    );
+    root.write(&broken);
+
+    let ran = root.run(&["infer", "--owner", "a parent test", "--until", FAR, "--write"]);
+    assert_ne!(
+        ran.code,
+        Some(0),
+        "a block this run cannot add to stops the write\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert_eq!(root.text(), broken, "the file the run refused is untouched");
+    assert!(
+        ran.err.contains("adoption"),
+        "the refusal names what a write would have discarded:\n{}",
+        ran.err
+    );
+}
