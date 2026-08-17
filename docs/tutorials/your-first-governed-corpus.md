@@ -33,8 +33,9 @@ You need four things.
 - A checkout of the Headwater repository. The repository is private today, so you need access to it.
 - About twenty minutes.
 
-Two facts about the output blocks below.
+Three facts about the blocks below.
 
+- **A block is a command or it is output, and the two look the same.** Every step gives the command first and what it printed after. Nothing marks the difference, so read the sentence above a block before you paste it.
 - **Your dates differ.** The engine reads a clock, and it puts the date of your run into what it writes. Where a block below shows `2026-08-17`, yours shows the day you read this.
 - **Long output is trimmed.** A block that is shorter than the real output says so on the line above it.
 
@@ -291,14 +292,28 @@ census
 
 The corpus did not grow. The count of checks that ran went from 2 to 14, because a typed document is a document that rules can reach. That is the whole trade this system asks for: type a document, and fourteen questions become answerable about it.
 
-### Step 10 — Commit, so that a mistake is reversible
+### Step 10 — Say what does not belong in the repository, and commit
+
+One directory under `.headwater/` is not yours to keep. Write the ignore file first.
 
 ```
+printf '.headwater/cache/\n' > .gitignore
 git add -A
 git commit -m "A first governed corpus"
 ```
 
-**Check.** `git log --oneline` prints one line that ends in `A first governed corpus`.
+**Check.** `git log --oneline` prints one line that ends in `A first governed corpus`, and `git ls-files .headwater` prints four files and no cache:
+
+```
+.headwater/capture-cost.jsonl
+.headwater/overlay.yml
+.headwater/taxonomy.lock
+.headwater/taxonomy.yml
+```
+
+**The lock is committed and the cache is not, and the difference is the point.** A reviewer reads the lock, because it is the taxonomy a verdict came from. A verdict you cannot trace to a schema is one nobody can argue with. The cache holds no fact of its own. Every entry is recomputable from the tree it was written over, and a run that finds none is slower and never different. Headwater's own repository draws that line in its `.gitignore`, in those words. The run that checks this page reads that same file.
+
+`.headwater/capture-cost.jsonl` is the one that takes a decision rather than a rule. It holds one reading per document that `headwater new` wrote, and it names no person and no agent. Headwater's own repository commits it, so that `headwater capture` can trend it. Keep it or ignore it, and know that you chose.
 
 ### Step 11 — Declare an edge between two documents
 
@@ -345,7 +360,27 @@ Trimmed to the findings block:
 
 The `git checkout` put the target back to the version you committed, which is the version before the far half arrived. One edge now has one end.
 
-Read the identifier in parentheses. An **obligation** is a claim this system makes about itself: something the corpus owes, with the rule that verifies it named beside it. `OB-REL-1` is the obligation that this rule discharges, and every finding names the one it serves. Run `headwater check` and read the `register` block to see all twenty-seven of them, with a count of the ones that no rule verifies. The system reports its own gaps in the same artifact as yours.
+Read the identifier in parentheses. An **obligation** is a claim this system makes about itself: something a corpus owes, with the rule that verifies it named beside it. `OB-REL-1` is the obligation that this rule discharges, and every finding names the one it serves.
+
+Trimmed to the head of the register and to its last line. The same run printed both, above the findings:
+
+```
+  register
+    27 obligations: 27 verified, 0 gap, 0 unverifiable, 0 with no disposition
+       11 high, 11 verified
+       11 medium, 11 verified
+        5 low, 5 verified
+```
+
+```
+    every rule this engine carries reaches one obligation
+```
+
+**Check.** `headwater check 2>/dev/null | grep 'obligations:'` prints the second line of the first block.
+
+**One of those readings is about the package and one is about your run.** The twenty-seven obligations and their severities come from `headwater/standard`, so they read the same on your first day and your thousandth. The last line is derived from the run in front of you. It says that no rule fired at you without an obligation behind it, and that is what makes the identifier in your finding worth reading.
+
+**Your corpus will not show you a gap, and the reason is worth knowing.** A `gap` is a disposition that a package author writes, with an owner, for an obligation that no mechanism verifies. The base package declares none, so this row reads `0 gap` on every run of yours and no step here moves it. Headwater's own corpus takes a bundle that declares three obligations no mechanism verifies. The same block there reads `30 obligations: 27 verified, 2 gap, 1 unverifiable`, and it names the owner of each gap. The number worth watching is the one that is not `verified`.
 
 The word `mechanical` on the fix line is the second thing to read. A rule is an error when the repair takes no judgment, and advisory when the repair is a rewrite. This one takes no judgment, so the next step is a command rather than an edit.
 
@@ -355,7 +390,7 @@ The word `mechanical` on the fix line is the second thing to read. A rule is an 
 headwater check --fix
 ```
 
-The account of what was written goes to standard error:
+Trimmed to the first line. The account of what was written goes to standard error, and the cache accounting follows it there:
 
 ```
 headwater: fixed docs/decisions/0001-store-attempts-in-postgres.md (1 patch)
@@ -468,7 +503,7 @@ Say each of these back before you leave. A finding you meet later names two or t
 
 **Overlay.** What your repository declares on top of the package it takes. An overlay adds what a package cannot know: your namespace, your phrases, your extra kinds. `headwater taxonomy resolve` merges the package and the overlay into one lock, and every later command reads the lock.
 
-**Obligation.** A claim this system makes about itself, with the rule that verifies it named beside it. Every finding prints the obligation it discharges, in parentheses after the rule name. An obligation that no rule verifies is reported as a gap in the same run as your own findings.
+**Obligation.** A claim this system makes about itself, with the rule that verifies it named beside it. Every finding prints the obligation it discharges, in parentheses after the rule name. The register block of every run counts them. An obligation whose author declared that nothing verifies it is counted there as a gap, with an owner.
 
 Four more words earn their place beside those five.
 

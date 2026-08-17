@@ -44,7 +44,19 @@ checks = 0
 
 
 def read_blocks(root):
-    """Every fenced code block of the tutorial body, in order."""
+    """Every fenced code block of the tutorial body, and whether it is marked trimmed.
+
+    The tutorial states its own convention in *Before you start*: "A block that
+    is shorter than the real output says so on the line above it." A block is
+    marked when the nearest prose paragraph above it opens with `Trimmed`, and
+    one marker covers the run of fences under it, which is how steps 7, 9, 11
+    and 12 show two or three cuts of one run.
+
+    The flag is what `compare` holds the page to. A comparison that passes on a
+    subset of the real output is a claim that the block is a cut of it, and a cut
+    the page does not declare is the page breaking its own rule. That is the one
+    thing sixteen steps of substring matching cannot otherwise see.
+    """
     lines = open(os.path.join(root, DOC)).read().split('\n')
     # Strip the front matter, which ends at the first `---` after the opening one.
     # A split on the delimiter would cut at the scaffolded front matter that step
@@ -52,30 +64,34 @@ def read_blocks(root):
     # one it uses.
     if lines and lines[0] == '---':
         lines = lines[lines.index('---', 1) + 1:]
-    blocks, current, inside = [], [], False
+    blocks, trimmed, current, inside, paragraph = [], [], [], False, ''
     for line in lines:
         if line.strip() == '```':
             if inside:
                 blocks.append('\n'.join(current))
+                trimmed.append(paragraph.lstrip('*').lower().startswith('trimmed'))
                 current = []
             inside = not inside
             continue
         if inside:
             current.append(line)
-        elif line.startswith('    ') and line.strip():
+            continue
+        if line.startswith('    ') and line.strip():
             raise SystemExit(
                 'tutorial: an indented code block is outside a fence, and CommonMark '
                 'joins two of those into one <pre>: ' + line[:60])
+        if line.strip():
+            paragraph = line.strip()
     if inside:
         raise SystemExit('tutorial: an unclosed code fence')
-    return blocks
+    return blocks, trimmed
 
 
 def normalize(text, today):
     return [line.rstrip() for line in text.replace(today, STATED_DATE).strip('\n').split('\n')]
 
 
-def compare(label, actual, stated, today, subset=False):
+def compare(label, actual, stated, today, subset=False, index=None, trimmed=None):
     global checks
     checks += 1
     got, want = normalize(actual, today), normalize(stated, today)
@@ -89,6 +105,11 @@ def compare(label, actual, stated, today, subset=False):
         print('  the run printed:')
         for line in got[:40]:
             print('    | ' + line)
+    # A subset match means the block is a cut of the real output, so the page owes
+    # the reader the marker its own convention promises.
+    if subset and index is not None and trimmed is not None:
+        assert_true(f'{label}: the page declares this block trimmed', trimmed[index],
+                    'the block matches part of the output and no `Trimmed` line stands above it')
 
 
 def assert_true(label, condition, detail=''):
@@ -107,9 +128,9 @@ def main():
     if not os.access(binary, os.X_OK):
         raise SystemExit('tutorial: no engine at ' + binary)
 
-    blocks = read_blocks(root)
-    if len(blocks) != 42:
-        raise SystemExit(f'tutorial: expected 42 code blocks and found {len(blocks)}')
+    blocks, trimmed = read_blocks(root)
+    if len(blocks) != 45:
+        raise SystemExit(f'tutorial: expected 45 code blocks and found {len(blocks)}')
 
     today = datetime.date.today().isoformat()
     scratch = tempfile.mkdtemp(prefix='headwater-tutorial-')
@@ -131,28 +152,36 @@ def main():
                     run('command -v headwater').stdout.strip().endswith(
                         'engine/target/release/headwater'))
 
+        def cut(label, actual, index):
+            """A block the page presents as a cut of the real output."""
+            compare(label, actual, blocks[index], today, subset=True,
+                    index=index, trimmed=trimmed)
+
+        def whole(label, actual, index):
+            """A block the page presents as the whole of what a command printed."""
+            compare(label, actual, blocks[index], today)
+
         # Step 1.
         first = blocks[1].strip('\n').split('\n')
         run(first[0])
         cwd['at'] = os.path.join(scratch, 'headwater-tutorial')
         for command in first[2:]:
             run(command)
-        compare('step 1: ls docs/decisions', run('ls docs/decisions').stdout, blocks[2], today)
+        whole('step 1: ls docs/decisions', run('ls docs/decisions').stdout, 2)
 
         # Step 2.
-        result = run(blocks[3].strip())
-        compare('step 2: headwater init', result.stdout, blocks[4], today)
+        whole('step 2: headwater init', run(blocks[3].strip()).stdout, 4)
         compare('step 2: ls .headwater', run('ls .headwater').stdout,
                 'overlay.yml\ntaxonomy.yml', today)
 
         # Step 3.
         run(blocks[5].strip())
-        compare('step 3: ls packages/headwater-standard',
-                run('ls packages/headwater-standard').stdout, blocks[6], today)
+        whole('step 3: ls packages/headwater-standard',
+              run('ls packages/headwater-standard').stdout, 6)
 
         # Step 4.
         result = run(blocks[7].strip())
-        compare('step 4: the first refusal', result.stdout + result.stderr, blocks[8], today)
+        whole('step 4: the first refusal', result.stdout + result.stderr, 8)
         assert_true('step 4: exit status 1', result.returncode == 1)
 
         # Step 5. The tutorial names the line to change rather than a command.
@@ -161,10 +190,10 @@ def main():
         assert_true('step 5: the line the tutorial names is in the file',
                     '  version: 0.0.0' in source)
         open(path, 'w').write(source.replace('  version: 0.0.0', '  version: 3.2.0'))
-        compare("step 5: grep 'version:'",
-                run("grep 'version:' .headwater/taxonomy.yml").stdout, blocks[9], today)
+        whole("step 5: grep 'version:'",
+              run("grep 'version:' .headwater/taxonomy.yml").stdout, 9)
         result = run(blocks[10].strip())
-        compare('step 5: the second refusal', result.stdout + result.stderr, blocks[11], today)
+        whole('step 5: the second refusal', result.stdout + result.stderr, 11)
         assert_true('step 5: exit status 1', result.returncode == 1)
 
         # Step 6. The tutorial names the last line to replace.
@@ -172,78 +201,93 @@ def main():
         source = open(path).read()
         assert_true('step 6: the last line is `add: {}`', source.rstrip('\n').endswith('add: {}'))
         open(path, 'w').write(source.rstrip('\n')[:-len('add: {}')] + blocks[12].strip('\n') + '\n')
-        compare('step 6: tail -2 .headwater/overlay.yml',
-                run('tail -2 .headwater/overlay.yml').stdout, blocks[12], today)
+        whole('step 6: tail -2 .headwater/overlay.yml',
+              run('tail -2 .headwater/overlay.yml').stdout, 12)
         result = run(blocks[13].strip())
-        compare('step 6: the lock is written', result.stdout + result.stderr, blocks[14], today)
+        whole('step 6: the lock is written', result.stdout + result.stderr, 14)
         compare('step 6: ls .headwater/taxonomy.lock',
                 run('ls .headwater/taxonomy.lock').stdout, '.headwater/taxonomy.lock', today)
 
         # Step 7.
         result = run(blocks[15].strip())
-        compare('step 7: the census', result.stdout, blocks[16], today, subset=True)
-        compare('step 7: the coverage line', result.stdout, blocks[17], today, subset=True)
-        compare('step 7: the findings line', result.stdout, blocks[18], today, subset=True)
+        cut('step 7: the census', result.stdout, 16)
+        cut('step 7: the coverage line', result.stdout, 17)
+        cut('step 7: the findings line', result.stdout, 18)
         compare('step 7: strict exit',
                 run('headwater check --strict > /dev/null 2>&1; echo $?').stdout, '0', today)
 
         # Step 8.
         result = run(blocks[19].strip())
-        compare('step 8: what the taxonomy decided', result.stdout, blocks[20], today, subset=True)
-        compare('step 8: the document the verb wrote',
-                run('cat docs/decisions/0001-store-attempts-in-postgres.md').stdout,
-                blocks[21], today)
+        cut('step 8: what the taxonomy decided', result.stdout, 20)
+        whole('step 8: the document the verb wrote',
+              run('cat docs/decisions/0001-store-attempts-in-postgres.md').stdout, 21)
 
         # Step 9.
         result = run(blocks[22].strip())
-        compare('step 9: the census', result.stdout, blocks[23], today, subset=True)
-        compare('step 9: the coverage line', result.stdout, blocks[24], today, subset=True)
-        compare('step 9: grep check instances',
-                run("headwater check 2>/dev/null | grep 'check instances'").stdout,
-                blocks[24], today)
+        cut('step 9: the census', result.stdout, 23)
+        cut('step 9: the coverage line', result.stdout, 24)
+        whole('step 9: grep check instances',
+              run("headwater check 2>/dev/null | grep 'check instances'").stdout, 24)
 
-        # Step 10.
+        # Step 10. The ignore file is written before the commit, so the cache stays out.
         for command in blocks[25].strip('\n').split('\n'):
             run(command)
         log = run('git log --oneline').stdout.strip()
         assert_true('step 10: one commit',
                     len(log.split('\n')) == 1 and log.endswith('A first governed corpus'), log)
+        whole('step 10: git ls-files .headwater', run('git ls-files .headwater').stdout, 26)
+        # The step tells the reader to ignore what this repository ignores, and it
+        # says so in the paragraph under it. Hold the two to each other rather than
+        # to a copy: an ignore rule that moves in `.gitignore` and not on the page
+        # is the second-copy defect the page is teaching against.
+        line = blocks[25].strip('\n').split('\n')[0]
+        prefix, suffix = "printf '", "\\n' > .gitignore"
+        named = line.startswith(prefix) and line.endswith(suffix)
+        rule = line[len(prefix):-len(suffix)] if named else None
+        assert_true('step 10: the page ignores what this repository ignores',
+                    named and rule in open(os.path.join(root, '.gitignore')).read().split('\n'),
+                    f'the page writes `{rule}` and `.gitignore` here does not carry that line')
 
         # Step 11.
-        result = run(blocks[26].strip())
-        compare('step 11: wrote and edited', result.stdout, blocks[27], today, subset=True)
-        compare('step 11: the edges it proposed', result.stdout, blocks[28], today, subset=True)
+        result = run(blocks[27].strip())
+        cut('step 11: wrote and edited', result.stdout, 28)
+        cut('step 11: the edges it proposed', result.stdout, 29)
         compare('step 11: strict exit',
                 run('headwater check --strict > /dev/null 2>&1; echo $?').stdout, '0', today)
 
         # Step 12.
-        commands = blocks[29].strip('\n').split('\n')
+        commands = blocks[30].strip('\n').split('\n')
         run(commands[0])
         result = run(commands[1])
-        compare('step 12: the finding', result.stdout, blocks[30], today, subset=True)
+        cut('step 12: the finding', result.stdout, 31)
+        cut('step 12: the head of the register', result.stdout, 32)
+        cut('step 12: every rule reaches one obligation', result.stdout, 33)
+        # The page's own check names the second line of the register block.
+        compare('step 12: grep obligations:',
+                run("headwater check 2>/dev/null | grep 'obligations:'").stdout,
+                blocks[32].strip('\n').split('\n')[1], today)
         compare('step 12: strict exit',
                 run('headwater check --strict > /dev/null 2>&1; echo $?').stdout, '1', today)
 
         # Step 13.
-        result = run(blocks[31].strip())
-        compare('step 13: the fix account, on standard error',
-                result.stderr, blocks[32], today, subset=True)
+        result = run(blocks[34].strip())
+        cut('step 13: the fix account, on standard error', result.stderr, 35)
         compare('step 13: strict exit',
                 run('headwater check --strict > /dev/null 2>&1; echo $?').stdout, '0', today)
-        compare('step 13: the repaired front matter',
-                run("grep -A2 '^relations:' docs/decisions/"
-                    "0001-store-attempts-in-postgres.md").stdout, blocks[33], today)
+        whole('step 13: the repaired front matter',
+              run("grep -A2 '^relations:' docs/decisions/"
+                  "0001-store-attempts-in-postgres.md").stdout, 36)
 
         # Step 14.
-        compare('step 14: explain', run(blocks[34].strip()).stdout, blocks[35], today)
+        whole('step 14: explain', run(blocks[37].strip()).stdout, 38)
 
         # Step 15.
-        compare('step 15: route', run(blocks[36].strip()).stdout, blocks[37], today)
+        whole('step 15: route', run(blocks[39].strip()).stdout, 40)
 
         # Step 16.
-        result = run(blocks[38].strip())
-        compare('step 16: the levels', result.stdout, blocks[39], today, subset=True)
-        for command in blocks[40].strip('\n').split('\n'):
+        result = run(blocks[41].strip())
+        cut('step 16: the levels', result.stdout, 42)
+        for command in blocks[43].strip('\n').split('\n'):
             run(command)
         compare('step 16: projections.current met',
                 run("headwater conformance 2>/dev/null | grep 'projections.current'").stdout,
@@ -251,7 +295,7 @@ def main():
 
         # Where to go next.
         assert_true('where to go next: headwater infer exits 0',
-                    run(blocks[41].strip()).returncode == 0)
+                    run(blocks[44].strip()).returncode == 0)
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
 
