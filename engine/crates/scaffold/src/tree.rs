@@ -188,11 +188,47 @@ impl Reserved {
     ///
     /// The read back is off the tree rather than out of the handle: what a
     /// caller needs to know is what the next reader of that path will get.
-    pub fn commit(mut self) -> Result<Vec<String>, Halted> {
+    pub fn commit(self) -> Result<Vec<String>, Halted> {
+        self.commit_with(
+            &mut |held: &mut Held, text: &str| -> Result<(), String> {
+                put_text(&mut held.file, text)
+            },
+        )
+    }
+
+    /// The write, as a parameter, for the one failure a test cannot cause.
+    ///
+    /// A `write_all` that fails part way through a file is the failure this
+    /// loop's rollback exists for, and it is not provocable from an
+    /// unprivileged, deterministic, thread-safe test against a handle
+    /// [`Reserved::over`] opened. `over` demands a path that opens `O_RDWR`
+    /// *and* that `read_to_string` runs to EOF on, and that pair excludes every
+    /// candidate: `/dev/full` gives `ENOSPC` on write but reads endless zeros,
+    /// so `over` never returns; a FIFO opened read-write blocks in
+    /// `read_to_string` forever; a read-only file, a directory and a missing
+    /// path all fail at `over`'s own open, one phase earlier than this loop;
+    /// and `RLIMIT_FSIZE` is process-wide while cargo runs a target's cases as
+    /// threads of one process, so it would break unrelated cases beside this
+    /// one. A fixture built on any of those tests an earlier phase than the
+    /// mechanism and reads as if it tested this one.
+    ///
+    /// So the seam is not a shortcut here, it is the only route. It is placed
+    /// on the per-file write and nowhere else: [`Reserved::commit`] is the only
+    /// production caller and it passes the real write unconditionally in every
+    /// build, `commit_with` is private, and [`Reserved::undo`] takes the same
+    /// closure so a rollback goes through one write path too. A test closure
+    /// therefore inflicts the damage on disk itself rather than reporting that
+    /// it did, which is what lets a case observe the state of the file the run
+    /// failed on. Do not delete this parameter as test-only scaffolding.
+    fn commit_with(
+        mut self,
+        write: &mut dyn FnMut(&mut Held, &str) -> Result<(), String>,
+    ) -> Result<Vec<String>, Halted> {
         for index in 0..self.held.len() {
-            if let Err(why) = put(&mut self.held[index]) {
+            let now = self.held[index].now.clone();
+            if let Err(why) = write(&mut self.held[index], &now) {
                 let path = self.held[index].path.clone();
-                return Err(self.undo(index, path, why));
+                return Err(self.undo(index, path, why, write));
             }
         }
         for index in 0..self.held.len() {
@@ -208,6 +244,7 @@ impl Reserved {
                     every,
                     path,
                     "the bytes read back off the tree are not the bytes this run wrote".to_string(),
+                    write,
                 ));
             }
         }
@@ -215,13 +252,19 @@ impl Reserved {
     }
 
     /// Put back every file up to `upto`, and say which ones would not go back.
-    fn undo(mut self, upto: usize, path: String, why: String) -> Halted {
+    fn undo(
+        mut self,
+        upto: usize,
+        path: String,
+        why: String,
+        write: &mut dyn FnMut(&mut Held, &str) -> Result<(), String>,
+    ) -> Halted {
         let mut restored = Vec::new();
         let mut lost = Vec::new();
         for index in 0..upto.min(self.held.len()) {
             let was = self.held[index].was.clone();
             let held = &mut self.held[index];
-            match put_text(&mut held.file, &was) {
+            match write(held, &was) {
                 Ok(()) => restored.push(held.path.clone()),
                 Err(error) => lost.push(Unopened {
                     path: held.path.clone(),
@@ -236,11 +279,6 @@ impl Reserved {
             lost,
         }
     }
-}
-
-fn put(held: &mut Held) -> Result<(), String> {
-    let now = held.now.clone();
-    put_text(&mut held.file, &now)
 }
 
 fn put_text(file: &mut std::fs::File, text: &str) -> Result<(), String> {
@@ -372,6 +410,139 @@ mod tests {
             dir.read("a.md"),
             "one",
             "the file that did write was put back"
+        );
+    }
+
+    /// What a `write_all` that fails part way leaves behind, done for real.
+    ///
+    /// [`put_text`] rewinds, truncates and then writes, so a failure inside
+    /// `write_all` lands on a file that has already been emptied and partly
+    /// rewritten. This does the same thing to the same handle and then reports
+    /// the failure, so a case built on it observes the true state of the disk
+    /// rather than a report that the state exists. A closure that only returned
+    /// an error would test the message and not the mechanism.
+    ///
+    /// The prefix is deliberately non-empty. An assertion that only told "put
+    /// back" from "empty" would also pass against a file no run had opened.
+    fn fails_part_way(file: &mut std::fs::File, prefix: &str) -> Result<(), String> {
+        file.rewind().expect("the handle rewinds");
+        file.set_len(0).expect("the handle truncates");
+        file.write_all(prefix.as_bytes()).expect("the prefix lands");
+        Err("no space left on device".to_string())
+    }
+
+    /// The case this issue is about: the file the run failed on comes back.
+    ///
+    /// `b.md` is emptied and rewritten as far as `TW`, and then the write
+    /// fails. Every byte needed to repair it is already in hand, so the run
+    /// puts it back through the handle it still holds.
+    #[test]
+    fn a_write_that_fails_part_way_puts_the_file_it_failed_on_back() {
+        let dir = Dir::with("fails-part-way", &[("a.md", "one"), ("b.md", "two")]);
+        let reserved = Reserved::over(dir.path(), composed(&[("a.md", "ONE"), ("b.md", "TWO")]))
+            .expect("both open");
+
+        let halted = reserved
+            .commit_with(
+                &mut |held: &mut Held, text: &str| -> Result<(), String> {
+                    match (held.path.as_str(), text) {
+                        ("b.md", "TWO") => fails_part_way(&mut held.file, "TW"),
+                        _ => put_text(&mut held.file, text),
+                    }
+                },
+            )
+            .expect_err("the second write fails part way");
+
+        assert_eq!(halted.path, "b.md");
+        assert_eq!(
+            dir.read("b.md"),
+            "two",
+            "the run emptied this file and rewrote part of it, so a rollback that skips it \
+             leaves a prefix of the new text where a document was: {halted}"
+        );
+        assert_eq!(
+            dir.read("a.md"),
+            "one",
+            "the file that did write is back too"
+        );
+        assert!(
+            halted.to_string().contains("the tree is as it was"),
+            "every file is back, so this run is one that may say so: {halted}"
+        );
+    }
+
+    /// The arm a reader fixing one document actually meets.
+    ///
+    /// The run fails on its first and only file, so nothing else was written
+    /// and `restored` is empty. That is the ordinary shape of `--fix` over one
+    /// document, not an edge of it.
+    #[test]
+    fn a_single_file_run_that_fails_part_way_puts_that_file_back() {
+        let dir = Dir::with("single-file", &[("a.md", "one")]);
+        let reserved =
+            Reserved::over(dir.path(), composed(&[("a.md", "ONE")])).expect("the one target opens");
+
+        let halted = reserved
+            .commit_with(
+                &mut |held: &mut Held, text: &str| -> Result<(), String> {
+                    match text {
+                        "ONE" => fails_part_way(&mut held.file, "O"),
+                        _ => put_text(&mut held.file, text),
+                    }
+                },
+            )
+            .expect_err("the only write fails part way");
+
+        assert_eq!(halted.path, "a.md");
+        assert_eq!(
+            dir.read("a.md"),
+            "one",
+            "no other file had been written, and this one had: {halted}"
+        );
+        assert!(
+            halted.to_string().contains("the tree is as it was"),
+            "the one file is back, so this run is one that may say so: {halted}"
+        );
+    }
+
+    /// The other half of the ruling: a restore that fails is not an intact tree.
+    ///
+    /// The closure fails `b.md` twice, and it tells the two apart by the text it
+    /// is handed: once writing `TWO`, and again writing `two` back. The second
+    /// failure is the state `Failed::Damaged` exists for, and the message must
+    /// not claim an intact tree over it.
+    #[test]
+    fn a_file_that_could_not_be_put_back_is_named_rather_than_called_intact() {
+        let dir = Dir::with("not-put-back", &[("a.md", "one"), ("b.md", "two")]);
+        let reserved = Reserved::over(dir.path(), composed(&[("a.md", "ONE"), ("b.md", "TWO")]))
+            .expect("both open");
+
+        let halted = reserved
+            .commit_with(
+                &mut |held: &mut Held, text: &str| -> Result<(), String> {
+                    match (held.path.as_str(), text) {
+                        ("b.md", "TWO") => fails_part_way(&mut held.file, "TW"),
+                        ("b.md", "two") => fails_part_way(&mut held.file, "t"),
+                        _ => put_text(&mut held.file, text),
+                    }
+                },
+            )
+            .expect_err("the second write fails part way");
+
+        assert_eq!(halted.path, "b.md");
+        assert!(
+            !halted.to_string().contains("the tree is as it was"),
+            "one file holds neither what it held nor what this run asked for: {halted}"
+        );
+        assert_eq!(
+            dir.read("b.md"),
+            "t",
+            "the rollback of the failing file failed in its turn, so the damage is real"
+        );
+        assert_eq!(
+            dir.read("a.md"),
+            "one",
+            "the file that did write is back"
         );
     }
 
