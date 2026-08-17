@@ -239,13 +239,38 @@ const ROUTE: [(&str, &str); 7] = [
     ),
 ];
 
-/// The steps of [`ROUTE`] that a remediation string does not name.
-fn unnamed(fix: &str) -> Vec<&'static str> {
-    ROUTE
-        .iter()
-        .filter(|(_, token)| !fix.contains(token))
-        .map(|(label, _)| *label)
-        .collect()
+/// What a remediation string fails to say about [`ROUTE`]: a step it does not
+/// name at all, and a step it names out of turn.
+///
+/// **Order is part of what the string asserts, so a reading of the tokens alone
+/// is not enough.** The string numbers its own steps, and the numbers are not
+/// decoration: `vendor` refuses over a directory that carries no release record,
+/// so a reader who takes step 4 before step 3 meets the very refusal the string
+/// exists to route them around. A `contains` over the whole string cannot see
+/// that, and swapping two sentences would leave it green. So the position of each
+/// token's first occurrence is read, and each named step is held to the step
+/// named before it.
+fn unsaid(fix: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut previous: Option<(usize, &str)> = None;
+    for (label, token) in ROUTE {
+        let Some(at) = fix.find(token) else {
+            out.push(format!(
+                "the remediation of pin.current does not name {label}"
+            ));
+            continue;
+        };
+        if let Some((was, earlier)) = previous {
+            if at < was {
+                out.push(format!(
+                    "the remediation of pin.current puts {label} before {earlier}, and the route \
+                     runs the other way"
+                ));
+            }
+        }
+        previous = Some((at, label));
+    }
+    out
 }
 
 /// **The route, executed, with every step bracketed by the reading that proves
@@ -328,20 +353,24 @@ fn the_route_the_remediation_names_is_the_route_that_reaches_the_met_arm() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
-/// **The string this package ships names every step of that route.**
+/// **The string this package ships names every step of that route, in the order
+/// the route runs.**
 ///
 /// The remediation is the only copy of those instructions, and nothing but this
-/// read it. A reading that compared the string to itself would pass on any
+/// reads it. A reading that compared the string to itself would pass on any
 /// string, so the table is the reading and the string is only the subject.
 ///
-/// The second half calibrates the instrument rather than the subject. `PRIOR` is
-/// the remediation this one replaced, kept here for one purpose: it names steps 1
-/// and 2 and nothing else, so a table that reports it as complete is a table that
-/// reports anything as complete. That is the failure the whole test exists to
-/// avoid, and asserting it here is what keeps the demonstration in the suite
-/// instead of in a pull request body.
+/// **The last two thirds calibrate the instrument rather than the subject**, and
+/// each arm of [`unsaid`] gets its own calibration, because an arm asserted only
+/// where it passes is an arm whose green answer is the only one anybody measured.
+/// `PRIOR` is the remediation this one replaced: it names steps 1 and 2 and the
+/// verb of step 4, so a table that reports it as complete is a table that reports
+/// anything as complete. `OUT_OF_TURN` names every step and puts two of them the
+/// wrong way round, which no reading of the tokens alone can see. Both belong here
+/// rather than in a pull request body, because a demonstration that lives in prose
+/// is a demonstration nobody runs again.
 #[test]
-fn the_remediation_of_pin_current_names_every_step_of_the_route() {
+fn the_remediation_of_pin_current_names_every_step_of_the_route_in_order() {
     let text = std::fs::read_to_string(
         repository_root().join("packages/headwater-standard/conformance.yml"),
     )
@@ -355,15 +384,11 @@ fn the_remediation_of_pin_current_names_every_step_of_the_route() {
         .expect("the package declares pin.current")
         .remediation;
 
-    let missing = unnamed(fix);
+    let faults = unsaid(fix);
     assert!(
-        missing.is_empty(),
+        faults.is_empty(),
         "{}\n\nthe whole string:\n{fix}",
-        missing
-            .iter()
-            .map(|label| format!("the remediation of pin.current does not name {label}"))
-            .collect::<Vec<String>>()
-            .join("\n")
+        faults.join("\n")
     );
 
     // The remediation before #276, which named step 1, step 2, and the verb of
@@ -373,15 +398,37 @@ fn the_remediation_of_pin_current_names_every_step_of_the_route() {
                          arrived from elsewhere, run `headwater taxonomy vendor <dir>`, which \
                          refuses an artifact that is not the pinned one.";
     assert_eq!(
-        unnamed(PRIOR),
+        unsaid(PRIOR),
         [
-            "step 1 — no verb of this engine fetches one",
-            "step 3 — move the existing package directory aside",
-            "step 4 — it installs under `packages/`",
-            "step 5 — a vendored source moves the lock, so resolve follows",
+            "the remediation of pin.current does not name step 1 — no verb of this engine fetches \
+             one",
+            "the remediation of pin.current does not name step 3 — move the existing package \
+             directory aside",
+            "the remediation of pin.current does not name step 4 — it installs under `packages/`",
+            "the remediation of pin.current does not name step 5 — a vendored source moves the \
+             lock, so resolve follows",
         ],
         "the table has to report the string it replaced as incomplete, and to report \
-         steps 1, 2 and the vendor verb as named, or it discriminates nothing"
+         steps 1, 2 and the vendor verb as named, or it discriminates nothing. It also \
+         reports no step out of turn, because the three that string does name are in \
+         order, so this holds the order arm against a false positive as well"
+    );
+
+    // Every step named and two of them the wrong way round. `vendor` refuses over
+    // a directory that carries no release record, so a reader who took step 4
+    // before step 3 would meet that refusal — the string is wrong in practice
+    // rather than merely untidy, and a reading of the tokens alone calls it
+    // complete.
+    const OUT_OF_TURN: &str = "headwater taxonomy publish writes one, HW-OBL-0085 records the \
+                               fetch, taxonomy.digest takes the number, then run `headwater \
+                               taxonomy vendor` and it installs under `packages/`, then move \
+                               the existing directory aside, then headwater taxonomy resolve.";
+    assert_eq!(
+        unsaid(OUT_OF_TURN),
+        ["the remediation of pin.current puts step 4 — vendor the artifact before step 3 — move \
+          the existing package directory aside, and the route runs the other way"],
+        "a string that names every step in the wrong order has to be reported, or the \
+         word `order` in this test's name is held by nothing"
     );
 }
 
