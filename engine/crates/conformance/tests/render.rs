@@ -1,0 +1,558 @@
+// SPDX-License-Identifier: Apache-2.0
+//! Every line this report prints, held against a recorded block at one width.
+//!
+//! # Why the whole block and not a substring
+//!
+//! [`rules.rs`](./rules.rs) holds eight `contains` assertions over
+//! [`Report::render`], and a `contains` cannot tell a wrapped block from an
+//! unwrapped one that carries the same words. The report that reached an adopter
+//! before this file existed printed a 1028-character line, and every one of
+//! those eight assertions passed over it. So the hold here is one `assert_eq!`
+//! against a recorded file, and the words of the case that matters are read out
+//! of the rule set this repository ships rather than typed in beside them.
+//!
+//! `.claude/tutorial/drive.py` compares the conformance block of the tutorial as
+//! a **subset**, trimmed to the levels block, so it carries no `fix:` line and no
+//! `detail` line at all. That comparison would have passed over the defect this
+//! file reports, which is why the recorded block lives here.
+//!
+//! # Which phase each case fails in
+//!
+//! Every case here builds a [`Report`] in memory and calls `render()`. There is
+//! no parse, no lock resolution, no census and no corpus walk on the path. The
+//! one file either read is the shipped rule set, and a failure to read *that*
+//! panics with its own message rather than reporting a wrap defect. So each
+//! failure fires in the rendering phase, which is the phase the fill lives in.
+
+use headwater_check::context::Date;
+use headwater_conformance::{
+    assemble, read, render::WIDTH, Cover, DecidedBy, Identity, LevelState, Reading, Reason, Report,
+    Rule, Verdict, Waiver,
+};
+use std::path::{Path, PathBuf};
+
+fn repository_root() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../..")
+        .canonicalize()
+        .expect("the repository root")
+}
+
+fn fixtures_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")
+}
+
+fn at(text: &str) -> Date {
+    Date::parse(text).expect("a date")
+}
+
+/// The recorded expectation, compared whole.
+///
+/// Copied from `engine/crates/check/tests/fixtures.rs`, which is this
+/// repository's one idiom for a recorded artifact, including the environment
+/// variable that rewrites it. **A blessed run can move the words and it cannot
+/// re-admit a line over the width**, because the invariants below run over the
+/// rendered string rather than over this file.
+fn compare(recorded: &Path, actual: &str) {
+    if std::env::var_os("HEADWATER_BLESS").is_some() {
+        std::fs::write(recorded, actual).expect("cannot write the expectation");
+        return;
+    }
+    let expected = std::fs::read_to_string(recorded).unwrap_or_else(|e| {
+        panic!(
+            "{}: {e}. Run with HEADWATER_BLESS=1 to record it.",
+            recorded.display()
+        )
+    });
+    assert_eq!(
+        expected,
+        actual,
+        "\nthe render no longer matches {}",
+        recorded.display()
+    );
+}
+
+/// The remediation of one rule of the package this repository publishes.
+///
+/// **The parsed value, never the file bytes.** `readings.rs` states the reason
+/// and it holds here too: a token that straddles a YAML fold is one space in the
+/// parsed string and a newline in the file. Typing the string into this test
+/// instead would compare the renderer against a copy that no run reads, and the
+/// copy would go stale on the next edit of the package.
+fn shipped(rule: &str) -> String {
+    let text = std::fs::read_to_string(
+        repository_root().join("packages/headwater-standard/conformance.yml"),
+    )
+    .expect("this repository's conformance rule set");
+    let set = headwater_conformance::read(&text, "headwater/standard").expect("the rule set reads");
+    set.rule(rule)
+        .unwrap_or_else(|| panic!("the package declares {rule}"))
+        .remediation
+        .clone()
+}
+
+fn rule(name: &str, title: &str, remediation: &str, decided_by: DecidedBy) -> Rule {
+    Rule {
+        name: name.to_string(),
+        title: title.to_string(),
+        decided_by,
+        statement: "not printed by the report".to_string(),
+        remediation: remediation.to_string(),
+    }
+}
+
+fn waiver(rule: &str, reason: Reason, until: &str, note: &str) -> Waiver {
+    Waiver {
+        rule: rule.to_string(),
+        reason,
+        owner: "j.w.baxter".to_string(),
+        until: at(until),
+        note: Some(note.to_string()),
+    }
+}
+
+const LIVE_NOTE: &str = "The four rows are the review records, which no kind claims today, and \
+                         the kind that would claim them is the subject of an open decision.";
+
+/// The class with no upper bound at all, because an **adopter** writes it. The
+/// waiver note of this repository's own report is 373 characters today and the
+/// issue that asked for this fill did not mention it.
+const EXPIRED_NOTE: &str =
+    "The register was regenerated by hand while the projection plan named a path the corpus \
+     had moved, and the deviation was carried under this waiver rather than under a \
+     suppression, because a suppression would have hidden the row from the report that a \
+     reader of the register reads. The plan has since been corrected, so this waiver was \
+     already spent when its date passed.";
+
+/// One report that reaches every line class the renderer writes.
+///
+/// The clock is injected, so the block is the same on every day. Spec 12 makes
+/// the clock an input for this reason.
+fn subject() -> Report {
+    Report {
+        package: "headwater/standard".to_string(),
+        version: "3.2.0".to_string(),
+        digest: None,
+        now: at("2026-08-12"),
+        readings: vec![
+            // The case the issue names: 1019 characters of remediation, read
+            // out of the package rather than typed here.
+            Reading {
+                rule: rule(
+                    "pin.current",
+                    "The pin names the package that is installed",
+                    &shipped("pin.current"),
+                    DecidedBy::Tree,
+                ),
+                verdict: Verdict::Gap(
+                    "the version is 3.2.0 and there is no digest on either side. The package \
+                     directory carries no release record, so no published artifact stands behind \
+                     it"
+                    .to_string(),
+                ),
+                cover: Cover::None,
+            },
+            // A met rule prints two lines and no remediation.
+            Reading {
+                rule: rule(
+                    "lock.current",
+                    "The lock is current against the taxonomy sources",
+                    "Run `headwater taxonomy resolve`.",
+                    DecidedBy::Tree,
+                ),
+                verdict: Verdict::Met,
+                cover: Cover::None,
+            },
+            // The undecided arm, which reaches the 106-character sentence this
+            // engine writes as a literal.
+            Reading {
+                rule: rule(
+                    "gates.required",
+                    "A gate runs this engine between a change and a merge",
+                    "Record an attestation and name the gate it ran in.",
+                    DecidedBy::Attestation,
+                ),
+                verdict: Verdict::NotDecided("an attestation record".to_string()),
+                cover: Cover::None,
+            },
+            // A live waiver with a note over the width.
+            Reading {
+                rule: rule(
+                    "corpus.classified",
+                    "Every document of the corpus is classified",
+                    "Declare a kind that claims the rows, or move them off the shelf the corpus \
+                     root names.",
+                    DecidedBy::Tree,
+                ),
+                verdict: Verdict::Gap("4 of 201 rows carry no kind".to_string()),
+                cover: Cover::Live(waiver(
+                    "corpus.classified",
+                    Reason::AcceptedDeviation,
+                    "2027-06-30",
+                    LIVE_NOTE,
+                )),
+            },
+            // An expired waiver, which reaches both the long note class and the
+            // 103-character sentence under it.
+            Reading {
+                rule: rule(
+                    "projections.current",
+                    "Every projection is current against the corpus",
+                    "Run `headwater generate`.",
+                    DecidedBy::Tree,
+                ),
+                verdict: Verdict::Gap(
+                    "the obligation register is stale against 2 records".to_string(),
+                ),
+                cover: Cover::Expired(waiver(
+                    "projections.current",
+                    Reason::FalsePositive,
+                    "2026-07-31",
+                    EXPIRED_NOTE,
+                )),
+            },
+        ],
+        levels: vec![
+            // Exactly `WIDTH` characters and `WIDTH + 2` bytes: the em dash is
+            // one character and three bytes. A fill measuring `str::len()` wraps
+            // this line and the recorded block says it does not.
+            LevelState {
+                name: "L0".to_string(),
+                title: "Vendored and the lock is current against it".to_string(),
+                rules: vec!["pin.current".to_string()],
+                reached: false,
+                met: 0,
+                gaps: 1,
+                waived: 1,
+                undecided: 0,
+            },
+            LevelState {
+                name: "L1".to_string(),
+                title: "Classified, projected, and every rung below it reached".to_string(),
+                rules: vec![
+                    "pin.current".to_string(),
+                    "lock.current".to_string(),
+                    "corpus.classified".to_string(),
+                    "projections.current".to_string(),
+                ],
+                reached: false,
+                met: 1,
+                gaps: 2,
+                waived: 1,
+                undecided: 1,
+            },
+        ],
+        reached: None,
+    }
+}
+
+/// The continuation indent of a `fix:` block: four spaces of the rule body plus
+/// the five characters of the label. Derived here the same way the renderer
+/// derives it, from the label rather than from a second constant.
+const FIX_CONTINUATION: usize = 4 + "fix: ".len();
+
+/// A line the fill was allowed to leave over the width: one word that does not
+/// fit its own column. A word is never broken, so such a line overflows.
+fn one_word(line: &str) -> bool {
+    line.split_whitespace().count() == 1
+}
+
+// ---------------------------------------------------------------------------
+// The subject
+// ---------------------------------------------------------------------------
+
+/// **The whole rendered report, against a recorded block, at one width.**
+///
+/// The three assertions after the comparison hold the instrument rather than the
+/// subject, and they run whether or not `HEADWATER_BLESS` rewrote the file. A
+/// blessed regression to one long line fails on the first of them.
+#[test]
+fn the_report_wraps_every_line_to_the_width() {
+    let rendered = subject().render();
+    compare(&fixtures_dir().join("wrapped.report"), &rendered);
+
+    let over: Vec<String> = rendered
+        .lines()
+        .filter(|line| line.chars().count() > WIDTH && !one_word(line))
+        .map(|line| format!("{} characters: {line}", line.chars().count()))
+        .collect();
+    assert!(
+        over.is_empty(),
+        "these lines are over {WIDTH} characters and are not a single word:\n{}",
+        over.join("\n")
+    );
+
+    // The fill is tight. A width of 20 would satisfy the bound above and fail
+    // here, so the bound alone is not what this file holds.
+    let longest = rendered
+        .lines()
+        .map(|line| line.chars().count())
+        .max()
+        .expect("the report has lines");
+    assert!(
+        longest > WIDTH - 12,
+        "the longest line is {longest} of {WIDTH}, so the fill is not reaching the width"
+    );
+
+    // The remediation of `pin.current` is demonstrably filled rather than
+    // accidentally short: it carries continuation lines under its label.
+    let continued = rendered
+        .lines()
+        .filter(|line| {
+            line.chars().take(FIX_CONTINUATION).all(|c| c == ' ')
+                && line.chars().nth(FIX_CONTINUATION) != Some(' ')
+                && line.chars().count() > FIX_CONTINUATION
+        })
+        .count();
+    assert!(
+        continued > 1,
+        "no `fix:` block has a continuation line, so nothing here was wrapped"
+    );
+}
+
+/// Every word of the remediation survives the fill, in order, exactly once.
+///
+/// This is the structural answer to "can two remediations that differ by one
+/// word render to one block": stripping the indents and rejoining on single
+/// spaces returns the shipped string, so the block is injective on it up to the
+/// whitespace runs the fill normalizes.
+#[test]
+fn the_filled_block_rejoins_to_the_shipped_remediation() {
+    let rendered = subject().render();
+    let mut block: Vec<&str> = Vec::new();
+    for line in rendered.lines() {
+        match block.is_empty() {
+            true => {
+                if let Some(rest) = line.strip_prefix("    fix: ") {
+                    block.push(rest);
+                }
+            }
+            false => match line.strip_prefix("         ") {
+                Some(rest) if !rest.starts_with(' ') => block.push(rest),
+                _ => break,
+            },
+        }
+    }
+    assert!(block.len() > 1, "the first `fix:` block is one line");
+    assert_eq!(
+        block.join(" "),
+        shipped("pin.current"),
+        "the fill lost, duplicated or reordered a word"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// The instrument
+// ---------------------------------------------------------------------------
+
+/// A report with one gap, so a single line class can be asserted exactly.
+fn one_gap(remediation: &str) -> Report {
+    Report {
+        package: "acme/taxonomy".to_string(),
+        version: "1.0.0".to_string(),
+        digest: None,
+        now: at("2026-08-12"),
+        readings: vec![Reading {
+            rule: rule(
+                "lock.current",
+                "The lock is current",
+                remediation,
+                DecidedBy::Tree,
+            ),
+            verdict: Verdict::Gap("the lock is behind its sources".to_string()),
+            cover: Cover::None,
+        }],
+        levels: Vec::new(),
+        reached: None,
+    }
+}
+
+/// **A remediation that fits is one line, with no continuation.**
+///
+/// The ambient outcome here is the opposite of the asserted one: a fill that
+/// always broke, or one that indented a continuation it did not need, passes the
+/// recorded comparison above and fails this. An arm asserted only where it
+/// passes is an arm whose green answer is the only one anybody measured.
+#[test]
+fn a_remediation_that_fits_the_width_is_one_line() {
+    let rendered = one_gap("Run `headwater taxonomy resolve`.").render();
+    assert!(
+        rendered.contains("\n    fix: Run `headwater taxonomy resolve`.\n"),
+        "the short remediation is not one line:\n{rendered}"
+    );
+    let continuations = rendered
+        .lines()
+        .filter(|line| line.starts_with("         "))
+        .count();
+    assert_eq!(
+        continuations, 0,
+        "a remediation that fits was given a continuation line:\n{rendered}"
+    );
+}
+
+/// **A word longer than its column goes on its own line, whole.**
+///
+/// A digest, a URL or a backticked path can be longer than the column it lands
+/// in. The fill never breaks inside a word, never hyphenates and never
+/// truncates, so such a line overflows and the word survives. This is the arm
+/// that had no location before this file: the over-long word.
+#[test]
+fn a_word_longer_than_the_column_is_not_broken() {
+    let word = "a".repeat(90);
+    let rendered = one_gap(&format!("Compare the digest against {word} and stop.")).render();
+    assert!(
+        rendered.contains(&word),
+        "the fill broke a word that does not fit its column"
+    );
+    let own_line = rendered
+        .lines()
+        .find(|line| line.contains(&word))
+        .expect("the long word is on a line");
+    assert_eq!(
+        own_line.trim(),
+        &word,
+        "the over-long word shares its line with another word"
+    );
+    assert!(
+        own_line.starts_with(&" ".repeat(FIX_CONTINUATION)),
+        "the over-long word lost the continuation indent: {own_line:?}"
+    );
+}
+
+/// **A line of exactly the width, whose bytes exceed it, is not wrapped.**
+///
+/// The level line carries an em dash: one character, three bytes. A fill
+/// measuring `str::len()` would break this line two characters early, and the
+/// recorded block would then record that error as the expectation. Asserting it
+/// here gives the mistake a name.
+#[test]
+fn a_line_of_exactly_the_width_with_a_multibyte_dash_is_not_wrapped() {
+    let mut report = subject();
+    report.readings = Vec::new();
+    report.levels.truncate(1);
+    let rendered = report.render();
+    let line = rendered
+        .lines()
+        .find(|line| line.starts_with("  L0 "))
+        .expect("the level line");
+    assert_eq!(
+        line.chars().count(),
+        WIDTH,
+        "the calibration moved: {line:?}"
+    );
+    assert_eq!(
+        line.len(),
+        WIDTH + 2,
+        "the em dash is no longer in the line"
+    );
+    assert_eq!(
+        line,
+        "  L0 Vendored and the lock is current against it — not reached, 0 of 1 rules met"
+    );
+}
+
+/// **A title the package wrote over two lines arrives at the fill with its
+/// newline, and each line is filled on its own.**
+///
+/// This is the arm that says why `block` splits on `'\n'` before it fills, and
+/// it is driven from YAML through `read` and `assemble` rather than by handing
+/// `block` a string, because the question is whether any **caller that exists**
+/// can reach it.
+///
+/// `statement`, `remediation` and the waiver `note` cannot: `lib.rs:260`, `:261`
+/// and `:470` pass each through `collapse`, which is `split_whitespace().join(" ")`,
+/// so a newline is gone before the renderer sees it. **A title is not collapsed.**
+/// `lib.rs:259` and `:294` write `text_of(entry, "title").unwrap_or(&name).to_string()`
+/// for a rule and for a level, and a YAML literal block scalar — `title: |-` — is
+/// ordinary YAML that a package author can write.
+///
+/// The two lines below join to 79 characters, one under [`WIDTH`]. So a fill that
+/// ignored the newline would print them as **one** line rather than wrapping, and
+/// the assertion that the joined line is absent is what fails when the split goes.
+#[test]
+fn a_title_the_package_wrote_over_two_lines_is_filled_line_by_line() {
+    const FIRST: &str = "The lock is what the sources resolve to";
+    const SECOND: &str = "and a second line the package wrote";
+    let text = format!(
+        "\
+conformance:
+  format: 1
+  rules:
+    - name: lock.current
+      title: |-
+        {FIRST}
+        {SECOND}
+      decided_by: tree
+      statement: it is
+      remediation: run resolve
+  levels:
+    - name: L0
+      title: Pointed at
+      rules: [lock.current]
+"
+    );
+    let set = read(&text, "acme/taxonomy").expect("the rule set reads");
+    assert!(
+        set.rule("lock.current")
+            .expect("the rule")
+            .title
+            .contains('\n'),
+        "the loader collapsed the literal scalar, so this case no longer reaches the fill"
+    );
+
+    let identity = Identity {
+        package: "acme/taxonomy".to_string(),
+        version: "1.0.0".to_string(),
+        digest: None,
+    };
+    let taken = vec![("lock.current".to_string(), Verdict::Met)];
+    let rendered = assemble(&set, &[], &identity, &taken, at("2026-08-12"))
+        .expect("it assembles")
+        .render();
+
+    assert!(
+        rendered.contains(&format!("\n    {FIRST}\n")),
+        "the first line of the title is not a line of its own:\n{rendered}"
+    );
+    assert!(
+        rendered.contains(&format!("\n    {SECOND}\n")),
+        "the second line of the title is not a line of its own:\n{rendered}"
+    );
+    // The discriminator. Delete the split in `block` and the two run together
+    // into one 79-character line, which is under the width and so would not even
+    // wrap.
+    let joined = format!("    {FIRST} {SECOND}");
+    assert_eq!(
+        joined.chars().count(),
+        79,
+        "the case stopped being decisive"
+    );
+    assert!(
+        !rendered.contains(&joined),
+        "the fill ran two lines of one title together:\n{rendered}"
+    );
+}
+
+/// **The recorded file was recorded against this width.**
+///
+/// Move `WIDTH` without re-recording and this fails, which makes the constant a
+/// source the fixture is derived from rather than a number written beside it.
+#[test]
+fn the_recorded_block_is_the_one_this_width_produces() {
+    let recorded = std::fs::read_to_string(fixtures_dir().join("wrapped.report"))
+        .expect("the recorded expectation");
+    let longest = recorded
+        .lines()
+        .filter(|line| !one_word(line))
+        .map(|line| line.chars().count())
+        .max()
+        .expect("the recorded block has lines");
+    assert!(
+        longest <= WIDTH,
+        "the recorded block carries a {longest}-character line, over a width of {WIDTH}"
+    );
+    assert!(
+        longest > WIDTH - 12,
+        "the recorded block reaches only {longest} of {WIDTH}, so it was recorded at another width"
+    );
+}

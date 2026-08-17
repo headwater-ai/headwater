@@ -478,8 +478,9 @@ levels
     2 gaps, 0 of them waived
 
 no level reached, against headwater/standard 3.2.0
-  a level states what this repository wired up. It measures nothing about the corpus,
-  no key declares one, and a waiver moves the exit status and never the level.
+  a level states what this repository wired up. It measures nothing about the
+  corpus, no key declares one, and a waiver moves the exit status and never the
+  level.
 ```
 
 **Check.** The last line of the levels block reads `no level reached, against headwater/standard 3.2.0`.

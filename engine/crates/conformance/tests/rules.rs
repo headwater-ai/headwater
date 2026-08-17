@@ -538,7 +538,13 @@ conformance:
     let rendered = report.render();
     assert!(rendered.contains("L4 Gated — not reached, 0 of 1 rules met"));
     assert!(rendered.contains("waits on an attestation record"));
-    assert!(rendered.contains("It is neither met nor missing"));
+    // The report fills every line of prose to `render::WIDTH`, so this sentence
+    // arrives over two lines and `It is` sits at the end of the first one. The
+    // fragment asserted here lies wholly inside the second line. **A `contains`
+    // over a filled report holds the words and nothing about the shape** — the
+    // hold on the shape is the recorded block in `tests/render.rs`, which is
+    // where this assertion would have to move if the width moved.
+    assert!(rendered.contains("neither met nor missing"));
     assert!(
         !rendered.contains("gap"),
         "an undecidable rule was reported as a gap"
@@ -582,7 +588,10 @@ fn the_report_says_what_a_level_is_not_even_when_every_rung_is_reached() {
         .expect("it assembles")
         .render();
     assert!(rendered.contains("L1 reached"));
-    assert!(rendered.contains("It measures nothing about the corpus"));
+    // Same reason as above: the disclaimer is filled, and the break now falls
+    // between `the` and `corpus,`. The fragment asserted here is the first
+    // sentence, which lies wholly inside the first line of the block.
+    assert!(rendered.contains("a level states what this repository wired up."));
     assert!(rendered.contains("acme/taxonomy 1.0.0"));
 }
 
