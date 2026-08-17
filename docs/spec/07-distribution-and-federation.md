@@ -299,6 +299,8 @@ The alternative fails quietly, which is worse. An engine that skipped a rule it 
 
 So the reading compares both and reports each half. A repository whose package directory carries no release record pins nothing, because no published artifact stands behind that directory. The reading calls that a gap with a remediation, rather than a state it looks away from.
 
+**The remediation names five steps, and [Waivers](#waivers) below says why one of them moves the existing package directory aside.** A consumer cannot take the first of those steps from inside this tool, which [13 — Open obligations](13-open-obligations.md) records as `HW-OBL-0085`. So the remediation states which step nobody can do, rather than a route that ends where the reader started.
+
 **No rule names the core, and that is not an omission.** [The section above](#the-invariant-core) says that conformance checks the core rather than the whole taxonomy. `taxonomy validate` already decides core satisfaction, and `taxonomy resolve` writes a lock only when the taxonomy validates. A lock is therefore a validated taxonomy, so the rule that holds the lock to the sources holds the core through it. A second reading of the core here would be a second answer to a question one verb already decides.
 
 ### What a level means, and what stops it from becoming a score

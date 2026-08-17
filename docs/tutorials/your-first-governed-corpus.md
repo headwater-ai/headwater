@@ -86,7 +86,7 @@ wrote .headwater/overlay.yml
 
 what this read off the tree
   corpus root docs
-  package headwater/standard is not under `packages/`, and nothing here fetches one. Vendor it before resolving
+  package headwater/standard is not under `packages/`, and nothing here fetches one. Copy a package directory into `packages/` to resolve against it, or run `headwater taxonomy vendor <dir>` on a published artifact to reach `pin.current` too
 
 what it cannot read off a tree, and asked instead
   the phrases each purpose answers, which decide what a task routes to
@@ -116,7 +116,7 @@ taxonomy.yml
 
 A **package** carries a taxonomy: the kinds, the facets, the shelves and the rules. `headwater/standard` is the base package, and it is deliberately small. Nothing in this engine fetches a package over a network, so a package arrives in your tree by a copy that you can read.
 
-The refusal in step 2 said *vendor it*, and this step used `cp`. Those are two different things, and the difference returns in step 16. `headwater taxonomy vendor` installs a **published artifact**, which is what `headwater taxonomy publish` writes. It refuses a directory that somebody maintains by hand. What you copied is a package source directory, so no verb of this engine vendored anything.
+Step 2 named two routes, and this step took the first. `headwater taxonomy vendor` installs a **published artifact**, which is what `headwater taxonomy publish` writes. It refuses a directory that somebody maintains by hand. What you copied is a package source directory, so no verb of this engine vendored anything. The difference between the two routes returns in step 16.
 
 ### Step 4 — Meet the first refusal
 
@@ -131,7 +131,7 @@ headwater: the taxonomy did not resolve, so no lock is possible
 
 **Check.** `echo $?` prints `1`.
 
-`headwater init` wrote `version: 0.0.0`, because it had no package in front of it to read a number from. A refusal here is the design and not a fault. A **lock** is a validated taxonomy, so a taxonomy that does not validate produces no lock at all.
+`headwater init` wrote `version: 0.0.0`, because it had no package in front of it to read a number from. The comment it left above that line names the two ways a package arrives, a copy or a vendored artifact. It also says the version comes from the package itself, which is where the number in the next step comes from. A refusal here is the design and not a fault. A **lock** is a validated taxonomy, so a taxonomy that does not validate produces no lock at all.
 
 ### Step 5 — Pin the version, and meet the second refusal
 

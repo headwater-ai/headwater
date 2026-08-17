@@ -4800,9 +4800,21 @@ taxonomy:
     ));
     match &found {
         Some(version) => declaration_text.push_str(&format!("  version: {version}\n")),
+        // **The same ruling as the printed line below, and for the same reason.**
+        // This arm writes a second message under the identical condition, and it
+        // said "Vendor the package, then pin the version it declares" until
+        // [#276](https://github.com/headwater-ai/headwater/issues/276). That was
+        // the single-route wording, and it was worse here than in the report: an
+        // adopter who copied a package directory cannot vendor, and the version
+        // they pin comes from the package they copied rather than from an
+        // artifact. So it named a dead end in the file they then edit and commit.
+        // It names both routes now, and says where the number comes from either
+        // way.
         None => declaration_text.push_str(
             "  # INTERVIEW: no package of this name is under `packages/`, and nothing in this\n\
-             \x20 # engine fetches one. Vendor the package, then pin the version it declares.\n\
+             \x20 # engine fetches one. Copy a package directory into `packages/`, or run\n\
+             \x20 # `headwater taxonomy vendor <dir>` on a published artifact. Either way, pin\n\
+             \x20 # the version that the package itself declares.\n\
              \x20 version: 0.0.0\n",
         ),
     }
@@ -4883,9 +4895,21 @@ add: {{}}
     println!("  corpus root {corpus_root}");
     match &found {
         Some(version) => println!("  package {package} {version}, under `packages/`"),
+        // **Two routes, because this verb cannot know which one the reader
+        // holds.** The line said "Vendor it before resolving" until
+        // [#276](https://github.com/headwater-ai/headwater/issues/276) ruled on
+        // it. `vendor` in this engine takes a published artifact, and
+        // `HW-OBL-0085` records that nothing here fetches one, so the old line
+        // named the single action a reader on a fresh tree cannot perform — in
+        // the first verb an adopter runs. A newcomer read it as *copy*, which is
+        // the misreading #271 was filed from and which the tutorial spent a
+        // paragraph repairing. So the copy is named, because it is what an
+        // adopter can do, and `vendor` keeps its own sense with the artifact
+        // beside it.
         None => println!(
-            "  package {package} is not under `packages/`, and nothing here fetches one. \
-             Vendor it before resolving"
+            "  package {package} is not under `packages/`, and nothing here fetches one. Copy a \
+             package directory into `packages/` to resolve against it, or run `headwater taxonomy \
+             vendor <dir>` on a published artifact to reach `pin.current` too"
         ),
     }
     println!("\nwhat it cannot read off a tree, and asked instead");

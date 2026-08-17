@@ -46,10 +46,22 @@ conformance:
         version alone would pass a repository whose pinned digest names an
         artifact that nobody publishes any more.
       remediation: >-
-        Publish the package with `headwater taxonomy publish --out <dir>`, and
-        write the digest it prints into `taxonomy.digest`. Where the package
-        arrived from elsewhere, run `headwater taxonomy vendor <dir>`, which
-        refuses an artifact that is not the pinned one.
+        Five steps reach this rule, and a consumer cannot take the first one
+        from inside this tool. Step 1 is a published artifact. `headwater
+        taxonomy publish --out <dir>` writes one and prints its digest. A
+        consumer needs the artifact that the publisher of the package wrote,
+        and no verb of this engine fetches one. The publisher records that gap
+        as HW-OBL-0085. Step 2 writes the printed digest into
+        `taxonomy.digest` in `.headwater/taxonomy.yml`. Step 3 moves the
+        existing `packages/<name>` directory aside. Step 4 runs `headwater
+        taxonomy vendor <dir>`, which checks the artifact against the pin and
+        installs it under `packages/`. That install goes to the same path step
+        3 cleared, and it refuses to overwrite a directory that carries no
+        release record. Step 5 runs `headwater taxonomy resolve`, because a
+        vendored artifact replaces the taxonomy sources and moves the lock. A
+        publisher that consumes the package it maintains cannot close this gap
+        without the loss of that source. A dated waiver is the honest answer
+        there.
 
     - name: lock.current
       title: The lock is what the sources resolve to
