@@ -572,7 +572,7 @@ pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<Resol
 
     migrations(root, &directory, &manifest, source)?;
 
-    let staged = stage(root, &directory, &manifest, &contents)?;
+    let staged = stage(root, &directory, &manifest)?;
 
     let written = put(out, &staged)
         .map_err(|why| refusal(&display(root, out), &why))
@@ -843,7 +843,6 @@ fn stage(
     root: &Path,
     directory: &Path,
     manifest: &Mapping,
-    contents: &Mapping,
 ) -> Result<Vec<Staged>, Vec<ResolveError>> {
     let name = manifest_name(root, directory);
 
