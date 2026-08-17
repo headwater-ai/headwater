@@ -312,6 +312,7 @@ mod tests {
             path: path.to_string(),
             id: Some(id.to_string()),
             kind: "decision".to_string(),
+            name: None,
             purpose: None,
             summary: Some("a summary".to_string()),
             unwarranted: false,

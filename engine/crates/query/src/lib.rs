@@ -126,6 +126,16 @@ pub struct Pointer {
     pub path: String,
     pub id: Option<String>,
     pub kind: String,
+    /// What the document is called: the facet in the `name` role, and `None`
+    /// where the taxonomy declares no such facet or the document leaves it
+    /// empty. See [`Surface::name`].
+    ///
+    /// A path and an identifier are conventions an author chose, and this is a
+    /// declaration. For most kinds the two agree and this adds little. For an
+    /// `interface_contract` the name is the command a caller types, so a reader
+    /// who is told the name knows what the document describes without opening
+    /// it, and a reader who is told only `HW-IFACE-headwater-check` does not.
+    pub name: Option<String>,
     /// The reader intent the kind serves, and `None` where the taxonomy
     /// declares none for it.
     pub purpose: Option<String>,
@@ -444,6 +454,7 @@ impl<'a> Surface<'a> {
             path: document.path.to_string(),
             id: document.id.map(str::to_string),
             kind: document.kind.to_string(),
+            name: self.name(document),
             purpose: self
                 .shape
                 .purpose_of(document.kind)
@@ -542,10 +553,20 @@ impl Neighbour {
 }
 
 impl Pointer {
-    /// The pointer as one line: the path, the summary, and the warrant where a
-    /// reader has to be told.
+    /// The pointer as one line: the path, what the document is called, the
+    /// summary, and the warrant where a reader has to be told.
+    ///
+    /// The name is parenthesized rather than run into the summary with a second
+    /// dash, so that a reader and a script can both tell the declaration from
+    /// the prose beside it. A document that declares no name renders exactly as
+    /// it did before this field existed.
     pub fn render(&self) -> String {
         let mut line = self.path.clone();
+        if let Some(name) = &self.name {
+            line.push_str(" (");
+            line.push_str(name);
+            line.push(')');
+        }
         if let Some(summary) = &self.summary {
             line.push_str(" — ");
             line.push_str(summary);
