@@ -45,14 +45,32 @@ fn consumer(version: &str, digest: Option<&str>) -> Consumer {
 
 /// A package directory under `packages/`, with a manifest and one content file.
 fn package(root: &Path, version: &str) -> PathBuf {
-    let dir = root.join("packages").join("acme");
+    package_at(root, "acme", version)
+}
+
+/// The same package, under a directory the caller names.
+///
+/// The directory name matters to exactly one caller and to nothing else here.
+/// `pin_current` finds a package by reading every manifest under `packages/`, so
+/// any name serves it. `headwater taxonomy vendor` installs at
+/// `packages/<package name with the slash replaced>`, so a test about the route
+/// has to put the source on that one path or the collision the route turns on
+/// never happens.
+fn package_at(root: &Path, directory: &str, version: &str) -> PathBuf {
+    let dir = root.join("packages").join(directory);
     std::fs::create_dir_all(&dir).expect("the package directory");
     std::fs::write(
         dir.join("package.yml"),
-        format!("package: acme/taxonomy\nversion: {version}\n"),
+        format!(
+            "package: acme/taxonomy\nversion: {version}\ncontents:\n  taxonomy: taxonomy.yml\n"
+        ),
     )
     .expect("the manifest");
-    std::fs::write(dir.join("taxonomy.yml"), "taxonomy: acme/taxonomy\n").expect("a source");
+    std::fs::write(
+        dir.join("taxonomy.yml"),
+        format!("taxonomy: acme/taxonomy\nversion: {version}\n"),
+    )
+    .expect("a source");
     dir
 }
 
@@ -180,6 +198,191 @@ fn a_package_that_is_not_installed_at_all_is_a_gap() {
     let detail = gap(&pin_current(&root, &consumer("1.0.0", None)));
     assert!(detail.contains("acme/taxonomy"));
     let _ = std::fs::remove_dir_all(&root);
+}
+
+// ---------------------------------------------------------------------------
+// pin.current — the route its remediation names
+// ---------------------------------------------------------------------------
+//
+// The block above holds the six states of the two numbers. These two hold
+// something else: the sequence of actions that carries a repository from the
+// gap to the met arm, and whether the string the package ships names it. A
+// remediation naming two of five steps sends a reader to a dead end, and a
+// green reading of the arm says nothing about that.
+
+/// Each row is one step of the route, and the token is what the remediation must
+/// carry for that step to be named at all.
+///
+/// The destination of step 4 is its own row. A string that names the verb but
+/// not the path the verb writes to is the exact defect
+/// [#276](https://github.com/headwater-ai/headwater/issues/276) was filed on, so
+/// a failure has to be able to say which of the two is absent.
+const ROUTE: [(&str, &str); 7] = [
+    (
+        "step 1 — publish the artifact",
+        "headwater taxonomy publish",
+    ),
+    ("step 1 — no verb of this engine fetches one", "HW-OBL-0085"),
+    ("step 2 — write the digest into the pin", "taxonomy.digest"),
+    (
+        "step 3 — move the existing package directory aside",
+        "directory aside",
+    ),
+    ("step 4 — vendor the artifact", "headwater taxonomy vendor"),
+    (
+        "step 4 — it installs under `packages/`",
+        "under `packages/`",
+    ),
+    (
+        "step 5 — a vendored source moves the lock, so resolve follows",
+        "headwater taxonomy resolve",
+    ),
+];
+
+/// The steps of [`ROUTE`] that a remediation string does not name.
+fn unnamed(fix: &str) -> Vec<&'static str> {
+    ROUTE
+        .iter()
+        .filter(|(_, token)| !fix.contains(token))
+        .map(|(label, _)| *label)
+        .collect()
+}
+
+/// **The route, executed, with every step bracketed by the reading that proves
+/// it necessary.**
+///
+/// This is what stops the test below being a snapshot of a string somebody
+/// typed. The route is run in process — `headwater-resolve` is already a
+/// dependency of this crate — so if the engine starts requiring a step the
+/// string does not name, or stops requiring one it does, an assertion here moves.
+///
+/// Every assertion before the last one is deliberately loose (`assert_ne!`
+/// against `Met` rather than a match on the gap text), because the ambient state
+/// is a gap and a tight assertion before the change would take the attribution
+/// away from the `Met` at the end.
+#[test]
+fn the_route_the_remediation_names_is_the_route_that_reaches_the_met_arm() {
+    let root = scratch("pin-route");
+
+    // The source sits on the path `vendor` installs to. That is the state of a
+    // publisher who consumes the package it maintains, and it is the state the
+    // whole route turns on: without the collision, step 3 has no reason.
+    let installed = package_at(&root, "acme-taxonomy", "1.0.0");
+    assert_eq!(
+        installed,
+        root.join("packages").join("acme-taxonomy"),
+        "the source and the destination of a vendor are one path"
+    );
+    assert_ne!(pin_current(&root, &consumer("1.0.0", None)), Verdict::Met);
+
+    // Step 1 — publish. The digest is what the verb wrote, never a number typed
+    // into the test.
+    let artifact = root.join("artifact");
+    let digest = headwater_resolve::package::publish(&root, "acme/taxonomy", &artifact)
+        .expect("step 1 publishes")
+        .digest;
+
+    // Step 2 — the pin, and steps 1 and 2 together do not reach the rule. This
+    // is the dead end the issue was filed from: a digest written beside a
+    // maintained source is a number nothing accepts.
+    assert_ne!(
+        pin_current(&root, &consumer("1.0.0", Some(&digest))),
+        Verdict::Met,
+        "step 4 is necessary, so the two steps the old string named do not reach the rule"
+    );
+
+    // Step 3, omitted. The refusal is why the move is a step of the route and
+    // not an afterthought, and it is the step the string never named.
+    let refused = headwater_resolve::package::vendor(&root, &artifact, &digest)
+        .expect_err("a vendor over a maintained source is refused");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(message.contains("somebody maintains"), "{message}");
+    assert!(
+        message.contains("Move it before vendoring over it"),
+        "{message}"
+    );
+    assert!(message.contains("packages/acme-taxonomy"), "{message}");
+
+    // Step 3 — the move.
+    std::fs::rename(&installed, root.join("aside")).expect("the source moves aside");
+    assert_ne!(
+        pin_current(&root, &consumer("1.0.0", Some(&digest))),
+        Verdict::Met
+    );
+
+    // Step 4 — vendor, and the artifact lands under `packages/` at the package's
+    // own directory, carrying the release record the source never had.
+    headwater_resolve::package::vendor(&root, &artifact, &digest).expect("step 4 installs it");
+    assert!(
+        installed.join(headwater_resolve::release::RECORD).is_file(),
+        "the installed directory carries the release record that the source did not"
+    );
+
+    // Step 5 is `taxonomy resolve`, and `lock.current` owns it. `pin_current`
+    // reads the release record and the pin, and never the lock, so the rule is
+    // reached here and the lock is the next rule's business.
+    assert_eq!(
+        pin_current(&root, &consumer("1.0.0", Some(&digest))),
+        Verdict::Met
+    );
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// **The string this package ships names every step of that route.**
+///
+/// The remediation is the only copy of those instructions, and nothing but this
+/// read it. A reading that compared the string to itself would pass on any
+/// string, so the table is the reading and the string is only the subject.
+///
+/// The second half calibrates the instrument rather than the subject. `PRIOR` is
+/// the remediation this one replaced, kept here for one purpose: it names steps 1
+/// and 2 and nothing else, so a table that reports it as complete is a table that
+/// reports anything as complete. That is the failure the whole test exists to
+/// avoid, and asserting it here is what keeps the demonstration in the suite
+/// instead of in a pull request body.
+#[test]
+fn the_remediation_of_pin_current_names_every_step_of_the_route() {
+    let text = std::fs::read_to_string(
+        repository_root().join("packages/headwater-standard/conformance.yml"),
+    )
+    .expect("this repository's conformance rule set");
+    let set = headwater_conformance::read(&text, "headwater/standard").expect("the rule set reads");
+    // The parsed value, never the file bytes. A token that straddles a YAML fold
+    // is one space in the parsed string and a newline in the file, so a read of
+    // the bytes would fail for a reason that is not this rule.
+    let fix = &set
+        .rule("pin.current")
+        .expect("the package declares pin.current")
+        .remediation;
+
+    let missing = unnamed(fix);
+    assert!(
+        missing.is_empty(),
+        "{}\n\nthe whole string:\n{fix}",
+        missing
+            .iter()
+            .map(|label| format!("the remediation of pin.current does not name {label}"))
+            .collect::<Vec<String>>()
+            .join("\n")
+    );
+
+    // The remediation before #276, which named step 1, step 2, and the verb of
+    // step 4 with neither its destination nor the move it needs.
+    const PRIOR: &str = "Publish the package with `headwater taxonomy publish --out <dir>`, and \
+                         write the digest it prints into `taxonomy.digest`. Where the package \
+                         arrived from elsewhere, run `headwater taxonomy vendor <dir>`, which \
+                         refuses an artifact that is not the pinned one.";
+    assert_eq!(
+        unnamed(PRIOR),
+        [
+            "step 1 — no verb of this engine fetches one",
+            "step 3 — move the existing package directory aside",
+            "step 4 — it installs under `packages/`",
+            "step 5 — a vendored source moves the lock, so resolve follows",
+        ],
+        "the table has to report the string it replaced as incomplete, and to report \
+         steps 1, 2 and the vendor verb as named, or it discriminates nothing"
+    );
 }
 
 // ---------------------------------------------------------------------------
