@@ -86,4 +86,6 @@ It gates nothing and it exits 0 whatever it finds, because nothing declares what
     headwater check
     cargo test --workspace --manifest-path engine/Cargo.toml
 
-A taxonomy change moves the lock digest, which moves `.headwater/corpus.json` and three recorded engine fixtures. Run `headwater generate`, re-record with `HEADWATER_BLESS=1`, and read the diff.
+A taxonomy change moves the lock digest, which moves `.headwater/corpus.json` and the recorded engine fixtures. Run `headwater generate`, re-record with `HEADWATER_BLESS=1`, and read the diff.
+
+**Two of the things a change moves are not recorded fixtures, so a bless run leaves both failing.** `engine/crates/ref/tests/fixtures.rs` asserts by hand how many `add` operations this repository's overlay and the design-spec bundle declare between them, and the number is a Rust literal that you edit. `.claude/skills/headwater-authoring/SKILL.md` prints the concrete kinds, and `.claude/skills/fixtures.sh` compares that list against the list `headwater new` admits, so a new kind is an edit to another skill. Neither is reached by `HEADWATER_BLESS=1`, and `cargo test` stops at the first target that fails, so fix them one at a time and count the targets that ran rather than the failures.
