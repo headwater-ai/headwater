@@ -147,7 +147,7 @@ fn subject() -> Report {
                     "the version is 3.2.0 and there is no digest on either side. The package \
                      directory carries no release record, so no published artifact stands behind \
                      it"
-                        .to_string(),
+                    .to_string(),
                 ),
                 cover: Cover::None,
             },
@@ -352,7 +352,12 @@ fn one_gap(remediation: &str) -> Report {
         digest: None,
         now: at("2026-08-12"),
         readings: vec![Reading {
-            rule: rule("lock.current", "The lock is current", remediation, DecidedBy::Tree),
+            rule: rule(
+                "lock.current",
+                "The lock is current",
+                remediation,
+                DecidedBy::Tree,
+            ),
             verdict: Verdict::Gap("the lock is behind its sources".to_string()),
             cover: Cover::None,
         }],
@@ -429,8 +434,16 @@ fn a_line_of_exactly_the_width_with_a_multibyte_dash_is_not_wrapped() {
         .lines()
         .find(|line| line.starts_with("  L0 "))
         .expect("the level line");
-    assert_eq!(line.chars().count(), WIDTH, "the calibration moved: {line:?}");
-    assert_eq!(line.len(), WIDTH + 2, "the em dash is no longer in the line");
+    assert_eq!(
+        line.chars().count(),
+        WIDTH,
+        "the calibration moved: {line:?}"
+    );
+    assert_eq!(
+        line.len(),
+        WIDTH + 2,
+        "the em dash is no longer in the line"
+    );
     assert_eq!(
         line,
         "  L0 Vendored and the lock is current against it — not reached, 0 of 1 rules met"
