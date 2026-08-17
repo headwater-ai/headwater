@@ -13,6 +13,9 @@
 use crate::{Cover, LevelState, Reading, Report, Verdict};
 use std::fmt::Write;
 
+/// The widest line this report prints, in characters.
+pub const WIDTH: usize = 80;
+
 impl Report {
     pub fn render(&self) -> String {
         let mut out = String::new();
