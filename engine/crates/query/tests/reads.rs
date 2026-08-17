@@ -232,19 +232,51 @@ fn two_reads_of_one_corpus_are_byte_identical() {
     );
 }
 
-/// A route stays inside its budget, and the budget is what says so.
+/// The tasks that reach the budget arm over this repository's own corpus.
+///
+/// Held apart from `TASKS`, which `reads()` walks to write the recorded answers
+/// of the fixture tree. None of those six names an anchor of this repository,
+/// so a budget run over them cuts nothing and asserts nothing. Each task here
+/// is one this corpus answers: the first names a path two documents govern, and
+/// the second matches a purpose that more documents answer than any budget
+/// below allows.
+const BUDGET_TASKS: [&str; 2] = [
+    "engine/crates/cli/src/main.rs",
+    "why does the engine read the lock rather than the taxonomy sources",
+];
+
+/// A route offers no more ranked pointers than its budget, and every anchored
+/// pointer whatever the budget.
+///
+/// The budget caps the ranking. It does not cap the documents an anchor named,
+/// so the total can exceed it and the property is stated over the ranked half.
+/// What the ranking dropped is not silent: the route counts it.
 #[test]
-fn a_route_offers_no_more_than_its_budget() {
+fn a_route_ranks_no_more_than_its_budget_and_never_cuts_an_anchor() {
     let built = this_repository();
     let surface = built.surface();
     for pointers in [1, 3, 5] {
-        for task in TASKS {
+        for task in TASKS.iter().chain(BUDGET_TASKS.iter()) {
             let route = surface.route(task, Budget { pointers });
+            let anchored: Vec<_> = route
+                .anchors
+                .iter()
+                .flat_map(|anchor| surface.governing_docs_for_path(anchor))
+                .collect();
+            let ranked = route.pointers.len() - route.pointers.iter().filter(|pointer| anchored.contains(pointer)).count();
             assert!(
-                route.pointers.len() <= pointers,
-                "{task} offered {} pointers under a budget of {pointers}",
-                route.pointers.len()
+                ranked <= pointers,
+                "{task} ranked {ranked} pointers under a budget of {pointers}\n{}",
+                route.render()
             );
+            for pointer in &anchored {
+                assert!(
+                    route.pointers.contains(pointer),
+                    "{task} dropped the anchored {} under a budget of {pointers}\n{}",
+                    pointer.path,
+                    route.render()
+                );
+            }
         }
     }
 }
@@ -431,6 +463,139 @@ fn a_task_that_names_an_anchor_is_answered_by_the_documents_that_govern_it() {
         "{}",
         route.render()
     );
+}
+
+/// A document that governs the named path is carried whatever the budget is.
+///
+/// Spec 5 caps the ranking and not the identities. A document that declares
+/// `governs` over the path was named rather than ranked, so the budget has no
+/// basis on which to remove it, and `governing_docs_for_path` already answers
+/// this question with no budget at all.
+///
+/// The corpus is this repository rather than the tree under `fixtures/`. Each
+/// governed path of that tree has one governing document, so no budget of one
+/// or more can cut anything there, and a case placed there would assert
+/// nothing. This repository has a path with two governors.
+///
+/// The expectation is derived from `governing_docs_for_path` rather than
+/// written as a number, so the case states that the two surfaces agree rather
+/// than that a count is two.
+#[test]
+fn a_route_carries_every_governing_document_whatever_the_budget() {
+    let built = this_repository();
+    let surface = built.surface();
+    let path = "engine/crates/cli/src/main.rs";
+    let governing = surface.governing_docs_for_path(path);
+    // Loose, and first on purpose: if this is the assertion that fires, the
+    // corpus moved rather than the mechanism broke.
+    assert!(
+        governing.len() > 1,
+        "{path} no longer has more than one governing document, so this case \
+         reaches nothing. Find a path that does."
+    );
+    let route = surface.route(path, Budget { pointers: 1 });
+    for pointer in &governing {
+        assert!(
+            route.pointers.contains(pointer),
+            "the budget dropped {}, which governs {path}\n{}",
+            pointer.path,
+            route.render()
+        );
+    }
+}
+
+/// One document is offered once, however many anchors of the task it governs.
+///
+/// The anchored set is the union over every anchor the task named.
+/// `governing_docs_for_path` deduplicates inside one anchor and cannot see
+/// across them, so a document that governs two named paths arrived twice. The
+/// truncation used to hide this at a low budget; carrying the identities whole
+/// shows it.
+#[test]
+fn a_document_that_governs_two_named_anchors_is_offered_once() {
+    let built = this_repository();
+    let surface = built.surface();
+    let task = "engine/crates/cli/src/main.rs engine/crates/check/src/lib.rs";
+    let route = surface.route(task, Budget::default());
+    assert_eq!(route.anchors.len(), 2, "{}", route.render());
+    let mut paths: Vec<&str> = route
+        .pointers
+        .iter()
+        .map(|pointer| pointer.path.as_str())
+        .collect();
+    let offered = paths.len();
+    paths.sort_unstable();
+    paths.dedup();
+    assert_eq!(paths.len(), offered, "a pointer is offered twice\n{}", route.render());
+}
+
+/// A route says how many ranked pointers the budget removed.
+///
+/// The count is what a silent `truncate` destroyed: the difference between
+/// "there were three" and "there were fifteen and you were shown three". The
+/// property is stated against a wider budget rather than against a number, so
+/// it holds whatever this corpus grows into: what a route offers plus what it
+/// says it withheld is what a route with room for everything offers.
+#[test]
+fn a_route_says_how_many_ranked_pointers_the_budget_withheld() {
+    let built = this_repository();
+    let surface = built.surface();
+    let task = "why does the engine read the lock rather than the taxonomy sources";
+    let whole = surface.route(task, Budget { pointers: 512 });
+    // Loose, and first on purpose: if this fires, the corpus stopped having
+    // more answers to this task than the budget below allows.
+    assert!(whole.pointers.len() > 3, "{}", whole.render());
+    assert_eq!(whole.withheld, 0, "{}", whole.render());
+
+    let cut = surface.route(task, Budget { pointers: 3 });
+    assert_eq!(
+        cut.pointers.len() + cut.withheld,
+        whole.pointers.len(),
+        "the withheld count does not account for what a wider budget offers\n{}",
+        cut.render()
+    );
+}
+
+/// The withheld count reaches the reader, and it is not mistaken for a pointer.
+///
+/// `.claude/hooks/write.sh` selects the pointer lines of a rendered route by
+/// grepping for the separator a pointer carries, so a count line carrying that
+/// separator would be shown to an author as though it were a document, and a
+/// count line is not one.
+#[test]
+fn the_withheld_line_is_rendered_and_is_not_shaped_like_a_pointer() {
+    let built = this_repository();
+    let surface = built.surface();
+    let task = "why does the engine read the lock rather than the taxonomy sources";
+    let route = surface.route(task, Budget { pointers: 3 });
+    assert!(route.withheld > 0, "{}", route.render());
+    let line = route
+        .render()
+        .lines()
+        .find(|line| line.contains("withheld"))
+        .map(str::to_string)
+        .unwrap_or_else(|| panic!("no withheld line\n{}", route.render()));
+    assert!(
+        line.contains(&route.withheld.to_string()),
+        "the line does not carry the count: {line}"
+    );
+    assert!(
+        !line.contains(" — "),
+        "the withheld line is shaped like a pointer: {line}"
+    );
+}
+
+/// A route that cuts nothing says nothing about a cut.
+#[test]
+fn a_route_within_its_budget_renders_no_withheld_line() {
+    let built = this_repository();
+    let surface = built.surface();
+    let route = surface.route(
+        "why does the engine read the lock rather than the taxonomy sources",
+        Budget { pointers: 512 },
+    );
+    assert_eq!(route.withheld, 0);
+    assert!(!route.render().contains("withheld"), "{}", route.render());
 }
 
 /// A pointer to an unaccepted document says so, and one to an accepted document

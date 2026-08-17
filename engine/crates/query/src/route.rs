@@ -117,6 +117,18 @@ pub struct Route {
     pub matched: Vec<Matched>,
     /// The pointers, in the order a reader should take them.
     pub pointers: Vec<Pointer>,
+    /// How many ranked pointers the budget removed from this route.
+    ///
+    /// This is the answer to "were there more". A silent cut destroyed the
+    /// difference between "there were three" and "there were fifteen and you
+    /// were shown three", and a reader who cannot tell them apart stops
+    /// looking. Spec 5 already requires a document removed by an export filter
+    /// to be reported, because nothing about the removal is uncertain, and a
+    /// removal for cost is the same kind of fact.
+    ///
+    /// It counts ranked candidates only. A pointer an anchor named is never
+    /// removed, so it is never counted here.
+    pub withheld: usize,
     /// Why the pointer list is empty, and `None` where it is not.
     pub silence: Option<Silence>,
 }
@@ -196,6 +208,7 @@ impl Surface<'_> {
             anchors: Vec::new(),
             matched: Vec::new(),
             pointers: Vec::new(),
+            withheld: 0,
             silence: None,
         };
 
@@ -205,20 +218,31 @@ impl Surface<'_> {
         // are the answer. It runs before the purposes because no lexical score
         // competes with an identity, and it is the one step that answers a task
         // in which no purpose has any scent at all.
+        // The set is the union over every anchor the task named, and it is a
+        // set: `governing_docs_for_path` deduplicates inside one anchor and
+        // cannot see across them, so a document that governs two of the named
+        // paths would otherwise be offered twice.
         route.anchors = self.named_anchors(task);
-        let anchored: Vec<Pointer> = route
-            .anchors
-            .iter()
-            .flat_map(|anchor| self.governing_docs_for_path(anchor))
-            .collect();
+        let mut anchored: Vec<Pointer> = Vec::new();
+        for anchor in &route.anchors {
+            for pointer in self.governing_docs_for_path(anchor) {
+                if !anchored.contains(&pointer) {
+                    anchored.push(pointer);
+                }
+            }
+        }
+
+        // The budget never reaches this set, on any of the three branches
+        // below. An anchor is an identity and the budget caps the ranking, so
+        // removing a document nobody ranked has no declared basis — which is
+        // the rule spec 5 applies to its other budget, where a bound engine
+        // drops satellites before nuclei because nuclearity is declared.
+        // `governing_docs_for_path` is a published tool that takes no budget,
+        // and this is the step that answers the same question, so the two
+        // surfaces have to agree.
 
         if self.shape().purposes.is_empty() {
-            route.pointers = anchored;
-            route.pointers.truncate(budget.pointers);
-            if route.pointers.is_empty() {
-                route.silence = Some(Silence::NoPurposes);
-            }
-            return route;
+            return route.on_anchors_alone(anchored, Silence::NoPurposes);
         }
         if terms.is_empty() {
             route.silence = Some(Silence::NoTerms);
@@ -251,12 +275,7 @@ impl Surface<'_> {
             }
         }
         if route.matched.is_empty() {
-            route.pointers = anchored;
-            route.pointers.truncate(budget.pointers);
-            if route.pointers.is_empty() {
-                route.silence = Some(Silence::NoPurposeMatched);
-            }
-            return route;
+            return route.on_anchors_alone(anchored, Silence::NoPurposeMatched);
         }
         route
             .matched
@@ -319,7 +338,16 @@ impl Surface<'_> {
                 .then(b.lexical.cmp(&a.lexical))
                 .then(a.pointer.path.cmp(&b.pointer.path))
         });
-        candidates.truncate(budget.pointers.saturating_sub(anchored.len()));
+        // The one place a budget cuts anything. It cuts `Candidate`, which is
+        // the private type a ranked guess arrives in, and an anchored pointer
+        // is never built into one — so no anchor can be removed here whatever
+        // the budget says.
+        //
+        // The count is taken before the cut, because the cut is what destroys
+        // the length that answers "were there more".
+        let ranked = budget.pointers.saturating_sub(anchored.len());
+        route.withheld = candidates.len().saturating_sub(ranked);
+        candidates.truncate(ranked);
 
         // Step 3. Derived reading precedence, over the list the budget left.
         // Spec 5: "Where two linked documents both match, routing offers a
@@ -333,7 +361,6 @@ impl Surface<'_> {
         // named. To run one pass over the joined list would let a lexical guess
         // displace an identity, which is the trade spec 5 makes in the other
         // direction.
-        let mut anchored = anchored;
         let mut offered: Vec<Pointer> = candidates
             .into_iter()
             .map(|candidate| candidate.pointer)
@@ -542,6 +569,27 @@ fn facet_text(document: &Document<'_>) -> String {
 }
 
 impl Route {
+    /// Finish a route that has no ranking to do, on the pointers its anchors
+    /// named.
+    ///
+    /// Two branches arrive here: a corpus whose taxonomy declares no purposes,
+    /// which is the corpus of an adopter on the first day, and a task that
+    /// matched none of the purposes a taxonomy does declare. A bare file path
+    /// is such a task, so this is the branch every impact-detection call takes.
+    ///
+    /// They are one function because they were two copies of the same four
+    /// lines, and each copy cut the anchored set to the budget while the third
+    /// branch of `route` carried it whole. One copy cannot disagree with
+    /// itself. This one takes no budget, so no edit here can reintroduce the
+    /// cut without changing the signature.
+    fn on_anchors_alone(mut self, anchored: Vec<Pointer>, silence: Silence) -> Route {
+        self.pointers = anchored;
+        if self.pointers.is_empty() {
+            self.silence = Some(silence);
+        }
+        self
+    }
+
     /// The route as text: what it matched, and what it offers.
     ///
     /// A silent route prints why it is silent. Spec 5 makes silence a result,
@@ -572,6 +620,18 @@ impl Route {
         }
         for pointer in &self.pointers {
             let _ = writeln!(out, "  {}", pointer.render());
+        }
+        // Printed only where the budget removed something, so a route that cut
+        // nothing renders exactly as it did before. The line carries no em dash,
+        // because `.claude/hooks/write.sh` selects pointer lines with a grep for
+        // one and would show this count to an author as though it were a
+        // document.
+        if self.withheld > 0 {
+            let more = match self.withheld {
+                1 => "pointer",
+                _ => "pointers",
+            };
+            let _ = writeln!(out, "  the budget withheld {} more {more}", self.withheld);
         }
         out
     }

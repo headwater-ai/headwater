@@ -334,7 +334,9 @@ headwater taxonomy migrate   <dir> [--to <version>] [--apply] [--now <date>]
                  the relation, unless both ends are kinds the relation permits,
                  and unless the target resolves. Where reciprocity is required
                  the far half is written into the target document.
-  --budget <n>   `route` only: how many pointers it may offer. Five by default.
+  --budget <n>   `route` only: how many ranked pointers it may offer. It never
+                 removes a document that governs a path the task named, and it
+                 says how many it withheld. Five by default.
   --owner <name>
                  `infer` only: who owns the debt it proposes. Required with
                  `--write`, because an owner is the field that ranks declared
