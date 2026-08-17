@@ -59,9 +59,17 @@ pub const WIDTH: usize = 80;
 ///
 /// Four things it does, each of which a reader of the output can see:
 ///
-/// 1. `text` is split on `'\n'` first and each piece is filled on its own. No
-///    text carries one today. A fill that ignored them would run two paragraphs
-///    of a future waiver note into one.
+/// 1. `text` is split on `'\n'` first and each piece is filled on its own.
+///    **A title is the caller that reaches this.** `Rule.title` and
+///    `Level.title` are written by `lib.rs:259` and `:294` as
+///    `text_of(entry, "title").to_string()` with no collapse, and a YAML literal
+///    block scalar — `title: |-` — is ordinary YAML for a package author. The
+///    other three fields that arrive here cannot carry a newline: `statement`,
+///    `remediation` and the waiver `note` each go through `collapse` at
+///    `lib.rs:260`, `:261` and `:470`, which is `split_whitespace().join(" ")`.
+///    Held by
+///    `tests/render.rs::a_title_the_package_wrote_over_two_lines_is_filled_line_by_line`,
+///    which drives it from YAML rather than by handing this function a string.
 /// 2. The fill is greedy on whitespace runs, and a whitespace run becomes one
 ///    space. That normalization is invisible in the YAML-folded strings a rule
 ///    set ships.

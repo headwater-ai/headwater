@@ -26,7 +26,8 @@
 
 use headwater_check::context::Date;
 use headwater_conformance::{
-    render::WIDTH, Cover, DecidedBy, LevelState, Reading, Reason, Report, Rule, Verdict, Waiver,
+    assemble, read, render::WIDTH, Cover, DecidedBy, Identity, LevelState, Reading, Reason, Report,
+    Rule, Verdict, Waiver,
 };
 use std::path::{Path, PathBuf};
 
@@ -447,6 +448,88 @@ fn a_line_of_exactly_the_width_with_a_multibyte_dash_is_not_wrapped() {
     assert_eq!(
         line,
         "  L0 Vendored and the lock is current against it — not reached, 0 of 1 rules met"
+    );
+}
+
+/// **A title the package wrote over two lines arrives at the fill with its
+/// newline, and each line is filled on its own.**
+///
+/// This is the arm that says why `block` splits on `'\n'` before it fills, and
+/// it is driven from YAML through `read` and `assemble` rather than by handing
+/// `block` a string, because the question is whether any **caller that exists**
+/// can reach it.
+///
+/// `statement`, `remediation` and the waiver `note` cannot: `lib.rs:260`, `:261`
+/// and `:470` pass each through `collapse`, which is `split_whitespace().join(" ")`,
+/// so a newline is gone before the renderer sees it. **A title is not collapsed.**
+/// `lib.rs:259` and `:294` write `text_of(entry, "title").unwrap_or(&name).to_string()`
+/// for a rule and for a level, and a YAML literal block scalar — `title: |-` — is
+/// ordinary YAML that a package author can write.
+///
+/// The two lines below join to 79 characters, one under [`WIDTH`]. So a fill that
+/// ignored the newline would print them as **one** line rather than wrapping, and
+/// the assertion that the joined line is absent is what fails when the split goes.
+#[test]
+fn a_title_the_package_wrote_over_two_lines_is_filled_line_by_line() {
+    const FIRST: &str = "The lock is what the sources resolve to";
+    const SECOND: &str = "and a second line the package wrote";
+    let text = format!(
+        "\
+conformance:
+  format: 1
+  rules:
+    - name: lock.current
+      title: |-
+        {FIRST}
+        {SECOND}
+      decided_by: tree
+      statement: it is
+      remediation: run resolve
+  levels:
+    - name: L0
+      title: Pointed at
+      rules: [lock.current]
+"
+    );
+    let set = read(&text, "acme/taxonomy").expect("the rule set reads");
+    assert!(
+        set.rule("lock.current")
+            .expect("the rule")
+            .title
+            .contains('\n'),
+        "the loader collapsed the literal scalar, so this case no longer reaches the fill"
+    );
+
+    let identity = Identity {
+        package: "acme/taxonomy".to_string(),
+        version: "1.0.0".to_string(),
+        digest: None,
+    };
+    let taken = vec![("lock.current".to_string(), Verdict::Met)];
+    let rendered = assemble(&set, &[], &identity, &taken, at("2026-08-12"))
+        .expect("it assembles")
+        .render();
+
+    assert!(
+        rendered.contains(&format!("\n    {FIRST}\n")),
+        "the first line of the title is not a line of its own:\n{rendered}"
+    );
+    assert!(
+        rendered.contains(&format!("\n    {SECOND}\n")),
+        "the second line of the title is not a line of its own:\n{rendered}"
+    );
+    // The discriminator. Delete the split in `block` and the two run together
+    // into one 79-character line, which is under the width and so would not even
+    // wrap.
+    let joined = format!("    {FIRST} {SECOND}");
+    assert_eq!(
+        joined.chars().count(),
+        79,
+        "the case stopped being decisive"
+    );
+    assert!(
+        !rendered.contains(&joined),
+        "the fill ran two lines of one title together:\n{rendered}"
     );
 }
 
