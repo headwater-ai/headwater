@@ -11,8 +11,9 @@
 //! answers. Every summary in `docs/spec/` is prose somebody edits, and a
 //! recorded route over it would be re-blessed on the week's first paragraph.
 //! What is asserted there is what a prose edit must not change: that a read
-//! returns no content, that a route stays inside its budget, and that two runs
-//! agree byte for byte.
+//! returns no content, that a route ranks no more than its budget and carries
+//! every document that governs a path the task names, and that two runs agree
+//! byte for byte.
 //!
 //!     HEADWATER_BLESS=1 cargo test -p headwater-query --test reads
 //!
@@ -263,7 +264,12 @@ fn a_route_ranks_no_more_than_its_budget_and_never_cuts_an_anchor() {
                 .iter()
                 .flat_map(|anchor| surface.governing_docs_for_path(anchor))
                 .collect();
-            let ranked = route.pointers.len() - route.pointers.iter().filter(|pointer| anchored.contains(pointer)).count();
+            let ranked = route.pointers.len()
+                - route
+                    .pointers
+                    .iter()
+                    .filter(|pointer| anchored.contains(pointer))
+                    .count();
             assert!(
                 ranked <= pointers,
                 "{task} ranked {ranked} pointers under a budget of {pointers}\n{}",
@@ -527,7 +533,12 @@ fn a_document_that_governs_two_named_anchors_is_offered_once() {
     let offered = paths.len();
     paths.sort_unstable();
     paths.dedup();
-    assert_eq!(paths.len(), offered, "a pointer is offered twice\n{}", route.render());
+    assert_eq!(
+        paths.len(),
+        offered,
+        "a pointer is offered twice\n{}",
+        route.render()
+    );
 }
 
 /// A route says how many ranked pointers the budget removed.
