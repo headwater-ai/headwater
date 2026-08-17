@@ -376,7 +376,9 @@ fn an_edge_half_that_cannot_be_opened_leaves_every_other_document_as_it_was() {
          its edge on the tree"
     );
     assert!(
-        !scratch.read("docs/spec/01-second.md").contains("audited_by"),
+        !scratch
+            .read("docs/spec/01-second.md")
+            .contains("audited_by"),
         "and so is the one that could not be opened"
     );
 }
