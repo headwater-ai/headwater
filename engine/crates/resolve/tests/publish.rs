@@ -61,15 +61,45 @@ add:
 /// A publisher whose manifest points its bundles out of the package, the way
 /// this repository's own does while the package and the library share a tree.
 fn publisher(scratch: &Scratch, requires_engine: Option<&str>) -> PathBuf {
+    publisher_at(scratch, requires_engine, "1.0.0")
+}
+
+/// The same publisher, with the version its taxonomy source declares set by the
+/// caller.
+///
+/// The manifest stays at `1.0.0` whatever this is. A package states its version
+/// twice — the manifest key that spec 7 gives it and the taxonomy-source key
+/// that the meta-schema requires — and a caller that can move one without the
+/// other is what makes the disagreement reachable from a test.
+fn publisher_at(scratch: &Scratch, requires_engine: Option<&str>, source: &str) -> PathBuf {
     let mut manifest = String::from("package: acme/fixture\nversion: 1.0.0\n");
     if let Some(range) = requires_engine {
         manifest.push_str(&format!("requires_engine: \"{range}\"\n"));
     }
     manifest.push_str("contents:\n  taxonomy: taxonomy.yml\n  bundles: ../../library\n");
     scratch.write("publisher/packages/acme-fixture/package.yml", &manifest);
-    scratch.write("publisher/packages/acme-fixture/taxonomy.yml", TAXONOMY);
+    scratch.write(
+        "publisher/packages/acme-fixture/taxonomy.yml",
+        &TAXONOMY.replace("version: 1.0.0", &format!("version: {source}")),
+    );
     scratch.write("publisher/library/extra/bundle.yml", BUNDLE);
     scratch.path().join("publisher")
+}
+
+/// A consumer declaration inside the publisher tree, pinning what it takes.
+fn takes(scratch: &Scratch, version: &str) {
+    scratch.write(
+        "publisher/.headwater/taxonomy.yml",
+        &format!(
+            "\
+taxonomy:
+  package: acme/fixture
+  version: {version}
+corpus:
+  root: docs
+"
+        ),
+    );
 }
 
 /// A consumer that pins one digest and takes the bundle the package ships.
@@ -243,21 +273,116 @@ fn vendoring_over_a_maintained_package_is_refused() {
 fn a_package_that_needs_a_later_engine_does_not_resolve() {
     let scratch = Scratch::new("engine");
     let root = publisher(&scratch, Some(">=9 <10"));
-    scratch.write(
-        "publisher/.headwater/taxonomy.yml",
-        "\
-taxonomy:
-  package: acme/fixture
-  version: 1.0.0
-corpus:
-  root: docs
-",
-    );
+    takes(&scratch, "1.0.0");
     let declaration = package::consumer(&root).expect("it reads");
     let refused = package::sources(&root, &declaration).expect_err("the range refuses it");
     let message = headwater_resolve::render_errors(&refused);
     assert!(message.contains(">=9 <10"), "{message}");
     assert!(message.contains(release::ENGINE), "{message}");
+}
+
+/// A package that declares one version in its manifest and another in its
+/// taxonomy source is refused, whichever of the two the consumer pinned.
+///
+/// # Why both pins are one case
+///
+/// The refusal has to fire on the package rather than on the pairing. Before
+/// [#212](https://github.com/headwater-ai/headwater/issues/212) the only
+/// comparison here was the consumer's pin against the manifest, so a package
+/// carrying two versions of itself resolved clean for a consumer who happened
+/// to pin the manifest number and was refused for the wrong reason — a message
+/// about the pin, naming one file and one number — for a consumer who happened
+/// to pin the other. Which of the two a consumer wrote is not a property of the
+/// package, so it cannot be what decides whether the package is well formed.
+/// Both arms therefore assert the same refusal, and the second arm is the one
+/// that fails if the check is put after the pin comparison rather than before
+/// it.
+#[test]
+fn a_package_that_states_two_versions_of_itself_is_refused_on_either_pin() {
+    for pinned in ["1.0.0", "2.0.0"] {
+        let scratch = Scratch::new(&format!("two-versions-{pinned}"));
+        // The manifest stays at 1.0.0 and the taxonomy source goes to 2.0.0.
+        let root = publisher_at(&scratch, None, "2.0.0");
+        takes(&scratch, pinned);
+
+        let declaration = package::consumer(&root).expect("it reads");
+        let refused = package::sources(&root, &declaration)
+            .expect_err("a package with two versions of itself does not load");
+        let message = headwater_resolve::render_errors(&refused);
+
+        // Both files, so a reader knows where to go.
+        assert!(
+            message.contains("packages/acme-fixture/package.yml"),
+            "the manifest is not named:\n{message}"
+        );
+        assert!(
+            message.contains("packages/acme-fixture/taxonomy.yml"),
+            "the taxonomy source is not named:\n{message}"
+        );
+        // Both numbers, so a reader knows which two disagree.
+        assert!(message.contains("1.0.0"), "{message}");
+        assert!(message.contains("2.0.0"), "{message}");
+        // And not the pin refusal, which is a different question about a
+        // different pair of values.
+        assert!(
+            !message.contains("this takes"),
+            "the pin comparison answered first, so the package was never held to itself:\n{message}"
+        );
+    }
+}
+
+/// The same disagreement stops a publish, before a byte reaches an artifact.
+///
+/// `publish` does not resolve for a consumer, so it does not pass through the
+/// comparison above. It copies both files into the artifact and the release
+/// digest covers both, so without its own reading of this a publisher seals two
+/// numbers under one digest and an adopter receives a package that says two
+/// things about what it is.
+#[test]
+fn a_publish_of_a_package_that_states_two_versions_is_refused() {
+    let scratch = Scratch::new("two-versions-publish");
+    let root = publisher_at(&scratch, None, "2.0.0");
+    let out = scratch.path().join("artifact");
+
+    let refused =
+        package::publish(&root, "acme/fixture", &out).expect_err("the publish does not run");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(message.contains("package.yml"), "{message}");
+    assert!(message.contains("taxonomy.yml"), "{message}");
+    assert!(message.contains("1.0.0"), "{message}");
+    assert!(message.contains("2.0.0"), "{message}");
+    assert!(
+        !out.join(package::MANIFEST).exists(),
+        "the artifact was written anyway"
+    );
+}
+
+/// The two declarations of this repository's own package agree.
+///
+/// The case above proves the refusal fires. This one proves it is not firing on
+/// the tree it ships in, and it reads both files rather than asserting a
+/// literal, so a version bump that moves one and forgets the other fails here
+/// as well as at the gate.
+#[test]
+fn the_package_in_this_repository_states_one_version_in_both_files() {
+    let root = Path::new("../../..");
+    let directory = root.join(package::PACKAGES).join("headwater-standard");
+    let manifest = std::fs::read_to_string(directory.join(package::MANIFEST))
+        .expect("the manifest is there");
+    let source =
+        std::fs::read_to_string(directory.join("taxonomy.yml")).expect("the source is there");
+
+    let declared = |text: &str| {
+        text.lines()
+            .find_map(|line| line.strip_prefix("version: "))
+            .map(str::to_string)
+            .expect("a version is declared")
+    };
+    assert_eq!(
+        declared(&manifest),
+        declared(&source),
+        "packages/headwater-standard states two versions of itself"
+    );
 }
 
 /// The range the base package of this repository declares is one this engine
