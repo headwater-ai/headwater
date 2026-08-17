@@ -11,17 +11,32 @@ The first code meant to survive. The [Q1 spike](../spike) retired four risks and
 
 Needs Rust 1.85 or later. The floor comes from `saphyr-parser`, which is on edition 2024. A distribution `cargo` older than that reports `feature edition2024 is required` and nothing else, so check the toolchain first when a clean checkout will not build.
 
-## Format and lint
+## Format, lint and test in a container
 
-A machine that installed Rust from its distribution usually has neither rustfmt nor clippy, and adding them changes a toolchain that other work depends on. A container answers both, and it pins the floor version at the same time:
+A machine that installed Rust from its distribution usually has neither rustfmt nor clippy, and adding them changes a toolchain that other work depends on. A container answers both, and it pins the floor version at the same time. It is two runs and not one, because the two halves need different users:
 
-    docker run --rm -v "$PWD/..":/w:ro -w /w/engine \
+    docker run --rm -v "$(git rev-parse --show-toplevel)":/w:ro -w /w/engine \
       -e CARGO_HOME=/tmp/cargo -e CARGO_TARGET_DIR=/tmp/target \
-      rust:1.85-slim sh -c "rustup component add rustfmt clippy && cargo fmt --check && cargo clippy --all-targets && cargo test"
+      rust:1.85-slim sh -c "rustup component add rustfmt clippy && cargo fmt --check && cargo clippy --all-targets"
 
-The mount is read only and the target directory sits inside the container, so a run leaves nothing behind and writes nothing into the checkout. The slim image carries neither component, which is why the command adds them.
+    docker run --rm --user "$(id -u):$(id -g)" \
+      -v "$(git rev-parse --show-toplevel)":/w:ro -w /w/engine \
+      -e CARGO_HOME=/tmp/cargo -e CARGO_TARGET_DIR=/tmp/target \
+      rust:1.85-slim cargo test
 
-The container pins the floor and CI runs the current stable, so a clean run here is not a clean run there. Every clippy release adds lints, and `-D warnings` promotes each new one to an error. When CI reports a lint that this command does not, the lint is newer than 1.85 and the fix is the one the message names.
+Run them in that order and read each exit status on its own. The first is red on a format or a lint finding and the second on a test, and a shell that joins them with a pipe reports the wrong one. On this tree the second run reports 90 targets, 836 tests and 0 failed, which is what the same suite reports on a host.
+
+**Why the second run is not root.** Three tests set a path unwritable and require the engine to refuse it. They are `a_document_that_cannot_be_written_leaves_every_other_document_as_it_was` and `an_unwritable_overlay_leaves_the_document_beside_it_untouched` in `headwater-cli`, and `tree::tests::a_read_only_target_is_named_and_nothing_is_written` in `headwater-scaffold`. Those three guard the all-or-nothing write path, the one whose failure leaves a reader's tree half migrated with nothing recording which half. Root writes through a `0444` mode, so under root the engine writes, `migrate --apply` exits 0 where the test requires 1, and all three report a defect the engine does not have. `--user` makes the process one that a read-only file can stop, and the tests then pass by refusing rather than by being skipped. Read the three names in the run output to see that they executed.
+
+**Why the first run is root.** `rustup component add` writes into `RUSTUP_HOME`, which is `/usr/local/rustup` in this image and is not writable by an arbitrary user. Neither `rust:1.85-slim` nor `rust:1.85` carries rustfmt or clippy, so the install cannot be dropped and no `--user` value can perform it. That is the whole reason for the split. Format and lint read the tree and write nothing outside the container, so root costs nothing in the first run.
+
+**Why the split is not a filter.** `cargo test` stops at the first target that fails, and the two `headwater-cli` failures come before `headwater-scaffold` runs. So the old single command never reached the third of the three tests at all, and a reader who filtered the two away to get a green run would have been hiding the guard rather than running it. Nothing here excludes a test, and the third name appearing as `ok` is the evidence.
+
+**Where you may run it from.** Anywhere inside the checkout. `git rev-parse --show-toplevel` names the root of the working tree that the current directory belongs to, which is the worktree root inside a `git worktree` and the repository root elsewhere. The earlier form of this command mounted `$PWD/..`, which is the right tree only from `engine/`. From the repository root it failed before any test ran, with `mkdir /w/engine: read-only file system`, and from a worktree it mounted the tree above the worktree.
+
+The mount is read only, the target directory sits inside the container, and the second run is your own user, so neither run writes into the checkout and neither can leave a file you cannot delete. `git status` and `ls engine/target` after a run are the check on that. A container that leaves a root-owned `engine/target` behind has moved a failure into the next unrelated run rather than fixed one, and the symptom there is a `NotFound` out of `std::fs::copy`.
+
+**This command is not CI, in two ways that each cost a run.** CI runs `cargo clippy --all-targets -- -D warnings` and this command does not, and must not. `[workspace.lints.clippy]` denies `manual_assert_eq`, which clippy at 1.85 does not know, so `-D warnings` here turns `unknown lint` into an error in every crate. Clippy at 1.85 also reports `nonminimal_bool` on code that the current stable passes. So a lint CI reports and this command does not is newer than 1.85, and one this command reports and CI does not is older than the fix. The message names the remedy in both directions. Second, the image carries no `python3`, so the two differential suites skip here, while CI sets `HEADWATER_STOCK_VALIDATOR` and `HEADWATER_SARIF_VALIDATOR` to `required` and fails instead of skipping.
 
 ## What is here
 
