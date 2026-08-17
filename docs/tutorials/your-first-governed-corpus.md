@@ -86,7 +86,7 @@ wrote .headwater/overlay.yml
 
 what this read off the tree
   corpus root docs
-  package headwater/standard is not under `packages/`, and nothing here fetches one. Vendor it before resolving
+  package headwater/standard is not under `packages/`, and nothing here fetches one. Copy a package directory into `packages/` to resolve against it, or run `headwater taxonomy vendor <dir>` on a published artifact to reach `pin.current` too
 
 what it cannot read off a tree, and asked instead
   the phrases each purpose answers, which decide what a task routes to
@@ -116,7 +116,7 @@ taxonomy.yml
 
 A **package** carries a taxonomy: the kinds, the facets, the shelves and the rules. `headwater/standard` is the base package, and it is deliberately small. Nothing in this engine fetches a package over a network, so a package arrives in your tree by a copy that you can read.
 
-The refusal in step 2 said *vendor it*, and this step used `cp`. Those are two different things, and the difference returns in step 16. `headwater taxonomy vendor` installs a **published artifact**, which is what `headwater taxonomy publish` writes. It refuses a directory that somebody maintains by hand. What you copied is a package source directory, so no verb of this engine vendored anything.
+Step 2 named two routes, and this step took the first. `headwater taxonomy vendor` installs a **published artifact**, which is what `headwater taxonomy publish` writes. It refuses a directory that somebody maintains by hand. What you copied is a package source directory, so no verb of this engine vendored anything. The difference between the two routes returns in step 16.
 
 ### Step 4 — Meet the first refusal
 

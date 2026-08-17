@@ -4883,9 +4883,21 @@ add: {{}}
     println!("  corpus root {corpus_root}");
     match &found {
         Some(version) => println!("  package {package} {version}, under `packages/`"),
+        // **Two routes, because this verb cannot know which one the reader
+        // holds.** The line said "Vendor it before resolving" until
+        // [#276](https://github.com/headwater-ai/headwater/issues/276) ruled on
+        // it. `vendor` in this engine takes a published artifact, and
+        // `HW-OBL-0085` records that nothing here fetches one, so the old line
+        // named the single action a reader on a fresh tree cannot perform — in
+        // the first verb an adopter runs. A newcomer read it as *copy*, which is
+        // the misreading #271 was filed from and which the tutorial spent a
+        // paragraph repairing. So the copy is named, because it is what an
+        // adopter can do, and `vendor` keeps its own sense with the artifact
+        // beside it.
         None => println!(
-            "  package {package} is not under `packages/`, and nothing here fetches one. \
-             Vendor it before resolving"
+            "  package {package} is not under `packages/`, and nothing here fetches one. Copy a \
+             package directory into `packages/` to resolve against it, or run `headwater taxonomy \
+             vendor <dir>` on a published artifact to reach `pin.current` too"
         ),
     }
     println!("\nwhat it cannot read off a tree, and asked instead");
