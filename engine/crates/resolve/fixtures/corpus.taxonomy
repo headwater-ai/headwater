@@ -651,6 +651,10 @@ projections:
     identity:
       id: "HW-RESULT-{run}"
       kind: probe_result
+  - kind: verb_index
+    for:
+      - interfaces
+    output: docs/interfaces/README.md
 obligations:
   OB-COV-1:
     statement: "Every file under the corpus root is classified, or reported as unclassifiable"

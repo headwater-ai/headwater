@@ -209,7 +209,9 @@ fn every_verb_gets_a_row_and_the_undescribed_ones_are_marked() {
     let rows = rows(bytes);
     assert_eq!(rows.len(), 4, "one row per verb of the table\n{bytes}");
     assert_eq!(
-        rows.iter().filter(|row| row.contains("**no contract**")).count(),
+        rows.iter()
+            .filter(|row| row.contains("**no contract**"))
+            .count(),
         3,
         "three of the four verbs are described by nothing\n{bytes}"
     );
@@ -276,7 +278,10 @@ fn a_contract_removed_from_the_corpus_makes_the_committed_index_stale() {
         "the link has to go with the document\n{bytes}"
     );
     assert_eq!(
-        rows(bytes).iter().filter(|row| row.contains("**no contract**")).count(),
+        rows(bytes)
+            .iter()
+            .filter(|row| row.contains("**no contract**"))
+            .count(),
         4,
         "every verb is now undescribed\n{bytes}"
     );
@@ -324,7 +329,10 @@ fn a_document_that_describes_no_verb_declines_the_whole_file() {
     .expect("the document");
     let (plan, _built) = plan_over(&root, &four());
     assert!(
-        !plan.outputs.iter().any(|output| output.kind == Kind::VerbIndex),
+        !plan
+            .outputs
+            .iter()
+            .any(|output| output.kind == Kind::VerbIndex),
         "a decline is whole, so no file is written"
     );
     let reason = plan
@@ -349,7 +357,10 @@ fn a_document_with_no_name_declines_the_whole_file() {
     )
     .expect("the document");
     let (plan, _built) = plan_over(&root, &four());
-    assert!(!plan.outputs.iter().any(|output| output.kind == Kind::VerbIndex));
+    assert!(!plan
+        .outputs
+        .iter()
+        .any(|output| output.kind == Kind::VerbIndex));
     let reason = plan
         .unwritten
         .iter()
@@ -369,7 +380,8 @@ fn a_document_with_no_name_declines_the_whole_file() {
 #[test]
 fn the_committed_index_carries_one_row_for_every_verb_this_binary_dispatches() {
     let path = repository_root().join("docs/interfaces/README.md");
-    let bytes = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let bytes =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let rows = rows(&bytes);
     assert_eq!(
         rows.len(),
@@ -378,12 +390,16 @@ fn the_committed_index_carries_one_row_for_every_verb_this_binary_dispatches() {
     );
     for verb in headwater_verbs::VERBS {
         assert!(
-            rows.iter().any(|row| row.starts_with(&format!("| `{}` |", verb.name))),
+            rows.iter()
+                .any(|row| row.starts_with(&format!("| `{}` |", verb.name))),
             "`{}` is dispatched and the committed index has no row for it",
             verb.name
         );
     }
-    let undescribed = rows.iter().filter(|row| row.contains("**no contract**")).count();
+    let undescribed = rows
+        .iter()
+        .filter(|row| row.contains("**no contract**"))
+        .count();
     assert!(
         undescribed > 0,
         "an index whose every cell is filled is an index nobody needs to read"

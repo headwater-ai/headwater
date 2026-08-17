@@ -171,6 +171,7 @@ fn the_fixture_tree_generates_the_recorded_projections() {
         &projections,
         &fixture_identity(),
         &Runs::default(),
+        headwater_verbs::VERBS,
     );
 
     let mut out = String::new();
@@ -286,6 +287,7 @@ fn two_plans_over_one_tree_agree() {
         &projections,
         &fixture_identity(),
         &Runs::default(),
+        headwater_verbs::VERBS,
     );
     let two = plan(
         &surface,
@@ -293,6 +295,7 @@ fn two_plans_over_one_tree_agree() {
         &projections,
         &fixture_identity(),
         &Runs::default(),
+        headwater_verbs::VERBS,
     );
     assert_eq!(one.outputs.len(), two.outputs.len());
     for (left, right) in one.outputs.iter().zip(&two.outputs) {
@@ -328,6 +331,7 @@ fn a_generated_file_is_censused_as_generated_and_orphaned_when_nothing_writes_it
         &projections,
         &fixture_identity(),
         &Runs::default(),
+        headwater_verbs::VERBS,
     );
     assert!(
         first.orphaned.is_empty(),
@@ -379,6 +383,7 @@ fn a_generated_file_is_censused_as_generated_and_orphaned_when_nothing_writes_it
         &projections,
         &fixture_identity(),
         &Runs::default(),
+        headwater_verbs::VERBS,
     );
     let mut orphaned: Vec<&str> = stale
         .orphaned
@@ -452,6 +457,7 @@ fn a_generated_document_is_a_document_of_its_shelf() {
         &projections,
         &fixture_identity(),
         &Runs::default(),
+        headwater_verbs::VERBS,
     );
     let report = write(&tree, &first);
     assert!(!report.has_errors(), "{}", report.render());
@@ -497,6 +503,7 @@ fn a_generated_document_is_a_document_of_its_shelf() {
         &projections,
         &fixture_identity(),
         &Runs::default(),
+        headwater_verbs::VERBS,
     );
     let index = second
         .outputs
@@ -551,6 +558,7 @@ fn every_output_carries_its_own_marker() {
         &projections,
         &fixture_identity(),
         &Runs::default(),
+        headwater_verbs::VERBS,
     );
     assert!(!plan.outputs.is_empty(), "the fixture generates something");
     for output in &plan.outputs {
@@ -585,7 +593,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_four_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_five_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -612,6 +620,7 @@ fn this_repository_generates_its_four_artifacts_and_accounts_for_the_rest() {
         &projections,
         &identity,
         &Runs::default(),
+        headwater_verbs::VERBS,
     );
 
     let paths: Vec<&str> = plan.outputs.iter().map(|o| o.path.as_str()).collect();
@@ -621,10 +630,11 @@ fn this_repository_generates_its_four_artifacts_and_accounts_for_the_rest() {
             "docs/decisions/README.md",
             "docs/spec/README.md",
             "docs/spec/09-open-questions.md",
+            "docs/interfaces/README.md",
             descriptor::PATH
         ],
         "this repository writes the decisions index, the specification index, the \
-         redirect map and the descriptor, in that order"
+         redirect map, the verb index and the descriptor, in that order"
     );
     // One declared shelf that holds no document, one declared projection whose
     // source this corpus does not hold, and the register. Nothing is passed
@@ -717,6 +727,7 @@ fn the_redirect_map_keeps_every_anchor_that_this_corpus_cites_into_it() {
         &projections,
         &Identity::default(),
         &Runs::default(),
+        headwater_verbs::VERBS,
     );
     let map = plan
         .outputs
@@ -846,6 +857,7 @@ fn the_descriptor_path_obeys_the_marker_rule() {
         &projections,
         &fixture_identity(),
         &Runs::default(),
+        headwater_verbs::VERBS,
     );
     let written = plan
         .outputs

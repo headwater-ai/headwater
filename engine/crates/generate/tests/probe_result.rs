@@ -220,6 +220,7 @@ fn plan_priced(at: &Path, envelope: &str) -> headwater_generate::Plan {
         &projections,
         &identity(),
         &runs_over(&built, at, envelope),
+        headwater_verbs::VERBS,
     )
 }
 
@@ -489,6 +490,7 @@ fn a_corpus_with_no_transcript_reports_the_reason_rather_than_writing_nothing() 
         &projections,
         &identity(),
         &runs_over(&built, &at, ENVELOPE),
+        headwater_verbs::VERBS,
     );
 
     assert!(

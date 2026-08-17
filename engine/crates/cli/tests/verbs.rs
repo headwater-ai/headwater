@@ -100,7 +100,9 @@ fn the_second_words_of_each_verb_are_the_second_words_of_its_arms() {
 #[test]
 fn every_verb_and_every_second_word_is_in_the_synopsis() {
     let text = source();
-    let start = text.find("const USAGE: &str = \"\\\n").expect("the synopsis");
+    let start = text
+        .find("const USAGE: &str = \"\\\n")
+        .expect("the synopsis");
     let usage = &text[start..];
     let end = usage.find("\n\";").expect("the end of the synopsis");
     let usage = &usage[..end];

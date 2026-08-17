@@ -2,6 +2,8 @@ docs/decisions/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/doctrine/maturity-model.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/interfaces/README.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/spec/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/taxonomies/README.md

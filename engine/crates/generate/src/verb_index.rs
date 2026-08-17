@@ -170,7 +170,10 @@ fn render(output: &str, verbs: &[Verb], described: &[(String, String)]) -> Strin
         let name = verb.described_as();
         described.iter().find(|(called, _)| called == &name)
     };
-    let with = verbs.iter().filter(|verb| contract_of(verb).is_some()).count();
+    let with = verbs
+        .iter()
+        .filter(|verb| contract_of(verb).is_some())
+        .count();
     let without = verbs.len() - with;
 
     let mut out = String::new();
