@@ -33,6 +33,8 @@ For the `governs` half, run the write hook the way the harness does, once per ch
 
 It answers by string equality against the value on each edge. A path *under* a governed directory answers nothing, so a silent result is not evidence that no document governs the area — see HW-OBL-0104. Say so in part 4 rather than reporting silence as absence.
 
+A crate file that an `interface_contract` governs answers with the contract, and each answer carries in parentheses the name the document declares. For a contract that name is the command a caller types, so `engine/crates/check/src/lib.rs` answers `docs/interfaces/headwater-check.md (headwater check)`. Report the command rather than the path, because the path is a file name somebody chose and the name is a declaration the taxonomy reads.
+
 ## What you never do
 
 - **You never accept.** You do not write `accepted_by`, and you do not move a warrant to `accepted`. Acceptance is a human act.

@@ -435,6 +435,53 @@ $out" ;;
         esac
     fi
 
+    # The same position, over a crate rather than over a script. This is the
+    # half of the agent's first part that had nothing to report until an
+    # `interface_contract` declared `governs` onto a crate: an edit to the code
+    # a command is described by now names the description.
+    #
+    # Three assertions rather than one, and the second and third are why this
+    # case is here at all.
+    #
+    #   the contract   the document is named. A case that stopped here would
+    #                  pass on the path alone, and the path was already being
+    #                  printed for every governed file before contracts existed.
+    #   the verb       `(headwater check)` is the rendering of the facet in the
+    #                  `name` role, and nothing else in this output writes a
+    #                  parenthesized span. The bare substring `headwater check`
+    #                  would not do: the contract's own summary holds it, so a
+    #                  case asserting that would pass whether the name was read
+    #                  or not.
+    #   not silence    the empty output is the ambient result of an unbuilt
+    #                  engine, an unreadable input and a path nothing governs,
+    #                  so a case that could pass on it is a case that tests
+    #                  none of the above. Both assertions above fail on it, and
+    #                  this one says so where a reader of a failure will see it.
+    sentence='answers `docs/interfaces/headwater-check.md (headwater check)`'
+    name='an edit to a governed crate names the contract and the command it describes'
+    if ! grep -qF "$sentence" "$agents/headwater-maintainer.md"; then
+        fail "$name" 'the agent no longer says what a governed crate answers'
+    else
+        export HEADWATER_HOOK_ROOT="$root"
+        out=$(printf '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/check/src/lib.rs"}}' |
+            sh "$root/.claude/hooks/write.sh" 2>/dev/null)
+        if [ -z "$out" ]; then
+            fail "$name" 'the hook said nothing at all'
+        else
+            case $out in
+                *docs/interfaces/headwater-check.md*)
+                    case $out in
+                        *'(headwater check)'*) pass "$name" ;;
+                        *) fail "$name" "it named the contract and not the command:
+$out" ;;
+                    esac ;;
+                *)
+                    fail "$name" "it named no contract:
+$out" ;;
+            esac
+        fi
+    fi
+
     printf '\n# headwater-sweep, against the promise that nothing gates on it\n'
 
     # The sweep is the one mechanism here whose output no engine produces, and
