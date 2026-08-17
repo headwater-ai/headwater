@@ -43,16 +43,24 @@ The unit to think in is **carry**: a tool result costs its own size times the nu
 
 **Hand the iteration to three agents rather than one.** The three phases need disjoint context. Adjudication reads the board and the specification to settle whether the issue's premise still holds. Construction reads the code and runs the suite. Write-back reads the diff and the board. In one context the specification prose sits underneath two hundred turns of `cargo test` output, and that output sits underneath the write-back, and none of it is ever dropped. As three agents passing a written note, each starts near 25k instead of inheriting 285k.
 
-| Agents per iteration | Cache read | Cost |
-|---|---|---|
-| 1 | 50.0M | $31 |
-| 2 | 28.5M | $21 |
-| **3** | **21.3M** | **$17** |
-| 4 | 17.7M | $15 |
+|  | Turns | Peak context | Cache read | Cost |
+|---|---|---|---|---|
+| One agent, over 82 runs | 280 | 285k | 50.0M | $31 |
+| Phase one, adjudication | 100 | 126k | 7.3M | $7 |
+| Phase two, construction | 123 | 161k | 12.2M | $9 |
+| Phase three, write-back | — | — | — | — |
 
-The first row is measured and the rest is a model, so read the shape rather than the figures. The saving is about 45% at three agents, and it flattens after that because every phase re-pays its own briefing of roughly 25k.
+Every figure above is measured. **Peak context per agent falls by about half**, which is the mechanism and the part that held. Phase two was stopped part way and phase three has not yet run, so read the saving as **about 30%** rather than the 45% first modeled here — the first two phases came to $16 against $31 for the whole of the old shape. The number will move again once a full three-phase iteration lands; correct it here when it does.
+
+**The saving is only real if you do not spend it waiting.** See the rule below, which the first run of this shape cost $21 to learn.
 
 **The handoff is a file, not a context.** Phase one writes the adjudication into the iteration's scratch directory: the premise verdict, what it will build, and the decisive fixture. Phase two writes what it built, what it ran, and what the numbers were. Phase three reads those two notes and the diff. A phase that needs something an earlier phase saw and did not write down is telling you the note is too thin — thicken the note rather than merging the phases back together.
+
+**The file is for the phase that reads it next. The report comes back to you on its own.** A phase agent's final message reaches you when it completes, so the verdict, the number and the surprise belong there, and none of it needs asking for. Write the file for the next phase; read the return value for yourself.
+
+**Wait by blocking, and never by polling.** A phase agent runs in the background and tells you when it finishes, so between launching it and its report you have nothing to do. Do not fill that with checks. The first run of this shape made 232 identical `git log origin/main..<branch>` calls in twelve minutes, a median of three seconds apart, and narrated *"I'm burning turns polling"* while it went on polling — a third of the parent's turns and $21 of its $74. Every check re-reads your whole context, so a poll is the most expensive way available to do nothing. **Wait for the completion notification.** Where you must wait on a file a phase writes, spend one blocking call — `until [ -f <path> ]; do sleep 30; done` — rather than a check per turn, and never a sleep shorter than thirty seconds. Across the five parent sessions before this shape existed, not one repeated a single command more than twenty times; the first session under it repeated one 232 times. The failure is available to you and it does not announce itself, so count your repeats rather than trusting that you would notice.
+
+**When the coordination outgrows the waiting.** Three phases and two handoffs is the point at which a parent starts writing wait logic, and wait logic is what went wrong above. If it grows past that — more phases, phases that fan out, a handoff that wants validating rather than reading — the sequence belongs in a script rather than in your turns. `Workflow` is that script: it runs the phases in a fixed order, hands you each phase's return value directly, keeps every phase's tool output out of your context, and never puts you in a position to wait at all. It costs a decision from the human to start, so raise it rather than reaching for it, and only once the waiting logic is bigger than the judgment it serves. Judgment between iterations — what to merge, what a stale premise means — stays with you either way.
 
 ## Each iteration's prompt
 
