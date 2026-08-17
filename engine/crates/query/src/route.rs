@@ -44,7 +44,12 @@ use crate::{terms, Document, Pointer, Surface};
 use headwater_graph::declarations::Governs;
 use headwater_graph::Target;
 
-/// What a route may return, which spec 5 calls a budget.
+/// How much of a route a ranking may fill, which spec 5 calls a budget.
+///
+/// It bounds the ranked offer and nothing else. A document that declares
+/// `governs` over a path the task named was named rather than ranked, so it is
+/// carried whatever this says, and [`Route::withheld`] reports what the bound
+/// removed.
 ///
 /// The default is five. The number is a stated choice rather than a measured
 /// one: a pointer list is read by an agent that then opens documents, and a
@@ -52,6 +57,8 @@ use headwater_graph::Target;
 /// adopter who wants another number passes one.
 #[derive(Clone, Copy, Debug)]
 pub struct Budget {
+    /// How many ranked pointers a route may offer. A route may return more
+    /// pointers than this, and every one of them was named by an anchor.
     pub pointers: usize,
 }
 
