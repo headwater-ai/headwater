@@ -437,3 +437,170 @@ fn the_package_in_this_repository_declares_a_range_this_engine_is_inside() {
     );
     package::sources(root, &declaration).expect("the sources of this repository load");
 }
+
+/// The same publisher, with the bundle library its manifest names never written.
+///
+/// This is the shape of the vendored copy that [#271] is about: a manifest whose
+/// `..` points at a tree that is not there, because the package directory was
+/// copied out of the repository that holds the library beside it.
+///
+/// **It is the one input that reaches the write phase and comes back out.**
+/// Every other refusal `publish` makes — the two version declarations
+/// disagreeing, an engine range, a migration payload, a package that is not
+/// found — fires before the first byte, so *`--out` untouched* is the ambient
+/// outcome for all of them and a case built on one would pass while proving
+/// nothing.
+///
+/// [#271]: https://github.com/headwater-ai/headwater/issues/271
+fn publisher_without_its_library(scratch: &Scratch) -> PathBuf {
+    let root = publisher(scratch, None);
+    std::fs::remove_dir_all(scratch.path().join("publisher/library")).expect("the library goes");
+    root
+}
+
+/// A publisher whose manifest names content it does not carry, without a `..`.
+///
+/// `conformance` is declared and absent, and `bundles` is declared, absent, and
+/// inside the package. Spec 7 says every `contents` path a publisher writes is
+/// read, and before this both of these published an artifact with a hole in it
+/// and exited 0.
+fn publisher_naming_content_it_does_not_carry(scratch: &Scratch) -> PathBuf {
+    scratch.write(
+        "hollow/packages/acme-fixture/package.yml",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  \
+         conformance: nosuch-conformance.yml\n  bundles: nosuch-bundles\n",
+    );
+    scratch.write("hollow/packages/acme-fixture/taxonomy.yml", TAXONOMY);
+    scratch.path().join("hollow")
+}
+
+/// A publish that cannot read what its manifest declares writes nothing at all.
+///
+/// The three assertions are the three halves of [#271] that a caller can see.
+/// The message names the manifest rather than a directory, so a reader is sent
+/// to the declaration rather than to a path with a `..` in it. `--out` does not
+/// exist afterwards, which is the one assertion no cosmetic change satisfies.
+/// And the second run meets the same refusal as the first, rather than the
+/// output-directory precondition catching the leftovers of the first.
+///
+/// [#271]: https://github.com/headwater-ai/headwater/issues/271
+#[test]
+fn a_publish_that_cannot_read_its_declared_content_leaves_the_output_directory_as_it_found_it() {
+    let scratch = Scratch::new("unreadable-content");
+    let root = publisher_without_its_library(&scratch);
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish(&root, "acme/fixture", &out).expect_err("it does not publish");
+    let first = headwater_resolve::render_errors(&refused);
+    assert!(
+        first.contains(package::MANIFEST),
+        "the refusal does not name the manifest that declares the path: {first}"
+    );
+    assert!(
+        first.contains("../../library"),
+        "the refusal does not name the declared value: {first}"
+    );
+    assert!(
+        !out.exists(),
+        "the output directory was created by a publish that says it published nothing: {:?}",
+        std::fs::read_dir(&out)
+            .map(|entries| entries.filter_map(Result::ok).map(|e| e.path()).collect::<Vec<_>>())
+    );
+
+    let again = package::publish(&root, "acme/fixture", &out).expect_err("it does not publish");
+    assert_eq!(
+        headwater_resolve::render_errors(&again),
+        first,
+        "the second run met a different refusal, so the first run left something behind"
+    );
+}
+
+/// A declared content path that stays inside the package is read too.
+///
+/// The escaping path is the loud half of #271 and this is the quiet one. Spec 7
+/// (Publishing): "Every `contents` path a publisher writes is read … A key that
+/// no verb reads is a claim that a publisher makes and a consumer never sees."
+/// Before this, a package declaring `contents.conformance` and
+/// `contents.bundles` with neither on disk published two members and exited 0.
+#[test]
+fn a_publish_refuses_content_it_does_not_carry_even_where_no_path_escapes() {
+    let scratch = Scratch::new("hollow");
+    let root = publisher_naming_content_it_does_not_carry(&scratch);
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish(&root, "acme/fixture", &out).expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains(package::MANIFEST),
+        "the refusal does not name the manifest: {message}"
+    );
+    assert!(
+        message.contains("nosuch-conformance.yml") || message.contains("nosuch-bundles"),
+        "the refusal names neither declared path: {message}"
+    );
+    assert!(!out.exists(), "nothing is written for this one either");
+}
+
+/// This repository's own package publishes, and the artifact is what the record
+/// says it is.
+///
+/// The precondition above reads every declared `contents` path, and the base
+/// package declares one that escapes on purpose. This is the case that would
+/// fail if the precondition were written to refuse an escape rather than to
+/// read one.
+///
+/// It also holds the published identity to the files on disk. The digest is
+/// taken over the member list, and a staging refactor that dropped one relative
+/// path or swept in `release.yml` would move the number every future consumer
+/// pins without changing a byte of any file. The literal is never written down
+/// here, because it moves with any file under `docs/taxonomies/`.
+#[test]
+fn the_package_in_this_repository_publishes_and_its_digest_covers_what_is_on_disk() {
+    let scratch = Scratch::new("this-repository");
+    let root = Path::new("../../..");
+    let out = scratch.path().join("artifact");
+
+    let record = package::publish(root, "headwater/standard", &out).expect("it publishes");
+
+    let on_disk = release::members(&out).expect("the artifact reads");
+    assert_eq!(
+        record.members, on_disk,
+        "the record does not name the files that were written"
+    );
+    assert_eq!(
+        record.digest,
+        release::digest_of(&on_disk),
+        "the digest is not the digest of what is on disk"
+    );
+    release::verify(&out, &record.digest).expect("the artifact verifies against its own digest");
+
+    let files = walk_files(&out);
+    assert_eq!(
+        record.members.len() + 1,
+        files,
+        "every file except {} is a member",
+        release::RECORD
+    );
+
+    let manifest = std::fs::read_to_string(out.join(package::MANIFEST)).expect("it is there");
+    assert!(
+        manifest.contains("bundles: bundles"),
+        "the escaping path did not become one inside the artifact: {manifest}"
+    );
+    assert!(
+        out.join("bundles").is_dir(),
+        "the bundles the manifest now names are not there"
+    );
+}
+
+/// Every file under a directory, counted.
+fn walk_files(at: &Path) -> usize {
+    std::fs::read_dir(at)
+        .expect("the directory reads")
+        .filter_map(Result::ok)
+        .map(|entry| match entry.path().is_dir() {
+            true => walk_files(&entry.path()),
+            false => 1,
+        })
+        .sum()
+}

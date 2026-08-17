@@ -405,7 +405,9 @@ headwater taxonomy migrate   <dir> [--to <version>] [--apply] [--now <date>]
   --out <dir>    `taxonomy publish` only: where to write the artifact. The
                  directory must be empty or absent, because a published artifact
                  is every file under its root and a stray one would be a member
-                 the publisher never shipped.
+                 the publisher never shipped. A run that cannot finish leaves it
+                 as it found it, so a second run meets the same precondition the
+                 first one did.
   --to <version> `taxonomy diff` only: the version the artifact is expected to
                  be, written as a version or as a range: `4.0.0`, or `>=4 <5`
                  with the quoting your shell needs.
@@ -1101,6 +1103,19 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>) -> ExitCode 
 /// what the release notes carry and what a consumer writes into its own
 /// declaration. The number is printed rather than filed anywhere, because a
 /// digest that travels inside the artifact it describes checks nothing.
+///
+/// **`nothing was published` is printed for every error and it is a statement
+/// about the disk.** Nothing here establishes it: this arm never learns whether
+/// the library reached a write. What makes it true is
+/// [`headwater_resolve::package::publish`], which reads every path the manifest
+/// declares before it creates `--out` and returns `--out` to the state it found
+/// it in when a write fails. That was false until [#271], where a failing run
+/// left three files and an empty `bundles/` under a directory it said it had not
+/// written to, and the next run was refused by the `--out` precondition catching
+/// the first run's leftovers. `engine/crates/cli/tests/publish.rs` holds this
+/// line to the disk from the state an adopter is in.
+///
+/// [#271]: https://github.com/headwater-ai/headwater/issues/271
 fn publish(root: &Path, package: Option<&str>, out: Option<&Path>) -> ExitCode {
     let Some(out) = out else {
         return fail("`taxonomy publish` writes into a directory. Name it with `--out <dir>`");
