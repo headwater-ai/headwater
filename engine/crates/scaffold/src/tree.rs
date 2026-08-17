@@ -343,11 +343,13 @@ impl Reserved {
 
     /// Put back every file up to `upto`, and say which ones would not go back.
     ///
-    /// `failed` is the index the run stopped at. The loop skips it and the
-    /// restore after the loop takes it, so it goes back exactly once and its
-    /// result lands in [`Failed`] rather than in `restored` — which keeps
-    /// `restored` meaning the files this run wrote *in full* and put back, the
-    /// reading both older cases were written against.
+    /// `failed` is the index the run stopped at, at whichever of the two
+    /// failure points it stopped. The loop skips it and the restore after the
+    /// loop takes it, so it goes back exactly once and its result lands in
+    /// [`Failed`] rather than in `restored`. That keeps `restored` meaning
+    /// *every file other than the one the run failed on*, which is the reading
+    /// both older cases were written against, and it keeps the one file a
+    /// reader most needs to hear about out of a count and in a sentence.
     ///
     /// Restoring it needs nothing that is not already in hand: `Held::was` is
     /// the file's bytes, read in [`Reserved::over`] through the same handle the
