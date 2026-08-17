@@ -432,9 +432,51 @@ pub enum Refusal {
     },
     /// The reciprocal half would go into a document, and the splice did not
     /// read back. Nothing is written.
+    ///
+    /// **Raised in the compose phase and nowhere else**, which is what lets its
+    /// message end *Nothing was written* and be true. It once carried the write
+    /// phase too, and printed that sentence to an author whose tree had just
+    /// gained a document — the four variants below are the write phase, and
+    /// each one says what the write actually did.
     ReciprocalUnwritable {
         path: String,
         why: String,
+    },
+    /// A document this run would have edited could not be opened for writing.
+    ///
+    /// The reservation refuses before a byte moves and before the new document
+    /// is created, so this is the one write-phase refusal whose tree is the tree
+    /// the run started with. It is also the only write failure anybody has
+    /// produced: a reciprocal end that is read-only reaches it.
+    TargetUnopened {
+        path: String,
+        why: String,
+    },
+    /// The new document could not be created at its path.
+    ///
+    /// Every file this run will edit is already open and unchanged when this
+    /// fires, so nothing else was written.
+    DocumentUncreated {
+        path: String,
+        why: String,
+    },
+    /// The write started and stopped, and the run put back what it could.
+    ///
+    /// `report` is [`tree::Halted`]'s own account, which names the file that
+    /// stopped it, what that file holds now, which of the others went back, and
+    /// what became of the document this run created. Nothing here restates it.
+    WriteHalted {
+        path: String,
+        report: String,
+    },
+    /// The composition names some number of new documents other than one.
+    ///
+    /// [`write::compose`] pushes exactly one entry with `created: true` and
+    /// every reciprocal it appends is a document it read off the tree. A writer
+    /// that met two would have to choose which one an undo may unlink, and this
+    /// refuses rather than choosing.
+    NotOneDocument {
+        created: usize,
     },
 }
 
@@ -587,6 +629,22 @@ impl std::fmt::Display for Refusal {
                 f,
                 "the reciprocal half belongs in {path}, and the result did not read back: {why}. \
                  Nothing was written"
+            ),
+            Refusal::TargetUnopened { path, why } => write!(
+                f,
+                "{path} holds the other half of an edge this run would write, and it could not be \
+                 opened for writing: {why}. Nothing was written and no document was created"
+            ),
+            Refusal::DocumentUncreated { path, why } => write!(
+                f,
+                "the document could not be created at {path}: {why}. No other file was written"
+            ),
+            Refusal::WriteHalted { report, .. } => write!(f, "the write stopped: {report}"),
+            Refusal::NotOneDocument { created } => write!(
+                f,
+                "this run composed {created} new documents and a scaffold makes exactly one, so \
+                 the writer cannot say which one an undo may remove. That is a defect in the \
+                 scaffolder"
             ),
         }
     }

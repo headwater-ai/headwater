@@ -53,12 +53,19 @@
 //!
 //! # One file at a time, and all of a file or none of it
 //!
-//! [`crate::write::apply`] composes every file before it writes any, because a
-//! half-written scaffold leaves an edge with one end. A fix is not that shape.
-//! Each file's patches are independent of every other file's, and a refusal
-//! over one document is no evidence about another. So the unit is the file: all
-//! of its patches land or none of them do, and a refusal is reported beside the
-//! files that did land.
+//! [`crate::write::apply`] puts every file of a scaffold on the tree or none of
+//! them, because a half-written scaffold leaves an edge with one end. A fix is
+//! not that shape. Each file's patches are independent of every other file's,
+//! and a refusal over one document is no evidence about another. So the unit is
+//! the file: all of its patches land or none of them do, and a refusal is
+//! reported beside the files that did land.
+//!
+//! That sentence used to say *composes every file before it writes any*, which
+//! was a claim about the phase that cannot fail standing in for the phase that
+//! can: composition finished, and the write beneath it was a loop that stopped
+//! on its first error. Both writers now go through [`crate::tree::Reserved`],
+//! and [`apply`] here calls [`crate::tree::Reserved::over`] alone because a fix
+//! creates nothing.
 
 use crate::write::splice;
 use crate::{Half, Refusal};

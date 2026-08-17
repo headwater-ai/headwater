@@ -19,12 +19,35 @@
 //! whose shape the splice guessed wrong fails that read, and the run refuses
 //! with [`crate::Refusal::ReciprocalUnwritable`] having written nothing.
 //!
-//! # Nothing is written until everything can be
+//! # Nothing is written until everything can be, and this is where that became
+//! true of the writing rather than of the composing
 //!
-//! [`apply`] composes every byte of every file first, and writes only when each
-//! one is composed. A run that failed halfway would leave an edge with one half
-//! on the tree, which is the state the reciprocity rule exists to report and
-//! the last state a scaffolder should produce.
+//! [`compose`] composes every byte of every file before any of it reaches disk.
+//! That was the whole of the claim for a long time, and it was a claim about
+//! the phase that cannot fail: underneath it, [`apply`] was a loop of
+//! `std::fs::write` that stopped on the first error with every file before it
+//! written. The run it left behind was the exact state the reciprocity rule
+//! exists to report — a new document declaring one half of an edge, with the
+//! other half nowhere — and the corpus then failed its own commit gate over a
+//! document the author never chose to keep.
+//!
+//! [`apply`] now goes through [`crate::tree::Reserved`], in the order that
+//! decides everything:
+//!
+//! 1. [`crate::tree::Reserved::over`] opens every document this run will
+//!    **edit**. No byte moves, so the failure that actually happens — a
+//!    reciprocal end that is read-only — refuses here with the tree exactly as
+//!    it was and nothing to undo.
+//! 2. [`crate::tree::Reserved::making`] creates the one document this run
+//!    **makes**, through `create_new`, so *this run made it* is an answer the
+//!    kernel returned.
+//! 3. [`crate::tree::Reserved::commit`] writes, reads every path back, and on a
+//!    failure puts every edited file back and unlinks the created one.
+//!
+//! **A crash between two writes is still uncovered**, as
+//! [`crate::tree`]'s own comment says and as no user-space scheme covers
+//! without a journal. What is covered is the failure a run is still there to
+//! undo.
 
 use crate::{Half, Plan, Refusal};
 use std::path::Path;
@@ -91,6 +114,16 @@ pub struct Composed {
 ///
 /// The caller writes them, so a dry run and a real one differ by one loop
 /// rather than by a second composer.
+///
+/// # Exactly one entry is new, and it is the first
+///
+/// The vector opens with the document this run makes, and every entry appended
+/// after it is a reciprocal end this function `read_to_string`'d off the tree.
+/// A reciprocal can never be the new document either: [`crate::propose`] refuses
+/// with [`Refusal::TargetUnresolved`] unless the far end already carries the
+/// identifier the edge names, and with [`Refusal::PathTaken`] unless the new
+/// path is free. So the invariant [`apply`] reads is established here, and
+/// [`apply`] refuses rather than picking when it does not hold.
 pub fn compose(root: &Path, plan: &Plan) -> Result<Vec<Composed>, Refusal> {
     let mut composed = vec![Composed {
         path: plan.path.clone(),
@@ -128,21 +161,53 @@ pub fn compose(root: &Path, plan: &Plan) -> Result<Vec<Composed>, Refusal> {
     Ok(composed)
 }
 
-/// Write what [`compose`] produced.
+/// Write what [`compose`] produced: all of it, or none of it.
+///
+/// The documents this run edits are reserved first and the document it makes is
+/// created after them, which is the ordering [`crate::tree`] argues for at
+/// length. A failure at the reservation leaves the tree untouched, and a failure
+/// after it puts every edited file back and unlinks the created one.
+///
+/// # `created` routes, and never licenses
+///
+/// The flag says which entry [`compose`] planned to make, and routing on it is
+/// safe because a wrong answer is caught rather than acted on: an entry marked
+/// new whose path is taken fails `create_new` with `AlreadyExists` and refuses,
+/// and an entry marked old that is not there fails the reservation's open. What
+/// the flag never does is license the unlink. The undo removes the path
+/// `create_new` returned `Ok` for, so the licence is a syscall's answer and not
+/// a bool three functions upstream.
 pub fn apply(root: &Path, composed: &[Composed]) -> Result<(), Refusal> {
-    for file in composed {
-        let path = root.join(&file.path);
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent).map_err(|error| Refusal::ReciprocalUnwritable {
-                path: file.path.clone(),
-                why: error.to_string(),
-            })?;
-        }
-        std::fs::write(&path, &file.text).map_err(|error| Refusal::ReciprocalUnwritable {
+    let new: Vec<&Composed> = composed.iter().filter(|file| file.created).collect();
+    let [new] = new[..] else {
+        return Err(Refusal::NotOneDocument {
+            created: new.len(),
+        });
+    };
+    let editing = composed
+        .iter()
+        .filter(|file| !file.created)
+        .map(|file| crate::tree::Composed {
             path: file.path.clone(),
-            why: error.to_string(),
+            text: file.text.clone(),
+        })
+        .collect();
+
+    crate::tree::Reserved::over(root, editing)
+        .map_err(|unopened| Refusal::TargetUnopened {
+            path: unopened.path,
+            why: unopened.why,
+        })?
+        .making(root, &new.path, new.text.clone())
+        .map_err(|unopened| Refusal::DocumentUncreated {
+            path: unopened.path,
+            why: unopened.why,
+        })?
+        .commit()
+        .map_err(|halted| Refusal::WriteHalted {
+            path: halted.path().to_string(),
+            report: halted.to_string(),
         })?;
-    }
     Ok(())
 }
 
