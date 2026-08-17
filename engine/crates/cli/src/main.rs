@@ -3493,9 +3493,13 @@ fn import(root: &Path, name: Option<&str>, expect: Option<&str>, writing: bool) 
             return ExitCode::FAILURE;
         }
     };
-    if let Err(why) = headwater_import::write::apply(root, &composed) {
-        eprintln!("headwater: the write stopped part way");
-        eprintln!("{}", indent(&why));
+    // The headline comes off the refusal rather than out of this line. A run
+    // refused at the reservation wrote nothing, and this call site printed *the
+    // write stopped part way* over it for as long as one sentence covered both
+    // phases.
+    if let Err(unwritten) = headwater_import::write::apply(root, &composed) {
+        eprintln!("headwater: {}", unwritten.headline());
+        eprintln!("{}", indent(&unwritten.to_string()));
         return ExitCode::FAILURE;
     }
     println!(
