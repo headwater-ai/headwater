@@ -2,7 +2,9 @@
 
 A **documentation governance system**: a typed, validated, self-describing corpus of documentation that machines can check and agents can navigate — where the taxonomy itself is configuration, not code.
 
-> **Status: specification, pre-implementation.** Nothing here is built yet. This repository currently holds a high-level specification written to be argued with. The next phase drills into each area before any implementation begins.
+> **Status: the engine runs, and two layers of it are unfinished.** M1 to M5 shipped, so this repository types its own corpus, checks it on every commit, and scaffolds, explains, routes, generates and exports it. M6 (distribution) and M7 (the measurement layer) are open, and every efficacy claim in this repository is still marked unmeasured.
+
+**Start here: [Your first governed corpus](docs/tutorials/your-first-governed-corpus.md).** Sixteen steps from an empty directory to a passing check, and it teaches the model rather than the commands. Every step states what you should now see, and `sh .claude/tutorial/fixtures.sh` runs the page against the engine in CI so that no output block on it can go stale quietly.
 
 ## What problem this solves
 
