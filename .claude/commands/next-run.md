@@ -1,9 +1,9 @@
 ---
-description: Run N stacked iterations of the Headwater build order, one subagent each, merging between
+description: Run N stacked iterations of the Headwater build order, three subagents each, merging between
 argument-hint: "[iteration count, default 20]"
 ---
 
-Run `$ARGUMENTS` iterations (default 20) of the Headwater build order, one Opus 5 subagent per iteration, **sequentially**. Merge between each, so iteration N+1 branches from N's merge and reads a board N already changed. Parallel runs do not stack; they collide.
+Run `$ARGUMENTS` iterations (default 20) of the Headwater build order, three Opus 5 subagents per iteration, **sequentially**. Merge between each, so iteration N+1 branches from N's merge and reads a board N already changed. Parallel runs do not stack; they collide.
 
 You are the parent. The subagents do the volume. Your job is judgment: what to merge, what a stale premise means, which of the agent's surprises is a lesson and which is noise. Almost everything you control sits in two places — **what you put in the next prompt, and what you refuse to take on trust.**
 
@@ -35,6 +35,25 @@ Keep a running ledger at `~/.claude/headwater-build-order-ledger.md`, **on disk,
 - **Milestone status.** Which milestones closed, whose bar you verified, what the next one assumes.
 - **Log.** One line per iteration: issue, pull request, merge commit, verdict, **what your own verification proved** rather than what the agent claimed, and **the net issue delta — opened minus closed, with the `self-audit` share called out**. A run that nets positive for three iterations is a run building faster than it is deciding, and the delta is the only place that is visible while it is happening rather than in a review a week later.
 
+## What an iteration costs, and the shape that follows
+
+Measured across 82 iteration agents: **78% of an iteration's cost is cache reads**, which is the accumulated context re-read on every turn. Cache writes are 14% and output is 8%. The median iteration runs 280 turns, peaks at 285k of context, and re-reads 50M tokens getting there. Nothing else you tune moves the number as much as what enters that context and how early it arrives.
+
+The unit to think in is **carry**: a tool result costs its own size times the number of turns that follow it. Seven thousand tokens read at turn 20 of a 280-turn agent carry 1.8M token-reads; the same seven thousand read at turn 250 carry 210k. Position is worth as much as size, which is why the cheap-looking calls dominate. **Bash results are 68% of all carry and file reads 29%**, because an iteration makes 142 bash calls against eleven reads, and each 400-token result then rides every remaining turn.
+
+**Hand the iteration to three agents rather than one.** The three phases need disjoint context. Adjudication reads the board and the specification to settle whether the issue's premise still holds. Construction reads the code and runs the suite. Write-back reads the diff and the board. In one context the specification prose sits underneath two hundred turns of `cargo test` output, and that output sits underneath the write-back, and none of it is ever dropped. As three agents passing a written note, each starts near 25k instead of inheriting 285k.
+
+| Agents per iteration | Cache read | Cost |
+|---|---|---|
+| 1 | 50.0M | $31 |
+| 2 | 28.5M | $21 |
+| **3** | **21.3M** | **$17** |
+| 4 | 17.7M | $15 |
+
+The first row is measured and the rest is a model, so read the shape rather than the figures. The saving is about 45% at three agents, and it flattens after that because every phase re-pays its own briefing of roughly 25k.
+
+**The handoff is a file, not a context.** Phase one writes the adjudication into the iteration's scratch directory: the premise verdict, what it will build, and the decisive fixture. Phase two writes what it built, what it ran, and what the numbers were. Phase three reads those two notes and the diff. A phase that needs something an earlier phase saw and did not write down is telling you the note is too thin — thicken the note rather than merging the phases back together.
+
 ## Each iteration's prompt
 
 Build it fresh. It must contain all seven parts.
@@ -42,6 +61,8 @@ Build it fresh. It must contain all seven parts.
 ### 1. The procedure the agent follows
 
 Subagents do not get slash commands, so paste this in full. An agent told to "run /next" invents its own idea of what that means.
+
+**This is the whole iteration, and it goes out in three pieces.** The adjudication agent gets everything through *Check the issue against reality* and writes its verdict to the scratch directory. The construction agent gets *Do the work*, the amendments, and that verdict. The write-back agent gets *Write back* and *Report*, both notes, and the diff. Parts 2 through 7 below are not addressed to all three: every phase gets part 2, adjudication gets 4 and 5, construction gets 3, 5 and 6, and write-back gets 5 and 7.
 
 > **Work exactly one iteration of the Headwater build order** (org project "Headwater build order", `headwater-ai/headwater`), then stop.
 >
@@ -75,7 +96,7 @@ Carry the whole list forward — it is cheap to paste and each entry cost somebo
 
 - `gh issue view` and `gh pr edit` fail with a `projectCards` GraphQL deprecation. Use `gh api repos/headwater-ai/headwater/issues/<N> --jq .body`, and patch bodies with `gh api -X PATCH repos/headwater-ai/headwater/{pulls,issues}/<N> -F body=@file.md`. Read the comments too — corrections live there.
 - Worktree isolation refuses heredocs and compound shell. Write scripts to files and run them.
-- **Give the agent its own scratch directory**, `$CLAUDE_JOB_DIR/tmp/issue-<N>/`, and tell it your own instruments live in `$CLAUDE_JOB_DIR/tmp/parent-only/` and are off limits. An agent once wrote its checking script onto the exact path holding yours, and your "independent" re-derivation then ran the agent's code against the agent's work with nothing to tell you.
+- **Give the agent its own scratch directory**, `$CLAUDE_JOB_DIR/tmp/issue-<N>/`, and tell it your own instruments live in `$CLAUDE_JOB_DIR/tmp/parent-only/` and are off limits. An agent once wrote its checking script onto the exact path holding yours, and your "independent" re-derivation then ran the agent's code against the agent's work with nothing to tell you. **The rule is not holding.** Iteration agents opened `parent-only/lessons-seed.md` and `parent-only/seed.md` 24 times across 82 iterations. Saying it once in the prompt has not been enough; read the transcript for the path.
 - `Write` is blocked in the shared checkout and `EnterWorktree` is refused from a subagent. Tell it to create one by hand: `git worktree add .claude/worktrees/<name> -b <branch> origin/main`, staging files through its own tmp subdirectory, leaving the shared checkout untouched on `main`, and removing the worktree at the end or saying it is still there.
 - `git push -u origin <branch>`, never a bare `git push` — `push.default` is `matching` on this machine, so a bare push also tries to push a stale local `main`. Branch from `origin/main` after a fetch.
 - The pinned container is Rust 1.85 while CI runs current stable, so clippy differs and `-D warnings` promotes new lints. Run it with `--user` and a container-internal `CARGO_TARGET_DIR`. `--user` and `rustup component add` cannot both work there, because rustup needs a writable `RUSTUP_HOME`, so a formatter fix is applied by hand. **Capture each step's exit status separately** and check CI rather than trusting a local green run.
@@ -87,6 +108,14 @@ Carry the whole list forward — it is cheap to paste and each entry cost somebo
 - **Commit and push in small steps.** A transport error or an API limit costs everything unbanked, and only pushed commits survive an agent death.
 - `git config core.hooksPath .githooks` in the worktree. A `Stop` hook runs `.githooks/pre-commit` and exits 2 on failure; dormant while `--strict` exits 0.
 - A rust-analyzer LSP is available. **Never navigate from its `documentSymbol` line numbers** — they point at an item's first doc-comment line, not its signature, and the gap runs to sixteen lines in this codebase. `findReferences` at the wrong line returns "No references found", which is indistinguishable from a true negative. `grep -n 'fn <name>'` first.
+
+**Token discipline is the same list read for cost.** Each entry below was measured across 82 iterations, and each is worth more than it looks, because a result rides every turn that follows it.
+
+- **Redirect a build or a check to files and read the tail.** `cargo test` ran 447 times and `headwater check` 209, for a quarter of a million tokens that never leave the context once they arrive. Send stdout and stderr to *separate* files — the trap above about merging them still holds — as `cargo test ... > $TMP/test.out 2> $TMP/test.err`, then read `tail -5 $TMP/test.out` as its own call. Two calls rather than one compound command, because worktree isolation refuses the compound form anyway.
+- **Ask an API for the field rather than the record.** `gh issue view` cost 79k tokens over 138 calls. `gh api repos/headwater-ai/headwater/issues/<N> --jq .body` is the same fact for a fraction of it, and the traps above already require that form for an unrelated reason.
+- **Never read a whole specification part.** `11-adjacent-work.md` is 36k tokens and `02-taxonomy-model.md` is 24k. Use `headwater explain`, or `Read` with an offset and a limit. File reads are 29% of carry and it concentrates in whole-file reads that land early and then ride the entire run.
+- **Do not run the same command twice.** 693 exact-duplicate calls across 82 iterations, about eight an iteration. A repeat costs its output a second time and adds a turn, and turns are the multiplier on everything else in the context.
+- **Prefer `Edit` to `Write` on a file that already exists.** `Write` carries the whole new body in the request: 1,508 calls at an average of 1,024 tokens, which is 45% of all tool-input volume.
 
 **Correct an environment claim the moment you disprove it.** An agent reported an invariant "literally false" and wrote it to memory; it had captured `2>&1` and read a stderr statistic as part of a stdout artifact. Left standing, that would have taught every later iteration to weaken the strongest test in the repository. If an agent's environment claim contradicts a recorded lesson, measure it yourself before it propagates — and if the agent wrote it somewhere durable, go and fix that too.
 
