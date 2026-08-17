@@ -26,6 +26,7 @@ use headwater_check::shape::Shape;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::index::Index;
 use headwater_graph::Config;
+use headwater_import::write::Unwritten;
 use headwater_import::{Declaration, Proposed, Refusal};
 use std::path::{Path, PathBuf};
 
@@ -305,6 +306,98 @@ fn a_pinned_snapshot_writes_one_edge_per_link_and_writes_it_once() {
         again.edges
     );
     assert!(again.to_write().is_empty());
+}
+
+/// Lock a file against writing.
+///
+/// `compose` never sees this. Its only read of a document is a
+/// `read_to_string`, which succeeds on a read-only file, so the failure this
+/// provokes lands in the write and not one phase before it.
+fn lock(at: &Path) {
+    let mut permissions = std::fs::metadata(at)
+        .expect("the file is there")
+        .permissions();
+    permissions.set_readonly(true);
+    std::fs::set_permissions(at, permissions).expect("the file locks");
+}
+
+/// One import over the fixture tree, with the second of its two documents
+/// unwritable by the time the write runs.
+///
+/// The lock goes on **after** the compose, because a document `compose` cannot
+/// read is `compose`'s own refusal and would stop the run one phase earlier
+/// than the writer these cases are about. Returns the tree, what the *other*
+/// document held before the write, and the refusal.
+fn stopped(case: &str) -> (Scratch, String, Unwritten) {
+    let scratch = Scratch::new(case);
+    let digest = tree(&scratch, PAYLOAD);
+    let planned = plan(&scratch, &declaration(Some(&digest), channel())).expect("it plans");
+    let pending = planned.to_write();
+    let composed = headwater_import::write::compose(scratch.path(), &pending).expect("it composes");
+    assert_eq!(
+        composed
+            .iter()
+            .map(|file| file.path.as_str())
+            .collect::<Vec<_>>(),
+        vec!["docs/spec/00-first.md", "docs/spec/01-second.md"],
+        "one run writes two documents, and the one locked below is the second of them"
+    );
+
+    let first = scratch.read("docs/spec/00-first.md");
+    lock(&scratch.path().join("docs/spec/01-second.md"));
+    let refused = headwater_import::write::apply(scratch.path(), &composed)
+        .expect_err("the second document cannot be opened for writing");
+    (scratch, first, refused)
+}
+
+/// An edge half nobody can open leaves every other document of the run as it
+/// was.
+///
+/// The exposure here is width. One `headwater import --write` puts an edge half
+/// into every document the snapshot names, and the loop this replaces wrote
+/// them one at a time and stopped on its first error — leaving a corpus part
+/// way through one import, with nothing on the tree to say which run stopped or
+/// where.
+///
+/// **The *before* assertion is deliberately loose.** That `apply` returns an
+/// error is true of the loop this replaces too, so making that the tight
+/// assertion would attribute the case's failure to the wrong thing. The
+/// decisive assertion is the first one below: the ambient outcome of this exact
+/// scenario, measured against the writer this change replaces, is
+/// `00-first.md` on the tree carrying its edge.
+#[test]
+fn an_edge_half_that_cannot_be_opened_leaves_every_other_document_as_it_was() {
+    let (scratch, first, _) = stopped("write-half-written");
+
+    assert_eq!(
+        scratch.read("docs/spec/00-first.md"),
+        first,
+        "the other document of the run is as it was, and the writer this replaces had already put \
+         its edge on the tree"
+    );
+    assert!(
+        !scratch
+            .read("docs/spec/01-second.md")
+            .contains("audited_by"),
+        "and so is the one that could not be opened"
+    );
+}
+
+/// A run refused before it wrote says nothing was written, rather than saying
+/// it stopped part way.
+///
+/// One sentence over two phases is true of neither. `headwater import --write`
+/// printed *the write stopped part way* over every failure of the write,
+/// including this one, where the run stopped before it started — the same fault
+/// the scaffolder's own refusal carried when it printed *Nothing was written*
+/// to an author whose tree had just gained a document.
+#[test]
+fn a_write_refused_before_it_started_says_nothing_was_written() {
+    let (_scratch, _first, refused) = stopped("write-nothing-written");
+
+    assert_eq!(refused.headline(), "nothing was written");
+    assert_eq!(refused.path(), "docs/spec/01-second.md");
+    assert!(matches!(refused, Unwritten::Unopened { .. }), "{refused}");
 }
 
 /// Nothing pins the snapshot, so the import refuses rather than records what it
@@ -663,15 +756,23 @@ fn every_wrong_link_is_reported_and_not_only_the_first() {
         .any(|refusal| matches!(refusal, Refusal::NotAnImportRelation { .. })));
 }
 
-/// A refused import writes nothing at all.
+/// An import refused at the plan writes nothing at all.
 ///
 /// The refusals above are worth what this test says they are worth. An importer
 /// that reported a wrong link and wrote the rest would leave a corpus that is
 /// part imported, and the next run over the corrected snapshot would have no
 /// way to tell which half it was looking at.
+///
+/// **The name says *at the plan* because that is the whole of what this holds.**
+/// `plan` refuses before `compose` and `apply` are called at all, so the tree
+/// this asserts about is a tree no writer has touched under any implementation
+/// of the writer — including the loop that stopped part way. The case that
+/// holds the writer is
+/// [`an_edge_half_that_cannot_be_opened_leaves_every_other_document_as_it_was`],
+/// which reaches `apply` and asserts the opposite of that loop's outcome.
 #[test]
-fn a_refused_import_leaves_every_document_as_it_found_it() {
-    let scratch = Scratch::new("nothing-written");
+fn a_link_refused_at_the_plan_leaves_every_document_as_it_found_it() {
+    let scratch = Scratch::new("plan-refused");
     let digest = tree(&scratch, &PAYLOAD.replace("SPEC-FIX-one", "SPEC-FIX-nine"));
     let before = scratch.read("docs/spec/01-second.md");
 
