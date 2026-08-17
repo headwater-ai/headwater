@@ -116,7 +116,10 @@ fn a_publish_that_says_nothing_was_published_wrote_nothing() {
 
     let (code, first) = root.publish(&out);
     assert_eq!(code, Some(1), "{first}");
-    assert!(first.contains("headwater: nothing was published"), "{first}");
+    assert!(
+        first.contains("headwater: nothing was published"),
+        "{first}"
+    );
     assert!(
         first.contains("package.yml"),
         "the refusal does not name the manifest that declares the path: {first}"

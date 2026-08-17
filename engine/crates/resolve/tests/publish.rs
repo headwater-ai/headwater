@@ -503,8 +503,10 @@ fn a_publish_that_cannot_read_its_declared_content_leaves_the_output_directory_a
     assert!(
         !out.exists(),
         "the output directory was created by a publish that says it published nothing: {:?}",
-        std::fs::read_dir(&out)
-            .map(|entries| entries.filter_map(Result::ok).map(|e| e.path()).collect::<Vec<_>>())
+        std::fs::read_dir(&out).map(|entries| entries
+            .filter_map(Result::ok)
+            .map(|e| e.path())
+            .collect::<Vec<_>>())
     );
 
     let again = package::publish(&root, "acme/fixture", &out).expect_err("it does not publish");

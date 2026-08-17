@@ -551,22 +551,21 @@ pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<Resol
     let source = taxonomy_source(root, &directory, &contents)?;
     agrees(&manifest_name(root, &directory), &manifest, &source)?;
 
-    let found = match std::fs::read_dir(out) {
-        Ok(mut entries) => match entries.next() {
-            Some(_) => {
-                return Err(refusal(
+    let found =
+        match std::fs::read_dir(out) {
+            Ok(mut entries) => match entries.next() {
+                Some(_) => return Err(refusal(
                     &display(root, out),
                     "the output directory holds files already, and a published artifact is every \
                      file under its root. Publish into a directory that does not exist yet",
-                ))
-            }
-            None => Found::Empty,
-        },
-        // An unreadable directory reaches the write below and fails there, which
-        // is the arm the undo covers. Reporting it here would turn one refusal
-        // into two readings of one path.
-        Err(_) => Found::Absent,
-    };
+                )),
+                None => Found::Empty,
+            },
+            // An unreadable directory reaches the write below and fails there, which
+            // is the arm the undo covers. Reporting it here would turn one refusal
+            // into two readings of one path.
+            Err(_) => Found::Absent,
+        };
 
     migrations(root, &directory, &manifest, source)?;
 
@@ -666,7 +665,7 @@ fn reachable(
     directory: &Path,
     contents: &Mapping,
 ) -> Result<(), Vec<ResolveError>> {
-    for entry in contents.iter() {
+    for entry in contents {
         let key = entry.key.value.as_str();
         let Some(scalar) = entry.value.value.as_scalar() else {
             continue;
@@ -723,7 +722,8 @@ fn stage(
     reachable(&name, directory, contents)?;
 
     let mut staged = Vec::new();
-    read_tree(directory, "", &mut staged).map_err(|why| refusal(&display(root, directory), &why))?;
+    read_tree(directory, "", &mut staged)
+        .map_err(|why| refusal(&display(root, directory), &why))?;
 
     let Some(bundles) = manifest
         .get("contents")
