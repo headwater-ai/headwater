@@ -148,6 +148,16 @@ pub enum Unwritten {
     /// `report` is [`headwater_scaffold::tree::Halted`]'s own account, which
     /// names the document that stopped the run, what it holds now, and which of
     /// the others went back. Nothing here restates it.
+    ///
+    /// **No case in this crate reaches this arm, and that is stated rather
+    /// than hidden.** It is raised by a `write_all` that fails part way through
+    /// a handle `Reserved::over` already opened, which
+    /// `headwater_scaffold::tree::Reserved::commit_with`'s own comment argues
+    /// is not provocable from an unprivileged, deterministic, thread-safe test.
+    /// The rollback behind it is held by that module's in-module cases, through
+    /// the seam it owns. What this crate holds is that the arm exists, that it
+    /// carries the report rather than a sentence of its own, and that the other
+    /// arm is not printed in its place.
     Halted { path: String, report: String },
 }
 
