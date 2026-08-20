@@ -947,9 +947,9 @@ fn reachable(
             refused.extend(refusal(
                 manifest,
                 &format!(
-                    "`contents.{key}` names {declared}, and it is not there. Every path a \
-                     manifest declares reaches the artifact, so a publish cannot ship the key \
-                     without the file.{outside}"
+                    "`contents.{key}` names {declared}, and it is not there. A publish reads \
+                     every path a manifest declares before it writes anything, so a key that \
+                     names nothing on disk stops it.{outside}"
                 ),
             ));
             continue;
