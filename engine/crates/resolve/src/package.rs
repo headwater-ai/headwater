@@ -249,26 +249,44 @@ fn contents_of(manifest: &Mapping) -> Mapping {
         .unwrap_or_default()
 }
 
-/// A package declares its version twice, and this is the only thing that holds
-/// the two together.
+/// A package declares what it is twice — its name and its version — and this is
+/// the only thing that holds either pair together.
 ///
 /// [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#publishing)
-/// gives the manifest a `version` key, and the meta-schema requires a `version`
-/// at the root of a taxonomy source. The split above says why the two files are
-/// two files, and it left one value declared in both of them. Nothing compared
-/// them until [#212](https://github.com/headwater-ai/headwater/issues/212), so a
-/// package could ship with the two apart and pass every gate this repository
-/// runs.
+/// gives the manifest a `package` key and a `version` key, and the meta-schema
+/// requires a `taxonomy` and a `version` at the root of a taxonomy source. The
+/// split above says why the two files are two files, and it left both of those
+/// values declared in both of them. Nothing compared the versions until
+/// [#212](https://github.com/headwater-ai/headwater/issues/212) and nothing
+/// compared the names until
+/// [#267](https://github.com/headwater-ai/headwater/issues/267), so a package
+/// could ship with either pair apart and pass every gate this repository runs.
 ///
 /// **The manifest decides, and this is what makes that statement true.** Every
-/// consumer-facing reader takes the manifest number: the pin comparison in
-/// [`sources`], [`find_version`], and the release record that
-/// `taxonomy diff` reads a version out of. The taxonomy source's copy reaches
-/// the lock, where `taxonomy.version` sits beside `package.version` — so before
-/// this the committed lock could state two versions of one taxonomy in two of
-/// its own blocks. Rather than pick a winner and leave the loser writable, the
-/// two are required to agree, and the refusal names both files and both
-/// numbers.
+/// consumer-facing reader takes the manifest value. For the version that is the
+/// pin comparison in [`sources`], [`find_version`], and the release record that
+/// `taxonomy diff` reads a version out of. For the name it is [`find`], the
+/// release record's `package` field, the vendor target directory derived from
+/// it, and the corpus descriptor a served host publishes. The meta-schema had
+/// already ruled this half in a comment: `package` is a reserved reference root,
+/// no taxonomy may declare a block with that name, and it is the manifest that
+/// names the package. The taxonomy source's copies reach the lock, where the
+/// `taxonomy` block sits beside the `package` block — so before this the
+/// committed lock could state two names of one taxonomy, or two versions of it,
+/// in two of its own blocks. Rather than pick a winner and leave the loser
+/// writable, each pair is required to agree.
+///
+/// **The refusals cannot be one refusal.** Both version keys are called
+/// `version`, so that message says the word once. The name keys are two
+/// different keys, `package:` in the manifest and `taxonomy:` in the source, so
+/// its message names each key beside its value. A message that named the value
+/// alone would send a reader looking for a `package:` key in the taxonomy source
+/// that the meta-schema forbids.
+///
+/// **The name is compared before the version**, because a package that is not
+/// the package you asked for makes the question of its version moot. Where both
+/// disagree both are reported, so a second run does not have to discover the
+/// second one.
 ///
 /// Whether a taxonomy source should carry a version at all is a meta-schema
 /// question, and #212 does not answer it. This holds the declarations that
@@ -280,20 +298,40 @@ fn agrees(manifest: &str, declaration: &Mapping, source: &Source) -> Result<(), 
         // finding a reader needs rather than one about a missing key.
         return Ok(());
     };
+    let mut refused = Vec::new();
+
+    let named = text(declaration, "package").unwrap_or_default();
+    let carries = text(root, "taxonomy").unwrap_or_default();
+    if named != carries {
+        refused.extend(refusal(
+            manifest,
+            &format!(
+                "this declares `package: {named}` and the taxonomy source it names, {}, declares \
+                 `taxonomy: {carries}`. One package states two names of itself, and each of them \
+                 is what some reader downstream takes the package to be",
+                source.name
+            ),
+        ));
+    }
+
     let declared = text(declaration, "version").unwrap_or_default();
     let carried = text(root, "version").unwrap_or_default();
-    if declared == carried {
+    if declared != carried {
+        refused.extend(refusal(
+            manifest,
+            &format!(
+                "this declares version `{declared}` and the taxonomy source it names, {}, \
+                 declares `{carried}`. One package states two versions of itself, and each of \
+                 them is what some reader downstream takes the package to be",
+                source.name
+            ),
+        ));
+    }
+
+    if refused.is_empty() {
         return Ok(());
     }
-    Err(refusal(
-        manifest,
-        &format!(
-            "this declares version `{declared}` and the taxonomy source it names, {}, declares \
-             `{carried}`. One package states two versions of itself, and each of them is what \
-             some reader downstream takes the package to be",
-            source.name
-        ),
-    ))
+    Err(refused)
 }
 
 /// The bundles the consumer selected and the overlay it declares, on top of the
