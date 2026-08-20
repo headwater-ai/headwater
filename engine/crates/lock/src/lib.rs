@@ -438,6 +438,16 @@ pub fn at(root: &Path) -> Result<Lock, LockError> {
     read(&text)
 }
 
+/// The first line of the comment block that [`render`] writes between the
+/// authored payload and the generated taxonomy.
+///
+/// It is here rather than inline because [`parts`] bounds the authored span on
+/// it. Bounding that span on `resolved:` instead put three generated comment
+/// lines inside the authored half, and a difference in one of them was then
+/// reported against a block nobody had touched.
+const GENERATED_TRAILER: &str =
+    "\n# The resolved taxonomy. The digest above is over this text with the two\n";
+
 /// The lock as a file.
 ///
 /// The header is a mapping and the body is the canonical taxonomy indented under
@@ -503,7 +513,7 @@ adoption:
         }
     }
 
-    out.push_str("\n# The resolved taxonomy. The digest above is over this text with the two\n");
+    out.push_str(GENERATED_TRAILER);
     out.push_str("# leading spaces of each line removed, which is the form the resolver writes\n");
     out.push_str("# and the form a round trip loads back.\n\nresolved:\n");
     for line in canonical.lines() {
@@ -591,25 +601,38 @@ pub fn diverged(committed: &str, resolved: &str) -> Divergence {
     if render(&lock, &lock.canonical()) != resolved {
         return Divergence::Generated;
     }
+    // The authored block is named only where everything outside it is byte
+    // identical. Anything less is a difference this cannot place, and naming
+    // the block for one of those is the defect this whole split removes,
+    // committed one file lower down.
+    let (before, authored, after) = parts(committed);
+    let (theirs_before, theirs_authored, theirs_after) = parts(resolved);
     Divergence::Form {
-        adoption: authored_bytes(committed) != authored_bytes(resolved),
+        adoption: authored != theirs_authored && before == theirs_before && after == theirs_after,
     }
 }
 
-/// The bytes of the `adoption` block of a lock file, or the empty string where
-/// the file declares none.
+/// A lock file cut into the authored block and the two generated pieces around
+/// it, in file order: `(before, authored, after)`.
 ///
-/// The block runs from the `adoption` key to the `resolved` key, both of which
-/// [`render`] writes at the left margin. Everything either one contains is
-/// indented, so nothing inside a block can be mistaken for the bound of one.
-fn authored_bytes(text: &str) -> &str {
-    let Some(start) = text.find("\nadoption:\n") else {
-        return "";
+/// The authored span starts at the `adoption` key and ends at
+/// [`GENERATED_TRAILER`]. A file that declares no block, or that is not laid
+/// out the way [`render`] lays one out, yields an empty span and lands wholly
+/// in one of the other two pieces. That is the answer that keeps a caller
+/// honest: a difference it cannot place inside the block is a difference it
+/// must not blame on the block.
+fn parts(text: &str) -> (&str, &str, &str) {
+    let Some(found) = text.find("\nadoption:\n") else {
+        return (text, "", "");
     };
-    let block = &text[start + 1..];
-    match block.find("\nresolved:\n") {
-        Some(end) => &block[..end + 1],
-        None => block,
+    let start = found + 1;
+    let tail = &text[start..];
+    match tail.find(GENERATED_TRAILER) {
+        Some(end) => (&text[..start], &tail[..end], &tail[end..]),
+        // The block is there and the trailer under it is not, so this file is
+        // not laid out the way `render` lays one out. Nothing here can say
+        // where the authored half ends, so nothing here claims a span.
+        None => (text, "", ""),
     }
 }
 
@@ -915,6 +938,118 @@ tasks:
             diverged(&commented, &text),
             Divergence::Form { adoption: false }
         );
+    }
+
+    /// The three generated comment lines under the payload are not the payload.
+    ///
+    /// The first cut of this split bounded the authored span on `resolved:`,
+    /// which put those three lines inside it. A comment added immediately above
+    /// `resolved:` was then reported as "the `adoption` block is where the two
+    /// differ", over a block nobody had touched — the defect this branch exists
+    /// to remove, committed one file lower down.
+    #[test]
+    fn a_comment_above_the_generated_taxonomy_is_not_the_authored_block() {
+        let (sources, resolution, payload) = laden();
+        let text = write("acme/f", "1.0.0", &sources, &resolution, Some(&payload)).expect("ok");
+        let edited = text.replacen("\nresolved:\n", "\n# somebody added a note\nresolved:\n", 1);
+        assert_ne!(edited, text);
+        assert_eq!(
+            diverged(&edited, &text),
+            Divergence::Form { adoption: false }
+        );
+    }
+
+    /// The same defect at full size: YAML admits any key order, so the whole
+    /// generated taxonomy can move and leave the payload untouched.
+    #[test]
+    fn a_lock_whose_blocks_are_reordered_is_not_the_authored_block_either() {
+        let (sources, resolution, payload) = laden();
+        let text = write("acme/f", "1.0.0", &sources, &resolution, Some(&payload)).expect("ok");
+        let cut = text.find("\nadoption:\n").expect("the block is there") + 1;
+        let end = text[cut..]
+            .find("\nresolved:\n")
+            .expect("the generated half follows it")
+            + cut
+            + 1;
+        // header, then the generated taxonomy, then the authored block last.
+        let reordered = format!("{}{}{}", &text[..cut], &text[end..], &text[cut..end]);
+        assert_ne!(reordered, text);
+        let carried = read(&reordered)
+            .expect("it still reads")
+            .adoption
+            .expect("the payload survived");
+        assert_eq!(
+            headwater_resolve::render::render(&carried),
+            headwater_resolve::render::render(&payload),
+            "the reorder changes no content"
+        );
+        assert_eq!(
+            diverged(&reordered, &text),
+            Divergence::Form { adoption: false }
+        );
+    }
+
+    /// `render` writes the marker that bounds the authored span, exactly once.
+    ///
+    /// One copy, because a second one would let the writer and the reader of
+    /// that bound drift apart with nothing to report it.
+    #[test]
+    fn the_renderer_writes_the_marker_that_bounds_the_authored_span() {
+        let (sources, resolution, payload) = laden();
+        let text = write("acme/f", "1.0.0", &sources, &resolution, Some(&payload)).expect("ok");
+        assert_eq!(text.matches(GENERATED_TRAILER).count(), 1);
+        let (before, authored, after) = parts(&text);
+        assert!(authored.starts_with("adoption:\n"), "{authored}");
+        assert!(
+            !authored.contains('#'),
+            "the span holds no generated comment:\n{authored}"
+        );
+        assert_eq!(
+            after.strip_prefix(GENERATED_TRAILER).map(|rest| rest
+                .lines()
+                .next()
+                .unwrap_or_default()
+                .starts_with('#')),
+            Some(true),
+            "the generated comment block opens what follows the span:\n{after}"
+        );
+        assert!(
+            authored.ends_with("rule: facet.required.missing\n"),
+            "{authored}"
+        );
+        assert_eq!(format!("{before}{authored}{after}"), text);
+    }
+
+    /// A key order a person chose is carried through, and is not a difference.
+    ///
+    /// `resolve` re-renders the payload out of the parsed mapping, and a
+    /// mapping here keeps the order it was written in. So the renderer
+    /// normalizes the *style* of a scalar and preserves the *order* of a key,
+    /// and a reordered task is what the sources resolve to. This is recorded
+    /// rather than fixed: the header promises the block is carried through
+    /// untouched, and an order this engine imposed would not be untouched.
+    #[test]
+    fn a_key_order_inside_a_task_is_carried_through_rather_than_normalized() {
+        let (sources, resolution, payload) = laden();
+        let text = write("acme/f", "1.0.0", &sources, &resolution, Some(&payload)).expect("ok");
+        let statement = "      statement: \"every document states no summary\"\n";
+        let owner = "      owner: guild\n";
+        assert!(text.contains(&format!("{statement}{owner}")), "{text}");
+        let reordered = text.replacen(
+            &format!("{statement}{owner}"),
+            &format!("{owner}{statement}"),
+            1,
+        );
+        assert_ne!(reordered, text, "the fixture moved two keys");
+        let again = write(
+            "acme/f",
+            "1.0.0",
+            &sources,
+            &resolution,
+            read(&reordered).expect("it reads").adoption.as_ref(),
+        )
+        .expect("ok");
+        assert_eq!(diverged(&reordered, &again), Divergence::Same);
     }
 
     /// The two ends: the same bytes, and a file that will not read at all.

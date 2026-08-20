@@ -899,16 +899,15 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
                          is carried through"
                     ),
                     false => eprintln!(
-                        "  The two differ outside the `adoption` block, in the generated \
-                         half of the file. Run `headwater taxonomy resolve` and commit the \
-                         result"
+                        "  The difference is not inside the `adoption` block. Run `headwater \
+                         taxonomy resolve` and commit the result"
                     ),
                 }
                 ExitCode::FAILURE
             }
-            // A lock that will not read is its own message, and a lock whose
-            // generated half moved is the case this verb was written for.
-            headwater_lock::Divergence::Unreadable(_) | headwater_lock::Divergence::Generated => {
+            // A lock whose generated half moved is the case this verb was
+            // written for.
+            headwater_lock::Divergence::Generated => {
                 eprintln!(
                     "headwater: {} is not what the sources resolve to. \
                      Run `headwater taxonomy resolve` and commit the result",
@@ -920,6 +919,28 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
                     for moved in lock.moved(root) {
                         eprintln!("  {moved} has changed since the lock was written");
                     }
+                }
+                ExitCode::FAILURE
+            }
+            // A lock that will not read says nothing about its sources, so this
+            // run says nothing about them either. The remedy splits, because
+            // `resolve` refuses one of these two states and repairs the other,
+            // and the state is already read: `Authored::Opaque` is exactly the
+            // one the write path below returns on.
+            headwater_lock::Divergence::Unreadable(why) => {
+                eprintln!("headwater: {} did not read: {why}", headwater_lock::LOCK);
+                match &authored {
+                    headwater_lock::Authored::Opaque { .. } => eprintln!(
+                        "  Nothing can be seen of its adoption block, so `headwater taxonomy \
+                         resolve` refuses this file rather than replacing it. Repair the file, \
+                         or delete it to resolve from the sources alone and write the block again"
+                    ),
+                    _ => eprintln!(
+                        "  Nothing here can say whether a source moved, because the file that \
+                         records them will not read. Run `headwater taxonomy resolve` and commit \
+                         the result. The digest covers the resolution and has never covered the \
+                         adoption block, so that block is carried through"
+                    ),
                 }
                 ExitCode::FAILURE
             }

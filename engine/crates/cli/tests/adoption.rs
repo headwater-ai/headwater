@@ -827,3 +827,153 @@ fn a_task_level_key_this_engine_does_not_read_refuses_the_task() {
         ran.out
     );
 }
+
+/// The generated half is never blamed on the authored block, at the CLI.
+///
+/// The verifier of #310 built this: a comment added immediately above
+/// `resolved:` sits between the payload and the generated taxonomy, and the
+/// first cut of the split put those bytes inside the authored span. Exit code
+/// and remedy were right and the diagnosis named a block nobody had touched,
+/// which is the defect the branch exists to remove.
+#[test]
+fn a_comment_in_the_generated_half_is_not_blamed_on_the_authored_block() {
+    let root = Root::new("comment-in-generated-half");
+    root.author();
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(
+        resolved.code,
+        Some(0),
+        "the fixture resolves\n{}{}",
+        resolved.out,
+        resolved.err
+    );
+
+    let canonical = root.text();
+    root.write(&canonical.replacen("\nresolved:\n", "\n# somebody added a note\nresolved:\n", 1));
+
+    let ran = root.run(&["taxonomy", "resolve", "--check"]);
+    assert_eq!(
+        ran.code,
+        Some(1),
+        "the file still differs from the one the sources produce\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert!(
+        ran.err.contains("not inside the `adoption` block"),
+        "the diagnosis places the difference outside the block:\n{}",
+        ran.err
+    );
+    assert!(
+        !ran.err.contains("where the two differ"),
+        "and does not blame the block:\n{}",
+        ran.err
+    );
+}
+
+/// A lock that will not read says so, and names a remedy that can succeed.
+///
+/// `--check` used to print "is not what the sources resolve to" here, which is
+/// false — the sources resolve to exactly this taxonomy — with no reason, no
+/// moved source, and `headwater taxonomy resolve` as the remedy. That remedy
+/// exits 1 and refuses on this input, because nothing can be seen of the
+/// authored block. Naming a command that cannot succeed is its own wrong
+/// diagnosis, which is the class of defect this branch exists to remove.
+#[test]
+fn a_lock_that_will_not_read_names_a_remedy_that_can_succeed() {
+    let root = Root::new("unreadable-empty-block");
+    root.author();
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(resolved.code, Some(0), "the fixture resolves");
+
+    // The block a person is invited to edit, emptied. The key is there and its
+    // value is null, so the lock is malformed rather than blockless.
+    let canonical = root.text();
+    let cut = canonical.find("\nadoption:\n").expect("the block is there") + 1;
+    let end = canonical[cut..]
+        .find("\n# The resolved taxonomy")
+        .expect("the generated half follows it")
+        + cut;
+    root.write(&format!(
+        "{}adoption:{}",
+        &canonical[..cut],
+        &canonical[end..]
+    ));
+
+    let ran = root.run(&["taxonomy", "resolve", "--check"]);
+    assert_eq!(
+        ran.code,
+        Some(1),
+        "a lock that will not read is not a lock\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert!(
+        ran.err.contains("did not read"),
+        "the run says what is wrong with the file:\n{}",
+        ran.err
+    );
+    assert!(
+        !ran.err.contains("is not what the sources resolve to"),
+        "and says nothing about the sources, which it cannot see:\n{}",
+        ran.err
+    );
+
+    // The remedy `--check` printed, run. It must agree with what was printed.
+    let remedy = root.run(&["taxonomy", "resolve"]);
+    let refuses = ran.err.contains("refuses this file");
+    assert_eq!(
+        remedy.code != Some(0),
+        refuses,
+        "the printed remedy and what the remedy does agree\n--check said:\n{}\nresolve said ({:?}):\n{}{}",
+        ran.err,
+        remedy.code,
+        remedy.out,
+        remedy.err
+    );
+}
+
+/// The digest mismatch keeps the remedy that works, which is #213's case.
+///
+/// This is the other side of the split above. A lock whose digest no longer
+/// matches also does not read, and there `taxonomy resolve` succeeds and
+/// carries the authored block through. So the two states must not share one
+/// remedy sentence.
+#[test]
+fn a_lock_whose_digest_does_not_match_is_told_to_resolve() {
+    let root = Root::new("unreadable-digest");
+    root.author();
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(resolved.code, Some(0), "the fixture resolves");
+    root.write(
+        &root
+            .text()
+            .replacen("digest: sha256:", "digest: sha256:0000", 1),
+    );
+
+    let ran = root.run(&["taxonomy", "resolve", "--check"]);
+    assert_eq!(ran.code, Some(1), "{}{}", ran.out, ran.err);
+    assert!(
+        ran.err.contains("did not read"),
+        "the run says what is wrong with the file:\n{}",
+        ran.err
+    );
+    assert!(
+        !ran.err.contains("refuses this file"),
+        "and this is the state a resolve repairs:\n{}",
+        ran.err
+    );
+
+    let remedy = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(
+        remedy.code,
+        Some(0),
+        "the printed remedy succeeds\n{}{}",
+        remedy.out,
+        remedy.err
+    );
+    assert!(
+        root.text().contains("AD-9"),
+        "and the authored block survived it"
+    );
+}
