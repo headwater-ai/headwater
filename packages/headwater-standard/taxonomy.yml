@@ -17,6 +17,17 @@
 # declarations. `package` is a reserved reference root, so a taxonomy source may
 # not declare it. The manifest is `package.yml` beside this file, and a taxonomy
 # source names itself with `taxonomy:`.
+#
+# So this name appears twice, here and as `package:` in `package.yml` beside it,
+# under two different keys for the one thing. The manifest is the file that
+# decides. Every consumer-facing reader takes the name from there: the lookup
+# under `packages/`, the release record, the directory `taxonomy vendor` writes
+# into, and the corpus descriptor a served host publishes. The copy here reached
+# the lock and the published artifact and decided nothing, so until #267 the two
+# could name different things through a resolve, through a publish and into the
+# lock, with every gate green. Now `resolve::package::agrees` refuses a package
+# whose two names differ, before it compares the two versions, and the refusal
+# names both files, both keys and both names.
 
 taxonomy: headwater/standard
 # 3.2.0 adds `OB-LIFE-4` and `CT-LIFE-4`, which are the obligation and the

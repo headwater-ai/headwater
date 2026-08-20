@@ -86,6 +86,27 @@ fn publisher_at(scratch: &Scratch, requires_engine: Option<&str>, source: &str) 
     scratch.path().join("publisher")
 }
 
+/// The same publisher, with the name its taxonomy source declares set by the
+/// caller.
+///
+/// The manifest stays at `acme/fixture` whatever this is. A package states its
+/// name twice as well as its version, and the two names sit under two different
+/// keys: `package:` in the manifest that spec 7 gives it, and `taxonomy:` at the
+/// root of the source, where the meta-schema requires one and forbids a
+/// `package:` beside it. This is the knob that moves one without the other.
+///
+/// It edits the file [`publisher_at`] wrote rather than taking a fourth
+/// positional parameter, so the fifteen call sites of that helper are untouched.
+fn publisher_named(scratch: &Scratch, source: &str) -> PathBuf {
+    let root = publisher_at(scratch, None, "1.0.0");
+    let path = root.join("packages/acme-fixture/taxonomy.yml");
+    let text = std::fs::read_to_string(&path).expect("the source was just written");
+    let moved = text.replace("taxonomy: acme/fixture", &format!("taxonomy: {source}"));
+    assert_ne!(text, moved, "the source did not declare the name it was to");
+    std::fs::write(&path, moved).expect("the source writes");
+    root
+}
+
 /// A consumer declaration inside the publisher tree, pinning what it takes.
 fn takes(scratch: &Scratch, version: &str) {
     scratch.write(
@@ -416,6 +437,164 @@ fn the_package_in_this_repository_states_one_version_in_both_files() {
         declared(&manifest),
         declared(&source),
         "packages/headwater-standard states two versions of itself"
+    );
+}
+
+/// A package states its name twice, and the two names must be one name.
+///
+/// This is the same shape as the version case above, one key up, and one thing
+/// about it cannot be copied from there. Both version keys are called `version`,
+/// so that message says "version" once and a reader knows where to look. The
+/// name keys are different keys: `package:` in the manifest and `taxonomy:` at
+/// the root of the source, where the meta-schema forbids a `package:`. A message
+/// that named the value and not the key would send a reader hunting for a
+/// `package:` key in `taxonomy.yml` that no taxonomy source may declare, so the
+/// refusal names both keys as well as both files and both names.
+///
+/// The version case has two arms and this has one, for a reason that is a
+/// property of `find` rather than an omission. A consumer pins a version, so
+/// which of the two numbers it wrote decided which refusal it got, and the
+/// second arm is what holds the comparison in front of the pin. A consumer
+/// cannot pin either name: `find` searches `packages/` by the manifest key
+/// alone, so a consumer naming the source's name never reaches this comparison
+/// and is told "no package under `packages/` declares" instead. There is no
+/// `find`-side arm to write, and asserting that this refusal is not that one is
+/// what stands in place of it.
+#[test]
+fn a_package_that_states_two_names_of_itself_is_refused() {
+    let scratch = Scratch::new("two-names");
+    // The manifest stays at acme/fixture and the taxonomy source goes to
+    // acme/other.
+    let root = publisher_named(&scratch, "acme/other");
+    takes(&scratch, "1.0.0");
+
+    let declaration = package::consumer(&root).expect("it reads");
+    let refused = package::sources(&root, &declaration)
+        .expect_err("a package with two names of itself does not load");
+    let message = headwater_resolve::render_errors(&refused);
+
+    // Both files, so a reader knows where to go.
+    assert!(
+        message.contains("packages/acme-fixture/package.yml"),
+        "the manifest is not named:\n{message}"
+    );
+    assert!(
+        message.contains("packages/acme-fixture/taxonomy.yml"),
+        "the taxonomy source is not named:\n{message}"
+    );
+    // Both keys, because they are two different keys.
+    assert!(
+        message.contains("package: acme/fixture"),
+        "the manifest's key is not named, so a reader cannot find the value:\n{message}"
+    );
+    assert!(
+        message.contains("taxonomy: acme/other"),
+        "the source's key is not named, so a reader looks for a `package:` key the \
+         meta-schema forbids:\n{message}"
+    );
+    // And neither of the two refusals it could be mistaken for. `find` answers
+    // about a name nothing declares, and the pin comparison about a consumer's
+    // number; this is about the package being two things at once.
+    assert!(
+        !message.contains("no package under"),
+        "the lookup answered first, so the package was never held to itself:\n{message}"
+    );
+    assert!(
+        !message.contains("this takes"),
+        "the pin comparison answered first, so the package was never held to itself:\n{message}"
+    );
+}
+
+/// The same disagreement stops a publish, before a byte reaches an artifact.
+///
+/// `publish` does not resolve for a consumer, so it does not pass through the
+/// comparison above. It copies both files into the artifact and the release
+/// digest covers both, so without its own reading of this a publisher seals two
+/// names under one digest and every adopter of that artifact receives a package
+/// that says two things about what it is.
+#[test]
+fn a_publish_of_a_package_that_states_two_names_is_refused() {
+    let scratch = Scratch::new("two-names-publish");
+    let root = publisher_named(&scratch, "acme/other");
+    let out = scratch.path().join("artifact");
+
+    let refused =
+        package::publish(&root, "acme/fixture", &out).expect_err("the publish does not run");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(message.contains("package.yml"), "{message}");
+    assert!(message.contains("taxonomy.yml"), "{message}");
+    assert!(message.contains("package: acme/fixture"), "{message}");
+    assert!(message.contains("taxonomy: acme/other"), "{message}");
+    assert!(
+        !out.join(package::MANIFEST).exists(),
+        "the artifact was written anyway"
+    );
+}
+
+/// An artifact that already carries two names is refused on the path a fetched
+/// directory is read by.
+///
+/// This engine cannot publish such an artifact any more, so the only publisher
+/// that can hand one over is a publisher on some other engine. That is the case
+/// that matters for a fetched package: the release digest covers both files and
+/// proves the bytes, never that the bytes agree. It matters more here than one
+/// key down, because the vendor target directory is derived from the manifest
+/// name — so without this an adopter lands a source naming one thing in a
+/// directory named after another, and their own resolve passes.
+#[test]
+fn a_fetched_artifact_that_states_two_names_is_refused() {
+    let scratch = Scratch::new("two-names-fetched");
+    let root = publisher(&scratch, None);
+    let out = scratch.path().join("artifact");
+    package::publish(&root, "acme/fixture", &out).expect("the honest artifact publishes");
+
+    // What another publisher's engine could have written: the manifest at
+    // acme/fixture and the taxonomy source beside it at acme/other.
+    let source = out.join("taxonomy.yml");
+    let text = std::fs::read_to_string(&source).expect("it is there");
+    std::fs::write(
+        &source,
+        text.replace("taxonomy: acme/fixture", "taxonomy: acme/other"),
+    )
+    .expect("it writes");
+
+    consumer(&scratch, "sha256:0");
+    let consumer_root = scratch.path().join("consumer");
+    let declaration = package::consumer(&consumer_root).expect("it reads");
+    let manifest = package::manifest_at(&out).expect("the manifest reads");
+    let refused = package::sources_at(&consumer_root, &out, &manifest, &declaration)
+        .expect_err("the fetched artifact does not load");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(message.contains("package: acme/fixture"), "{message}");
+    assert!(message.contains("taxonomy: acme/other"), "{message}");
+    assert!(message.contains("taxonomy.yml"), "{message}");
+}
+
+/// The two declarations of this repository's own package name one thing.
+///
+/// The cases above prove the refusal fires. This one proves it is not firing on
+/// the tree it ships in, and it reads both files under their own keys rather
+/// than asserting the literal `headwater/standard`, so a rename that moves one
+/// and forgets the other fails here as well as at the gate.
+#[test]
+fn the_package_in_this_repository_states_one_name_in_both_files() {
+    let root = Path::new("../../..");
+    let directory = root.join(package::PACKAGES).join("headwater-standard");
+    let manifest =
+        std::fs::read_to_string(directory.join(package::MANIFEST)).expect("the manifest is there");
+    let source =
+        std::fs::read_to_string(directory.join("taxonomy.yml")).expect("the source is there");
+
+    let named = |text: &str, key: &str| {
+        text.lines()
+            .find_map(|line| line.strip_prefix(key))
+            .map(str::to_string)
+            .unwrap_or_else(|| panic!("no root `{key}` is declared"))
+    };
+    assert_eq!(
+        named(&manifest, "package: "),
+        named(&source, "taxonomy: "),
+        "packages/headwater-standard states two names of itself"
     );
 }
 
