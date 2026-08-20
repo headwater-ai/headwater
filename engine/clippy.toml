@@ -1,0 +1,11 @@
+# The oldest Rust this workspace builds on.
+#
+# `.github/workflows/ci.yml` states 1.85 in a comment — `saphyr-parser` is on
+# edition 2024, and an older cargo reports `feature edition2024 is required` and
+# nothing else — and the pinned container runs that version. Neither of those is
+# a place a tool reads, so clippy had no floor and suggested APIs the floor does
+# not have: `chunks_exact_to_as_chunks` fired twice on `crates/hash/src/lib.rs`
+# and pointed at `slice::as_chunks`, which is stable in 1.88 and not in 1.85.
+# `-D warnings` turned that into a build failure on `main` itself, on every
+# branch off it, before `cargo test` ran at all.
+msrv = "1.85"
