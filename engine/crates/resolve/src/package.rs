@@ -862,7 +862,7 @@ fn required_kind(key: &str) -> Option<Kind> {
 /// [`required_kind`]. `exists` answers presence and not kind, so a `bundles`
 /// naming a file passed it, [`stage`] then took the arm that is right for a
 /// bundles directory inside the package, and the publish exited 0 with an
-/// artifact that carried no bundle at all — 40 members down to 4 on this
+/// artifact that carried no bundle at all — 39 members down to 3 on this
 /// repository's own package, with the published manifest still naming the file.
 /// A `conformance` naming a directory published the same way and failed on the
 /// machine of whoever installed it.

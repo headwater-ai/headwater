@@ -1103,8 +1103,8 @@ fn a_missing_taxonomy_source_is_refused_by_the_manifest_rather_than_by_the_resol
 /// file passed it, `stage` then took its `if !leaves(…) { return Ok(staged) }`
 /// arm — correct for a bundles directory *inside* the package — and the publish
 /// exited 0 with an artifact that carried no `bundles/` at all. Measured on this
-/// repository's own package it went from 40 members to 4, with the published
-/// manifest still pointing at the file. Spec 7 says every `contents` path is
+/// repository's own package it went from 39 members to 3, with the published
+/// manifest still pointing at the file and a digest of its own over the three. Spec 7 says every `contents` path is
 /// read, and a key whose reader is `read_dir` is not read by naming a file.
 #[test]
 fn a_contents_bundles_naming_a_file_is_refused() {
