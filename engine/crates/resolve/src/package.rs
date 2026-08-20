@@ -789,6 +789,60 @@ struct Staged {
     mode: std::fs::Permissions,
 }
 
+/// Which kind of thing a `contents` key's reader opens.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Kind {
+    File,
+    Directory,
+}
+
+impl Kind {
+    /// The kind a path on disk is, where it is one of these two.
+    fn of(at: &Path) -> Kind {
+        match at.is_dir() {
+            true => Kind::Directory,
+            false => Kind::File,
+        }
+    }
+
+    fn name(self) -> &'static str {
+        match self {
+            Kind::File => "file",
+            Kind::Directory => "directory",
+        }
+    }
+}
+
+/// What the reader of a `contents` key opens at the path that key names.
+///
+/// Each row was read off the verb that reads the key, and not off the manifest
+/// or off spec 7:
+///
+/// - `taxonomy` is a file: [`taxonomy_source`] hands it to [`crate::source::load`],
+///   which is `read_to_string`.
+/// - `conformance` is a file: `headwater_conformance::set` reads it with
+///   `read_to_string`. The key is a literal here rather than that crate's
+///   constant, because `headwater-conformance` depends on this crate and the
+///   dependency cannot run the other way.
+/// - `bundles` is a directory: [`stage`] reads it with [`read_tree`], which is
+///   `read_dir`, and the resolver then reads `<bundles>/<name>/bundle.yml`.
+/// - `migrations` is a directory: [`crate::migration::at`] reads it with
+///   `read_dir` and globs `*.yml` out of it.
+///
+/// **A key that is not here keeps the existence check and nothing more.** That
+/// is the seam of this table. [`reachable`] still walks the keys the manifest
+/// declares rather than this list, so a key nobody reads yet — spec 7's example
+/// block declares `doctrine`, `templates` and `plugins` — is held to being
+/// there, and gains a kind on the day something reads it. Adding a row here is
+/// the whole change that takes.
+fn required_kind(key: &str) -> Option<Kind> {
+    match key {
+        "taxonomy" | "conformance" => Some(Kind::File),
+        BUNDLES | crate::migration::CONTENTS_KEY => Some(Kind::Directory),
+        _ => None,
+    }
+}
+
 /// Every path the manifest's `contents` declares, held to the tree.
 ///
 /// [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#publishing):
@@ -804,15 +858,36 @@ struct Staged {
 /// under any other key would reach a consumer in the published manifest, which
 /// is the one thing spec 7 says no artifact carries.
 ///
-/// `contents.migrations` is read twice over, here for existence and by
-/// [`crate::migration::at`] for its payloads. That one runs first, so its
-/// refusal is the one a publisher sees and this is a second reading of a path
-/// rather than a second definition of a rule.
+/// **The kind is checked as well as the existence**, against
+/// [`required_kind`]. `exists` answers presence and not kind, so a `bundles`
+/// naming a file passed it, [`stage`] then took the arm that is right for a
+/// bundles directory inside the package, and the publish exited 0 with an
+/// artifact that carried no bundle at all — 40 members down to 4 on this
+/// repository's own package, with the published manifest still naming the file.
+/// A `conformance` naming a directory published the same way and failed on the
+/// machine of whoever installed it.
+///
+/// **The empty value is refused first, and the kind check cannot stand in for
+/// it.** `join("")` is the package directory, which exists and which *is* a
+/// directory, so `bundles: ""` and `migrations: ""` satisfy a kind check that
+/// requires one. `migrations: ""` then reaches [`crate::migration::at`], which
+/// reads the package directory and globs the manifest itself as a payload. Only
+/// an arm of its own catches an empty value, and it runs before the escape, the
+/// existence and the kind.
+///
+/// `contents.migrations` is read twice over, here for existence and kind and by
+/// [`crate::migration::at`] for its payloads. This one runs first, so its
+/// refusal is the one a publisher sees and that one is a second reading of a
+/// path rather than a second definition of a rule.
+///
+/// **Every bad key is reported, not the first one.** [`agrees`] collects for the
+/// same reason: a second run should not have to discover the second defect.
 fn reachable(
     manifest: &str,
     directory: &Path,
     contents: &Mapping,
 ) -> Result<(), Vec<ResolveError>> {
+    let mut refused = Vec::new();
     for entry in contents {
         let key = entry.key.value.as_str();
         // A value that is not a scalar used to be skipped here, and skipping it
@@ -823,7 +898,7 @@ fn reachable(
         // rewrites `bundles` alone, so there is no reader for whom a list of
         // paths under any key would mean anything.
         let Some(scalar) = entry.value.value.as_scalar() else {
-            return Err(refusal(
+            refused.extend(refusal(
                 manifest,
                 &format!(
                     "`contents.{key}` is not a path. Every value under `contents` names one file \
@@ -831,11 +906,24 @@ fn reachable(
                      writes anything"
                 ),
             ));
+            continue;
         };
         let declared = scalar.text.as_str();
+        if declared.is_empty() {
+            refused.extend(refusal(
+                manifest,
+                &format!(
+                    "`contents.{key}` is empty. Every value under `contents` names one file or \
+                     one directory inside the package, and an empty value names the package \
+                     directory itself, which is neither. Write the path the key points at, or \
+                     take the key out"
+                ),
+            ));
+            continue;
+        }
         let escapes = leaves(declared);
         if escapes && key != BUNDLES {
-            return Err(refusal(
+            refused.extend(refusal(
                 manifest,
                 &format!(
                     "`contents.{key}` names {declared}, which is outside the package. Only \
@@ -844,28 +932,48 @@ fn reachable(
                      Every other key would reach a consumer with the `..` in it"
                 ),
             ));
-        }
-        if directory.join(declared).exists() {
             continue;
         }
-        let outside = match escapes {
-            true => {
-                " A package directory copied out of the tree that holds its bundle library is not \
-                 that tree. Publish from the tree the manifest was written for, or take a \
-                 published artifact with `headwater taxonomy vendor`."
-            }
-            false => "",
+        let at = directory.join(declared);
+        if !at.exists() {
+            let outside = match escapes {
+                true => {
+                    " A package directory copied out of the tree that holds its bundle library is \
+                     not that tree. Publish from the tree the manifest was written for, or take a \
+                     published artifact with `headwater taxonomy vendor`."
+                }
+                false => "",
+            };
+            refused.extend(refusal(
+                manifest,
+                &format!(
+                    "`contents.{key}` names {declared}, and it is not there. Every path a \
+                     manifest declares reaches the artifact, so a publish cannot ship the key \
+                     without the file.{outside}"
+                ),
+            ));
+            continue;
+        }
+        let Some(needed) = required_kind(key) else {
+            continue;
         };
-        return Err(refusal(
-            manifest,
-            &format!(
-                "`contents.{key}` names {declared}, and it is not there. Every path a manifest \
-                 declares reaches the artifact, so a publish cannot ship the key without the \
-                 file.{outside}"
-            ),
-        ));
+        let found = Kind::of(&at);
+        if found != needed {
+            let (found, needed) = (found.name(), needed.name());
+            refused.extend(refusal(
+                manifest,
+                &format!(
+                    "`contents.{key}` names {declared}, which is a {found}. The verb that reads \
+                     `contents.{key}` reads a {needed}, so publishing this would ship a key that \
+                     is there and cannot be read"
+                ),
+            ));
+        }
     }
-    Ok(())
+    match refused.is_empty() {
+        true => Ok(()),
+        false => Err(refused),
+    }
 }
 
 /// The whole artifact, in memory, before `out` exists.
