@@ -29,6 +29,18 @@
 //! two differ, naming each file that moved. An artifact that a proxy, a mirror
 //! or a rebuilt release changed between the pin and the use is refused.
 //!
+//! **It does not prove that the record's own header is the publisher's.** The
+//! digest is over the member list and [`members`] skips the record itself, so
+//! the header lines above the digest — the format, the package, the version and
+//! the engine range — are covered by nothing. Spec 7 states that non-coverage as
+//! the design and it cannot be otherwise while the digest field sits inside the
+//! file that would be hashed. What makes it harmless is that `package.yml` is
+//! inside the walk, so the artifact carries an authenticated declaration of what
+//! it is: [`crate::package::vendor`] reads the name and the version out of that
+//! and refuses a header disagreeing with it, rather than believing the header.
+//! Until [#297](https://github.com/headwater-ai/headwater/issues/297) it
+//! believed the header, and the header named the directory it deleted.
+//!
 //! **It does not prove who published the artifact.** A digest with no signature
 //! over it authenticates the pin and never the publisher, so the first fetch —
 //! the one that produced the pin — rests on whatever channel carried the digest.
@@ -278,6 +290,17 @@ pub fn digest_of(members: &[Member]) -> String {
 /// backup — is not the directory that was published, and an artifact check that
 /// looked away from part of the tree would be an artifact check with a hole in
 /// it that the publisher never agreed to.
+///
+/// **The record is that hole, and this says what holds it.** The one skip here
+/// is forced: the digest field is inside the file that would be hashed, so
+/// covering the record needs a canonical form of the record with its own digest
+/// elided, and adopting one moves every digest anybody has published. What the
+/// skip does not reach is identity, because `package.yml` is inside this walk —
+/// its presence and its bytes are both pinned. So the artifact declares what it
+/// is in a file the digest covers, and
+/// [`crate::package::vendor`] takes the name and the version from there and
+/// refuses a header that disagrees
+/// ([#297](https://github.com/headwater-ai/headwater/issues/297)).
 pub fn members(dir: &Path) -> Result<Vec<Member>, ReleaseError> {
     let mut out = Vec::new();
     walk(dir, dir, &mut out)?;
@@ -330,6 +353,12 @@ pub fn render(release: &Release) -> String {
 # digest of its bytes, and one digest over that list. A consumer pins the digest
 # below in `.headwater/taxonomy.yml` and `headwater taxonomy vendor` refuses an
 # artifact that does not match it, naming each file that moved.
+#
+# The digest covers the files listed below it and not the lines above it. It
+# cannot cover them, because it is one of them. So nothing reads this package's
+# identity out of this header: `headwater taxonomy vendor` takes the name and
+# the version from `package.yml`, which the digest does cover, and refuses an
+# artifact whose header disagrees with it.
 #
 # The digest is an integrity check against the pin and it is not a signature. It
 # says that these bytes are the bytes the pin was written for. It says nothing
@@ -581,8 +610,16 @@ fn parse(version: &str) -> Result<(u64, u64, u64), String> {
 
 /// The release record a directory of package content produces.
 ///
-/// The manifest supplies the identity, so a record and the package it describes
-/// cannot disagree about a name or a version.
+/// The manifest supplies the identity, so a record this writes cannot disagree
+/// with the package it describes about a name or a version.
+///
+/// **That is a property of the write and never of a record on disk.** The header
+/// it produces sits outside the digest below it ([`members`]), so a record can
+/// be edited afterwards to say anything at all and still verify against the
+/// honest pin. Every reader of a record therefore has to hold the header to the
+/// manifest itself rather than inherit the agreement from here, which is what
+/// [`crate::package::vendor`] does
+/// ([#297](https://github.com/headwater-ai/headwater/issues/297)).
 pub fn compute(dir: &Path, manifest: &Mapping) -> Result<Release, ReleaseError> {
     let members = members(dir)?;
     Ok(Release {
