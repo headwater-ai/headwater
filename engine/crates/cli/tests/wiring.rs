@@ -311,3 +311,85 @@ fn the_generator_is_handed_the_refusal_beside_the_selection() {
         generated.out
     );
 }
+
+/// One invocation with no root named, from a directory that is not a corpus.
+///
+/// [`Root::run`] cannot express this case. It appends `--root` to every
+/// invocation unconditionally, and it appends it to a directory it has just
+/// filled with a lock and a corpus descriptor, so nothing that helper runs can
+/// say what the binary does for a caller who has no repository at all. The bare
+/// `Command` below is the difference, and it is the whole point of the case
+/// under it.
+///
+/// The directory is keyed on the process identifier **and** a label, for the
+/// reason [`Root::over`] records: cargo runs the cases of one target as threads
+/// of one process, so a key that is the pid alone is a directory a second case
+/// removes while the first is reading it.
+fn outside_a_corpus(label: &str, arguments: &[&str]) -> Ran {
+    let at = std::env::temp_dir().join(format!(
+        "headwater-cli-wiring-{}-{label}",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&at);
+    std::fs::create_dir_all(&at).expect("the directory is there");
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(arguments)
+        .current_dir(&at)
+        .output()
+        .expect("the binary runs");
+    Ran {
+        code: output.status.code(),
+        out: String::from_utf8_lossy(&output.stdout).into_owned(),
+        err: String::from_utf8_lossy(&output.stderr).into_owned(),
+    }
+}
+
+/// `--version` and `-V` print the constant a `requires_engine` range is read
+/// against, from outside a corpus, on standard output alone.
+///
+/// Before this case the binary answered both spellings with exit 1, nothing on
+/// standard output and 25,194 bytes of usage text on standard error, because a
+/// word opening with `-` that no arm names reaches `fail`. So the three
+/// assertions below each failed, and the first line of the failure named the
+/// flag as one this binary does not know.
+///
+/// # What this case does not prove, and where the guarantee actually lives
+///
+/// Every crate of this workspace declares `version.workspace = true`, so
+/// [`headwater_resolve::release::ENGINE`] and this crate's own
+/// `env!("CARGO_PKG_VERSION")` are the same string. The equality below
+/// therefore passes against either read, and it cannot tell them apart. **The
+/// guarantee is that the implementation names one constant, not that this test
+/// holds it there**, and a reviewer has to read the line in `main.rs` to see
+/// it. The engine already paid for the other shape: it advertised the
+/// placeholder `0.0.0` as `serverInfo.version` over MCP and the value sat wrong
+/// through five milestones, because a value exactly one surface reports is a
+/// value nobody audits.
+#[test]
+fn the_version_flag_prints_the_engine_constant_outside_a_corpus() {
+    for (label, flag) in [("version-long", "--version"), ("version-short", "-V")] {
+        let ran = outside_a_corpus(label, &[flag]);
+        assert_eq!(
+            ran.code,
+            Some(0),
+            "`{flag}` is a question rather than a mistake:\n{}{}",
+            ran.out,
+            ran.err
+        );
+        assert_eq!(
+            ran.err, "",
+            "`{flag}` writes nothing to standard error, so a caller may read the answer with the streams apart"
+        );
+        assert_eq!(
+            ran.out.lines().count(),
+            1,
+            "`{flag}` prints one line and nothing else:\n{}",
+            ran.out
+        );
+        assert_eq!(
+            ran.out.trim_end(),
+            headwater_resolve::release::ENGINE,
+            "`{flag}` prints the version a `requires_engine` range is read against"
+        );
+    }
+}

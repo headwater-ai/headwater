@@ -423,6 +423,10 @@ headwater taxonomy migrate   <dir> [--to <version>] [--apply] [--now <date>]
                  there. A pin the engine took from the artifact in front of it
                  would be a pin against itself.
   --root <path>  the repository to read. Defaults to the working directory.
+  -V, --version  the version of this engine. It is the number a package's
+                 `requires_engine` range is read against, and it is the number
+                 to quote in a bug report. One line on standard output, and no
+                 repository is needed to ask.
 ";
 
 fn main() -> ExitCode {
@@ -602,6 +606,26 @@ fn main() -> ExitCode {
             },
             "-h" | "--help" => {
                 print!("{USAGE}");
+                return ExitCode::SUCCESS;
+            }
+            // The value is `headwater_resolve::release::ENGINE` and not a
+            // fourth `env!("CARGO_PKG_VERSION")`. That constant is what a
+            // `requires_engine` range is compared against, so the number a
+            // caller reads here is the number that decides whether a package
+            // loads, rather than a second string that agrees with it today
+            // because every crate declares `version.workspace = true`. The
+            // engine has already paid for the other shape: it advertised the
+            // placeholder `0.0.0` as `serverInfo.version` over MCP and the
+            // value sat wrong through five milestones, because a value exactly
+            // one surface reports is a value nobody audits.
+            //
+            // Placed beside `--help` because it answers the same way: standard
+            // output, exit 0, and short-circuited before `let root` below, so a
+            // caller with no corpus and no `--root` still gets an answer. It
+            // works after a verb as well as before one, for the same reason
+            // `headwater check --help` does.
+            "-V" | "--version" => {
+                println!("{}", headwater_resolve::release::ENGINE);
                 return ExitCode::SUCCESS;
             }
             other if other.starts_with('-') => {
