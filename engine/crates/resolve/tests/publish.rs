@@ -369,11 +369,14 @@ fn a_record_that_restates_the_version_or_the_engine_range_is_refused() {
     let text = std::fs::read_to_string(&path).expect("the record is there");
 
     let bumped = text.replace("version: 1.0.0", "version: 9.9.9");
-    assert_ne!(text, bumped, "the record did not carry the version it was to");
+    assert_ne!(
+        text, bumped,
+        "the record did not carry the version it was to"
+    );
     std::fs::write(&path, bumped).expect("the record writes");
     let adopter = scratch.path().join("adopter-version");
-    let refused = package::vendor(&adopter, &out, &record.digest)
-        .expect_err("a restated version is refused");
+    let refused =
+        package::vendor(&adopter, &out, &record.digest).expect_err("a restated version is refused");
     let message = headwater_resolve::render_errors(&refused);
     assert!(message.contains("version `9.9.9`"), "{message}");
     assert!(message.contains("`1.0.0`"), "{message}");
