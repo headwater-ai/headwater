@@ -703,6 +703,11 @@ fn a_publish_that_cannot_read_its_declared_content_leaves_the_output_directory_a
 /// no verb reads is a claim that a publisher makes and a consumer never sees."
 /// Before this, a package declaring `contents.conformance` and
 /// `contents.bundles` with neither on disk published two members and exited 0.
+///
+/// It names *both* paths. The assertion took either one while the check
+/// returned on the first bad key, and a publisher then had to run twice to see
+/// two defects. `reachable` collects now, which is what makes the pair
+/// assertable.
 #[test]
 fn a_publish_refuses_content_it_does_not_carry_even_where_no_path_escapes() {
     let scratch = Scratch::new("hollow");
@@ -716,8 +721,8 @@ fn a_publish_refuses_content_it_does_not_carry_even_where_no_path_escapes() {
         "the refusal does not name the manifest: {message}"
     );
     assert!(
-        message.contains("nosuch-conformance.yml") || message.contains("nosuch-bundles"),
-        "the refusal names neither declared path: {message}"
+        message.contains("nosuch-conformance.yml") && message.contains("nosuch-bundles"),
+        "the refusal does not name both declared paths: {message}"
     );
     assert!(!out.exists(), "nothing is written for this one either");
 }
@@ -1085,6 +1090,200 @@ fn a_missing_taxonomy_source_is_refused_by_the_manifest_rather_than_by_the_resol
         assert!(
             !message.contains("No such file or directory"),
             "a file system error reached the publisher instead: {message}"
+        );
+        assert!(!out_of(&scratch).exists(), "an artifact was written anyway");
+    }
+}
+
+/// `contents.bundles` naming a file that is there is refused, and nothing is
+/// published.
+///
+/// This is the case that loses content rather than the case that fails to read.
+/// The existence check answers presence and not kind, so a `bundles` naming a
+/// file passed it, `stage` then took its `if !leaves(…) { return Ok(staged) }`
+/// arm — correct for a bundles directory *inside* the package — and the publish
+/// exited 0 with an artifact that carried no `bundles/` at all. Measured on this
+/// repository's own package it went from 39 members to 3, with the published
+/// manifest still pointing at the file and a digest of its own over the three. Spec 7 says every `contents` path is
+/// read, and a key whose reader is `read_dir` is not read by naming a file.
+#[test]
+fn a_contents_bundles_naming_a_file_is_refused() {
+    let scratch = Scratch::new("bundles-file");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/package.yml",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: \
+         taxonomy.yml\n",
+    );
+    assert!(
+        root.join("packages/acme-fixture/taxonomy.yml").is_file(),
+        "the case is testing the existence check rather than the kind rule"
+    );
+
+    let refused = package::publish(&root, "acme/fixture", &out_of(&scratch))
+        .expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("`contents.bundles`"),
+        "the refusal does not name the key: {message}"
+    );
+    assert!(
+        message.contains("reads a directory"),
+        "the refusal does not say which kind the key's reader needs: {message}"
+    );
+    assert!(!out_of(&scratch).exists(), "an artifact was written anyway");
+}
+
+/// `contents.conformance` naming a directory that is there is refused.
+///
+/// The body of #279's first case. `headwater conformance` is the only reader of
+/// the key and it reads the path with `read_to_string`, so an adopter who
+/// installed the artifact got `Is a directory (os error 21)` on their own
+/// machine while the publish that shipped it exited 0. The directory exists on
+/// disk, so the existence check cannot be what refuses it and the kind rule is
+/// the only thing under test.
+#[test]
+fn a_contents_conformance_naming_a_directory_is_refused() {
+    let scratch = Scratch::new("conformance-directory");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/package.yml",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: \
+         ../../library\n  conformance: confdir\n",
+    );
+    scratch.write(
+        "publisher/packages/acme-fixture/confdir/inside.yml",
+        "x: 1\n",
+    );
+    assert!(
+        root.join("packages/acme-fixture/confdir").is_dir(),
+        "the case is testing the existence check rather than the kind rule"
+    );
+
+    let refused = package::publish(&root, "acme/fixture", &out_of(&scratch))
+        .expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("`contents.conformance`"),
+        "the refusal does not name the key: {message}"
+    );
+    assert!(
+        message.contains("reads a file"),
+        "the refusal does not say which kind the key's reader needs: {message}"
+    );
+    assert!(!out_of(&scratch).exists(), "an artifact was written anyway");
+}
+
+/// `contents.taxonomy` naming a directory is refused by the manifest, rather
+/// than by the resolver reading it.
+///
+/// The sibling of the missing-source case above, and it was false in the same
+/// way. `taxonomy_source` runs after the reachability check, so before a kind
+/// comparison existed the publisher got `packages/acme-fixture/confdir: cannot
+/// read …: Is a directory (os error 21)` — a file system error that names
+/// neither the manifest nor the key.
+#[test]
+fn a_contents_taxonomy_naming_a_directory_is_refused_by_the_manifest() {
+    let scratch = Scratch::new("taxonomy-directory");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/package.yml",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: confdir\n  bundles: \
+         ../../library\n",
+    );
+    scratch.write(
+        "publisher/packages/acme-fixture/confdir/inside.yml",
+        "x: 1\n",
+    );
+
+    let refused = package::publish(&root, "acme/fixture", &out_of(&scratch))
+        .expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains(package::MANIFEST),
+        "the refusal does not name the manifest: {message}"
+    );
+    assert!(
+        message.contains("`contents.taxonomy`") && message.contains("reads a file"),
+        "the refusal is not the kind rule: {message}"
+    );
+    assert!(
+        !message.contains("Is a directory"),
+        "a file system error reached the publisher instead: {message}"
+    );
+    assert!(!out_of(&scratch).exists(), "an artifact was written anyway");
+}
+
+/// `contents.migrations` naming a file is refused.
+///
+/// This case is hand-built and it is the only one here that is. This
+/// repository's own package declares no `contents.migrations`, so no probe over
+/// it reaches this arm and a fixture that looked symmetric with the three above
+/// would be asserting a guard against a state nothing produces. `migration::at`
+/// reads the declared path with `read_dir` and globs `*.yml` out of it, which is
+/// where the required kind was read off.
+#[test]
+fn a_contents_migrations_naming_a_file_is_refused() {
+    let scratch = Scratch::new("migrations-file");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/package.yml",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: \
+         ../../library\n  migrations: taxonomy.yml\n",
+    );
+
+    let refused = package::publish(&root, "acme/fixture", &out_of(&scratch))
+        .expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("`contents.migrations`") && message.contains("reads a directory"),
+        "the refusal is not the kind rule: {message}"
+    );
+    assert!(!out_of(&scratch).exists(), "an artifact was written anyway");
+}
+
+/// An empty value under any `contents` key is refused, and the refusal says the
+/// value is empty.
+///
+/// The kind comparison does not catch this and cannot. An empty value joins to
+/// the package directory itself, which exists and which *is* a directory, so
+/// `bundles: ""` and `migrations: ""` pass a kind check that requires one —
+/// `bundles: ""` published the same 4-member artifact as the case above, with
+/// every bundle silently gone. The empty arm runs before the escape check, the
+/// existence check and the kind check, so it is the arm every key meets first.
+#[test]
+fn an_empty_contents_value_is_refused_under_every_key() {
+    for key in ["taxonomy", "conformance", "bundles", "migrations"] {
+        let scratch = Scratch::new(&format!("empty-{key}"));
+        let root = publisher(&scratch, None);
+        // The emptied key replaces the value the working manifest declares for
+        // it, rather than being appended beside it. A manifest that declared
+        // `taxonomy` twice would be refused for the duplicate and never reach
+        // the rule under test.
+        let mut declared = vec![("taxonomy", "taxonomy.yml"), ("bundles", "../../library")];
+        match declared.iter_mut().find(|(name, _)| *name == key) {
+            Some(pair) => pair.1 = "\"\"",
+            None => declared.push((key, "\"\"")),
+        }
+        let block: String = declared
+            .iter()
+            .map(|(name, value)| format!("  {name}: {value}\n"))
+            .collect();
+        scratch.write(
+            "publisher/packages/acme-fixture/package.yml",
+            &format!("package: acme/fixture\nversion: 1.0.0\ncontents:\n{block}"),
+        );
+
+        let refused = package::publish(&root, "acme/fixture", &out_of(&scratch))
+            .expect_err("it does not publish");
+        let message = headwater_resolve::render_errors(&refused);
+        assert!(
+            message.contains(&format!("`contents.{key}`")) && message.contains("is empty"),
+            "the refusal is not the empty-value rule: {message}"
+        );
+        assert!(
+            !message.contains("No such file or directory") && !message.contains("Is a directory"),
+            "a path error about the package directory reached the publisher: {message}"
         );
         assert!(!out_of(&scratch).exists(), "an artifact was written anyway");
     }
