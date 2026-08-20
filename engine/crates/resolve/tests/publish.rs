@@ -107,6 +107,26 @@ fn publisher_named(scratch: &Scratch, source: &str) -> PathBuf {
     root
 }
 
+/// A publisher of one named package, in a tree of its own.
+///
+/// [`publisher_at`] has fifteen call sites and every one of them publishes
+/// `acme/fixture` out of `publisher/`. The identity case needs two packages
+/// under two names in one scratch tree — one the adopter already holds and one
+/// an adversary hands them — so this takes the directory and the name. It ships
+/// no bundles, because nothing here resolves the result.
+fn publisher_of(scratch: &Scratch, at: &str, package: &str) -> PathBuf {
+    let directory = package.replace('/', "-");
+    scratch.write(
+        &format!("{at}/packages/{directory}/package.yml"),
+        &format!("package: {package}\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n"),
+    );
+    scratch.write(
+        &format!("{at}/packages/{directory}/taxonomy.yml"),
+        &TAXONOMY.replace("taxonomy: acme/fixture", &format!("taxonomy: {package}")),
+    );
+    scratch.path().join(at)
+}
+
 /// A consumer declaration inside the publisher tree, pinning what it takes.
 fn takes(scratch: &Scratch, version: &str) {
     scratch.write(
@@ -259,6 +279,121 @@ fn a_consistent_forgery_is_refused_by_the_pin() {
     let message = refused.to_string();
     assert!(message.contains(&published.digest));
     assert!(message.contains(&second.digest));
+}
+
+/// A record whose header renames the artifact does not steer the vendor target,
+/// and the adopter's package of that name survives.
+///
+/// This is the case the pin cannot catch, and it is the mirror of the one above.
+/// There the whole artifact was republished and the pin refused it. Here the
+/// artifact is honest, the pin is the honest one, and the four header lines of
+/// `release.yml` above the digest are the part no digest covers — so an
+/// adversary rewrites the name in them, `release::verify` passes, and the target
+/// directory the vendor deletes and rewrites was named by the edit.
+///
+/// **The victim is vendored rather than written.** A `packages/acme-victim/`
+/// made by hand carries no release record, so `vendor` refuses it on the
+/// maintained-package guard — `is_err` with no fix in the tree at all, which is
+/// a green test measuring nothing. That is why the assertions below are on the
+/// message and not on the shape of the result.
+///
+/// **The digest is asserted unchanged before the refusal is.** Without that
+/// line, a later change that put the header inside the digest would keep this
+/// test green while it measured a pin mismatch — the test would outlive the
+/// thing it was written for and say nothing about it.
+#[test]
+fn a_record_that_renames_the_artifact_does_not_steer_the_vendor_target() {
+    let scratch = Scratch::new("record-renames");
+    let adopter = scratch.path().join("adopter");
+
+    // The adopter holds `acme/victim`, vendored honestly.
+    let victim_root = publisher_of(&scratch, "victim", "acme/victim");
+    let victim_out = scratch.path().join("victim-artifact");
+    let victim =
+        package::publish(&victim_root, "acme/victim", &victim_out).expect("the victim publishes");
+    package::vendor(&adopter, &victim_out, &victim.digest).expect("the victim vendors");
+    let landed = adopter.join("packages/acme-victim/taxonomy.yml");
+    let held = std::fs::read_to_string(&landed).expect("the victim's source landed");
+    assert!(held.contains("taxonomy: acme/victim"), "{held}");
+
+    // The adversary publishes their own package honestly, then edits the one
+    // line of the record that no digest covers.
+    let attacker_root = publisher_of(&scratch, "attacker", "acme/attacker");
+    let attacker_out = scratch.path().join("attacker-artifact");
+    let attacker = package::publish(&attacker_root, "acme/attacker", &attacker_out)
+        .expect("the attacker publishes");
+    let path = attacker_out.join(release::RECORD);
+    let text = std::fs::read_to_string(&path).expect("the record is there");
+    let forged = text.replace("package: acme/attacker", "package: acme/victim");
+    assert_ne!(text, forged, "the record did not name what it was to");
+    std::fs::write(&path, forged).expect("the record writes");
+
+    // The edit moved no digest, so the attacker's own honest pin still verifies.
+    let reread = release::at(&attacker_out).expect("the edited record reads");
+    assert_eq!(reread.digest, attacker.digest, "the edit moved the digest");
+    assert_eq!(reread.package, "acme/victim", "the edit did not take");
+    assert!(release::verify(&attacker_out, &attacker.digest).is_ok());
+
+    let refused = package::vendor(&adopter, &attacker_out, &attacker.digest)
+        .expect_err("a record that renames its own artifact is refused");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(message.contains("package: acme/victim"), "{message}");
+    assert!(message.contains("package: acme/attacker"), "{message}");
+    assert!(message.contains(release::RECORD), "{message}");
+    assert!(message.contains(package::MANIFEST), "{message}");
+
+    // The adopter's real package is where it was, with the bytes it had.
+    assert_eq!(
+        std::fs::read_to_string(&landed).expect("the victim's source is still there"),
+        held
+    );
+    assert!(!adopter.join("packages/acme-attacker").exists());
+}
+
+/// A record whose header states a version or an engine range the artifact's own
+/// manifest does not is refused on the same read.
+///
+/// Neither field steers a write, so neither carries the harm the name does. They
+/// are held because `release::compute` derives all three from the manifest, so
+/// no publisher writing a record that way can produce a disagreeing pair — and
+/// because a stripped `requires_engine` moves the range refusal from the vendor,
+/// which runs before the bytes land, to the adopter's next resolve.
+#[test]
+fn a_record_that_restates_the_version_or_the_engine_range_is_refused() {
+    let scratch = Scratch::new("record-restates");
+
+    let root = publisher(&scratch, Some(">=0 <9"));
+    let out = scratch.path().join("artifact");
+    let record = package::publish(&root, "acme/fixture", &out).expect("it publishes");
+    let path = out.join(release::RECORD);
+    let text = std::fs::read_to_string(&path).expect("the record is there");
+
+    let bumped = text.replace("version: 1.0.0", "version: 9.9.9");
+    assert_ne!(
+        text, bumped,
+        "the record did not carry the version it was to"
+    );
+    std::fs::write(&path, bumped).expect("the record writes");
+    let adopter = scratch.path().join("adopter-version");
+    let refused =
+        package::vendor(&adopter, &out, &record.digest).expect_err("a restated version is refused");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(message.contains("version `9.9.9`"), "{message}");
+    assert!(message.contains("`1.0.0`"), "{message}");
+
+    let stripped: String = text
+        .lines()
+        .filter(|line| !line.contains("requires_engine"))
+        .map(|line| format!("{line}\n"))
+        .collect();
+    assert_ne!(text, stripped, "the record declared no range to strip");
+    std::fs::write(&path, stripped).expect("the record writes");
+    let adopter = scratch.path().join("adopter-range");
+    let refused =
+        package::vendor(&adopter, &out, &record.digest).expect_err("a dropped range is refused");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(message.contains("no `requires_engine`"), "{message}");
+    assert!(message.contains(">=0 <9"), "{message}");
 }
 
 /// A package directory that a person maintains is not overwritten by a consumer
