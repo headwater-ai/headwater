@@ -188,7 +188,7 @@ pub fn read(block: &Mapping, rules: &[&'static str]) -> Declared {
     // engine reads here, so every sibling of it is a key an author wrote and a
     // run honored nothing of. Naming one costs the reading nothing: the block
     // still holds the tasks it declares, and they are still read.
-    for entry in block.iter() {
+    for entry in block {
         if entry.key.value != "tasks" {
             declared.unread.push(Unread {
                 key: entry.key.value.clone(),
@@ -248,7 +248,7 @@ fn task(map: Option<&Mapping>, rules: &[&'static str]) -> Result<Task, String> {
     // A key here sits inside the unit that holds findings, so a task carrying
     // one may be an accounting this engine did not read. It holds nothing until
     // somebody says what the key means.
-    for entry in map.iter() {
+    for entry in map {
         let key = entry.key.value.as_str();
         if !["id", "statement", "owner", "until", "pairs"].contains(&key) {
             return Err(format!("it declares `{key}`, and {}", unread(key)));
@@ -280,7 +280,7 @@ fn task(map: Option<&Mapping>, rules: &[&'static str]) -> Result<Task, String> {
     let mut pairs = Vec::with_capacity(items.len());
     for item in items {
         let entry = item.value.as_map().ok_or("a pair is not a mapping")?;
-        for field in entry.iter() {
+        for field in entry {
             let key = field.key.value.as_str();
             if !["path", "rule"].contains(&key) {
                 return Err(format!("a pair declares `{key}`, and {}", unread(key)));
