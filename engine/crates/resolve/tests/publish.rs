@@ -1151,7 +1151,10 @@ fn a_contents_conformance_naming_a_directory_is_refused() {
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: \
          ../../library\n  conformance: confdir\n",
     );
-    scratch.write("publisher/packages/acme-fixture/confdir/inside.yml", "x: 1\n");
+    scratch.write(
+        "publisher/packages/acme-fixture/confdir/inside.yml",
+        "x: 1\n",
+    );
     assert!(
         root.join("packages/acme-fixture/confdir").is_dir(),
         "the case is testing the existence check rather than the kind rule"
@@ -1188,7 +1191,10 @@ fn a_contents_taxonomy_naming_a_directory_is_refused_by_the_manifest() {
         "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: confdir\n  bundles: \
          ../../library\n",
     );
-    scratch.write("publisher/packages/acme-fixture/confdir/inside.yml", "x: 1\n");
+    scratch.write(
+        "publisher/packages/acme-fixture/confdir/inside.yml",
+        "x: 1\n",
+    );
 
     let refused = package::publish(&root, "acme/fixture", &out_of(&scratch))
         .expect_err("it does not publish");
