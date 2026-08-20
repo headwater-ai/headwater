@@ -145,6 +145,8 @@ Consuming is two steps, and the split is what keeps the network out of the engin
 
 **It proves that the artifact is the one the consumer pinned.** `vendor` recomputes the digest from the bytes on disk and refuses an artifact that does not match. The message names three kinds of divergence. A file that moved, a file the record names that is absent, and a file present that the record names no member for. The third is the one that a comparison over the record alone would miss. A record cannot report a file that it never named.
 
+**It does not prove that the publisher wrote the header of the record.** The digest covers the member files and not the record that lists them. So `vendor` takes the package identity from the manifest, and it refuses a header that disagrees.
+
 **The pin is authored, and no verb writes it.** A digest that the engine recorded from whatever it had just received would be a pin against itself. So `vendor` refuses to run when no pin exists, and it names the field to write. The publisher states the digest where a consumer reads it, and the artifact and the digest travel apart.
 
 **It does not prove who published the artifact.** Nothing here is a signature, so the first fetch rests on the channel that carried the digest. A signature needs a key, a route that distributes the key to an adopter who has never met the publisher, and a rule for revocation. None of the three is decided ([Q22](09-decisions.md#q22--the-integrity-posture-of-a-published-package)), and [HW-OBL-0115](../obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md) holds the question rather than a manifest key that would read as an answer.
