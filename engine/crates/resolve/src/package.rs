@@ -1145,12 +1145,17 @@ pub const BUNDLES: &str = "bundles";
 /// An existing directory is replaced only when it is itself a vendored artifact.
 /// A package directory that a person maintains is a publisher's source, and
 /// overwriting one on a consumer command would delete the thing being published.
+///
+/// **The identity comes from the manifest and never from the record's header.**
+/// [`identity`] states why, and it runs before the target directory is named,
+/// because that name is what steers the removal below.
 pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<ResolveError>> {
     let name = display(root, fetched);
     let record =
         release::verify(fetched, pinned).map_err(|error| release::as_error(&name, &error))?;
 
-    let target = root.join(PACKAGES).join(record.package.replace('/', "-"));
+    let declared = identity(root, fetched, &record)?;
+    let target = root.join(PACKAGES).join(declared.replace('/', "-"));
     if target.exists() {
         match release::at(&target) {
             Ok(_) => {
@@ -1174,6 +1179,146 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
     }
     copy_tree(fetched, &target).map_err(|why| refusal(&name, &why))?;
     Ok(record)
+}
+
+/// The package a fetched artifact is, taken from the file the digest covers,
+/// with the record's header held against it.
+///
+/// **The record's header is outside the digest and the manifest is inside it.**
+/// [`release::members`] walks every file in the artifact except the record
+/// itself, so `package.yml` — that it is there, and what it says — is covered by
+/// the digest the consumer pinned, while the header lines of `release.yml` above
+/// that digest are covered by nothing. An adversary who rewrites the header
+/// moves no digest, and the honest pin still verifies. Until
+/// [#297](https://github.com/headwater-ai/headwater/issues/297) that header
+/// named the target directory of the vendor, so a record edited to name the
+/// adopter's own package sent `remove_dir_all` at it and put the attacker's
+/// bytes under its name, with the verb exiting 0.
+///
+/// **This is not a new rule, and no digest moves.**
+/// [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#publishing)
+/// already says "every consumer-facing reader takes the name from the manifest:
+/// the lookup under `packages/`, the release record, the vendor target directory
+/// and the corpus descriptor", and the vendor target was the one reader in that
+/// list that did not. Covering the header with the digest would be the other
+/// repair and it is a different change: the digest field lives inside the file
+/// it would hash, so it needs a canonical elided form and it moves every digest
+/// anybody has published. Nothing here needs that, because the authenticated
+/// declaration was already in the artifact — this reads it instead of the
+/// unauthenticated one. An artifact carrying no manifest at all cannot arrive
+/// here against a pin written for one, for the same reason: its absence is a
+/// divergence [`release::verify`] has already refused.
+///
+/// **What the comparison covers, and why each field is in or out.**
+///
+/// The name is compared and it is what the target is derived from. It is the
+/// whole harm: it is the only header field that steers a write.
+///
+/// The version is compared. It steers nothing here — resolution takes the
+/// version from the manifest, and the record's copy is read only by the `--to`
+/// guard of `taxonomy diff` and `taxonomy migrate`, which takes no pin at all —
+/// so this adds no protection that path did not have. It is compared because
+/// [`release::compute`] derives both from the manifest, so no publisher on any
+/// engine that writes a record this way can produce a disagreeing pair, and
+/// because [`agrees`] holds the name and the version of a package together one
+/// level down. Reporting half of a forged header and passing the other half
+/// would be the odd thing to do.
+///
+/// The engine range is compared, and this one is a refusal moved rather than a
+/// refusal added. The manifest's copy is enforced at resolve by [`base`], so an
+/// adversary who strips `requires_engine` from the record delays the refusal to
+/// the adopter's next resolve rather than escaping it. A delayed refusal is one
+/// the adopter meets after the bytes are on disk, which is exactly what the
+/// range in the record exists to prevent.
+///
+/// **Absent is not a value that can agree with another absent, for the name.**
+/// Both sides are read without a default there: a manifest stating no `package:`
+/// is refused outright rather than compared, because two blanks compared equal
+/// is [#298](https://github.com/headwater-ai/headwater/issues/298)'s defect in
+/// [`agrees`], and here it would name the target directory `packages/`. The
+/// engine range is the opposite case and is compared as an [`Option`]: absent on
+/// both sides is a publisher that states no floor, which spec 7 gives a meaning
+/// to. The version sits between them — absent on both sides is a versionless
+/// package, which the version pin refuses at resolve on its own terms, and a
+/// second copy of that rule here would be a copy in a worse place.
+///
+/// **The name is compared before the version**, which is [`agrees`]'s ordering
+/// and its reason: a package that is not the package you asked for makes the
+/// question of its version moot. Every disagreement is reported, so a second run
+/// does not have to discover the second one.
+fn identity(root: &Path, fetched: &Path, record: &Release) -> Result<String, Vec<ResolveError>> {
+    let manifest = manifest_at(fetched)?;
+    let at = display(root, &fetched.join(release::RECORD));
+    let beside = display(root, &fetched.join(MANIFEST));
+
+    let declared = text(&manifest, "package").unwrap_or_default();
+    if declared.is_empty() {
+        return Err(refusal(
+            &beside,
+            "this states no `package:`, so the artifact beside it declares no name of its own \
+             that the release digest covers. The name in the record is not one, because the \
+             record is the one file the digest does not cover, and it is the name a directory \
+             under `packages/` would be created and replaced under",
+        ));
+    }
+
+    let mut refused = Vec::new();
+    if record.package != declared {
+        refused.extend(refusal(
+            &at,
+            &format!(
+                "this declares `package: {}` and {beside}, which the release digest covers, \
+                 declares `package: {declared}`. One artifact states two names of itself, and \
+                 the record's is the one a consumer reads without opening the artifact. The \
+                 manifest decides, so `{}` is the directory under `packages/` this would have \
+                 replaced",
+                record.package,
+                declared.replace('/', "-"),
+            ),
+        ));
+    }
+
+    let carried = text(&manifest, "version").unwrap_or_default();
+    if record.version != carried {
+        refused.extend(refusal(
+            &at,
+            &format!(
+                "this declares version `{}` and {beside}, which the release digest covers, \
+                 declares `{carried}`. One artifact states two versions of itself, and each of \
+                 them is what some reader downstream takes the release to be",
+                record.version,
+            ),
+        ));
+    }
+
+    let range = text(&manifest, REQUIRES_ENGINE);
+    if record.requires_engine != range {
+        refused.extend(refusal(
+            &at,
+            &format!(
+                "this declares {} and {beside}, which the release digest covers, declares {}. \
+                 The record's copy is the one a consumer checks before the bytes land, so a \
+                 record that states a different floor than the package does moves that refusal \
+                 to the adopter's next resolve",
+                stated(record.requires_engine.as_deref()),
+                stated(range.as_deref()),
+            ),
+        ));
+    }
+
+    match refused.is_empty() {
+        true => Ok(declared),
+        false => Err(refused),
+    }
+}
+
+/// An engine range as a message should say it, where absent is a state and not
+/// an empty string.
+fn stated(range: Option<&str>) -> String {
+    match range {
+        Some(range) => format!("`{REQUIRES_ENGINE}: {range}`"),
+        None => format!("no `{REQUIRES_ENGINE}`"),
+    }
 }
 
 /// Whether a path written in a manifest leaves the package that carries it.
