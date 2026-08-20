@@ -3,7 +3,7 @@ id: HW-OBL-0082
 title: "The lock is half generated and half authored, and nothing states the rule for the seam"
 status: current
 status_since: 2026-08-13
-last_verified: 2026-08-13
+last_verified: 2026-08-21
 summary: "The adoption payload is authored and every other line of the lock is derived, and no document says which is which."
 provenance:
   warrant: accepted
@@ -25,7 +25,7 @@ relations:
 
 ## Obligation
 
-Three questions stay open. Whether a payload survives a rewrite is a rule that belongs in spec 7 rather than in one function. No document says whether `resolve --check` may pass while the authored half is stale. And a payload that no digest covers is a part of a reviewed artifact that no later reader can verify.
+Three questions stand here, and the second one now has a measured answer beside it. Whether a payload survives a rewrite is a rule that belongs in spec 7 rather than in one function. `resolve --check` does pass while the authored half is stale, and the lock of this repository is the instance it passes over. `resolve` reads the package sources and never the corpus, so no run of it holds the input that would answer otherwise. What no document states is whether it **may**, and that is a ruling rather than a measurement. And a payload that no digest covers is a part of a reviewed artifact that no later reader can verify.
 
 ## Discharge
 
