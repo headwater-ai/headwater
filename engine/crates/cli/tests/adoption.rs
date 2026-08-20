@@ -623,3 +623,207 @@ fn an_adoption_block_with_no_tasks_stops_an_infer_write() {
         ran.err
     );
 }
+
+// ---------------------------------------------------------------------------
+// The seam read from the other side: what a person is told about the block the
+// header invites them to edit, and what is said about a key nothing reads.
+// ---------------------------------------------------------------------------
+
+/// A hand edit inside the authored block is not a source that moved.
+///
+/// The lock's own header says the `adoption` block is "authored", that
+/// "`headwater infer` writes it, a person edits it, and `headwater taxonomy
+/// resolve` carries it through untouched". `--check` compares the whole file,
+/// so the quoting of one scalar inside that block reads as a stale lock, and
+/// the message a person gets names their sources — which did not move.
+///
+/// The edit here is one scalar, quoted the way a person writes one. Nothing
+/// else in the file changes, and the resolved half is byte identical.
+#[test]
+fn a_hand_edited_adoption_block_does_not_read_as_a_source_that_moved() {
+    let root = Root::new("hand-edited-block");
+    root.author();
+    // `author` writes the block by hand, so the file is not yet in the form the
+    // renderer writes. One resolve puts it there, and the case starts from a
+    // file that `--check` accepts.
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(
+        resolved.code,
+        Some(0),
+        "the fixture resolves\n{}{}",
+        resolved.out,
+        resolved.err
+    );
+    let clean = root.run(&["taxonomy", "resolve", "--check"]);
+    assert_eq!(
+        clean.code,
+        Some(0),
+        "the case starts from a lock `--check` accepts\n{}{}",
+        clean.out,
+        clean.err
+    );
+
+    let canonical = root.text();
+    let bare = "    - id: AD-9\n";
+    assert!(
+        canonical.contains(bare),
+        "the renderer writes the identifier bare:\n{canonical}"
+    );
+    root.write(&canonical.replacen(bare, "    - id: \"AD-9\"\n", 1));
+
+    let ran = root.run(&["taxonomy", "resolve", "--check"]);
+    assert_eq!(
+        ran.code,
+        Some(1),
+        "the file still differs from the one the sources produce\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert!(
+        ran.err
+            .contains("carries the taxonomy its sources resolve to"),
+        "the diagnosis names the half that agrees:\n{}",
+        ran.err
+    );
+    assert!(
+        ran.err.contains("`adoption` block"),
+        "and the half that does not:\n{}",
+        ran.err
+    );
+    assert!(
+        !ran.err.contains("is not what the sources resolve to"),
+        "nothing about the sources changed:\n{}",
+        ran.err
+    );
+}
+
+/// The guard: a source that genuinely moved still gets the old message.
+///
+/// This is the harder half of the same split. The source edit is a comment, so
+/// the resolved taxonomy is byte identical and only the recorded source digest
+/// moves. A fix that decided "the resolution agrees" from the taxonomy alone
+/// would call this a hand edit, which is worse than the defect it replaced.
+#[test]
+fn a_source_that_moved_still_names_itself_and_keeps_the_old_message() {
+    let root = Root::new("source-moved");
+    root.author();
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(
+        resolved.code,
+        Some(0),
+        "the fixture resolves\n{}{}",
+        resolved.out,
+        resolved.err
+    );
+
+    let source = root.at.join("packages/headwater-standard/taxonomy.yml");
+    let mut text = std::fs::read_to_string(&source).expect("the source reads");
+    text.push_str("\n# A comment this case appended, which moves the bytes and not the result.\n");
+    std::fs::write(&source, text).expect("the source writes");
+
+    let ran = root.run(&["taxonomy", "resolve", "--check"]);
+    assert_eq!(
+        ran.code,
+        Some(1),
+        "a moved source is still a stale lock\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert!(
+        ran.err.contains("is not what the sources resolve to"),
+        "the old message stands:\n{}",
+        ran.err
+    );
+    assert!(
+        ran.err
+            .contains("taxonomy.yml has changed since the lock was written"),
+        "and it names the file that moved:\n{}",
+        ran.err
+    );
+}
+
+/// A key at the top of the block that this engine does not read is named.
+///
+/// `adoption::read` already refuses a pair naming a rule the engine does not
+/// carry, on the argument that "a directive against a rule that does not exist
+/// is a directive its author believes is working". One level up, the same
+/// belief was free: the block's siblings of `tasks` were ignored.
+///
+/// `from` is the case that matters, because it is the field
+/// [#78](https://github.com/headwater-ai/headwater/issues/78) exists to add.
+/// Nothing writes it and nothing reads it, so an adopter who writes it by hand
+/// gets a green run and a false belief.
+#[test]
+fn a_block_level_key_this_engine_does_not_read_is_named() {
+    let root = Root::new("unread-block-key");
+    root.author();
+    root.corpus();
+
+    let text = root.text();
+    root.write(&text.replacen(
+        "\nadoption:\n  tasks:\n",
+        "\nadoption:\n  from: 99.0.0\n  severity: quiet\n  tasks:\n",
+        1,
+    ));
+
+    let ran = root.run(&["check"]);
+    assert_eq!(
+        ran.code,
+        Some(0),
+        "an unread key is reported and does not fail a run\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert!(
+        ran.out.contains("`from`"),
+        "the report names the key:\n{}",
+        ran.out
+    );
+    assert!(
+        ran.out.contains("`severity`"),
+        "and the second one:\n{}",
+        ran.out
+    );
+    assert!(
+        ran.out.contains("AD-9"),
+        "and the tasks beside it are still read:\n{}",
+        ran.out
+    );
+}
+
+/// A key inside a task is a refusal rather than a note.
+///
+/// The two levels want different answers. A key beside `tasks` holds nothing,
+/// so the run names it and reads the tasks. A key inside a task may mean the
+/// task is not the debt this engine read out of it, so the task holds nothing
+/// and every finding it named is reported.
+#[test]
+fn a_task_level_key_this_engine_does_not_read_refuses_the_task() {
+    let root = Root::new("unread-task-key");
+    root.author();
+    root.corpus();
+
+    let text = root.text();
+    let anchor = "      until: 2027-06-30\n";
+    assert!(text.contains(anchor), "the task states its expiry:\n{text}");
+    root.write(&text.replacen(anchor, &format!("{anchor}      to: 4.0.0\n"), 1));
+
+    let ran = root.run(&["check"]);
+    assert_eq!(
+        ran.code,
+        Some(0),
+        "a refused task is reported and does not fail a run\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert!(
+        ran.out.contains("AD-9 holds nothing"),
+        "the task is refused by name:\n{}",
+        ran.out
+    );
+    assert!(
+        ran.out.contains("`to`"),
+        "and the refusal names the key:\n{}",
+        ran.out
+    );
+}

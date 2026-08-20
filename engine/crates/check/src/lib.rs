@@ -711,16 +711,12 @@ pub fn run(
     // waiver, then migration-pending, then suppression. A finding a task holds
     // never reaches a directive, so the two inventories partition by the order
     // of these two calls rather than by a rule checked afterwards.
-    let (declared_tasks, task_refusals) = match declared.adoption {
+    let declared_payload = match declared.adoption {
         Some(block) => adoption::read(block, &RULES),
-        None => (Vec::new(), Vec::new()),
+        None => adoption::Declared::default(),
     };
-    let (findings, adoption) = adoption::apply(
-        finding::sorted(findings),
-        declared_tasks,
-        task_refusals,
-        ctx.now(),
-    );
+    let (findings, adoption) =
+        adoption::apply(finding::sorted(findings), declared_payload, ctx.now());
 
     let (declared_suppressions, refused) = suppression::declared(census, &RULES);
     let (findings, suppressions) =
