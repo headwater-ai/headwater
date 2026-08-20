@@ -623,3 +623,357 @@ fn an_adoption_block_with_no_tasks_stops_an_infer_write() {
         ran.err
     );
 }
+
+// ---------------------------------------------------------------------------
+// The seam read from the other side: what a person is told about the block the
+// header invites them to edit, and what is said about a key nothing reads.
+// ---------------------------------------------------------------------------
+
+/// A hand edit inside the authored block is not a source that moved.
+///
+/// The lock's own header says the `adoption` block is "authored", that
+/// "`headwater infer` writes it, a person edits it, and `headwater taxonomy
+/// resolve` carries it through untouched". `--check` compares the whole file,
+/// so the quoting of one scalar inside that block reads as a stale lock, and
+/// the message a person gets names their sources — which did not move.
+///
+/// The edit here is one scalar, quoted the way a person writes one. Nothing
+/// else in the file changes, and the resolved half is byte identical.
+#[test]
+fn a_hand_edited_adoption_block_does_not_read_as_a_source_that_moved() {
+    let root = Root::new("hand-edited-block");
+    root.author();
+    // `author` writes the block by hand, so the file is not yet in the form the
+    // renderer writes. One resolve puts it there, and the case starts from a
+    // file that `--check` accepts.
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(
+        resolved.code,
+        Some(0),
+        "the fixture resolves\n{}{}",
+        resolved.out,
+        resolved.err
+    );
+    let clean = root.run(&["taxonomy", "resolve", "--check"]);
+    assert_eq!(
+        clean.code,
+        Some(0),
+        "the case starts from a lock `--check` accepts\n{}{}",
+        clean.out,
+        clean.err
+    );
+
+    let canonical = root.text();
+    let bare = "    - id: AD-9\n";
+    assert!(
+        canonical.contains(bare),
+        "the renderer writes the identifier bare:\n{canonical}"
+    );
+    root.write(&canonical.replacen(bare, "    - id: \"AD-9\"\n", 1));
+
+    let ran = root.run(&["taxonomy", "resolve", "--check"]);
+    assert_eq!(
+        ran.code,
+        Some(1),
+        "the file still differs from the one the sources produce\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert!(
+        ran.err
+            .contains("carries the taxonomy its sources resolve to"),
+        "the diagnosis names the half that agrees:\n{}",
+        ran.err
+    );
+    assert!(
+        ran.err.contains("`adoption` block"),
+        "and the half that does not:\n{}",
+        ran.err
+    );
+    assert!(
+        !ran.err.contains("is not what the sources resolve to"),
+        "nothing about the sources changed:\n{}",
+        ran.err
+    );
+}
+
+/// The guard: a source that genuinely moved still gets the old message.
+///
+/// This is the harder half of the same split. The source edit is a comment, so
+/// the resolved taxonomy is byte identical and only the recorded source digest
+/// moves. A fix that decided "the resolution agrees" from the taxonomy alone
+/// would call this a hand edit, which is worse than the defect it replaced.
+#[test]
+fn a_source_that_moved_still_names_itself_and_keeps_the_old_message() {
+    let root = Root::new("source-moved");
+    root.author();
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(
+        resolved.code,
+        Some(0),
+        "the fixture resolves\n{}{}",
+        resolved.out,
+        resolved.err
+    );
+
+    let source = root.at.join("packages/headwater-standard/taxonomy.yml");
+    let mut text = std::fs::read_to_string(&source).expect("the source reads");
+    text.push_str("\n# A comment this case appended, which moves the bytes and not the result.\n");
+    std::fs::write(&source, text).expect("the source writes");
+
+    let ran = root.run(&["taxonomy", "resolve", "--check"]);
+    assert_eq!(
+        ran.code,
+        Some(1),
+        "a moved source is still a stale lock\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert!(
+        ran.err.contains("is not what the sources resolve to"),
+        "the old message stands:\n{}",
+        ran.err
+    );
+    assert!(
+        ran.err
+            .contains("taxonomy.yml has changed since the lock was written"),
+        "and it names the file that moved:\n{}",
+        ran.err
+    );
+}
+
+/// A key at the top of the block that this engine does not read is named.
+///
+/// `adoption::read` already refuses a pair naming a rule the engine does not
+/// carry, on the argument that "a directive against a rule that does not exist
+/// is a directive its author believes is working". One level up, the same
+/// belief was free: the block's siblings of `tasks` were ignored.
+///
+/// `from` is the case that matters, because it is the field
+/// [#78](https://github.com/headwater-ai/headwater/issues/78) exists to add.
+/// Nothing writes it and nothing reads it, so an adopter who writes it by hand
+/// gets a green run and a false belief.
+#[test]
+fn a_block_level_key_this_engine_does_not_read_is_named() {
+    let root = Root::new("unread-block-key");
+    root.author();
+    root.corpus();
+
+    let text = root.text();
+    root.write(&text.replacen(
+        "\nadoption:\n  tasks:\n",
+        "\nadoption:\n  from: 99.0.0\n  severity: quiet\n  tasks:\n",
+        1,
+    ));
+
+    let ran = root.run(&["check"]);
+    assert_eq!(
+        ran.code,
+        Some(0),
+        "an unread key is reported and does not fail a run\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert!(
+        ran.out.contains("`from`"),
+        "the report names the key:\n{}",
+        ran.out
+    );
+    assert!(
+        ran.out.contains("`severity`"),
+        "and the second one:\n{}",
+        ran.out
+    );
+    assert!(
+        ran.out.contains("AD-9"),
+        "and the tasks beside it are still read:\n{}",
+        ran.out
+    );
+}
+
+/// A key inside a task is a refusal rather than a note.
+///
+/// The two levels want different answers. A key beside `tasks` holds nothing,
+/// so the run names it and reads the tasks. A key inside a task may mean the
+/// task is not the debt this engine read out of it, so the task holds nothing
+/// and every finding it named is reported.
+#[test]
+fn a_task_level_key_this_engine_does_not_read_refuses_the_task() {
+    let root = Root::new("unread-task-key");
+    root.author();
+    root.corpus();
+
+    let text = root.text();
+    let anchor = "      until: 2027-06-30\n";
+    assert!(text.contains(anchor), "the task states its expiry:\n{text}");
+    root.write(&text.replacen(anchor, &format!("{anchor}      to: 4.0.0\n"), 1));
+
+    let ran = root.run(&["check"]);
+    assert_eq!(
+        ran.code,
+        Some(0),
+        "a refused task is reported and does not fail a run\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert!(
+        ran.out.contains("AD-9 holds nothing"),
+        "the task is refused by name:\n{}",
+        ran.out
+    );
+    assert!(
+        ran.out.contains("`to`"),
+        "and the refusal names the key:\n{}",
+        ran.out
+    );
+}
+
+/// The generated half is never blamed on the authored block, at the CLI.
+///
+/// The verifier of #310 built this: a comment added immediately above
+/// `resolved:` sits between the payload and the generated taxonomy, and the
+/// first cut of the split put those bytes inside the authored span. Exit code
+/// and remedy were right and the diagnosis named a block nobody had touched,
+/// which is the defect the branch exists to remove.
+#[test]
+fn a_comment_in_the_generated_half_is_not_blamed_on_the_authored_block() {
+    let root = Root::new("comment-in-generated-half");
+    root.author();
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(
+        resolved.code,
+        Some(0),
+        "the fixture resolves\n{}{}",
+        resolved.out,
+        resolved.err
+    );
+
+    let canonical = root.text();
+    root.write(&canonical.replacen("\nresolved:\n", "\n# somebody added a note\nresolved:\n", 1));
+
+    let ran = root.run(&["taxonomy", "resolve", "--check"]);
+    assert_eq!(
+        ran.code,
+        Some(1),
+        "the file still differs from the one the sources produce\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert!(
+        ran.err.contains("not inside the `adoption` block"),
+        "the diagnosis places the difference outside the block:\n{}",
+        ran.err
+    );
+    assert!(
+        !ran.err.contains("where the two differ"),
+        "and does not blame the block:\n{}",
+        ran.err
+    );
+}
+
+/// A lock that will not read says so, and names a remedy that can succeed.
+///
+/// `--check` used to print "is not what the sources resolve to" here, which is
+/// false — the sources resolve to exactly this taxonomy — with no reason, no
+/// moved source, and `headwater taxonomy resolve` as the remedy. That remedy
+/// exits 1 and refuses on this input, because nothing can be seen of the
+/// authored block. Naming a command that cannot succeed is its own wrong
+/// diagnosis, which is the class of defect this branch exists to remove.
+#[test]
+fn a_lock_that_will_not_read_names_a_remedy_that_can_succeed() {
+    let root = Root::new("unreadable-empty-block");
+    root.author();
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(resolved.code, Some(0), "the fixture resolves");
+
+    // The block a person is invited to edit, emptied. The key is there and its
+    // value is null, so the lock is malformed rather than blockless.
+    let canonical = root.text();
+    let cut = canonical.find("\nadoption:\n").expect("the block is there") + 1;
+    let end = canonical[cut..]
+        .find("\n# The resolved taxonomy")
+        .expect("the generated half follows it")
+        + cut;
+    root.write(&format!(
+        "{}adoption:{}",
+        &canonical[..cut],
+        &canonical[end..]
+    ));
+
+    let ran = root.run(&["taxonomy", "resolve", "--check"]);
+    assert_eq!(
+        ran.code,
+        Some(1),
+        "a lock that will not read is not a lock\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert!(
+        ran.err.contains("did not read"),
+        "the run says what is wrong with the file:\n{}",
+        ran.err
+    );
+    assert!(
+        !ran.err.contains("is not what the sources resolve to"),
+        "and says nothing about the sources, which it cannot see:\n{}",
+        ran.err
+    );
+
+    // The remedy `--check` printed, run. It must agree with what was printed.
+    let remedy = root.run(&["taxonomy", "resolve"]);
+    let refuses = ran.err.contains("refuses this file");
+    assert_eq!(
+        remedy.code != Some(0),
+        refuses,
+        "the printed remedy and what the remedy does agree\n--check said:\n{}\nresolve said ({:?}):\n{}{}",
+        ran.err,
+        remedy.code,
+        remedy.out,
+        remedy.err
+    );
+}
+
+/// The digest mismatch keeps the remedy that works, which is #213's case.
+///
+/// This is the other side of the split above. A lock whose digest no longer
+/// matches also does not read, and there `taxonomy resolve` succeeds and
+/// carries the authored block through. So the two states must not share one
+/// remedy sentence.
+#[test]
+fn a_lock_whose_digest_does_not_match_is_told_to_resolve() {
+    let root = Root::new("unreadable-digest");
+    root.author();
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(resolved.code, Some(0), "the fixture resolves");
+    root.write(
+        &root
+            .text()
+            .replacen("digest: sha256:", "digest: sha256:0000", 1),
+    );
+
+    let ran = root.run(&["taxonomy", "resolve", "--check"]);
+    assert_eq!(ran.code, Some(1), "{}{}", ran.out, ran.err);
+    assert!(
+        ran.err.contains("did not read"),
+        "the run says what is wrong with the file:\n{}",
+        ran.err
+    );
+    assert!(
+        !ran.err.contains("refuses this file"),
+        "and this is the state a resolve repairs:\n{}",
+        ran.err
+    );
+
+    let remedy = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(
+        remedy.code,
+        Some(0),
+        "the printed remedy succeeds\n{}{}",
+        remedy.out,
+        remedy.err
+    );
+    assert!(
+        root.text().contains("AD-9"),
+        "and the authored block survived it"
+    );
+}

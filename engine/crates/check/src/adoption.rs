@@ -75,6 +75,24 @@
 //! 12 puts severity on the check and spec 4 on the obligation, and a payload is
 //! neither. An adopter who wants a finding quieter is asking for a different
 //! taxonomy, not for a different accounting of the same one.
+//!
+//! # A key this engine does not read
+//!
+//! [`read`] refuses a pair that names a rule this engine does not carry, on the
+//! argument [`crate::suppression::read`] makes about `allow=`: a directive
+//! against a rule that does not exist is a directive its author believes is
+//! working. The same holds of a key, and the two levels want different answers.
+//!
+//! A key beside `tasks` holds nothing, so the run names it and reads the tasks
+//! beside it ([`Unread`]). A key inside a task, or inside one of its pairs, may
+//! mean the task is not the debt this engine read out of it, so the task is
+//! refused and every finding it named is reported ([`Refused`]).
+//!
+//! `from` and `to` are named rather than lumped in, because they are the two
+//! fields spec 7 gives a migration state and the two that
+//! [#78](https://github.com/headwater-ai/headwater/issues/78) exists to add. No
+//! verb writes either one today. An adopter who writes one by hand used to get
+//! a green run and a false belief, which is the state this naming ends.
 
 use crate::context::Date;
 use crate::finding::Finding;
@@ -125,11 +143,33 @@ pub struct Refused {
     pub why: String,
 }
 
+/// A key of the block that this engine does not read, and why that is worth a
+/// line.
+///
+/// It holds nothing and it refuses nothing, so the tasks beside it are read as
+/// they always were. What it costs today is a belief: an adopter writes a key,
+/// no run mentions it, and the silence reads as agreement.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Unread {
+    pub key: String,
+    pub why: String,
+}
+
+/// What reading the `adoption` block of a lock found.
+#[derive(Clone, Debug, Default)]
+pub struct Declared {
+    pub tasks: Vec<Task>,
+    pub refused: Vec<Refused>,
+    pub unread: Vec<Unread>,
+}
+
 /// What a run has to say about the payload.
 #[derive(Clone, Debug, Default)]
 pub struct Ledger {
     pub tasks: Vec<Task>,
     pub refused: Vec<Refused>,
+    /// Keys of the block that nothing read.
+    pub unread: Vec<Unread>,
     /// The findings the payload held, in report order.
     pub pending: Vec<Finding>,
 }
@@ -141,16 +181,28 @@ pub struct Ledger {
 /// same argument [`crate::suppression::read`] makes about `allow=`: a directive
 /// against a rule that does not exist is a directive its author believes is
 /// working.
-pub fn read(block: &Mapping, rules: &[&'static str]) -> (Vec<Task>, Vec<Refused>) {
-    let mut tasks = Vec::new();
-    let mut refused = Vec::new();
+pub fn read(block: &Mapping, rules: &[&'static str]) -> Declared {
+    let mut declared = Declared::default();
+
+    // The block's own keys, before its tasks. `tasks` is the whole of what this
+    // engine reads here, so every sibling of it is a key an author wrote and a
+    // run honored nothing of. Naming one costs the reading nothing: the block
+    // still holds the tasks it declares, and they are still read.
+    for entry in block {
+        if entry.key.value != "tasks" {
+            declared.unread.push(Unread {
+                key: entry.key.value.clone(),
+                why: unread(&entry.key.value),
+            });
+        }
+    }
 
     let Some(items) = block.get("tasks").and_then(|node| node.value.as_seq()) else {
-        refused.push(Refused {
+        declared.refused.push(Refused {
             task: "adoption".to_string(),
             why: "it declares no `tasks` sequence, so it accounts for nothing".to_string(),
         });
-        return (tasks, refused);
+        return declared;
     };
 
     for (index, item) in items.iter().enumerate() {
@@ -163,15 +215,45 @@ pub fn read(block: &Mapping, rules: &[&'static str]) -> (Vec<Task>, Vec<Refused>
             .map(str::to_string)
             .unwrap_or_else(|| format!("task {}", index + 1));
         match task(item.value.as_map(), rules) {
-            Ok(read) => tasks.push(read),
-            Err(why) => refused.push(Refused { task: name, why }),
+            Ok(read) => declared.tasks.push(read),
+            Err(why) => declared.refused.push(Refused { task: name, why }),
         }
     }
-    (tasks, refused)
+    declared
+}
+
+/// Why a key nothing reads is worth saying out loud.
+///
+/// The two named cases are the ones an adopter has a reason to write. `from`
+/// and `to` are spec 7's two fields of a migration state, and `severity` is the
+/// one this module's own header says the format deliberately has no place for.
+/// A message that said only "unknown key" would leave all three sounding like a
+/// typo.
+fn unread(key: &str) -> String {
+    match key {
+        "from" | "to" => "it names a migration state. Spec 7 gives one a from-version and a \
+             to-version, and no verb of this engine writes either into this block"
+            .to_string(),
+        "severity" => "a pending finding keeps the severity its rule gave it, and this format \
+             has no place to write one"
+            .to_string(),
+        _ => "nothing in this engine reads it, so what it declares is not what this run honored"
+            .to_string(),
+    }
 }
 
 fn task(map: Option<&Mapping>, rules: &[&'static str]) -> Result<Task, String> {
     let map = map.ok_or("it is not a mapping")?;
+    // Refused rather than noted, which is the difference from the block above.
+    // A key here sits inside the unit that holds findings, so a task carrying
+    // one may be an accounting this engine did not read. It holds nothing until
+    // somebody says what the key means.
+    for entry in map {
+        let key = entry.key.value.as_str();
+        if !["id", "statement", "owner", "until", "pairs"].contains(&key) {
+            return Err(format!("it declares `{key}`, and {}", unread(key)));
+        }
+    }
     let id = scalar(map, "id")
         .ok_or("it names no `id`, and a task a report cannot name is one nobody can close")?;
     let statement = scalar(map, "statement")
@@ -198,6 +280,12 @@ fn task(map: Option<&Mapping>, rules: &[&'static str]) -> Result<Task, String> {
     let mut pairs = Vec::with_capacity(items.len());
     for item in items {
         let entry = item.value.as_map().ok_or("a pair is not a mapping")?;
+        for field in entry {
+            let key = field.key.value.as_str();
+            if !["path", "rule"].contains(&key) {
+                return Err(format!("a pair declares `{key}`, and {}", unread(key)));
+            }
+        }
         let path = entry
             .get("path")
             .and_then(scalar_of)
@@ -248,12 +336,12 @@ fn scalar_of(node: &headwater_yaml::Spanned<Value>) -> Option<&str> {
 /// This runs before [`crate::suppression::apply`], which is the precedence spec
 /// 4 fixes. A finding held here never reaches a directive, so the two
 /// inventories partition by construction.
-pub fn apply(
-    findings: Vec<Finding>,
-    mut tasks: Vec<Task>,
-    refused: Vec<Refused>,
-    now: Date,
-) -> (Vec<Finding>, Ledger) {
+pub fn apply(findings: Vec<Finding>, declared: Declared, now: Date) -> (Vec<Finding>, Ledger) {
+    let Declared {
+        mut tasks,
+        refused,
+        unread,
+    } = declared;
     for task in &mut tasks {
         // Expiry is decided once, against the injected clock, before any
         // finding is compared. `until` is the last day the task holds.
@@ -310,6 +398,7 @@ pub fn apply(
         Ledger {
             tasks,
             refused,
+            unread,
             pending,
         },
     )
@@ -318,7 +407,7 @@ pub fn apply(
 impl Ledger {
     /// Whether this run has anything to say about a payload at all.
     pub fn is_empty(&self) -> bool {
-        self.tasks.is_empty() && self.refused.is_empty()
+        self.tasks.is_empty() && self.refused.is_empty() && self.unread.is_empty()
     }
 
     /// Pairs still failing. This is the number spec 7 puts beside coverage:
@@ -419,6 +508,13 @@ impl Ledger {
         for refused in &self.refused {
             let _ = writeln!(out, "  {} holds nothing: {}", refused.task, refused.why);
         }
+        for unread in &self.unread {
+            let _ = writeln!(
+                out,
+                "  the block declares `{}`, which nothing here reads: {}",
+                unread.key, unread.why
+            );
+        }
         out
     }
 }
@@ -488,8 +584,8 @@ tasks:
     #[test]
     fn a_task_holds_one_pair_and_not_the_document_or_the_rule_around_it() {
         let block = one_task("      - {path: docs/a.md, rule: facet.required.missing}");
-        let (tasks, refused) = read(&block, &RULES);
-        assert!(refused.is_empty(), "{refused:?}");
+        let declared = read(&block, &RULES);
+        assert!(declared.refused.is_empty(), "{:?}", declared.refused);
 
         let findings = vec![
             finding("docs/a.md", "facet.required.missing"),
@@ -498,7 +594,7 @@ tasks:
             // Same rule, another document.
             finding("docs/b.md", "facet.required.missing"),
         ];
-        let (kept, ledger) = apply(findings, tasks, refused, day("2026-08-13"));
+        let (kept, ledger) = apply(findings, declared, day("2026-08-13"));
 
         assert_eq!(ledger.pending.len(), 1);
         assert_eq!(ledger.pending[0].path, "docs/a.md");
@@ -518,11 +614,9 @@ tasks:
             "      - {path: docs/a.md, rule: facet.required.missing}\n\
              \x20     - {path: docs/b.md, rule: facet.required.missing}",
         );
-        let (tasks, refused) = read(&block, &RULES);
         let (kept, ledger) = apply(
             vec![finding("docs/a.md", "facet.required.missing")],
-            tasks,
-            refused,
+            read(&block, &RULES),
             day("2026-08-13"),
         );
         assert!(kept.is_empty());
@@ -535,11 +629,9 @@ tasks:
     #[test]
     fn an_expired_task_holds_nothing_and_the_findings_come_back() {
         let block = one_task("      - {path: docs/a.md, rule: facet.required.missing}");
-        let (tasks, refused) = read(&block, &RULES);
         let (kept, ledger) = apply(
             vec![finding("docs/a.md", "facet.required.missing")],
-            tasks,
-            refused,
+            read(&block, &RULES),
             day("2027-01-02"),
         );
         assert_eq!(kept.len(), 1, "the finding is reported");
@@ -548,11 +640,9 @@ tasks:
         assert_eq!(ledger.open(), 0);
 
         // The last day it holds.
-        let (tasks, refused) = read(&block, &RULES);
         let (kept, _) = apply(
             vec![finding("docs/a.md", "facet.required.missing")],
-            tasks,
-            refused,
+            read(&block, &RULES),
             day("2027-01-01"),
         );
         assert!(kept.is_empty(), "`until` is inclusive");
@@ -562,12 +652,13 @@ tasks:
     #[test]
     fn a_pattern_is_refused_because_it_would_blanket_a_document_nothing_has_seen() {
         let block = one_task("      - {path: docs/*.md, rule: facet.required.missing}");
-        let (tasks, refused) = read(&block, &RULES);
-        assert!(tasks.is_empty());
-        assert_eq!(refused.len(), 1);
+        let declared = read(&block, &RULES);
+        assert!(declared.tasks.is_empty());
+        assert_eq!(declared.refused.len(), 1);
         assert!(
-            refused[0].why.contains("one document at a time"),
-            "{refused:?}"
+            declared.refused[0].why.contains("one document at a time"),
+            "{:?}",
+            declared.refused
         );
     }
 
@@ -584,15 +675,18 @@ tasks:
       - {path: docs/a.md, rule: facet.required.missing}
 ",
         );
-        let (tasks, refused) = read(&block, &RULES);
-        assert!(tasks.is_empty());
-        assert!(refused[0].why.contains("`owner`"), "{refused:?}");
+        let declared = read(&block, &RULES);
+        assert!(declared.tasks.is_empty());
+        assert!(
+            declared.refused[0].why.contains("`owner`"),
+            "{:?}",
+            declared.refused
+        );
 
         // And a refused task holds nothing, so the finding is reported.
         let (kept, ledger) = apply(
             vec![finding("docs/a.md", "facet.required.missing")],
-            tasks,
-            refused,
+            declared,
             day("2026-08-13"),
         );
         assert_eq!(kept.len(), 1);
@@ -613,9 +707,9 @@ tasks:
       - {{path: docs/a.md, rule: facet.required.missing}}
 "
             ));
-            let (tasks, refused) = read(&block, &RULES);
-            assert!(tasks.is_empty(), "accepted `{line}`");
-            assert_eq!(refused.len(), 1);
+            let declared = read(&block, &RULES);
+            assert!(declared.tasks.is_empty(), "accepted `{line}`");
+            assert_eq!(declared.refused.len(), 1);
         }
     }
 
@@ -623,17 +717,121 @@ tasks:
     #[test]
     fn a_pair_naming_a_rule_this_engine_does_not_carry_is_refused() {
         let block = one_task("      - {path: docs/a.md, rule: voice.no_such_rule}");
-        let (tasks, refused) = read(&block, &RULES);
-        assert!(tasks.is_empty());
-        assert!(refused[0].why.contains("voice.no_such_rule"), "{refused:?}");
+        let declared = read(&block, &RULES);
+        assert!(declared.tasks.is_empty());
+        assert!(
+            declared.refused[0].why.contains("voice.no_such_rule"),
+            "{:?}",
+            declared.refused
+        );
+    }
+
+    /// The same argument, one level up, where it used to cost nothing.
+    ///
+    /// A key beside `tasks` is named and the tasks beside it are still read.
+    /// `from` and `severity` are the two an adopter has a reason to write, and
+    /// both used to ride through with nothing said anywhere.
+    #[test]
+    fn a_block_level_key_this_engine_does_not_read_is_named_and_holds_nothing() {
+        let block = payload(
+            "\
+from: 99.0.0
+severity: quiet
+tasks:
+  - id: AD-1
+    statement: a statement
+    owner: an owner
+    until: 2027-01-01
+    pairs:
+      - {path: docs/a.md, rule: facet.required.missing}
+",
+        );
+        let declared = read(&block, &RULES);
+        assert!(declared.refused.is_empty(), "{:?}", declared.refused);
+        assert_eq!(declared.tasks.len(), 1, "the task beside it is still read");
+        assert_eq!(declared.unread.len(), 2);
+        assert_eq!(declared.unread[0].key, "from");
+        assert!(
+            declared.unread[0].why.contains("migration state"),
+            "{:?}",
+            declared.unread
+        );
+        assert_eq!(declared.unread[1].key, "severity");
+        assert!(
+            declared.unread[1].why.contains("no place to write one"),
+            "{:?}",
+            declared.unread
+        );
+
+        // It is a note and not a refusal, so the pair is still held.
+        let (kept, ledger) = apply(
+            vec![finding("docs/a.md", "facet.required.missing")],
+            declared,
+            day("2026-08-13"),
+        );
+        assert!(kept.is_empty());
+        assert_eq!(ledger.unread.len(), 2);
+        assert!(ledger.render().contains("`from`"), "{}", ledger.render());
+    }
+
+    /// Inside a task the same key is a refusal, because the task may not be the
+    /// debt this engine read out of it.
+    #[test]
+    fn a_task_level_key_this_engine_does_not_read_refuses_the_task() {
+        let block = payload(
+            "\
+tasks:
+  - id: AD-1
+    statement: a statement
+    owner: an owner
+    until: 2027-01-01
+    to: 4.0.0
+    pairs:
+      - {path: docs/a.md, rule: facet.required.missing}
+",
+        );
+        let declared = read(&block, &RULES);
+        assert!(declared.unread.is_empty(), "{:?}", declared.unread);
+        assert!(declared.tasks.is_empty());
+        assert_eq!(declared.refused.len(), 1);
+        assert_eq!(declared.refused[0].task, "AD-1");
+        assert!(
+            declared.refused[0].why.contains("`to`"),
+            "{:?}",
+            declared.refused
+        );
+
+        // A refused task holds nothing, so the finding it named is reported.
+        let (kept, _) = apply(
+            vec![finding("docs/a.md", "facet.required.missing")],
+            declared,
+            day("2026-08-13"),
+        );
+        assert_eq!(kept.len(), 1);
+    }
+
+    /// And inside a pair, which is the innermost place an author writes one.
+    #[test]
+    fn a_pair_key_this_engine_does_not_read_refuses_the_task() {
+        let block = one_task("      - {path: docs/a.md, rule: facet.required.missing, note: soon}");
+        let declared = read(&block, &RULES);
+        assert!(declared.tasks.is_empty());
+        assert!(
+            declared.refused[0].why.contains("a pair declares `note`"),
+            "{:?}",
+            declared.refused
+        );
     }
 
     /// A block with no tasks accounts for nothing and says so.
     #[test]
     fn a_block_with_no_tasks_is_refused_rather_than_read_as_no_debt() {
-        let (tasks, refused) = read(&payload("to: acme/x\n"), &RULES);
-        assert!(tasks.is_empty());
-        assert_eq!(refused.len(), 1);
+        let declared = read(&payload("to: acme/x\n"), &RULES);
+        assert!(declared.tasks.is_empty());
+        assert_eq!(declared.refused.len(), 1);
+        // And the key it does declare is named rather than passed over.
+        assert_eq!(declared.unread.len(), 1);
+        assert_eq!(declared.unread[0].key, "to");
     }
 
     /// A task that declares no pair accounts for nothing.
@@ -649,11 +847,12 @@ tasks:
     pairs: []
 ",
         );
-        let (tasks, refused) = read(&block, &RULES);
-        assert!(tasks.is_empty());
+        let declared = read(&block, &RULES);
+        assert!(declared.tasks.is_empty());
         assert!(
-            refused[0].why.contains("accounts for nothing"),
-            "{refused:?}"
+            declared.refused[0].why.contains("accounts for nothing"),
+            "{:?}",
+            declared.refused
         );
     }
 
@@ -681,11 +880,9 @@ tasks:
       - {path: docs/a.md, rule: facet.required.missing}
 ",
         );
-        let (tasks, refused) = read(&block, &RULES);
         let (kept, ledger) = apply(
             vec![finding("docs/a.md", "facet.required.missing")],
-            tasks,
-            refused,
+            read(&block, &RULES),
             day("2026-08-13"),
         );
         assert!(kept.is_empty());
