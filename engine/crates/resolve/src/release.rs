@@ -34,12 +34,21 @@
 //! the header lines above the digest — the format, the package, the version and
 //! the engine range — are covered by nothing. Spec 7 states that non-coverage as
 //! the design and it cannot be otherwise while the digest field sits inside the
-//! file that would be hashed. What makes it harmless is that `package.yml` is
-//! inside the walk, so the artifact carries an authenticated declaration of what
-//! it is: [`crate::package::vendor`] reads the name and the version out of that
-//! and refuses a header disagreeing with it, rather than believing the header.
-//! Until [#297](https://github.com/headwater-ai/headwater/issues/297) it
-//! believed the header, and the header named the directory it deleted.
+//! file that would be hashed. What keeps that out of the vendor's way is that
+//! `package.yml` is inside the walk, so the artifact carries an authenticated
+//! declaration of what it is: [`crate::package::vendor`] reads the name, the
+//! version and the engine range out of that and refuses a header disagreeing
+//! with it, rather than believing the header. Until
+//! [#297](https://github.com/headwater-ai/headwater/issues/297) it believed the
+//! header, and the header named the directory it deleted.
+//!
+//! **It is not harmless everywhere, and the scope of that sentence is one
+//! verb.** `taxonomy diff` and `taxonomy migrate` reach a record through [`at`]
+//! rather than through [`verify`], gate on its `package` field against the
+//! lock, and take **no pin at all** on that path. `migrate` then applies a
+//! payload to the adopter's corpus after gating on a field nothing
+//! authenticated. So the honest statement is that the header is authenticated
+//! for `vendor`, and that every other reader of one trusts it.
 //!
 //! **It does not prove who published the artifact.** A digest with no signature
 //! over it authenticates the pin and never the publisher, so the first fetch —
@@ -355,10 +364,15 @@ pub fn render(release: &Release) -> String {
 # artifact that does not match it, naming each file that moved.
 #
 # The digest covers the files listed below it and not the lines above it. It
-# cannot cover them, because it is one of them. So nothing reads this package's
-# identity out of this header: `headwater taxonomy vendor` takes the name and
-# the version from `package.yml`, which the digest does cover, and refuses an
-# artifact whose header disagrees with it.
+# cannot cover them, because it is one of them. So `headwater taxonomy vendor`
+# does not read this package's identity out of this header: it takes the name,
+# the version and the engine range from `package.yml`, which the digest does
+# cover, and it refuses an artifact whose header disagrees with them.
+#
+# Other verbs do read these lines. `headwater taxonomy diff` and `headwater
+# taxonomy migrate` read the package name here and check no digest at all on
+# that path. So read `format`, `package`, `version` and `requires_engine` as
+# what the publisher wrote down, and not as something a pin has checked.
 #
 # The digest is an integrity check against the pin and it is not a signature. It
 # says that these bytes are the bytes the pin was written for. It says nothing

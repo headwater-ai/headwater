@@ -1205,14 +1205,37 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
 /// it would hash, so it needs a canonical elided form and it moves every digest
 /// anybody has published. Nothing here needs that, because the authenticated
 /// declaration was already in the artifact — this reads it instead of the
-/// unauthenticated one. An artifact carrying no manifest at all cannot arrive
-/// here against a pin written for one, for the same reason: its absence is a
-/// divergence [`release::verify`] has already refused.
+/// unauthenticated one.
+///
+/// **What the digest buys the name, and what it does not.** It says a publisher
+/// wrote this name and that nobody has changed it since the pin. It says nothing
+/// about the name being usable as a directory name, and nothing here checks
+/// that. `/` is turned into `-`, so a name with a slash cannot leave
+/// `packages/`, and `..` has no slash and survives — the target of a package
+/// named `..` is the adopter's own root. That is unchanged from before this and
+/// narrowed by it, because the name now has to be in the pinned manifest rather
+/// than in the free header, and it is
+/// [#314](https://github.com/headwater-ai/headwater/issues/314) rather than
+/// something this closes. Read the commit title of this change as *the name is
+/// one a publisher wrote*, never as *the name is safe to join onto a path*.
+///
+/// An artifact that carries no manifest reaches [`manifest_at`] and is refused
+/// by the error of the read rather than by anything written here. **The narrow
+/// claim is the true one**: removing `package.yml` from a *published* artifact
+/// moves the digest and [`release::verify`] refuses it by name. An artifact that
+/// never carried one is a different case, it verifies cleanly against a record
+/// resealed over what it does hold, and the refusal an adopter then reads is a
+/// raw `No such file or directory` where every other refusal on this path is a
+/// composed sentence.
 ///
 /// **What the comparison covers, and why each field is in or out.**
 ///
-/// The name is compared and it is what the target is derived from. It is the
-/// whole harm: it is the only header field that steers a write.
+/// The name is compared and it is what the target is derived from. **The
+/// derivation is the fix and the comparison is the report**: with the comparison
+/// removed the adopter's package still survives, because the target no longer
+/// comes from the header either way. The comparison is what says so out loud
+/// instead of silently vendoring an artifact under a name its own record
+/// disputes. Between them they cover the only header field that steers a write.
 ///
 /// The version is compared. It steers nothing here — resolution takes the
 /// version from the manifest, and the record's copy is read only by the `--to`
@@ -1232,11 +1255,25 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
 /// range in the record exists to prevent.
 ///
 /// **Absent is not a value that can agree with another absent, for the name.**
-/// Both sides are read without a default there: a manifest stating no `package:`
-/// is refused outright rather than compared, because two blanks compared equal
-/// is [#298](https://github.com/headwater-ai/headwater/issues/298)'s defect in
-/// [`agrees`], and here it would name the target directory `packages/`. The
-/// engine range is the opposite case and is compared as an [`Option`]: absent on
+/// That is the intent, and the guard below reaches two of the three spellings of
+/// it. A manifest whose `package:` is absent, and one whose value is `""`, are
+/// refused outright rather than compared, because two blanks compared equal is
+/// [#298](https://github.com/headwater-ai/headwater/issues/298)'s defect in
+/// [`agrees`], and here it would name the target directory `packages/`.
+///
+/// **A manifest whose `package:` is a YAML null is not refused, and this says so
+/// rather than claiming otherwise.** This engine hands back a scalar's source
+/// text, and the source text of a null is the literal `~`. So `is_empty()` is
+/// false, both sides compare equal at `~`, and the artifact vendors into
+/// `packages/~`. Measured identically at `01861df` and here, so this narrows
+/// nothing and closes nothing: the route moved from the record's header to the
+/// manifest and stayed open. `is_empty()` is the wrong test for it, because the
+/// ambiguity is born in the parse and not in the comparison, which is exactly
+/// the absent-versus-empty question #298 holds. Nobody names a package `~`, so
+/// no adopter's directory is overwritten — the cost is litter and a false
+/// sentence, and the false sentence is the part that was worth fixing here.
+///
+/// The engine range is the opposite case and is compared as an [`Option`]: absent on
 /// both sides is a publisher that states no floor, which spec 7 gives a meaning
 /// to. The version sits between them — absent on both sides is a versionless
 /// package, which the version pin refuses at resolve on its own terms, and a
