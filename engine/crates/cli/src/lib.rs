@@ -115,8 +115,8 @@ pub struct Cli {
                 Without it the help is 80 columns wide, nothing reads `COLUMNS`, and a run piped \
                 into a file and a run under a terminal write the same bytes. A shell keeps \
                 `COLUMNS` to itself, so the form that carries it is `COLUMNS=100 headwater --wide \
-                --help`. It lays out the help and nothing else, and it is refused alongside a \
-                `--format` that is not `text`"
+                --help`. It lays out the help and nothing else, so a run that prints no help \
+                refuses it rather than accepting a flag that would do nothing"
     )]
     pub wide: bool,
 
@@ -801,7 +801,7 @@ pub fn command_at(width: usize) -> Command {
 /// words were put on it. One entry point is what keeps the two the same tree.
 pub fn parsed() -> Result<Cli, clap::Error> {
     let matches = command().try_get_matches()?;
-    if let Some(message) = a_layout_of_something_nothing_lays_out(&matches) {
+    if let Some(message) = a_width_for_a_run_that_lays_nothing_out(&matches) {
         return Err(clap::Error::raw(
             clap::error::ErrorKind::ArgumentConflict,
             message,
@@ -810,34 +810,61 @@ pub fn parsed() -> Result<Cli, clap::Error> {
     Cli::from_arg_matches(&matches)
 }
 
-/// `--wide` against a machine format, which is a run one of the flags means
-/// nothing in.
+/// `--wide` on a run that prints no help, which is a run it would do nothing in.
 ///
-/// `--wide` says how wide a text laid out for a reader is. `--format json`,
-/// `--format sarif` and `--format markdown` write an artifact that nothing lays
-/// out, so a run carrying both would carry one flag that does nothing. This
-/// repository has two open issues about flags that are accepted and ignored, so
-/// the answer here is a refusal that says which flag and why.
+/// # The rule is wider than clause 12 asks, and deliberately
 ///
-/// It reads the matches rather than the parsed `Verb`, so every verb that
-/// declares a `format` argument is covered by the same six lines and a verb
-/// that gains one later is covered without an edit. `text` is the one value
-/// that is laid out, and it is the value the refusal leaves alone.
-fn a_layout_of_something_nothing_lays_out(matches: &clap::ArgMatches) -> Option<String> {
+/// Clause 12 of [#321](https://github.com/headwater-ai/headwater/issues/321)
+/// asks that `--wide` be refused alongside `--format json|sarif|markdown`. The
+/// rule here is that it is refused on **every** run that prints no help, and
+/// the machine formats are one case of it. The reason is that the flag lays out
+/// the help and lays out nothing else: the report of `headwater check` is
+/// composed by `headwater_adapter` and is not laid out at any width, so
+/// `headwater check --wide --format text` would be as inert as
+/// `--format json` and would say so to nobody.
+///
+/// This repository has two open issues about flags accepted and silently
+/// ignored — [#337](https://github.com/headwater-ai/headwater/issues/337) and
+/// [#338](https://github.com/headwater-ai/headwater/issues/338) — and a third
+/// would have been this one. When a report gains a layout the refusal narrows
+/// to the machine formats, which is the clause as written.
+///
+/// # Why reaching this function is already the test
+///
+/// `clap` answers `--help` inside `try_get_matches` and returns before this
+/// runs, so a run that printed help never arrives here. The one route that
+/// prints help and does arrive is `headwater help <verb>`, which is a verb of
+/// this binary rather than a flag, and it is the one command the check lets
+/// through.
+///
+/// The `format` value is read off the matches rather than off the parsed
+/// `Verb`, so every verb that declares one is named by the same two lines and a
+/// verb that gains one later is named without an edit.
+fn a_width_for_a_run_that_lays_nothing_out(matches: &clap::ArgMatches) -> Option<String> {
     let mut leaf = matches;
     while let Some((_, inner)) = leaf.subcommand() {
         leaf = inner;
     }
-    let wide = leaf.try_get_one::<bool>("wide").ok().flatten() == Some(&true);
-    let format = leaf.try_get_one::<String>("format").ok().flatten()?;
-    match wide && format != "text" {
-        false => None,
-        true => Some(format!(
-            "`--wide` says how wide a text laid out for a reader is, and `--format {format}` \
-             writes an artifact that nothing lays out. A run carrying both would carry one flag \
-             that does nothing, so it is refused rather than run"
-        )),
+    if leaf.try_get_one::<bool>("wide").ok().flatten() != Some(&true) {
+        return None;
     }
+    if matches.subcommand_name() == Some("help") {
+        return None;
+    }
+    // `text` is a report a person reads and it is still not laid out at a
+    // width, so it falls to the general reason rather than to the machine-format
+    // one. The narrower message is for the case clause 12 names.
+    let format = leaf.try_get_one::<String>("format").ok().flatten();
+    let says = match format.filter(|value| value.as_str() != "text") {
+        Some(format) => format!("`--format {format}` writes an artifact that nothing lays out"),
+        None => "this run prints no help".to_string(),
+    };
+    Some(format!(
+        "`--wide` says how wide the help is laid out, and {says}. A run carrying it would carry \
+         one flag that does nothing, so it is refused rather than run. `{0} <verb> --help` and \
+         `{0} help <verb>` are what it widens",
+        headwater_verbs::BINARY
+    ))
 }
 
 /// One verb of the tree, with the words the table carries for it.

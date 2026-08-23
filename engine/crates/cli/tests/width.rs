@@ -158,11 +158,14 @@ fn a_run_that_states_columns_and_one_that_does_not_write_the_same_bytes() {
         vec!["help", "check"],
     ] {
         let bare = ran(&line, None);
+        // The comparison is over the text rather than over the bytes, so that a
+        // failure prints the two layouts and not two thousand integers.
+        let written = String::from_utf8(bare.out.clone()).expect("the help is text");
         for absurd in ["1", "40", "500", "100000", "not a number"] {
             let stated = ran(&line, Some(absurd));
             assert_eq!(
-                bare.out,
-                stated.out,
+                written,
+                String::from_utf8(stated.out).expect("the help is text"),
                 "`headwater {}` under COLUMNS={absurd} writes what it writes with none",
                 line.join(" ")
             );
@@ -181,11 +184,13 @@ fn a_run_that_states_columns_and_one_that_does_not_write_the_same_bytes() {
 #[test]
 fn the_width_a_caller_asks_for_is_read_and_held_to_the_band() {
     let line = ["check", "--help"];
-    let ordinary = ran(&line, None).out;
+    // Text rather than bytes, so a failure prints the two layouts.
+    let text = |ran: Ran| String::from_utf8(ran.out).expect("the help is text");
+    let ordinary = text(ran(&line, None));
     let wide = |columns: &str| {
         let mut arguments = line.to_vec();
         arguments.push("--wide");
-        ran(&arguments, Some(columns)).out
+        text(ran(&arguments, Some(columns)))
     };
 
     let narrow = wide("40");
@@ -205,8 +210,7 @@ fn the_width_a_caller_asks_for_is_read_and_held_to_the_band() {
     assert_ne!(between, widest_asked);
 
     for (asked, out) in [(WIDTH, &narrow), (100, &between), (WIDEST, &widest_asked)] {
-        let text = String::from_utf8(out.clone()).expect("the help is text");
-        for line in text.lines() {
+        for line in out.lines() {
             assert!(
                 line.chars().count() <= asked,
                 "at {asked} columns this line is {}: {line}",
@@ -228,60 +232,81 @@ fn the_widest_a_caller_may_ask_for_lays_the_whole_surface_out_inside_it() {
     assert!(widest > WIDTH, "the widest band widened nothing: {widest}");
 }
 
-/// **Clause 12, the refusal.** `--wide` against a machine format is refused.
+/// **Clause 12, the refusal.** `--wide` on a run that lays nothing out.
 ///
-/// Not accepted and ignored. The message names the flag and the format, and the
-/// status is exactly 1, because a 2 would make the exit table of
-/// `docs/interfaces/headwater-check.md` false.
+/// Not accepted and ignored. The status is exactly 1, because a 2 would make
+/// the exit table of `docs/interfaces/headwater-check.md` false, and the message
+/// names the flag and the reason. Where a machine format was asked for, which is
+/// the case clause 12 names, that format is the reason the message gives.
 #[test]
-fn a_width_asked_for_a_format_nothing_lays_out_is_refused() {
-    for (verb, format) in [
-        ("check", "json"),
-        ("check", "sarif"),
-        ("check", "markdown"),
-        ("capture", "json"),
-        ("export", "json"),
+fn a_width_asked_for_a_run_that_lays_nothing_out_is_refused() {
+    for (line, names) in [
+        (vec!["check", "--wide", "--format", "json"], Some("json")),
+        (vec!["check", "--wide", "--format", "sarif"], Some("sarif")),
+        (
+            vec!["check", "--wide", "--format", "markdown"],
+            Some("markdown"),
+        ),
+        (vec!["capture", "--wide", "--format", "json"], Some("json")),
+        (vec!["export", "--wide", "--format", "json"], Some("json")),
+        // The text report is composed rather than laid out at a width, so
+        // `--wide` is as inert there as in a machine format and is refused the
+        // same way.
+        (vec!["check", "--wide", "--format", "text"], None),
+        (vec!["check", "--wide"], None),
+        (vec!["taxonomy", "audit", "--wide"], None),
     ] {
-        let ran = ran(&[verb, "--wide", "--format", format], None);
-        assert_eq!(
-            ran.code,
-            Some(1),
-            "`headwater {verb} --wide --format {format}` is refused with 1"
-        );
+        let typed = line.join(" ");
+        let ran = ran(&line, None);
+        assert_eq!(ran.code, Some(1), "`headwater {typed}` is refused with 1");
         let said = String::from_utf8_lossy(&ran.err).into_owned();
         assert!(
             said.contains("--wide"),
             "the refusal names the flag: {said}"
         );
         assert!(
-            said.contains(format),
-            "the refusal names the format: {said}"
+            said.contains("how wide the help is laid out"),
+            "the refusal says what the flag does: {said}"
         );
+        match names {
+            Some(format) => assert!(
+                said.contains(&format!("--format {format}")),
+                "the refusal names the format: {said}"
+            ),
+            None => assert!(
+                said.contains("prints no help"),
+                "the refusal says why this run is not one: {said}"
+            ),
+        }
         assert!(ran.out.is_empty(), "a refusal writes no artifact");
     }
 }
 
-/// The one format that is laid out is the one `--wide` is not refused with.
+/// The runs `--wide` does lay out are the runs that print help.
+///
+/// `clap` answers `--help` before the refusal above can run, and
+/// `headwater help <verb>` is a verb of this binary that reaches it and is let
+/// through. Both routes are asserted, because they are admitted by different
+/// code and only one of them is a check anybody wrote.
 #[test]
-fn a_width_asked_for_the_format_a_reader_reads_is_not_refused() {
-    let helped = ran(&["check", "--wide", "--format", "text", "--help"], None);
-    assert_eq!(helped.code, Some(0));
-    let elsewhere = ran(
-        &[
-            "check",
-            "--wide",
-            "--format",
-            "text",
-            "--root",
-            "/nonexistent",
-        ],
-        None,
-    );
-    let said = String::from_utf8_lossy(&elsewhere.err).into_owned();
-    assert!(
-        !said.contains("`--wide`"),
-        "`--format text` is laid out, so `--wide` is not the objection: {said}"
-    );
+fn a_width_asked_for_a_run_that_prints_help_is_answered() {
+    for line in [
+        vec!["--wide", "--help"],
+        vec!["check", "--wide", "--help"],
+        vec!["check", "--wide", "--format", "text", "--help"],
+        vec!["help", "check", "--wide"],
+        vec!["--wide", "help", "check"],
+        vec!["help", "--wide"],
+    ] {
+        let typed = line.join(" ");
+        let ran = ran(&line, Some("120"));
+        assert_eq!(ran.code, Some(0), "`headwater {typed}` is answered");
+        assert!(!ran.out.is_empty(), "`headwater {typed}` printed help");
+        assert!(
+            ran.err.is_empty(),
+            "`headwater {typed}` says nothing on standard error"
+        );
+    }
 }
 
 /// **Clause 11, the terminal half.** No escape byte reaches a caller.
