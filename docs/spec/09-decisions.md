@@ -185,3 +185,21 @@ An evaluation is governed prose, and the overlay binds the house language regime
 A path is corpus content when a file arriving there with no front matter is a defect, and no code directory answers that test. The corpus root stays `docs`, and an interface contract lives inside it and reaches a crate by a `governs` edge that binds on existence alone. The record is [HW-DR-0029](../decisions/0029-q29-whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach.md).
 
 **This question came from the build, and it had to be settled before a kind was declared.** [#253](https://github.com/headwater-ai/headwater/issues/253) asks where a document that describes a verb of this engine lives. `git ls-files engine` reports 608 files and 186 Markdown files, and 185 of the 186 are inputs to the suite rather than prose a person reads. The exclusion this corpus already declares on `docs/taxonomies/**` gives the reason in one sentence. A fixture corpus is a corpus that another root is meant to walk. What the ruling leaves open is that nothing holds a crate to having a contract, and [HW-OBL-0128](../obligations/0128-nothing-holds-a-crate-to-having-a-contract-under-a-root-that-excludes-it.md) carries it.
+
+## Q30 — Whether what an obligation waits on is a state or a property, and how many values it takes
+
+What an obligation waits on is a present-tense state and not a property fixed at filing, and the closed set holds four values. A required `waiting_on` facet on `obligation_record` takes `ruling`, `build`, `measurement` or `adopter`, and the decision-record bundle declares it. The record is [HW-DR-0030](../decisions/0030-q30-whether-what-an-obligation-waits-on-is-a-state-or-a-property-and-how-many-values-it-takes.md).
+
+**This question came from the board rather than from the build, and the specification argued against it in writing.** The obligations shelf holds 129 records and no record says what it is waiting on. So the owner reads the shelf with `grep -il ruling`, at a precision of 0.50 and a recall of 0.36. [Spec 13](13-open-obligations.md#a-human-maintains-this-list-by-hand) refuses a facet over this shelf because a four-class partition makes one class a residual. No value of these four is a residual, and the pair that objection rests on takes one value here. 38 of the 39 open records that wait on a ruling are followed by a build. A two-valued property would be wrong about 38 records.
+
+## Q31 — Whether this repository becomes public, and when
+
+This repository becomes public, and the date is unset. A settled posture with a pending date is not an open question, which is why the record exists. The record is [HW-DR-0031](../decisions/0031-q31-whether-this-repository-becomes-public-and-when.md).
+
+**This question came from the owner, and the cost of leaving it unwritten was a repeated argument.** The build order carried it on a list of standing escalations as undecided, so each run met it and left it where it was. 22 open obligation records wait for a corpus that another organization keeps, and nobody outside can bring one while the repository is unreadable.
+
+## Q32 — Which test the self-audit label states
+
+The `self-audit` label states the reader test. Its description reads *No reader outside this repository. How it was found is not the test.* The record is [HW-DR-0032](../decisions/0032-q32-which-test-the-self-audit-label-states.md).
+
+**This question came from the board, and the label decided whether work waits.** The earlier description named a test of provenance and a test of the reader in one sentence. The two partition the board differently. Almost every finding here arrives from running the engine over this repository, so a test of provenance separates nothing.

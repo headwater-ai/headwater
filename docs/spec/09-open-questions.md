@@ -10,7 +10,7 @@ relations:
 
 # decisions
 
-29 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+32 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -127,3 +127,15 @@ relations:
 ## Q29 — Whether a corpus root may contain code, and what an interface contract may reach
 
 [HW-DR-0029](../decisions/0029-q29-whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach.md) — The corpus root stays `docs`, because a path is corpus content only where a file with no front matter is a defect, and 185 of the 186 Markdown files under `engine/` exist to be defective. An interface contract lives inside the root and reaches a crate by a `governs` edge that binds on existence alone. (asserted, and no human has accepted it)
+
+## Q30 — Whether what an obligation waits on is a state or a property, and how many values it takes
+
+[HW-DR-0030](../decisions/0030-q30-whether-what-an-obligation-waits-on-is-a-state-or-a-property-and-how-many-values-it-takes.md) — What an obligation waits on is a state and not a property, and the closed set holds four values. A required `waiting_on` facet on `obligation_record` takes `ruling`, `build`, `measurement` or `adopter`, and the decision-record bundle declares it. (asserted, and no human has accepted it)
+
+## Q31 — Whether this repository becomes public, and when
+
+[HW-DR-0031](../decisions/0031-q31-whether-this-repository-becomes-public-and-when.md) — This repository becomes public, and the date is unset. A settled posture with a pending date is not an open question, and the record is what stops each run from raising it as one. (asserted, and no human has accepted it)
+
+## Q32 — Which test the self-audit label states
+
+[HW-DR-0032](../decisions/0032-q32-which-test-the-self-audit-label-states.md) — The `self-audit` label states the reader test and not the provenance test. How a finding was found is not the test, and the only question is whether a reader outside this repository is better off. (asserted, and no human has accepted it)
