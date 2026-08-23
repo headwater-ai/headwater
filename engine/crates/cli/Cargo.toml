@@ -83,5 +83,18 @@ headwater-verbs = { path = "../verbs" }
 # artifact that went through one reader.
 headwater-yaml = { path = "../yaml" }
 
+# The one external dependency of this crate, and the third of this workspace.
+# `HW-DR-0033` states what it costs and what it withdraws: 17 packages into the
+# lock, and the flat pre-dispatch flag namespace out of the surface. The
+# `derive` feature is the whole reason for it — the command tree is the enum in
+# `src/lib.rs` rather than a second list beside `headwater-verbs`, and
+# `tests/verbs.rs` holds the two against each other in both directions.
+#
+# `clap_complete` and `anstyle` are **not** here. `anstyle` is already in the
+# resolved graph through `clap_builder` and `anstream`, so declaring it would
+# move the lock by zero packages and add a line nothing reaches. `clap_complete`
+# costs one package and arrives with the verb that calls it.
+clap = { version = "4.6.6", features = ["derive"] }
+
 [lints]
 workspace = true

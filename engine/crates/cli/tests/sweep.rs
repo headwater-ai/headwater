@@ -252,19 +252,29 @@ fn every_refusal_of_a_returned_file_exits_zero() {
         ran.out
     );
 
-    // And `--strict` is a flag of another verb that this one accepts and
-    // ignores. Spec 12 says there is no `--strict`, which is true of what one
-    // would do and false of what the parser admits.
+    // And `--strict` is a flag of another verb. Until HW-DR-0033 this verb
+    // accepted it and ignored it, because every flag of this binary was parsed
+    // before the verb was decided, and this case asserted that: "`--strict`
+    // moves neither the status nor a byte of the report". Spec 12 says there is
+    // no `--strict` here, which was true of what the verb would do and false of
+    // what the parser admitted. The refusal below is what makes both halves of
+    // that sentence true, and inverting an assertion is the strongest evidence
+    // a contract reversed.
     let strict = root.run(&[
         "sweep",
         "report",
         stray.to_str().expect("a path"),
         "--strict",
     ]);
-    assert_eq!(strict.code, Some(0), "{strict:?}");
+    assert_eq!(strict.code, Some(1), "{strict:?}");
     assert_eq!(
-        strict.out, ran.out,
-        "`--strict` moves neither the status nor a byte of the report"
+        strict.out, "",
+        "a refused command line writes no report, so a sampler cannot be read as having run"
+    );
+    assert!(
+        strict.err.contains("--strict"),
+        "the refusal names the flag the caller wrote:\n{}",
+        strict.err
     );
 }
 
