@@ -3,6 +3,7 @@ id: HW-OBL-0091
 title: "The friction signal that Q4 narrowed is still unread"
 status: current
 status_since: 2026-08-11
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Q4 keeps a friction signal in a narrower form, and nothing reads the rate at which authors declare one link twice."
 provenance:

@@ -3,6 +3,7 @@ id: HW-OBL-0088
 title: "Correcting an identifier is mechanical and it is not local"
 status: current
 status_since: 2026-08-13
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "Spec 12 lists an identifier correction among four mechanical fixes, and no such repair is confined to one document."
 provenance:

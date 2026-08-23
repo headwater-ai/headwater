@@ -3,6 +3,7 @@ id: HW-OBL-0041
 title: "No declaration expresses a rule about content or state over time"
 status: current
 status_since: 2026-08-13
+waiting_on: build
 last_verified: 2026-08-13
 summary: "The decision-record tradition holds two invariants over time, and every declaration that carries time is a participation expectation."
 provenance:

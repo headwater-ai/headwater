@@ -3,6 +3,7 @@ id: HW-OBL-0074
 title: "A check version is raised by hand, and nothing catches a stale one"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Two editions of one rule differ only in code that no digest covers, so a stale version reads the verdicts of the rule before the change."
 provenance:

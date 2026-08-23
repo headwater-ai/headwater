@@ -3,6 +3,7 @@ id: HW-OBL-0062
 title: "A relation may admit a document and an anchor, and no rule orders the two"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-13
 summary: "`traces_to` takes a document or a code path at the target end, and nothing says which resolver wins a string that both claim."
 provenance:

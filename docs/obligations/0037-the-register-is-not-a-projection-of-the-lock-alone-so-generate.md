@@ -3,6 +3,7 @@ id: HW-OBL-0037
 title: "The register is not a projection of the lock alone, so `generate --check` cannot hold it"
 status: current
 status_since: 2026-08-13
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "A rendered register is a function of the corpus, the lock and the clock, and a byte comparison fails on a morning when nobody changed a file."
 provenance:

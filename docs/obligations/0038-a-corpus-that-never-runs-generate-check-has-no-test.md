@@ -3,6 +3,7 @@ id: HW-OBL-0038
 title: "A corpus that never runs `generate --check` has no test of a generated-file marker"
 status: current
 status_since: 2026-08-13
+waiting_on: build
 last_verified: 2026-08-13
 summary: "The census excuses a marked file from every document check, and only `generate --check` tests that claim."
 provenance:

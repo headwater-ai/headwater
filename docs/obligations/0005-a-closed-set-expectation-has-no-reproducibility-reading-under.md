@@ -3,6 +3,7 @@ id: HW-OBL-0005
 title: "A closed-set expectation has no reproducibility reading under grading"
 status: current
 status_since: 2026-08-11
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Q8 claims that a closed-set expectation makes a probe verdict reproducible, and no probe has run."
 provenance:

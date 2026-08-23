@@ -3,6 +3,7 @@ id: HW-OBL-0106
 title: "A shelf layout names a file at birth and no rule reads it"
 status: current
 status_since: 2026-08-14
+waiting_on: ruling
 last_verified: 2026-08-15
 summary: "A shelf layout is read by the scaffolder and by nothing else, and a rule that read it would report every document that a person renamed or typed by hand."
 provenance:

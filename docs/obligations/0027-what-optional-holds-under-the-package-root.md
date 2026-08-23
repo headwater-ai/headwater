@@ -3,6 +3,7 @@ id: HW-OBL-0027
 title: "What `optional` holds under the `package` root"
 status: current
 status_since: 2026-08-12
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "The grammar of `$package.optional.forbids` is settled and the shape of what it reads is not."
 provenance:

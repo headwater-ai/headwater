@@ -3,6 +3,7 @@ id: HW-OBL-0031
 title: "List extension in an add-only overlay"
 status: current
 status_since: 2026-08-12
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "A bundle holds no `override` and no `remove`, and nothing states whether it may use `add_to` on a list."
 provenance:

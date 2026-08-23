@@ -3,6 +3,7 @@ id: HW-OBL-0063
 title: "An anchor that resolves inside a declared exclusion has no stated outcome"
 status: current
 status_since: 2026-08-12
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "Spec 1 fixes three outcomes for an anchor, and a hit inside a corpus exclusion is none of them."
 provenance:

@@ -3,6 +3,7 @@ id: HW-OBL-0112
 title: "A surface cannot move the assisted fraction of a run"
 status: current
 status_since: 2026-08-14
+waiting_on: measurement
 last_verified: 2026-08-14
 summary: "The four counts of a reading are derived from the plan, and a plan is the same plan whatever asked for it, so Q7's comparison has to read reach rather than the fraction."
 provenance:

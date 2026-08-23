@@ -3,6 +3,7 @@ id: HW-OBL-0110
 title: "The loss census carries a finding by substring, so an index of rules and paths passes it"
 status: current
 status_since: 2026-08-14
+waiting_on: build
 last_verified: 2026-08-14
 summary: "The audit that holds a format to its loss set asks whether the bytes contain a rule name and a path, and a text report with no findings block at all carried 39 of 45."
 provenance:

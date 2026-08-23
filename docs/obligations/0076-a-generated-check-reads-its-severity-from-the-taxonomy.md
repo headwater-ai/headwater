@@ -3,6 +3,7 @@ id: HW-OBL-0076
 title: "A generated check reads its severity from the taxonomy"
 status: current
 status_since: 2026-08-13
+waiting_on: build
 last_verified: 2026-08-13
 summary: "An adopter moves a generated finding from `warn` to `error` by editing data, and spec 12 reads as though only a control is data."
 provenance:

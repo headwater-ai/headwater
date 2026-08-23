@@ -3,6 +3,7 @@ id: HW-OBL-0003
 title: "The rebuild-and-cache design is measured at spike scale alone"
 status: current
 status_since: 2026-08-10
+waiting_on: adopter
 last_verified: 2026-08-13
 summary: "Q6 rules that the graph never rests, and the only evidence is a spike over generated documents."
 provenance:

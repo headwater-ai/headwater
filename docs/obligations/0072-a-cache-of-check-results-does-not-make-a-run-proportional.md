@@ -3,6 +3,7 @@ id: HW-OBL-0072
 title: "A cache of check results does not make a run proportional to the change"
 status: current
 status_since: 2026-08-12
+waiting_on: ruling
 last_verified: 2026-08-14
 summary: "Spec 6 promises a run proportional to the change, and a warm run still walks the corpus and builds the whole graph."
 provenance:

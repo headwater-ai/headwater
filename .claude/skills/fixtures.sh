@@ -265,6 +265,7 @@ $names"
         'The verb writes an edge only where the taxonomy declares `created_by: scaffold` on the relation.' \
         1 'created_by: hook' \
         "$engine" new obligation_record --title 'An edge a hook pays for' \
+        --facet waiting_on=build \
         --relates traces_to=HW-SPEC-ai-integration --root "$scratch"
 
     # A shelf with no layout, because a layout that carries the identifier
@@ -299,6 +300,7 @@ $names"
             "the skill no longer says: $sentence"
     else
         written=$("$engine" new obligation_record --title 'A fixture for the skill suite' \
+            --facet waiting_on=build \
             --now 2026-08-14 --root "$scratch" 2>&1 | sed -n 's/^wrote //p')
         case $written in
             docs/obligations/[0-9][0-9][0-9][0-9]-a-fixture-for-the-skill-suite.md)
@@ -328,12 +330,13 @@ $names"
         rm -rf "$clean/.headwater/cache"
 
         "$engine" new obligation_record --title 'A record the store watched' \
+            --facet waiting_on=build \
             --now 2026-08-14 --root "$clean" >/dev/null 2>&1
         scaffolded=$("$engine" capture --root "$clean" |
             sed -n 's/^  \([0-9]*\) of \([0-9]*\) classified documents carry a reading$/\1 \2/p')
 
         # The same document shape, written by no verb at all.
-        printf -- '---\nid: HW-OBL-9998\ntitle: "A record no verb wrote"\nstatus: current\nstatus_since: 2026-08-14\nlast_verified: 2026-08-14\nsummary: "Written by no verb, to hold the reach figure against a route the store does not watch."\n---\n\n# A record no verb wrote\n\n## Context\n\nNone.\n\n## Obligation\n\nNone.\n\n## Discharge\n\nNone.\n' \
+        printf -- '---\nid: HW-OBL-9998\ntitle: "A record no verb wrote"\nstatus: current\nstatus_since: 2026-08-14\nwaiting_on: build\nlast_verified: 2026-08-14\nsummary: "Written by no verb, to hold the reach figure against a route the store does not watch."\n---\n\n# A record no verb wrote\n\n## Context\n\nNone.\n\n## Obligation\n\nNone.\n\n## Discharge\n\nNone.\n' \
             > "$clean/docs/obligations/9998-a-record-no-verb-wrote.md"
         by_hand=$("$engine" capture --root "$clean" |
             sed -n 's/^  \([0-9]*\) of \([0-9]*\) classified documents carry a reading$/\1 \2/p')

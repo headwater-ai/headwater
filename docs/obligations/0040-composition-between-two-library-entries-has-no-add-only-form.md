@@ -3,6 +3,7 @@ id: HW-OBL-0040
 title: "Composition between two library entries has no add-only form"
 status: current
 status_since: 2026-08-13
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "The first library entry to claim an address owns it, so a second entry cannot reuse the vocabulary that both traditions need."
 provenance:

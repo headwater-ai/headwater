@@ -3,6 +3,7 @@ id: HW-OBL-0052
 title: "A document has no identifier, and every relation target must be one"
 status: current
 status_since: 2026-08-12
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "Spec 3 reserves identifiers for five artifacts and a document is none of them, so every adopter mints a scheme before declaring one edge."
 provenance:

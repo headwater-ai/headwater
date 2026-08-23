@@ -3,6 +3,7 @@ id: HW-OBL-0046
 title: "The identifier scheme grammar"
 status: current
 status_since: 2026-08-12
+waiting_on: adopter
 last_verified: 2026-08-15
 summary: "A scheme holds the prefix that discriminates a kind as a literal inside a pattern string, so no declaration names the prefix that a document IRI would carry."
 provenance:

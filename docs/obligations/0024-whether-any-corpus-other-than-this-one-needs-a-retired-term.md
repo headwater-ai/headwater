@@ -3,6 +3,7 @@ id: HW-OBL-0024
 title: "Whether any corpus other than this one needs a retired-term lexicon"
 status: current
 status_since: 2026-08-11
+waiting_on: adopter
 last_verified: 2026-08-13
 summary: "Q21 supplies a retired-term lexicon, and only this repository has ever declared one."
 provenance:

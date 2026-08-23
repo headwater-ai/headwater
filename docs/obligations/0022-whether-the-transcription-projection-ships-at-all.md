@@ -3,6 +3,7 @@ id: HW-OBL-0022
 title: "Whether the transcription projection ships at all"
 status: current
 status_since: 2026-08-11
+waiting_on: adopter
 last_verified: 2026-08-13
 summary: "Q19 describes a transcription projection, and no adopter has asked for imported text."
 provenance:

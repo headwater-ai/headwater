@@ -3,6 +3,7 @@ id: HW-OBL-0008
 title: "An adoption payload has a first reading and no elapsed time"
 status: current
 status_since: 2026-08-11
+waiting_on: measurement
 last_verified: 2026-08-13
 summary: "Q12 claims that an adoption payload shrinks, and this repository holds one task that is a day old."
 provenance:

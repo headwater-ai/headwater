@@ -63,6 +63,8 @@ These are the behaviors that pressure to be helpful breaks first, and spec 5 sta
 
 Neither is worked around. Hand both to the `headwater-taxonomy` skill, which owns the declaration.
 
+**One kind meets `FacetUndeterminable` by design, and it takes a flag rather than a declaration.** `obligation_record` requires `waiting_on`, which is closed to `ruling`, `build`, `measurement` and `adopter`, and no role derives a value for it. Read the Discharge section you are about to write, and pass `--facet waiting_on=<value>`. [HW-DR-0030](../../../docs/decisions/0030-q30-whether-what-an-obligation-waits-on-is-a-state-or-a-property-and-how-many-values-it-takes.md) states what each value means. The refusal is the point: a record that does not say what it waits on is not written.
+
 ## Finish with the engine
 
     headwater check

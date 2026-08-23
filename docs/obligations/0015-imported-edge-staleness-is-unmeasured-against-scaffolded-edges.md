@@ -3,6 +3,7 @@ id: HW-OBL-0015
 title: "Imported edge staleness is unmeasured against scaffolded edges"
 status: current
 status_since: 2026-08-10
+waiting_on: adopter
 last_verified: 2026-08-13
 summary: "Q19 claims that imported edges do not decay faster than scaffolded ones, and nothing has been imported."
 provenance:

@@ -3,6 +3,7 @@ id: HW-OBL-0011
 title: "Nothing has been promoted out of the synthesized tier"
 status: current
 status_since: 2026-08-10
+waiting_on: measurement
 last_verified: 2026-08-15
 summary: "Q15 claims that asserted content moves to accepted rather than accumulates, both halves of the instrument now run, and no change of this repository has moved a warrant yet."
 provenance:

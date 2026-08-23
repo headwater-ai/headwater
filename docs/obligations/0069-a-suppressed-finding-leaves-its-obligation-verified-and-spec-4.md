@@ -3,6 +3,7 @@ id: HW-OBL-0069
 title: "A suppressed finding leaves its obligation verified, and spec 4 does not say so"
 status: current
 status_since: 2026-08-13
+waiting_on: build
 last_verified: 2026-08-13
 summary: "The engine rules that an obligation with accepted deviations against it stays verified, and spec 4 states no such rule."
 provenance:

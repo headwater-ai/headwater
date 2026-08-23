@@ -42,6 +42,45 @@ add:
     required: false
     volatility: stable
 
+  # What an obligation record is waiting on right now, which is the one thing
+  # the shelf never carried. `status` says whether a reader may rely on the
+  # document, and a record that waits on a ruling is fully `current`. The
+  # blocker belongs to the subject of the record rather than to its authority,
+  # so it is a second facet and not a sixth lifecycle state.
+  #
+  # A present-tense state and not a property fixed at filing. HW-DR-0030
+  # measures the reason: 38 of the 39 open records that wait on a ruling are
+  # followed by a build, so a property that named one of the two would be wrong
+  # about 38 records. The value changes on the day the act it names happens,
+  # and the person who writes the ruling down is the person who edits it.
+  #
+  # Four values and no residual. Two of them hold populations that a binary has
+  # no cell for: 22 records wait on an outside corpus and 8 wait on a run of an
+  # instrument that already ships. No value here means `none of the others`, so
+  # no value changes on a record that nobody edited. A record that fits none of
+  # the four has a Discharge section that does not say what happens next, which
+  # is a defect in the record rather than a missing value.
+  #
+  # `volatility: mutable` is the claim that the value moves, so it may not
+  # appear in an identifier pattern, a shelf path or a shelf layout. The
+  # `obligations` layout `{seq:04d}-{slug}.md` reads neither.
+  #
+  # On a record at `status: discharged` the value reads as what discharged it.
+  # A record leaves the queue by `status` and never by this facet, so there is
+  # no fifth value. That a facet applies to one value of another facet is
+  # HW-OBL-0123, and this is a third instance of it rather than a reason to
+  # invent a value.
+  facets.waiting_on:
+    type: string
+    values: [ruling, build, measurement, adopter]
+    required: false
+    volatility: mutable
+    guidance:
+      ruling: a person has to choose, and no build and no measurement settles it
+      build: the answer is known and somebody has to write the code or the prose
+      measurement: an instrument exists and no run of it has been made
+      adopter: an outside corpus has to exist before anything can move
+
   # --- kinds ----------------------------------------------------------------
   # The base `decision` kind is this tradition's kind. `is_a: governed_document`,
   # `purpose: rationale`, `voice: declarative`, `lifecycle: standard`,
@@ -63,7 +102,7 @@ add:
     voice: declarative
     lifecycle: obligation
     facets:
-      require: [title]
+      require: [title, waiting_on]
     sections: {require: [Context, Obligation, Discharge]}
 
   # --- relations ------------------------------------------------------------

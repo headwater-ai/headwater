@@ -3,6 +3,7 @@ id: HW-OBL-0078
 title: "Two positions that the meta-schema marks a gap are a closed set in the engine"
 status: current
 status_since: 2026-08-13
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "A voice regime names categories and a language regime names a controlled language, and the language states neither set."
 provenance:

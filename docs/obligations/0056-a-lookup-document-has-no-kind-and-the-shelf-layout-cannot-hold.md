@@ -3,6 +3,7 @@ id: HW-OBL-0056
 title: "A lookup document has no kind, and the shelf layout cannot hold one"
 status: current
 status_since: 2026-08-12
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "The glossary sits on the specification shelf with a layout it cannot satisfy, and it carries a sequence that nothing cites."
 provenance:

@@ -2,6 +2,7 @@
 id: HW-OBL-0129
 status: draft
 status_since: 2026-08-16
+waiting_on: build
 summary: "Spec 12 lists an unparseable file and an unclassifiable path among the structural findings of Phase A, and the engine emits no finding for either. The census and `corpus.classified` report both, which is what the control on OB-COV-1 declares, and no document says so."
 last_verified: 2026-08-16
 title: "Spec 12 calls two Phase A outcomes structural findings and the engine emits none"

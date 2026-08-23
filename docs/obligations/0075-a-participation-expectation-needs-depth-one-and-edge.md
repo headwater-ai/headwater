@@ -3,6 +3,7 @@ id: HW-OBL-0075
 title: "A participation expectation needs depth one, and `Edge` does not reach it"
 status: current
 status_since: 2026-08-13
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Spec 12 calls the neighbourhood scope speculative and offers a test that misses the check that arrived."
 provenance:

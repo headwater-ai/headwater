@@ -3,6 +3,7 @@ id: HW-OBL-0019
 title: "Whether any corpus needs a second export profile"
 status: current
 status_since: 2026-08-11
+waiting_on: adopter
 last_verified: 2026-08-13
 summary: "Q17 admits more than one export profile, and the first release ships one unfiltered profile and no second audience."
 provenance:

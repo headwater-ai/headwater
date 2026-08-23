@@ -3,6 +3,7 @@ id: HW-OBL-0012
 title: "The human half of the public presence claim has no instrument at all"
 status: current
 status_since: 2026-08-11
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Q16 claims that a generated site answers \"is this for me?\", and only the machine half has an instrument."
 provenance:

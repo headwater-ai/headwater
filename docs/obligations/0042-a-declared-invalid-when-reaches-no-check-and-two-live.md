@@ -3,6 +3,7 @@ id: HW-OBL-0042
 title: "A declared `invalid_when` reaches no check, and two live contradictory decisions pass in silence"
 status: current
 status_since: 2026-08-13
+waiting_on: build
 last_verified: 2026-08-13
 summary: "The base declares `conflicts_with` with `invalid_when`, two specifications promise the check, and no code performs it."
 provenance:

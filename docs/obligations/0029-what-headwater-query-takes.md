@@ -3,6 +3,7 @@ id: HW-OBL-0029
 title: "What `headwater query` takes"
 status: current
 status_since: 2026-08-13
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Spec 6 lists the verb `headwater query <expression>`, and no document states what an expression is."
 provenance:

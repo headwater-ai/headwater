@@ -2,6 +2,7 @@
 id: HW-OBL-0124
 status: current
 status_since: 2026-08-14
+waiting_on: build
 summary: "The grader writes verdicts to standard output, no kind types a result, and the standing test spec 12 names cannot run."
 last_verified: 2026-08-14
 title: "A probe result is printed and never committed, so nothing regenerates one"

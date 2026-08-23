@@ -3,6 +3,7 @@ id: HW-OBL-0018
 title: "The bundle set is a guess about how adopters cluster"
 status: current
 status_since: 2026-08-11
+waiting_on: adopter
 last_verified: 2026-08-13
 summary: "Q3 ships optional content as bundles, and the set of them is a guess that no adopter has revised."
 provenance:

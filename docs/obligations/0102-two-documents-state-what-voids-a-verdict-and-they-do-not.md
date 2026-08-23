@@ -3,6 +3,7 @@ id: HW-OBL-0102
 title: "Two documents state what voids a verdict, and they do not agree"
 status: discharged
 status_since: 2026-08-15
+waiting_on: ruling
 last_verified: 2026-08-14
 summary: "Spec 12 voids a verdict by a tree diff, and the engine voids it by a hash comparison that no added document reaches."
 provenance:

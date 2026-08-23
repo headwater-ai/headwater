@@ -3,6 +3,7 @@ id: HW-OBL-0054
 title: "The templates and the fixtures of the first library entry disagree with Q4"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-14
 summary: "Every template of the design-spec entry writes a relation at the top level with a path as the target, which Q4 refused."
 provenance:

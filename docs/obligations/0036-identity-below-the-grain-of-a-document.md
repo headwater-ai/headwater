@@ -3,6 +3,7 @@ id: HW-OBL-0036
 title: "Identity below the grain of a document"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-13
 summary: "A decision and an obligation are documents now, and a criterion inside a sidecar and a section of a document still reach no identifier index."
 provenance:

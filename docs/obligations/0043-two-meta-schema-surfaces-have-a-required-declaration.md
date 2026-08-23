@@ -3,6 +3,7 @@ id: HW-OBL-0043
 title: "Two meta-schema surfaces have a required declaration and no stated form"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Ten positions of the meta-schema carry the word `gap`, where a declaration is required and no form is stated."
 provenance:

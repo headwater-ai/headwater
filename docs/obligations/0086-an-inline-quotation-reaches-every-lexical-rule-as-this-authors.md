@@ -3,6 +3,7 @@ id: HW-OBL-0086
 title: "An inline quotation reaches every lexical rule as this author's prose"
 status: current
 status_since: 2026-08-13
+waiting_on: ruling
 last_verified: 2026-08-15
 summary: "The parser marks a block quotation and a code span, and an inline quotation is marked as nothing."
 provenance:

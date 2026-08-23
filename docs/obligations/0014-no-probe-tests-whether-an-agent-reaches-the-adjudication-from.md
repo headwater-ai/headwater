@@ -3,6 +3,7 @@ id: HW-OBL-0014
 title: "No probe tests whether an agent reaches the adjudication from the losing document"
 status: current
 status_since: 2026-08-10
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Q18 claims that an agent meeting the losing document first reaches the adjudication, and no probe has run."
 provenance:

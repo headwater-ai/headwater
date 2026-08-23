@@ -153,6 +153,20 @@ facets:
     role: name
     type: string
     volatility: stable
+  waiting_on:
+    guidance:
+      adopter: "an outside corpus has to exist before anything can move"
+      build: "the answer is known and somebody has to write the code or the prose"
+      measurement: "an instrument exists and no run of it has been made"
+      ruling: "a person has to choose, and no build and no measurement settles it"
+    required: false
+    type: string
+    values:
+      - ruling
+      - build
+      - measurement
+      - adopter
+    volatility: mutable
 regimes:
   lifecycle:
     standard:
@@ -337,6 +351,7 @@ kinds:
     facets:
       require:
         - title
+        - waiting_on
     identifier:
       scheme: obligation_record_id
     is_a: governed_document

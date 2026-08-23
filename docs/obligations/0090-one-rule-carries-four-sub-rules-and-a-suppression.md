@@ -3,6 +3,7 @@ id: HW-OBL-0090
 title: "One rule carries four sub-rules, and a suppression cannot separate them"
 status: current
 status_since: 2026-08-13
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "A directive names a rule, and `language.controlled.not_met` reports four different defects under one name."
 provenance:

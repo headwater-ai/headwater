@@ -3,6 +3,7 @@ id: HW-OBL-0061
 title: "An anchor resolver normalizes, and nothing states how"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Spec 2 requires that anchor strings normalize before comparison, and it states no rule that does it."
 provenance:

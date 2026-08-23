@@ -3,6 +3,7 @@ id: HW-OBL-0094
 title: "Where a commercial tier could sit, and how thin the trademark position is"
 status: current
 status_since: 2026-08-11
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "Q11 holds the question of where a commercial tier could sit rather than answering it, and the trademark position is deliberately thin."
 provenance:

@@ -3,6 +3,7 @@ id: HW-OBL-0013
 title: "No probe tests whether a counted tombstone stops a confident report of absence"
 status: current
 status_since: 2026-08-10
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Q17 claims that a counted tombstone stops an agent reporting absence with confidence, and no probe has run."
 provenance:

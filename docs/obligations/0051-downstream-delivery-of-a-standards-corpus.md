@@ -3,6 +3,7 @@ id: HW-OBL-0051
 title: "Downstream delivery of a standards corpus"
 status: current
 status_since: 2026-08-12
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "Spec 7 shares a schema and no corpus content, so a publisher of standards documents reaches a consumer with a rule and never with a document."
 provenance:

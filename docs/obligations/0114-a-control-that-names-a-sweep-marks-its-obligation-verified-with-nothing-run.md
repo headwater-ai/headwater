@@ -2,6 +2,7 @@
 id: HW-OBL-0114
 status: current
 status_since: 2026-08-14
+waiting_on: ruling
 summary: The register holds no coherence obligation at all, and the one mechanism that could bind the sweep to one reports it verified from the declaration alone.
 last_verified: 2026-08-14
 title: "A control that names a sweep marks its obligation verified with nothing run"

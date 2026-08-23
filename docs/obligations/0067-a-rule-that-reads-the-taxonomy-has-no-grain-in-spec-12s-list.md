@@ -3,6 +3,7 @@ id: HW-OBL-0067
 title: "A rule that reads the taxonomy has no grain in spec 12's list"
 status: current
 status_since: 2026-08-13
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Two register rules are about the taxonomy and about no document, and spec 12 draws every scope over the corpus."
 provenance:

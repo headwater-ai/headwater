@@ -3,6 +3,7 @@ id: HW-OBL-0103
 title: "The front-matter half of a patch has no writer"
 status: current
 status_since: 2026-08-14
+waiting_on: build
 last_verified: 2026-08-15
 summary: "Three documents name a mechanical correction inside front matter, and the two patch shapes that ship reach a run of prose and a relations block."
 provenance:

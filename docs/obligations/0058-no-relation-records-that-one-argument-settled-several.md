@@ -3,6 +3,7 @@ id: HW-OBL-0058
 title: "No relation records that one argument settled several decisions"
 status: current
 status_since: 2026-08-13
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "The register states twelve times that one evaluation settled several decisions, and no declaration holds that fact."
 provenance:

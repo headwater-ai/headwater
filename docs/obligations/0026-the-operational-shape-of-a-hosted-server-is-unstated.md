@@ -3,6 +3,7 @@ id: HW-OBL-0026
 title: "The operational shape of a hosted server is unstated"
 status: current
 status_since: 2026-08-11
+waiting_on: adopter
 last_verified: 2026-08-13
 summary: "Q7 and Q17 both hold the question of who runs a hosted server and how it is deployed, and neither answers it."
 provenance:

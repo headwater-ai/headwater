@@ -3,6 +3,7 @@ id: HW-OBL-0065
 title: "A classified document with no check instance has a third cause"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Spec 12 names two causes for a document with zero instances, and the one this corpus met is neither."
 provenance:

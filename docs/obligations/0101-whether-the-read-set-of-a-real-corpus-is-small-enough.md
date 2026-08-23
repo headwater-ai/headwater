@@ -3,6 +3,7 @@ id: HW-OBL-0101
 title: "Whether the read set of a real corpus is small enough that publishing it is free"
 status: current
 status_since: 2026-08-13
+waiting_on: adopter
 last_verified: 2026-08-13
 summary: "Publishing the read set costs 0.37 per cent of this corpus, and the fraction is a ratio against document size rather than a constant."
 provenance:

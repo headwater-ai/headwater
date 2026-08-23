@@ -3,6 +3,7 @@ id: HW-OBL-0055
 title: "The tradition has no relation for the link that this corpus makes most"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-13
 summary: "No relation admits a specification-to-specification or an evaluation-to-specification pair, and those are most of this corpus."
 provenance:

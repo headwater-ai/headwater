@@ -3,6 +3,7 @@ id: HW-OBL-0079
 title: "A correctness root that is a type has no failing fixture"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Scope enforcement is a type now, and a build that passes is not a fixture that fails."
 provenance:

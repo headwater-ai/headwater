@@ -3,6 +3,7 @@ id: HW-OBL-0028
 title: "A run cannot report the corpus tree, because nothing computes one"
 status: current
 status_since: 2026-08-13
+waiting_on: build
 last_verified: 2026-08-14
 summary: "Spec 6 asks every run for a corpus tree beside its findings, and the engine computes none."
 provenance:

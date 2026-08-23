@@ -3,6 +3,7 @@ id: HW-OBL-0071
 title: "A corpus-scoped check makes the coverage rule unreachable"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-14
 summary: "A corpus-scoped instance reads every document, and coverage counts routing rather than reading."
 provenance:
@@ -39,3 +40,5 @@ Coverage counts routing, and routing is the generation step: a template, a decla
 The second option is refused. An instance that counted only for the documents its findings name makes coverage a function of the verdict. A rule that finds nothing then covers nothing, and a corpus with a defect reports higher coverage than a clean one.
 
 One cost stands. A rule that instantiates over every typed document reaches the unreachable end by a shorter route. Such a rule routes every document to a check before anything is read. The generated Shape checks instantiate per kind for that reason, so a kind that forbids what a rule reads gets no instance.
+
+**What happens next is the closure of this record, which is why it reads `build`.** The question is answered, `Grain::routes` carries the answer, spec 12 states it and one test holds it. Nothing further is owed by the engine or by the specification. What remains is the state movement of this record to `discharged`, and that is the owner's to take rather than an agent's.

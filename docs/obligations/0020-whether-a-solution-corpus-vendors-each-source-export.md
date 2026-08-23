@@ -3,6 +3,7 @@ id: HW-OBL-0020
 title: "Whether a solution corpus vendors each source export or references it"
 status: current
 status_since: 2026-08-11
+waiting_on: adopter
 last_verified: 2026-08-13
 summary: "Q9 harvests pinned exports, and nothing settles whether the tier above copies each one or points at it."
 provenance:

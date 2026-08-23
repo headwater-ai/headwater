@@ -3,6 +3,7 @@ id: HW-OBL-0082
 title: "The lock is half generated and half authored, and nothing states the rule for the seam"
 status: current
 status_since: 2026-08-13
+waiting_on: ruling
 last_verified: 2026-08-21
 summary: "The adoption payload is authored and every other line of the lock is derived, and no document says which is which."
 provenance:

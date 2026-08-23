@@ -2,6 +2,7 @@
 id: HW-OBL-0125
 status: current
 status_since: 2026-08-15
+waiting_on: ruling
 summary: "Spec 3 closes the warrant vocabulary at four values, nine documents here state a fifth, no check reads a warrant, and the query surface serves an unknown value as a vouched one."
 last_verified: 2026-08-15
 title: "Nine documents state a warrant the closed set does not hold, and no check reads one"

@@ -3,6 +3,7 @@ id: HW-OBL-0108
 title: "An agent writes the acceptance stamp of every document in this corpus"
 status: current
 status_since: 2026-08-14
+waiting_on: ruling
 last_verified: 2026-08-14
 summary: "Stop rule 5 forbids an agent to write `accepted_by`, and 161 of the 161 agent-drafted documents here carry one that the drafting agent typed."
 provenance:

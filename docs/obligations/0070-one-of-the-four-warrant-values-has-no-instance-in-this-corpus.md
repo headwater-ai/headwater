@@ -3,6 +3,7 @@ id: HW-OBL-0070
 title: "One of the four warrant values has no instance in this corpus"
 status: current
 status_since: 2026-08-13
+waiting_on: adopter
 last_verified: 2026-08-15
 summary: "`transcribed` is the one warrant with no instance here. `asserted` acquired nine, so three of the four engine branches now run over corpus content."
 provenance:

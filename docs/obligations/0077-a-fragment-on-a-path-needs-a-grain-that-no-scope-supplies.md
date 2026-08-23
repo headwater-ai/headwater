@@ -3,6 +3,7 @@ id: HW-OBL-0077
 title: "A fragment on a path needs a grain that no scope supplies"
 status: current
 status_since: 2026-08-13
+waiting_on: build
 last_verified: 2026-08-13
 summary: "`link.fragment.unresolved` reads a bare fragment and never one on a path, and 1595 of this corpus's fragments carry a path."
 provenance:

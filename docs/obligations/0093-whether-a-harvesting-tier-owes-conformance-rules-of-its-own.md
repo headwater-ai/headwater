@@ -3,6 +3,7 @@ id: HW-OBL-0093
 title: "Whether a harvesting tier owes conformance rules of its own"
 status: current
 status_since: 2026-08-11
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Q9 leaves open whether a harvesting tier has conformance rules, because `headwater conformance` evaluates one repository."
 provenance:
