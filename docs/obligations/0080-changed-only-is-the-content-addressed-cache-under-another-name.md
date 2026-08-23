@@ -3,6 +3,7 @@ id: HW-OBL-0080
 title: "`--changed-only` is the content-addressed cache under another name"
 status: current
 status_since: 2026-08-13
+waiting_on: measurement
 last_verified: 2026-08-14
 summary: "The one job a change-scoped flag has is a job the cache already pays, and Phase A is what no flag reaches."
 provenance:

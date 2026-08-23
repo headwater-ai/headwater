@@ -3,6 +3,7 @@ id: HW-OBL-0064
 title: "Two identity components are correctness roots that spec 12 does not cover"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-13
 summary: "The anchor resolver has no normalization fixture set asked of it, and the identifier index is absent from the list of roots."
 provenance:

@@ -3,6 +3,7 @@ id: HW-OBL-0048
 title: "A mapping key holds a dot, and no address reaches it"
 status: current
 status_since: 2026-08-12
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "`facet_values` is keyed by a facet and a value joined by a dot, which the reference sublanguage rules ambiguous."
 provenance:

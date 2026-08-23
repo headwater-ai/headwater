@@ -3,6 +3,7 @@ id: HW-OBL-0107
 title: "The base package ships a kind that the scaffolder refuses to write"
 status: current
 status_since: 2026-08-14
+waiting_on: build
 last_verified: 2026-08-14
 summary: "`kinds.specification` names no identifier scheme and four relations may name a document of it, so `headwater new specification` refuses on the stock package and no check reports the cause."
 provenance:

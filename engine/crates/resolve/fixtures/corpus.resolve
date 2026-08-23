@@ -25,6 +25,7 @@ operations
   add.shelves.evaluations (docs/taxonomies/design-spec/bundle.yml)
   add.shelves.reviews (docs/taxonomies/design-spec/bundle.yml)
   add.facets.title (docs/taxonomies/decision-record/bundle.yml)
+  add.facets.waiting_on (docs/taxonomies/decision-record/bundle.yml)
   add.kinds.decision.facets (docs/taxonomies/decision-record/bundle.yml)
   add.kinds.obligation_record (docs/taxonomies/decision-record/bundle.yml)
   add.relations.discharges (docs/taxonomies/decision-record/bundle.yml)
@@ -82,7 +83,7 @@ declarations, by member count
   version: 3.2.0
   purposes: 5 members
   vocabularies: 1 member
-  facets: 12 members
+  facets: 13 members
   regimes: 3 members
   anchors: 1 member
   kinds: 15 members

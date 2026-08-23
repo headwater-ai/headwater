@@ -3,6 +3,7 @@ id: HW-OBL-0060
 title: "\"The most specific shelf wins\" names no order"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Spec 2 rules that the most specific shelf pattern wins, and it never states what makes one pattern more specific."
 provenance:

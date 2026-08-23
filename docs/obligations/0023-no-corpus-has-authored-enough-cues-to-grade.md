@@ -3,6 +3,7 @@ id: HW-OBL-0023
 title: "No corpus has authored enough cues to grade"
 status: current
 status_since: 2026-08-11
+waiting_on: adopter
 last_verified: 2026-08-13
 summary: "Q20 puts a cue on the referring end, and no corpus has written enough of them to grade."
 provenance:

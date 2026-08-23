@@ -3,6 +3,7 @@ id: HW-OBL-0044
 title: "A generated index labels a document with its identifier"
 status: current
 status_since: 2026-08-13
+waiting_on: build
 last_verified: 2026-08-13
 summary: "The index of the specification shelf reads `HW-SPEC-vision-and-scope` where the table it replaced read \"Vision and scope\"."
 provenance:

@@ -3,6 +3,7 @@ id: HW-OBL-0053
 title: "The front-matter key that carries an identifier is undeclared"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-13
 summary: "A kind declares an identifier scheme, and nothing states which key in front matter holds the minted value."
 provenance:

@@ -3,6 +3,7 @@ id: HW-OBL-0081
 title: "A published read set never says which instances must run again"
 status: current
 status_since: 2026-08-13
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "A union of inputs answers whether a verdict survives a merge, and the artifact that answers the finer question is one row per instance."
 provenance:

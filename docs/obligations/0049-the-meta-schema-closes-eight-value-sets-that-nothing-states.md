@@ -3,6 +3,7 @@ id: HW-OBL-0049
 title: "The meta-schema closes eight value sets that nothing states"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Eight value sets are closed to the values this corpus writes, and each one is marked `guess`."
 provenance:

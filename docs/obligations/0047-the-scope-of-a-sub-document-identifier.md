@@ -3,6 +3,7 @@ id: HW-OBL-0047
 title: "The scope of a sub-document identifier"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-13
 summary: "An acceptance criterion receives a stable identifier, and nothing says whether it numbers within its requirement or over the corpus."
 provenance:

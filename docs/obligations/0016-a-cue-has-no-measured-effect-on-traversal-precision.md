@@ -3,6 +3,7 @@ id: HW-OBL-0016
 title: "A cue has no measured effect on traversal precision"
 status: current
 status_since: 2026-08-11
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Q20 claims that a cue raises traversal precision over the summary fallback, and no campaign has graded one."
 provenance:

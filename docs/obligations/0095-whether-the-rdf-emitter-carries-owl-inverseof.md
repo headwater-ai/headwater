@@ -3,6 +3,7 @@ id: HW-OBL-0095
 title: "Whether the RDF emitter carries `owl:inverseOf`"
 status: current
 status_since: 2026-08-12
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "An inverse manufactures 332 edges no author declared, which leaves `taxonomy audit` with no baseline for `created_by`."
 provenance:

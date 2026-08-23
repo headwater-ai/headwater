@@ -3,6 +3,7 @@ id: HW-OBL-0001
 title: "The promotion fix has no reading of the assisted fraction"
 status: current
 status_since: 2026-08-10
+waiting_on: measurement
 last_verified: 2026-08-14
 summary: "Q4 claims that the promotion fix raises author-attributable edges without more hand entry, and no run supports it."
 provenance:

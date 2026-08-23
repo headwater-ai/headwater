@@ -3,6 +3,7 @@ id: HW-OBL-0068
 title: "The promotion record has three members and no unit, scale or shape"
 status: current
 status_since: 2026-08-13
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Spec 4 names an observation window, a false-positive threshold and an adjudicated sample, and it gives none of them a form."
 provenance:

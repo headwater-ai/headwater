@@ -3,6 +3,7 @@ id: HW-OBL-0092
 title: "How a probe reaches a harvesting tier, and what a transcript costs to keep"
 status: current
 status_since: 2026-08-11
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Q8 leaves the route from a probe to a harvesting tier, the retention policy for transcripts, and who pays for a campaign."
 provenance:

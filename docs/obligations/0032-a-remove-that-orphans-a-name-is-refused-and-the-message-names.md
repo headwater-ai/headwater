@@ -3,6 +3,7 @@ id: HW-OBL-0032
 title: "A `remove` that orphans a name is refused, and the message names the wrong line"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Referential integrity finds every orphan a removal leaves, and the finding blames the declaration that reads it rather than the `remove`."
 provenance:

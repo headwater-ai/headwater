@@ -3,6 +3,7 @@ id: HW-OBL-0025
 title: "Where the probe kind ships is an unsettled clustering question"
 status: current
 status_since: 2026-08-11
+waiting_on: adopter
 last_verified: 2026-08-13
 summary: "Q8 declares a probe kind, and nothing says whether it belongs in the base package or in a bundle."
 provenance:

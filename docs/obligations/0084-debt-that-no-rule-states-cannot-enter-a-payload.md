@@ -3,6 +3,7 @@ id: HW-OBL-0084
 title: "Debt that no rule states cannot enter a payload"
 status: current
 status_since: 2026-08-13
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "A corpus with no summaries is unsearchable and has nothing to declare, because a payload holds findings alone."
 provenance:

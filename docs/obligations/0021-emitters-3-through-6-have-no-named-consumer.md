@@ -3,6 +3,7 @@ id: HW-OBL-0021
 title: "Emitters 3 through 6 have no named consumer"
 status: current
 status_since: 2026-08-11
+waiting_on: adopter
 last_verified: 2026-08-13
 summary: "Q13 stages six emitters, and the last four wait on a consumer that nobody has named."
 provenance:

@@ -3,6 +3,7 @@ id: HW-OBL-0085
 title: "`headwater init` cannot reach a package that is not already vendored"
 status: current
 status_since: 2026-08-13
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Nothing in this engine fetches anything, so the first verb a new adopter runs cannot complete on a fresh repository."
 provenance:

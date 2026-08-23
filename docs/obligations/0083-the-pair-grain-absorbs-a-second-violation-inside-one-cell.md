@@ -3,6 +3,7 @@ id: HW-OBL-0083
 title: "The pair grain absorbs a second violation inside one cell"
 status: current
 status_since: 2026-08-13
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "A `(document, rule)` cell holds every finding of that rule on that document, so a second violation is silent."
 provenance:

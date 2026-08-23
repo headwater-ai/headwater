@@ -57,6 +57,24 @@ A tradition whose whole point is a readable log has to answer this, so `facets.t
 
 **The facet reaches this entry's kinds and the base `decision`, and it reaches nothing else.** The gap that #123 measured is on the specification shelf, and the design-spec kinds already declare `facets.require` as a list. An `add` cannot reach into a list that exists, and a bundle holds no `override`. So the entry that met the defect cannot fix it where it was found. The general remedy is a `name` role in the base facet registry, which is a meta-schema change, and the finding below carries it.
 
+### The `waiting_on` facet, and why it is a state rather than a property
+
+A record on this shelf states what the corpus owes and what would discharge it. It never states what it is waiting on right now, and that is the one question a reader of the whole shelf asks. [HW-DR-0030](../../decisions/0030-q30-whether-what-an-obligation-waits-on-is-a-state-or-a-property-and-how-many-values-it-takes.md) settles the shape and this paragraph states why the declaration is here.
+
+**It is not a value of `status`.** `status` answers whether a reader may rely on the document. A record that waits on a ruling is fully `current`, because it states what holds now. The blocker belongs to the subject of the record and not to its authority, and one facet cannot hold two orthogonal things.
+
+**It is a present-tense state and not a property fixed at filing.** Over the 129 records of the repository that wrote this entry, 38 of the 39 open records that wait on a ruling are followed by a build. One is followed by nothing and none by a measurement. So a property that had to name the act that discharges a record would be wrong about 38 of them. The value names the act that comes next, and the person who writes the ruling down is the person who moves it.
+
+**The set holds four values and no residual.** A residual value means none of the others, so it changes on a record that nobody edited on the day a new class arrives. [Spec 13](../../spec/13-open-obligations.md#a-human-maintains-this-list-by-hand) refuses an editorial facet over this shelf on exactly that ground, and the refusal holds. Each of these four names an act positively. Two of them hold populations that a two-valued set has no cell for: 22 records wait on an outside corpus and 8 wait on a run of an instrument that already ships.
+
+**A record that fits none of the four is a defective record.** Its Discharge section does not say what happens next. Two of the 129 met that test on the first reading, and the change that declared the facet wrote the next act into each of them. That is the set with no residual working as designed rather than a missing fifth value.
+
+**On a record at `status: discharged` the value reads as what discharged it.** A record leaves the queue by `status` and never by this facet. That a facet applies to one value of another facet has nowhere to be said, which is [HW-OBL-0123](../../obligations/0123-a-facet-that-applies-to-one-value-of-another-facet-has-nowhere-to-say-so.md), and this is a third instance of that record rather than a reason to invent a value.
+
+**The declaration is here because the engine put it here.** An overlay that reaches `add_to.kinds.obligation_record.facets.require` is refused: *does not commute with `add.kinds.obligation_record` in `docs/taxonomies/decision-record/bundle.yml`*. The same refusal meets `facets.optional`. That is [HW-OBL-0031](../../obligations/0031-list-extension-in-an-add-only-overlay.md) on a real change, and it means an adopter's overlay cannot extend this kind's facet contract either. So the four values answer to any corpus that keeps obligation records, and not to one repository.
+
+**A required facet with a closed value set and no role makes the scaffolder stop.** `headwater new obligation_record` refuses to write a record without a value and names the four. Every record filed after this declaration states what it waits on, or it is not written.
+
 ## The lifecycle ladder maps, and two of its rungs do not
 
 The tradition's ladder is the reason this entry was chosen second. Proposed, then accepted, then superseded or deprecated, is what an ADR log is for. The base declares five states in `vocabularies.lifecycle_state`, and the four that `regimes.lifecycle.standard` names are the same graph. The fifth is `discharged`, which the base names in `regimes.lifecycle.obligation` and which `kinds.decision` therefore cannot reach.

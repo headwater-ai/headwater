@@ -3,6 +3,7 @@ id: HW-OBL-0073
 title: "The prior version still owes the key edit that the clock has now made"
 status: current
 status_since: 2026-08-13
+waiting_on: build
 last_verified: 2026-08-13
 summary: "The cache key covers the injected clock, and nothing forces whoever adds the prior version to write the matching branch."
 provenance:

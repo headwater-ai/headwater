@@ -3,6 +3,7 @@ id: HW-OBL-0033
 title: "A required declaration that an overlay may supply cannot be required of a source"
 status: current
 status_since: 2026-08-12
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "The meta-schema has one notion of a required member, and two facet acceptance tests need a second."
 provenance:

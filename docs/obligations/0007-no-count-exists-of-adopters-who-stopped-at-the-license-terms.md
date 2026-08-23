@@ -3,6 +3,7 @@ id: HW-OBL-0007
 title: "No count exists of adopters who stopped at the license terms"
 status: current
 status_since: 2026-08-11
+waiting_on: adopter
 last_verified: 2026-08-13
 summary: "Q11 claims that permissive terms remove a step before a trial, and the count that would show it needs a public channel."
 provenance:

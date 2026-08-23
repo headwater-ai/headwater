@@ -3,6 +3,7 @@ id: HW-OBL-0030
 title: "The provenance block belongs to the engine, and nothing states its shape"
 status: current
 status_since: 2026-08-13
+waiting_on: build
 last_verified: 2026-08-14
 summary: "Spec 3 gives the provenance block to the engine and states no shape for it, so a read depends on a key that nothing validates."
 provenance:

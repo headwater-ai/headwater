@@ -3,6 +3,7 @@ id: HW-OBL-0096
 title: "Whether anything is ever promoted out of the asserted tier"
 status: current
 status_since: 2026-08-10
+waiting_on: measurement
 last_verified: 2026-08-13
 summary: "Q15 leaves open whether any asserted content is ever promoted, and this repository has no asserted content to watch."
 provenance:

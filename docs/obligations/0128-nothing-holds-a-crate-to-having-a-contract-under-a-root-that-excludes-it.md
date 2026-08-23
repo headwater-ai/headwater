@@ -2,6 +2,7 @@
 id: HW-OBL-0128
 status: draft
 status_since: 2026-08-16
+waiting_on: ruling
 summary: "Q29 keeps the engine outside the corpus root, so a contract may name a crate and nothing names a crate that has no contract. A participation expectation runs between documents, and an anchor target is no node with a kind."
 last_verified: 2026-08-17
 title: "Nothing holds a crate to having a contract under a root that excludes it"

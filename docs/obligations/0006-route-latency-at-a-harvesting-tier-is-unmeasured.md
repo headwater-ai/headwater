@@ -3,6 +3,7 @@ id: HW-OBL-0006
 title: "Route latency at a harvesting tier is unmeasured"
 status: current
 status_since: 2026-08-10
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Q9 claims that harvest keeps a solution-tier route query inside 100 ms, and no such tier exists."
 provenance:

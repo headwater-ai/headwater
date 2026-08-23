@@ -3,6 +3,7 @@ id: HW-OBL-0109
 title: "The capture-cost denominator is set by declaration and not by work"
 status: current
 status_since: 2026-08-14
+waiting_on: ruling
 last_verified: 2026-08-14
 summary: "Over the eight scaffoldable kinds the verb supplies 48 of 56 units, the one hand entry of each kind is the summary, and the body counts nowhere."
 provenance:

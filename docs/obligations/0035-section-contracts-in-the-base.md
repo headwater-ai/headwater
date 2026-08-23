@@ -3,6 +3,7 @@ id: HW-OBL-0035
 title: "Section contracts in the base"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-13
 summary: "The base `specification` kind requires two headings, which is a lexical commitment inside a package whose core is semantic."
 provenance:

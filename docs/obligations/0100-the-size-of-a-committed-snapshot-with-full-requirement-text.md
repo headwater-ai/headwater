@@ -3,6 +3,7 @@ id: HW-OBL-0100
 title: "The size of a committed snapshot with full requirement text"
 status: current
 status_since: 2026-08-11
+waiting_on: adopter
 last_verified: 2026-08-13
 summary: "Q19 pins an external system of record, and nobody has measured what a snapshot with full requirement text costs."
 provenance:

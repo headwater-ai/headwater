@@ -2,6 +2,7 @@
 id: HW-OBL-0115
 status: current
 status_since: 2026-08-14
+waiting_on: ruling
 summary: A consumer that vendors a package for the first time takes the publisher's identity on the channel that carried the digest, because nothing signs a release and no key reaches an adopter.
 last_verified: 2026-08-14
 title: "A pinned digest authenticates the pin and never the publisher"

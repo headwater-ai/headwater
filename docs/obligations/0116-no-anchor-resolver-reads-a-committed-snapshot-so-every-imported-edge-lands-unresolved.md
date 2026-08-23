@@ -2,6 +2,7 @@
 id: HW-OBL-0116
 status: discharged
 status_since: 2026-08-15
+waiting_on: build
 summary: "An import writes an edge onto an anchor kind, one resolver ships, and it reads the source tree, so the check layer reports every imported edge as unresolved."
 last_verified: 2026-08-14
 title: "No anchor resolver reads a committed snapshot, so every imported edge lands unresolved"

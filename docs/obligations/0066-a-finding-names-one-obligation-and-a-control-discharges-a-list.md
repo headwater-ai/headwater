@@ -3,6 +3,7 @@ id: HW-OBL-0066
 title: "A finding names one obligation, and a control discharges a list"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Several controls may name one rule, and nothing says which obligation the finding of such a rule names."
 provenance:

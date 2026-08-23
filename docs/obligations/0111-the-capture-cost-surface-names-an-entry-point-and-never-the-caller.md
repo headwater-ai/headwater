@@ -3,6 +3,7 @@ id: HW-OBL-0111
 title: "The capture-cost surface names an entry point and never the caller"
 status: current
 status_since: 2026-08-14
+waiting_on: measurement
 last_verified: 2026-08-14
 summary: "The store records which wire a run of the authoring verb arrived on, and an agent drove both wires on the day the term arrived."
 provenance:

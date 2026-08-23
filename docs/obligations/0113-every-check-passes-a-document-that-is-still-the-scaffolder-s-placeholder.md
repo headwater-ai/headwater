@@ -3,6 +3,7 @@ id: HW-OBL-0113
 title: "Every check passes a document that is still the scaffolder's placeholder"
 status: current
 status_since: 2026-08-14
+waiting_on: build
 last_verified: 2026-08-14
 summary: "A decision record whose three sections each read TODO raised no finding at all, and the count over the corpus did not move."
 provenance:

@@ -2,6 +2,7 @@
 id: HW-OBL-0120
 status: current
 status_since: 2026-08-14
+waiting_on: build
 summary: "A waiver mechanism now ships and reads a conformance rule, so the coverage account of `headwater check` is the one reader of the pair that does not exist."
 last_verified: 2026-08-14
 title: "No reader takes a waiver against a check finding, so one arm of the escape partition is empty"

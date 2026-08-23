@@ -3,6 +3,7 @@ id: HW-OBL-0099
 title: "Whether an adjudication is ever partial"
 status: current
 status_since: 2026-08-10
+waiting_on: adopter
 last_verified: 2026-08-13
 summary: "Q18 records an adjudication over a pair, and nothing says what happens when each document governs a different axis."
 provenance:

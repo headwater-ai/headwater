@@ -3,6 +3,7 @@ id: HW-OBL-0057
 title: "A retrofit cannot recover the two dates or the acceptance"
 status: current
 status_since: 2026-08-12
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "Three retrofits have now run, and each one recovered a date only where somebody had recorded one."
 provenance:

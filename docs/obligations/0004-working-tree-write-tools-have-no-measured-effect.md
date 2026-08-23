@@ -3,6 +3,7 @@ id: HW-OBL-0004
 title: "Working-tree write tools have no measured effect on the assisted fraction"
 status: current
 status_since: 2026-08-10
+waiting_on: measurement
 last_verified: 2026-08-14
 summary: "Q7 claims that write tools raise the assisted fraction, and the treatment has never been applied."
 provenance:

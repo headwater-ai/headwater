@@ -3,6 +3,7 @@ id: HW-OBL-0105
 title: "Nothing plays the hook role that two relations name as their author"
 status: current
 status_since: 2026-08-13
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "`governs` and `traces_to` declare `created_by: hook`, no verb of this engine writes either one, and every such edge in this corpus is hand entry."
 provenance:

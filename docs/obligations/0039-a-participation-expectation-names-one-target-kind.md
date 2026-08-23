@@ -3,6 +3,7 @@ id: HW-OBL-0039
 title: "A participation expectation names one target kind"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-13
 summary: "The declaration carries one `to_kind`, so a corpus that expects a citation from any of several register kinds cannot state it."
 provenance:

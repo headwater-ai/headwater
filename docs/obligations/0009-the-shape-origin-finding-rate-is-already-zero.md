@@ -3,6 +3,7 @@ id: HW-OBL-0009
 title: "The Shape-origin finding rate is already zero, so the intervention has nowhere to act"
 status: current
 status_since: 2026-08-10
+waiting_on: adopter
 last_verified: 2026-08-13
 summary: "Q13 claims that emitted JSON Schema lowers the rate of invalid front matter, and the rate this corpus reports is zero."
 provenance:

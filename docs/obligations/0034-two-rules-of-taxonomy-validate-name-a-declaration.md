@@ -3,6 +3,7 @@ id: HW-OBL-0034
 title: "Two rules of `taxonomy validate` name a declaration or an artifact that does not exist"
 status: current
 status_since: 2026-08-12
+waiting_on: build
 last_verified: 2026-08-13
 summary: "Context safety wants a size budget that no declaration carries, and mapping integrity wants a taxonomy that nothing fetches."
 provenance:

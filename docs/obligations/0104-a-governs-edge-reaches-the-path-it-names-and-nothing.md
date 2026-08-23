@@ -3,6 +3,7 @@ id: HW-OBL-0104
 title: "A governs edge reaches the path it names and nothing under it"
 status: current
 status_since: 2026-08-13
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "Impact detection compares the edited path against the anchor by equality, so an edge onto a directory answers for no file inside it."
 provenance:

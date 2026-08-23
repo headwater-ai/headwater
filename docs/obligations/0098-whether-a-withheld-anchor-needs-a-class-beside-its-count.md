@@ -3,6 +3,7 @@ id: HW-OBL-0098
 title: "Whether a withheld anchor needs a class beside its count"
 status: current
 status_since: 2026-08-11
+waiting_on: adopter
 last_verified: 2026-08-13
 summary: "Q17 counts a withheld anchor, and nothing says whether the count needs a class beside it."
 provenance:

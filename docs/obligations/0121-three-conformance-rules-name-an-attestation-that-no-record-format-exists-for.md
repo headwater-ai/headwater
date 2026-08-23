@@ -2,6 +2,7 @@
 id: HW-OBL-0121
 status: current
 status_since: 2026-08-14
+waiting_on: build
 summary: "Three of the seven conformance rules can never be met, because the attestation each one names has no record format, and four rungs of the ladder wait behind them."
 last_verified: 2026-08-14
 title: "Three conformance rules name an attestation that no record format exists for"

@@ -3,6 +3,7 @@ id: HW-OBL-0089
 title: "A profile names its rules and never states them"
 status: current
 status_since: 2026-08-13
+waiting_on: ruling
 last_verified: 2026-08-15
 summary: "`ste_house` names a controlled language and a profile, and four of its rules are constants in a Rust file."
 provenance:

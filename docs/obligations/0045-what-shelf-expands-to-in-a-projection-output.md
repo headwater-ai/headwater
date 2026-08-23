@@ -3,6 +3,7 @@ id: HW-OBL-0045
 title: "What `{shelf}` expands to in a projection output"
 status: current
 status_since: 2026-08-13
+waiting_on: build
 last_verified: 2026-08-13
 summary: "The base writes `output: \"{shelf}/README.md\"`, and no document states what the placeholder holds."
 provenance:

@@ -3,6 +3,7 @@ id: HW-OBL-0097
 title: "Whether the four modes of Diátaxis are the kind set for a documentation-site bundle"
 status: current
 status_since: 2026-08-11
+waiting_on: adopter
 last_verified: 2026-08-13
 summary: "Q16 leaves the kind set of a documentation-site bundle open, and it is a clustering question that only an adopter settles."
 provenance:

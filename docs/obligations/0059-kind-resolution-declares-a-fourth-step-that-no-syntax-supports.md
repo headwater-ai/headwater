@@ -3,6 +3,7 @@ id: HW-OBL-0059
 title: "Kind resolution declares a fourth step that no syntax supports"
 status: current
 status_since: 2026-08-12
+waiting_on: ruling
 last_verified: 2026-08-13
 summary: "The fourth step of kind resolution applies a path-pattern refinement, and nothing gives that declaration a form."
 provenance:
