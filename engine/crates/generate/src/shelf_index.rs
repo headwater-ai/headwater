@@ -25,12 +25,51 @@
 //! shelf path admits, and [spec 13](../../../../docs/spec/13-open-obligations.md)
 //! carries both.
 
+use crate::profile::Admission;
 use crate::{pointers, shelf_of, Declaration, Kind, Output, Plan, Unwritten};
 use headwater_census::census::Census;
-use headwater_query::{Pointer, Surface};
+use headwater_query::{Document, Pointer, Surface};
 
 /// The placeholder a shelf index's output path may carry.
 const SHELF: &str = "{shelf}";
+
+/// The documents of a shelf that this declaration's filter admits.
+///
+/// `projections[].filter` is declared in the meta-schema for every projection
+/// kind, and it reached one caller: the graph export. A shelf projection took
+/// every document on the shelf and never asked, so a declared filter validated,
+/// resolved, generated and was discarded at exit 0. Both shelf emitters call
+/// this, and an empty filter admits everything, which is what a declaration
+/// that states none says.
+pub(crate) fn admitted<'a>(
+    declaration: &Declaration,
+    on_shelf: Vec<Document<'a>>,
+) -> Vec<Document<'a>> {
+    let filter = &declaration.membership.filter;
+    if filter.is_empty() {
+        return on_shelf;
+    }
+    on_shelf
+        .into_iter()
+        .filter(|document| {
+            filter.admits(&declaration.membership.name, document.facets) == Admission::Carried
+        })
+        .collect()
+}
+
+/// What a declaration whose filter admits nothing says, which is not what an
+/// empty shelf says.
+///
+/// An index of an empty shelf asserts that a shelf is there. A filter that
+/// names a value no document of the shelf states is a declaration that produced
+/// nothing, and a reader acts on the difference.
+pub(crate) fn filtered_out(declaration: &Declaration, shelf: &str) -> String {
+    format!(
+        "the shelf `{shelf}` holds documents and the `{}` filter admits none of them, so this \
+         declaration writes nothing",
+        declaration.membership.name
+    )
+}
 
 pub(crate) fn emit(
     surface: &Surface<'_>,
@@ -107,6 +146,16 @@ pub(crate) fn emit(
                     "the shelf `{name}` holds no document, and an index of nothing asserts that \
                      a shelf is there"
                 ),
+            });
+            continue;
+        }
+
+        let on_shelf = admitted(declaration, on_shelf);
+        if on_shelf.is_empty() {
+            plan.unwritten.push(Unwritten {
+                at: path,
+                kind: Kind::ShelfIndex,
+                reason: filtered_out(declaration, &name),
             });
             continue;
         }
