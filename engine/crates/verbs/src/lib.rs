@@ -7,7 +7,7 @@
 //! measurement. The `match verb.as_slice()` arms of the binary were the truth.
 //! The message a caller reads on an unknown verb listed fifteen names where the
 //! arms carried seventeen, and it omitted `probe` and `query`. The `USAGE`
-//! synopsis that `--help` prints omitted `query` and `taxonomy migrate`. Spec 6
+//! synopsis that `--help` printed omitted `query` and `taxonomy migrate`. Spec 6
 //! kept a fourth copy as the CLI grammar.
 //!
 //! The one that costs the most is `query`. `headwater query "anything"` exits 1
@@ -18,15 +18,22 @@
 //!
 //! # What this crate changes, and the one property that matters
 //!
-//! [`VERBS`] is the dispatch table. The binary resolves the first word against
-//! it before it enters the arms, so **an arm this list does not carry never
-//! runs**. That inverts the old direction: the list was downstream of the arms
-//! and drifted from them, and now the arms are downstream of the list.
+//! [`VERBS`] is the surface this binary answers to, and it is the copy every
+//! other reader takes. `headwater generate` writes the verb index out of it,
+//! and every message that enumerates what a caller may type next is written out
+//! of it. Nothing in the binary looks a first word up here to decide a verb:
+//! `engine/crates/cli/src/lib.rs` declares the parse and `clap` builds a command
+//! tree from that declaration, so the tree is what dispatches.
 //!
-//! `engine/crates/cli/tests/verbs.rs` closes the other direction. It reads the
-//! arms out of `main.rs` and holds them against this list, so a name here with
-//! no arm fails the suite. Neither half is a rule of the check layer, and
-//! neither one had to be: the surface of a binary is not corpus content
+//! `engine/crates/cli/tests/verbs.rs` is what holds the two together, in **both
+//! directions**. It walks that command tree to its leaves and compares them with
+//! this list: a name here that the parser does not answer to fails, and a
+//! command line the parser answers to that is not here fails, and each failure
+//! names the command line. A third direction needs no case at all, because
+//! `dispatch` in `main.rs` matches the parser's enum exhaustively — a verb in
+//! the parser with no arm behind it does not compile. Neither half is a rule of
+//! the check layer, and neither one had to be: the surface of a binary is not
+//! corpus content
 //! ([Q29](../../../../docs/decisions/0029-q29-whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach.md)).
 //!
 //! # Why it is a crate of its own and not a module of the binary

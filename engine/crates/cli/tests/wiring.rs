@@ -397,19 +397,19 @@ fn the_version_flag_prints_the_engine_constant_outside_a_corpus() {
 /// A command line this binary cannot parse is refused in a few lines, and the
 /// grammar is one command away rather than under the sentence.
 ///
-/// Two invocations, because the two arms reach `fail` from different places: an
-/// unknown flag is refused inside the argument loop, before any verb is
-/// decided, and an unknown first word is refused after that loop against
-/// [`headwater_verbs::parse`]. A case over one of them says nothing about the
-/// other.
+/// Two invocations, because the two reach `fail` from different places: an
+/// unknown flag is refused by the parse of the verb that did not declare it,
+/// and an unknown first word is refused by the external-subcommand form that
+/// `headwater_cli::Verb` declares. A case over one of them says nothing about
+/// the other.
 ///
 /// # What each assertion holds, and why none of them is a byte count
 ///
-/// The marker is `--root <path>`, a line of the usage body that no refusal
+/// The marker is `--root <path>`, a line of the help body that no refusal
 /// message contains. Its **absence** is what says the grammar did not print.
 /// The obvious alternative — pinning the length of standard error — passes for
 /// the wrong reason the moment anybody rewords a message, and fails for the
-/// wrong reason the moment anybody edits `USAGE`, which is a fixture nobody
+/// wrong reason the moment anybody edits the help, which is a fixture nobody
 /// reads. #306 asked for the marker for that reason.
 ///
 /// Absence alone is satisfied by a binary that prints nothing at all, so three
