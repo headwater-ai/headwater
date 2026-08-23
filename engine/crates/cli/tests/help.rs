@@ -62,7 +62,7 @@ fn ran(label: &str, arguments: &[&str]) -> Ran {
 ///
 /// `clap` does no wrapping in this build — `StyledStr::wrap` is compiled out
 /// without the `wrap_help` feature, which this workspace does not take — so
-/// help text is one line however long it is today. #321 clause 13 changes that,
+/// help text is one line however long it is today. #321 clause 12 changes that,
 /// and a case that compared raw bytes would go red on the piece that does it
 /// for no reason a reader would recognize.
 fn flat(text: &str) -> String {

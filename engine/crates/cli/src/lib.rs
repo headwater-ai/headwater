@@ -311,10 +311,12 @@ pub enum Verb {
             long,
             value_name = "facet=value",
             value_parser = a_pair,
-            help = "a value for a facet this kind requires, as `<facet>=<value>`. Repeatable. It \
-                    is refused for a facet the kind does not require, for a facet whose value a \
-                    declaration already decides, and for a value outside a closed set — so a \
-                    value that would have been dropped in silence is a refusal instead"
+            help = "a value for a facet this kind requires, as `<facet>=<value>`. Repeatable. A \
+                    facet the kind does not require is refused, a facet in an engine role is \
+                    refused because the role decides the value, and a value outside a closed set \
+                    is refused with the set printed. The discriminator of a heterogeneous shelf \
+                    is the exception: the shelf decides it, and a value stated for it is \
+                    overwritten rather than refused"
         )]
         facet: Vec<(String, String)>,
         #[arg(
@@ -513,33 +515,46 @@ pub enum ProbeWord {
         #[arg(
             long,
             value_name = "regression|campaign",
-            help = "which ceiling of `.headwater/probe.yml` to project the sessions against. \
-                    `regression` by default"
+            help = "which tier of `.headwater/probe.yml` to plan against. A tier declares the \
+                    ceiling, the session cost, the repetitions and the arms, and the plan is \
+                    projected against all four. `regression` by default"
         )]
         tier: Option<String>,
         #[arg(
             long,
             value_name = "present|absent",
-            help = "narrow the selection to one arm of the comparison. Both arms by default"
+            help = "narrow the selection to one arm the tier declares. Every arm the tier \
+                    declares by default, which is one for `regression` and two for `campaign`. \
+                    An arm the tier does not declare narrows nothing: the plan runs the tier's \
+                    own arms and prints them under `arms:`"
         )]
         arm: Option<String>,
         #[arg(
             long,
             value_name = "name",
             help = "narrow the selection to one probe category, by the name this engine declares \
-                    for it. Every category by default, and a name outside the closed set is \
-                    refused with the set printed"
+                    for it. Every category by default, a name outside the closed set is refused \
+                    with the set printed, and a category no probe of this corpus carries is \
+                    refused rather than planned as a run of nothing"
         )]
         category: Option<String>,
         // Zero is the default and it is a value like any other. The seed is
         // the caller's, so a run that states none states zero, and a run that
         // repeats a seed repeats a selection.
+        //
+        // It is a member of the run identity and not an input to the selection.
+        // `crates/probe/src/plan.rs` records it and prints it, and the selection
+        // is every declared probe, narrowed by category and sorted by
+        // identifier. Spec 5 asks for deterministic rotation and this engine
+        // implements none, so the help says that rather than implying a draw.
         #[arg(
             long,
             value_name = "n",
             default_value_t = 0,
-            help = "the seed the selection is drawn with. It is the caller's value: a run that \
-                    states none states zero, and a run that repeats a seed repeats a selection"
+            help = "the rotation seed, which is a member of the run identity spec 5 declares. It \
+                    is the caller's number: a run that states none states zero, and it is \
+                    recorded as stated. No selection is drawn from it — every declared probe is \
+                    selected — so it identifies a run rather than choosing one"
         )]
         seed: u64,
     },
