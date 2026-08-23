@@ -1149,8 +1149,20 @@ pub const BUNDLES: &str = "bundles";
 /// **The identity comes from the manifest and never from the record's header.**
 /// [`identity`] states why, and it runs before the target directory is named,
 /// because that name is what steers the removal below. It now also refuses a
-/// name that is not a name, by [`names_a_package`], which is what makes the
-/// target below always a directory of the package's own.
+/// name that is not a name, by [`names_a_package`], so the target below is
+/// always one segment under `packages/` rather than a path that reaches out of
+/// it.
+///
+/// **That says nothing about the segment being the package's alone, and it is
+/// not.** The `/` → `-` substitution is not injective: `acme/my-taxonomy` and
+/// `acme-my/taxonomy` are two names inside the grammar that flatten to one
+/// directory, `packages/acme-my-taxonomy`. Vendoring the second over the first
+/// takes the replace arm, because the first left a release record there, so it
+/// deletes a package the adopter holds and exits 0 — two honest publishers and
+/// no adversary. Measured, with `find_version` for the first name returning
+/// `None` afterwards. That is
+/// [#320](https://github.com/headwater-ai/headwater/issues/320) and not
+/// something the grammar closes.
 ///
 /// **One refusal below became unreachable, and no issue is filed for it.** The
 /// maintained-package arm composes its message from `display(root, &target)`,

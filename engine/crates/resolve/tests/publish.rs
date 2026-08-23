@@ -594,6 +594,11 @@ fn a_package_named_dot_does_not_empty_the_adopters_packages_directory() {
     std::fs::write(packages.join("keepme.txt"), "the adopter's own file\n").expect("it writes");
     std::fs::copy(out.join(release::RECORD), packages.join(release::RECORD))
         .expect("the record copies");
+    assert!(
+        release::at(&packages).is_ok(),
+        "without a record in `packages/` the maintained-package guard answers instead, and \
+         nothing reaches the removal this case is about"
+    );
 
     let refused = package::vendor(&adopter, &out, &record.digest)
         .expect_err("a package name that is not a name is refused");
