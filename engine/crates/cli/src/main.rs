@@ -3683,7 +3683,10 @@ fn export(
     let Some(target) = format else {
         if generated_at.is_some() {
             return fail(
-                "--at states the time an artifact that leaves this repository was generated,                  and it is refused for a declared output. A committed export is held to                  regeneration by byte, so a clock reading inside one would fail the gate on a                  morning when nothing changed. Name a target with --format",
+                "--at states the time an artifact that leaves this repository was generated, \
+                 and it is refused for a declared output. A committed export is held to \
+                 regeneration by byte, so a clock reading inside one would fail the gate on a \
+                 morning when nothing changed. Name a target with --format",
             );
         }
         let plan = match headwater_generate::export_plan(&surface, &projections, profile.as_deref())
@@ -3715,7 +3718,9 @@ fn export(
     };
     if check_only {
         return fail(
-            "--check compares a committed artifact against what a run produces, and --format              writes to standard output where nothing is committed. Run `headwater export              --check` over the declared outputs instead",
+            "--check compares a committed artifact against what a run produces, and --format \
+             writes to standard output where nothing is committed. Run `headwater export \
+             --check` over the declared outputs instead",
         );
     }
 
@@ -3733,12 +3738,14 @@ fn export(
         [one] => *one,
         [] => {
             return fail(
-                "this taxonomy declares no projection, so it declares no export profile.                  Spec 6 makes a profile an entry under `projections`",
+                "this taxonomy declares no projection, so it declares no export profile. \
+                 Spec 6 makes a profile an entry under `projections`",
             )
         }
         several => {
             return fail(&format!(
-                "--format writes one artifact to standard output and this taxonomy declares {}                  profiles. Name one with --profile: {}",
+                "--format writes one artifact to standard output and this taxonomy declares {} \
+                 profiles. Name one with --profile: {}",
                 several.len(),
                 several
                     .iter()
@@ -3755,7 +3762,8 @@ fn export(
             eprint!("{}", headwater_generate::export::render(&emission.census));
             if emission.census.is_defective() {
                 eprintln!(
-                    "headwater: the projection census found an omission that no declared loss                      reason covers, which is a defect in this emitter rather than in the corpus"
+                    "headwater: the projection census found an omission that no declared loss \
+                     reason covers, which is a defect in this emitter rather than in the corpus"
                 );
                 return ExitCode::FAILURE;
             }
