@@ -22,8 +22,9 @@
 //! nothing held, and both went blind the moment either surface stopped being
 //! written by hand — which is what the parser migration did to them.
 //!
-//! What they are replaced by is the command tree `clap` builds from
-//! [`headwater_cli::Cli`], walked to its leaves. That is the parse itself
+//! What they are replaced by is the command tree
+//! [`headwater_cli::command`] hands back, walked to its leaves. That is the
+//! parse itself
 //! rather than a reading of the source that declares it, so a discrepancy this
 //! file reports is one a caller would meet.
 //!
@@ -35,8 +36,7 @@
 //! arm is a build failure rather than a finding. **The wrong state is
 //! unrepresentable**, which is why no case below looks for it.
 
-use clap::CommandFactory;
-use headwater_cli::Cli;
+use headwater_cli::command;
 use std::collections::BTreeSet;
 use std::path::Path;
 
@@ -49,8 +49,10 @@ use std::path::Path;
 /// `build()` is called first, because the tree `clap` hands back before it is
 /// built carries none of the commands `clap` adds on its own. A `help`
 /// subcommand is the one this binary would meet, and the parser disables it —
-/// with this call, re-enabling it without adding the name to
-/// [`headwater_verbs::VERBS`] fails here rather than passing unread.
+/// with this call, re-enabling it fails here rather than passing unread. The
+/// injected one is not the `headwater help` this binary carries: it brings a
+/// copy of the whole tree under itself, and `headwater_cli::Verb::Help` is one
+/// leaf with one positional.
 fn parsed_forms() -> BTreeSet<String> {
     fn walk(prefix: &str, command: &clap::Command, found: &mut BTreeSet<String>) {
         let mut leaf = true;
@@ -63,7 +65,7 @@ fn parsed_forms() -> BTreeSet<String> {
         }
     }
 
-    let mut command = Cli::command();
+    let mut command = command();
     command.build();
     let mut found = BTreeSet::new();
     walk(headwater_verbs::BINARY, &command, &mut found);
@@ -78,7 +80,7 @@ fn parsed_forms() -> BTreeSet<String> {
 /// nothing reads it.
 #[test]
 fn the_parser_and_the_table_call_this_binary_the_same_thing() {
-    assert_eq!(Cli::command().get_name(), headwater_verbs::BINARY);
+    assert_eq!(command().get_name(), headwater_verbs::BINARY);
 }
 
 /// The whole surface, both ways.
@@ -124,7 +126,7 @@ fn the_parser_answers_to_exactly_the_command_lines_the_table_carries() {
 /// direct successor of the case that read the second element of each match arm.
 #[test]
 fn the_second_words_of_each_verb_are_the_second_words_the_parser_answers_to() {
-    let mut command = Cli::command();
+    let mut command = command();
     command.build();
     for verb in headwater_verbs::VERBS {
         let found = command
@@ -135,7 +137,7 @@ fn the_second_words_of_each_verb_are_the_second_words_the_parser_answers_to() {
             .flat_map(|one| one.get_subcommands())
             .map(clap::Command::get_name)
             .collect();
-        let declared: BTreeSet<&str> = verb.words.iter().copied().collect();
+        let declared: BTreeSet<&str> = verb.words.iter().map(|word| word.name).collect();
         assert_eq!(
             declared, parsed,
             "`{}` declares different second words from the ones the parser answers to",

@@ -51,13 +51,12 @@
 //! under `cargo test`. What the cached run writes to standard error is the hit
 //! count, which belongs there because it is a fact about a disk.
 
-use clap::Parser;
 use headwater_adapter::{Format, Subject};
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::{Cache, Context, Date, Declared, Register, Shape};
-use headwater_cli::{Cli, ProbeWord, SweepWord, TaxonomyWord, Verb};
+use headwater_cli::{ProbeWord, SweepWord, TaxonomyWord, Verb};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
@@ -86,7 +85,7 @@ fn main() -> ExitCode {
     // turn `--help` into a failure, and printing to the wrong stream would
     // break the zero-bytes-on-standard-error guarantee that
     // `tests/wiring.rs` holds for both `--help` and `--version`.
-    let cli = match Cli::try_parse() {
+    let cli = match headwater_cli::parsed() {
         Ok(cli) => cli,
         Err(error) => match error.use_stderr() {
             true => return fail(&headwater_cli::headline(&error)),
@@ -280,6 +279,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
              is, so this engine implements none. See `docs/spec/13-open-obligations.md`. \
              `headwater route` and `headwater explain` are the reads that exist",
         ),
+        Verb::Help { verb } => print_help_for(&verb),
         Verb::Taxonomy { word } => match word {
             None => fail(&format!(
                 "`taxonomy` takes a second word: {}",
@@ -343,6 +343,69 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
 /// `taxonomy` says "yet" where these two do not, and the difference is old
 /// enough to be a promise nobody made. Both forms are preserved rather than
 /// unified here, because a message a caller reads is not this change's subject.
+/// `headwater help`, `headwater help <verb>` and `headwater help <verb> <word>`.
+///
+/// # Why this is a verb of this binary rather than the one `clap` injects
+///
+/// `clap` adds a `help` subcommand of its own during `Command::build()`, and it
+/// adds a copy of the whole command tree underneath it: `headwater help sweep
+/// plan`, `headwater probe help grade`, forty-four command lines in all. The
+/// dispatch table carries none of them, so
+/// `engine/crates/cli/tests/verbs.rs` would report every one — and the only way
+/// to keep the injected subcommand is to write an exclusion into that walk,
+/// which is the guard trading itself for a feature. One variant with one
+/// positional adds `headwater help` and nothing else, and the walk stays exact.
+///
+/// # It prints the same bytes the flag prints
+///
+/// `headwater help check`, `headwater check --help` and `headwater check -h`
+/// render one command of one tree, byte for byte, and
+/// `engine/crates/cli/tests/help.rs` asserts that rather than asserting each
+/// carries something. Two declarations are what make it hold: no `long_about`
+/// and no `long_help` exists anywhere in this parser, so the two spellings of
+/// the flag render one text, and this prints through `print_help` rather than
+/// `print_long_help` for the same reason — the long renderer puts a blank line
+/// between arguments and the flag does not. That is what clause 4 of
+/// [#321](https://github.com/headwater-ai/headwater/issues/321) asks for,
+/// stated as one route rather than three.
+fn print_help_for(words: &[String]) -> ExitCode {
+    let mut command = headwater_cli::command();
+    command.build();
+
+    // The refusal first, with shared borrows, so the descent below is known to
+    // land. Each failure names the word the caller got wrong and what may
+    // stand in that position, which is what every other refusal here does.
+    let mut cursor = &command;
+    for (at, word) in words.iter().enumerate() {
+        let Some(next) = cursor.find_subcommand(word.as_str()) else {
+            if at == 0 {
+                return fail(&format!(
+                    "`{word}` is not a verb this binary carries yet. It carries {}",
+                    headwater_verbs::listed()
+                ));
+            }
+            let verb = words[at - 1].as_str();
+            return match headwater_verbs::words_of(verb).is_empty() {
+                true => fail(&format!("`{verb}` takes no second word")),
+                false => no_such_second_word(verb, &words[at..]),
+            };
+        };
+        cursor = next;
+    }
+
+    let target = descend(&mut command, words).expect("the walk above found every word");
+    let _ = target.print_help();
+    ExitCode::SUCCESS
+}
+
+/// The command a sequence of words names, or `None` for a word that names none.
+fn descend<'a>(command: &'a mut clap::Command, words: &[String]) -> Option<&'a mut clap::Command> {
+    match words.split_first() {
+        None => Some(command),
+        Some((word, rest)) => descend(command.find_subcommand_mut(word.as_str())?, rest),
+    }
+}
+
 fn no_such_second_word(verb: &str, words: &[String]) -> ExitCode {
     fail(&format!(
         "`{verb} {}` is not a verb this binary carries. It carries {}",

@@ -2,26 +2,56 @@
 
 # The command surface
 
-`headwater` dispatches 17 verbs. 2 of them have a contract on this shelf, and 15 have none.
+`headwater` dispatches 18 verbs. 2 of them have a contract on this shelf, and 16 have none.
 
 A verb with no contract carries a mark in the last column, and that cell is what this file is for. An index of the contracts that exist would say nothing about the verbs nobody has described yet.
 
-| Verb | What a caller types | Contract |
-|---|---|---|
-| `check` | `headwater check` | [headwater check](headwater-check.md) |
-| `gate` | `headwater gate` | **no contract** |
-| `route` | `headwater route` | **no contract** |
-| `explain` | `headwater explain` | **no contract** |
-| `mcp` | `headwater mcp` | **no contract** |
-| `new` | `headwater new` | **no contract** |
-| `capture` | `headwater capture` | **no contract** |
-| `sweep` | `headwater sweep plan`, `headwater sweep report` | [headwater sweep](headwater-sweep.md) |
-| `probe` | `headwater probe plan`, `headwater probe record`, `headwater probe grade`, `headwater probe stale` | **no contract** |
-| `generate` | `headwater generate` | **no contract** |
-| `import` | `headwater import` | **no contract** |
-| `export` | `headwater export` | **no contract** |
-| `init` | `headwater init` | **no contract** |
-| `infer` | `headwater infer` | **no contract** |
-| `conformance` | `headwater conformance` | **no contract** |
-| `query` | `headwater query` | **no contract** |
-| `taxonomy` | `headwater taxonomy validate`, `headwater taxonomy resolve`, `headwater taxonomy audit`, `headwater taxonomy publish`, `headwater taxonomy vendor`, `headwater taxonomy diff`, `headwater taxonomy migrate` | **no contract** |
+The headings and the second column are the groups and the summaries that `headwater --help` prints, read off the same table. The long description of a verb is what `headwater help <verb>` prints, and it is not repeated here.
+
+## Checking a corpus
+
+| Verb | What it does | What a caller types | Contract |
+|---|---|---|---|
+| `check` | run the pipeline over the corpus, against the committed lock | `headwater check` | [headwater check](headwater-check.md) |
+| `gate` | hold an earlier run's read set against the tree in front of it | `headwater gate` | **no contract** |
+| `conformance` | evaluate this repository against a package's conformance rules | `headwater conformance` | **no contract** |
+
+## Reading a corpus
+
+| Verb | What it does | What a caller types | Contract |
+|---|---|---|---|
+| `route` | resolve a task description to the documents that govern it | `headwater route` | **no contract** |
+| `explain` | why a document is the kind it is, and what it serves | `headwater explain` | **no contract** |
+| `query` | listed in spec 6, and no document says what an expression is | `headwater query` | **no contract** |
+| `capture` | read the capture-cost store back | `headwater capture` | **no contract** |
+| `mcp` | serve the reads and one run of the checks to an agent | `headwater mcp` | **no contract** |
+
+## Writing a corpus
+
+| Verb | What it does | What a caller types | Contract |
+|---|---|---|---|
+| `new` | scaffold a document of a kind | `headwater new` | **no contract** |
+| `infer` | report the debt this taxonomy raises over this corpus | `headwater infer` | **no contract** |
+| `generate` | write every projection the taxonomy declares | `headwater generate` | **no contract** |
+| `import` | write the edges a committed snapshot declares | `headwater import` | **no contract** |
+| `export` | emit a declared export profile through an emitter target | `headwater export` | **no contract** |
+
+## Sampling, which never gates
+
+| Verb | What it does | What a caller types | Contract |
+|---|---|---|---|
+| `sweep` | the two halves of the coherence sweep | `headwater sweep plan`, `headwater sweep report` | [headwater sweep](headwater-sweep.md) |
+| `probe` | the four parts of the probe harness | `headwater probe plan`, `headwater probe record`, `headwater probe grade`, `headwater probe stale` | **no contract** |
+
+## The taxonomy
+
+| Verb | What it does | What a caller types | Contract |
+|---|---|---|---|
+| `init` | scaffold the consumer declaration and the overlay | `headwater init` | **no contract** |
+| `taxonomy` | read, write, publish and compare a taxonomy package | `headwater taxonomy validate`, `headwater taxonomy resolve`, `headwater taxonomy audit`, `headwater taxonomy publish`, `headwater taxonomy vendor`, `headwater taxonomy diff`, `headwater taxonomy migrate` | **no contract** |
+
+## Getting help
+
+| Verb | What it does | What a caller types | Contract |
+|---|---|---|---|
+| `help` | the long description of one verb, or this screen | `headwater help` | **no contract** |

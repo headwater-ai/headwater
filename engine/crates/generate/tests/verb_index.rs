@@ -22,7 +22,7 @@ use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
 use headwater_query::Surface;
-use headwater_verbs::Verb;
+use headwater_verbs::{Verb, Word};
 use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};
 
@@ -46,22 +46,49 @@ fn repository_root() -> PathBuf {
 /// Synthetic on purpose. A test that read the real table would move every time
 /// a verb was added, which is a property of the *committed* index rather than
 /// of the emitter, and the last test here is where that property belongs.
+///
+/// Two groups, because the emitter writes one section per group and a table of
+/// one group would leave that half of it unread. The summaries are the words a
+/// row carries in its second column.
 fn four() -> Vec<Verb> {
     vec![
         Verb {
             name: "check",
+            group: "Reading",
+            summary: "what the first screen says about `check`",
+            description: "The long form of `check`, which the index does not carry.",
             words: &[],
         },
         Verb {
             name: "gate",
+            group: "Reading",
+            summary: "what the first screen says about `gate`",
+            description: "The long form of `gate`.",
             words: &[],
         },
         Verb {
             name: "sweep",
-            words: &["plan", "report"],
+            group: "Sampling",
+            summary: "what the first screen says about `sweep`",
+            description: "The long form of `sweep`.",
+            words: &[
+                Word {
+                    name: "plan",
+                    summary: "the plan",
+                    description: "The long form of `sweep plan`.",
+                },
+                Word {
+                    name: "report",
+                    summary: "the report",
+                    description: "The long form of `sweep report`.",
+                },
+            ],
         },
         Verb {
             name: "route",
+            group: "Sampling",
+            summary: "what the first screen says about `route`",
+            description: "The long form of `route`.",
             words: &[],
         },
     ]
@@ -222,6 +249,18 @@ fn every_verb_gets_a_row_and_the_undescribed_ones_are_marked() {
     // The forms are the command lines a caller may type, and a verb with second
     // words names no bare one.
     assert!(rows[2].contains("`headwater sweep plan`, `headwater sweep report`"));
+    // The second column is the summary the table carries, and the heading over
+    // the row is its group. Both come off `Verb` and neither is written here.
+    assert!(
+        rows[0].contains("what the first screen says about `check`"),
+        "the row carries the summary the dispatch table holds\n{bytes}"
+    );
+    for group in ["## Reading", "## Sampling"] {
+        assert!(
+            bytes.contains(group),
+            "the index carries one section per group, and `{group}` is missing\n{bytes}"
+        );
+    }
 }
 
 /// The test that decides whether this artifact is derived.
@@ -243,6 +282,9 @@ fn a_verb_added_to_the_dispatch_table_makes_the_committed_index_stale() {
     let mut wider = four();
     wider.push(Verb {
         name: "explain",
+        group: "Reading",
+        summary: "what the first screen says about `explain`",
+        description: "The long form of `explain`.",
         words: &[],
     });
     let (after, _built) = plan_over(&root, &wider);
