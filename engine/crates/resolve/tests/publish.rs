@@ -423,6 +423,233 @@ fn vendoring_over_a_maintained_package_is_refused() {
     package::vendor(&consumer_root, &out, &record.digest).expect("the second replaces it");
 }
 
+/// A publisher whose package directory is named `source` and whose manifest
+/// declares whatever name the caller hands it.
+///
+/// The directory is deliberately not named after the package. The four cases
+/// below publish names that cannot be directory names at all — `..`, `.`, a
+/// YAML null — so a helper that derived the directory from the name, the way
+/// [`publisher_of`] does, could not lay the publisher's own tree out. `find`
+/// matches the string in the manifest and never the directory that carries it,
+/// which is what makes one fixed directory enough.
+fn publisher_declaring(scratch: &Scratch, at: &str, name: &str) -> PathBuf {
+    scratch.write(
+        &format!("{at}/packages/source/package.yml"),
+        &format!("package: {name}\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n"),
+    );
+    scratch.write(
+        &format!("{at}/packages/source/taxonomy.yml"),
+        &TAXONOMY.replace("taxonomy: acme/fixture", &format!("taxonomy: {name}")),
+    );
+    scratch.path().join(at)
+}
+
+/// A package named `..` does not reach the adopter's own root.
+///
+/// **The adopter must not already hold a `packages/` directory, and the case
+/// asserts it rather than assuming it.** `Path::exists()` asks the operating
+/// system, which resolves a `..` only under a directory that is on disk, so
+/// `<root>/packages/..` does not exist on an adopter that has never vendored
+/// anything. That single fact decides which arm of `vendor` runs: with no
+/// `packages/` the target looks absent and the artifact scatters over the
+/// adopter's root, and with a `packages/` the maintained-package guard fires
+/// first and refuses for a reason that has nothing to do with the name. A
+/// setup that hands the adopter a `packages/` — the natural thing to write,
+/// and what every other case in this file does — passes with no fix in the
+/// tree at all.
+///
+/// **The digest is asserted unchanged before the refusal is**, for the reason
+/// [`a_record_that_renames_the_artifact_does_not_steer_the_vendor_target`]
+/// states: an artifact that no longer verifies would refuse for the pin and
+/// the case would stop measuring the name.
+///
+/// The assertion on `release.yml` is what breaks the chain. Left in place, that
+/// record is one of the two things a second vendor needs to take the deleting
+/// arm over the whole root.
+#[test]
+fn a_package_named_dot_dot_does_not_reach_the_adopters_own_root() {
+    let scratch = Scratch::new("name-parent");
+    let root = publisher_declaring(&scratch, "publisher", "..");
+    let out = scratch.path().join("artifact");
+    let record = package::publish(&root, "..", &out).expect("it publishes");
+    assert!(
+        release::verify(&out, &record.digest).is_ok(),
+        "the artifact does not verify against its own digest, so what follows measures the pin"
+    );
+
+    let adopter = scratch.path().join("adopter");
+    std::fs::create_dir_all(&adopter).expect("the adopter root is made");
+    std::fs::write(adopter.join("keepme.txt"), "the adopter's own file\n").expect("it writes");
+    assert!(
+        !adopter.join(package::PACKAGES).exists(),
+        "the adopter already holds `packages/`, so this measures the maintained-package guard"
+    );
+
+    let refused = package::vendor(&adopter, &out, &record.digest)
+        .expect_err("a package name that is not a name is refused");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(message.contains(package::MANIFEST), "{message}");
+    assert!(message.contains("package: .."), "{message}");
+
+    assert!(
+        adopter.join("keepme.txt").is_file(),
+        "the adopter lost a file"
+    );
+    assert!(
+        !adopter.join(release::RECORD).exists(),
+        "a release record at the adopter's root is half of what a second vendor needs to \
+         delete the whole of it"
+    );
+    assert!(
+        !adopter.join(package::PACKAGES).exists(),
+        "nothing was created, because the refusal runs before the target is named"
+    );
+}
+
+/// The same name, over an adopter that already holds both of the things a
+/// deleting vendor needs.
+///
+/// **The precondition is built by hand and never by running the case above.**
+/// A first vendor of this artifact used to create `packages/` and leave a
+/// `release.yml` at the adopter's root, which is exactly the pair that sends
+/// `remove_dir_all` at the root on the second run. The moment the guard lands
+/// that route closes, so an arm that seeded itself by vendoring once would go
+/// vacuous and green while measuring nothing at all.
+///
+/// The message assertion is what keeps it honest. `is_err()` alone passes here
+/// on the maintained-package guard, which refuses for a reason of its own and
+/// leaves the harm untouched on every other shape.
+#[test]
+fn a_package_named_dot_dot_does_not_reach_a_root_that_already_holds_packages() {
+    let scratch = Scratch::new("name-parent-seeded");
+    let root = publisher_declaring(&scratch, "publisher", "..");
+    let out = scratch.path().join("artifact");
+    let record = package::publish(&root, "..", &out).expect("it publishes");
+    assert!(
+        release::verify(&out, &record.digest).is_ok(),
+        "the artifact does not verify against its own digest, so what follows measures the pin"
+    );
+
+    let adopter = scratch.path().join("adopter");
+    std::fs::create_dir_all(adopter.join(package::PACKAGES)).expect("the directory is made");
+    std::fs::create_dir_all(adopter.join("docs")).expect("the directory is made");
+    std::fs::write(adopter.join("keepme.txt"), "the adopter's own file\n").expect("it writes");
+    std::fs::write(adopter.join("docs/spec.md"), "# the adopter's corpus\n").expect("it writes");
+    std::fs::copy(out.join(release::RECORD), adopter.join(release::RECORD))
+        .expect("the record copies");
+    assert!(
+        adopter.join(package::PACKAGES).is_dir(),
+        "without `packages/` on disk the operating system cannot resolve the `..` under it"
+    );
+    assert!(
+        release::at(&adopter).is_ok(),
+        "without a record at the root the maintained-package guard answers instead"
+    );
+
+    let refused = package::vendor(&adopter, &out, &record.digest)
+        .expect_err("a package name that is not a name is refused");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(message.contains("package: .."), "{message}");
+    assert!(
+        !message.contains("somebody maintains"),
+        "the maintained-package guard answered, so the precondition is wrong: {message}"
+    );
+
+    assert!(
+        adopter.join("keepme.txt").is_file(),
+        "the adopter lost a file"
+    );
+    assert!(
+        adopter.join("docs/spec.md").is_file(),
+        "the adopter lost its corpus"
+    );
+}
+
+/// A package named `.` does not empty the adopter's `packages/` directory.
+///
+/// **The result type says nothing about this shape and the surviving bytes say
+/// everything.** `packages/.` is `packages/`, and `remove_dir_all` on a path
+/// ending in `.` returns `EINVAL` *after* it has emptied the directory. So
+/// before the guard this call returned `Err` and destroyed the adopter's whole
+/// `packages/` tree in the same breath, and a case that asserted only "it
+/// refused" scored that as a pass.
+///
+/// It is also the shape a path-containment guard cannot see: `packages/.` is
+/// strictly under `packages/` by any reading of the paths, so only a rule about
+/// the name refuses it.
+#[test]
+fn a_package_named_dot_does_not_empty_the_adopters_packages_directory() {
+    let scratch = Scratch::new("name-dot");
+    let root = publisher_declaring(&scratch, "publisher", ".");
+    let out = scratch.path().join("artifact");
+    let record = package::publish(&root, ".", &out).expect("it publishes");
+    assert!(
+        release::verify(&out, &record.digest).is_ok(),
+        "the artifact does not verify against its own digest, so what follows measures the pin"
+    );
+
+    let adopter = scratch.path().join("adopter");
+    let packages = adopter.join(package::PACKAGES);
+    std::fs::create_dir_all(&packages).expect("the directory is made");
+    std::fs::write(packages.join("keepme.txt"), "the adopter's own file\n").expect("it writes");
+    std::fs::copy(out.join(release::RECORD), packages.join(release::RECORD))
+        .expect("the record copies");
+    assert!(
+        release::at(&packages).is_ok(),
+        "without a record in `packages/` the maintained-package guard answers instead, and \
+         nothing reaches the removal this case is about"
+    );
+
+    let refused = package::vendor(&adopter, &out, &record.digest)
+        .expect_err("a package name that is not a name is refused");
+
+    assert!(
+        packages.join("keepme.txt").is_file(),
+        "`packages/` was emptied behind the refusal, which is what the result type hides"
+    );
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(message.contains(package::MANIFEST), "{message}");
+    assert!(message.contains("package: ."), "{message}");
+}
+
+/// A manifest whose `package:` is a YAML null does not vendor into
+/// `packages/~`.
+///
+/// This engine hands back a scalar's source text and the source text of a null
+/// is the literal `~`, so `is_empty()` is false and the value travels as a
+/// one-character name. The grammar refuses the result. It teaches the reader
+/// nothing about absent versus null, which is
+/// [#298](https://github.com/headwater-ai/headwater/issues/298) and stays open.
+#[test]
+fn a_manifest_whose_package_is_a_yaml_null_does_not_vendor_into_a_directory() {
+    let scratch = Scratch::new("name-null");
+    scratch.write(
+        "publisher/packages/source/package.yml",
+        "package:\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
+    );
+    scratch.write(
+        "publisher/packages/source/taxonomy.yml",
+        &TAXONOMY.replace("taxonomy: acme/fixture", "taxonomy:"),
+    );
+    let root = scratch.path().join("publisher");
+    let out = scratch.path().join("artifact");
+    let record = package::publish(&root, "~", &out).expect("it publishes");
+    assert!(
+        release::verify(&out, &record.digest).is_ok(),
+        "the artifact does not verify against its own digest, so what follows measures the pin"
+    );
+
+    let adopter = scratch.path().join("adopter");
+    let refused = package::vendor(&adopter, &out, &record.digest)
+        .expect_err("a package name that is not a name is refused");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(message.contains("package: ~"), "{message}");
+    assert!(
+        !adopter.join(package::PACKAGES).join("~").exists(),
+        "the artifact landed in a directory called `~`"
+    );
+}
+
 /// A package that declares an engine range this engine is outside of is refused
 /// before a source is read.
 #[test]

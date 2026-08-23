@@ -1148,7 +1148,34 @@ pub const BUNDLES: &str = "bundles";
 ///
 /// **The identity comes from the manifest and never from the record's header.**
 /// [`identity`] states why, and it runs before the target directory is named,
-/// because that name is what steers the removal below.
+/// because that name is what steers the removal below. It now also refuses a
+/// name that is not a name, by [`names_a_package`], so the target below is
+/// always one segment under `packages/` rather than a path that reaches out of
+/// it.
+///
+/// **That says nothing about the segment being the package's alone, and it is
+/// not.** The `/` → `-` substitution is not injective: `acme/my-taxonomy` and
+/// `acme-my/taxonomy` are two names inside the grammar that flatten to one
+/// directory, `packages/acme-my-taxonomy`. Vendoring the second over the first
+/// takes the replace arm, because the first left a release record there, so it
+/// deletes a package the adopter holds and exits 0 — two honest publishers and
+/// no adversary. Measured, with `find_version` for the first name returning
+/// `None` afterwards. That is
+/// [#320](https://github.com/headwater-ai/headwater/issues/320) and not
+/// something the grammar closes.
+///
+/// **One refusal below became unreachable, and no issue is filed for it.** The
+/// maintained-package arm composes its message from `display(root, &target)`,
+/// and [`display`] flattens a `..` lexically, so on a package named `..` the
+/// target `<root>/packages/..` rendered as the empty string: an adopter was
+/// told that "a directory is there and it carries no release record, so it is a
+/// package somebody maintains" about their whole repository, with nothing
+/// named. The predicate was right at its own level and the sentence was false
+/// one level of scope out. `..` is the only name whose `display` flattens to
+/// nothing, and [`identity`] refuses it before this arm can run, so the route
+/// is closed rather than the message repaired. Every message [`identity`] adds
+/// is composed from `beside` and a literal key, and never from a derived path,
+/// which is why none of them can go false the same way.
 pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<ResolveError>> {
     let name = display(root, fetched);
     let record =
@@ -1207,17 +1234,22 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
 /// declaration was already in the artifact — this reads it instead of the
 /// unauthenticated one.
 ///
-/// **What the digest buys the name, and what it does not.** It says a publisher
-/// wrote this name and that nobody has changed it since the pin. It says nothing
-/// about the name being usable as a directory name, and nothing here checks
-/// that. `/` is turned into `-`, so a name with a slash cannot leave
-/// `packages/`, and `..` has no slash and survives — the target of a package
-/// named `..` is the adopter's own root. That is unchanged from before this and
-/// narrowed by it, because the name now has to be in the pinned manifest rather
-/// than in the free header, and it is
-/// [#314](https://github.com/headwater-ai/headwater/issues/314) rather than
-/// something this closes. Read the commit title of this change as *the name is
-/// one a publisher wrote*, never as *the name is safe to join onto a path*.
+/// **What the digest buys the name, and what [`names_a_package`] buys it.** The
+/// digest says a publisher wrote this name and that nobody has changed it since
+/// the pin. It says nothing at all about the name being usable as a directory
+/// name, and for a while nothing here checked that: `/` was turned into `-`, so
+/// a name with a slash could not leave `packages/`, and `..` has no slash and
+/// survived, which made the target of a package named `..` the adopter's own
+/// root. [#314](https://github.com/headwater-ai/headwater/issues/314) records
+/// what that cost — an artifact scattered over an adopter's repository on the
+/// first vendor and the repository deleted on the second — and the grammar
+/// below closes it, along with `.`, a YAML null, an absolute path and every
+/// other spelling of a value that is not a name.
+///
+/// **The two guarantees are separate and both are needed.** The digest says the
+/// name is one a publisher wrote; the grammar says the name is one that can be
+/// joined onto a path. Neither implies the other, and a forged header now fails
+/// the first while a publisher's own honest `package: ..` fails the second.
 ///
 /// An artifact that carries no manifest reaches [`manifest_at`] and is refused
 /// by the error of the read rather than by anything written here. **The narrow
@@ -1254,24 +1286,24 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
 /// the adopter meets after the bytes are on disk, which is exactly what the
 /// range in the record exists to prevent.
 ///
-/// **Absent is not a value that can agree with another absent, for the name.**
-/// That is the intent, and the guard below reaches two of the three spellings of
-/// it. A manifest whose `package:` is absent, and one whose value is `""`, are
-/// refused outright rather than compared, because two blanks compared equal is
-/// [#298](https://github.com/headwater-ai/headwater/issues/298)'s defect in
-/// [`agrees`], and here it would name the target directory `packages/`.
+/// **Absent is not a value that can agree with another absent, for the name,
+/// and neither is any other value that is not a name.** A manifest whose
+/// `package:` is absent, one whose value is `""`, and one whose value is a
+/// YAML null are all refused outright rather than compared. Two blanks compared
+/// equal is [#298](https://github.com/headwater-ai/headwater/issues/298)'s
+/// defect in [`agrees`], and here it would name the target directory
+/// `packages/`. The guard is [`names_a_package`] and it reaches all three
+/// spellings, because it asks what a name is rather than listing what a name is
+/// not.
 ///
-/// **A manifest whose `package:` is a YAML null is not refused, and this says so
-/// rather than claiming otherwise.** This engine hands back a scalar's source
-/// text, and the source text of a null is the literal `~`. So `is_empty()` is
-/// false, both sides compare equal at `~`, and the artifact vendors into
-/// `packages/~`. Measured identically at `01861df` and here, so this narrows
-/// nothing and closes nothing: the route moved from the record's header to the
-/// manifest and stayed open. `is_empty()` is the wrong test for it, because the
-/// ambiguity is born in the parse and not in the comparison, which is exactly
-/// the absent-versus-empty question #298 holds. Nobody names a package `~`, so
-/// no adopter's directory is overwritten — the cost is litter and a false
-/// sentence, and the false sentence is the part that was worth fixing here.
+/// **The null case is a symptom of #298 closed here, and #298 itself stays
+/// open.** This engine hands back a scalar's source text, and the source text
+/// of a null is the literal `~`. So `is_empty()` is false, both sides compare
+/// equal at `~`, and the artifact used to vendor into `packages/~`. The grammar
+/// refuses `~` as a name, so no adopter gets that directory — and it teaches
+/// [`agrees`] nothing about absent versus null, which is where the ambiguity is
+/// born and what #298 holds. Read this as *the route into an adopter's
+/// `packages/` is closed*, never as *the parse was fixed*.
 ///
 /// The engine range is the opposite case and is compared as an [`Option`]: absent on
 /// both sides is a publisher that states no floor, which spec 7 gives a meaning
@@ -1289,13 +1321,23 @@ fn identity(root: &Path, fetched: &Path, record: &Release) -> Result<String, Vec
     let beside = display(root, &fetched.join(MANIFEST));
 
     let declared = text(&manifest, "package").unwrap_or_default();
-    if declared.is_empty() {
+    if !names_a_package(&declared) {
+        let states = match declared.is_empty() {
+            true => "this states no `package:`".to_string(),
+            false => format!("this states `package: {declared}`"),
+        };
         return Err(refusal(
             &beside,
-            "this states no `package:`, so the artifact beside it declares no name of its own \
-             that the release digest covers. The name in the record is not one, because the \
-             record is the one file the digest does not cover, and it is the name a directory \
-             under `packages/` would be created and replaced under",
+            &format!(
+                "{states}, which is not a package name. A package name is one or more segments \
+                 separated by `/`, and every segment opens and closes with a letter or a digit \
+                 and otherwise holds letters, digits, `.`, `-` and `_`. It is the name a \
+                 directory under `packages/` is created under and replaced under, so a value \
+                 outside that grammar names a directory that belongs to somebody else: `..` \
+                 names the adopter's own root, `.` names `packages/` itself, and an absent \
+                 value would name `packages/`. The name in the record is not a substitute, \
+                 because the record is the one file the release digest does not cover"
+            ),
         ));
     }
 
@@ -1356,6 +1398,52 @@ fn stated(range: Option<&str>) -> String {
         Some(range) => format!("`{REQUIRES_ENGINE}: {range}`"),
         None => format!("no `{REQUIRES_ENGINE}`"),
     }
+}
+
+/// Whether a string is a package name.
+///
+/// One or more segments separated by `/`, each matching
+/// `[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?`. Spec 7's *Publishing* section
+/// states the same grammar in prose, and this is the only reader of it.
+///
+/// **It is stated positively, and that is the whole of why it is complete.** A
+/// blocklist would have to name `..`, then `.`, then `~`, then the empty
+/// segment, then an absolute path, then a control character, and would still be
+/// open to the next spelling of "not a name" that somebody writes. Everything
+/// on that list is outside this grammar without being named by it.
+///
+/// **This is deliberately not [`leaves`], and the difference is the subject.**
+/// `leaves` answers whether a *path* a publisher declared points out of the
+/// package, and it is sound at its own level and false one level out:
+/// [#303](https://github.com/headwater-ai/headwater/issues/303) records a
+/// symlink walking past it, because a lexical reading of a declared path cannot
+/// see the file system. A package name is a single scalar with no such
+/// indirection in the question — measured on this path,
+/// `std::fs::remove_dir_all` removes a symlink standing at `packages/<name>`
+/// rather than following it, so a link there escapes nothing — which is what
+/// lets a lexical rule be the whole guard here. Reusing `leaves`'s
+/// [`std::path::Component`] scan would inherit an argument that has already
+/// failed once, in this file, on a neighbouring key.
+///
+/// **What it costs, said out loud rather than discovered later.** It refuses a
+/// name holding a character outside ASCII, and it refuses `+`. There is no
+/// registry and so no migration path, so a publisher already using such a name
+/// is refused outright: every name declared anywhere in this tree passes, and
+/// no fixture moved. It does **not** refuse the names Windows reserves —
+/// `con`, `nul`, `aux` — because refusing `con` costs a legitimate name for a
+/// package about containers and buys nothing on the platform this engine is
+/// tested on.
+fn names_a_package(declared: &str) -> bool {
+    !declared.is_empty()
+        && declared.split('/').all(|segment| {
+            let bytes = segment.as_bytes();
+            let alphanumeric = |byte: &u8| byte.is_ascii_alphanumeric();
+            matches!(bytes.first(), Some(byte) if alphanumeric(byte))
+                && matches!(bytes.last(), Some(byte) if alphanumeric(byte))
+                && bytes
+                    .iter()
+                    .all(|byte| alphanumeric(byte) || matches!(byte, b'.' | b'-' | b'_'))
+        })
 }
 
 /// Whether a path written in a manifest leaves the package that carries it.
@@ -1439,4 +1527,71 @@ fn refusal(source: &str, message: &str) -> Vec<ResolveError> {
         "",
         headwater_yaml::Span::default(),
     )]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::names_a_package;
+
+    /// Every package name declared anywhere in this tree.
+    ///
+    /// The grammar has no registry behind it and so no migration path, which
+    /// makes "nothing in this tree moves" a claim worth holding rather than
+    /// asserting. `packages/headwater-standard/package.yml` declares the first
+    /// one and the fixtures of `tests/publish.rs` and the conformance suite
+    /// declare the rest.
+    #[test]
+    fn every_name_this_tree_declares_is_a_package_name() {
+        for name in [
+            "headwater/standard",
+            "acme/headwater-taxonomy",
+            "acme/fixture",
+            "acme/taxonomy",
+            "acme/work-items",
+            "acme/victim",
+            "acme/attacker",
+            "audit/fixture",
+            "headwater/fixture",
+        ] {
+            assert!(names_a_package(name), "{name} is declared in this tree");
+        }
+    }
+
+    /// The values that reached a directory under an adopter's `packages/`, and
+    /// the one that was already closed.
+    ///
+    /// Each of these was measured landing somewhere before
+    /// [#314](https://github.com/headwater-ai/headwater/issues/314). `..` and
+    /// `.` are the two that reached outside the directory the name is for, and
+    /// the rest are litter. None of them is named by the grammar, which is the
+    /// point of stating it positively.
+    #[test]
+    fn no_value_that_is_not_a_name_is_one() {
+        for name in [
+            "", "..", ".", "...", "~", "-x", ".hidden", "..-x", "/etc/hw", "a/../..", "a/", "/a",
+            "a//b", "a b", "a\0b",
+        ] {
+            assert!(!names_a_package(name), "{name:?} is not a package name");
+        }
+    }
+
+    /// The costs the doc comment states, held rather than left in prose.
+    ///
+    /// A name outside ASCII is refused and so is `+`. The names Windows
+    /// reserves are not refused, because refusing `con` costs a legitimate name
+    /// and buys nothing on the platform this engine is tested on. A `.`, a `-`
+    /// and a `_` inside a segment are all fine, and the same characters at
+    /// either end of one are not.
+    #[test]
+    fn the_boundary_of_the_grammar_is_where_the_doc_comment_says() {
+        assert!(!names_a_package("acmé/fixture"));
+        assert!(!names_a_package("acme/c++"));
+        assert!(names_a_package("con"));
+        assert!(names_a_package("nul"));
+        assert!(names_a_package("acme/head.water_taxonomy-2"));
+        assert!(!names_a_package("acme/.fixture"));
+        assert!(!names_a_package("acme/fixture-"));
+        assert!(names_a_package("a"));
+        assert!(names_a_package("a/b/c"));
+    }
 }
