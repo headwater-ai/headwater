@@ -5128,7 +5128,9 @@ fn refused(what: &str, errors: &[headwater_census::shelves::DeclarationError]) -
 /// is a reclassification rather than a deletion, it is judgment nobody has
 /// asked for, and it is worth stating rather than doing quietly: the 45 pay one
 /// line here where they used to pay 359, so the pointer is a smaller mismatch
-/// than the one it replaced.
+/// than the one it replaced. #331 carries it, and it gets cheaper rather than
+/// harder after the parser migration, which deletes the 53 and leaves this
+/// function holding only the population [`refuse`] describes.
 fn fail(message: &str) -> ExitCode {
     eprintln!("headwater: {message}\nheadwater: run `headwater --help` for the grammar");
     ExitCode::FAILURE
