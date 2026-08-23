@@ -48,6 +48,17 @@
 //!
 //! Color is declared off. Nothing here emits an escape sequence, which is the
 //! state the binary was already in and the state its recorded fixtures read.
+//! `--no-color` is declared anyway, and it is declared as what it is: a caller
+//! who writes it out of habit is answered rather than refused, and its help
+//! says outright that this binary has no color to turn off. That is the
+//! opposite of a flag whose name implies an effect it does not have.
+//!
+//! **The width is decided in [`paint`] and never by the terminal.** Every string
+//! below is folded before `clap` sees it, because `clap` cannot fold at all in
+//! this workspace and the feature that would let it reads the terminal. So the
+//! strings here are written as one long line each and reach a caller folded.
+
+pub mod paint;
 
 use clap::{Command, CommandFactory, FromArgMatches, Parser, Subcommand};
 use headwater_check::Date;
@@ -90,6 +101,48 @@ pub struct Cli {
                 standard output, and no repository is needed to ask"
     )]
     pub version: bool,
+
+    // `--wide`, which is the one reader of `COLUMNS` in this binary.
+    //
+    // It is declared here so that a caller meets it in the help and so that a
+    // verb refuses it in the one place it means nothing. `paint::width` reads
+    // the raw arguments for it rather than this field, because the answer is
+    // needed to build the tree that produces this field.
+    #[arg(
+        long,
+        global = true,
+        help = "lay the help out at the width `COLUMNS` states, held to the range 80 to 120. A \
+                reading that is absent or is not a number gives 80, which is what a run with no \
+                flag gives. Without it the help is 80 columns wide, nothing reads `COLUMNS`, and \
+                a run piped \
+                into a file and a run under a terminal write the same bytes. A shell keeps \
+                `COLUMNS` to itself, so the form that carries it is `COLUMNS=100 headwater --wide \
+                --help`. It lays out the help and nothing else, so a run that prints no help \
+                refuses it rather than accepting a flag that would do nothing"
+    )]
+    pub wide: bool,
+
+    // `--no-color`, which is a flag this binary has nothing to turn off with.
+    //
+    // Declaring a flag that changes no byte is the defect
+    // [#337](https://github.com/headwater-ai/headwater/issues/337) and
+    // [#338](https://github.com/headwater-ai/headwater/issues/338) are filed
+    // about, and this is the case those two are not: there the name implies a
+    // narrowing the code does not perform and the caller is told nothing, and
+    // here the help states the whole truth in its first sentence. What it buys
+    // is that `headwater check --no-color` runs, where it exited 1 before, and
+    // a caller who writes the near-universal spelling meets an answer rather
+    // than a refusal about a flag every other tool carries.
+    #[arg(
+        long = "no-color",
+        global = true,
+        help = "write no color, which is what every run of this binary already does. Nothing here \
+                emits an escape sequence on any stream, in any format, under any terminal or for \
+                any value of `NO_COLOR`, so this flag confirms the state rather than changing it. \
+                It is declared so that a caller who writes it out of habit is answered rather \
+                than refused"
+    )]
+    pub no_color: bool,
 
     #[command(subcommand)]
     pub verb: Option<Verb>,
@@ -706,13 +759,23 @@ pub enum TaxonomyWord {
 /// of the help and a reader of the test meet the same tree. A caller that used
 /// [`Cli::command`] directly would meet a tree with no prose on it at all.
 pub fn command() -> Command {
+    command_at(paint::width())
+}
+
+/// The same tree, laid out at a width the caller states.
+///
+/// Every string it carries is folded to `width` before `clap` sees it, and
+/// `clap` folds nothing, so this number and the strings are the whole of the
+/// layout. [`command`] is this at [`paint::WIDTH`] unless the command line
+/// carries `--wide`.
+pub fn command_at(width: usize) -> Command {
     let mut root = Cli::command()
         .about(format!(
             "{} — {}",
             headwater_verbs::BINARY,
             headwater_verbs::TAGLINE
         ))
-        .help_template(first_screen());
+        .help_template(first_screen(width));
     for verb in headwater_verbs::VERBS {
         // A name the derive does not carry is skipped rather than added.
         //
@@ -725,10 +788,10 @@ pub fn command() -> Command {
         // against the table in both directions and prints the command lines that
         // are on one side and not the other.
         if root.find_subcommand(verb.name).is_some() {
-            root = root.mut_subcommand(verb.name, |one| described(one, verb));
+            root = root.mut_subcommand(verb.name, |one| described(one, verb, width));
         }
     }
-    root
+    paint::painted(root, width)
 }
 
 /// The command line this process was started with, parsed through [`command`].
@@ -739,14 +802,78 @@ pub fn command() -> Command {
 /// a command nothing had described, which is the state this returned before the
 /// words were put on it. One entry point is what keeps the two the same tree.
 pub fn parsed() -> Result<Cli, clap::Error> {
-    Cli::from_arg_matches(&command().try_get_matches()?)
+    let matches = command().try_get_matches()?;
+    if let Some(message) = a_width_for_a_run_that_lays_nothing_out(&matches) {
+        return Err(clap::Error::raw(
+            clap::error::ErrorKind::ArgumentConflict,
+            message,
+        ));
+    }
+    Cli::from_arg_matches(&matches)
+}
+
+/// `--wide` on a run that prints no help, which is a run it would do nothing in.
+///
+/// # The rule is wider than clause 12 asks, and deliberately
+///
+/// Clause 12 of [#321](https://github.com/headwater-ai/headwater/issues/321)
+/// asks that `--wide` be refused alongside `--format json|sarif|markdown`. The
+/// rule here is that it is refused on **every** run that prints no help, and
+/// the machine formats are one case of it. The reason is that the flag lays out
+/// the help and lays out nothing else: the report of `headwater check` is
+/// composed by `headwater_adapter` and is not laid out at any width, so
+/// `headwater check --wide --format text` would be as inert as
+/// `--format json` and would say so to nobody.
+///
+/// This repository has two open issues about flags accepted and silently
+/// ignored — [#337](https://github.com/headwater-ai/headwater/issues/337) and
+/// [#338](https://github.com/headwater-ai/headwater/issues/338) — and a third
+/// would have been this one. When a report gains a layout the refusal narrows
+/// to the machine formats, which is the clause as written.
+///
+/// # Why reaching this function is already the test
+///
+/// `clap` answers `--help` inside `try_get_matches` and returns before this
+/// runs, so a run that printed help never arrives here. The one route that
+/// prints help and does arrive is `headwater help <verb>`, which is a verb of
+/// this binary rather than a flag, and it is the one command the check lets
+/// through.
+///
+/// The `format` value is read off the matches rather than off the parsed
+/// `Verb`, so every verb that declares one is named by the same two lines and a
+/// verb that gains one later is named without an edit.
+fn a_width_for_a_run_that_lays_nothing_out(matches: &clap::ArgMatches) -> Option<String> {
+    let mut leaf = matches;
+    while let Some((_, inner)) = leaf.subcommand() {
+        leaf = inner;
+    }
+    if leaf.try_get_one::<bool>("wide").ok().flatten() != Some(&true) {
+        return None;
+    }
+    if matches.subcommand_name() == Some("help") {
+        return None;
+    }
+    // `text` is a report a person reads and it is still not laid out at a
+    // width, so it falls to the general reason rather than to the machine-format
+    // one. The narrower message is for the case clause 12 names.
+    let format = leaf.try_get_one::<String>("format").ok().flatten();
+    let says = match format.filter(|value| value.as_str() != "text") {
+        Some(format) => format!("`--format {format}` writes an artifact that nothing lays out"),
+        None => "this run prints no help".to_string(),
+    };
+    Some(format!(
+        "`--wide` says how wide the help is laid out, and {says}. A run carrying it would carry \
+         one flag that does nothing, so it is refused rather than run. The runs it widens are \
+         `{0} --wide --help`, `{0} <verb> --wide --help` and `{0} --wide help <verb>`",
+        headwater_verbs::BINARY
+    ))
 }
 
 /// One verb of the tree, with the words the table carries for it.
-fn described(command: Command, verb: &headwater_verbs::Verb) -> Command {
+fn described(command: Command, verb: &headwater_verbs::Verb, width: usize) -> Command {
     let mut one = command.about(verb.description);
     if !verb.words.is_empty() {
-        one = one.help_template(second_words(verb));
+        one = one.help_template(second_words(verb, width));
         for word in verb.words {
             if one.find_subcommand(word.name).is_none() {
                 continue;
@@ -757,8 +884,8 @@ fn described(command: Command, verb: &headwater_verbs::Verb) -> Command {
     one
 }
 
-/// The width the name column of a printed list is padded to.
-const COLUMN: usize = 13;
+/// The column the second field of a printed list starts at.
+const COLUMN: usize = 15;
 
 /// The template `headwater --help` renders.
 ///
@@ -773,7 +900,7 @@ const COLUMN: usize = 13;
 /// binary carried. #321 measured the old help and found no example anywhere in
 /// its 25,415 bytes, so these are written rather than recovered, and each one
 /// is a command line that runs.
-fn first_screen() -> String {
+fn first_screen(width: usize) -> String {
     let mut out = String::from("{about}\n\n{usage-heading} {usage}\n\nExamples:\n");
     for (line, says) in [
         (
@@ -797,7 +924,12 @@ fn first_screen() -> String {
             "the long description of one verb",
         ),
     ] {
-        out.push_str(&format!("  {line:<52}{says}\n"));
+        // The command line and what it does are stacked rather than columned.
+        // The longest of the five is 48 columns, so a column wide enough to
+        // hold it leaves 26 for a description and every one of the five is
+        // longer than that. Two lines each is what 80 columns buys.
+        out.push_str(&format!("  {line}\n"));
+        out.push_str(&paint::fold_indented(says, width, 6));
     }
     for group in headwater_verbs::groups() {
         out.push_str(&format!("\n{group}:\n"));
@@ -805,18 +937,17 @@ fn first_screen() -> String {
             .iter()
             .filter(|one| one.group == group)
         {
-            out.push_str(&format!(
-                "  {:<width$}{}\n",
-                verb.name,
-                verb.summary,
-                width = COLUMN
-            ));
+            out.push_str(&paint::row(verb.name, verb.summary, COLUMN, width));
         }
     }
     out.push_str("\nGlobal flags:\n{options}\n\n");
-    out.push_str(&format!(
-        "Run `{0} help <verb>` for the long description of one verb, or `{0} <verb> --help`.\n",
-        headwater_verbs::BINARY
+    out.push_str(&paint::fold_indented(
+        &format!(
+            "Run `{0} help <verb>` for the long description of one verb, or `{0} <verb> --help`.",
+            headwater_verbs::BINARY
+        ),
+        width,
+        0,
     ));
     out
 }
@@ -828,21 +959,20 @@ fn first_screen() -> String {
 /// caller who typed `headwater sweep` to find out what `plan` is would meet
 /// both descriptions in full. This prints the summary the table carries and
 /// names where the long one is.
-fn second_words(verb: &headwater_verbs::Verb) -> String {
+fn second_words(verb: &headwater_verbs::Verb, width: usize) -> String {
     let mut out = String::from("{about}\n\n{usage-heading} {usage}\n\nSecond words:\n");
     for word in verb.words {
-        out.push_str(&format!(
-            "  {:<width$}{}\n",
-            word.name,
-            word.summary,
-            width = COLUMN
-        ));
+        out.push_str(&paint::row(word.name, word.summary, COLUMN, width));
     }
     out.push_str("\nFlags:\n{options}\n\n");
-    out.push_str(&format!(
-        "Run `{} help {} <word>` for the long description of one.\n",
-        headwater_verbs::BINARY,
-        verb.name
+    out.push_str(&paint::fold_indented(
+        &format!(
+            "Run `{} help {} <word>` for the long description of one.",
+            headwater_verbs::BINARY,
+            verb.name
+        ),
+        width,
+        0,
     ));
     out
 }
