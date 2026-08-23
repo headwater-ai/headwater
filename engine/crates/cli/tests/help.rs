@@ -241,12 +241,27 @@ fn the_long_description_of_every_command_line_is_what_the_table_carries() {
 /// on every verb added and teaches a reader to re-bless it; a ceiling goes red
 /// only when the screen stops being a screen. The help this replaced was **357
 /// lines**, which is what the ceiling is for.
+///
+/// # The ceiling moved from 60 to 80, and the reason is the other axis
+///
+/// Clause 12 folds every string to 80 columns, and a screen has two dimensions:
+/// the text that was 47 lines with a widest line of 229 columns is 73 lines
+/// with a widest of 80. Nothing was added to it — the examples went from one
+/// line each to two, the closing pointer from one to two, and the four global
+/// flags from four lines to twenty-six, which is what four paragraphs of
+/// description come to when they are folded rather than run off the screen.
+///
+/// **So the lever that is left is the length of those four descriptions, and it
+/// is not a layout lever.** Shortening them is an edit to what the help says,
+/// which [#339](https://github.com/headwater-ai/headwater/issues/339) carries.
+/// A ceiling that stayed at 60 would have been met by leaving the lines long,
+/// which is the state clause 12 was filed against.
 #[test]
 fn the_first_screen_is_one_screen() {
     let screen = help_of(&[]);
     let lines = screen.lines().count();
     assert!(
-        lines <= 60,
+        lines <= 80,
         "`headwater --help` is {lines} lines, and the first screen is meant to fit one:\n{screen}"
     );
     assert!(

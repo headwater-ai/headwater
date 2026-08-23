@@ -356,7 +356,7 @@ mod tests {
             40,
         );
         let lines: Vec<&str> = written.trim_end().lines().collect();
-        assert_eq!(lines[0], "  check      run the pipeline over the");
+        assert_eq!(lines[0], "  check        run the pipeline over the");
         for line in &lines[1..] {
             assert!(line.starts_with(&" ".repeat(15)), "{line:?}");
         }

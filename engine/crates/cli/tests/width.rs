@@ -47,7 +47,10 @@ fn ran(arguments: &[&str], columns: Option<&str>) -> Ran {
     let at = std::env::temp_dir().join(format!("headwater-width-{}", std::process::id()));
     std::fs::create_dir_all(&at).expect("the directory is there");
     let mut process = Process::new(env!("CARGO_BIN_EXE_headwater"));
-    process.args(arguments).current_dir(&at).env_remove("COLUMNS");
+    process
+        .args(arguments)
+        .current_dir(&at)
+        .env_remove("COLUMNS");
     if let Some(value) = columns {
         process.env("COLUMNS", value);
     }
@@ -87,7 +90,10 @@ fn surface(columns: Option<&str>, extra: &[&str]) -> Vec<(String, String)> {
             let ran = ran(&arguments, columns);
             let typed = format!("headwater {}", arguments.join(" "));
             assert_eq!(ran.code, Some(0), "{typed} exits 0");
-            assert!(ran.err.is_empty(), "{typed} writes nothing to standard error");
+            assert!(
+                ran.err.is_empty(),
+                "{typed} writes nothing to standard error"
+            );
             (typed, String::from_utf8(ran.out).expect("the help is text"))
         })
         .collect()
@@ -146,7 +152,11 @@ fn no_line_of_the_help_surface_is_wider_than_eighty_columns() {
 /// the one input that could still reach the layout, which is `COLUMNS`.
 #[test]
 fn a_run_that_states_columns_and_one_that_does_not_write_the_same_bytes() {
-    for line in [vec!["--help"], vec!["check", "--help"], vec!["help", "check"]] {
+    for line in [
+        vec!["--help"],
+        vec!["check", "--help"],
+        vec!["help", "check"],
+    ] {
         let bare = ran(&line, None);
         for absurd in ["1", "40", "500", "100000", "not a number"] {
             let stated = ran(&line, Some(absurd));
@@ -183,18 +193,18 @@ fn the_width_a_caller_asks_for_is_read_and_held_to_the_band() {
     assert_eq!(wide("80"), ordinary);
 
     let widest_asked = wide("500");
-    assert_eq!(widest_asked, wide("120"), "a width over {WIDEST} is {WIDEST}");
+    assert_eq!(
+        widest_asked,
+        wide("120"),
+        "a width over {WIDEST} is {WIDEST}"
+    );
     assert_ne!(widest_asked, ordinary, "{WIDEST} is not {WIDTH}");
 
     let between = wide("100");
     assert_ne!(between, ordinary);
     assert_ne!(between, widest_asked);
 
-    for (asked, out) in [
-        (WIDTH, &narrow),
-        (100, &between),
-        (WIDEST, &widest_asked),
-    ] {
+    for (asked, out) in [(WIDTH, &narrow), (100, &between), (WIDEST, &widest_asked)] {
         let text = String::from_utf8(out.clone()).expect("the help is text");
         for line in text.lines() {
             assert!(
@@ -239,7 +249,10 @@ fn a_width_asked_for_a_format_nothing_lays_out_is_refused() {
             "`headwater {verb} --wide --format {format}` is refused with 1"
         );
         let said = String::from_utf8_lossy(&ran.err).into_owned();
-        assert!(said.contains("--wide"), "the refusal names the flag: {said}");
+        assert!(
+            said.contains("--wide"),
+            "the refusal names the flag: {said}"
+        );
         assert!(
             said.contains(format),
             "the refusal names the format: {said}"
@@ -251,10 +264,20 @@ fn a_width_asked_for_a_format_nothing_lays_out_is_refused() {
 /// The one format that is laid out is the one `--wide` is not refused with.
 #[test]
 fn a_width_asked_for_the_format_a_reader_reads_is_not_refused() {
-    let ran = ran(&["check", "--wide", "--format", "text", "--help"], None);
-    assert_eq!(ran.code, Some(0));
-    let refused = ran(&["check", "--wide", "--format", "text", "--root", "/nonexistent"], None);
-    let said = String::from_utf8_lossy(&refused.err).into_owned();
+    let helped = ran(&["check", "--wide", "--format", "text", "--help"], None);
+    assert_eq!(helped.code, Some(0));
+    let elsewhere = ran(
+        &[
+            "check",
+            "--wide",
+            "--format",
+            "text",
+            "--root",
+            "/nonexistent",
+        ],
+        None,
+    );
+    let said = String::from_utf8_lossy(&elsewhere.err).into_owned();
     assert!(
         !said.contains("`--wide`"),
         "`--format text` is laid out, so `--wide` is not the objection: {said}"
@@ -269,21 +292,31 @@ fn a_width_asked_for_the_format_a_reader_reads_is_not_refused() {
 /// under the harness's own environment would be measuring the harness.
 #[test]
 fn no_escape_byte_reaches_a_caller_under_any_of_the_four_conditions() {
-    let cases: Vec<(&str, Vec<(&str, &str)>, Vec<&str>)> = vec![
-        ("plain", vec![], vec!["--help"]),
-        ("NO_COLOR=1", vec![("NO_COLOR", "1")], vec!["--help"]),
-        ("NO_COLOR=", vec![("NO_COLOR", "")], vec!["--help"]),
-        ("NO_COLOR=0", vec![("NO_COLOR", "0")], vec!["--help"]),
-        ("TERM=dumb", vec![("TERM", "dumb")], vec!["--help"]),
-        ("--no-color", vec![], vec!["--no-color", "--help"]),
-        ("--no-color deep", vec![], vec!["check", "--no-color", "--help"]),
-        ("CLICOLOR_FORCE", vec![("CLICOLOR_FORCE", "1")], vec!["--help"]),
+    /// A label, the environment the case states, and the command line.
+    struct Case(
+        &'static str,
+        &'static [(&'static str, &'static str)],
+        &'static [&'static str],
+    );
+
+    let cases = [
+        Case("plain", &[], &["--help"]),
+        Case("NO_COLOR=1", &[("NO_COLOR", "1")], &["--help"]),
+        Case("NO_COLOR=", &[("NO_COLOR", "")], &["--help"]),
+        Case("NO_COLOR=0", &[("NO_COLOR", "0")], &["--help"]),
+        Case("TERM=dumb", &[("TERM", "dumb")], &["--help"]),
+        Case("--no-color", &[], &["--no-color", "--help"]),
+        Case("--no-color deep", &[], &["check", "--no-color", "--help"]),
+        Case("CLICOLOR_FORCE", &[("CLICOLOR_FORCE", "1")], &["--help"]),
     ];
-    for (label, environment, arguments) in cases {
+    for Case(label, environment, arguments) in cases {
         let at = std::env::temp_dir().join(format!("headwater-color-{}", std::process::id()));
         std::fs::create_dir_all(&at).expect("the directory is there");
         let mut process = Process::new(env!("CARGO_BIN_EXE_headwater"));
-        process.args(&arguments).current_dir(&at).env_remove("COLUMNS");
+        process
+            .args(arguments)
+            .current_dir(&at)
+            .env_remove("COLUMNS");
         for (name, value) in environment {
             process.env(name, value);
         }
