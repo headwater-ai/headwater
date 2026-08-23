@@ -145,6 +145,16 @@ pub(crate) fn emit(
             continue;
         }
 
+        let on_shelf = crate::shelf_index::admitted(declaration, on_shelf);
+        if on_shelf.is_empty() {
+            plan.unwritten.push(Unwritten {
+                at: path,
+                kind: Kind::ShelfSections,
+                reason: crate::shelf_index::filtered_out(declaration, &name),
+            });
+            continue;
+        }
+
         let mut ordered = pointers(surface, &on_shelf);
         surface.by_precedence(&mut ordered);
 
