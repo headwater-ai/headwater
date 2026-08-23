@@ -1516,3 +1516,70 @@ fn refusal(source: &str, message: &str) -> Vec<ResolveError> {
         headwater_yaml::Span::default(),
     )]
 }
+
+#[cfg(test)]
+mod tests {
+    use super::names_a_package;
+
+    /// Every package name declared anywhere in this tree.
+    ///
+    /// The grammar has no registry behind it and so no migration path, which
+    /// makes "nothing in this tree moves" a claim worth holding rather than
+    /// asserting. `packages/headwater-standard/package.yml` declares the first
+    /// one and the fixtures of `tests/publish.rs` and the conformance suite
+    /// declare the rest.
+    #[test]
+    fn every_name_this_tree_declares_is_a_package_name() {
+        for name in [
+            "headwater/standard",
+            "acme/headwater-taxonomy",
+            "acme/fixture",
+            "acme/taxonomy",
+            "acme/work-items",
+            "acme/victim",
+            "acme/attacker",
+            "audit/fixture",
+            "headwater/fixture",
+        ] {
+            assert!(names_a_package(name), "{name} is declared in this tree");
+        }
+    }
+
+    /// The values that reached a directory under an adopter's `packages/`, and
+    /// the one that was already closed.
+    ///
+    /// Each of these was measured landing somewhere before
+    /// [#314](https://github.com/headwater-ai/headwater/issues/314). `..` and
+    /// `.` are the two that reached outside the directory the name is for, and
+    /// the rest are litter. None of them is named by the grammar, which is the
+    /// point of stating it positively.
+    #[test]
+    fn no_value_that_is_not_a_name_is_one() {
+        for name in [
+            "", "..", ".", "...", "~", "-x", ".hidden", "..-x", "/etc/hw", "a/../..", "a/", "/a",
+            "a//b", "a b", "a\0b",
+        ] {
+            assert!(!names_a_package(name), "{name:?} is not a package name");
+        }
+    }
+
+    /// The costs the doc comment states, held rather than left in prose.
+    ///
+    /// A name outside ASCII is refused and so is `+`. The names Windows
+    /// reserves are not refused, because refusing `con` costs a legitimate name
+    /// and buys nothing on the platform this engine is tested on. A `.`, a `-`
+    /// and a `_` inside a segment are all fine, and the same characters at
+    /// either end of one are not.
+    #[test]
+    fn the_boundary_of_the_grammar_is_where_the_doc_comment_says() {
+        assert!(!names_a_package("acmé/fixture"));
+        assert!(!names_a_package("acme/c++"));
+        assert!(names_a_package("con"));
+        assert!(names_a_package("nul"));
+        assert!(names_a_package("acme/head.water_taxonomy-2"));
+        assert!(!names_a_package("acme/.fixture"));
+        assert!(!names_a_package("acme/fixture-"));
+        assert!(names_a_package("a"));
+        assert!(names_a_package("a/b/c"));
+    }
+}
