@@ -111,8 +111,10 @@ pub struct Cli {
     #[arg(
         long,
         global = true,
-        help = "lay the help out at the width `COLUMNS` states, held to the range 80 to 120. \
-                Without it the help is 80 columns wide, nothing reads `COLUMNS`, and a run piped \
+        help = "lay the help out at the width `COLUMNS` states, held to the range 80 to 120. A \
+                reading that is absent or is not a number gives 80, which is what a run with no \
+                flag gives. Without it the help is 80 columns wide, nothing reads `COLUMNS`, and \
+                a run piped \
                 into a file and a run under a terminal write the same bytes. A shell keeps \
                 `COLUMNS` to itself, so the form that carries it is `COLUMNS=100 headwater --wide \
                 --help`. It lays out the help and nothing else, so a run that prints no help \
@@ -861,8 +863,8 @@ fn a_width_for_a_run_that_lays_nothing_out(matches: &clap::ArgMatches) -> Option
     };
     Some(format!(
         "`--wide` says how wide the help is laid out, and {says}. A run carrying it would carry \
-         one flag that does nothing, so it is refused rather than run. `{0} <verb> --help` and \
-         `{0} help <verb>` are what it widens",
+         one flag that does nothing, so it is refused rather than run. The runs it widens are \
+         `{0} --wide --help`, `{0} <verb> --wide --help` and `{0} --wide help <verb>`",
         headwater_verbs::BINARY
     ))
 }
