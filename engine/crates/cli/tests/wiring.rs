@@ -393,3 +393,135 @@ fn the_version_flag_prints_the_engine_constant_outside_a_corpus() {
         );
     }
 }
+
+/// A command line this binary cannot parse is refused in a few lines, and the
+/// grammar is one command away rather than under the sentence.
+///
+/// Two invocations, because the two arms reach `fail` from different places: an
+/// unknown flag is refused inside the argument loop, before any verb is
+/// decided, and an unknown first word is refused after that loop against
+/// [`headwater_verbs::parse`]. A case over one of them says nothing about the
+/// other.
+///
+/// # What each assertion holds, and why none of them is a byte count
+///
+/// The marker is `--root <path>`, a line of the usage body that no refusal
+/// message contains. Its **absence** is what says the grammar did not print.
+/// The obvious alternative — pinning the length of standard error — passes for
+/// the wrong reason the moment anybody rewords a message, and fails for the
+/// wrong reason the moment anybody edits `USAGE`, which is a fixture nobody
+/// reads. #306 asked for the marker for that reason.
+///
+/// Absence alone is satisfied by a binary that prints nothing at all, so three
+/// assertions stand beside it: the word the caller got wrong is echoed back,
+/// `headwater --help` is named as where the grammar is, and the whole refusal
+/// fits in five lines. Together they say the refusal is short **and** still
+/// tells the caller what happened.
+///
+/// The status is asserted as exactly 1 rather than as non-zero. This binary
+/// promises one failing status and no other — `docs/interfaces/headwater-check.md`
+/// states eleven reasons for exit 1 under the sentence "There is no third
+/// status" — so a 2 here would be a defect that a `!= 0` assertion would pass.
+///
+/// Standard output is asserted empty, because a refusal that puts one byte
+/// there corrupts every caller that reads a report from this binary by pipe.
+///
+/// # This case was watched failing
+///
+/// Against the parent commit `6e29f5d`, `headwater check --nonsense` wrote 0
+/// bytes to standard output and **25,473 bytes over 360 lines** to standard
+/// error, carrying the marker 27 times, and `headwater versoin` wrote 25,655
+/// bytes over 360 lines. The exit status and the empty standard output already
+/// held; the marker, the line bound and the pointer did not.
+#[test]
+fn a_refused_command_line_names_the_grammar_rather_than_printing_it() {
+    for (label, arguments, offender) in [
+        (
+            "unknown-flag",
+            ["check", "--nonsense"].as_slice(),
+            "--nonsense",
+        ),
+        ("unknown-verb", ["versoin"].as_slice(), "versoin"),
+    ] {
+        let ran = outside_a_corpus(label, arguments);
+        assert_eq!(
+            ran.code,
+            Some(1),
+            "`headwater {}` is refused with the one failing status this binary has:\n{}",
+            arguments.join(" "),
+            ran.err
+        );
+        assert_eq!(
+            ran.out, "",
+            "a refusal writes nothing to standard output, so a caller reading a report by pipe reads a report or nothing"
+        );
+        assert!(
+            !ran.err.contains("--root <path>"),
+            "`headwater {}` printed the usage body: `--root <path>` is a line of it and it is on standard error:\n{}",
+            arguments.join(" "),
+            ran.err
+        );
+        assert!(
+            ran.err.contains(offender),
+            "`headwater {}` says `{offender}` back to the caller, so the refusal names what was wrong:\n{}",
+            arguments.join(" "),
+            ran.err
+        );
+        assert!(
+            ran.err.contains("headwater --help"),
+            "`headwater {}` names where the grammar is:\n{}",
+            arguments.join(" "),
+            ran.err
+        );
+        assert!(
+            ran.err.lines().count() <= 5,
+            "`headwater {}` refuses in five lines or fewer, and it wrote {}:\n{}",
+            arguments.join(" "),
+            ran.err.lines().count(),
+            ran.err
+        );
+    }
+}
+
+/// `--help` answers on standard output alone, and it is not a failure.
+///
+/// The case above deletes the usage body from every refusal, which leaves
+/// exactly one caller of `USAGE` in the binary. Nothing else now holds that
+/// caller, so a change that deleted the printing altogether, or that moved it
+/// to standard error beside the refusals, would take this whole surface away
+/// with the suite green.
+///
+/// The three assertions are the ones
+/// [`the_version_flag_prints_the_engine_constant_outside_a_corpus`] makes about
+/// `--version`, for the same reason: a question is answered on standard output
+/// with exit 0, and standard error stays empty so a caller may keep the two
+/// apart. What is asserted about the body is that it is long and carries the
+/// marker the refusals must not — the inverse of the case above, and the
+/// statement that the grammar went somewhere rather than nowhere.
+#[test]
+fn the_help_flag_answers_on_standard_output_outside_a_corpus() {
+    for (label, flag) in [("help-long", "--help"), ("help-short", "-h")] {
+        let ran = outside_a_corpus(label, &[flag]);
+        assert_eq!(
+            ran.code,
+            Some(0),
+            "`{flag}` is a question rather than a mistake:\n{}{}",
+            ran.out,
+            ran.err
+        );
+        assert_eq!(
+            ran.err, "",
+            "`{flag}` writes nothing to standard error, so a caller may read the answer with the streams apart"
+        );
+        assert!(
+            ran.out.contains("--root <path>"),
+            "`{flag}` is where the grammar is, and `--root <path>` is a line of it:\n{}",
+            ran.out
+        );
+        assert!(
+            ran.out.lines().count() > 100,
+            "`{flag}` prints the whole grammar, and it printed {} lines",
+            ran.out.lines().count()
+        );
+    }
+}
