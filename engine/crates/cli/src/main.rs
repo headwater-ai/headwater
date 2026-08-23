@@ -5095,16 +5095,51 @@ fn refused(what: &str, errors: &[headwater_census::shelves::DeclarationError]) -
     ExitCode::FAILURE
 }
 
+/// A refusal a caller's command line earned. One line saying what was wrong,
+/// and one line saying where the grammar is.
+///
+/// # The ruling this carries, which reverses the one it used to carry
+///
+/// The whole of `USAGE` printed here, under every message. The reason it did is
+/// the sentence under [`refuse`]: a caller who wrote the wrong flag is reading
+/// the grammar, so the grammar went where that caller already was. That reason
+/// was written against a `USAGE` of about a hundred lines. It is 359 lines of
+/// this file now, and 25,415 bytes on the wire, so the one sentence a caller
+/// needs arrives above a screenful that scrolls it away, and anything recording
+/// this stream records the whole manual once per typo. The reason `refuse`
+/// gives for existing had grown into a reason against this function, which is
+/// #306's argument and it needs nothing else to stand.
+///
+/// So the pointer replaces the body. Nothing a caller could do with the grammar
+/// here is lost: `headwater --help` writes the same 25,415 bytes to standard
+/// output, exits 0, and is named on the line under every refusal.
+///
+/// # Every call site moved, at once and on purpose
+///
+/// `USAGE` was this function's suffix rather than anything a call site passed,
+/// so all 98 of them moved together on one edit. #306 asks which of "all of
+/// them changed deliberately" and "none of them did" was meant, and this is the
+/// answer: **all of them**, and not one message text changed.
+///
+/// 53 of the 98 are command-line facts -- 33 in the argument loop and 20 in the
+/// dispatch -- and the pointer is written for those. The other 45 are facts
+/// about a corpus or about the filesystem, which is the population [`refuse`]
+/// describes, and a pointer to the grammar is beside the point for them. That
+/// is a reclassification rather than a deletion, it is judgment nobody has
+/// asked for, and it is worth stating rather than doing quietly: the 45 pay one
+/// line here where they used to pay 359, so the pointer is a smaller mismatch
+/// than the one it replaced.
 fn fail(message: &str) -> ExitCode {
-    eprintln!("headwater: {message}\n\n{USAGE}");
+    eprintln!("headwater: {message}\nheadwater: run `headwater --help` for the grammar");
     ExitCode::FAILURE
 }
 
 /// A refusal that is a fact about the corpus rather than a mistyped command.
 ///
-/// [`fail`] prints the grammar, because a caller who wrote the wrong flag is
-/// reading it. A caller whose taxonomy declares no shelf for a kind is not, and
-/// a hundred lines of grammar under that sentence buries the sentence.
+/// [`fail`] names where the grammar is, because a caller who wrote the wrong
+/// flag is looking for it. A caller whose taxonomy declares no shelf for a kind
+/// is not, and a line pointing at the grammar under that sentence points away
+/// from what the sentence says.
 fn refuse(message: &str) -> ExitCode {
     eprintln!("headwater: {message}");
     ExitCode::FAILURE
