@@ -83,7 +83,7 @@ There is no precondition about a model, about a network, or about a plan having 
 
 | The reason | Half | When it is decided |
 |---|---|---|
-| A flag that names a value has none after it. Or a word that opens with `-` is not a flag this half reads. Or the words after `sweep` are not `plan`, `report <path>` | both | in the parse, before the verb is entered |
+| A flag that names a value has none after it. Or the command line holds a word this half does not read. Or the words after `sweep` are not `plan`, `report <path>` | both | in the parse, before the verb is entered |
 | `--format` names a target that is neither `text` nor `json` | `report` | first thing in the verb, before the file is opened |
 | The file at the given path did not read | `report` | after the format is decided, before the corpus is loaded |
 | The lock is absent, or a declaration under it did not read | both | for `report`, after the return file is read and before it is parsed. For `plan`, before anything |

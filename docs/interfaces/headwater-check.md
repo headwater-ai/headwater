@@ -74,7 +74,7 @@ The verb takes no operand. A word after `check` is refused, and the message name
 
 | The reason | Where it is decided |
 |---|---|
-| A flag that names a value has none after it. Or `--now` is not `YYYY-MM-DD`. Or a word that opens with `-` is not a flag this verb reads | the parse, before the verb is entered |
+| A flag that names a value has none after it. Or `--now` is not `YYYY-MM-DD`. Or the command line holds a word this verb does not read | the parse, before the verb is entered |
 | `--format` names a target that is not one of the four | `check`, before the corpus is walked |
 | The host has no readable clock and no `--now` was passed | `check`, before the corpus is walked |
 | `--change` names a manifest that did not read | `check`, before the corpus is walked |
