@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-check
 status: draft
 status_since: 2026-08-16
 summary: "What headwater check reads, what goes to each of its two streams, and the eleven causes behind its one non-zero exit."
-last_verified: 2026-08-16
+last_verified: 2026-08-24
 title: "headwater check"
 provenance:
   warrant: asserted
@@ -25,6 +25,7 @@ relations:
                     [--change <manifest>]
                     [--read-set <path>] [--register <path>]
                     [--format text|json|sarif|markdown] [--root <path>]
+                    [--no-color]
 
 The verb takes no operand. A word after `check` is refused, and the message names `check` as a verb the binary does not carry.
 
@@ -63,8 +64,10 @@ The verb takes no operand. A word after `check` is refused, and the message name
 | `--register <path>` | Write the obligation and control register of this run to a file as well as into the report. The bytes are the bytes already in the report. |
 | `--format text\|json\|sarif\|markdown` | The vocabulary the report is written in. `text` is the default and the one a person reads. `sarif` is what a forge ingests, `markdown` is a job summary or a review comment, and `json` is the finding shape that [spec 4](../spec/04-assurance-model.md) declares. Each target states what it could not carry. The flag moves no verdict and no exit status. |
 | `--root <path>` | The repository to read. It defaults to the working directory. |
+| `--no-color` | Write no color. Every run of this binary already writes none, on either stream and in every format, so the flag confirms that state and changes no byte. It is declared so that a caller who writes it out of habit gets an answer rather than a refusal. |
+| `--wide` | How wide the help is laid out. It reaches this verb, and this verb refuses it: `headwater check --wide` exits 1 and names the reason. The flag lays out the help and lays out nothing else. The report of this verb is composed rather than laid out at a width. [#340](https://github.com/headwater-ai/headwater/issues/340) carries that width. `headwater check --wide --help` is the one run here that the flag does lay out. |
 
-**Every flag above belongs to this verb, and a flag that belongs to another verb is refused here.** `headwater check --level L0` exits 1 and writes no report, because `--level` is a flag of `headwater conformance`. The table above is the set of flags that reach this verb. Two flags are answered by the parse before the verb is reached, and neither is in it: `--help` and `--version`, on both spellings. Each exits 0, writes to standard output alone, and produces no report. [HW-DR-0033](../decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md) is the ruling that a flag belongs to the verb that reads it. `engine/crates/cli/tests/wiring.rs` holds this paragraph over a corpus where the verb otherwise succeeds.
+**Every flag above belongs to this verb, and a flag that belongs to another verb is refused here.** `headwater check --level L0` exits 1 and writes no report, because `--level` is a flag of `headwater conformance`. The table above is the set of flags that reach this verb. Three flags are answered before the verb is reached. `--help` and `--version`, on both spellings, each exit 0, write to standard output alone, and produce no report. `--wide` exits 1 for the reason its row above gives, and produces no report either. [HW-DR-0033](../decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md) is the ruling that a flag belongs to the verb that reads it. `engine/crates/cli/tests/wiring.rs` holds this paragraph over a corpus where the verb otherwise succeeds.
 
 ## Exit status
 
@@ -90,7 +93,9 @@ Two of those are worth separating. **A refused patch is not a finding**, so no a
 
 ## Environment
 
-**No environment variable reaches this verb.** No crate under `engine/crates/` calls `std::env::var` outside a test target. The date is `--now`, the corpus is `--root`, and the taxonomy is the lock. `HEADWATER_BLESS`, `HEADWATER_SHA256_ORACLE` and `HEADWATER_SARIF_VALIDATOR` are read by test targets alone and reach no shipped code path.
+**No environment variable reaches this verb.** The date is `--now`, the corpus is `--root`, and the taxonomy is the lock. `HEADWATER_BLESS`, `HEADWATER_SHA256_ORACLE` and `HEADWATER_SARIF_VALIDATOR` are read by test targets alone and reach no shipped code path.
+
+**One variable reaches this binary, and a run of this verb never reads it.** `COLUMNS` says how wide the help is laid out. `engine/crates/cli/src/paint.rs` reads it, and only where the raw command line carries `--wide`, which this verb refuses. That call is the one `std::env::var` under `engine/crates/` outside a test target. So a run of this verb is a function of the command line, the tree and the lock, and of nothing a shell exported.
 
 A reader who met `HEADWATER_NOW` in a continuous-integration job is reading a shell variable of that job, which the job passes to `--now`.
 

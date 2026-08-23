@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-sweep
 status: draft
 status_since: 2026-08-16
 summary: "Why no result of headwater sweep can move an exit status, and the four caller errors that move one anyway."
-last_verified: 2026-08-16
+last_verified: 2026-08-24
 title: "headwater sweep"
 provenance:
   warrant: asserted
@@ -96,7 +96,9 @@ There is no precondition about a model, about a network, or about a plan having 
 
 ## Environment
 
-**No environment variable reaches either half.** No crate under `engine/crates/` calls `std::env::var` outside a test target. The slice is `--under`, the repository is `--root`, and the taxonomy is the lock.
+**No environment variable reaches either half.** The slice is `--under`, the repository is `--root`, and the taxonomy is the lock.
+
+**One variable reaches this binary, and neither half reads it.** `COLUMNS` says how wide the help is laid out. `engine/crates/cli/src/paint.rs` reads it, and only where the raw command line carries `--wide`, which both halves refuse for the reason `docs/interfaces/headwater-check.md` gives. That call is the one `std::env::var` under `engine/crates/` outside a test target.
 
 There is no variable that names a model, a key or an endpoint, and there is nowhere for one to be read. No crate of this engine depends on a network client.
 

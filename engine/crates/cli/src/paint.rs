@@ -61,8 +61,14 @@ pub const INDENT: usize = 10;
 /// the answer is needed to build the tree that parses them: `clap` renders help
 /// inside the parse, out of strings that were folded before it started.
 pub fn width() -> usize {
-    let wide = std::env::args_os().any(|one| one == "--wide");
-    width_of(wide, std::env::var("COLUMNS").ok().as_deref())
+    // The variable is read inside the `true` arm rather than beside the scan,
+    // so that a run with no `--wide` on its command line makes no call at all.
+    // Two interface contracts say what reaches this binary out of the
+    // environment, and the honest sentence is shorter for it.
+    match std::env::args_os().any(|one| one == "--wide") {
+        false => WIDTH,
+        true => width_of(true, std::env::var("COLUMNS").ok().as_deref()),
+    }
 }
 
 /// The width a `--wide` and a `COLUMNS` reading come to.
