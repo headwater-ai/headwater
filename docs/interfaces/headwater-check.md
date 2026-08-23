@@ -64,7 +64,7 @@ The verb takes no operand. A word after `check` is refused, and the message name
 | `--format text\|json\|sarif\|markdown` | The vocabulary the report is written in. `text` is the default and the one a person reads. `sarif` is what a forge ingests, `markdown` is a job summary or a review comment, and `json` is the finding shape that [spec 4](../spec/04-assurance-model.md) declares. Each target states what it could not carry. The flag moves no verdict and no exit status. |
 | `--root <path>` | The repository to read. It defaults to the working directory. |
 
-**Every flag of this binary is parsed before the verb is decided.** A flag that belongs to another verb is therefore accepted here, and it does nothing. `headwater check --level L0` exits 0 and writes the report that `headwater check` writes. The table above is the set of flags that reach this verb, and not the set the parser admits.
+**Every flag above belongs to this verb, and a flag that belongs to another verb is refused here.** `headwater check --level L0` exits 1 and writes no report, because `--level` is a flag of `headwater conformance`. The table above is the set of flags that reach this verb. Two flags are answered by the parse before the verb is reached, and neither is in it: `--help` and `--version`, on both spellings. Each exits 0, writes to standard output alone, and produces no report. [HW-DR-0033](../decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md) is the ruling that a flag belongs to the verb that reads it. `engine/crates/cli/tests/wiring.rs` holds this paragraph over a corpus where the verb otherwise succeeds.
 
 ## Exit status
 
@@ -74,7 +74,7 @@ The verb takes no operand. A word after `check` is refused, and the message name
 
 | The reason | Where it is decided |
 |---|---|
-| A flag that names a value has none after it. Or `--now` is not `YYYY-MM-DD`. Or a word that opens with `-` is not a flag this binary knows | the argument loop of `main` |
+| A flag that names a value has none after it. Or `--now` is not `YYYY-MM-DD`. Or the command line holds a word this verb does not read | the parse, before the verb is entered |
 | `--format` names a target that is not one of the four | `check`, before the corpus is walked |
 | The host has no readable clock and no `--now` was passed | `check`, before the corpus is walked |
 | `--change` names a manifest that did not read | `check`, before the corpus is walked |

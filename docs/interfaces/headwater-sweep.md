@@ -73,7 +73,7 @@ There is no precondition about a model, about a network, or about a plan having 
 | `--format text\|json` | `report` | The vocabulary. `text` is the default and the one a person reads. `json` is the finding shape that [spec 4](../spec/04-assurance-model.md) declares, with the provenance and the evidence a sweep adds. |
 | `--root <path>` | both | The repository to read. It defaults to the working directory. |
 
-**There is no `--strict`, and the parser accepts one.** Every flag of this binary is parsed before the verb is decided, so `headwater sweep report <path> --strict` exits 0 and writes what `headwater sweep report <path>` writes. The absence of a `--strict` that does anything is the property spec 12 states. The absence of a `--strict` the parser refuses is not.
+**There is no `--strict`, and the parser refuses one.** `headwater sweep report <path> --strict` exits 1 and writes no report. Spec 12 states the absence of a `--strict` that does anything. The parse states the absence of the word, so both readings of that sentence hold of this verb. [HW-DR-0033](../decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md) is the ruling, and `engine/crates/cli/tests/sweep.rs` holds the refusal.
 
 ## Exit status
 
@@ -83,7 +83,7 @@ There is no precondition about a model, about a network, or about a plan having 
 
 | The reason | Half | When it is decided |
 |---|---|---|
-| A flag that names a value has none after it. Or a word that opens with `-` is not a flag this binary knows. Or the words after `sweep` are not `plan`, `report <path>` | both | in `main`, before the verb is entered |
+| A flag that names a value has none after it. Or the command line holds a word this half does not read. Or the words after `sweep` are not `plan`, `report <path>` | both | in the parse, before the verb is entered |
 | `--format` names a target that is neither `text` nor `json` | `report` | first thing in the verb, before the file is opened |
 | The file at the given path did not read | `report` | after the format is decided, before the corpus is loaded |
 | The lock is absent, or a declaration under it did not read | both | for `report`, after the return file is read and before it is parsed. For `plan`, before anything |

@@ -397,19 +397,19 @@ fn the_version_flag_prints_the_engine_constant_outside_a_corpus() {
 /// A command line this binary cannot parse is refused in a few lines, and the
 /// grammar is one command away rather than under the sentence.
 ///
-/// Two invocations, because the two arms reach `fail` from different places: an
-/// unknown flag is refused inside the argument loop, before any verb is
-/// decided, and an unknown first word is refused after that loop against
-/// [`headwater_verbs::parse`]. A case over one of them says nothing about the
-/// other.
+/// Two invocations, because the two reach `fail` from different places: an
+/// unknown flag is refused by the parse of the verb that did not declare it,
+/// and an unknown first word is refused by the external-subcommand form that
+/// `headwater_cli::Verb` declares. A case over one of them says nothing about
+/// the other.
 ///
 /// # What each assertion holds, and why none of them is a byte count
 ///
-/// The marker is `--root <path>`, a line of the usage body that no refusal
+/// The marker is `--root <path>`, a line of the help body that no refusal
 /// message contains. Its **absence** is what says the grammar did not print.
 /// The obvious alternative — pinning the length of standard error — passes for
 /// the wrong reason the moment anybody rewords a message, and fails for the
-/// wrong reason the moment anybody edits `USAGE`, which is a fixture nobody
+/// wrong reason the moment anybody edits the help, which is a fixture nobody
 /// reads. #306 asked for the marker for that reason.
 ///
 /// Absence alone is satisfied by a binary that prints nothing at all, so three
@@ -485,19 +485,28 @@ fn a_refused_command_line_names_the_grammar_rather_than_printing_it() {
 
 /// `--help` answers on standard output alone, and it is not a failure.
 ///
-/// The case above deletes the usage body from every refusal, which leaves
-/// exactly one caller of `USAGE` in the binary. Nothing else now holds that
-/// caller, so a change that deleted the printing altogether, or that moved it
-/// to standard error beside the refusals, would take this whole surface away
-/// with the suite green.
+/// Every refusal of this binary points at `headwater --help` and prints none of
+/// the grammar itself, so this is the one surface the grammar has. Nothing else
+/// holds it: a change that stopped printing it, or that moved it to standard
+/// error beside the refusals, would take the whole surface away with the rest of
+/// the suite green.
 ///
-/// The three assertions are the ones
+/// The first two assertions are the ones
 /// [`the_version_flag_prints_the_engine_constant_outside_a_corpus`] makes about
 /// `--version`, for the same reason: a question is answered on standard output
 /// with exit 0, and standard error stays empty so a caller may keep the two
-/// apart. What is asserted about the body is that it is long and carries the
-/// marker the refusals must not — the inverse of the case above, and the
-/// statement that the grammar went somewhere rather than nowhere.
+/// apart.
+///
+/// # What is asserted about the body, and what used to be
+///
+/// That it names `--root <path>`, which is the marker the refusals must not
+/// carry, and that it names every verb the dispatch table carries. Until the
+/// parser migration the second of those was `lines().count() > 100`, which was a
+/// proxy for "the grammar is here" against a 357-line literal. A count is a
+/// fixture nobody reads: it passes for the wrong reason as soon as the layout
+/// moves, and [#321](https://github.com/headwater-ai/headwater/issues/321) moves
+/// it deliberately. The verb list is the thing the count stood in for, and it is
+/// held directly.
 #[test]
 fn the_help_flag_answers_on_standard_output_outside_a_corpus() {
     for (label, flag) in [("help-long", "--help"), ("help-short", "-h")] {
@@ -518,10 +527,85 @@ fn the_help_flag_answers_on_standard_output_outside_a_corpus() {
             "`{flag}` is where the grammar is, and `--root <path>` is a line of it:\n{}",
             ran.out
         );
-        assert!(
-            ran.out.lines().count() > 100,
-            "`{flag}` prints the whole grammar, and it printed {} lines",
-            ran.out.lines().count()
-        );
+        for verb in headwater_verbs::VERBS {
+            assert!(
+                ran.out.contains(verb.name),
+                "`{flag}` is where a caller finds a verb, and it does not name `{}`:\n{}",
+                verb.name,
+                ran.out
+            );
+        }
     }
+}
+
+/// A flag that belongs to another verb is refused rather than accepted and
+/// ignored.
+///
+/// This is the reversal
+/// [HW-DR-0033](../../../../docs/decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md)
+/// records, at the surface a caller meets. `--level` is read by `conformance`
+/// and by nothing else. Under the flat namespace `headwater check --level L0`
+/// exited **0** and wrote the whole report, which
+/// `docs/interfaces/headwater-check.md` stated as a promise, and a caller who
+/// believed the flag had done something read a report that ignored it.
+///
+/// # The corpus is the point of this case rather than a setting for it
+///
+/// The first invocation is not scaffolding. Run from a directory that is not a
+/// corpus, `headwater check` exits 1 with nothing on standard output *whatever*
+/// the parser does, so the asserted outcome would be the ambient one and
+/// deleting the refusal would break nothing. Over this fixture root `check`
+/// exits 0 and writes a report, so exit 1 with an empty standard output is
+/// reachable through the refusal and through nothing else.
+///
+/// The last invocation is the other direction: the flag still reaches the verb
+/// that declares it, so what was withdrawn is the namespace and not the flag.
+#[test]
+fn a_flag_that_belongs_to_another_verb_is_refused_rather_than_ignored() {
+    let root = Root::over("change", "level-belongs-to-conformance");
+
+    let ran = root.run(&["check", "--no-cache", "--now", "2026-08-01"]);
+    assert_eq!(
+        ran.code,
+        Some(0),
+        "over this root the verb succeeds, which is what makes the refusal below the only route to a 1:\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert!(
+        !ran.out.is_empty(),
+        "over this root the verb writes a report, which is what makes an empty standard output below decisive"
+    );
+
+    let refused = root.run(&[
+        "check",
+        "--level",
+        "L0",
+        "--no-cache",
+        "--now",
+        "2026-08-01",
+    ]);
+    assert_eq!(
+        refused.code,
+        Some(1),
+        "`--level` is not a flag `check` reads, and this binary has one failing status:\n{}{}",
+        refused.out,
+        refused.err
+    );
+    assert_eq!(
+        refused.out, "",
+        "a refused command line writes no report, so a caller reading by pipe reads a report or nothing"
+    );
+    assert!(
+        refused.err.contains("--level"),
+        "the refusal names the flag the caller wrote:\n{}",
+        refused.err
+    );
+
+    let read = root.run(&["conformance", "--level", "L0", "--now", "2026-08-01"]);
+    assert!(
+        !read.err.contains("--level"),
+        "`--level` reaches the verb that declares it, whatever that verb then reports:\n{}",
+        read.err
+    );
 }

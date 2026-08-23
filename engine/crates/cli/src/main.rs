@@ -51,11 +51,13 @@
 //! under `cargo test`. What the cached run writes to standard error is the hit
 //! count, which belongs there because it is a fact about a disk.
 
+use clap::Parser;
 use headwater_adapter::{Format, Subject};
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::{Cache, Context, Date, Declared, Register, Shape};
+use headwater_cli::{Cli, ProbeWord, SweepWord, TaxonomyWord, Verb};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
@@ -69,573 +71,51 @@ use headwater_scaffold::reading::Surface as EntryPoint;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-const USAGE: &str = "\
-headwater check              [--strict] [--fix] [--no-cache] [--now <date>]
-                             [--change <manifest>]
-                             [--read-set <path>] [--register <path>]
-                             [--format text|json|sarif|markdown] [--root <path>]
-headwater gate               --read-set <path> [--now <date>] [--root <path>]
-headwater route              <task description> [--budget <n>] [--root <path>]
-headwater explain            <path|identifier> [--root <path>]
-headwater mcp                [--now <date>] [--write] [--root <path>]
-headwater new                <kind> --title <text> [--relates <relation>=<identifier>]
-                             [--facet <facet>=<value>] [--now <date>] [--root <path>]
-headwater capture            [--format text|json] [--root <path>]
-headwater sweep plan         [--under <path>] [--root <path>]
-headwater sweep report       <path> [--format text|json] [--root <path>]
-headwater probe plan         [--tier regression|campaign] [--arm present|absent]
-                             [--category <name>] [--seed <n>] [--root <path>]
-headwater probe record       <path> [--root <path>]
-headwater probe grade        <path> [--root <path>]
-headwater probe stale        [--root <path>]
-headwater generate           [--check] [--root <path>]
-headwater import             [<name>] [--expect <digest>] [--write] [--root <path>]
-headwater export             [--profile <name>] [--format json|jsonschema] [--at <date>]
-                             [--check] [--root <path>]
-headwater init               [--corpus <dir>] [--package <name>] [--root <path>]
-headwater infer              [--owner <name>] [--until <date>] [--write]
-                             [--now <date>] [--root <path>]
-headwater conformance        [--level <name>] [--now <date>] [--root <path>]
-headwater query              <expression>
-headwater taxonomy validate  [--root <path>]
-headwater taxonomy resolve   [--check] [--root <path>]
-headwater taxonomy audit     [--now <date>] [--root <path>]
-headwater taxonomy publish   [--package <name>] --out <dir> [--root <path>]
-headwater taxonomy vendor    <dir> [--expect <digest>] [--root <path>]
-headwater taxonomy diff      <dir> [--to <version>] [--now <date>] [--root <path>]
-headwater taxonomy migrate   <dir> [--to <version>] [--apply] [--now <date>]
-                             [--root <path>]
-
-  check              run the pipeline over the corpus, against the taxonomy in
-                     the committed lock.
-  gate               hold the read set of an earlier run against the tree in
-                     front of it, and report whether the verdicts of that run
-                     carry to this one. It reads only what the set lists, so it
-                     reports the reach of its own answer and never reports that
-                     a corpus is green. It exits non-zero on a verdict that does
-                     not carry, which is the signal to run the checks again.
-  route              resolve a task description to the documents that govern it,
-                     as pointers. It is silent when nothing matches.
-  explain            why a document is the kind it is, what it serves, and what
-                     is consequently required of it.
-  mcp                serve the reads above, and one run of the checks, to an
-                     agent over the Model Context Protocol, on standard input
-                     and output. It registers spec 5's query class, and with
-                     `--write` the working-tree write class beside it. The
-                     corpus is walked once before it starts and the clock is
-                     read once, so every call answers about the same tree at the
-                     same date, and the `check` tool returns the bytes `check
-                     --format` returns. A call that moves a byte of that tree
-                     ends the server rather than answering from a walk it made
-                     stale.
-  new                scaffold a document of a kind: the placement its shelf
-                     dictates, the front matter its facets require, the sections
-                     its contract requires, an identifier under its scheme, and
-                     the edges the taxonomy assigns to a scaffold. It writes no
-                     generated-file marker, because what it writes is an
-                     authored document from the moment it lands and every check
-                     reads it. It decides everything before it writes anything,
-                     and it never overwrites a document. Every run that writes a
-                     document appends one capture-cost reading to the store, and
-                     a run whose reading did not land exits non-zero.
-  capture            read the capture-cost store back: the assisted fraction
-                     over every reading it holds, the same by kind, and how far
-                     the authoring verb reaches into the corpus. It names no
-                     person and no agent, and it never averages readings taken
-                     under two taxonomies.
-  generate           write every projection the taxonomy declares, and report
-                     every one it does not write with the reason. It refuses to
-                     overwrite a file that carries no generated-file marker.
-  import             read a snapshot that somebody already fetched and
-                     committed, and write the edges it declares into the
-                     documents at their near ends. The snapshot is checked
-                     against a digest and a channel that a person wrote into
-                     `.headwater/taxonomy.yml`, and an import with neither is
-                     refused rather than recorded. Without `--write` it reports
-                     the edges and touches nothing. A wrong imported edge would
-                     produce a correct check result over a wrong graph, so every
-                     link is refused whole rather than reported as a finding.
-  export             emit one declared export profile through one emitter
-                     target, with the loss set the target declares and the
-                     projection census that holds the output against the graph.
-                     With `--format` it writes the artifact to standard output,
-                     which is what a consumer outside this repository asks for.
-                     Without one it writes every declared export to the path its
-                     taxonomy names, and `--check` holds those to regeneration.
-  sweep              the two deterministic halves of the coherence sweep, which
-                     is a sampler and never a check. `plan` writes the briefing
-                     an agent reads: the slice, what the graph already declares
-                     about it, and the file to write back. `report` reads that
-                     file and says what this engine could confirm about it —
-                     that every quotation is in the document it names, that
-                     every path is a classified document, and that no proposed
-                     edge is one the graph already carries. No model is reached
-                     from this binary, both halves exit 0 whatever they find,
-                     and neither writes a byte of the corpus.
-  probe              the four deterministic parts of the probe harness, which
-                     is a sampler and never a check. `plan` fixes the six
-                     members of the run identity that exist before a run, and
-                     projects the sessions against the ceiling that
-                     `.headwater/probe.yml` declares for the tier. It refuses a
-                     run above it, and it refuses one whose probes name an
-                     oracle this engine does not carry or a predicate over no
-                     document. `record` reads a transcript that a recorder
-                     wrote and confirms the taxonomy, the completeness of the
-                     run identity, the membership of every probe named, that no
-                     key outside the closed set appears, and that a realized
-                     cost was recorded. Nothing here reaches a model, nothing
-                     here writes a transcript, and both halves exit 0 whatever
-                     they find. A transcript that an agent wrote about its own
-                     session is a self-report, which spec 5 refuses, so the
-                     recorder observes a session from outside it and is not in
-                     this repository. Neither of those two grades. `grade` is
-                     the one component of this engine that returns a verdict,
-                     and three properties are why it may: its inputs carry no
-                     prose, every satisfied verdict names the event that
-                     satisfied it, and six conditions return no verdict where a
-                     green one would be free. It reports a rate over the
-                     sessions that reached a verdict, with the count that did
-                     not beside it. `stale` holds the read set of every
-                     committed transcript against the tree in front of it and
-                     reports which recorded results a change voided. A read set
-                     is the probes of the selection, the documents they examine
-                     and the documents a session was observed to open, so an
-                     edit anywhere else voids nothing. It exits 0 on every
-                     answer, because a result going stale is a fact about a
-                     measurement rather than a status a build reads.
-  init               scaffold the consumer declaration and the overlay for a
-                     repository that has neither, and print the questions that
-                     no tree answers. It refuses to overwrite a binding.
-  infer              report the debt this taxonomy raises over this corpus as
-                     an adoption payload: `(document, rule)` pairs under tasks
-                     that each carry an owner and an expiry. It prints the
-                     payload and writes nothing without `--write`.
-  conformance        evaluate this repository against the conformance rules the
-                     taxonomy package ships, and report the level that the
-                     passing rules reach. A level states what this repository
-                     wired up: it measures nothing about the corpus, no key
-                     declares one, and a waiver moves the exit status and never
-                     the level. A rule this engine holds no reading for ends the
-                     run rather than being skipped. Without `--level` it exits 0
-                     whatever it finds.
-  query              listed in spec 6, and no document states what an
-                     expression is, so this engine implements none. It states
-                     that wait and exits non-zero. It is here because a wait a
-                     caller cannot discover is a wait nobody reads. `route` and
-                     `explain` are the reads that exist.
-  taxonomy validate  resolve the sources and report every rule of spec 2's
-                     list, and what each one did not decide. Writes nothing.
-  taxonomy resolve   write `.headwater/taxonomy.lock`. It is written only when
-                     the taxonomy validates, so a lock is a validated taxonomy.
-  taxonomy audit     measure the taxonomy against the corpus: edge counts and
-                     staleness by the creator each relation declares, relation
-                     drift by family, facet differentiation, the discriminator
-                     distribution of a heterogeneous shelf, and state dwell. It
-                     reports findings about the schema and never about a
-                     document, it gates nothing, and it always exits 0. One bar
-                     is declared and the rest of the readings are distributions
-                     with no verdict beside them.
-  taxonomy publish   write the artifact of a package into a directory, with a
-                     release record over it: every file, the digest of its
-                     bytes, and one digest over that list. It prints the digest,
-                     which is the number the release notes state and a consumer
-                     pins. It reads every migration payload the manifest
-                     declares before it writes a file, and refuses one that the
-                     taxonomy under publication contradicts.
-  taxonomy diff      measure what a published artifact would do to this corpus,
-                     across the six compatibility dimensions of spec 2. It
-                     resolves the artifact under this repository's own overlays
-                     and runs every phase twice over one tree, so a difference
-                     is attributable to the schema rather than to two publishes
-                     of one package differing in trivia. Where the artifact
-                     ships a migration payload for the move, it reports what
-                     each step reaches in this corpus and every document that
-                     stopped validating under no step. It writes nothing, and
-                     it fails only when it could not measure.
-  taxonomy vendor    check an artifact that somebody already fetched against the
-                     digest this repository pinned, and install it under
-                     `packages/`. It refuses an artifact that is not the pinned
-                     one, and it names every file that moved. Nothing here
-                     fetches: no crate of this engine depends on the network, so
-                     the verb takes the path of a directory and never a
-                     location.
-  taxonomy migrate   apply the migration payload a published artifact ships, to
-                     this corpus. It takes the path of a directory somebody
-                     already fetched, for the reason above. Without `--apply` it
-                     reports every file each step would write and writes
-                     nothing.
-
-  --strict       `check` only: exit non-zero when a finding is an error. Without
-                 it the run is advisory and always exits 0, which is the default
-                 spec 6 fixes.
-  --fix          `check` only: write the patch that rides with a finding, in
-                 this working tree. A finding carries one only when the fix is
-                 mechanical and total, and a finding an author suppressed
-                 carries none. Every patch is held against the bytes it names
-                 and the result is read back before it lands, so a file whose
-                 shape this engine guessed wrong is refused with nothing
-                 written. The report that follows is the run after the write,
-                 and the account of what was written goes to standard error.
-                 It exits non-zero on a refusal.
-  --no-cache     `check` only: read and write no cache, and evaluate every
-                 instance. This run and a cached one write the same bytes to
-                 standard output, and a difference between them is a defect in
-                 the cache rather than a result.
-  --now <date>   `check`, `gate`, `new`, `mcp`, `conformance` and
-                 `taxonomy audit`: the date to
-                 evaluate against, as `YYYY-MM-DD`. Defaults to today. On
-                 `taxonomy audit` it is what a staleness reading and a dwell
-                 reading are taken at, so two audits of one tree at one date
-                 write the same bytes. Spec 12 makes the
-                 clock an injected value rather than a syscall inside a check,
-                 and this flag is where it is injected: same corpus, same lock,
-                 same date, same bytes. On `gate` it is the day the question is
-                 asked about, and a run that read the clock is void on any
-                 other day. On `mcp` it is read once and fixed for the life of
-                 the server, and every result states it.
-  --read-set <path>
-                 `check`: write the read set of this run to a file as well as
-                 to the report. `gate`: the file to hold against this tree, and
-                 the flag is required there. The artifact is what decides
-                 whether a verdict survives a merge without running the checks
-                 again.
-  --change <path>
-                 `check` only: the manifest of the change this run is scoped
-                 to. Each line names one document the change carries, as
-                 `added\t<path>` or `prior\t<path>\t<file>`, and the second
-                 form names a file holding the bytes that stood before the
-                 change. A document the manifest does not name did not change.
-                 It is what a rule that reads a transition needs, and without
-                 it, every instance of such a rule is reported as skipped rather
-                 than passed. This engine walks no history: the caller anchors
-                 the prior version to the state on the branch where the change
-                 lands, which spec 12 fixes as the merge base of a proposed
-                 change and the committed `HEAD` of a working-tree hook.
-                 Every path is held against the corpus this run walks, and one
-                 that reaches no row of it is counted and named in the report
-                 rather than absorbed. No path is normalized, so `./docs/a.md`
-                 reaches no row. What this engine cannot check is whether the
-                 manifest tells the truth: a line that says `added` for a
-                 document that already stood, and a document the change carried
-                 and the manifest omits, are both invisible without the history
-                 that spec 12 rules out as an input.
-  --register <path>
-                 `check` only: write the register of this run to a file as well
-                 as to the report. Spec 4 makes it a projection of the
-                 `obligations` and `controls` declarations, generated and never
-                 authored: every obligation with its disposition, every control
-                 with its health, and what escaped under each.
-  --title <text> `new` only: what the document is called. Required, because the
-                 file name and the facet in the `name` role both come from it.
-  --relates <relation>=<identifier>
-                 `new` only, and repeatable: an edge to propose, as a relation
-                 and the identifier of the document at the other end. It is
-                 refused unless the taxonomy declares `created_by: scaffold` on
-                 the relation, unless both ends are kinds the relation permits,
-                 and unless the target resolves. Where reciprocity is required
-                 the far half is written into the target document.
-  --budget <n>   `route` only: how many ranked pointers it may offer. It never
-                 removes a document that governs a path the task named, and it
-                 says how many it withheld. Five by default.
-  --owner <name>
-                 `infer` only: who owns the debt it proposes. Required with
-                 `--write`, because an owner is the field that ranks declared
-                 debt above a suppression and this engine will not invent one.
-  --until <date> `infer` only: the last day the tasks it proposes hold, as
-                 `YYYY-MM-DD`. Ninety days out by default.
-  --level <name> `conformance` only: the rung to ask about, by the name the
-                 package declares. It exits non-zero on a gap under that rung
-                 that no live waiver covers. It never moves the level the report
-                 states, which is computed from met rules alone.
-  --write        `infer`: put the payload in the lock, which is committed and
-                 reviewed. Without it nothing is written. `mcp`: register the
-                 working-tree write class, which is `new` and `fix`. Spec 5
-                 keeps it off by default, because a client may connect to a
-                 checkout that the user did not intend to change, so the
-                 consent is a word somebody typed rather than a setting a tree
-                 carries. A tool that lands a change is registered by no
-                 switch. The first call that moves a byte ends the server: it
-                 walked the corpus once, so every later answer would be about a
-                 tree that is gone.
-  --corpus <dir> `init` only: the corpus root to declare. Proposed from the
-                 tree by default.
-  --package <name>
-                 `init`: the package to take. `headwater/standard` by default.
-                 `taxonomy publish`: the package to publish. The one this
-                 repository's own declaration takes, by default, because a
-                 publisher usually publishes what it also consumes.
-  --check        `taxonomy resolve` and `generate`: write nothing and exit
-                 non-zero when what is committed is not what a run produces. The
-                 two read different things. `taxonomy resolve --check` reads the
-                 taxonomy sources, so it answers whether the lock is current.
-                 `generate --check` reads the corpus through the lock, so it
-                 answers whether a derived artifact is.
-  --profile <name>
-                 `export` only: which declared export profile to emit. Every
-                 declared profile by default, so a filtered audience is never
-                 omitted by accident.
-  --format <target>
-                 `check`: which vocabulary to write the run in. `text` is the
-                 report a person reads and the default. `sarif` is what a forge
-                 ingests as a check run, `markdown` is a job summary or a review
-                 comment, and `json` is the finding shape spec 4 declares, for an
-                 adapter nobody here wrote. Each names what it could not carry.
-
-                 `export`: the emitter target. `json` is the native
-                 property graph with no loss and `jsonschema` constrains front
-                 matter. The other five targets of spec 6 parse and report the
-                 consumer each one waits on. With this flag the artifact goes to
-                 standard output and no declared output path is touched.
-
-                 `capture`: `text` is the report a person reads and the default,
-                 and `json` is the same numbers for a program. Neither carries a
-                 reading the store does not hold.
-
-                 `sweep report`: `text` is the report a person reads and the
-                 default, and `json` is the finding shape spec 4 declares with
-                 the provenance and the evidence a sweep adds.
-  --under <path> `sweep plan` only: the slice, as a path prefix under the
-                 repository root. The whole corpus by default. There is no
-                 sampling rule here: a slice this engine picked would be an
-                 unreproducible sample dressed as a reproducible one, and the
-                 plan reports its own extent instead.
-  --at <date>    `export` only: the generation time the artifact states, as
-                 `YYYY-MM-DD`. Absent by default, because an artifact that
-                 `--check` compares by byte cannot carry a clock reading. Spec 6
-                 asks a filtered export that leaves the repository to state one,
-                 and this is where it is injected.
-  --out <dir>    `taxonomy publish` only: where to write the artifact. The
-                 directory must be empty or absent, because a published artifact
-                 is every file under its root and a stray one would be a member
-                 the publisher never shipped. A run that cannot finish leaves it
-                 as it found it, so a second run meets the same precondition the
-                 first one did.
-  --to <version> `taxonomy diff` only: the version the artifact is expected to
-                 be, written as a version or as a range: `4.0.0`, or `>=4 <5`
-                 with the quoting your shell needs.
-                 This engine fetches nothing, so the directory decides which
-                 artifact is compared and this flag holds it to what the caller
-                 meant. It is read by the one range reader the engine has, which
-                 is what reads `requires_engine`.
-  --expect <d>   `taxonomy vendor` only: the digest to check the artifact
-                 against. It defaults to `taxonomy.digest` in
-                 `.headwater/taxonomy.yml`, and the verb refuses when neither is
-                 there. A pin the engine took from the artifact in front of it
-                 would be a pin against itself.
-  --root <path>  the repository to read. Defaults to the working directory.
-  -V, --version  the version of this engine. It is the number a package's
-                 `requires_engine` range is read against, and it is the number
-                 to quote in a bug report. One line on standard output, and no
-                 repository is needed to ask.
-";
-
 fn main() -> ExitCode {
-    let mut arguments = std::env::args().skip(1);
-    let mut strict = false;
-    let mut check_only = false;
-    let mut fixing = false;
-    let mut applying = false;
-    let mut cached = true;
-    let mut now: Option<Date> = None;
-    let mut read_set: Option<PathBuf> = None;
-    let mut change: Option<PathBuf> = None;
-    let mut register_out: Option<PathBuf> = None;
-    let mut root: Option<PathBuf> = None;
-    let mut budget: Option<usize> = None;
-    let mut write = false;
-    let mut owner: Option<String> = None;
-    let mut until: Option<Date> = None;
-    let mut corpus_root: Option<String> = None;
-    let mut package: Option<String> = None;
-    let mut out: Option<PathBuf> = None;
-    let mut expect: Option<String> = None;
-    let mut to: Option<String> = None;
-    let mut profile: Option<String> = None;
-    let mut format: Option<String> = None;
-    let mut generated_at: Option<String> = None;
-    let mut title: Option<String> = None;
-    let mut under: Option<String> = None;
-    let mut relates: Vec<(String, String)> = Vec::new();
-    let mut facets: Vec<(String, String)> = Vec::new();
-    let mut level: Option<String> = None;
-    let mut tier: Option<String> = None;
-    let mut arm: Option<String> = None;
-    let mut category: Option<String> = None;
-    let mut seed: u64 = 0;
-    let mut words: Vec<String> = Vec::new();
+    // `clap` exits **2** on a parse error, and this binary has one failing
+    // status and it is 1: `docs/interfaces/headwater-check.md` lists eleven
+    // reasons for it under "There is no third status", and a 2 anywhere makes
+    // that sentence false. `Command` exposes no setting for the error exit
+    // code, so the only route is `try_parse` and never letting `clap` call
+    // `exit` itself. That is one site rather than a rule each error path keeps.
+    //
+    // `use_stderr()` is what carries the other half. It is false for exactly
+    // the two errors that are answers rather than mistakes — `--help`, and
+    // `--version` for a `clap` that owns it — and `Error::print` already routes
+    // those to standard output. Returning `FAILURE` unconditionally here would
+    // turn `--help` into a failure, and printing to the wrong stream would
+    // break the zero-bytes-on-standard-error guarantee that
+    // `tests/wiring.rs` holds for both `--help` and `--version`.
+    let cli = match Cli::try_parse() {
+        Ok(cli) => cli,
+        Err(error) => match error.use_stderr() {
+            true => return fail(&headwater_cli::headline(&error)),
+            false => {
+                let _ = error.print();
+                return ExitCode::SUCCESS;
+            }
+        },
+    };
 
-    while let Some(argument) = arguments.next() {
-        match argument.as_str() {
-            "--strict" => strict = true,
-            "--check" => check_only = true,
-            "--fix" => fixing = true,
-            "--apply" => applying = true,
-            "--no-cache" => cached = false,
-            "--now" => match arguments.next().as_deref().map(Date::parse) {
-                Some(Some(date)) => now = Some(date),
-                Some(None) => return fail("--now takes a date written `YYYY-MM-DD`"),
-                None => return fail("--now names a date and none followed it"),
-            },
-            "--budget" => match arguments.next().as_deref().map(str::parse::<usize>) {
-                Some(Ok(value)) if value > 0 => budget = Some(value),
-                Some(_) => return fail("--budget takes a whole number above zero"),
-                None => return fail("--budget names a number and none followed it"),
-            },
-            "--write" => write = true,
-            "--profile" => match arguments.next() {
-                Some(name) => profile = Some(name),
-                None => return fail("--profile names an export profile and none followed it"),
-            },
-            "--format" => match arguments.next() {
-                Some(name) => format = Some(name),
-                None => return fail("--format names an emitter target and none followed it"),
-            },
-            "--at" => match arguments.next() {
-                Some(text) => match Date::parse(&text) {
-                    Some(_) => generated_at = Some(text),
-                    None => return fail("--at takes a date written `YYYY-MM-DD`"),
-                },
-                None => return fail("--at names a date and none followed it"),
-            },
-            "--under" => match arguments.next() {
-                Some(path) => under = Some(path),
-                None => return fail("--under names a path prefix and none followed it"),
-            },
-            "--title" => match arguments.next() {
-                Some(text) => title = Some(text),
-                None => return fail("--title names the document and none followed it"),
-            },
-            "--relates" => match arguments.next() {
-                Some(pair) => match pair.split_once('=') {
-                    Some((relation, target)) if !relation.is_empty() && !target.is_empty() => {
-                        relates.push((relation.to_string(), target.to_string()));
-                    }
-                    _ => {
-                        return fail(
-                            "--relates takes `<relation>=<identifier>`, as in \
-                             `--relates supersedes=HW-DR-0007`",
-                        )
-                    }
-                },
-                None => {
-                    return fail("--relates names a relation and a target, and none followed it")
-                }
-            },
-            "--facet" => match arguments.next() {
-                Some(pair) => match pair.split_once('=') {
-                    Some((facet, value)) if !facet.is_empty() && !value.is_empty() => {
-                        facets.push((facet.to_string(), value.to_string()));
-                    }
-                    _ => {
-                        return fail(
-                            "--facet takes `<facet>=<value>`, as in \
-                             `--facet probe_category=discovery`",
-                        )
-                    }
-                },
-                None => return fail("--facet names a facet and a value, and none followed it"),
-            },
-            "--owner" => match arguments.next() {
-                Some(name) => owner = Some(name),
-                None => return fail("--owner names a person or a team and none followed it"),
-            },
-            "--corpus" => match arguments.next() {
-                Some(directory) => corpus_root = Some(directory),
-                None => return fail("--corpus names a directory and none followed it"),
-            },
-            "--package" => match arguments.next() {
-                Some(name) => package = Some(name),
-                None => return fail("--package names a package and none followed it"),
-            },
-            "--level" => match arguments.next() {
-                Some(name) => level = Some(name),
-                None => return fail("--level names a level and none followed it"),
-            },
-            "--out" => match arguments.next() {
-                Some(path) => out = Some(PathBuf::from(path)),
-                None => return fail("--out names a directory and none followed it"),
-            },
-            "--expect" => match arguments.next() {
-                Some(text) => expect = Some(text),
-                None => return fail("--expect names a digest and none followed it"),
-            },
-            "--to" => match arguments.next() {
-                Some(text) => to = Some(text),
-                None => return fail("--to names a version and none followed it"),
-            },
-            "--until" => match arguments.next().as_deref().map(Date::parse) {
-                Some(Some(date)) => until = Some(date),
-                Some(None) => return fail("--until takes a date written `YYYY-MM-DD`"),
-                None => return fail("--until names a date and none followed it"),
-            },
-            "--register" => match arguments.next() {
-                Some(path) => register_out = Some(PathBuf::from(path)),
-                None => return fail("--register names a file and none followed it"),
-            },
-            "--read-set" => match arguments.next() {
-                Some(path) => read_set = Some(PathBuf::from(path)),
-                None => return fail("--read-set names a path and none followed it"),
-            },
-            "--change" => match arguments.next() {
-                Some(path) => change = Some(PathBuf::from(path)),
-                None => return fail("--change names a manifest and none followed it"),
-            },
-            "--tier" => match arguments.next() {
-                Some(name) => tier = Some(name),
-                None => return fail("--tier names a probe tier and none followed it"),
-            },
-            "--arm" => match arguments.next() {
-                Some(name) => arm = Some(name),
-                None => return fail("--arm names `present` or `absent` and none followed it"),
-            },
-            "--category" => match arguments.next() {
-                Some(name) => category = Some(name),
-                None => return fail("--category names a probe category and none followed it"),
-            },
-            // Zero is the default and it is a value like any other. The seed is
-            // the caller's, so a run that states none states zero, and a run
-            // that repeats a seed repeats a selection.
-            "--seed" => match arguments.next().as_deref().map(str::parse::<u64>) {
-                Some(Ok(value)) => seed = value,
-                Some(_) => return fail("--seed takes a whole number"),
-                None => return fail("--seed names a number and none followed it"),
-            },
-            "--root" => match arguments.next() {
-                Some(path) => root = Some(PathBuf::from(path)),
-                None => return fail("--root names a path and none followed it"),
-            },
-            "-h" | "--help" => {
-                print!("{USAGE}");
-                return ExitCode::SUCCESS;
-            }
-            // The value is `headwater_resolve::release::ENGINE` and not a
-            // fourth `env!("CARGO_PKG_VERSION")`. That constant is what a
-            // `requires_engine` range is compared against, so the number a
-            // caller reads here is the number that decides whether a package
-            // loads, rather than a second string that agrees with it today
-            // because every crate declares `version.workspace = true`. The
-            // engine has already paid for the other shape: it advertised the
-            // placeholder `0.0.0` as `serverInfo.version` over MCP and the
-            // value sat wrong through five milestones, because a value exactly
-            // one surface reports is a value nobody audits.
-            //
-            // Placed beside `--help` because it answers the same way: standard
-            // output, exit 0, and short-circuited before `let root` below, so a
-            // caller with no corpus and no `--root` still gets an answer. It
-            // works after a verb as well as before one, for the same reason
-            // `headwater check --help` does.
-            "-V" | "--version" => {
-                println!("{}", headwater_resolve::release::ENGINE);
-                return ExitCode::SUCCESS;
-            }
-            other if other.starts_with('-') => {
-                return fail(&format!("`{other}` is not a flag this binary knows"));
-            }
-            other => words.push(other.to_string()),
-        }
+    // The value is `headwater_resolve::release::ENGINE` and not a fourth
+    // `env!("CARGO_PKG_VERSION")`. That constant is what a `requires_engine`
+    // range is compared against, so the number a caller reads here is the
+    // number that decides whether a package loads, rather than a second string
+    // that agrees with it today because every crate declares
+    // `version.workspace = true`. The engine has already paid for the other
+    // shape: it advertised the placeholder `0.0.0` as `serverInfo.version` over
+    // MCP and the value sat wrong through five milestones, because a value
+    // exactly one surface reports is a value nobody audits.
+    //
+    // It is read before `let root` below, so a caller with no corpus and no
+    // `--root` still gets an answer, and it is declared global so that it works
+    // after a verb as well as before one.
+    if cli.version {
+        println!("{}", headwater_resolve::release::ENGINE);
+        return ExitCode::SUCCESS;
     }
 
-    let root = match root {
+    let root = match cli.root {
         Some(path) => path,
         None => match std::env::current_dir() {
             Ok(path) => path,
@@ -643,156 +123,232 @@ fn main() -> ExitCode {
         },
     };
 
-    let verb: Vec<&str> = words.iter().map(String::as_str).collect();
+    let Some(verb) = cli.verb else {
+        return fail("no verb. Try `headwater check`");
+    };
 
-    // The dispatch table is `headwater_verbs::VERBS`, and this is where it
-    // decides. A first word the table does not carry is refused here, so an arm
-    // below that the table does not name is unreachable and the verb it claims
-    // to add does not run. That is the property #257 asked for: the list was
-    // downstream of the arms and drifted from them in three places, and the
-    // arms are now downstream of the list. `crates/cli/tests/verbs.rs` reads the
-    // arms out of this file and holds them against the table, which closes the
-    // other direction.
-    //
-    // The message keeps its wording. It names the first word of the command
-    // line rather than the verb it dispatched to, so `headwater check docs/`
-    // still answers that `check` is not a verb this binary carries. Two
-    // interface contracts state that behavior, because a contract states what
-    // the binary does.
-    if let [first, ..] = verb.as_slice() {
-        if headwater_verbs::parse(first).is_none() {
-            return fail(&format!(
-                "`{first}` is not a verb this binary carries yet. It carries {}",
-                headwater_verbs::listed()
-            ));
-        }
-    }
+    dispatch(&root, verb)
+}
 
-    match verb.as_slice() {
-        ["check"] => check(
-            &root,
+/// One command line to one verb.
+///
+/// # The dispatch table is `headwater_verbs::VERBS`, and this is no longer
+/// where it decides
+///
+/// It was, until [HW-DR-0033](../../../../docs/decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md).
+/// `main` resolved the first word against the table before it entered a
+/// `match verb.as_slice()` of string patterns, so an arm the table did not
+/// carry never ran, and `tests/verbs.rs` scraped the arms out of this file as
+/// source text to close the other direction. The patterns are gone: the arms
+/// below are variants of `headwater_cli::Verb`, which `clap` builds a command
+/// tree from, and that tree is what `tests/verbs.rs` now holds against the
+/// table in both directions. A name in either one and not the other fails, and
+/// the failure names it.
+///
+/// # What is still decided here, and why it is not `clap`'s
+///
+/// Every refusal below states what a caller may type next, out of
+/// `headwater_verbs`. `clap` would answer an unknown first word with
+/// `unrecognized subcommand` and at most one near miss, and this binary
+/// enumerates the whole set — which is what [#257](https://github.com/headwater-ai/headwater/issues/257)
+/// asked for, and why each level declares an external-subcommand form rather
+/// than letting the parse refuse. A required operand is optional to the parser
+/// for the same reason: `headwater gate` names what a read set is and how to
+/// produce one, which a missing-argument message cannot.
+fn dispatch(root: &Path, verb: Verb) -> ExitCode {
+    match verb {
+        Verb::Check {
+            strict,
+            fix,
+            no_cache,
+            now,
+            change,
+            read_set,
+            register,
+            format,
+        } => check(
+            root,
             Asked {
                 strict,
-                cached,
-                fixing,
+                cached: !no_cache,
+                fixing: fix,
                 now,
                 read_set,
-                register_out,
+                register_out: register,
                 format,
                 change,
             },
         ),
-        ["gate"] => gate(&root, read_set, now),
-        ["route"] => fail("`route` takes a task description. Try `headwater route \"add rate limiting to the ingest API\"`"),
-        ["route", task @ ..] => route(&root, &task.join(" "), budget),
-        ["explain"] => fail("`explain` takes a path or an identifier"),
-        ["explain", target] => explain(&root, target),
-        ["mcp"] => mcp(&root, now, write),
-        ["new"] => fail(
-            "`new` takes a kind. Try `headwater new decision --title \"Adopt an overlay\"`",
-        ),
-        ["new", kind] => new(&root, kind, title, &relates, &facets, now),
-        ["capture"] => capture(&root, format),
-        ["sweep"] => fail(&format!(
-            "`sweep` takes a second word: {}",
-            headwater_verbs::words_of("sweep")
-        )),
-        ["sweep", "plan"] => sweep_plan(&root, under),
-        ["sweep", "report"] => fail(
-            "`sweep report` takes the path of the file an agent wrote back. \
-             `headwater sweep plan` prints the shape of it",
-        ),
-        ["sweep", "report", path] => sweep_report(&root, Path::new(path), format),
-        ["sweep", other, ..] => fail(&format!(
-            "`sweep {other}` is not a verb this binary carries. It carries {}",
-            headwater_verbs::words_of("sweep")
-        )),
-        ["probe"] => fail(&format!(
-            "`probe` takes a second word: {}",
-            headwater_verbs::words_of("probe")
-        )),
-        ["probe", "plan"] => probe_plan(
-            &root,
-            tier.as_deref(),
-            arm.as_deref(),
-            category.as_deref(),
-            seed,
-        ),
-        ["probe", "record"] => fail(
-            "`probe record` takes the path of a transcript a recorder wrote. \
-             `headwater probe plan` prints the shape of it",
-        ),
-        ["probe", "record", path] => probe_record(&root, Path::new(path)),
-        ["probe", "grade"] => fail(
-            "`probe grade` takes the path of a transcript a recorder wrote. It grades that \
-             transcript against the probes this corpus declares",
-        ),
-        ["probe", "grade", path] => probe_grade(&root, Path::new(path)),
-        ["probe", "stale"] => probe_stale(&root),
-        ["probe", other, ..] => fail(&format!(
-            "`probe {other}` is not a verb this binary carries. It carries {}",
-            headwater_verbs::words_of("probe")
-        )),
-        ["generate"] => generate(&root, check_only),
-        ["import"] => import(&root, None, expect.as_deref(), write),
-        ["import", name] => import(&root, Some(name), expect.as_deref(), write),
-        ["export"] => export(&root, profile, format, generated_at, check_only),
-        ["init"] => init(&root, corpus_root, package),
-        ["infer"] => infer(&root, owner, until, write, now),
-        ["conformance"] => conformance(&root, level.as_deref(), now),
+        Verb::Gate { read_set, now } => gate(root, read_set, now),
+        Verb::Route { task, budget } => match task.is_empty() {
+            true => fail("`route` takes a task description. Try `headwater route \"add rate limiting to the ingest API\"`"),
+            false => route(root, &task.join(" "), budget),
+        },
+        Verb::Explain { target } => match target {
+            None => fail("`explain` takes a path or an identifier"),
+            Some(target) => explain(root, &target),
+        },
+        Verb::Mcp { now, write } => mcp(root, now, write),
+        Verb::New {
+            kind,
+            title,
+            relates,
+            facet,
+            now,
+        } => match kind {
+            None => fail(
+                "`new` takes a kind. Try `headwater new decision --title \"Adopt an overlay\"`",
+            ),
+            Some(kind) => new(root, &kind, title, &relates, &facet, now),
+        },
+        Verb::Capture { format } => capture(root, format),
+        Verb::Sweep { word } => match word {
+            None => fail(&format!(
+                "`sweep` takes a second word: {}",
+                headwater_verbs::words_of("sweep")
+            )),
+            Some(SweepWord::Plan { under }) => sweep_plan(root, under),
+            Some(SweepWord::Report { path, format }) => match path {
+                None => fail(
+                    "`sweep report` takes the path of the file an agent wrote back. \
+                     `headwater sweep plan` prints the shape of it",
+                ),
+                Some(path) => sweep_report(root, Path::new(&path), format),
+            },
+            Some(SweepWord::Other(words)) => no_such_second_word("sweep", &words),
+        },
+        Verb::Probe { word } => match word {
+            None => fail(&format!(
+                "`probe` takes a second word: {}",
+                headwater_verbs::words_of("probe")
+            )),
+            Some(ProbeWord::Plan {
+                tier,
+                arm,
+                category,
+                seed,
+            }) => probe_plan(
+                root,
+                tier.as_deref(),
+                arm.as_deref(),
+                category.as_deref(),
+                seed,
+            ),
+            Some(ProbeWord::Record { path }) => match path {
+                None => fail(
+                    "`probe record` takes the path of a transcript a recorder wrote. \
+                     `headwater probe plan` prints the shape of it",
+                ),
+                Some(path) => probe_record(root, Path::new(&path)),
+            },
+            Some(ProbeWord::Grade { path }) => match path {
+                None => fail(
+                    "`probe grade` takes the path of a transcript a recorder wrote. It grades that \
+                     transcript against the probes this corpus declares",
+                ),
+                Some(path) => probe_grade(root, Path::new(&path)),
+            },
+            Some(ProbeWord::Stale) => probe_stale(root),
+            Some(ProbeWord::Other(words)) => no_such_second_word("probe", &words),
+        },
+        Verb::Generate { check } => generate(root, check),
+        Verb::Import {
+            name,
+            expect,
+            write,
+        } => import(root, name.as_deref(), expect.as_deref(), write),
+        Verb::Export {
+            profile,
+            format,
+            at,
+            check,
+        } => export(root, profile, format, at, check),
+        Verb::Init { corpus, package } => init(root, corpus, package),
+        Verb::Infer {
+            owner,
+            until,
+            write,
+            now,
+        } => infer(root, owner, until, write, now),
+        Verb::Conformance { level, now } => conformance(root, level.as_deref(), now),
         // Spec 6 lists this verb and no document of the specification states
         // what an expression is. The engine names the gap rather than invent a
         // form, which is the posture the resolver takes over a `$package`
         // reference for the same reason.
-        ["query", ..] => fail(
+        Verb::Query { .. } => fail(
             "`query <expression>` is listed in spec 6 and no document states what an expression \
              is, so this engine implements none. See `docs/spec/13-open-obligations.md`. \
              `headwater route` and `headwater explain` are the reads that exist",
         ),
-        ["taxonomy", "validate"] => validate(&root),
-        ["taxonomy", "resolve"] => resolve(&root, check_only),
-        ["taxonomy", "audit"] => audit(&root, now),
-        ["taxonomy", "publish"] => publish(&root, package.as_deref(), out.as_deref()),
-        ["taxonomy", "vendor"] => fail(
-            "`taxonomy vendor` takes the path of a package somebody already fetched. \
-             This engine opens no socket, so it checks a directory it is handed",
-        ),
-        ["taxonomy", "vendor", fetched] => {
-            vendor(&root, Path::new(fetched), expect.as_deref())
-        }
-        ["taxonomy"] => fail(&format!(
-            "`taxonomy` takes a second word: {}",
-            headwater_verbs::words_of("taxonomy")
-        )),
-        ["taxonomy", "diff"] => fail(
-            "`taxonomy diff` takes the path of a published artifact somebody already fetched. \
-             This engine opens no socket, so it compares against a directory it is handed, and \
-             `--to <version>` states which version that directory is expected to be",
-        ),
-        ["taxonomy", "diff", fetched] => diff(&root, Path::new(fetched), to.as_deref(), now),
-        ["taxonomy", "migrate"] => fail(
-            "`taxonomy migrate` takes the path of a published artifact somebody already fetched. \
-             This engine opens no socket, so it applies a payload it is handed, and `--to \
-             <version>` states which version that directory is expected to be. Without `--apply` \
-             it reports what it would write and writes nothing",
-        ),
-        ["taxonomy", "migrate", fetched] => {
-            migrate(&root, Path::new(fetched), to.as_deref(), now, applying)
-        }
-        ["taxonomy", other, ..] => fail(&format!(
-            "`taxonomy {other}` is not a verb this binary carries yet. It carries {}",
-            headwater_verbs::words_of("taxonomy")
-        )),
-        [] => fail("no verb. Try `headwater check`"),
-        // Reached by a first word the table carries and an operand count no arm
-        // takes. The list is the table's, so it can no longer be short of the
-        // arms: it was fifteen names against seventeen arms until #257, and it
-        // omitted `probe` and `query`.
-        [other, ..] => fail(&format!(
-            "`{other}` is not a verb this binary carries yet. It carries {}",
+        Verb::Taxonomy { word } => match word {
+            None => fail(&format!(
+                "`taxonomy` takes a second word: {}",
+                headwater_verbs::words_of("taxonomy")
+            )),
+            Some(TaxonomyWord::Validate) => validate(root),
+            Some(TaxonomyWord::Resolve { check }) => resolve(root, check),
+            Some(TaxonomyWord::Audit { now }) => audit(root, now),
+            Some(TaxonomyWord::Publish { package, out }) => {
+                publish(root, package.as_deref(), out.as_deref())
+            }
+            Some(TaxonomyWord::Vendor { path, expect }) => match path {
+                None => fail(
+                    "`taxonomy vendor` takes the path of a package somebody already fetched. \
+                     This engine opens no socket, so it checks a directory it is handed",
+                ),
+                Some(path) => vendor(root, Path::new(&path), expect.as_deref()),
+            },
+            Some(TaxonomyWord::Diff { path, to, now }) => match path {
+                None => fail(
+                    "`taxonomy diff` takes the path of a published artifact somebody already \
+                     fetched. This engine opens no socket, so it compares against a directory it \
+                     is handed, and `--to <version>` states which version that directory is \
+                     expected to be",
+                ),
+                Some(path) => diff(root, Path::new(&path), to.as_deref(), now),
+            },
+            Some(TaxonomyWord::Migrate {
+                path,
+                to,
+                apply,
+                now,
+            }) => match path {
+                None => fail(
+                    "`taxonomy migrate` takes the path of a published artifact somebody already \
+                     fetched. This engine opens no socket, so it applies a payload it is handed, \
+                     and `--to <version>` states which version that directory is expected to be. \
+                     Without `--apply` it reports what it would write and writes nothing",
+                ),
+                Some(path) => migrate(root, Path::new(&path), to.as_deref(), now, apply),
+            },
+            Some(TaxonomyWord::Other(words)) => fail(&format!(
+                "`taxonomy {}` is not a verb this binary carries yet. It carries {}",
+                words.first().map(String::as_str).unwrap_or_default(),
+                headwater_verbs::words_of("taxonomy")
+            )),
+        },
+        // The message keeps its wording. It names the first word of the command
+        // line, so `headwater chekc` answers with every word this binary does
+        // carry rather than with the one `clap` thought was closest.
+        Verb::Other(words) => fail(&format!(
+            "`{}` is not a verb this binary carries yet. It carries {}",
+            words.first().map(String::as_str).unwrap_or_default(),
             headwater_verbs::listed()
         )),
     }
+}
+
+/// A second word one of the three grouped verbs does not carry.
+///
+/// `taxonomy` says "yet" where these two do not, and the difference is old
+/// enough to be a promise nobody made. Both forms are preserved rather than
+/// unified here, because a message a caller reads is not this change's subject.
+fn no_such_second_word(verb: &str, words: &[String]) -> ExitCode {
+    fail(&format!(
+        "`{verb} {}` is not a verb this binary carries. It carries {}",
+        words.first().map(String::as_str).unwrap_or_default(),
+        headwater_verbs::words_of(verb)
+    ))
 }
 
 /// `headwater taxonomy validate`.
@@ -3683,7 +3239,10 @@ fn export(
     let Some(target) = format else {
         if generated_at.is_some() {
             return fail(
-                "--at states the time an artifact that leaves this repository was generated,                  and it is refused for a declared output. A committed export is held to                  regeneration by byte, so a clock reading inside one would fail the gate on a                  morning when nothing changed. Name a target with --format",
+                "--at states the time an artifact that leaves this repository was generated, \
+                 and it is refused for a declared output. A committed export is held to \
+                 regeneration by byte, so a clock reading inside one would fail the gate on a \
+                 morning when nothing changed. Name a target with --format",
             );
         }
         let plan = match headwater_generate::export_plan(&surface, &projections, profile.as_deref())
@@ -3715,7 +3274,9 @@ fn export(
     };
     if check_only {
         return fail(
-            "--check compares a committed artifact against what a run produces, and --format              writes to standard output where nothing is committed. Run `headwater export              --check` over the declared outputs instead",
+            "--check compares a committed artifact against what a run produces, and --format \
+             writes to standard output where nothing is committed. Run `headwater export \
+             --check` over the declared outputs instead",
         );
     }
 
@@ -3733,12 +3294,14 @@ fn export(
         [one] => *one,
         [] => {
             return fail(
-                "this taxonomy declares no projection, so it declares no export profile.                  Spec 6 makes a profile an entry under `projections`",
+                "this taxonomy declares no projection, so it declares no export profile. \
+                 Spec 6 makes a profile an entry under `projections`",
             )
         }
         several => {
             return fail(&format!(
-                "--format writes one artifact to standard output and this taxonomy declares {}                  profiles. Name one with --profile: {}",
+                "--format writes one artifact to standard output and this taxonomy declares {} \
+                 profiles. Name one with --profile: {}",
                 several.len(),
                 several
                     .iter()
@@ -3755,7 +3318,8 @@ fn export(
             eprint!("{}", headwater_generate::export::render(&emission.census));
             if emission.census.is_defective() {
                 eprintln!(
-                    "headwater: the projection census found an omission that no declared loss                      reason covers, which is a defect in this emitter rather than in the corpus"
+                    "headwater: the projection census found an omission that no declared loss \
+                     reason covers, which is a defect in this emitter rather than in the corpus"
                 );
                 return ExitCode::FAILURE;
             }
@@ -5095,24 +4659,24 @@ fn refused(what: &str, errors: &[headwater_census::shelves::DeclarationError]) -
     ExitCode::FAILURE
 }
 
-/// A refusal a caller's command line earned. One line saying what was wrong,
-/// and one line saying where the grammar is.
+/// A refusal a caller's command line earned. The message, and one line saying
+/// where the grammar is.
 ///
 /// # The ruling this carries, which reverses the one it used to carry
 ///
 /// The whole of `USAGE` printed here, under every message. The reason it did is
 /// the sentence under [`refuse`]: a caller who wrote the wrong flag is reading
 /// the grammar, so the grammar went where that caller already was. That reason
-/// was written against a `USAGE` of about a hundred lines. It is 359 lines of
-/// this file now, and 25,415 bytes on the wire, so the one sentence a caller
-/// needs arrives above a screenful that scrolls it away, and anything recording
-/// this stream records the whole manual once per typo. The reason `refuse`
-/// gives for existing had grown into a reason against this function, which is
-/// #306's argument and it needs nothing else to stand.
+/// was written against a `USAGE` of about a hundred lines. It reached 359
+/// source lines and 25,415 bytes on the wire, so the one sentence a caller
+/// needed arrived above a screenful that scrolled it away, and anything
+/// recording this stream recorded the whole manual once per typo. The reason
+/// `refuse` gives for existing had grown into a reason against this function,
+/// which is #306's argument and it needs nothing else to stand.
 ///
 /// So the pointer replaces the body. Nothing a caller could do with the grammar
-/// here is lost: `headwater --help` writes the same 25,415 bytes to standard
-/// output, exits 0, and is named on the line under every refusal.
+/// here is lost: `headwater --help` writes it to standard output and exits 0,
+/// and it is named on the line under every refusal.
 ///
 /// # Every call site moved, at once and on purpose
 ///
@@ -5121,18 +4685,26 @@ fn refused(what: &str, errors: &[headwater_census::shelves::DeclarationError]) -
 /// them changed deliberately" and "none of them did" was meant, and this is the
 /// answer: **all of them**, and not one message text changed.
 ///
-/// 53 of the 98 are command-line facts -- 33 in the argument loop and 20 in the
-/// dispatch -- and the pointer is written for those. The other 45 are facts
-/// about a corpus or about the filesystem, which is the population [`refuse`]
-/// describes, and a pointer to the grammar is beside the point for them. That
-/// is a reclassification rather than a deletion, it is judgment nobody has
-/// asked for, and it is worth stating rather than doing quietly: the 45 pay one
-/// line here where they used to pay 359, so the pointer is a smaller mismatch
-/// than the one it replaced. #331 carries it, and it gets cheaper rather than
-/// harder after the parser migration, which deletes the 53 and leaves this
-/// function holding only the population [`refuse`] describes.
+/// The parser migration then took the 33 that were the argument loop's, and one
+/// caller now carries every refusal a parse can make: `main` hands over the
+/// line `clap` wrote. 64 call sites remain, of which 45 are facts about a
+/// corpus or about the filesystem rather than about a command line. That
+/// population is the one [`refuse`] describes, a pointer to the grammar is
+/// beside the point for it, and
+/// [#331](https://github.com/headwater-ai/headwater/issues/331) carries the
+/// reclassification. It is judgment nobody has asked for, so it is stated here
+/// rather than done quietly.
+///
+/// # Why the prefix is written per line
+///
+/// `clap` puts a `tip:` line under some of its messages, and every other line
+/// this binary writes to standard error opens with its own name. A message with
+/// no newline in it prints exactly the two lines it printed before this loop.
 fn fail(message: &str) -> ExitCode {
-    eprintln!("headwater: {message}\nheadwater: run `headwater --help` for the grammar");
+    for line in message.lines() {
+        eprintln!("headwater: {line}");
+    }
+    eprintln!("headwater: run `headwater --help` for the grammar");
     ExitCode::FAILURE
 }
 
