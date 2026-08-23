@@ -135,7 +135,7 @@ fn main() -> ExitCode {
 /// # The dispatch table is `headwater_verbs::VERBS`, and this is no longer
 /// where it decides
 ///
-/// It was, until [HW-DR-0033](../../../../docs/decisions/0033-adopt-clap-for-the-command-line-and-withdraw-the-flat-flag-namespace.md).
+/// It was, until [HW-DR-0033](../../../../docs/decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md).
 /// `main` resolved the first word against the table before it entered a
 /// `match verb.as_slice()` of string patterns, so an arm the table did not
 /// carry never ran, and `tests/verbs.rs` scraped the arms out of this file as

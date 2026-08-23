@@ -542,7 +542,7 @@ fn the_help_flag_answers_on_standard_output_outside_a_corpus() {
 /// ignored.
 ///
 /// This is the reversal
-/// [HW-DR-0033](../../../../docs/decisions/0033-adopt-clap-for-the-command-line-and-withdraw-the-flat-flag-namespace.md)
+/// [HW-DR-0033](../../../../docs/decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md)
 /// records, at the surface a caller meets. `--level` is read by `conformance`
 /// and by nothing else. Under the flat namespace `headwater check --level L0`
 /// exited **0** and wrote the whole report, which

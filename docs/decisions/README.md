@@ -2,7 +2,7 @@
 
 # decisions
 
-32 documents on this shelf, in the reading order this corpus derives.
+33 documents on this shelf, in the reading order this corpus derives.
 
 - [HW-DR-0001](0001-implementation-language.md) — The language is Rust, with a WebAssembly build of the same crate for editor and browser embedding.
 - [HW-DR-0002](0002-schema-format.md) — YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema.
@@ -36,3 +36,4 @@
 - [HW-DR-0030](0030-q30-whether-what-an-obligation-waits-on-is-a-state-or-a-property-and-how-many-values-it-takes.md) — What an obligation waits on is a state and not a property, and the closed set holds four values. A required `waiting_on` facet on `obligation_record` takes `ruling`, `build`, `measurement` or `adopter`, and the decision-record bundle declares it. (asserted, and no human has accepted it)
 - [HW-DR-0031](0031-q31-whether-this-repository-becomes-public-and-when.md) — This repository becomes public, and the date is unset. A settled posture with a pending date is not an open question, and the record is what stops each run from raising it as one. (asserted, and no human has accepted it)
 - [HW-DR-0032](0032-q32-which-test-the-self-audit-label-states.md) — The `self-audit` label states the reader test and not the provenance test. How a finding was found is not the test, and the only question is whether a reader outside this repository is better off. (asserted, and no human has accepted it)
+- [HW-DR-0033](0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md) — `clap` derives the command line for 17 lock entries, and a flag belongs to the verb that reads it rather than to the binary. (asserted, and no human has accepted it)

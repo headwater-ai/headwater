@@ -15,7 +15,7 @@
 //! # What replaced the source-text scrape, and why it is stronger
 //!
 //! Until
-//! [HW-DR-0033](../../../../docs/decisions/0033-adopt-clap-for-the-command-line-and-withdraw-the-flat-flag-namespace.md)
+//! [HW-DR-0033](../../../../docs/decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md)
 //! four of the five cases in this file read `main.rs` as **text**: one function
 //! scraped the `["word", …]` match arms out of it and another scraped the
 //! `USAGE` literal. Both were parsers of Rust and of a string constant that

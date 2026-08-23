@@ -3,7 +3,7 @@
 //!
 //! # What this replaced, and the contract that went with it
 //!
-//! Until [HW-DR-0033](../../../../docs/decisions/0033-adopt-clap-for-the-command-line-and-withdraw-the-flat-flag-namespace.md)
+//! Until [HW-DR-0033](../../../../docs/decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md)
 //! the parse was a loop over `std::env::args()` in `main`, with thirty-three
 //! arms that read a flag and twenty that read a verb. Every flag of the binary
 //! was admitted before the verb was decided, so a flag belonging to another

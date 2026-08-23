@@ -10,7 +10,7 @@ relations:
 
 # decisions
 
-32 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+33 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -139,3 +139,7 @@ relations:
 ## Q32 — Which test the self-audit label states
 
 [HW-DR-0032](../decisions/0032-q32-which-test-the-self-audit-label-states.md) — The `self-audit` label states the reader test and not the provenance test. How a finding was found is not the test, and the only question is whether a reader outside this repository is better off. (asserted, and no human has accepted it)
+
+## Q33 — Whether the command line is derived, and who a flag belongs to
+
+[HW-DR-0033](../decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md) — `clap` derives the command line for 17 lock entries, and a flag belongs to the verb that reads it rather than to the binary. (asserted, and no human has accepted it)
