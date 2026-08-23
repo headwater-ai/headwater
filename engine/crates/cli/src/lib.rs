@@ -699,7 +699,19 @@ pub fn command() -> Command {
         ))
         .help_template(first_screen());
     for verb in headwater_verbs::VERBS {
-        root = root.mut_subcommand(verb.name, |one| described(one, verb));
+        // A name the derive does not carry is skipped rather than added.
+        //
+        // `Command::mut_subcommand` panics on a name it cannot find, and
+        // `Command::subcommand` would put a command in the tree with no variant
+        // behind it and nothing to dispatch to. Either one would answer a
+        // discrepancy between the table and the parser here, where a caller
+        // running `--help` meets it. It is answered in
+        // `engine/crates/cli/tests/verbs.rs` instead, which walks this tree
+        // against the table in both directions and prints the command lines that
+        // are on one side and not the other.
+        if root.find_subcommand(verb.name).is_some() {
+            root = root.mut_subcommand(verb.name, |one| described(one, verb));
+        }
     }
     root
 }
@@ -721,6 +733,9 @@ fn described(command: Command, verb: &headwater_verbs::Verb) -> Command {
     if !verb.words.is_empty() {
         one = one.help_template(second_words(verb));
         for word in verb.words {
+            if one.find_subcommand(word.name).is_none() {
+                continue;
+            }
             one = one.mut_subcommand(word.name, |inner| inner.about(word.description));
         }
     }
