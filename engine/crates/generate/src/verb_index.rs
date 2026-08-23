@@ -42,7 +42,7 @@
 //!
 //! An empty shelf is not a decline, and that is the difference from a shelf
 //! index. An index of no documents asserts that a shelf is there; an index of
-//! seventeen verbs that nobody has described is the strongest form of this
+//! eighteen verbs that nobody has described is the strongest form of this
 //! artifact rather than the weakest.
 
 use crate::{shelf_index, shelf_of, Declaration, Kind, Output, Plan, Unwritten};
@@ -163,7 +163,13 @@ pub(crate) fn emit(
     });
 }
 
-/// One row for every verb, in the order the dispatch table carries them.
+/// One section per group, one row per verb, in the order the dispatch table
+/// carries them.
+///
+/// The group and the summary are fields of [`Verb`], so this file and the first
+/// screen of `headwater --help` are two renderings of one table rather than two
+/// lists that agree today. A summary edited in the dispatch table moves both,
+/// and `headwater generate --check` is what reports that this half went stale.
 fn render(output: &str, verbs: &[Verb], described: &[(String, String)]) -> String {
     let base = shelf_index::parent_of(output);
     let contract_of = |verb: &Verb| -> Option<&(String, String)> {
@@ -205,22 +211,45 @@ fn render(output: &str, verbs: &[Verb], described: &[(String, String)]) -> Strin
          file is for. An index of the contracts that exist would say nothing about the verbs \
          nobody has described yet.\n\n",
     );
-    out.push_str("| Verb | What a caller types | Contract |\n|---|---|---|\n");
+    out.push_str(
+        "The headings and the second column are the groups and the summaries that \
+         `headwater --help` prints, read off the same table. The long description of a verb is \
+         what `headwater help <verb>` prints, and it is not repeated here.\n",
+    );
+
+    // The order of the groups is the order the table first names each one, and
+    // the verbs of one group are contiguous there. Reading it off the argument
+    // rather than off `headwater_verbs::groups()` keeps this emitter a function
+    // of the table it was handed, which is what lets a test render a table of
+    // its own through it.
+    let mut groups: Vec<&str> = Vec::new();
     for verb in verbs {
-        let forms: Vec<String> = verb
-            .forms()
-            .into_iter()
-            .map(|form| format!("`{form}`"))
-            .collect();
-        let contract = match contract_of(verb) {
-            Some((name, at)) => format!("[{name}]({})", shelf_index::relative(&base, at)),
-            None => UNDESCRIBED.to_string(),
-        };
-        out.push_str(&format!(
-            "| `{}` | {} | {contract} |\n",
-            verb.name,
-            forms.join(", ")
-        ));
+        if !groups.contains(&verb.group) {
+            groups.push(verb.group);
+        }
+    }
+    for group in groups {
+        out.push_str(&format!("\n## {group}\n\n"));
+        out.push_str(
+            "| Verb | What it does | What a caller types | Contract |\n|---|---|---|---|\n",
+        );
+        for verb in verbs.iter().filter(|verb| verb.group == group) {
+            let forms: Vec<String> = verb
+                .forms()
+                .into_iter()
+                .map(|form| format!("`{form}`"))
+                .collect();
+            let contract = match contract_of(verb) {
+                Some((name, at)) => format!("[{name}]({})", shelf_index::relative(&base, at)),
+                None => UNDESCRIBED.to_string(),
+            };
+            out.push_str(&format!(
+                "| `{}` | {} | {} | {contract} |\n",
+                verb.name,
+                verb.summary,
+                forms.join(", ")
+            ));
+        }
     }
     out
 }

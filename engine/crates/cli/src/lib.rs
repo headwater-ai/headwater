@@ -19,25 +19,37 @@
 //! `tests/verbs.rs` used to read `main.rs` as **source text** and scrape the
 //! `["word", …]` patterns out of it. A scrape is a parser of Rust that nothing
 //! holds, and it would go blind the moment the arms stopped being written by
-//! hand. With the surface here, that test holds `Cli::command()` against
+//! hand. With the surface here, that test holds [`command`] against
 //! [`headwater_verbs::VERBS`] in both directions, over the tree `clap` itself
 //! builds.
 //!
-//! # What is deliberately absent
+//! # Where the words come from, and what is deliberately absent
 //!
-//! No `about`, no `long_about` and no help text on any argument. The one-line
-//! summary of a verb is a field on [`headwater_verbs::Verb`] rather than a
-//! string here, because a summary written at this layer would be the fifth
-//! hand-kept copy of the verb list that
-//! [#257](https://github.com/headwater-ai/headwater/issues/257) was filed
-//! about. [#321](https://github.com/headwater-ai/headwater/issues/321) carries
-//! the help layout, the flag descriptions and the color, and this file carries
-//! the parse alone.
+//! No `about` on a verb and no summary is written in this file. [`command`]
+//! reads both off [`headwater_verbs::VERBS`] and puts them on the tree, because
+//! a summary written here would be the fifth hand-kept copy of the verb list
+//! that [#257](https://github.com/headwater-ai/headwater/issues/257) was filed
+//! about. The correspondence is by command line rather than by a name repeated
+//! at each variant: [`command`] walks the table and calls `mut_subcommand`, so
+//! a verb renamed in one place and not the other is a verb the walk in
+//! `tests/verbs.rs` reports.
+//!
+//! **A flag is the other way round, and for the reason `HW-DR-0033` gives.** A
+//! flag belongs to the verb that reads it, so its description is written at the
+//! declaration of that flag, here. `engine/crates/cli/tests/help.rs` holds every
+//! argument of every command in the tree to carrying one, which is what stops
+//! the next flag arriving undescribed the way `--facet`, `--tier`, `--arm`,
+//! `--category` and `--seed` did.
+//!
+//! **A `///` comment on a derived item becomes help text.** The commentary on
+//! the types below is `//` for that reason, and the module documentation you
+//! are reading is `//!`, which `clap` does not read either. A house-style doc
+//! comment on a variant or a field would be printed to a caller.
 //!
 //! Color is declared off. Nothing here emits an escape sequence, which is the
 //! state the binary was already in and the state its recorded fixtures read.
 
-use clap::{Parser, Subcommand};
+use clap::{Command, CommandFactory, FromArgMatches, Parser, Subcommand};
 use headwater_check::Date;
 use std::path::PathBuf;
 
@@ -55,7 +67,12 @@ use std::path::PathBuf;
     disable_version_flag = true
 )]
 pub struct Cli {
-    #[arg(long, global = true, value_name = "path")]
+    #[arg(
+        long,
+        global = true,
+        value_name = "path",
+        help = "the repository to read. Defaults to the working directory"
+    )]
     pub root: Option<PathBuf>,
 
     // `-V` and `--version`, held here rather than by `clap`.
@@ -64,7 +81,14 @@ pub struct Cli {
     // alone: the value is `headwater_resolve::release::ENGINE`, which is what
     // a `requires_engine` range is read against, so a caller pastes one line
     // into a bug report and a reader compares it to a range.
-    #[arg(short = 'V', long, global = true)]
+    #[arg(
+        short = 'V',
+        long,
+        global = true,
+        help = "the version of this engine. It is the number a package's `requires_engine` range \
+                is read against, and it is the number to quote in a bug report. One line on \
+                standard output, and no repository is needed to ask"
+    )]
     pub version: bool,
 
     #[command(subcommand)]
@@ -73,65 +97,330 @@ pub struct Cli {
 
 // The first word.
 //
-// The order is [`headwater_verbs::VERBS`]' order, which is the order the help
-// prints and the order the generated verb index carries.
+// The order is [`headwater_verbs::VERBS`]' order, which is the order the first
+// screen prints and the order the generated verb index carries.
 #[derive(Subcommand, Debug)]
 pub enum Verb {
     Check {
-        #[arg(long)]
+        #[arg(
+            long,
+            help = "exit non-zero when a finding is an error. Without it the run is advisory and \
+                    always exits 0, which is the default spec 6 fixes"
+        )]
         strict: bool,
-        #[arg(long)]
+        #[arg(
+            long,
+            help = "write the patch that rides with a finding, in this working tree. A finding \
+                    carries one only when the fix is mechanical and total, and a finding an author \
+                    suppressed carries none. Every patch is held against the bytes it names and \
+                    the result is read back before it lands, so a file whose shape this engine \
+                    guessed wrong is refused with nothing written. The report that follows is the \
+                    run after the write, and the account of what was written goes to standard \
+                    error. It exits non-zero on a refusal"
+        )]
         fix: bool,
-        #[arg(long = "no-cache")]
+        #[arg(
+            long = "no-cache",
+            help = "read and write no cache, and evaluate every instance. This run and a cached \
+                    one write the same bytes to standard output, and a difference between them is \
+                    a defect in the cache rather than a result"
+        )]
         no_cache: bool,
-        #[arg(long, value_name = "date", value_parser = a_date)]
+        #[arg(
+            long,
+            value_name = "date",
+            value_parser = a_date,
+            help = "the date to evaluate against, as `YYYY-MM-DD`. Defaults to today. Spec 12 \
+                    makes the clock an injected value rather than a syscall inside a check, and \
+                    this flag is where it is injected: same corpus, same lock, same date, same \
+                    bytes"
+        )]
         now: Option<Date>,
-        #[arg(long, value_name = "manifest")]
+        #[arg(
+            long,
+            value_name = "manifest",
+            help = "the manifest of the change this run is scoped to. Each line names one document \
+                    the change carries, as `added<tab><path>` or `prior<tab><path><tab><file>`, \
+                    and the second form names a file holding the bytes that stood before the \
+                    change. A document the manifest does not name did not change. It is what a \
+                    rule that reads a transition needs, and without it every instance of such a \
+                    rule is reported as skipped rather than passed. This engine walks no history: \
+                    the caller anchors the prior version to the state on the branch where the \
+                    change lands, which spec 12 fixes as the merge base of a proposed change and \
+                    the committed `HEAD` of a working-tree hook. Every path is held against the \
+                    corpus this run walks, and one that reaches no row of it is counted and named \
+                    in the report rather than absorbed. No path is normalized, so `./docs/a.md` \
+                    reaches no row. What this engine cannot check is whether the manifest tells \
+                    the truth: a line that says `added` for a document that already stood, and a \
+                    document the change carried and the manifest omits, are both invisible without \
+                    the history that spec 12 rules out as an input"
+        )]
         change: Option<PathBuf>,
-        #[arg(long = "read-set", value_name = "path")]
+        #[arg(
+            long = "read-set",
+            value_name = "path",
+            help = "write the read set of this run to a file as well as to the report. The \
+                    artifact is what decides whether a verdict survives a merge without running \
+                    the checks again, and `headwater gate` is what reads it"
+        )]
         read_set: Option<PathBuf>,
-        #[arg(long, value_name = "path")]
+        #[arg(
+            long,
+            value_name = "path",
+            help = "write the register of this run to a file as well as to the report. Spec 4 \
+                    makes it a projection of the `obligations` and `controls` declarations, \
+                    generated and never authored: every obligation with its disposition, every \
+                    control with its health, and what escaped under each"
+        )]
         register: Option<PathBuf>,
-        #[arg(long, value_name = "text|json|sarif|markdown")]
+        #[arg(
+            long,
+            value_name = "text|json|sarif|markdown",
+            help = "which vocabulary to write the run in. `text` is the report a person reads and \
+                    the default. `sarif` is what a forge ingests as a check run, `markdown` is a \
+                    job summary or a review comment, and `json` is the finding shape spec 4 \
+                    declares, for an adapter nobody here wrote. Each names what it could not carry"
+        )]
         format: Option<String>,
     },
     Gate {
         // Optional here and required by the verb, so that the refusal a caller
         // reads is the one the verb wrote: it names what a read set is and how
         // to produce one, which a missing-argument message cannot.
-        #[arg(long = "read-set", value_name = "path")]
+        #[arg(
+            long = "read-set",
+            value_name = "path",
+            help = "the read set to hold against this tree, and it is required here. \
+                    `headwater check --read-set <path>` is what writes one. The artifact is what \
+                    decides whether a verdict survives a merge without running the checks again"
+        )]
         read_set: Option<PathBuf>,
-        #[arg(long, value_name = "date", value_parser = a_date)]
+        #[arg(
+            long,
+            value_name = "date",
+            value_parser = a_date,
+            help = "the day the question is asked about, as `YYYY-MM-DD`. Defaults to today. A run \
+                    that read the clock is void on any other day"
+        )]
+        now: Option<Date>,
+    },
+    Conformance {
+        #[arg(
+            long,
+            value_name = "name",
+            help = "the rung to ask about, by the name the package declares. It exits non-zero on \
+                    a gap under that rung that no live waiver covers. It never moves the level the \
+                    report states, which is computed from met rules alone"
+        )]
+        level: Option<String>,
+        #[arg(
+            long,
+            value_name = "date",
+            value_parser = a_date,
+            help = "the date to evaluate against, as `YYYY-MM-DD`. Defaults to today"
+        )]
         now: Option<Date>,
     },
     Route {
+        #[arg(
+            value_name = "task description",
+            help = "what you are about to do, in your own words. Every word after the verb is one \
+                    description, so it needs no quoting to hold together"
+        )]
         task: Vec<String>,
-        #[arg(long, value_name = "n", value_parser = a_budget)]
+        #[arg(
+            long,
+            value_name = "n",
+            value_parser = a_budget,
+            help = "how many ranked pointers it may offer. It never removes a document that \
+                    governs a path the task named, and it says how many it withheld. Five by \
+                    default"
+        )]
         budget: Option<usize>,
     },
     Explain {
+        #[arg(
+            value_name = "path|identifier",
+            help = "the document to explain, as a path under the corpus root or as the identifier \
+                    it declares"
+        )]
         target: Option<String>,
     },
+    Query {
+        #[arg(
+            value_name = "expression",
+            help = "the expression to run, and no document of this repository states what one is"
+        )]
+        expression: Vec<String>,
+    },
+    Capture {
+        #[arg(
+            long,
+            value_name = "text|json",
+            help = "`text` is the report a person reads and the default, and `json` is the same \
+                    numbers for a program. Neither carries a reading the store does not hold"
+        )]
+        format: Option<String>,
+    },
     Mcp {
-        #[arg(long, value_name = "date", value_parser = a_date)]
+        #[arg(
+            long,
+            value_name = "date",
+            value_parser = a_date,
+            help = "the date to evaluate against, as `YYYY-MM-DD`. Defaults to today. It is read \
+                    once and fixed for the life of the server, and every result states it"
+        )]
         now: Option<Date>,
-        #[arg(long)]
+        #[arg(
+            long,
+            help = "register the working-tree write class, which is `new` and `fix`. Spec 5 keeps \
+                    it off by default, because a client may connect to a checkout that the user \
+                    did not intend to change, so the consent is a word somebody typed rather than \
+                    a setting a tree carries. A tool that lands a change is registered by no \
+                    switch. The first call that moves a byte ends the server: it walked the corpus \
+                    once, so every later answer would be about a tree that is gone"
+        )]
         write: bool,
     },
     New {
+        #[arg(
+            value_name = "kind",
+            help = "the kind of document to scaffold, by the name the resolved taxonomy declares \
+                    for it"
+        )]
         kind: Option<String>,
-        #[arg(long, value_name = "text")]
+        #[arg(
+            long,
+            value_name = "text",
+            help = "what the document is called. Required, because the file name and the facet in \
+                    the `name` role both come from it"
+        )]
         title: Option<String>,
-        #[arg(long, value_name = "relation=identifier", value_parser = a_pair)]
+        #[arg(
+            long,
+            value_name = "relation=identifier",
+            value_parser = a_pair,
+            help = "an edge to propose, as a relation and the identifier of the document at the \
+                    other end. Repeatable. It is refused unless the taxonomy declares \
+                    `created_by: scaffold` on the relation, unless both ends are kinds the \
+                    relation permits, and unless the target resolves. Where reciprocity is \
+                    required the far half is written into the target document"
+        )]
         relates: Vec<(String, String)>,
-        #[arg(long, value_name = "facet=value", value_parser = a_pair)]
+        #[arg(
+            long,
+            value_name = "facet=value",
+            value_parser = a_pair,
+            help = "a value for a facet this kind requires, as `<facet>=<value>`. Repeatable. It \
+                    is refused for a facet the kind does not require, for a facet whose value a \
+                    declaration already decides, and for a value outside a closed set — so a \
+                    value that would have been dropped in silence is a refusal instead"
+        )]
         facet: Vec<(String, String)>,
-        #[arg(long, value_name = "date", value_parser = a_date)]
+        #[arg(
+            long,
+            value_name = "date",
+            value_parser = a_date,
+            help = "the date the document is stamped with, as `YYYY-MM-DD`. Defaults to today"
+        )]
         now: Option<Date>,
     },
-    Capture {
-        #[arg(long, value_name = "text|json")]
+    Infer {
+        #[arg(
+            long,
+            value_name = "name",
+            help = "who owns the debt it proposes. Required with `--write`, because an owner is \
+                    the field that ranks declared debt above a suppression and this engine will \
+                    not invent one"
+        )]
+        owner: Option<String>,
+        #[arg(
+            long,
+            value_name = "date",
+            value_parser = a_date,
+            help = "the last day the tasks it proposes hold, as `YYYY-MM-DD`. Ninety days out by \
+                    default"
+        )]
+        until: Option<Date>,
+        #[arg(
+            long,
+            help = "put the payload in the lock, which is committed and reviewed. Without it \
+                    nothing is written"
+        )]
+        write: bool,
+        #[arg(
+            long,
+            value_name = "date",
+            value_parser = a_date,
+            help = "the date to evaluate against, as `YYYY-MM-DD`. Defaults to today"
+        )]
+        now: Option<Date>,
+    },
+    Generate {
+        #[arg(
+            long,
+            help = "write nothing and exit non-zero when what is committed is not what a run \
+                    produces. It reads the corpus through the lock, so it answers whether a \
+                    derived artifact is current"
+        )]
+        check: bool,
+    },
+    Import {
+        #[arg(
+            value_name = "name",
+            help = "which declared import to read, by the name its block carries in \
+                    `.headwater/taxonomy.yml`. One declared import needs no name and two do, \
+                    because choosing for the caller would import whichever the file listed first"
+        )]
+        name: Option<String>,
+        #[arg(
+            long,
+            value_name = "digest",
+            help = "the digest to check the snapshot against. It defaults to the `digest` of the \
+                    import block in `.headwater/taxonomy.yml`, and the verb refuses when neither \
+                    is there rather than reading an unpinned directory"
+        )]
+        expect: Option<String>,
+        #[arg(
+            long,
+            help = "write the edge halves into the documents at their near ends. Without it the \
+                    edges are reported and nothing is touched"
+        )]
+        write: bool,
+    },
+    Export {
+        #[arg(
+            long,
+            value_name = "name",
+            help = "which declared export profile to emit. Every declared profile by default, so \
+                    a filtered audience is never omitted by accident"
+        )]
+        profile: Option<String>,
+        #[arg(
+            long,
+            value_name = "json|jsonschema",
+            help = "the emitter target. `json` is the native property graph with no loss and \
+                    `jsonschema` constrains front matter. The other five targets of spec 6 parse \
+                    and report the consumer each one waits on. With this flag the artifact goes to \
+                    standard output and no declared output path is touched"
+        )]
         format: Option<String>,
+        #[arg(
+            long,
+            value_name = "date",
+            value_parser = a_date_as_written,
+            help = "the generation time the artifact states, as `YYYY-MM-DD`. Absent by default, \
+                    because an artifact that `--check` compares by byte cannot carry a clock \
+                    reading. Spec 6 asks a filtered export that leaves the repository to state \
+                    one, and this is where it is injected"
+        )]
+        at: Option<String>,
+        #[arg(
+            long,
+            help = "write nothing and exit non-zero when a declared output is not what a run \
+                    produces. It holds every export the taxonomy names a path for to regeneration"
+        )]
+        check: bool,
     },
     Sweep {
         #[command(subcommand)]
@@ -141,58 +430,39 @@ pub enum Verb {
         #[command(subcommand)]
         word: Option<ProbeWord>,
     },
-    Generate {
-        #[arg(long)]
-        check: bool,
-    },
-    Import {
-        name: Option<String>,
-        #[arg(long, value_name = "digest")]
-        expect: Option<String>,
-        #[arg(long)]
-        write: bool,
-    },
-    Export {
-        #[arg(long, value_name = "name")]
-        profile: Option<String>,
-        #[arg(long, value_name = "json|jsonschema")]
-        format: Option<String>,
-        #[arg(long, value_name = "date", value_parser = a_date_as_written)]
-        at: Option<String>,
-        #[arg(long)]
-        check: bool,
-    },
     Init {
-        #[arg(long, value_name = "dir")]
+        #[arg(
+            long,
+            value_name = "dir",
+            help = "the corpus root to declare. Proposed from the tree by default"
+        )]
         corpus: Option<String>,
-        #[arg(long, value_name = "name")]
+        #[arg(
+            long,
+            value_name = "name",
+            help = "the package to take. `headwater/standard` by default"
+        )]
         package: Option<String>,
-    },
-    Infer {
-        #[arg(long, value_name = "name")]
-        owner: Option<String>,
-        #[arg(long, value_name = "date", value_parser = a_date)]
-        until: Option<Date>,
-        #[arg(long)]
-        write: bool,
-        #[arg(long, value_name = "date", value_parser = a_date)]
-        now: Option<Date>,
-    },
-    Conformance {
-        #[arg(long, value_name = "name")]
-        level: Option<String>,
-        #[arg(long, value_name = "date", value_parser = a_date)]
-        now: Option<Date>,
-    },
-    // Listed in spec 6, and no document states what an expression is. The verb
-    // states that wait when a caller types it, which is what #146 requires of
-    // a declared name.
-    Query {
-        expression: Vec<String>,
     },
     Taxonomy {
         #[command(subcommand)]
         word: Option<TaxonomyWord>,
+    },
+    // `headwater help <verb>`, which is a variant here rather than the
+    // subcommand `clap` injects during `build()`.
+    //
+    // The injected one carries a copy of the whole command tree under itself —
+    // `headwater help sweep plan` and forty-two more — and the dispatch table
+    // carries no such command line, so `tests/verbs.rs` would either fail or
+    // need an exclusion written into it. One variant with one positional adds
+    // the command line #321 asks for and leaves that walk exact.
+    Help {
+        #[arg(
+            value_name = "verb",
+            help = "the verb to describe, with its second word where it takes one: \
+                    `headwater help taxonomy diff`. Without one this screen is printed"
+        )]
+        verb: Vec<String>,
     },
     // A first word this binary does not carry.
     //
@@ -208,12 +478,28 @@ pub enum Verb {
 #[derive(Subcommand, Debug)]
 pub enum SweepWord {
     Plan {
-        #[arg(long, value_name = "path")]
+        #[arg(
+            long,
+            value_name = "path",
+            help = "the slice, as a path prefix under the repository root. The whole corpus by \
+                    default. There is no sampling rule here: a slice this engine picked would be \
+                    an unreproducible sample dressed as a reproducible one, and the plan reports \
+                    its own extent instead"
+        )]
         under: Option<String>,
     },
     Report {
+        #[arg(
+            value_name = "path",
+            help = "the file an agent wrote back. `headwater sweep plan` prints the shape of it"
+        )]
         path: Option<String>,
-        #[arg(long, value_name = "text|json")]
+        #[arg(
+            long,
+            value_name = "text|json",
+            help = "`text` is the report a person reads and the default, and `json` is the finding \
+                    shape spec 4 declares with the provenance and the evidence a sweep adds"
+        )]
         format: Option<String>,
     },
     #[command(external_subcommand)]
@@ -224,22 +510,53 @@ pub enum SweepWord {
 #[derive(Subcommand, Debug)]
 pub enum ProbeWord {
     Plan {
-        #[arg(long, value_name = "regression|campaign")]
+        #[arg(
+            long,
+            value_name = "regression|campaign",
+            help = "which ceiling of `.headwater/probe.yml` to project the sessions against. \
+                    `regression` by default"
+        )]
         tier: Option<String>,
-        #[arg(long, value_name = "present|absent")]
+        #[arg(
+            long,
+            value_name = "present|absent",
+            help = "narrow the selection to one arm of the comparison. Both arms by default"
+        )]
         arm: Option<String>,
-        #[arg(long, value_name = "name")]
+        #[arg(
+            long,
+            value_name = "name",
+            help = "narrow the selection to one probe category, by the name this engine declares \
+                    for it. Every category by default, and a name outside the closed set is \
+                    refused with the set printed"
+        )]
         category: Option<String>,
         // Zero is the default and it is a value like any other. The seed is
         // the caller's, so a run that states none states zero, and a run that
         // repeats a seed repeats a selection.
-        #[arg(long, value_name = "n", default_value_t = 0)]
+        #[arg(
+            long,
+            value_name = "n",
+            default_value_t = 0,
+            help = "the seed the selection is drawn with. It is the caller's value: a run that \
+                    states none states zero, and a run that repeats a seed repeats a selection"
+        )]
         seed: u64,
     },
     Record {
+        #[arg(
+            value_name = "path",
+            help = "the transcript a recorder wrote. `headwater probe plan` prints the run \
+                    identity it has to carry"
+        )]
         path: Option<String>,
     },
     Grade {
+        #[arg(
+            value_name = "path",
+            help = "the transcript a recorder wrote. It is graded against the probes this corpus \
+                    declares, re-derived here rather than taken from the transcript"
+        )]
         path: Option<String>,
     },
     Stale,
@@ -252,42 +569,252 @@ pub enum ProbeWord {
 pub enum TaxonomyWord {
     Validate,
     Resolve {
-        #[arg(long)]
+        #[arg(
+            long,
+            help = "write nothing and exit non-zero when what is committed is not what a run \
+                    produces. It reads the taxonomy sources, so it answers whether the lock is \
+                    current"
+        )]
         check: bool,
     },
     Audit {
-        #[arg(long, value_name = "date", value_parser = a_date)]
+        #[arg(
+            long,
+            value_name = "date",
+            value_parser = a_date,
+            help = "the date a staleness reading and a dwell reading are taken at, as \
+                    `YYYY-MM-DD`. Defaults to today, and two audits of one tree at one date write \
+                    the same bytes"
+        )]
         now: Option<Date>,
     },
     Publish {
-        #[arg(long, value_name = "name")]
+        #[arg(
+            long,
+            value_name = "name",
+            help = "the package to publish. The one this repository's own declaration takes, by \
+                    default, because a publisher usually publishes what it also consumes"
+        )]
         package: Option<String>,
-        #[arg(long, value_name = "dir")]
+        #[arg(
+            long,
+            value_name = "dir",
+            help = "where to write the artifact. The directory must be empty or absent, because a \
+                    published artifact is every file under its root and a stray one would be a \
+                    member the publisher never shipped. A run that cannot finish leaves it as it \
+                    found it, so a second run meets the same precondition the first one did"
+        )]
         out: Option<PathBuf>,
     },
     Vendor {
+        #[arg(
+            value_name = "dir",
+            help = "the directory of an artifact somebody already fetched. This engine opens no \
+                    socket, so the verb takes a path and never a location"
+        )]
         path: Option<String>,
-        #[arg(long, value_name = "digest")]
+        #[arg(
+            long,
+            value_name = "digest",
+            help = "the digest to check the artifact against. It defaults to `taxonomy.digest` in \
+                    `.headwater/taxonomy.yml`, and the verb refuses when neither is there. A pin \
+                    the engine took from the artifact in front of it would be a pin against itself"
+        )]
         expect: Option<String>,
     },
     Diff {
+        #[arg(
+            value_name = "dir",
+            help = "the directory of an artifact somebody already fetched. This engine opens no \
+                    socket, so the verb takes a path and never a location"
+        )]
         path: Option<String>,
-        #[arg(long, value_name = "version")]
+        #[arg(
+            long,
+            value_name = "version",
+            help = "the version the artifact is expected to be, written as a version or as a \
+                    range: `4.0.0`, or `>=4 <5` with the quoting your shell needs. This engine \
+                    fetches nothing, so the directory decides which artifact is compared and this \
+                    flag holds it to what the caller meant. It is read by the one range reader \
+                    the engine has, which is what reads `requires_engine`"
+        )]
         to: Option<String>,
-        #[arg(long, value_name = "date", value_parser = a_date)]
+        #[arg(
+            long,
+            value_name = "date",
+            value_parser = a_date,
+            help = "the date to evaluate against, as `YYYY-MM-DD`. Defaults to today"
+        )]
         now: Option<Date>,
     },
     Migrate {
+        #[arg(
+            value_name = "dir",
+            help = "the directory of an artifact somebody already fetched. This engine opens no \
+                    socket, so the verb takes a path and never a location"
+        )]
         path: Option<String>,
-        #[arg(long, value_name = "version")]
+        #[arg(
+            long,
+            value_name = "version",
+            help = "the version the artifact is expected to be, written as a version or as a \
+                    range: `4.0.0`, or `>=4 <5` with the quoting your shell needs"
+        )]
         to: Option<String>,
-        #[arg(long)]
+        #[arg(
+            long,
+            help = "write the files each step names. Without it every file each step would write \
+                    is reported and nothing is written"
+        )]
         apply: bool,
-        #[arg(long, value_name = "date", value_parser = a_date)]
+        #[arg(
+            long,
+            value_name = "date",
+            value_parser = a_date,
+            help = "the date to evaluate against, as `YYYY-MM-DD`. Defaults to today"
+        )]
         now: Option<Date>,
     },
     #[command(external_subcommand)]
     Other(Vec<String>),
+}
+
+/// The command tree this binary parses with, and the one every reader takes.
+///
+/// [`Cli::command`] is the derived half and carries the grammar alone. This
+/// function is what puts the words on it, and every word it puts there comes
+/// out of [`headwater_verbs::VERBS`]: the group headings and the one-line
+/// summary of the first screen, the long description a verb prints for itself,
+/// and the same pair for each second word.
+///
+/// `main` prints help through this and `tests/verbs.rs` walks it, so a reader
+/// of the help and a reader of the test meet the same tree. A caller that used
+/// [`Cli::command`] directly would meet a tree with no prose on it at all.
+pub fn command() -> Command {
+    let mut root = Cli::command()
+        .about(format!(
+            "{} — {}",
+            headwater_verbs::BINARY,
+            headwater_verbs::TAGLINE
+        ))
+        .help_template(first_screen());
+    for verb in headwater_verbs::VERBS {
+        root = root.mut_subcommand(verb.name, |one| described(one, verb));
+    }
+    root
+}
+
+/// The command line this process was started with, parsed through [`command`].
+///
+/// `Cli::parse` and `Cli::try_parse` build their own tree out of the derive
+/// alone, which carries the grammar and none of the words. A binary that parsed
+/// through one tree and printed help out of another would answer `--help` from
+/// a command nothing had described, which is the state this returned before the
+/// words were put on it. One entry point is what keeps the two the same tree.
+pub fn parsed() -> Result<Cli, clap::Error> {
+    Cli::from_arg_matches(&command().try_get_matches()?)
+}
+
+/// One verb of the tree, with the words the table carries for it.
+fn described(command: Command, verb: &headwater_verbs::Verb) -> Command {
+    let mut one = command.about(verb.description);
+    if !verb.words.is_empty() {
+        one = one.help_template(second_words(verb));
+        for word in verb.words {
+            one = one.mut_subcommand(word.name, |inner| inner.about(word.description));
+        }
+    }
+    one
+}
+
+/// The width the name column of a printed list is padded to.
+const COLUMN: usize = 13;
+
+/// The template `headwater --help` renders.
+///
+/// The literal parts of a `clap` template are written out as they stand, and
+/// only the `{…}` tags are rendered, so this is where the layout of the first
+/// screen is decided rather than in a `write!` somewhere else. `{subcommands}`
+/// is deliberately absent: `clap` renders one flat list and the screen this
+/// builds is grouped, and the groups come off
+/// [`headwater_verbs::groups`] in the order the table first names each one.
+///
+/// The examples are the one part of this screen that no earlier version of the
+/// binary carried. #321 measured the old help and found no example anywhere in
+/// its 25,415 bytes, so these are written rather than recovered, and each one
+/// is a command line that runs.
+fn first_screen() -> String {
+    let mut out = String::from("{about}\n\n{usage-heading} {usage}\n\nExamples:\n");
+    for (line, says) in [
+        (
+            "headwater check --strict",
+            "run the checks, and fail on an error",
+        ),
+        (
+            "headwater route \"add rate limiting\"",
+            "the documents that govern a task",
+        ),
+        (
+            "headwater explain HW-DR-0033",
+            "why a document is the kind it is",
+        ),
+        (
+            "headwater new decision --title \"Adopt an overlay\"",
+            "scaffold a document of a kind",
+        ),
+        (
+            "headwater help taxonomy diff",
+            "the long description of one verb",
+        ),
+    ] {
+        out.push_str(&format!("  {line:<52}{says}\n"));
+    }
+    for group in headwater_verbs::groups() {
+        out.push_str(&format!("\n{group}:\n"));
+        for verb in headwater_verbs::VERBS
+            .iter()
+            .filter(|one| one.group == group)
+        {
+            out.push_str(&format!(
+                "  {:<width$}{}\n",
+                verb.name,
+                verb.summary,
+                width = COLUMN
+            ));
+        }
+    }
+    out.push_str("\nGlobal flags:\n{options}\n\n");
+    out.push_str(&format!(
+        "Run `{0} help <verb>` for the long description of one verb, or `{0} <verb> --help`.\n",
+        headwater_verbs::BINARY
+    ));
+    out
+}
+
+/// The template a verb with second words renders.
+///
+/// The same argument as [`first_screen`]: `clap`'s own subcommand list would
+/// print each second word's `about`, which is its long description here, so a
+/// caller who typed `headwater sweep` to find out what `plan` is would meet
+/// both descriptions in full. This prints the summary the table carries and
+/// names where the long one is.
+fn second_words(verb: &headwater_verbs::Verb) -> String {
+    let mut out = String::from("{about}\n\n{usage-heading} {usage}\n\nSecond words:\n");
+    for word in verb.words {
+        out.push_str(&format!(
+            "  {:<width$}{}\n",
+            word.name,
+            word.summary,
+            width = COLUMN
+        ));
+    }
+    out.push_str("\nFlags:\n{options}\n\n");
+    out.push_str(&format!(
+        "Run `{} help {} <word>` for the long description of one.\n",
+        headwater_verbs::BINARY,
+        verb.name
+    ));
+    out
 }
 
 /// A date the engine compares against, as `YYYY-MM-DD`.
@@ -359,12 +886,13 @@ pub fn headline(error: &clap::Error) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{a_budget, a_date, a_pair, headline, Cli};
+    use super::{a_budget, a_date, a_pair, command, headline, Cli};
     use clap::{CommandFactory, Parser};
 
     #[test]
     fn the_declared_parse_is_a_command_clap_can_build() {
         Cli::command().debug_assert();
+        command().debug_assert();
     }
 
     #[test]

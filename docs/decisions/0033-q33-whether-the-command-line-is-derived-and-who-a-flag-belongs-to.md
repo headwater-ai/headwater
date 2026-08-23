@@ -3,7 +3,7 @@ id: HW-DR-0033
 status: draft
 status_since: 2026-08-23
 summary: "`clap` derives the command line for 17 lock entries, and a flag belongs to the verb that reads it rather than to the binary."
-last_verified: 2026-08-23
+last_verified: 2026-08-24
 title: "Q33 — Whether the command line is derived, and who a flag belongs to"
 provenance:
   warrant: asserted
@@ -62,14 +62,16 @@ relations:
 
 **What a caller reads on a mistyped command line comes from `clap`, and it is better than what it replaced.** A wrong value is named back with the flag it was written for, as in `invalid value '2026-13-45' for '--now <date>'`. A missing value names the flag and its value name. The 33 refusals the argument loop carried are gone, and one call site of `fail` carries all of them.
 
-**What a caller reads on an unknown verb is this binary's and stays this binary's.** `headwater chekc` names all seventeen verbs, because each level of the parse declares an external-subcommand form that reaches the message `headwater_verbs::listed` writes. `clap` on its own answers `unrecognized subcommand` and names at most one near miss.
+**What a caller reads on an unknown verb is this binary's and stays this binary's.** `headwater chekc` names every verb the dispatch table carries, because each level of the parse declares an external-subcommand form that reaches the message `headwater_verbs::listed` writes. `clap` on its own answers `unrecognized subcommand` and names at most one near miss.
 
-**The help is 25 lines and it describes nothing.** `headwater --help` was 357 lines and 25,415 bytes of hand-written synopsis and prose. It is now the command list and three options, with no description against any of them. That is the state clause 4 of #321 acts on, and the prose it replaces is in the history of `engine/crates/cli/src/main.rs`. `headwater check --help` is no longer a copy of the whole grammar, which is the one thing the shorter surface already fixes.
+**The help describes every verb, and no description is written in this parser.** `headwater --help` was 357 lines and 25,415 bytes of hand-written synopsis and prose. It is now a first screen: worked examples, the verbs under group headings with one line each, the global flags, and a closing pointer. The long form of one verb is behind `headwater help <verb>` and behind both spellings of the flag, and those three routes print one text. The group, the one-line summary and the long description are fields on `headwater_verbs::Verb`, so no copy of the verb list reaches this parser. `headwater check --help` is not a copy of the whole grammar, which is the one thing the shorter surface fixed on its own.
 
 **Color is declared off.** The parse sets `ColorChoice::Never`, so no escape sequence reaches either stream. Clause 11 of #321 owns the question of when color is right, and `anstyle` is already resolved for whoever takes it.
 
 **The test that read the source as text is gone, and one direction of it is now a build failure.** `engine/crates/cli/tests/verbs.rs` scraped the `["word", …]` match arms and the `USAGE` literal out of `main.rs`. It holds the command tree `clap` builds against `headwater_verbs::VERBS` instead, walked to its leaves, in both directions. The third direction needs no case at all. `dispatch` matches the parser's enum exhaustively, so a verb in the parser with no arm behind it does not compile.
 
 **One assertion inverts, and it is the strongest evidence here.** `engine/crates/cli/tests/sweep.rs` asserted that `--strict` moves neither the status nor a byte of a sweep report. It asserts the refusal. A test that has to be reversed states a reversal more exactly than the prose that describes it.
+
+**One paragraph above moved on 2026-08-24, and the reason it carried had ended.** The help paragraph read *The help is 25 lines and it describes nothing*, and that was true on the day this record landed. [#333](https://github.com/headwater-ai/headwater/issues/333) recovered the 23,038 bytes of description that this ruling deleted, out of the commit this record points at. Clause 5 of #321 put those words on `headwater_verbs::VERBS` rather than on the parser. Nothing else here moved: the lock, the exit statuses, and the verb that owns a flag are as this record states them.
 
 **What this ruling does not decide.** Five things, and #321 carries all five. The layout of the help, the description of every flag, and the width the output wraps at. The machine-readable output of the verbs that lack one, and the completion scripts. Each one is a separate change over the surface this ruling settles.
