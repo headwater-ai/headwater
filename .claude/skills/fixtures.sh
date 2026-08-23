@@ -136,7 +136,63 @@ else
     fail 'every link resolves' "these do not:$missing"
 fi
 
-# --- derived: every rule and verb a skill names is one the engine carries ----
+# --- derived: every verb a skill names is a verb the binary dispatches -------
+
+# `docs/interfaces/README.md` is the `verb_index` projection: one row per entry
+# of `headwater_verbs::VERBS`, which is the table `main` resolves a first word
+# against before it enters any arm. A name in the first column is therefore a
+# name this binary dispatches, and `headwater generate --check` holds the whole
+# file against that table on every pull request, so a row written by hand and a
+# verb added without regenerating both fail there.
+#
+# The set used to come from `headwater --help`, which made it a function of the
+# rendered help text. Any left-aligned `headwater …` line added to the synopsis
+# widened it, and a name nothing dispatches was then accepted as shipping, with
+# no suite, hook or CI job reporting it. That is
+# [#309](https://github.com/headwater-ai/headwater/issues/309), and
+# `engine/crates/cli/tests/verbs.rs` closes the other half of it by holding the
+# synopsis against the table in both directions.
+#
+# The old pipeline also read `2>&1`. This binary writes artifacts to standard
+# output and run statistics to standard error, and merging the two on anything
+# measured has already cost this repository a wrong entry in durable memory. The
+# replacement opens a file and starts no process, so the question does not
+# arise.
+#
+# Reading a committed artifact rather than a built binary is also what lets this
+# case run in a clone that has never compiled the engine, which is why it sits
+# above the block below rather than inside it.
+index="$root/docs/interfaces/README.md"
+verbs=$(sed -n 's/^| `\([a-z][a-z]*\)` |.*/\1/p' "$index" | sort -u)
+
+printf '\n# the verb set this suite accepts comes from the generated verb index\n'
+if ! grep -q '^<!-- headwater:generated verb_index\.' "$index"; then
+    fail 'the verb set comes from the generated verb index' \
+        "docs/interfaces/README.md no longer opens with the \`verb_index\` marker"
+elif [ -z "$verbs" ]; then
+    fail 'the verb set comes from the generated verb index' \
+        'docs/interfaces/README.md holds no row this suite can read'
+else
+    pass "$(printf '%s\n' "$verbs" | wc -l | tr -d ' ') verbs, read from the verb index"
+fi
+
+printf '\n# every verb a skill tells an agent to run is a verb that ships\n'
+missing=''
+counted=0
+for file in $instruction_files; do
+    for verb in $(grep -oE 'headwater [a-z]+' "$file" | awk '{print $2}' | sort -u); do
+        counted=$((counted + 1))
+        printf '%s\n' "$verbs" | grep -qx "$verb" ||
+            missing="$missing $(basename "$file"):headwater $verb"
+    done
+done
+if [ -z "$missing" ]; then
+    pass "$counted verbs named, and every one of them ships"
+else
+    fail 'every verb a skill names ships' "these do not:$missing"
+fi
+
+# --- derived: every rule a skill names is one this engine runs ---------------
 
 if [ -x "$engine" ]; then
     printf '\n# every rule a skill names is a rule this engine runs\n'
@@ -162,23 +218,6 @@ if [ -x "$engine" ]; then
         pass "$counted rule names, and this engine runs every one of them"
     else
         fail 'every rule a skill names is one this engine runs' "these are not:$missing"
-    fi
-
-    printf '\n# every verb a skill tells an agent to run is a verb that ships\n'
-    verbs=$("$engine" --help 2>&1 | grep -oE '^headwater [a-z]+' | awk '{print $2}' | sort -u)
-    missing=''
-    counted=0
-    for file in $instruction_files; do
-        for verb in $(grep -oE 'headwater [a-z]+' "$file" | awk '{print $2}' | sort -u); do
-            counted=$((counted + 1))
-            printf '%s\n' "$verbs" | grep -qx "$verb" ||
-                missing="$missing $(basename "$file"):headwater $verb"
-        done
-    done
-    if [ -z "$missing" ]; then
-        pass "$counted verbs named, and every one of them ships"
-    else
-        fail 'every verb a skill names ships' "these do not:$missing"
     fi
 else
     skip 'the derived cases that read the engine' 'no built engine'
