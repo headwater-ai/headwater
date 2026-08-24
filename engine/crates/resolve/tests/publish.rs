@@ -433,13 +433,26 @@ fn vendoring_over_a_maintained_package_is_refused() {
 /// matches the string in the manifest and never the directory that carries it,
 /// which is what makes one fixed directory enough.
 fn publisher_declaring(scratch: &Scratch, at: &str, name: &str) -> PathBuf {
+    publisher_declaring_at(scratch, at, name, "1.0.0")
+}
+
+/// The same publisher, at the version the caller hands it.
+///
+/// **Both version keys move together**, because a package that states two
+/// versions of itself is refused at publish and the upgrade case needs a second
+/// artifact that publishes. [`publisher_at`] is the helper that moves one
+/// without the other, and it exists to reach that refusal rather than to pass
+/// it.
+fn publisher_declaring_at(scratch: &Scratch, at: &str, name: &str, version: &str) -> PathBuf {
     scratch.write(
         &format!("{at}/packages/source/package.yml"),
-        &format!("package: {name}\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n"),
+        &format!("package: {name}\nversion: {version}\ncontents:\n  taxonomy: taxonomy.yml\n"),
     );
     scratch.write(
         &format!("{at}/packages/source/taxonomy.yml"),
-        &TAXONOMY.replace("taxonomy: acme/fixture", &format!("taxonomy: {name}")),
+        &TAXONOMY
+            .replace("taxonomy: acme/fixture", &format!("taxonomy: {name}"))
+            .replace("version: 1.0.0", &format!("version: {version}")),
     );
     scratch.path().join(at)
 }
@@ -647,6 +660,295 @@ fn a_manifest_whose_package_is_a_yaml_null_does_not_vendor_into_a_directory() {
     assert!(
         !adopter.join(package::PACKAGES).join("~").exists(),
         "the artifact landed in a directory called `~`"
+    );
+}
+
+/// The directories under an adopter's `packages/`, sorted.
+///
+/// The three cases below assert what `packages/` holds as well as what `find`
+/// answers, because a refusal that left a second tree beside the first would
+/// answer every lookup correctly and still have written where it must not.
+fn packages_under(root: &Path) -> Vec<String> {
+    let mut names: Vec<String> = std::fs::read_dir(root.join(package::PACKAGES))
+        .expect("the adopter holds `packages/`")
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .collect();
+    names.sort();
+    names
+}
+
+/// Two package names inside the grammar flatten to one directory, and the
+/// second does not delete the first.
+///
+/// `acme/my-taxonomy` and `acme-my/taxonomy` are both names the grammar
+/// accepts, and `declared.replace('/', "-")` sends both of them to
+/// `packages/acme-my-taxonomy`. The first vendor leaves a release record there,
+/// so `release::at` succeeds, the maintained-package guard does not fire, and
+/// the replace arm removed the first publisher's package before writing the
+/// second — two honest publishers, no adversary, and both runs exiting 0. That
+/// is [#320](https://github.com/headwater-ai/headwater/issues/320).
+///
+/// **[`publisher_declaring`] is the helper this needs and [`publisher_of`] is
+/// not.** The latter derives the publisher's own directory from the name, so
+/// two colliding names lay out over one path in one scratch tree and the second
+/// publisher overwrites the first before either is published. The collision
+/// under test would then be a collision in the fixture's own tree.
+///
+/// **The digest of each artifact is asserted before the refusal is**, for the
+/// reason [`a_package_named_dot_dot_does_not_reach_the_adopters_own_root`]
+/// states: an artifact that stopped verifying would refuse for the pin, and the
+/// case would quietly stop measuring the name.
+///
+/// **The surviving package is read and not only found.** `find_version` reads
+/// the manifest alone, so a removal that ran and then wrote a partial tree
+/// answers it correctly. The taxonomy source beside the manifest is what says
+/// the whole directory is still there.
+#[test]
+fn two_names_that_flatten_to_one_directory_do_not_delete_each_other() {
+    let scratch = Scratch::new("collide");
+
+    let first_root = publisher_declaring(&scratch, "first", "acme/my-taxonomy");
+    let first_out = scratch.path().join("artifact-first");
+    let first =
+        package::publish(&first_root, "acme/my-taxonomy", &first_out).expect("the first publishes");
+    assert!(
+        release::verify(&first_out, &first.digest).is_ok(),
+        "the artifact does not verify against its own digest, so what follows measures the pin"
+    );
+
+    let second_root = publisher_declaring(&scratch, "second", "acme-my/taxonomy");
+    let second_out = scratch.path().join("artifact-second");
+    let second = package::publish(&second_root, "acme-my/taxonomy", &second_out)
+        .expect("the second publishes");
+    assert!(
+        release::verify(&second_out, &second.digest).is_ok(),
+        "the artifact does not verify against its own digest, so what follows measures the pin"
+    );
+
+    let adopter = scratch.path().join("adopter");
+    std::fs::create_dir_all(&adopter).expect("the adopter root is made");
+    package::vendor(&adopter, &first_out, &first.digest).expect("the first vendor lands");
+    assert_eq!(
+        package::find_version(&adopter, "acme/my-taxonomy"),
+        Some("1.0.0".to_string()),
+        "the first package is not installed, so what follows measures nothing"
+    );
+
+    let refused = package::vendor(&adopter, &second_out, &second.digest)
+        .expect_err("a second name that flattens onto an installed package is refused");
+    let message = headwater_resolve::render_errors(&refused);
+
+    // The refusal names both names and the directory they contend for, and
+    // none of the three is a substring of either of the others.
+    assert!(
+        message.contains("acme/my-taxonomy"),
+        "the package that is installed is not named:\n{message}"
+    );
+    assert!(
+        message.contains("acme-my/taxonomy"),
+        "the package the artifact declares is not named:\n{message}"
+    );
+    assert!(
+        message.contains("packages/acme-my-taxonomy"),
+        "the directory the two names contend for is not named:\n{message}"
+    );
+
+    // The first publisher's package is installed, and whole.
+    assert_eq!(
+        package::find_version(&adopter, "acme/my-taxonomy"),
+        Some("1.0.0".to_string()),
+        "the adopter's package is gone, which is the defect"
+    );
+    assert_eq!(
+        package::find_version(&adopter, "acme-my/taxonomy"),
+        None,
+        "the refused artifact is installed"
+    );
+    let installed = adopter.join(package::PACKAGES).join("acme-my-taxonomy");
+    let manifest =
+        std::fs::read_to_string(installed.join(package::MANIFEST)).expect("the manifest is there");
+    assert!(manifest.contains("package: acme/my-taxonomy"), "{manifest}");
+    let source =
+        std::fs::read_to_string(installed.join("taxonomy.yml")).expect("the source is there");
+    assert!(source.contains("taxonomy: acme/my-taxonomy"), "{source}");
+
+    // And the refusal wrote nothing anywhere else under `packages/`.
+    assert_eq!(
+        packages_under(&adopter),
+        vec!["acme-my-taxonomy".to_string()],
+        "the refusal left a second tree behind"
+    );
+}
+
+/// A later version of the package that is installed still replaces it.
+///
+/// **This case separates an executed replace from a silent no-op, and that is
+/// what it adds.** [`vendoring_over_a_maintained_package_is_refused`] vendors
+/// one artifact twice, so the bytes it expects are the bytes that are already
+/// there and a guard that quietly did nothing would satisfy it. Moving the
+/// version is what makes the replace arm say whether it ran.
+///
+/// **A blanket refusal is not what this alone catches, and the measurement says
+/// so.** Patch the equal arm of `holds_the_same_package` to refuse whatever it
+/// finds and the target reports `40 passed; 2 failed`: this case, and
+/// [`vendoring_over_a_maintained_package_is_refused`], which ends in
+/// `.expect("the second replaces it")` and so observes an `Err` whatever the
+/// bytes are. A refusal is visible to that case. A guard that returns `Ok` and
+/// lets nothing happen is visible only to this one, which is the reason to keep
+/// it rather than the reason it was written.
+///
+/// Both version keys move together, because a package that states two versions
+/// of itself is refused at publish. [`publisher_declaring_at`] is the knob.
+#[test]
+fn a_later_version_of_the_installed_package_still_replaces_it() {
+    let scratch = Scratch::new("upgrade");
+
+    let root = publisher_declaring_at(&scratch, "publisher", "acme/fixture", "1.0.0");
+    let out = scratch.path().join("artifact-1");
+    let first = package::publish(&root, "acme/fixture", &out).expect("1.0.0 publishes");
+
+    let adopter = scratch.path().join("adopter");
+    std::fs::create_dir_all(&adopter).expect("the adopter root is made");
+    package::vendor(&adopter, &out, &first.digest).expect("the first vendor lands");
+    assert_eq!(
+        package::find_version(&adopter, "acme/fixture"),
+        Some("1.0.0".to_string())
+    );
+
+    let later_root = publisher_declaring_at(&scratch, "later", "acme/fixture", "2.0.0");
+    let later_out = scratch.path().join("artifact-2");
+    let later = package::publish(&later_root, "acme/fixture", &later_out).expect("2.0.0 publishes");
+    assert_ne!(
+        first.digest, later.digest,
+        "the two artifacts are the same bytes, so a vendor that did nothing would pass"
+    );
+
+    package::vendor(&adopter, &later_out, &later.digest)
+        .expect("a later version of the same package replaces the one that is installed");
+    assert_eq!(
+        package::find_version(&adopter, "acme/fixture"),
+        Some("2.0.0".to_string()),
+        "the upgrade did not land, so the guard refuses a package its own name"
+    );
+    assert_eq!(
+        packages_under(&adopter),
+        vec!["acme-fixture".to_string()],
+        "the upgrade wrote a second tree instead of replacing the first"
+    );
+}
+
+/// The resident's manifest decides, and its release record does not.
+///
+/// A vendored directory states its name twice: `package.yml`, which the release
+/// digest covers, and the header of `release.yml`, which the digest cannot cover
+/// because it is one of the lines the digest is written over.
+/// [`a_record_that_renames_the_artifact_does_not_steer_the_vendor_target`] holds
+/// that distinction for the *artifact* being vendored. This holds it for the
+/// directory already installed, which is the other end of the same comparison
+/// and reaches it through [`holds_the_same_package`] rather than through
+/// [`identity`].
+///
+/// **Without this the choice is pinned only by absence.** Every other case here
+/// reaches the guard over a resident whose two names agree, or over one with no
+/// readable manifest at all, so a guard that read the record's header instead
+/// would pass all of them. Here the two names disagree, and only one answer
+/// leaves the upgrade running.
+///
+/// The version moves, so what is asserted is that the replace ran rather than
+/// that nothing was refused.
+#[test]
+fn the_resident_manifest_decides_and_its_record_header_does_not() {
+    let scratch = Scratch::new("resident-header");
+
+    let root = publisher_declaring_at(&scratch, "publisher", "acme/fixture", "1.0.0");
+    let out = scratch.path().join("artifact-1");
+    let first = package::publish(&root, "acme/fixture", &out).expect("1.0.0 publishes");
+
+    let adopter = scratch.path().join("adopter");
+    std::fs::create_dir_all(&adopter).expect("the adopter root is made");
+    package::vendor(&adopter, &out, &first.digest).expect("the first vendor lands");
+
+    // Rewrite the installed record's header to name a different package, and
+    // leave the manifest beside it alone. The digest covers the manifest and
+    // not this line, which is why the two can disagree at all.
+    let installed = adopter.join(package::PACKAGES).join("acme-fixture");
+    let record = installed.join(release::RECORD);
+    let text = std::fs::read_to_string(&record).expect("the record is there");
+    let forged = text.replace("package: acme/fixture", "package: acme/somebody-else");
+    assert_ne!(text, forged, "the record header did not name the package");
+    std::fs::write(&record, forged).expect("the record writes");
+    assert!(
+        release::at(&installed).is_ok(),
+        "the edited record no longer reads, so the guard is never reached"
+    );
+    assert!(
+        std::fs::read_to_string(installed.join(package::MANIFEST))
+            .expect("the manifest is there")
+            .contains("package: acme/fixture"),
+        "the manifest moved with the record, so the two no longer disagree"
+    );
+
+    let later_root = publisher_declaring_at(&scratch, "later", "acme/fixture", "2.0.0");
+    let later_out = scratch.path().join("artifact-2");
+    let later = package::publish(&later_root, "acme/fixture", &later_out).expect("2.0.0 publishes");
+
+    package::vendor(&adopter, &later_out, &later.digest)
+        .expect("the manifest names this package, so the upgrade lands");
+    assert_eq!(
+        package::find_version(&adopter, "acme/fixture"),
+        Some("2.0.0".to_string()),
+        "the guard read the record's header, which the release digest does not cover"
+    );
+    assert_eq!(
+        packages_under(&adopter),
+        vec!["acme-fixture".to_string()],
+        "the upgrade wrote a second tree instead of replacing the first"
+    );
+}
+
+/// A vendored directory whose manifest cannot be read is not removed either.
+///
+/// The guard reads the `package:` of the directory that is there. A directory
+/// that carries a release record and no readable manifest states no name to
+/// compare, so it is refused rather than assumed to be the package the artifact
+/// declares. Nothing this verb writes reaches that state: `identity` reads the
+/// artifact's own manifest and refuses an artifact without one before a byte is
+/// written, so a directory in this state was not written here.
+///
+/// The release record is asserted present first. Without one the
+/// maintained-package guard answers instead, for a reason of its own, and the
+/// case would measure that refusal rather than this one.
+#[test]
+fn a_vendored_directory_that_declares_no_readable_name_is_not_replaced() {
+    let scratch = Scratch::new("no-manifest");
+
+    let root = publisher_declaring(&scratch, "publisher", "acme/fixture");
+    let out = scratch.path().join("artifact");
+    let record = package::publish(&root, "acme/fixture", &out).expect("it publishes");
+
+    let adopter = scratch.path().join("adopter");
+    std::fs::create_dir_all(&adopter).expect("the adopter root is made");
+    package::vendor(&adopter, &out, &record.digest).expect("the first vendor lands");
+
+    let installed = adopter.join(package::PACKAGES).join("acme-fixture");
+    std::fs::remove_file(installed.join(package::MANIFEST)).expect("the manifest is removed");
+    assert!(
+        release::at(&installed).is_ok(),
+        "without a release record the maintained-package guard answers instead, and nothing \
+         reaches the comparison this case is about"
+    );
+
+    let refused = package::vendor(&adopter, &out, &record.digest)
+        .expect_err("a directory that declares no readable name is not removed");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("packages/acme-fixture/package.yml"),
+        "the file that cannot be read is not named:\n{message}"
+    );
+    assert!(
+        installed.join("taxonomy.yml").is_file(),
+        "the rest of the directory was removed behind the refusal"
     );
 }
 
