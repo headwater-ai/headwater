@@ -2435,7 +2435,7 @@ fn a_packages_directory_that_cannot_be_written_takes_nothing_from_the_installed_
         .collect::<Vec<_>>()
         .join("\n");
     assert!(
-        said.contains("acme-fixture~staged"),
+        said.contains("~staging") && said.contains("acme-fixture"),
         "the refusal does not name the staging path it could not make: {said}"
     );
     assert!(
@@ -2615,11 +2615,13 @@ fn an_artifact_that_holds_the_target_inside_it_is_refused() {
 fn a_directory_this_verb_stages_into_never_wins_the_lookup() {
     let scratch = Scratch::new("staging-shadow");
     let (adopter, _, _) = adopter_holding(&scratch);
+    let packages = adopter.join(package::PACKAGES);
 
-    for suffix in [package::STAGED, package::ASIDE] {
-        let residue = adopter
-            .join(package::PACKAGES)
-            .join(format!("acme-fixture{suffix}"));
+    let residues = [
+        package::staging_path(&packages, "acme-fixture"),
+        packages.join(format!("acme-fixture{}", package::ASIDE)),
+    ];
+    for residue in residues {
         std::fs::create_dir_all(&residue).expect("the residue is made");
         std::fs::write(
             residue.join(package::MANIFEST),
@@ -2679,8 +2681,11 @@ fn a_plain_retry_after_a_kill_mid_swap_still_lands() {
     let packages = adopter.join(package::PACKAGES);
     std::fs::remove_dir_all(packages.join("acme-fixture"))
         .expect("the target is cleared to simulate the kill");
-    for suffix in [package::STAGED, package::ASIDE] {
-        let residue = packages.join(format!("acme-fixture{suffix}"));
+    let residues = [
+        package::staging_path(&packages, "acme-fixture"),
+        packages.join(format!("acme-fixture{}", package::ASIDE)),
+    ];
+    for residue in residues {
         std::fs::create_dir_all(&residue).expect("the residue is made");
         std::fs::write(
             residue.join(package::MANIFEST),
@@ -2718,13 +2723,20 @@ fn a_plain_retry_after_a_kill_mid_swap_still_lands() {
 /// # The reachable state, and why the natural gesture is the destructive one
 ///
 /// A run killed after the staging copy and before the first rename leaves
-/// exactly `packages/<name>~staged`, complete, with nothing at the target. A run
-/// killed between the two renames leaves `packages/<name>~aside`, complete, with
-/// nothing at the target. In both states the adopter holds one copy of the
-/// package, it is under a name they did not choose, and pointing this verb at it
-/// is what finishing the install looks like from outside. The refusal for the
-/// second one says the package "is complete under `packages/<name>~aside`", so
-/// the message names the directory the gesture would use.
+/// exactly `packages/~staging/<name>`, complete, with nothing at the target.
+/// [`find`] never reads it there, which is what
+/// [#357](https://github.com/headwater-ai/headwater/issues/357) closes: this
+/// state does not resolve at all, complete or not, until a further `vendor`
+/// clears it. A run killed between the two renames leaves
+/// `packages/<name>~aside`, complete, with nothing at the target, and `find`
+/// does read that one — it is a flat sibling of the target, one level down
+/// like any package — which is the state
+/// [#312](https://github.com/headwater-ai/headwater/issues/312) asked to keep
+/// resolving. The aside case is where the adopter holds one copy of the
+/// package under a name they did not choose, and pointing this verb at it is
+/// what finishing the install looks like from outside; the refusal there says
+/// the package "is complete under `packages/<name>~aside`", so the message
+/// names the directory the gesture would use.
 ///
 /// The first step of the write phase clears both of those paths. Handed one of
 /// them as the artifact, the verb deletes the artifact it verified moments
@@ -2739,21 +2751,23 @@ fn a_plain_retry_after_a_kill_mid_swap_still_lands() {
 /// defect, reachable only through a state the fix for it creates.
 #[test]
 fn an_artifact_that_is_a_directory_this_verb_stages_through_is_refused() {
-    for suffix in [package::STAGED, package::ASIDE] {
-        let case = format!("staged-as-artifact{suffix}");
+    for kind in ["staging", "aside"] {
+        let case = format!("staged-as-artifact-{kind}");
         let scratch = Scratch::new(&case);
         let (adopter, _, digest) = adopter_holding(&scratch);
+        let packages = adopter.join(package::PACKAGES);
 
         // The state a kill leaves: one complete copy, under the sibling name,
         // and nothing at the target.
-        let residue = adopter
-            .join(package::PACKAGES)
-            .join(format!("acme-fixture{suffix}"));
-        std::fs::rename(
-            adopter.join(package::PACKAGES).join("acme-fixture"),
-            &residue,
-        )
-        .expect("the package moves to the name a kill would leave it under");
+        let residue = match kind {
+            "staging" => package::staging_path(&packages, "acme-fixture"),
+            _ => packages.join(format!("acme-fixture{}", package::ASIDE)),
+        };
+        if let Some(parent) = residue.parent() {
+            std::fs::create_dir_all(parent).expect("the residue's parent exists");
+        }
+        std::fs::rename(packages.join("acme-fixture"), &residue)
+            .expect("the package moves to the name a kill would leave it under");
 
         let errors = package::vendor(&adopter, &residue, &digest)
             .expect_err("an artifact that is a directory this verb stages through is refused");
@@ -2773,11 +2787,18 @@ fn an_artifact_that_is_a_directory_this_verb_stages_through_is_refused() {
             ],
             "the verb took files out of the artifact it was handed"
         );
-        assert_eq!(
-            package::find_version(&adopter, "acme/fixture"),
-            Some("1.0.0".to_string()),
-            "the package the adopter still held stopped resolving"
-        );
+        match kind {
+            "aside" => assert_eq!(
+                package::find_version(&adopter, "acme/fixture"),
+                Some("1.0.0".to_string()),
+                "the package the adopter still held stopped resolving"
+            ),
+            _ => assert_eq!(
+                package::find_version(&adopter, "acme/fixture"),
+                None,
+                "a residue under `~staging/` resolved, which #357 says it must not, complete or not"
+            ),
+        }
 
         let said = errors
             .iter()
@@ -2790,7 +2811,7 @@ fn an_artifact_that_is_a_directory_this_verb_stages_through_is_refused() {
         );
 
         // And the gesture that does work is the one the refusal names.
-        let moved = scratch.path().join(format!("moved{suffix}"));
+        let moved = scratch.path().join(format!("moved-{kind}"));
         std::fs::rename(&residue, &moved).expect("the artifact moves out of `packages/`");
         package::vendor(&adopter, &moved, &digest)
             .expect("the artifact vendors once it sits outside `packages/`");
@@ -2824,9 +2845,7 @@ fn a_file_an_earlier_run_left_in_the_staging_directory_is_not_installed() {
     let scratch = Scratch::new("stale-staging");
     let (adopter, _, _) = adopter_holding(&scratch);
 
-    let stale = adopter
-        .join(package::PACKAGES)
-        .join(format!("acme-fixture{}", package::STAGED));
+    let stale = package::staging_path(&adopter.join(package::PACKAGES), "acme-fixture");
     std::fs::create_dir_all(&stale).expect("the stale staging directory is made");
     std::fs::write(stale.join("poison.txt"), "not from any artifact")
         .expect("the stale directory holds a file no artifact carries");
