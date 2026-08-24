@@ -1384,7 +1384,7 @@ pub const BUNDLES: &str = "bundles";
 /// [#312](https://github.com/headwater-ai/headwater/issues/312) asked for.
 ///
 /// The sequence is: clear this verb's own scratch, copy the artifact into
-/// `packages/<name>~staged`, rename the installed package to
+/// `packages/~staging/<name>`, rename the installed package to
 /// `packages/<name>~aside`, rename the staged tree onto `packages/<name>`, and
 /// remove the aside tree last. Every refusal after the reading phase leaves one
 /// state, which is why each of them can say what it says: the package that was
@@ -1432,10 +1432,12 @@ pub const BUNDLES: &str = "bundles";
 /// therefore sorts *before* the real package and wins the lookup — measured,
 /// with `taxonomy resolve` reporting the staged version. `~` is 0x7E, and the
 /// highest byte [`names_a_package`] admits is `z` at 0x7A, so no package the
-/// grammar accepts can derive one of these directories and both of them sort
-/// after every flattened name. `~aside` sorts before `~staged`, so a run killed
-/// in the one-rename window leaves [`find`] returning the old complete tree
-/// rather than the new one. **This leans on that sort order**, which
+/// grammar accepts can derive `packages/<name>~aside` or the shared
+/// `packages/~staging`, and both sort after every flattened name.
+/// `<name>~aside` sorts before `~staging` too, because the flattened name's own
+/// first byte is always less than `~`, so a run killed in the one-rename window
+/// leaves [`find`] returning the old complete tree rather than the new one.
+/// **This leans on that sort order**, which
 /// [#369](https://github.com/headwater-ai/headwater/issues/369) already records
 /// as owed its own hardening: a change to how `find` chooses reads here first.
 ///
@@ -1477,20 +1479,21 @@ pub const BUNDLES: &str = "bundles";
 /// meantime, so the adopter still resolves.
 ///
 /// **A kill inside the staging copy leaves a partial tree under
-/// `packages/<name>~staged`, and that is the one residue that is not complete.**
-/// Where a package is installed, [`find`] answers from the installed one, which
-/// sorts first, and never reaches it. Where none is — a first install — `find`
-/// has nothing else to answer from and reads the partial tree. Measured, over
-/// an artifact of 4003 files laid out so the manifest and the taxonomy source
-/// copy before the rest: a run killed at 103 of 4003 files resolved exactly as
-/// the complete package does. So a killed first install can leave a package
-/// that resolves and is not all there. The next `vendor` of that package clears
-/// it, and until then nothing says so. Staging one level down, under
-/// `packages/~staging/<name>`, closes it, because `find` reads one level and
-/// skips a directory with no manifest beside it. That is
-/// [#357](https://github.com/headwater-ai/headwater/issues/357), and it is not
-/// this change: what this change removes is the same state under the package's
-/// own name, where `find` reads it whether or not anything else is installed.
+/// `packages/~staging/<name>`, and [`find`] never answers from it.** Before
+/// [#357](https://github.com/headwater-ai/headwater/issues/357), the staging
+/// copy sat flat at `packages/<name>~staged`: where a package was installed,
+/// `find` answered from the installed one, which sorted first, and never
+/// reached the staging directory, but where none was — a first install —
+/// `find` had nothing else to answer from and read the partial tree. Measured,
+/// over an artifact of 4003 files laid out so the manifest and the taxonomy
+/// source copy before the rest: a run killed at 103 of 4003 files resolved
+/// exactly as the complete package does. Staging one level down closes that:
+/// `find` reads one level of `packages/` and skips a directory with no
+/// manifest beside it, so `packages/~staging` is never a candidate, on a first
+/// install or an upgrade. What this does not touch is the state #312 and #356
+/// already hold: `find` still reads `packages/<name>` itself whether or not
+/// anything else is installed, and this staging path is never that
+/// directory.
 ///
 /// **Neither residue is inert to the rest of the engine, and whether it is
 /// depends on the adopter's configuration rather than on the residue.**
@@ -1510,10 +1513,11 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
     let flattened = declared.replace('/', "-");
     let packages = root.join(PACKAGES);
     let target = packages.join(&flattened);
-    let staged = packages.join(format!("{flattened}{STAGED}"));
+    let staging_root = packages.join(STAGING);
+    let staged = staging_path(&packages, &flattened);
     let aside = packages.join(format!("{flattened}{ASIDE}"));
     let under = format!("{PACKAGES}/{flattened}");
-    let staged_under = format!("{under}{STAGED}");
+    let staged_under = display(root, &staged);
     let aside_under = format!("{under}{ASIDE}");
 
     // The reading phase. Nothing below this writes until the staging copy, and
@@ -1621,12 +1625,14 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
 
     copy_tree(fetched, &staged).map_err(|why| {
         let _ = std::fs::remove_dir_all(&staged);
+        tidy(&staging_root);
         refusal(&name, &format!("{why}. Nothing was vendored, and {stands}"))
     })?;
 
     if installed {
         std::fs::rename(&target, &aside).map_err(|error| {
             let _ = std::fs::remove_dir_all(&staged);
+            tidy(&staging_root);
             refusal(
                 &under,
                 &format!(
@@ -1640,6 +1646,7 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
     if let Err(error) = std::fs::rename(&staged, &target) {
         let put_back = !installed || std::fs::rename(&aside, &target).is_ok();
         let _ = std::fs::remove_dir_all(&staged);
+        tidy(&staging_root);
         let state = match put_back {
             true => format!("Nothing was vendored, and {stands}"),
             false => format!(
@@ -1655,30 +1662,52 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
 
     // Last, and the error is dropped for the reason `found::unwind` drops its
     // own: this runs on the way out of a success, and a message about scratch
-    // would displace the one a reader came for.
+    // would displace the one a reader came for. The shared staging parent goes
+    // the same way, whether or not this run installed anything: it is either
+    // empty, because this run's own subdirectory was just renamed onto
+    // `target`, or a sibling package's `vendor` is staging into it right now,
+    // and `tidy` only ever removes an empty directory.
     if installed {
         let _ = std::fs::remove_dir_all(&aside);
     }
+    tidy(&staging_root);
     Ok(record)
 }
 
-/// The suffix of the directory [`vendor`] copies a new package into, beside the
-/// package's own directory.
+/// The name of the directory [`vendor`] copies a new package into, one level
+/// below `packages/`, before the swap onto the package's own name.
 ///
 /// **It is public because it is an assertion rather than a detail.** The byte
 /// `~` is one [`names_a_package`] refuses and it sorts after every byte that
-/// grammar admits, which is what keeps a staging directory from answering
-/// [`find`] in place of the package it is a copy of. A caller that lists
-/// `packages/` reads the same two constants this verb writes.
-pub const STAGED: &str = "~staged";
+/// grammar admits, so no package can derive this name, and [`find`] reads one
+/// level of `packages/` and skips a directory with no manifest beside it — so a
+/// directory named `STAGING` never answers a lookup in place of a package being
+/// staged inside it, on a first install or an upgrade. [`staging_path`] is the
+/// one construction that joins this to `packages/` and to a package's own
+/// flattened name; [`vendor`] and every test that plants a staging residue by
+/// hand share it, rather than hand-joining the same three pieces independently.
+pub const STAGING: &str = "~staging";
 
 /// The suffix of the directory [`vendor`] moves the installed package to while
 /// the new one takes its place.
 ///
-/// It sorts *before* [`STAGED`], so a run killed in the one-rename window leaves
+/// `<flattened>~aside` sorts before the shared [`STAGING`] directory, because
+/// the flattened name's own first byte is one the grammar admits and every such
+/// byte is less than `~`. So a run killed in the one-rename window leaves
 /// [`find`] returning the complete tree that was installed rather than the one
 /// being installed.
 pub const ASIDE: &str = "~aside";
+
+/// Where [`vendor`] copies a package while it is not yet complete.
+///
+/// One level below `packages/`, under [`STAGING`], so [`find`] — which reads
+/// one level of `packages/` and skips a directory with no manifest beside it —
+/// never descends into it. A copy killed mid-stage sits under a name `find`
+/// cannot reach, whether or not anything else answers the package's name; that
+/// is [#357](https://github.com/headwater-ai/headwater/issues/357).
+pub fn staging_path(packages: &Path, flattened: &str) -> PathBuf {
+    packages.join(STAGING).join(flattened)
+}
 
 /// Remove a directory an earlier run of this verb left, where absent is not a
 /// failure.
@@ -1687,6 +1716,22 @@ fn clear(at: &Path) -> std::io::Result<()> {
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
         other => other,
     }
+}
+
+/// Remove the shared staging parent [`vendor`] copies into, on every exit path
+/// that leaves it standing.
+///
+/// **Never [`std::fs::remove_dir_all`].** A sibling package's own `vendor` may
+/// be staging into its own subdirectory of this same parent at this instant —
+/// [`STAGING`]'s doc comment names the concurrency this implies — and the
+/// non-recursive [`std::fs::remove_dir`] is what makes that safe: it succeeds
+/// only when the directory holds nothing, so it can never take another
+/// package's in-flight staging subdirectory with it. Not empty and not there
+/// are both ignored on the same terms every other cleanup in this function
+/// ignores its own: this runs on an exit path that already has its own outcome
+/// to report, and one more scratch directory standing is not it.
+fn tidy(staging_root: &Path) {
+    let _ = std::fs::remove_dir(staging_root);
 }
 
 /// A path with the part of it that is on disk resolved, and the part that is
