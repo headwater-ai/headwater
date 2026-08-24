@@ -1708,6 +1708,168 @@ fn a_contents_path_that_leaves_the_package_is_refused_under_every_key_but_bundle
     assert!(!out_of(&scratch).exists(), "an artifact was written anyway");
 }
 
+/// A `contents` path that leaves the package and returns to a location inside
+/// it publishes.
+///
+/// The escape rule above used to be lexical: any `..` in the declared string
+/// refused, whether or not the path it named ever left the package. [`settled`]
+/// judges where the path resolves rather than the string a manifest wrote, and
+/// this pins the direction that rule must not over-refuse in. [#303].
+///
+/// [#303]: https://github.com/headwater-ai/headwater/issues/303
+#[test]
+fn a_contents_path_that_leaves_and_returns_inside_the_package_publishes() {
+    let scratch = Scratch::new("leaves-and-returns");
+    let root = publisher(&scratch, None);
+    scratch.write("publisher/packages/acme-fixture/sub/inside.yml", "x: 1\n");
+    scratch.write(
+        "publisher/packages/acme-fixture/package.yml",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: sub/../taxonomy.yml\n  \
+         bundles: ../../library\n",
+    );
+
+    let record = package::publish(&root, "acme/fixture", &out_of(&scratch)).expect("it publishes");
+    assert_eq!(record.package, "acme/fixture");
+}
+
+/// A `contents` value that names no `..` at all is still refused when it is a
+/// symlink resolving outside the package.
+///
+/// [#303]'s first mechanism: the escape check read the declared string, and a
+/// symlink's declared name never carries the escape its target does.
+/// `taxonomy.yml` is replaced with a link to a file elsewhere in the scratch
+/// tree, so the string a manifest author wrote and the bytes a publish would
+/// carry disagree about where the file is.
+///
+/// [#303]: https://github.com/headwater-ai/headwater/issues/303
+#[cfg(unix)]
+#[test]
+fn a_contents_path_that_is_a_symlink_resolving_outside_the_package_is_refused() {
+    let scratch = Scratch::new("contents-symlink-escape");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "secret/stolen.yml",
+        "taxonomy: acme/fixture\nversion: 1.0.0\n",
+    );
+    let linked = root.join("packages/acme-fixture/taxonomy.yml");
+    std::fs::remove_file(&linked).expect("the real file makes way for the link");
+    std::os::unix::fs::symlink(scratch.path().join("secret/stolen.yml"), &linked)
+        .expect("the link is made");
+
+    let refused = package::publish(&root, "acme/fixture", &out_of(&scratch))
+        .expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("`contents.taxonomy`") && message.contains("outside the package"),
+        "the refusal is not the escape rule: {message}"
+    );
+    assert!(!out_of(&scratch).exists(), "an artifact was written anyway");
+}
+
+/// A symlink under the package directory that no `contents` key names still
+/// reaches the artifact if nothing refuses it, because `stage` walks the whole
+/// directory and `contents` only says what a manifest chose to write down.
+///
+/// [#303]'s sharper finding: the escape rule on `contents` cannot reach this
+/// case at all, because no key names `undeclared.yml` for it to hold to
+/// anything.
+///
+/// [#303]: https://github.com/headwater-ai/headwater/issues/303
+#[cfg(unix)]
+#[test]
+fn an_undeclared_symlink_under_the_package_directory_is_refused() {
+    let scratch = Scratch::new("undeclared-symlink");
+    let root = publisher(&scratch, None);
+    scratch.write("secret/stolen.yml", "STOLEN\n");
+    std::os::unix::fs::symlink(
+        scratch.path().join("secret/stolen.yml"),
+        root.join("packages/acme-fixture/undeclared.yml"),
+    )
+    .expect("the link is made");
+
+    let refused = package::publish(&root, "acme/fixture", &out_of(&scratch))
+        .expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("undeclared.yml") && message.contains("outside"),
+        "the refusal does not name the offending path: {message}"
+    );
+    assert!(!out_of(&scratch).exists(), "an artifact was written anyway");
+}
+
+/// A symlink inside the directory `contents.bundles` points at is held to the
+/// same bound `bundles` itself is, and not to the wider filesystem.
+///
+/// The bundles walk reads from wherever the manifest points it, outside the
+/// package by design, so its boundary is `root` rather than the package
+/// directory — and a symlink inside that tree pointing further out is still
+/// refused by it. [#303].
+///
+/// [#303]: https://github.com/headwater-ai/headwater/issues/303
+#[cfg(unix)]
+#[test]
+fn a_symlink_inside_the_bundles_tree_that_resolves_outside_the_repository_is_refused() {
+    let scratch = Scratch::new("bundles-symlink-escape");
+    let root = publisher(&scratch, None);
+    scratch.write("secret/stolen.yml", "STOLEN\n");
+    std::os::unix::fs::symlink(
+        scratch.path().join("secret/stolen.yml"),
+        root.join("library/extra/linked.yml"),
+    )
+    .expect("the link is made");
+
+    let refused = package::publish(&root, "acme/fixture", &out_of(&scratch))
+        .expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("linked.yml") && message.contains("outside"),
+        "the refusal does not name the offending path: {message}"
+    );
+    assert!(!out_of(&scratch).exists(), "an artifact was written anyway");
+}
+
+/// `contents.bundles` may resolve outside the package, and not outside the
+/// repository the publish is reading from.
+///
+/// [#303]'s first mechanism: the `bundles` exemption from the escape check had
+/// no bound at all, so a manifest could point it at any directory the
+/// publishing process could read, including the filesystem root. This pins
+/// the bound at `root` and includes `bundles: /` among the refused cases, so
+/// the unbounded form this issue found is not merely narrowed but closed.
+///
+/// [#303]: https://github.com/headwater-ai/headwater/issues/303
+#[test]
+fn a_contents_bundles_that_resolves_outside_the_repository_is_refused() {
+    let scratch = Scratch::new("bundles-outside-repository");
+    let root = publisher(&scratch, None);
+    scratch.write("outside-lib/secret.yml", "x: 1\n");
+
+    for declared in [
+        scratch.path().join("outside-lib").display().to_string(),
+        "/".to_string(),
+    ] {
+        scratch.write(
+            "publisher/packages/acme-fixture/package.yml",
+            &format!(
+                "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  \
+                 bundles: {declared}\n"
+            ),
+        );
+
+        let refused = package::publish(&root, "acme/fixture", &out_of(&scratch))
+            .expect_err("it does not publish");
+        let message = headwater_resolve::render_errors(&refused);
+        assert!(
+            message.contains("`contents.bundles`") && message.contains("outside"),
+            "the refusal is not the repository bound, for `bundles: {declared}`: {message}"
+        );
+        assert!(
+            !out_of(&scratch).exists(),
+            "an artifact was written anyway, for `bundles: {declared}`"
+        );
+    }
+}
+
 /// A `contents.taxonomy` that is not there meets the refusal every other key
 /// meets, in both of its forms.
 ///
