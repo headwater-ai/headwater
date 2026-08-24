@@ -2020,6 +2020,323 @@ fn an_output_directory_that_holds_a_file_is_refused_and_the_file_survives() {
 }
 
 /// Every file under a directory, counted.
+/// The three files a vendored `acme/fixture` leaves under `packages/`, sorted.
+///
+/// The cases below read the whole directory rather than asking `find_version`,
+/// because a partial tree answers `find_version` correctly as long as the
+/// manifest is one of the files that survived. That is exactly the state
+/// [#312](https://github.com/headwater-ai/headwater/issues/312) is about.
+fn installed_files(adopter: &Path) -> Vec<String> {
+    let at = adopter.join(package::PACKAGES).join("acme-fixture");
+    let Ok(entries) = std::fs::read_dir(&at) else {
+        return Vec::new();
+    };
+    let mut names: Vec<String> = entries
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .collect();
+    names.sort();
+    names
+}
+
+/// An adopter holding `acme/fixture` 1.0.0, and the artifact it came from.
+fn adopter_holding(scratch: &Scratch) -> (PathBuf, PathBuf, String) {
+    let root = publisher_declaring_at(scratch, "publisher", "acme/fixture", "1.0.0");
+    let out = scratch.path().join("artifact-1");
+    let first = package::publish(&root, "acme/fixture", &out).expect("1.0.0 publishes");
+
+    let adopter = scratch.path().join("adopter");
+    std::fs::create_dir_all(&adopter).expect("the adopter root is made");
+    package::vendor(&adopter, &out, &first.digest).expect("the first vendor lands");
+    assert_eq!(
+        installed_files(&adopter),
+        vec![
+            "package.yml".to_string(),
+            "release.yml".to_string(),
+            "taxonomy.yml".to_string()
+        ],
+        "the first vendor did not install the whole package"
+    );
+    (adopter, out, first.digest)
+}
+
+/// A `packages/` this process cannot write takes nothing from the package that
+/// is installed, and the verb is not locked out of its own repair.
+///
+/// # The state this pins is worse than a partial tree
+///
+/// `remove_dir_all(&target)` needed write on the target to empty it and write
+/// on `packages/` to unlink the target itself. Mode `0500` on `packages/` grants
+/// the first and refuses the second, so the removal emptied the adopter's
+/// installed package and then failed. The verb printed `nothing was vendored`
+/// over a directory it had just emptied, `find_version` answered `None`, and —
+/// the part no message said — the empty directory carries no release record, so
+/// **every later run took the maintained-package arm and refused to touch it**.
+/// The adopter's recovery was `rm -rf` by hand.
+///
+/// So the third vendor here is the sharpest assertion in the case. It is the
+/// one that says the verb can still repair the state a failure left.
+///
+/// The mode is the injection because no source-side failure can reach the copy:
+/// `release::verify` walks the whole artifact tree, so every byte the copy reads
+/// has already been read and any unreadable file is refused before this.
+#[cfg(unix)]
+#[test]
+fn a_packages_directory_that_cannot_be_written_takes_nothing_from_the_installed_package() {
+    let scratch = Scratch::new("locked-packages");
+    if !modes_hold(&scratch) {
+        eprintln!("skipped: this process is root, and root writes through mode 0500");
+        return;
+    }
+    let (adopter, out, digest) = adopter_holding(&scratch);
+
+    let packages = adopter.join(package::PACKAGES);
+    mode(&packages, 0o500);
+    let refused = package::vendor(&adopter, &out, &digest);
+    mode(&packages, 0o700);
+
+    let errors = refused.expect_err("a `packages/` that cannot be written refuses the vendor");
+
+    // The state comes first, because the state is the defect and the sentence
+    // about it is the clause underneath.
+    assert_eq!(
+        installed_files(&adopter),
+        vec![
+            "package.yml".to_string(),
+            "release.yml".to_string(),
+            "taxonomy.yml".to_string()
+        ],
+        "the failed vendor took files out of the package the adopter had installed"
+    );
+    assert_eq!(
+        package::find_version(&adopter, "acme/fixture"),
+        Some("1.0.0".to_string()),
+        "the installed package no longer resolves after a vendor that refused"
+    );
+
+    let said = errors
+        .iter()
+        .map(|error| format!("{error}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(
+        said.contains("acme-fixture~staged"),
+        "the refusal does not name the staging path it could not make: {said}"
+    );
+    assert!(
+        said.contains("still the package that was installed"),
+        "the refusal does not say the installed package is untouched: {said}"
+    );
+
+    package::vendor(&adopter, &out, &digest)
+        .expect("the verb can still vendor over the package once `packages/` is writable again");
+    assert_eq!(
+        packages_under(&adopter),
+        vec!["acme-fixture".to_string()],
+        "a scratch directory survived a vendor that succeeded"
+    );
+}
+
+/// Vendoring a package over itself installs it, and does not empty it.
+///
+/// # This case is what decides the shape of the repair
+///
+/// The artifact path and the target are one directory. Under the old write half
+/// `remove_dir_all(&target)` removed the artifact, `copy_tree` then created the
+/// directory again and copied nothing into it, and the verb exited **0** with a
+/// success message naming the release over an empty directory.
+///
+/// **The assertion that does the work is `expect`, not survival.** Two plausible
+/// repairs both leave the old tree standing and both are wrong here: an unwind
+/// that copies the target aside, removes it, and copies the artifact in reaches
+/// `copy_tree` with an empty source and exits 0 over an empty directory; an
+/// unwind that renames the target aside first no longer finds the artifact and
+/// refuses with `ENOENT`. Only staging the copy while the artifact still stands,
+/// then swapping, exits 0 with the package installed.
+#[test]
+fn vendoring_a_package_over_itself_installs_it() {
+    let scratch = Scratch::new("over-itself");
+    let (adopter, _, digest) = adopter_holding(&scratch);
+
+    let installed = adopter.join(package::PACKAGES).join("acme-fixture");
+    package::vendor(&adopter, &installed, &digest)
+        .expect("an artifact that is the installed package vendors over itself");
+
+    assert_eq!(
+        installed_files(&adopter),
+        vec![
+            "package.yml".to_string(),
+            "release.yml".to_string(),
+            "taxonomy.yml".to_string()
+        ],
+        "vendoring the package over itself did not leave the whole package"
+    );
+    assert_eq!(
+        package::find_version(&adopter, "acme/fixture"),
+        Some("1.0.0".to_string()),
+        "the package no longer resolves after vendoring it over itself"
+    );
+    assert_eq!(
+        packages_under(&adopter),
+        vec!["acme-fixture".to_string()],
+        "vendoring the package over itself left a second directory behind"
+    );
+}
+
+/// A first vendor whose copy fails leaves nothing under `packages/`, rather than
+/// the part of the tree it had written.
+///
+/// The other half of the clause the case above holds: where nothing is
+/// installed, *the tree that was there before* is nothing, and that is the state
+/// the adopter must be left in. `packages/` is made by hand at mode `0500` so
+/// the copy is refused rather than the directory listing.
+#[cfg(unix)]
+#[test]
+fn a_first_vendor_whose_copy_fails_installs_no_part_of_the_package() {
+    let scratch = Scratch::new("fresh-fails");
+    if !modes_hold(&scratch) {
+        eprintln!("skipped: this process is root, and root writes through mode 0500");
+        return;
+    }
+    let root = publisher_declaring_at(&scratch, "publisher", "acme/fixture", "1.0.0");
+    let out = scratch.path().join("artifact-1");
+    let record = package::publish(&root, "acme/fixture", &out).expect("1.0.0 publishes");
+
+    let adopter = scratch.path().join("adopter");
+    let packages = adopter.join(package::PACKAGES);
+    std::fs::create_dir_all(&packages).expect("the adopter holds an empty `packages/`");
+
+    mode(&packages, 0o500);
+    let refused = package::vendor(&adopter, &out, &record.digest);
+    mode(&packages, 0o700);
+
+    let errors = refused.expect_err("a `packages/` that cannot be written refuses the vendor");
+
+    assert!(
+        !packages.join("acme-fixture").exists(),
+        "a vendor that refused left a directory at `packages/acme-fixture`"
+    );
+    assert_eq!(
+        packages_under(&adopter),
+        Vec::<String>::new(),
+        "a vendor that refused left something under `packages/`"
+    );
+
+    let said = errors
+        .iter()
+        .map(|error| format!("{error}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(
+        said.contains("nothing is installed at `packages/acme-fixture`"),
+        "the refusal does not say that nothing was installed: {said}"
+    );
+}
+
+/// An artifact directory that holds `packages/` inside it is refused before a
+/// byte is staged.
+///
+/// `copy_tree` calls `create_dir_all(to)` before `read_dir(from)`, so a
+/// destination inside the source is listed by its own copy and the recursion
+/// descends into what it is writing. Staging does not fix that and would make it
+/// new: today's destination is inside the source in this shape too.
+///
+/// **The adopter root here is itself the artifact**, which is the cheapest tree
+/// that `release::verify` accepts at a path above `packages/`. That is the
+/// `headwater taxonomy vendor .` shape.
+#[test]
+fn an_artifact_that_holds_the_target_inside_it_is_refused() {
+    let scratch = Scratch::new("artifact-above");
+    let root = publisher_declaring_at(&scratch, "publisher", "acme/fixture", "1.0.0");
+    let out = scratch.path().join("artifact-1");
+    let record = package::publish(&root, "acme/fixture", &out).expect("1.0.0 publishes");
+
+    // The adopter root is the artifact, so `<root>/packages/acme-fixture` is a
+    // path inside the directory being vendored.
+    let adopter = scratch.path().join("adopter");
+    std::fs::create_dir_all(&adopter).expect("the adopter root is made");
+    for name in ["package.yml", "taxonomy.yml", "release.yml"] {
+        std::fs::copy(out.join(name), adopter.join(name)).expect("the artifact is copied over");
+    }
+
+    let errors = package::vendor(&adopter, &adopter, &record.digest)
+        .expect_err("an artifact that holds the target inside it is refused");
+    let said = errors
+        .iter()
+        .map(|error| format!("{error}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(
+        said.contains("inside itself"),
+        "the refusal does not say the copy would descend into its own output: {said}"
+    );
+    assert!(
+        !adopter.join(package::PACKAGES).exists(),
+        "the refusal came after something had already been staged under `packages/`"
+    );
+}
+
+/// A directory this verb stages into never wins the lookup, and the next run
+/// clears the one an earlier run left.
+///
+/// # Two properties of one name, and both of them are load-bearing for `find`
+///
+/// [`package::find_version`] goes through the one listing of `packages/` this
+/// engine has. It sorts the entries and returns the first whose manifest
+/// declares the name, with no filter on the name of the entry itself, so a
+/// staging tree — which carries a manifest like any other — answers the lookup
+/// if it sorts first. A dot-prefixed name does sort first, measured. `~` is
+/// 0x7E and the package-name grammar admits nothing above `_` at 0x5F, so the
+/// two names this verb writes sort after every package directory and no package
+/// can be created under one of them.
+///
+/// **The vendor at the end is what holds the second property.** The residues
+/// here are planted by hand, because a vendor that succeeded leaves none, and a
+/// verb whose staging names did not match these would walk past them and leave
+/// them standing. So the last assertion says the names in this file are the
+/// names the verb writes, which is the half a planted residue cannot say by
+/// itself.
+#[test]
+fn a_directory_this_verb_stages_into_never_wins_the_lookup() {
+    let scratch = Scratch::new("staging-shadow");
+    let (adopter, _, _) = adopter_holding(&scratch);
+
+    for suffix in [package::STAGED, package::ASIDE] {
+        let residue = adopter
+            .join(package::PACKAGES)
+            .join(format!("acme-fixture{suffix}"));
+        std::fs::create_dir_all(&residue).expect("the residue is made");
+        std::fs::write(
+            residue.join(package::MANIFEST),
+            "package: acme/fixture\nversion: 9.9.9\ncontents:\n  taxonomy: taxonomy.yml\n",
+        )
+        .expect("the residue carries a manifest");
+    }
+
+    assert_eq!(
+        package::find_version(&adopter, "acme/fixture"),
+        Some("1.0.0".to_string()),
+        "a directory this verb stages into answered the lookup instead of the installed package"
+    );
+
+    let later_root = publisher_declaring_at(&scratch, "later", "acme/fixture", "2.0.0");
+    let later_out = scratch.path().join("artifact-2");
+    let later = package::publish(&later_root, "acme/fixture", &later_out).expect("2.0.0 publishes");
+    package::vendor(&adopter, &later_out, &later.digest).expect("2.0.0 vendors over 1.0.0");
+
+    assert_eq!(
+        package::find_version(&adopter, "acme/fixture"),
+        Some("2.0.0".to_string()),
+        "the upgrade did not land over the residues"
+    );
+    assert_eq!(
+        packages_under(&adopter),
+        vec!["acme-fixture".to_string()],
+        "the vendor left the residues of an earlier run standing, so the names this file plants \
+         are not the names the verb writes"
+    );
+}
+
 fn walk_files(at: &Path) -> usize {
     std::fs::read_dir(at)
         .expect("the directory reads")

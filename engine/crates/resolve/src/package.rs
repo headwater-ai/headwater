@@ -642,6 +642,13 @@ pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<Resol
 /// for *observed nothing* and the undo then removed a path the run had never
 /// seen.
 ///
+/// **[`vendor`] does not use this module, and the reason is the two states.**
+/// Both of them undo by deleting, which is affordable only because the `--out`
+/// precondition refuses a directory that holds anything. A vendor's target is a
+/// full package directory, so there is no state here to return it to, and that
+/// verb stages beside the target and swaps instead. Its doc comment carries the
+/// measurement.
+///
 /// [#271]: https://github.com/headwater-ai/headwater/issues/271
 mod found {
     use std::io::ErrorKind;
@@ -1224,6 +1231,96 @@ pub const BUNDLES: &str = "bundles";
 /// was safe there too, but safe by an invariant one function away rather than by
 /// construction. The two render the same string for every name the grammar
 /// admits, so no message moved and no fixture changed.
+///
+/// # `packages/<name>` is complete or it is absent, and it is never partial
+///
+/// That holds under a copy that returns an error and under a process killed at
+/// any point in the run. The old tree is destroyed only after the new one
+/// stands in its place. What a failure or a kill can leave is a complete tree
+/// under a sibling name that no package name can spell, and never a partial
+/// tree under the package's own name. This is what
+/// [#312](https://github.com/headwater-ai/headwater/issues/312) asked for.
+///
+/// The sequence is: clear this verb's own scratch, copy the artifact into
+/// `packages/<name>~staged`, rename the installed package to
+/// `packages/<name>~aside`, rename the staged tree onto `packages/<name>`, and
+/// remove the aside tree last. Every refusal after the reading phase leaves one
+/// state, which is why each of them can say what it says: the package that was
+/// installed is untouched, or nothing is installed.
+///
+/// **The one thing it does not buy is a single-instant swap.** `rename(2)`
+/// refuses a destination directory that is not empty — `ENOTEMPTY`, measured on
+/// this file system — and `std` offers no atomic exchange, so there is a window
+/// one `rename(2)` wide in which `packages/<name>` does not exist. A kill inside
+/// that window leaves the old tree complete under the aside name, where [`find`]
+/// still reaches it.
+///
+/// **[`publish`] holds the weaker of the two guarantees.** It reads everything
+/// before it writes anything and unwinds `--out` on a failure, which answers a
+/// call that returns an error and answers a kill not at all: a kill inside
+/// [`put`] leaves a partial artifact at `--out` that the next run's own
+/// precondition then refuses, and the publisher removes it by hand.
+/// [#355](https://github.com/headwater-ai/headwater/issues/355) holds that.
+/// `vendor` answers both.
+///
+/// **Copying the [`found`] module was the other repair, and it is mechanically
+/// unavailable rather than merely weaker.** `found` carries two states, absent
+/// and empty, and both of them undo by deleting. It can afford that only
+/// because `publish`'s `--out` precondition refuses a directory that holds
+/// anything, so the state it returns to is always no bytes at all. This verb's
+/// target is, in the one case that matters, a full package directory. Measured:
+/// a `remove_dir_all` that failed part-way had already taken `package.yml` and
+/// `release.yml` and left 7 of 10 entries, identically across three rounds. At
+/// the moment of the failure the bytes an unwind would restore from are gone,
+/// including the release record.
+///
+/// **A copy that fails part-way stopped being a case of its own.** The staging
+/// copy never touches `packages/<name>`, so every failure of the copy — at the
+/// first file or at the last — leaves the target exactly as it was. A fresh
+/// install whose copy fails now leaves nothing under `packages/`, where it used
+/// to leave the part it had written.
+///
+/// **Why the suffix is `~` and not a dot.** [`find`] sorts the entries of
+/// `packages/` and returns the first whose manifest declares the name, with no
+/// filter on the name of the entry itself, and it is the only listing of
+/// `packages/` anywhere in this engine. A dot-prefixed staging directory
+/// therefore sorts *before* the real package and wins the lookup — measured,
+/// with `taxonomy resolve` reporting the staged version. `~` is 0x7E and
+/// [`names_a_package`] admits nothing above `_` at 0x5F, so no package the
+/// grammar accepts can derive one of these directories, and both of them sort
+/// after every flattened name. `~aside` sorts before `~staged`, so a run killed
+/// in the one-rename window leaves [`find`] returning the old complete tree
+/// rather than the new one. **This leans on that sort order**, which
+/// [#354](https://github.com/headwater-ai/headwater/issues/354) already records
+/// as owed its own hardening: a change to how `find` chooses reads here first.
+///
+/// **The staged tree is not read back and held to the digest before the swap.**
+/// [`copy_tree`] returning `Ok` means every file was read and written and no
+/// call errored, which is the readable a complete replacement is asked for. A
+/// second digest pass was weighed and refused: `std::fs::copy` does not
+/// `fsync`, so the re-read comes back out of the page cache, and a file system
+/// that lied about the write lies about the read. It would cost a second hash
+/// of every artifact and answer a question the copy already answers with an
+/// error.
+///
+/// **An artifact directory that holds the target inside it is refused before a
+/// byte is staged.** [`copy_tree`] calls `create_dir_all(to)` before
+/// `read_dir(from)`, so a destination inside the source makes it recurse into
+/// its own output. `vendor <root>` and `vendor <root>/packages` are the two
+/// shapes. Vendoring a package over itself, where the artifact path and the
+/// target are one directory, is **not** this case and is not refused: the
+/// staged copy is taken while the artifact still stands and the swap puts it
+/// back, so it exits 0 with the package installed. Before this it exited 0 with
+/// an empty directory.
+///
+/// **Two `vendor` runs of one package contend for one staging path.** They
+/// contend for the target today, so nothing here is made worse, and there is no
+/// lock anywhere in this engine to hang a repair on.
+///
+/// **A kill inside the one-rename window leaves the package that was installed
+/// under `packages/<name>~aside`, and nothing tells the adopter.** The next
+/// `vendor` of that package clears it, and [`find`] answers from it in the
+/// meantime, so the adopter still resolves.
 pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<ResolveError>> {
     let name = display(root, fetched);
     let record =
@@ -1231,19 +1328,40 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
 
     let declared = identity(root, fetched, &record)?;
     let flattened = declared.replace('/', "-");
-    let target = root.join(PACKAGES).join(&flattened);
+    let packages = root.join(PACKAGES);
+    let target = packages.join(&flattened);
+    let staged = packages.join(format!("{flattened}{STAGED}"));
+    let aside = packages.join(format!("{flattened}{ASIDE}"));
     let under = format!("{PACKAGES}/{flattened}");
-    if target.exists() {
+    let staged_under = format!("{under}{STAGED}");
+    let aside_under = format!("{under}{ASIDE}");
+
+    // The reading phase. Nothing below this writes until the staging copy, and
+    // the staging copy does not touch `target`.
+    let holds = settled(fetched);
+    for shown in [&under, &staged_under] {
+        let path = packages.join(shown.trim_start_matches(&format!("{PACKAGES}/")));
+        if inside(&holds, &settled(&path)) {
+            return Err(refusal(
+                &name,
+                &format!(
+                    "this artifact directory holds `{shown}` inside it, so installing it would \
+                     copy the artifact into a directory inside itself and never finish. Vendor \
+                     from a copy of the artifact that sits outside `{PACKAGES}/`"
+                ),
+            ));
+        }
+    }
+
+    let installed = target.exists();
+    if installed {
         match release::at(&target) {
-            Ok(_) => {
-                holds_the_same_package(&target, &under, &declared)?;
-                std::fs::remove_dir_all(&target).map_err(|error| {
-                    refusal(
-                        &display(root, &target),
-                        &format!("cannot replace it: {error}"),
-                    )
-                })?;
-            }
+            // The guard reads and writes nothing, and it sits here rather than
+            // in the write phase below. #320 put it in front of a removal that
+            // has since moved; the question it answers — is the directory that
+            // is there the package this artifact declares — is one for the
+            // phase that reads.
+            Ok(_) => holds_the_same_package(&target, &under, &declared)?,
             Err(ReleaseError::Absent(_)) => {
                 return Err(refusal(
                     &under,
@@ -1255,8 +1373,134 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
             Err(error) => return Err(release::as_error(&under, &error)),
         }
     }
-    copy_tree(fetched, &target).map_err(|why| refusal(&name, &why))?;
+
+    // Every refusal below leaves one state, and this is that state said once.
+    let stands = match installed {
+        true => format!("`{under}` is still the package that was installed"),
+        false => format!("nothing is installed at `{under}`"),
+    };
+
+    // The write phase.
+    for (path, shown) in [(&staged, &staged_under), (&aside, &aside_under)] {
+        clear(path).map_err(|error| {
+            refusal(
+                shown,
+                &format!(
+                    "this verb stages a package here and cannot clear what an earlier run left: \
+                     {error}. Nothing was vendored, and {stands}"
+                ),
+            )
+        })?;
+    }
+
+    copy_tree(fetched, &staged).map_err(|why| {
+        let _ = std::fs::remove_dir_all(&staged);
+        refusal(&name, &format!("{why}. Nothing was vendored, and {stands}"))
+    })?;
+
+    if installed {
+        std::fs::rename(&target, &aside).map_err(|error| {
+            let _ = std::fs::remove_dir_all(&staged);
+            refusal(
+                &under,
+                &format!(
+                    "cannot move it aside to put `{name}` in its place: {error}. Nothing was \
+                     vendored, and {stands}"
+                ),
+            )
+        })?;
+    }
+
+    if let Err(error) = std::fs::rename(&staged, &target) {
+        let put_back = !installed || std::fs::rename(&aside, &target).is_ok();
+        let _ = std::fs::remove_dir_all(&staged);
+        let state = match put_back {
+            true => format!("Nothing was vendored, and {stands}"),
+            false => format!(
+                "Nothing was vendored, and the package that was installed is complete under \
+                 `{aside_under}`. Move it back to `{under}`"
+            ),
+        };
+        return Err(refusal(
+            &under,
+            &format!("cannot put `{name}` in place: {error}. {state}"),
+        ));
+    }
+
+    // Last, and the error is dropped for the reason `found::unwind` drops its
+    // own: this runs on the way out of a success, and a message about scratch
+    // would displace the one a reader came for.
+    if installed {
+        let _ = std::fs::remove_dir_all(&aside);
+    }
     Ok(record)
+}
+
+/// The suffix of the directory [`vendor`] copies a new package into, beside the
+/// package's own directory.
+///
+/// **It is public because it is an assertion rather than a detail.** The byte
+/// `~` is one [`names_a_package`] refuses and it sorts after every byte that
+/// grammar admits, which is what keeps a staging directory from answering
+/// [`find`] in place of the package it is a copy of. A caller that lists
+/// `packages/` reads the same two constants this verb writes.
+pub const STAGED: &str = "~staged";
+
+/// The suffix of the directory [`vendor`] moves the installed package to while
+/// the new one takes its place.
+///
+/// It sorts *before* [`STAGED`], so a run killed in the one-rename window leaves
+/// [`find`] returning the complete tree that was installed rather than the one
+/// being installed.
+pub const ASIDE: &str = "~aside";
+
+/// Remove a directory an earlier run of this verb left, where absent is not a
+/// failure.
+fn clear(at: &Path) -> std::io::Result<()> {
+    match std::fs::remove_dir_all(at) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        other => other,
+    }
+}
+
+/// A path with the part of it that is on disk resolved, and the part that is
+/// not there yet appended as it was written.
+///
+/// [`inside`] compares two paths and a lexical comparison answers the wrong
+/// question: `packages/` may be reached through a symlink, and the artifact
+/// path a caller hands in may be relative where the root is absolute. This
+/// climbs to the deepest ancestor that exists, canonicalizes that, and puts the
+/// rest back. It is not [`display`], which flattens a `..` for a person to read
+/// and never asks the file system anything.
+fn settled(path: &Path) -> PathBuf {
+    let mut tail: Vec<std::ffi::OsString> = Vec::new();
+    let mut at = path.to_path_buf();
+    loop {
+        if let Ok(real) = at.canonicalize() {
+            let mut settled = real;
+            for part in tail.iter().rev() {
+                settled.push(part);
+            }
+            return settled;
+        }
+        let (Some(name), Some(parent)) = (at.file_name(), at.parent()) else {
+            return path.to_path_buf();
+        };
+        if parent.as_os_str().is_empty() {
+            return path.to_path_buf();
+        }
+        tail.push(name.to_owned());
+        at = parent.to_path_buf();
+    }
+}
+
+/// Whether `path` sits strictly under `ancestor`.
+///
+/// Equality is deliberately not inside. Vendoring a package over itself hands
+/// this the same directory twice, and that call installs the package rather
+/// than being refused.
+fn inside(ancestor: &Path, path: &Path) -> bool {
+    path != ancestor && path.starts_with(ancestor)
 }
 
 /// Whether the vendored directory standing at the target is the package the
