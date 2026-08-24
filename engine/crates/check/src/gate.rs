@@ -371,7 +371,7 @@ impl Verdict {
     }
 }
 
-/// The version of the document [`Verdict::json`] writes.
+/// The version of the document [`Verdict::render_json`] writes.
 ///
 /// The document's own shape and never the engine's, which is the rule the
 /// finding shape states for the same reason: a consumer outside this repository
@@ -380,7 +380,7 @@ pub const VERSION: &str = "1.0";
 
 /// The sentence that keeps this artifact honest, printed on every verdict.
 ///
-/// One constant with two readers — [`Verdict::render`] and [`Verdict::json`] —
+/// One constant with two readers — [`Verdict::render`] and [`Verdict::render_json`] —
 /// rather than two literals that agree until somebody edits one of them.
 pub const LIMIT: &str = "this states nothing about a document this tree gained. A read set lists \
                          what a run read, and never that those were all there was";

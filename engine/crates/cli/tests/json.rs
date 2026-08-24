@@ -21,10 +21,12 @@
 //! this system: `headwater_yaml` is both halves of a protocol here, and a
 //! round-trip through it would prove that one crate agrees with itself.
 //! [`oracle`] runs it and `HEADWATER_JSON_ORACLE` turns "it did not run" into a
-//! failure, which is the shape `engine/crates/adapter/tests/fixtures.rs`
-//! already uses for the SARIF validator and the SHA-256 oracle. CI sets all
-//! four. The in-tree parse runs either way, so a machine with no `python3`
-//! still holds the shape and says which half it did not run.
+//! failure. That is the shape `engine/crates/adapter/tests/fixtures.rs`
+//! already uses for the SARIF validator, and `engine/crates/hash/tests/oracle.rs`
+//! for the SHA-256 one. The `Test` step of `.github/workflows/ci.yml` sets four
+//! such variables, which is those three and `HEADWATER_STOCK_VALIDATOR`. The
+//! in-tree parse runs either way, so a machine with no `python3` still holds the
+//! shape and says which half it did not run.
 //!
 //! # The root
 //!
@@ -120,10 +122,25 @@ fn sweep_return() -> PathBuf {
 }
 
 /// The four command lines that accept both spellings of one target.
+///
+/// **`check` carries `--no-cache`, and without it the comparison below is a
+/// coin toss.** `docs/interfaces/headwater-check.md` says why: the report goes
+/// to standard output and the cache accounting goes to standard error, "because
+/// it is a fact about the disk of one machine rather than about the corpus". So
+/// the first run of a pair evaluates and writes the cache and the second serves
+/// from it, and their standard-error lines differ by construction — on a cold
+/// tree, and not on a warm one. `--no-cache` makes both runs report the same
+/// accounting because neither reads or writes a cache, and spec 12 fixes that
+/// the flag moves no byte of standard output, so nothing about the artifact
+/// under comparison is weakened.
+///
+/// The other three write no such line: `capture` and `sweep report` put nothing
+/// on standard error, and `export` puts a loss-set account there that is a fact
+/// about the corpus.
 fn both_spellings() -> Vec<(&'static str, Vec<String>)> {
     let returned = sweep_return().to_str().expect("a path").to_string();
     vec![
-        ("check", vec!["check".to_string()]),
+        ("check", vec!["check".to_string(), "--no-cache".to_string()]),
         ("capture", vec!["capture".to_string()]),
         ("export", vec!["export".to_string()]),
         (
@@ -274,7 +291,8 @@ fn every_document_this_binary_writes_is_read_by_a_parser_that_is_not_this_one() 
 /// Where `python3` is absent this returns `None` too, and the note says so.
 /// `HEADWATER_JSON_ORACLE` turns that into a failure, so this reading cannot go
 /// quiet by losing a dependency. That is the shape the SARIF validator and the
-/// SHA-256 oracle already have here, and CI sets all three.
+/// SHA-256 oracle already have here, and the `Test` step of CI sets all three of
+/// those variables along with `HEADWATER_STOCK_VALIDATOR`.
 fn oracle(artifact: &str) -> Option<String> {
     let required = std::env::var_os("HEADWATER_JSON_ORACLE").is_some();
     let written = scratch().join("artifact.json");
