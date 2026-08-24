@@ -1,10 +1,10 @@
 ---
 id: HW-OBL-0108
 title: "An agent writes the acceptance stamp of every document in this corpus"
-status: current
-status_since: 2026-08-14
+status: discharged
+status_since: 2026-08-24
 waiting_on: ruling
-last_verified: 2026-08-14
+last_verified: 2026-08-24
 summary: "Stop rule 5 forbids an agent to write `accepted_by`, and 161 of the 161 agent-drafted documents here carry one that the drafting agent typed."
 provenance:
   warrant: accepted
@@ -17,6 +17,7 @@ relations:
   traces_to:
     - HW-SPEC-ai-integration
     - HW-SPEC-authoring-and-lifecycle
+    - HW-DR-0034
 ---
 
 # An agent writes the acceptance stamp of every document in this corpus
@@ -52,6 +53,8 @@ The second reading is defensible and the bytes do not carry it. A document that 
 Nothing reports any of this. [HW-OBL-0030](0030-the-provenance-block-belongs-to-the-engine-and-nothing-states.md) records that no taxonomy declares the block, so no rule reads a field of it. A stop rule with no instrument is a preference. This is the measurement of what that preference costs over 161 documents.
 
 ## Discharge
+
+**This record is discharged.** [HW-DR-0034](../decisions/0034-q34-whether-acceptance-means-merged-to-main-and-what-an-agent-may-write-before-that.md) rules that acceptance is the merge onto `main`, and that the second reading below holds. An agent may write `accepted_by` and `warrant: accepted` on a document it drafts. This holds where the document goes into a pull request a named human reviews before the merge. The stamp answers to nothing until the merge decides whether it was true. Stop rule 5 is reworded to say so.
 
 A ruling on which reading holds, in the decision register, because the two answers assign the act to different parties.
 
