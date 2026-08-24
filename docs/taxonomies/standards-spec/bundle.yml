@@ -52,6 +52,13 @@ add:
   # component-specs shelf, which is what a heterogeneous shelf needs to type a
   # document that placement alone cannot type.
   #
+  # The two values are the two kind names, and that is a requirement rather than
+  # a style. Kind resolution matches a discriminator value against the shelf's
+  # `kinds` list by identity (`census::resolve`, step 3), so a value of
+  # `functional` against a kind named `functional_spec` leaves the document
+  # untyped. The design-spec entry's `doc_type` takes the same form for the same
+  # reason.
+  #
   # No `role`. The role registry is closed at six, none of them is this, and the
   # diataxis entry took the same reading for `reader_mode`. The relevance canon
   # is satisfied twice over here, because two kinds require the facet and a
@@ -67,12 +74,12 @@ add:
 
   facets.spec_layer:
     type: string
-    values: [functional, technical]
+    values: [functional_spec, technical_spec]
     required: false
     volatility: stable
     guidance:
-      functional: the document states what the component does and what a caller may rely on, which is the level the standard binds and the level a reader cites
-      technical: the document states how the component is realized, which is the level that changes when the implementation changes and the behavior does not
+      functional_spec: the document states what the component does and what a caller may rely on, which is the level a standard binds and the level a reader cites
+      technical_spec: the document states how the component is realized, which is the level that changes when the implementation changes and the behavior does not
 
   # --- kinds ----------------------------------------------------------------
   # Three kinds. Each one inherits the four core-bearing facets and the base
