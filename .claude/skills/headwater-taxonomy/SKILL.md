@@ -1,6 +1,6 @@
 ---
 name: headwater-taxonomy
-description: Change what this repository's taxonomy declares — a kind, a facet, a shelf, a relation, an identifier scheme, a language regime, an obligation or a control. Use when `headwater new` refuses because a declaration is missing, when a document has nowhere to live or nothing to be, when a check must start or stop reading something, and whenever a change to `packages/`, `docs/taxonomies/` or `.headwater/overlay.yml` is asked for.
+description: Change what this repository's taxonomy declares — a kind, a facet, a shelf, a relation, an identifier scheme, a language regime, an obligation or a control. Use when `headwater new` refuses because a declaration is missing, when a document has nowhere to live or nothing to be, when a check must start or stop reading something, and whenever a change to `taxonomy-source/`, `docs/taxonomies/` or `.headwater/overlay.yml` is asked for.
 ---
 
 # Headwater taxonomy
@@ -15,7 +15,7 @@ Four sources resolve into one lock, in this order.
 
 | source | what belongs there |
 |---|---|
-| `packages/headwater-standard/taxonomy.yml` | the invariant core, and what every adopter of the package gets |
+| `taxonomy-source/headwater-standard/taxonomy.yml` | the invariant core, and what every adopter of the package gets. `packages/headwater-standard/` is the vendored copy of it. Edit here and republish. Never edit there |
 | `docs/taxonomies/design-spec/bundle.yml` | the specification tradition: numbered parts, registers, reviews |
 | `docs/taxonomies/decision-record/bundle.yml` | the decision-record tradition: one decision per document, obligation records |
 | `.headwater/overlay.yml` | what is true of this repository and of no adopter |
