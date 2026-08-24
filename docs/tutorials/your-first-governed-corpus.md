@@ -103,7 +103,7 @@ Read the two headings in that output. The first names what a tree states about i
 ### Step 3 — Copy the package into your tree
 
 ```
-cp -r "$HEADWATER_SRC/packages" .
+cp -r "$HEADWATER_SRC/taxonomy-source" packages
 ```
 
 **Check.** `ls packages/headwater-standard` prints three lines:

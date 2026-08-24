@@ -768,9 +768,21 @@ pub enum TaxonomyWord {
             long,
             value_name = "name",
             help = "the package to publish. The one this repository's own declaration takes, by \
-                    default, because a publisher usually publishes what it also consumes"
+                    default, because a publisher usually publishes what it also consumes. Refused \
+                    together with `--from`, which names the same thing by its directory instead"
         )]
         package: Option<String>,
+        #[arg(
+            long,
+            value_name = "dir",
+            help = "read the manifest at this directory directly, bypassing the lookup by name \
+                    under `packages/` that `--package` drives. For a repository that both \
+                    publishes a package and consumes it: `taxonomy vendor` refuses to install over \
+                    a directory that carries no release record, so a maintained source cannot sit \
+                    where its own artifact would be installed. This reads it from wherever it \
+                    actually sits instead"
+        )]
+        from: Option<PathBuf>,
         #[arg(
             long,
             value_name = "dir",

@@ -297,8 +297,8 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             Some(TaxonomyWord::Validate) => validate(root),
             Some(TaxonomyWord::Resolve { check }) => resolve(root, check),
             Some(TaxonomyWord::Audit { now }) => audit(root, now),
-            Some(TaxonomyWord::Publish { package, out }) => {
-                publish(root, package.as_deref(), out.as_deref())
+            Some(TaxonomyWord::Publish { package, from, out }) => {
+                publish(root, package.as_deref(), from.as_deref(), out.as_deref())
             }
             Some(TaxonomyWord::Vendor { path, expect }) => match path {
                 None => fail(
@@ -943,28 +943,47 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>, json: bool) 
 /// line to the disk from the state an adopter is in.
 ///
 /// [#271]: https://github.com/headwater-ai/headwater/issues/271
-fn publish(root: &Path, package: Option<&str>, out: Option<&Path>) -> ExitCode {
+fn publish(
+    root: &Path,
+    package: Option<&str>,
+    from: Option<&Path>,
+    out: Option<&Path>,
+) -> ExitCode {
     let Some(out) = out else {
         return fail("`taxonomy publish` writes into a directory. Name it with `--out <dir>`");
     };
-    let name = match package {
-        Some(name) => name.to_string(),
-        // The package this repository takes, where no flag names one. A
-        // publisher usually publishes the package it also consumes.
-        None => match headwater_resolve::package::consumer(root) {
-            Ok(consumer) => consumer.package,
-            Err(errors) => {
-                eprintln!(
-                    "headwater: no `--package` and this repository's declaration does not read, \
-                     so nothing says what to publish"
-                );
-                eprint!("{}", indent(&render_errors(&errors)));
-                return ExitCode::FAILURE;
-            }
-        },
+    if package.is_some() && from.is_some() {
+        return fail(
+            "`--package <name>` and `--from <dir>` name the same thing two ways: the first finds \
+             a directory under `packages/` by the name its manifest declares, and the second \
+             reads a directory the caller names directly. Pass one or the other",
+        );
+    }
+
+    let published = match from {
+        Some(directory) => headwater_resolve::package::publish_from(root, directory, out),
+        None => {
+            let name = match package {
+                Some(name) => name.to_string(),
+                // The package this repository takes, where no flag names one. A
+                // publisher usually publishes the package it also consumes.
+                None => match headwater_resolve::package::consumer(root) {
+                    Ok(consumer) => consumer.package,
+                    Err(errors) => {
+                        eprintln!(
+                            "headwater: no `--package`, no `--from`, and this repository's \
+                             declaration does not read, so nothing says what to publish"
+                        );
+                        eprint!("{}", indent(&render_errors(&errors)));
+                        return ExitCode::FAILURE;
+                    }
+                },
+            };
+            headwater_resolve::package::publish(root, &name, out)
+        }
     };
 
-    let record = match headwater_resolve::package::publish(root, &name, out) {
+    let record = match published {
         Ok(record) => record,
         Err(errors) => {
             eprintln!("headwater: nothing was published");

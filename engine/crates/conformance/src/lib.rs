@@ -56,7 +56,7 @@ use headwater_census::census::{Census, Outcome};
 use headwater_check::context::Date;
 use headwater_lock::Lock;
 use headwater_resolve::package::Consumer;
-use headwater_resolve::release::{self, ReleaseError};
+use headwater_resolve::release::{self, Divergence, ReleaseError};
 use headwater_yaml::Mapping;
 use std::path::Path;
 
@@ -172,6 +172,11 @@ pub enum SetError {
         level: String,
         rule: String,
     },
+    /// The installed package carries a release record, and the bytes on disk
+    /// no longer match it. The rule set below is read out of this same
+    /// directory, so a rule set read from a diverged one is a rule set this
+    /// run cannot trust to say what it is evaluated against.
+    Diverged(Vec<Divergence>),
 }
 
 impl std::fmt::Display for SetError {
@@ -206,6 +211,17 @@ impl std::fmt::Display for SetError {
             SetError::UnknownInLevel { level, rule } => write!(
                 f,
                 "the level `{level}` names the rule `{rule}` and the rule set declares no such rule"
+            ),
+            SetError::Diverged(divergences) => write!(
+                f,
+                "the installed package carries a release record, and the bytes on disk no \
+                 longer match it, so the rule set this run would read out of it is not one this \
+                 run can trust: {}",
+                divergences
+                    .iter()
+                    .map(ToString::to_string)
+                    .collect::<Vec<_>>()
+                    .join("; ")
             ),
         }
     }
@@ -312,6 +328,23 @@ pub fn at(root: &Path, consumer: &Consumer) -> Result<RuleSet, SetError> {
             consumer.package
         )));
     };
+
+    // The rule set is read out of this same directory below, and nothing has
+    // held it to anything yet at that point. A directory that carries a
+    // release record and no longer matches it is not one this run may trust
+    // to say what it declares: the level definitions inside it, and not only
+    // the prose a single rule reads, are bytes this same file carries. An
+    // adopter who has never vendored anything carries no release record here,
+    // and `release::at` answering `Err` is silent on purpose — that gap is
+    // `pin_current`'s to report, not this function's to refuse over.
+    if let Ok(record) = release::at(&directory) {
+        if let Ok(divergences) = release::diverged(&directory, &record) {
+            if !divergences.is_empty() {
+                return Err(SetError::Diverged(divergences));
+            }
+        }
+    }
+
     let named = manifest
         .get("contents")
         .and_then(|node| node.value.as_map())
@@ -777,6 +810,21 @@ pub fn reading(name: &str, subject: &Subject<'_>) -> Verdict {
 /// **The pin is two numbers.** A published artifact is a digest over every file
 /// in it, so a rule that read the version alone would pass a repository whose
 /// pinned digest names an artifact nobody publishes any more.
+///
+/// **The pin names the record, and this rule now holds the record to the bytes
+/// on disk too.** `release::at` reads `release.yml`'s own declared digest,
+/// which is a number the file states about itself, and it is never a re-hash
+/// of a member file. So a `pinned == record.digest` comparison alone answers
+/// "is this the release the consumer took" and says nothing about whether a
+/// vendored file was hand-edited after `vendor` installed it.
+/// [`release::diverged`] is the call that re-hashes every member the record
+/// names and reports what moved, and until this it ran only inside `vendor`'s
+/// own install-time path — never again afterward. This rule calls it again
+/// here, on every run, which is what makes a hand edit to a vendored file
+/// visible on an ongoing basis rather than only at the moment of installation.
+/// That matters most for a file such as `conformance.yml`, which carries no
+/// taxonomy source and so never reaches `taxonomy resolve --check` either: this
+/// rule is the only ongoing reading that holds it to anything at all.
 pub fn pin_current(root: &Path, consumer: &Consumer) -> Verdict {
     let installed = headwater_resolve::package::find_version(root, &consumer.package);
     let version = match installed {
@@ -800,27 +848,54 @@ pub fn pin_current(root: &Path, consumer: &Consumer) -> Verdict {
         return Verdict::Gap(format!("`{}` is not on disk", consumer.package));
     };
 
-    match (release::at(&directory), &consumer.digest) {
-        (Ok(record), Some(pinned)) if &record.digest == pinned => Verdict::Met,
-        (Ok(record), Some(pinned)) => Verdict::Gap(format!(
-            "the version is {version} and the digest is not: this pins {pinned} and the \
-             installed artifact is {}",
-            record.digest
+    let record = match release::at(&directory) {
+        Ok(record) => record,
+        Err(ReleaseError::Absent(_)) => {
+            return match &consumer.digest {
+                None => Verdict::Gap(format!(
+                    "the version is {version} and there is no digest on either side. The \
+                     package directory carries no release record, so no published artifact \
+                     stands behind it"
+                )),
+                Some(pinned) => Verdict::Gap(format!(
+                    "this pins {pinned} and the installed package carries no release record to \
+                     check it against"
+                )),
+            };
+        }
+        Err(other) => return Verdict::Gap(other.to_string()),
+    };
+
+    let pinned = match &consumer.digest {
+        None => {
+            return Verdict::Gap(format!(
+                "the version is {version} and nothing pins a digest. The installed artifact is \
+                 {}, and `taxonomy.digest` is where a consumer states which artifact it takes",
+                record.digest
+            ))
+        }
+        Some(pinned) if pinned != &record.digest => {
+            return Verdict::Gap(format!(
+                "the version is {version} and the digest is not: this pins {pinned} and the \
+                 installed artifact is {}",
+                record.digest
+            ))
+        }
+        Some(pinned) => pinned,
+    };
+
+    match release::diverged(&directory, &record) {
+        Ok(divergences) if divergences.is_empty() => Verdict::Met,
+        Ok(divergences) => Verdict::Gap(format!(
+            "the version is {version} and the pin {pinned} matches the release record, but the \
+             installed artifact no longer matches that record: {}",
+            divergences
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+                .join("; ")
         )),
-        (Ok(record), None) => Verdict::Gap(format!(
-            "the version is {version} and nothing pins a digest. The installed artifact is \
-             {}, and `taxonomy.digest` is where a consumer states which artifact it takes",
-            record.digest
-        )),
-        (Err(ReleaseError::Absent(_)), None) => Verdict::Gap(format!(
-            "the version is {version} and there is no digest on either side. The package \
-             directory carries no release record, so no published artifact stands behind it"
-        )),
-        (Err(ReleaseError::Absent(_)), Some(pinned)) => Verdict::Gap(format!(
-            "this pins {pinned} and the installed package carries no release record to check \
-             it against"
-        )),
-        (Err(other), _) => Verdict::Gap(other.to_string()),
+        Err(other) => Verdict::Gap(other.to_string()),
     }
 }
 

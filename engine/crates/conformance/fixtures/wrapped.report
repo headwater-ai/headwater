@@ -22,9 +22,14 @@ rules
          cleared, and it refuses to overwrite a directory that carries no
          release record. Step 5 runs `headwater taxonomy resolve`, because a
          vendored artifact replaces the taxonomy sources and moves the lock. A
-         publisher that consumes the package it maintains cannot close this gap
-         without the loss of that source. A dated waiver is the honest answer
-         there.
+         publisher that consumes the package it maintains does not have to lose
+         the source to close this gap, but it does have to move it: keep the
+         authored files outside `packages/<name>` and publish from there with
+         `--from <dir>` on step 1, because `packages/<name>` is where step 4
+         writes and a directory both authored and vendored is the one case
+         `taxonomy vendor` cannot tell apart from a package somebody still
+         maintains. Where the source stays inside `packages/<name>`, a dated
+         waiver is the honest answer instead.
   lock.current met
     The lock is current against the taxonomy sources
   gates.required not decided

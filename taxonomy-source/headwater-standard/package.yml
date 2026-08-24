@@ -1,0 +1,85 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The manifest of the base package, in the shape spec 7 (Publishing) gives one.
+# It names the package and points at its content. It is not a taxonomy source,
+# and that separation is the point of the file.
+#
+# THIS PACKAGE HAS TWO COPIES IN THIS REPOSITORY, AND THEY ARE NOT
+# INTERCHANGEABLE, WHICHEVER ONE YOU HAVE OPEN. `taxonomy-source/headwater-standard/`
+# is the authored source: a person edits these three files there.
+# `packages/headwater-standard/` is the vendored target: only `taxonomy vendor`
+# writes there, over an artifact `taxonomy publish --from` wrote from the
+# source, and nobody edits it by hand. #336 split the two apart, because a
+# package this repository both publishes and consumes made `packages/<name>`
+# two things at once: the directory `headwater_resolve::package::find` reads
+# as the hand-maintained source, and the directory the same lookup names as
+# the vendor target. `taxonomy vendor` refuses to install over a directory
+# that carries no release record, so it refused the very directory this file
+# used to sit in, structurally rather than as a defect: that refusal is what
+# stops an adopter's `vendor` from overwriting a package somebody maintains.
+# To change this package: edit the three files at
+# `taxonomy-source/headwater-standard/`, then run:
+#
+#     headwater taxonomy publish --from taxonomy-source/headwater-standard --out <scratch-dir>
+#     headwater taxonomy vendor <scratch-dir>
+#     headwater taxonomy resolve
+#
+# and pin the digest `publish` prints as `taxonomy.digest` in
+# `.headwater/taxonomy.yml`. `docs/spec/07-distribution-and-federation.md`
+# names this the vendored-bytes shape of self-consumption.
+#
+# Spec 2 makes `package` a reserved reference root, and it rules that no
+# taxonomy may declare a block with that name. Spec 7 gives a package manifest a
+# `package:` key at its root. The two rules only met because the one committed
+# copy of this package played both parts: a fenced YAML block that opened
+# `package: headwater/standard` and then declared eleven taxonomy blocks under
+# it. #49 refused that block on its first line, and #50 is where it was decided.
+# The manifest keeps `package:`. The taxonomy source beside it opens `taxonomy:`
+# and never carries a `package` block. See 13 — Open obligations.
+#
+# `requires_engine` states which engines this package is for.
+# `headwater_resolve::package::sources` reads it before it loads a single
+# source, and an engine outside the range is refused with both numbers in the
+# message. The floor is 0.1 because that is the release in which anything read
+# it at all. The ceiling is the next major, on the ordinary reading of a
+# breaking change.
+
+package: headwater/standard
+# This number appears twice, here and at the root of `taxonomy.yml`, and both
+# declarations are required: spec 7 gives a manifest a `version` key and the
+# meta-schema requires a `version` on a taxonomy source. So one value stands in
+# two files, and a bump moves both or neither.
+#
+# This file is the one that decides. Every consumer-facing reader takes the
+# number from here: the pin comparison in `resolve::package::sources`, the
+# lookup `headwater init` makes, and the release record that `taxonomy diff`
+# reads a version out of. The copy in `taxonomy.yml` reaches the lock, where it
+# lands in the `taxonomy` block beside the `package` block that carries this
+# one.
+#
+# Nothing held the two together until #212, so they could disagree through a
+# whole resolution, through a publish, and into the lock. Now
+# `resolve::package::agrees` refuses a package whose two declarations differ,
+# on load and before any comparison a consumer's pin makes, and the refusal
+# names both files and both numbers. Whether a taxonomy source should carry a
+# version at all is a meta-schema question that #212 leaves open.
+version: 3.2.0
+requires_engine: ">=0.1 <2"
+
+contents:
+  taxonomy: taxonomy.yml
+  # The conformance rule set and the levels over it. `headwater conformance`
+  # reads it from here and no other verb reads it at all. It is not a taxonomy
+  # source: it declares no kind, facet, shelf or check, and it never reaches the
+  # lock. What holds it is the release digest, which covers every file in the
+  # artifact including this one.
+  conformance: conformance.yml
+  # The bundles this package ships. They live in the library entry directory
+  # for as long as the package and the library are one repository, and the
+  # resolver reads `<bundles>/<name>/bundle.yml`. `headwater taxonomy publish`
+  # copies them into `bundles/` inside the artifact and rewrites this one
+  # scalar to point there, so a `..` reaching outside the package is a
+  # property of the authored source alone: this scalar reads
+  # `../../docs/taxonomies` here and `bundles` in every published artifact,
+  # including the vendored copy under `packages/`.
+  bundles: ../../docs/taxonomies

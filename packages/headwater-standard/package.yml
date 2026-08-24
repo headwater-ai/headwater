@@ -4,6 +4,30 @@
 # It names the package and points at its content. It is not a taxonomy source,
 # and that separation is the point of the file.
 #
+# THIS PACKAGE HAS TWO COPIES IN THIS REPOSITORY, AND THEY ARE NOT
+# INTERCHANGEABLE, WHICHEVER ONE YOU HAVE OPEN. `taxonomy-source/headwater-standard/`
+# is the authored source: a person edits these three files there.
+# `packages/headwater-standard/` is the vendored target: only `taxonomy vendor`
+# writes there, over an artifact `taxonomy publish --from` wrote from the
+# source, and nobody edits it by hand. #336 split the two apart, because a
+# package this repository both publishes and consumes made `packages/<name>`
+# two things at once: the directory `headwater_resolve::package::find` reads
+# as the hand-maintained source, and the directory the same lookup names as
+# the vendor target. `taxonomy vendor` refuses to install over a directory
+# that carries no release record, so it refused the very directory this file
+# used to sit in, structurally rather than as a defect: that refusal is what
+# stops an adopter's `vendor` from overwriting a package somebody maintains.
+# To change this package: edit the three files at
+# `taxonomy-source/headwater-standard/`, then run:
+#
+#     headwater taxonomy publish --from taxonomy-source/headwater-standard --out <scratch-dir>
+#     headwater taxonomy vendor <scratch-dir>
+#     headwater taxonomy resolve
+#
+# and pin the digest `publish` prints as `taxonomy.digest` in
+# `.headwater/taxonomy.yml`. `docs/spec/07-distribution-and-federation.md`
+# names this the vendored-bytes shape of self-consumption.
+#
 # Spec 2 makes `package` a reserved reference root, and it rules that no
 # taxonomy may declare a block with that name. Spec 7 gives a package manifest a
 # `package:` key at its root. The two rules only met because the one committed
@@ -54,6 +78,8 @@ contents:
   # for as long as the package and the library are one repository, and the
   # resolver reads `<bundles>/<name>/bundle.yml`. `headwater taxonomy publish`
   # copies them into `bundles/` inside the artifact and rewrites this one
-  # scalar, so the `..` is a property of this tree and no published package
-  # carries it.
-  bundles: ../../docs/taxonomies
+  # scalar to point there, so a `..` reaching outside the package is a
+  # property of the authored source alone: this scalar reads
+  # `../../docs/taxonomies` here and `bundles` in every published artifact,
+  # including the vendored copy under `packages/`.
+  bundles: bundles

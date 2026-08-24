@@ -119,6 +119,47 @@ fn the_pin_is_current_when_the_version_and_the_digest_both_name_what_is_installe
     let _ = std::fs::remove_dir_all(&root);
 }
 
+/// **#366's follow-up: a member with no digest re-hashed after the pin
+/// matches is a member nothing is holding.** `conformance.yml` is the real
+/// example in this repository's own package: it is a member of the release
+/// (every file under the package directory is), and it carries no taxonomy
+/// source, so it names no path in the lock's `sources:` list and
+/// `taxonomy resolve --check` never reads it either. Before `pin_current`
+/// called [`headwater_resolve::release::diverged`], a hand edit to such a file
+/// — made after a real vendor, never through `vendor` itself — passed every
+/// gate this engine runs, because `release::at` only reads the record's own
+/// declared digest and never re-hashes a member to check it.
+#[test]
+fn a_member_that_carries_no_taxonomy_source_reopens_the_pin_when_hand_edited() {
+    let root = scratch("pin-non-source-member");
+    let dir = package(&root, "1.0.0");
+    // A member of the release that is not a taxonomy source, matching
+    // `conformance.yml` beside this repository's own `taxonomy.yml`.
+    std::fs::write(dir.join("conformance.yml"), "conformance:\n  format: 1\n")
+        .expect("the extra member writes");
+    let digest = publish(&dir);
+    assert_eq!(
+        pin_current(&root, &consumer("1.0.0", Some(&digest))),
+        Verdict::Met,
+        "the freshly published artifact does not read as met"
+    );
+
+    // Nothing here goes through `vendor`. This is a hand edit to a file the
+    // record already covers, after the record was written over it.
+    std::fs::write(
+        dir.join("conformance.yml"),
+        "conformance:\n  format: 1\n  # hand-edited after publish, never through `vendor`\n",
+    )
+    .expect("the hand edit writes");
+
+    let message = gap(&pin_current(&root, &consumer("1.0.0", Some(&digest))));
+    assert!(
+        message.contains("conformance.yml"),
+        "the hand edit to a non-taxonomy-source member did not reopen the pin: {message}"
+    );
+    let _ = std::fs::remove_dir_all(&root);
+}
+
 /// **The arm a version-only rule would get wrong.** The version agrees and the
 /// digest does not, so a reading of the version alone would call this met. That
 /// repository takes an artifact that nobody publishes any more.

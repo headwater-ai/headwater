@@ -22,9 +22,9 @@ lock:
   sources:
     - path: packages/headwater-standard/taxonomy.yml
       digest: sha256:20ffa9a77f53da02e919111fd076de2b904c43978a4236ae9b2029aca3cc2971
-    - path: docs/taxonomies/design-spec/bundle.yml
+    - path: packages/headwater-standard/bundles/design-spec/bundle.yml
       digest: sha256:0dd73708d7200b7b02389a7dc8811ddc80ab61ece7892efd7391cdf504d6bda0
-    - path: docs/taxonomies/decision-record/bundle.yml
+    - path: packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:dfac204c8b8bddba13a81a5345633ace234d69b9eceef310ed3e0606c9a3b852
     - path: .headwater/overlay.yml
       digest: sha256:77aa14a5425fa5478363349b8d0c455db9218efe26dbe842b4d87eceaa6342fb
