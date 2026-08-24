@@ -60,5 +60,9 @@ docs/taxonomies/design-spec/templates/review_record.md
   10:17: a key must be a scalar; nothing can address a key that is not one
   12:11: a key must be a scalar; nothing can address a key that is not one
   14:6: a key must be a scalar; nothing can address a key that is not one
+docs/taxonomies/diataxis/doctrine.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/taxonomies/diataxis/fixtures/README.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/w3id/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
