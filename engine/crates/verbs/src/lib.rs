@@ -350,6 +350,18 @@ pub const VERBS: &[Verb] = &[
         description: "Print the long description of one verb, or this screen when no verb follows. `headwater help check`, `headwater check --help` and `headwater check -h` print the same text, and a second word follows its verb: `headwater help taxonomy diff`.",
         words: &[],
     },
+    // `completions` is in this group because a completion script is how a
+    // caller finds a verb without reading the help at all. It is the second
+    // reader of the command tree that is not a caller: `engine/crates/cli/tests/verbs.rs`
+    // walks that tree to hold it against this table, and `clap_complete` walks
+    // the same tree to write a script. Neither one carries a copy of this list.
+    Verb {
+        name: "completions",
+        group: "Getting help",
+        summary: "write the completion script of one shell",
+        description: "Write the completion script for one shell on standard output, and write no file. The four names are `bash`, `zsh`, `fish` and `powershell`, and a fifth is refused with the four printed. The script is generated from the command tree this binary parses with, so it carries the verbs, the second words and the flags this binary answers to rather than a list somebody keeps. Where the script goes is the shell's convention rather than this engine's, so redirect it there: `headwater completions bash > f && . f` is the form the tests use.",
+        words: &[],
+    },
 ];
 
 /// The verb a first word names, and `None` for a word this binary does not

@@ -288,6 +288,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
              `headwater route` and `headwater explain` are the reads that exist",
         ),
         Verb::Help { verb } => print_help_for(&verb),
+        Verb::Completions { shell } => completions(shell),
         Verb::Taxonomy { word } => match word {
             None => fail(&format!(
                 "`taxonomy` takes a second word: {}",
@@ -430,6 +431,74 @@ fn print_help_for(words: &[String]) -> ExitCode {
     let target = descend(&mut command, words).expect("the walk above found every word");
     let _ = target.print_help();
     ExitCode::SUCCESS
+}
+
+/// The completion script of one shell, on standard output.
+///
+/// # The tree the script is written from is the tree that parses
+///
+/// `clap_complete` walks a [`clap::Command`], and the one handed to it is
+/// [`headwater_cli::command`] — the same tree `main` parses with, the same tree
+/// `headwater help <verb>` prints out of, and the same tree
+/// `engine/crates/cli/tests/verbs.rs` walks against
+/// [`headwater_verbs::VERBS`]. So a verb, a second word or a flag added to the
+/// parser reaches every completion script with no edit here, and a script that
+/// offered a verb this binary does not carry would be a discrepancy that walk
+/// already fails on.
+///
+/// It is built at [`headwater_cli::paint::WIDTH`] rather than at
+/// `paint::width()`. The two are the same number on every run that reaches
+/// this function, because `--wide` is refused on a run that prints no help and
+/// this run prints none. Naming the constant is what makes the script
+/// independent of the command line rather than incidentally so: the bytes of a
+/// completion script are read by a shell and must not move with a caller's
+/// terminal.
+///
+/// # Standard output, and nothing else
+///
+/// Clause 11 of [#321](https://github.com/headwater-ai/headwater/issues/321)
+/// holds that no escape byte reaches a machine artifact. A completion script is
+/// a fifth such surface, and `clap_complete` writes to the sink it is handed
+/// and nowhere else. `engine/crates/cli/tests/completions.rs` holds the two
+/// halves that matter to a caller redirecting this into a file: standard error
+/// is empty, and no `\x1b` byte is on either stream.
+fn completions(shell: Option<headwater_cli::Shell>) -> ExitCode {
+    let Some(shell) = shell else {
+        let named: Vec<&str> = headwater_cli::Shell::ALL
+            .iter()
+            .map(|one| one.typed())
+            .collect();
+        return fail(&format!(
+            "`completions <shell>` writes a completion script on standard output, for one of {}. \
+             Where the script goes is the shell's own convention rather than this engine's, so \
+             redirect it there: `{} completions bash > f && . f` loads one into the shell in \
+             front of you",
+            listed(&named),
+            headwater_verbs::BINARY
+        ));
+    };
+    let mut command = headwater_cli::command_at(headwater_cli::paint::WIDTH);
+    clap_complete::generate(
+        clap_complete::Shell::from(shell),
+        &mut command,
+        headwater_verbs::BINARY,
+        &mut std::io::stdout(),
+    );
+    ExitCode::SUCCESS
+}
+
+/// `` `a`, `b` and `c` ``: the form every message in this binary uses.
+///
+/// `headwater_verbs::listed` writes the verbs this way and its `join` is
+/// private to that crate, so this is the same rendering over a set that crate
+/// does not carry. The shells are the parser's, not the dispatch table's.
+fn listed(words: &[&str]) -> String {
+    let quoted: Vec<String> = words.iter().map(|word| format!("`{word}`")).collect();
+    match quoted.split_last() {
+        None => String::new(),
+        Some((last, [])) => last.clone(),
+        Some((last, rest)) => format!("{} and {last}", rest.join(", ")),
+    }
 }
 
 /// The command a sequence of words names, or `None` for a word that names none.

@@ -90,11 +90,22 @@ headwater-yaml = { path = "../yaml" }
 # `src/lib.rs` rather than a second list beside `headwater-verbs`, and
 # `tests/verbs.rs` holds the two against each other in both directions.
 #
-# `clap_complete` and `anstyle` are **not** here. `anstyle` is already in the
-# resolved graph through `clap_builder` and `anstream`, so declaring it would
-# move the lock by zero packages and add a line nothing reaches. `clap_complete`
-# costs one package and arrives with the verb that calls it.
+# `anstyle` is **not** here. It is already in the resolved graph through
+# `clap_builder` and `anstream`, so declaring it would move the lock by zero
+# packages and add a line nothing reaches.
 clap = { version = "4.6.6", features = ["derive"] }
+
+# The completion scripts, and the fourth external declaration of this
+# workspace. `HW-DR-0033` said it costs one package and arrives with the verb
+# that calls it; `headwater completions` is that verb, and the lock goes 52 to
+# 53 with `clap_complete` the only entry added. Its one dependency is `clap`,
+# which is the line above.
+#
+# The generator reads the command tree `src/lib.rs` builds, so a verb, a second
+# word or a flag added there reaches every script without an edit here. That is
+# the same argument the verb index makes: a completion script written by hand
+# would be the sixth copy of the verb list #257 was filed about.
+clap_complete = { version = "4.6.9", default-features = false }
 
 [lints]
 workspace = true
