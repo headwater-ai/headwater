@@ -603,8 +603,8 @@ pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<Resol
 /// refuses to install over a directory that carries no release record, so it
 /// refuses the very directory a maintained source sits in, and two
 /// directories that both declare the package's name resolve to whichever
-/// sorts first — a collision [`vendor`]'s own doc comment already records
-/// under [#354](https://github.com/headwater-ai/headwater/issues/354). So a
+/// sorts first — a collision recorded and left open as
+/// [#369](https://github.com/headwater-ai/headwater/issues/369). So a
 /// repository in that position keeps its authored source somewhere `find`
 /// never walks for consumption, and needs a way to publish it that does not
 /// go through `find` either.
@@ -1320,17 +1320,22 @@ pub const BUNDLES: &str = "bundles";
 /// already asks an adopter to make, and the refusal says it because nothing else
 /// the adopter reads does.
 ///
-/// **What the rename costs is not in the refusal, and it belongs here until it
-/// is.** The adopter moves the first package aside and vendors the second into
-/// the cleared path. From then on the first package cannot be vendored again:
-/// every later artifact of it derives the directory the second one now holds, so
-/// this verb refuses every upgrade of it. Following the message a second time
-/// exits 0 and leaves two directories declaring one name, where [`find`] returns
-/// the one that sorts first — measured, with `taxonomy vendor` installing 2.0.0
-/// and `taxonomy resolve` then reporting the package here as 1.0.0. So an
-/// adopter can upgrade exactly one of two packages that contend for a directory.
-/// [#354](https://github.com/headwater-ai/headwater/issues/354) holds the
-/// hardening, and this paragraph is the record until it lands.
+/// **The first package stays stuck once moved, and the second follow of the
+/// remedy is now refused rather than silently duplicated.** The adopter moves
+/// the first package aside and vendors the second into the cleared path. From
+/// then on the first package cannot be vendored again: every later artifact of
+/// it derives the directory the second one now holds, so this verb refuses
+/// every upgrade of it, and nothing here lifts that: `vendor` only ever writes
+/// to the name-derived directory, never to one an adopter chose by hand. What
+/// changed is the second half. Following the message a second time used to exit
+/// 0 and leave two directories declaring one name, where [`find`] answered from
+/// whichever sorted first while `vendor` reported installing the other. This
+/// verb now runs [`find`] for the declared name before it writes anything and
+/// refuses that second move, naming the directory the package already resolves
+/// from, so the adopter is told at the vendor that would have created the
+/// duplicate rather than at their next `resolve`.
+/// [#354](https://github.com/headwater-ai/headwater/issues/354) is that
+/// hardening.
 ///
 /// **A remapping was the other repair and the grammar closes it, not this
 /// verb.** [`names_a_package`] admits any number of segments, so `a/b` and
@@ -1431,7 +1436,7 @@ pub const BUNDLES: &str = "bundles";
 /// after every flattened name. `~aside` sorts before `~staged`, so a run killed
 /// in the one-rename window leaves [`find`] returning the old complete tree
 /// rather than the new one. **This leans on that sort order**, which
-/// [#354](https://github.com/headwater-ai/headwater/issues/354) already records
+/// [#369](https://github.com/headwater-ai/headwater/issues/369) already records
 /// as owed its own hardening: a change to how `find` chooses reads here first.
 ///
 /// **The staged tree is not read back and held to the digest before the swap.**
@@ -1563,6 +1568,33 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
                 ))
             }
             Err(error) => return Err(release::as_error(&under, &error)),
+        }
+    }
+
+    // The package this artifact declares may already resolve from a directory
+    // that is neither `target` nor one of this run's own siblings -- the state
+    // #320's own remedy produces on the second collision. `target`, `staged`
+    // and `aside` are excluded on purpose: a kill mid-swap can leave the
+    // installed package's own manifest resolving from `aside` (or, mid-stage,
+    // a stale `staged`), and that residue is what the *next* `vendor` of the
+    // same package clears, not a directory that belongs to someone else. Only
+    // a standing directory outside those three is the adopter's own, moved
+    // package, and this is a read, so it runs here rather than in the write
+    // phase below.
+    if let Ok((found_at, _)) = find(root, &declared) {
+        if found_at != target && found_at != staged && found_at != aside {
+            let found_under = display(root, &found_at);
+            return Err(refusal(
+                &under,
+                &format!(
+                    "the artifact declares `{declared}`, and that name already resolves from \
+                     `{found_under}` rather than from `{under}`. Vendoring here would leave two \
+                     directories under `{PACKAGES}/` both declaring `{declared}`, and the next \
+                     lookup would have to choose between them. This package cannot be vendored \
+                     into its derived directory while it resolves from `{found_under}`; move it \
+                     back to `{under}` or vendor elsewhere by hand"
+                ),
+            ));
         }
     }
 
