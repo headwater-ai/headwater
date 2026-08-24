@@ -159,6 +159,10 @@ Consuming is two steps, and the split is what keeps the network out of the engin
 
 **A vendored package is not a maintained one.** `vendor` replaces a directory that carries a release record, and it refuses a directory that carries none. A package that a person maintains is a publisher's source, and a consumer command that overwrote one would delete the thing being published. Spec 2 requires customization by overlay and never by fork, so a vendored directory has nothing in it that an adopter should have edited.
 
+**The replacement never leaves part of a package behind.** `vendor` writes the new package beside the old one, and then puts the new one in place. So `packages/<name>` holds a complete package or nothing at every moment, under a failure and under a run that a person stops. A `vendor` that fails leaves the package that was installed, and the refusal says which state the directory is in.
+
+**A run that a person stops can leave a directory beside the package.** `packages/<name>~aside` holds the package that was installed, and the engine still finds it there. `packages/<name>~staged` holds the copy the run was making, and that copy can be a part of a package ([#357](https://github.com/headwater-ai/headwater/issues/357)). The next `vendor` of the package removes both. `vendor` refuses to install either of them as an artifact, so an adopter who finds one removes it.
+
 ### Profiles are publisher overlays
 
 Not every repository holds every shelf. A profile is a **named overlay that the publisher ships**. It contains `remove` operations for the shelves that a repository archetype does not have, and it is selected by name in the consumer declaration above. It is not a separate mechanism. The overlay resolver already implements every part of it (dependent-key deletion, confluence, core satisfaction on the result).
