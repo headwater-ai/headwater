@@ -22,7 +22,7 @@ relations:
 ## Synopsis
 
     headwater sweep plan   [--under <path>] [--root <path>]
-    headwater sweep report <path> [--format text|json] [--root <path>]
+    headwater sweep report <path> [--format text|json | --json] [--root <path>]
 
 `plan` takes no operand. `report` takes exactly one, which is the path of the file an agent wrote back. Four inputs are refused. A bare `sweep`. A `sweep report` with no path. A second word that is neither `plan` nor `report`. A `report` with more than one path, which the message calls a verb the binary does not carry.
 
@@ -71,6 +71,7 @@ There is no precondition about a model, about a network, or about a plan having 
 |---|---|---|
 | `--under <path>` | `plan` | The slice, as a path prefix under the repository root. The whole corpus by default. |
 | `--format text\|json` | `report` | The vocabulary. `text` is the default and the one a person reads. `json` is the finding shape that [spec 4](../spec/04-assurance-model.md) declares, with the provenance and the evidence a sweep adds. |
+| `--json` | `report` | The same artifact `--format json` writes, byte for byte, on both streams and with the same exit status. A command line that states both is refused, because two names for one target is a question answered twice. |
 | `--root <path>` | both | The repository to read. It defaults to the working directory. |
 
 **There is no `--strict`, and the parser refuses one.** `headwater sweep report <path> --strict` exits 1 and writes no report. Spec 12 states the absence of a `--strict` that does anything. The parse states the absence of the word, so both readings of that sentence hold of this verb. [HW-DR-0033](../decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md) is the ruling, and `engine/crates/cli/tests/sweep.rs` holds the refusal.
@@ -83,7 +84,7 @@ There is no precondition about a model, about a network, or about a plan having 
 
 | The reason | Half | When it is decided |
 |---|---|---|
-| A flag that names a value has none after it. Or the command line holds a word this half does not read. Or the words after `sweep` are not `plan`, `report <path>` | both | in the parse, before the verb is entered |
+| A flag that names a value has none after it. Or the command line holds a word this half does not read. Or the words after `sweep` are not `plan`, `report <path>`. Or `report` names one target twice, as `--json` beside `--format` | both | in the parse, before the verb is entered |
 | `--format` names a target that is neither `text` nor `json` | `report` | first thing in the verb, before the file is opened |
 | The file at the given path did not read | `report` | after the format is decided, before the corpus is loaded |
 | The lock is absent, or a declaration under it did not read | both | for `report`, after the return file is read and before it is parsed. For `plan`, before anything |

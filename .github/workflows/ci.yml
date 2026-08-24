@@ -75,6 +75,7 @@ jobs:
           HEADWATER_STOCK_VALIDATOR: required
           HEADWATER_SARIF_VALIDATOR: required
           HEADWATER_SHA256_ORACLE: required
+          HEADWATER_JSON_ORACLE: required
 
   headwater:
     name: headwater check (advisory)
