@@ -18,6 +18,8 @@ Build from the repository root with `--manifest-path`, or from `engine/` with ne
 
 **Every verb takes `--root`.** It names the corpus to read, and it is what makes the binary runnable from anywhere. A verb with no `--root` reads the current directory, which is the engine workspace whenever the last command was a build. Pass it, and no command in a session needs a `cd` in front of it.
 
+**This is the invocation for the binary itself, and not the default loop.** A session that is writing or checking a change stays on `cargo check` and `cargo test` — see the fifth mistake below.
+
 ## The toolchain floor
 
 Rust 1.85 or later. `saphyr-parser` is on edition 2024, and an older cargo reports `feature edition2024 is required` and nothing else. Check the toolchain first when a clean checkout will not build, because that message names no crate and reads like a corrupt tree.
@@ -36,7 +38,7 @@ CI runs the workspace with no filter, so the workspace is the bar. Name a crate 
 
 A recorded fixture is re-recorded with `HEADWATER_BLESS=1` and never edited by hand. The digest of the lock reaches `.headwater/corpus.json` and several recorded fixtures, so a taxonomy change moves files that the change itself did not touch. Read that diff rather than blessing past it.
 
-## The four mistakes
+## The five mistakes
 
 **`cargo test` from the repository root.** There is no manifest there. The workspace is under `engine/`, and the error names a missing `Cargo.toml` rather than the directory you are in.
 
@@ -45,6 +47,8 @@ A recorded fixture is re-recorded with `HEADWATER_BLESS=1` and never edited by h
 **Reading the corpus to answer a question about one document.** `headwater explain` prints the kind, the purpose, the summary, the warrant, the required facets and every edge in and out. That is the orientation, and [headwater-orient](../headwater-orient/SKILL.md) is the skill for it.
 
 **A green run read as a green corpus.** `headwater check` exits 0 with findings on standard output, because the posture is advisory. `--strict` is the gate, and it is what `.githooks/pre-commit` runs. Read the findings.
+
+**A `--release` build as a verification step.** `.github/workflows/ci.yml` already runs `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, the whole test suite, `taxonomy resolve --check`, `generate --check` and `headwater check` on every pull request. A debug `cargo check` and `cargo test` prove the same fix, in seconds rather than the minutes `lto = true` and `codegen-units = 1` cost a release link, and a session that also builds `--release` and runs the binary by hand to double-check a passing test suite is spending real time and real machine load on evidence it already had. Push and read CI rather than reproducing it locally. Reach for `--release`, or `--profile dev-release` for a faster link at a smaller optimization cost, only when the session needs the binary itself: to hand it to somebody, to run it once by hand against a real corpus, or to measure a performance claim, which debug and release answer differently by roughly an order of magnitude.
 
 ## What this skill does not decide
 
