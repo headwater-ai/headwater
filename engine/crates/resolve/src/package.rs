@@ -492,11 +492,52 @@ pub fn manifest_at(directory: &Path) -> Result<Mapping, Vec<ResolveError>> {
 /// [`find_version`], [`located`] and `vendor`'s own collision guard all want
 /// the package that resolves over a report about the first thing that went
 /// wrong, when the two are not the same directory. So this walk remembers
-/// every non-mapping manifest it meets and keeps looking; a match found
+/// every non-mapping manifest it meets and keeps looking; a single match found
 /// afterward returns `Ok` as though the broken sibling had never been read.
-/// Only where the walk exhausts without a match do the remembered manifests
-/// join the refusal, ahead of the `no package... declares` line they would
-/// otherwise be mistaken for.
+/// A manifest that does not even parse — a genuine YAML syntax error, not
+/// merely a value that is not a mapping — joins the same `broken` list rather
+/// than aborting the walk with [`crate::source::load`]'s own error: a syntax
+/// mistake in one directory is exactly as much somebody else's problem as a
+/// non-mapping value is, and the walk has to keep going past it for the same
+/// reason. Only where the walk exhausts without exactly one match do the
+/// remembered manifests join the refusal, ahead of the summary line they
+/// would otherwise be mistaken for.
+///
+/// # Two directories that declare the same name are both named, not resolved silently
+///
+/// The walk never stops at the first match. `packages/` holds nothing anybody
+/// hand-edits, but a person can still put a second directory there by hand —
+/// following `headwater init`'s own suggestion to copy a package directory in,
+/// beside one `vendor` already installed — and two directories that each
+/// declare the same `package:` name is a real collision, not a shape this
+/// engine should pick a winner for by alphabetical accident. So every
+/// directory is read to the end, and every manifest whose declared name
+/// matches is kept, sorted into two groups by whether it is genuine [`ASIDE`]
+/// residue [`vendor`]'s own atomic swap left standing.
+///
+/// **A directory's name alone does not prove what made it.** The grammar
+/// refuses `~` in a *package* name, but nothing refuses it in a *directory*
+/// name a person chooses by hand, and copying a package directory into
+/// `packages/` under any name at all — including one that happens to end in
+/// `~aside` — is exactly the `headwater init`-suggested workflow this
+/// function exists to stop from resolving silently. So a directory counts as
+/// residue only when its name carries the suffix **and** it carries a release
+/// record [`release::at`] can read. The second test is not incidental:
+/// [`vendor`] itself, a few dozen lines below, refuses to install over a
+/// directory with no release record on the same grounds — "a directory is
+/// there and it carries no release record, so it is a package somebody
+/// maintains rather than one that was vendored" — and every directory
+/// `vendor` ever renames to `<flattened>~aside` is, at the moment of that
+/// rename, the package it had just replaced, which [`publish`]'s own artifact
+/// always carries the record for. A hand-copied source directory is never a
+/// copy of a published artifact — #369's own report calls it the authored
+/// source, not a vendored one — so it never carries this record, whatever it
+/// is named. A real collision is decided on the ordinary matches alone: one
+/// resolves, and two or more are refused by name. Only where no ordinary
+/// match exists does a lone, record-carrying residue match answer instead,
+/// the same fallback `vendor`'s own collision guard already relies on — read
+/// exactly this way, so a kill mid-swap and a genuine duplicate that happens
+/// to reuse the reserved suffix are never mistaken for each other.
 fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>> {
     let packages = root.join(PACKAGES);
     let mut entries: Vec<PathBuf> = std::fs::read_dir(&packages)
@@ -511,12 +552,25 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
     entries.sort();
 
     let mut broken: Vec<ResolveError> = Vec::new();
+    let mut matches: Vec<(PathBuf, Mapping)> = Vec::new();
+    let mut residues: Vec<(PathBuf, Mapping)> = Vec::new();
     for directory in entries {
         let manifest = directory.join(MANIFEST);
         if !manifest.is_file() {
             continue;
         }
-        let loaded = crate::source::load(&manifest)?;
+        let loaded = match crate::source::load(&manifest) {
+            Ok(loaded) => loaded,
+            Err(errors) => {
+                // A syntax error here is the same kind of anomaly a
+                // non-mapping manifest is, below: it belongs to the directory
+                // it sits in, and the walk must keep going so a match sitting
+                // in a later directory (unreachable before the early return
+                // this function used to take) still resolves.
+                broken.extend(errors);
+                continue;
+            }
+        };
         let Some(map) = loaded.value.as_map() else {
             broken.extend(refusal(
                 &manifest_name(root, &directory),
@@ -525,15 +579,54 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
             continue;
         };
         if text(map, "package").as_deref() == Some(name) {
-            return Ok((directory, map.clone()));
+            // A directory only counts as vendor-made residue when its name
+            // carries the reserved suffix *and* it carries a release record --
+            // the same proof `vendor` itself demands, in the opposite
+            // direction, before it will treat a directory as one of its own.
+            // The suffix alone is not proof of provenance: nothing stops a
+            // person from naming a hand-copied directory `<name>~aside`.
+            let carries_suffix = directory
+                .file_name()
+                .and_then(|component| component.to_str())
+                .is_some_and(|component| component.ends_with(ASIDE));
+            let is_residue = carries_suffix && release::at(&directory).is_ok();
+            match is_residue {
+                true => residues.push((directory, map.clone())),
+                false => matches.push((directory, map.clone())),
+            }
         }
     }
 
-    broken.extend(refusal(
-        PACKAGES,
-        &format!("no package under `{PACKAGES}/` declares `{name}`"),
-    ));
-    Err(broken)
+    match matches.len() {
+        1 => {
+            let (directory, map) = matches.into_iter().next().expect("len checked above");
+            Ok((directory, map))
+        }
+        0 => match residues.len() {
+            1 => {
+                let (directory, map) = residues.into_iter().next().expect("len checked above");
+                Ok((directory, map))
+            }
+            _ => {
+                broken.extend(refusal(
+                    PACKAGES,
+                    &format!("no package under `{PACKAGES}/` declares `{name}`"),
+                ));
+                Err(broken)
+            }
+        },
+        _ => Err(refusal(
+            PACKAGES,
+            &format!(
+                "more than one package under `{PACKAGES}/` declares `{name}`: {}",
+                matches
+                    .iter()
+                    .map(|(directory, _)| display(root, directory))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+        )),
+    }
 }
 
 /// Write the published artifact of a package into `out`.
@@ -628,8 +721,8 @@ pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<Resol
 /// use that lookup for both roles over one directory: `taxonomy vendor`
 /// refuses to install over a directory that carries no release record, so it
 /// refuses the very directory a maintained source sits in, and two
-/// directories that both declare the package's name resolve to whichever
-/// sorts first — a collision recorded and left open as
+/// directories that both declare the package's name are refused as a
+/// collision rather than resolved to whichever sorts first, naming both —
 /// [#369](https://github.com/headwater-ai/headwater/issues/369). So a
 /// repository in that position keeps its authored source somewhere `find`
 /// never walks for consumption, and needs a way to publish it that does not
@@ -1463,9 +1556,14 @@ pub const BUNDLES: &str = "bundles";
 /// `<name>~aside` sorts before `~staging` too, because the flattened name's own
 /// first byte is always less than `~`, so a run killed in the one-rename window
 /// leaves [`find`] returning the old complete tree rather than the new one.
-/// **This leans on that sort order**, which
-/// [#369](https://github.com/headwater-ai/headwater/issues/369) already records
-/// as owed its own hardening: a change to how `find` chooses reads here first.
+/// **This leaned on that sort order alone**, until
+/// [#369](https://github.com/headwater-ai/headwater/issues/369)'s own fix made
+/// the choice explicit: `find` no longer decides by where a name happens to
+/// sort. It separates a directory's `~aside`/`~staging` residue from an
+/// ordinary match by whether the directory carries a release record —
+/// [`release::at`] — the same test `vendor` itself already applies, a few
+/// lines below, to tell a vendored directory from one a person maintains by
+/// hand.
 ///
 /// **The staged tree is not read back and held to the digest before the swap.**
 /// [`copy_tree`] returning `Ok` means every file was read and written and no

@@ -127,6 +127,22 @@ fn publisher_of(scratch: &Scratch, at: &str, package: &str) -> PathBuf {
     scratch.path().join(at)
 }
 
+/// A residue directory, planted by hand the way a killed `vendor` would
+/// actually leave it: a manifest, and a release record computed over exactly
+/// what stands beside it. [`package::find`]'s residue check demands this
+/// record as proof of provenance, so a residue this file plants without one
+/// would no longer be told apart from a hand-copied directory that merely
+/// reuses the reserved suffix.
+fn plant_residue(residue: &Path, manifest_text: &str) {
+    std::fs::create_dir_all(residue).expect("the residue directory is made");
+    std::fs::write(residue.join(package::MANIFEST), manifest_text)
+        .expect("the residue carries a manifest");
+    let manifest = package::manifest_at(residue).expect("the manifest just written reads back");
+    let record = release::compute(residue, &manifest).expect("the digest computes");
+    std::fs::write(residue.join(release::RECORD), release::render(&record))
+        .expect("the residue carries a release record");
+}
+
 /// A consumer declaration inside the publisher tree, pinning what it takes.
 fn takes(scratch: &Scratch, version: &str) {
     scratch.write(
@@ -2622,12 +2638,10 @@ fn a_directory_this_verb_stages_into_never_wins_the_lookup() {
         packages.join(format!("acme-fixture{}", package::ASIDE)),
     ];
     for residue in residues {
-        std::fs::create_dir_all(&residue).expect("the residue is made");
-        std::fs::write(
-            residue.join(package::MANIFEST),
+        plant_residue(
+            &residue,
             "package: acme/fixture\nversion: 9.9.9\ncontents:\n  taxonomy: taxonomy.yml\n",
-        )
-        .expect("the residue carries a manifest");
+        );
     }
 
     assert_eq!(
@@ -2688,12 +2702,10 @@ fn a_plain_retry_after_a_kill_mid_swap_still_lands() {
         packages.join(format!("acme-fixture{}", package::ASIDE)),
     ];
     for residue in residues {
-        std::fs::create_dir_all(&residue).expect("the residue is made");
-        std::fs::write(
-            residue.join(package::MANIFEST),
+        plant_residue(
+            &residue,
             "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
-        )
-        .expect("the residue carries a manifest");
+        );
     }
     assert_eq!(
         package::find_version(&adopter, "acme/fixture"),
@@ -3415,4 +3427,176 @@ fn a_broken_sibling_manifest_does_not_stop_a_package_that_resolves_fine() {
         .expect("a broken, unrelated sibling does not stop a package that resolves fine");
 
     assert_eq!(record.package, "acme/fixture");
+}
+
+/// Two directories that each carry a well-formed manifest declaring the same
+/// `package:` name are detected and reported, naming both, instead of
+/// resolving silently to whichever sorts first.
+///
+/// `aaa-vendored` sorts before `zzz-copied-source`, so the pre-fix walk
+/// returns the first one the instant it matches and never reads the second at
+/// all — the exact silent-duplicate defect #369 files. The second directory
+/// is written by a plain `Scratch::write`, the shape a person gets by copying
+/// a package directory in beside one `vendor` already installed, following
+/// `headwater init`'s own suggested workflow, and not through `package::vendor`
+/// itself.
+#[test]
+fn two_directories_declaring_one_name_are_both_named_rather_than_resolved_silently() {
+    let scratch = Scratch::new("duplicate-declared-name");
+    scratch.write(
+        "root/packages/aaa-vendored/package.yml",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
+    );
+    scratch.write("root/packages/aaa-vendored/taxonomy.yml", TAXONOMY);
+    scratch.write(
+        "root/packages/zzz-copied-source/package.yml",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
+    );
+    scratch.write("root/packages/zzz-copied-source/taxonomy.yml", TAXONOMY);
+    let root = scratch.path().join("root");
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish(&root, "acme/fixture", &out)
+        .expect_err("two directories declaring one name must not resolve silently");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("packages/aaa-vendored"),
+        "the first colliding directory is not named:\n{message}"
+    );
+    assert!(
+        message.contains("packages/zzz-copied-source"),
+        "the second colliding directory is not named:\n{message}"
+    );
+}
+
+/// The same collision, caught through [`package::sources`] rather than
+/// [`package::publish`] — the literal path `taxonomy resolve` runs, and the
+/// one a reader who has gone no further than "copy a package directory in,
+/// then resolve" actually exercises.
+///
+/// The consumer declaration is built directly rather than read from a written
+/// `.headwater/taxonomy.yml`, because the collision this proves lives entirely
+/// under `packages/` and a hand-built [`package::Consumer`] is the smaller
+/// fixture for it.
+#[test]
+fn two_directories_declaring_one_name_are_caught_by_sources_too() {
+    let scratch = Scratch::new("duplicate-declared-name-sources");
+    scratch.write(
+        "root/packages/aaa-vendored/package.yml",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
+    );
+    scratch.write("root/packages/aaa-vendored/taxonomy.yml", TAXONOMY);
+    scratch.write(
+        "root/packages/zzz-copied-source/package.yml",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
+    );
+    scratch.write("root/packages/zzz-copied-source/taxonomy.yml", TAXONOMY);
+    let root = scratch.path().join("root");
+
+    let consumer = package::Consumer {
+        package: "acme/fixture".to_string(),
+        version: "1.0.0".to_string(),
+        bundles: Vec::new(),
+        digest: None,
+        overlay: None,
+        corpus_root: "docs".to_string(),
+        exclusions: Vec::new(),
+    };
+
+    let refused = package::sources(&root, &consumer).expect_err(
+        "`sources`, the path `taxonomy resolve` runs, must not resolve a duplicate \
+                     name silently either",
+    );
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("packages/aaa-vendored"),
+        "the first colliding directory is not named:\n{message}"
+    );
+    assert!(
+        message.contains("packages/zzz-copied-source"),
+        "the second colliding directory is not named:\n{message}"
+    );
+}
+
+/// A manifest that fails to parse at all — a genuine YAML syntax error, not
+/// merely a value that parses but is not a mapping — sitting in a directory
+/// that sorts after a package that resolves fine, does not stop that package
+/// from resolving.
+///
+/// Before this fix, `find` returned the instant it matched `acme-fixture` and
+/// never read `zzz-broken-syntax` at all, so a syntax error there was
+/// invisible by construction. Removing the early return to detect duplicate
+/// names means the walk now reaches every directory regardless of where the
+/// match sits, including ones after it — and `crate::source::load`'s own
+/// `?` would have turned this manifest's parse failure into a hard error for
+/// the whole call, regressing the "a broken sibling does not stop a package
+/// that resolves fine" guarantee #296 already shipped. Folding a load failure
+/// into `broken` the same way a non-mapping manifest already is folds this
+/// case in too. `package: [oops` is unclosed flow-sequence syntax that
+/// `headwater_yaml` refuses outright, confirmed directly against
+/// [`headwater_resolve::source::load`] before this fixture was written.
+#[test]
+fn a_yaml_syntax_error_after_a_match_does_not_stop_the_match_from_resolving() {
+    let scratch = Scratch::new("syntax-error-after-match");
+    let root = publisher_of(&scratch, "root", "acme/fixture");
+    scratch.write(
+        "root/packages/zzz-broken-syntax/package.yml",
+        "package: [oops\nversion: 1.0.0\n",
+    );
+    let out = scratch.path().join("artifact");
+
+    let record = package::publish(&root, "acme/fixture", &out).expect(
+        "a manifest that fails to parse, sitting after a match the walk now has to keep reading \
+         past, must not stop the match from resolving",
+    );
+
+    assert_eq!(record.package, "acme/fixture");
+}
+
+/// A directory that merely carries the reserved `~aside` suffix, with no
+/// release record proving `vendor` ever made it, is a real collision and must
+/// not be silently treated as residue.
+///
+/// The grammar refuses `~` in a `package:` name, never in a directory name a
+/// person chooses by hand, so nothing stops someone from copying a package
+/// directory into `packages/` and naming it `<name>~aside` — the shape
+/// `headwater init`'s own suggested workflow invites, at any name at all. This
+/// is not residue: a directory `vendor` actually leaves at that name always
+/// carries a release record, because it is the rename of a directory that was
+/// itself vendored from a published artifact, and every published artifact
+/// carries one. This directory carries none, so it must be held to the same
+/// "two directories declare one name" refusal as any other collision, rather
+/// than answered from silently as the vendor-tolerated fallback.
+#[test]
+fn a_directory_merely_named_with_the_reserved_suffix_is_a_real_collision_not_residue() {
+    let scratch = Scratch::new("suffix-without-release-record");
+    let root = publisher_of(&scratch, "root", "acme/fixture");
+
+    // A hand-made directory, never touched by `vendor`, carrying no release
+    // record -- declaring the same name at a different version, and named
+    // with the suffix `vendor`'s own atomic swap reserves. Naming it this way
+    // must not make it invisible to the collision check.
+    scratch.write(
+        "root/packages/acme-fixture~aside/package.yml",
+        "package: acme/fixture\nversion: 2.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
+    );
+    scratch.write(
+        "root/packages/acme-fixture~aside/taxonomy.yml",
+        &TAXONOMY.replace("version: 1.0.0", "version: 2.0.0"),
+    );
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish(&root, "acme/fixture", &out).expect_err(
+        "a directory that merely carries the reserved suffix, with no release record proving \
+         `vendor` made it, must not be silently treated as residue",
+    );
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("more than one package"),
+        "the collision is not reported as a collision:\n{message}"
+    );
+    assert!(
+        message.contains("packages/acme-fixture~aside"),
+        "the suffixed directory is not named as a real collision:\n{message}"
+    );
 }
