@@ -1153,16 +1153,42 @@ pub const BUNDLES: &str = "bundles";
 /// always one segment under `packages/` rather than a path that reaches out of
 /// it.
 ///
-/// **That says nothing about the segment being the package's alone, and it is
-/// not.** The `/` → `-` substitution is not injective: `acme/my-taxonomy` and
-/// `acme-my/taxonomy` are two names inside the grammar that flatten to one
-/// directory, `packages/acme-my-taxonomy`. Vendoring the second over the first
-/// takes the replace arm, because the first left a release record there, so it
-/// deletes a package the adopter holds and exits 0 — two honest publishers and
-/// no adversary. Measured, with `find_version` for the first name returning
-/// `None` afterwards. That is
-/// [#320](https://github.com/headwater-ai/headwater/issues/320) and not
-/// something the grammar closes.
+/// **The substitution is still not injective, and the segment is the package's
+/// own because this verb refuses a directory that a different package holds.**
+/// `acme/my-taxonomy` and `acme-my/taxonomy` are two names inside the grammar
+/// that flatten to one directory, `packages/acme-my-taxonomy`. Vendoring the
+/// second over the first took the replace arm, because the first left a release
+/// record there, so it deleted a package the adopter held and exited 0 — two
+/// honest publishers and no adversary. Measured, with `find_version` for the
+/// first name returning `None` afterwards. That is
+/// [#320](https://github.com/headwater-ai/headwater/issues/320), and
+/// [`holds_the_same_package`] closes it: the replace arm reads the `package:` of
+/// the directory that is there and removes nothing unless it is the name the
+/// artifact declares.
+///
+/// **The cost is that two colliding packages cannot both sit under their derived
+/// names, and the adopter pays one rename for it.** [`find`] matches the
+/// `package:` of each manifest under `packages/` and never the name of the
+/// directory that carries it, so a package moved out of the way keeps resolving
+/// from wherever it lands. That is the same move the `pin.current` remediation
+/// of `packages/headwater-standard/conformance.yml` already asks an adopter to
+/// make, and the refusal says it, because nothing else the adopter reads does.
+///
+/// **A remapping was the other repair and the grammar closes it, not this
+/// verb.** [`names_a_package`] admits any number of segments, so `a/b` and
+/// `a/b/c` are both names and a nested `packages/a/b/c` would sit inside
+/// `packages/a/b`: upgrading `a/b` removes the installed `a/b/c` with it, which
+/// is #320's defect in a new shape. A flat percent-encoded name is injective and
+/// unreadable. Both move every directory an adopter already vendored, and this
+/// moves none. A later change that bounds a name to two segments would make
+/// `packages/<org>/<name>` injective by construction and would reopen the
+/// question.
+///
+/// **The comparison is over two declared names and never over two derived
+/// paths**, so a file system that folds case refuses `ACME/Fixture` over an
+/// installed `acme/fixture` by the same route rather than colliding with it.
+/// That is stated from the mechanism and it is not measured, because this engine
+/// is tested on Linux.
 ///
 /// **One refusal below became unreachable, and no issue is filed for it.** The
 /// maintained-package arm composes its message from `display(root, &target)`,
@@ -1182,10 +1208,13 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
         release::verify(fetched, pinned).map_err(|error| release::as_error(&name, &error))?;
 
     let declared = identity(root, fetched, &record)?;
-    let target = root.join(PACKAGES).join(declared.replace('/', "-"));
+    let flattened = declared.replace('/', "-");
+    let target = root.join(PACKAGES).join(&flattened);
+    let under = format!("{PACKAGES}/{flattened}");
     if target.exists() {
         match release::at(&target) {
             Ok(_) => {
+                holds_the_same_package(&target, &under, &declared)?;
                 std::fs::remove_dir_all(&target).map_err(|error| {
                     refusal(
                         &display(root, &target),
@@ -1206,6 +1235,70 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
     }
     copy_tree(fetched, &target).map_err(|why| refusal(&name, &why))?;
     Ok(record)
+}
+
+/// Whether the vendored directory standing at the target is the package the
+/// artifact declares, read from the `package:` each of them states.
+///
+/// [`vendor`] derives the target from a name and the derivation is not
+/// injective, so a directory that carries a release record is not evidence that
+/// the record covers this package. This asks the directory what it is, and it
+/// is the whole of what keeps the removal below from taking a package it is not
+/// replacing.
+///
+/// **It runs before the first write and it writes nothing**, so it is one more
+/// read in the phase that already reads. That is where
+/// [#312](https://github.com/headwater-ai/headwater/issues/312) needs it: that
+/// change restructures the write half of `vendor` so no removal happens before a
+/// complete replacement exists, and a guard folded into the removal's error path
+/// would have to move with it.
+///
+/// **Every message here is composed from a declared value**, never from
+/// [`display`] of the target. [`identity`] sets the precedent and [`vendor`]'s
+/// doc comment records what it cost to learn it.
+///
+/// **A resident name that is not a name is refused rather than compared.** The
+/// manifest may be absent, unreadable, not a mapping, carry no `package:`, or
+/// carry a value the grammar refuses, and all five states say the same thing: no
+/// name to hold this artifact's against. A comparison would read the first four
+/// as "some other package" and say so in a sentence that names nothing, and it
+/// would read `package: ""` as a package called nothing at all.
+fn holds_the_same_package(
+    target: &Path,
+    under: &str,
+    declared: &str,
+) -> Result<(), Vec<ResolveError>> {
+    let resident = manifest_at(target)
+        .ok()
+        .and_then(|manifest| text(&manifest, "package"))
+        .filter(|resident| names_a_package(resident));
+
+    match resident {
+        Some(resident) if resident == declared => Ok(()),
+        Some(resident) => Err(refusal(
+            under,
+            &format!(
+                "this directory holds `{resident}` and the artifact declares `{declared}`. Two \
+                 package names reach one directory, because a `/` in a name becomes a `-` in \
+                 the directory the name is created under, so vendoring this artifact would \
+                 delete a package it is not replacing. Move `{under}` aside and vendor again: \
+                 the lookup under `{PACKAGES}/` reads the `package:` of each manifest and never \
+                 the name of the directory that carries it, so `{resident}` keeps resolving \
+                 from wherever you move it"
+            ),
+        )),
+        None => Err(refusal(
+            under,
+            &format!(
+                "this directory carries a release record, and `{under}/{MANIFEST}` states no \
+                 package name that can be read, so there is nothing here to hold the \
+                 `{declared}` this artifact declares against. Every directory this verb writes \
+                 carries a manifest that names a package, because an artifact without one is \
+                 refused before a byte is written, so a directory in this state was not written \
+                 by this verb. Move `{under}` aside and vendor again"
+            ),
+        )),
+    }
 }
 
 /// The package a fetched artifact is, taken from the file the digest covers,
