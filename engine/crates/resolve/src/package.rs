@@ -601,7 +601,7 @@ pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<Resol
     // which names neither the manifest nor the key and carries the `..` that
     // publication exists to remove. One position for one rule, and `stage` no
     // longer holds a second copy of the call.
-    reachable(&declared, &directory, &contents)?;
+    reachable(root, &declared, &directory, &contents)?;
 
     let source = taxonomy_source(root, &directory, &contents)?;
     agrees(&declared, &manifest, &source)?;
@@ -859,11 +859,22 @@ fn required_kind(key: &str) -> Option<Kind> {
 /// sentence, and it reads the keys the manifest declares rather than a list
 /// written here, so a key added to a manifest is covered on the day it arrives.
 ///
-/// **The escape is checked as well as the existence.** `contents.bundles` may
-/// name a path outside the package, because [`publish`] carries what it points
-/// at inside and rewrites the scalar. No other key has a rewrite, so a `..`
-/// under any other key would reach a consumer in the published manifest, which
-/// is the one thing spec 7 says no artifact carries.
+/// **The escape is checked by where a path resolves, not by the string a
+/// manifest writes.** [#303] found two mechanisms a lexical check over the
+/// declared string could not see: `sub/../taxonomy.yml` never leaves the
+/// package and used to be refused for it, and a symlink whose declared name
+/// carries no `..` at all can still resolve anywhere `read_tree` will then
+/// follow and copy. [`settled`] resolves what is on disk before the compare,
+/// so a symlink is judged by its target and a `..` that returns is not an
+/// escape. `contents.bundles` may still resolve outside the package, because
+/// [`publish`] carries what it points at inside and rewrites the scalar — but
+/// the bound is `root`, not the filesystem: a bundle library lives somewhere
+/// in this repository or it is refused, and `bundles: /` is one of the cases a
+/// fixture pins. No other key has a rewrite, so a path that reaches a consumer
+/// in the published manifest at all is the one thing spec 7 says no artifact
+/// carries.
+///
+/// [#303]: https://github.com/headwater-ai/headwater/issues/303
 ///
 /// **The kind is checked as well as the existence**, against
 /// [`required_kind`]. `exists` answers presence and not kind, so a `bundles`
@@ -890,11 +901,14 @@ fn required_kind(key: &str) -> Option<Kind> {
 /// **Every bad key is reported, not the first one.** [`agrees`] collects for the
 /// same reason: a second run should not have to discover the second defect.
 fn reachable(
+    root: &Path,
     manifest: &str,
     directory: &Path,
     contents: &Mapping,
 ) -> Result<(), Vec<ResolveError>> {
     let mut refused = Vec::new();
+    let real_directory = settled(directory);
+    let real_root = settled(root);
     for entry in contents {
         let key = entry.key.value.as_str();
         // A value that is not a scalar used to be skipped here, and skipping it
@@ -928,20 +942,36 @@ fn reachable(
             ));
             continue;
         }
-        let escapes = leaves(declared);
-        if escapes && key != BUNDLES {
+        let at = directory.join(declared);
+        let real_at = settled(&at);
+        let escapes = !at_or_inside(&real_directory, &real_at);
+        if key != BUNDLES {
+            if escapes {
+                refused.extend(refusal(
+                    manifest,
+                    &format!(
+                        "`contents.{key}` names {declared}, which resolves outside the package. \
+                         Only `contents.{BUNDLES}` may name a path outside the package, because \
+                         publishing carries what that one points at inside the artifact and \
+                         rewrites the scalar. Every other key would reach a consumer with a path \
+                         it cannot follow, whether the manifest wrote the `..` itself or a \
+                         symlink resolves to one"
+                    ),
+                ));
+                continue;
+            }
+        } else if !at_or_inside(&real_root, &real_at) {
             refused.extend(refusal(
                 manifest,
                 &format!(
-                    "`contents.{key}` names {declared}, which is outside the package. Only \
-                     `contents.{BUNDLES}` may name a path outside the package, because publishing \
-                     carries what that one points at inside the artifact and rewrites the scalar. \
-                     Every other key would reach a consumer with the `..` in it"
+                    "`contents.{BUNDLES}` names {declared}, which resolves outside this \
+                     repository. A bundle library may sit anywhere inside it, because publishing \
+                     carries it inside the artifact — it may not sit outside the tree the \
+                     publish is reading"
                 ),
             ));
             continue;
         }
-        let at = directory.join(declared);
         if !at.exists() {
             let outside = match escapes {
                 true => {
@@ -1000,7 +1030,8 @@ fn stage(
     let name = manifest_name(root, directory);
 
     let mut staged = Vec::new();
-    read_tree(directory, "", &mut staged)
+    let package_boundary = settled(directory);
+    read_tree(directory, "", &package_boundary, &mut staged)
         .map_err(|why| refusal(&display(root, directory), &why))?;
 
     let Some(bundles) = manifest
@@ -1018,8 +1049,18 @@ fn stage(
         return Ok(staged);
     }
 
-    read_tree(&directory.join(&scalar.text), BUNDLES, &mut staged)
-        .map_err(|why| refusal(&name, &why))?;
+    // The bundles walk is held to `root`, not to `directory`: `reachable`
+    // already refused a `contents.bundles` that resolves outside the
+    // repository, so a symlink this walk meets inside that bound is a path
+    // the same rule already let through.
+    let repo_boundary = settled(root);
+    read_tree(
+        &directory.join(&scalar.text),
+        BUNDLES,
+        &repo_boundary,
+        &mut staged,
+    )
+    .map_err(|why| refusal(&name, &why))?;
 
     let Some(at) = staged.iter().position(|file| file.path == MANIFEST) else {
         return Err(refusal(&name, "the package carries no manifest to rewrite"));
@@ -1036,8 +1077,26 @@ fn stage(
     Ok(staged)
 }
 
-/// Read a directory tree into the staged set, under a prefix inside the artifact.
-fn read_tree(from: &Path, prefix: &str, into: &mut Vec<Staged>) -> Result<(), String> {
+/// Read a directory tree into the staged set, under a prefix inside the
+/// artifact.
+///
+/// **Every entry is judged by where it resolves, not by what its own name
+/// says**, the same rule [`reachable`] already holds a declared `contents`
+/// path to. `contents` only names what a manifest chose to write down, and
+/// this walk reads whatever is actually under the directory whether a key
+/// names it or not — [#303] planted a symlink under a package directory that
+/// no manifest key declared, and this walk carried it into the artifact as an
+/// ordinary file, dereferenced. `boundary` is [`settled`] once by the caller:
+/// the package directory for the main walk, `root` for the bundles walk,
+/// matching the wider bound [`reachable`] holds `contents.bundles` to.
+///
+/// [#303]: https://github.com/headwater-ai/headwater/issues/303
+fn read_tree(
+    from: &Path,
+    prefix: &str,
+    boundary: &Path,
+    into: &mut Vec<Staged>,
+) -> Result<(), String> {
     let mut entries: Vec<PathBuf> = std::fs::read_dir(from)
         .map_err(|error| format!("cannot read {}: {error}", from.display()))?
         .filter_map(|entry| entry.ok().map(|entry| entry.path()))
@@ -1063,8 +1122,17 @@ fn read_tree(from: &Path, prefix: &str, into: &mut Vec<Staged>) -> Result<(), St
             true => name.to_string(),
             false => format!("{prefix}/{name}"),
         };
+        if !at_or_inside(boundary, &settled(&entry)) {
+            return Err(format!(
+                "cannot carry {}: it resolves outside the tree a publish may read from, whether \
+                 the entry itself is a symlink or an ancestor of it is. A publish carries only \
+                 what a package or its declared bundle library contains, dereferenced or not. \
+                 Point it inside that tree, or take it out of the package",
+                entry.display()
+            ));
+        }
         if entry.is_dir() {
-            read_tree(&entry, &path, into)?;
+            read_tree(&entry, &path, boundary, into)?;
             continue;
         }
         let bytes = std::fs::read(&entry)
