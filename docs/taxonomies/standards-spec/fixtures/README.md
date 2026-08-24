@@ -57,7 +57,7 @@ No rule reads the document after that. `engine/crates/check/src/coverage.rs` sta
 
 **The control that makes this decisive.** Assemble the same root with `docs/component-specs/ingest/functional.md` as the only document and change nothing else. The run reports **1 file under the corpus root, 1 untyped, 0 classified, 0 checked, 2 check instances, 0 findings**, and `headwater check --strict` exits **0**. One typo in one discriminator value takes a whole document out of every rule this engine carries, and the commit gate passes.
 
-This is [finding 4](../doctrine.md#findings) of this entry. It is not a defect of the base package and it is not a defect of this bundle. It is a property of every heterogeneous shelf, and the design-spec entry's `spec_series` shelf has carried it since the library opened.
+This is [finding 6](../doctrine.md#findings) of this entry. It is not a defect of the base package and it is not a defect of this bundle. It is a property of every heterogeneous shelf, and the design-spec entry's `spec_series` shelf has carried it since the library opened.
 
 ## The run against the same corpus with the bundle deselected
 
