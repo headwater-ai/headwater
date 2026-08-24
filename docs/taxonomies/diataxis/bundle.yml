@@ -104,3 +104,23 @@ add:
   # that kind lists the facet. Remove this line and the taxonomy stops
   # resolving; it does not stop checking.
   kinds.governed_document.facets.optional: [reader_mode]
+
+  # --- obligations ----------------------------------------------------------
+  # The one invariant of the tradition, and no control discharges it.
+  #
+  # `unverifiable` rather than `gap`, and the difference is the whole content of
+  # the declaration. A `gap` says a control is owed and names what would supply
+  # it. `unverifiable` says no control of this engine can ever supply it, and
+  # states why. The closed value set catches a document that names a fifth mode.
+  # It cannot catch a document that names one mode truthfully and then serves
+  # two, because to find that is to reason about what the prose asserts, and
+  # spec 1 draws the boundary that puts that outside the engine.
+  obligations.OB-DX-1:
+    statement: A document is in one reader mode
+    rationale: A page that serves two modes serves neither, and the reader who came for one of them reads past the other. That is the method's central claim, and a corpus that adopts the four modes and keeps mixed pages has taken the labels without the separation that makes them worth anything
+    class: coherence
+    prevents: content.unclear
+    severity: medium
+    disposition:
+      unverifiable:
+        reasoning: To decide that a page holds two modes is to reason about what the prose asserts, which spec 1 forswears. The value set catches a fifth name and no rule catches a truthful name over prose that serves two readers
