@@ -1,10 +1,10 @@
 ---
 id: HW-OBL-0122
-status: current
-status_since: 2026-08-14
+status: discharged
+status_since: 2026-08-24
 waiting_on: ruling
 summary: "A conformance rule set is held by the release digest and never by the lock, so a repository that takes its package from source can edit the rules its own gate reads."
-last_verified: 2026-08-14
+last_verified: 2026-08-24
 title: "Nothing holds the conformance rule set of a package a consumer takes from source"
 provenance:
   warrant: proposed
@@ -47,6 +47,10 @@ The second is defensible and it is not free. A publisher is the ordinary occupan
 
 ## Discharge
 
-Either of two things closes it. A digest over the rule set, recorded where a run can compare it. Or a line in the report of `headwater conformance` that names the rule set as unheld, whenever the package carries no release record.
+**This record is discharged.** [#336](https://github.com/headwater-ai/headwater/issues/336) moved the authored files of `headwater/standard` to `taxonomy-source/headwater-standard/`, outside `packages/`. `packages/headwater-standard/` now holds a real vendored artifact, published from that source and installed by `headwater taxonomy vendor`.
 
-The record closes when a run over a repository that takes its package from source states the standing of the rules it evaluated against.
+**The first of the two closing conditions this record named is the one that closed it.** A digest over the rule set, recorded where a run can compare it, was the first. `release::compute` takes a digest over every member of the vendored artifact, and `conformance.yml` is one of those members. `.headwater/taxonomy.yml` now pins that digest as `taxonomy.digest`, and `headwater conformance` reports `pin.current` as met against it.
+
+**The premise named in the context above no longer holds, and that is why the second condition does not apply.** This repository no longer takes its package from source. It takes a vendored artifact, on the same terms as any other consumer of `headwater/standard`. A report line naming the rule set as unheld would misstate the corpus this record now describes.
+
+**What changed is the directory, and not the rule.** `packages/headwater-standard/` was once both the maintained source and the name a consumer resolves against. No digest could stand over a directory that a person kept editing. Nobody edits it now. Only `taxonomy publish --from` and `taxonomy vendor` write there, so a release record is always the reason anything sits under that name.

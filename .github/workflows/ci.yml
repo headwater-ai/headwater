@@ -138,24 +138,26 @@ jobs:
         # thing that moves its status, and this step is where this repository
         # submits to its own rule set.
         #
-        # It blocks, and it blocks on a state that today is waived rather than
-        # met. `pin.current` is a gap here: this repository consumes the package
-        # it publishes, from source, so no release record stands behind it. The
-        # waiver in `.headwater/taxonomy.yml` carries an owner and an expiry of
-        # 2027-02-28, and this step is what gives that date teeth. On the first
-        # of March 2027 the waiver covers nothing, the rule under it is
-        # evaluated as though no waiver stood there, and this job goes red with
-        # no file edited. That is the anti-parking device working rather than a
-        # step that will need disabling.
+        # It blocks, and until #336 it blocked on a state that was waived rather
+        # than met: `pin.current` was a gap, because this repository consumed
+        # the package it publishes from source under `packages/`, which carried
+        # no release record. #336 moved the authored source to
+        # `taxonomy-source/headwater-standard/` and vendored a real artifact
+        # into `packages/headwater-standard/` in its place, so `pin.current` is
+        # met against a real digest now and the waiver this comment used to
+        # describe is gone from `.headwater/taxonomy.yml`.
         #
-        # The level the report states is unmoved by any of this. A waiver buys
-        # the exit status of this step and never a rung, so the report goes on
-        # saying that no level is reached until somebody publishes the package.
+        # The level the report states is a measurement and not a claim this
+        # step can move by itself: `--level L0` only fails the job when a rule
+        # under it is neither met nor waived. With `pin.current` met on its own
+        # terms, this step now blocks on `lock.current` alone, and a future
+        # regression that reopened the gap without a waiver would fail here
+        # rather than pass silently.
         #
-        # It needs no `--now`. The clock a waiver expiry is read against
-        # defaults to today, and this step sits above the line that fixes a date
-        # for the three runs after it, which share one value for a different
-        # reason.
+        # It needs no `--now`. Nothing this step reads takes a clock any more,
+        # now that no waiver expiry is in play, and it sits above the line that
+        # fixes a date for the three runs after it, which share one value for a
+        # different reason.
         run: ./engine/target/release/headwater conformance --level L0
       - name: The date this job evaluates at
         # A windowed participation expectation compares a declared origin date

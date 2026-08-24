@@ -346,7 +346,7 @@ conformance:
       reason: accepted_deviation
       owner: j.baxter
       until: 2027-02-28
-      note: this repository consumes the package it publishes, from source
+      note: an adopter who has not yet vendored a published artifact
 ```
 
 **The expiry is required, on the terms the local escape hatch already takes.** [Spec 4](04-assurance-model.md#suppression) makes the expiry of a suppression mandatory because the expiry of a waiver was mandatory first. An expired waiver is reported as expired, and the rule under it is then evaluated as though no waiver stood there. A waiver thus fails toward the rule rather than toward the deviation, and the day it expires is the day the gate goes red.
@@ -358,6 +358,16 @@ conformance:
 **A waiver reaches a conformance rule, and [spec 4](04-assurance-model.md#suppression) counts one against a check finding.** One mechanism carries both populations, because the four fields and the mandatory expiry are the same in each. What differs is which rule a waiver may name. `headwater conformance` reads the waivers that name a conformance rule. The coverage account of `headwater check` reads the waivers that name a check rule. That second reader is why the paragraph below needs its exclusion. It does not exist yet, so every waiver in this repository today names a conformance rule, and the coverage line says so.
 
 One rule class is outside the mechanism. A [withholding rule](06-engine-architecture.md#an-export-profile-carries-a-filter) is not waivable. A waiver buys time against an error that a later run corrects, and no later run undoes a disclosure.
+
+### Self-consumption is the vendored-bytes shape
+
+A repository can both publish a package and consume it. This repository does, for `headwater/standard`, and the two roles meet each other at the pin.
+
+**Two shapes reach a consumer, and this one takes the shape already named above.** [Consuming](#consuming) states it: the caller fetches the artifact, `vendor` checks it against the pin, and the lock that names the result is committed. That is vendored bytes under version control. The other shape a consumer could take is a fetch that continuous integration performs on every change. It commits nothing, and it checks the artifact fresh each time. This engine opens no socket anywhere ([spec 0](00-vision-and-scope.md#non-negotiables)). So the second shape needs code no crate of this engine carries, and no crate has ever needed it. The first shape needs none of that code. The artifact already sits in this repository's own history, because `vendor` wrote it there once.
+
+**Publishing and consuming share one lookup, and a publisher that also consumes meets that lookup from both sides.** `taxonomy publish` finds its source under `packages/` by the name a manifest declares. `taxonomy resolve` finds its source the same way. A repository whose authored source and vendored target are one directory meets `vendor`'s own refusal. `vendor` refuses to install over a directory that carries no release record. That directory is the source, and `vendor` never wrote it. Two directories under `packages/` that both declare one name do not solve this either. The lookup returns whichever one sorts first. That is [#354](https://github.com/headwater-ai/headwater/issues/354)'s own defect, met here by the shape of the design rather than by an accident of it.
+
+**So the authored source moves out of `packages/`, and `taxonomy publish` gains a way to read it there.** This repository's own source sits at `taxonomy-source/headwater-standard/`, outside `packages/` entirely. `taxonomy publish --from <dir>` reads the manifest at a directory the caller names. It bypasses the lookup by name. Nobody edits `packages/headwater-standard/` after that. Only `taxonomy publish --from` and `taxonomy vendor` write there. Both run by hand, whenever the source changes. So the directory always carries the release record that `vendor`'s own guard depends on.
 
 ## Arriving at a corpus cold
 
