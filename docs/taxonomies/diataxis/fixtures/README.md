@@ -70,7 +70,7 @@ It also reports that **`reader_mode` fixes `status` over the five documents that
 
 ## What a run does not report, and cannot
 
-**`beacon-overview.md` mixes two modes and the run says nothing about it.** The page argues for the model in prose and then lists the fields of the model in a table. It is the failure the method exists to name, and it is invisible to every rule in this engine. `OB-DX-1` is declared with an `unverifiable` disposition for exactly this, and the [doctrine](../doctrine.md#a-document-that-mixes-modes) states the reasoning.
+**`beacon-overview.md` mixes two modes and the run says nothing about the mixing.** The page argues for the model in prose and then lists the fields of the model in a table. It is the failure the method exists to name, and it is invisible to every rule in this engine. The run does report `identifier.unusable` against the file, along with every other `specification` here, and that finding is about the base package's identifier scheme rather than about this page's modes. `OB-DX-1` is declared with an `unverifiable` disposition for exactly this, and the [doctrine](../doctrine.md#a-document-that-mixes-modes) states the reasoning.
 
 **`0001-sign-every-payload.md` carries no `reader_mode` and nothing asks it to.** The facet is optional, so an absent value is not a finding. That is the intended outcome for a kind that no mode fits, and it means the corpus cannot tell a considered omission from an author who never read the doctrine. No declaration in this language can, because "required, except where the author judged it inapplicable" is not a thing a facet contract can say.
 

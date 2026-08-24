@@ -16,9 +16,9 @@
 #
 # Two things about this bundle are unusual, and both are deliberate.
 #
-# It writes exactly two operations. A facet-only entry has one declaration to
-# make and one place to attach it, and everything else here is the prose beside
-# it.
+# It writes three operations and no more. A facet-only entry has one declaration
+# to make, one place to attach it, and one invariant of its tradition to state,
+# and everything else here is the prose beside those three.
 #
 # It reaches `kinds.governed_document`, which is the base's abstract kind, and
 # not a kind of any other entry. That is what keeps it add-only and disjoint:
@@ -65,9 +65,15 @@ add:
   # that path dying at an edit. `mutable` would forbid the mode-partitioned site
   # that is the most common reason to adopt the method at all.
   #
-  # No `role`. The role registry is closed at six, and none of them is this. A
-  # projection that partitions on the value reads the facet by an address the
-  # adopter writes, which is what `group_by` already takes.
+  # No `role`. The role registry is closed at six, none of them is this, and a
+  # role is the only thing about a facet that an emitter may read by name.
+  #
+  # An adopter who wants the corpus laid out by mode writes this facet into
+  # `shelves.<s>.group_by`, which is a **shelf** member and not a projection
+  # member: the meta-schema puts `group_by` inside the shelf block and the
+  # projection block has no such key. So to partition by mode is a placement
+  # decision, it belongs to whoever owns the placement axis, and that is the
+  # adopter and never this entry. `volatility: stable` above is what permits it.
   facets.reader_mode:
     type: string
     values: [tutorial, how-to, reference, explanation]
