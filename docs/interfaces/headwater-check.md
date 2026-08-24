@@ -24,14 +24,14 @@ relations:
     headwater check [--strict] [--fix] [--no-cache] [--now <date>]
                     [--change <manifest>]
                     [--read-set <path>] [--register <path>]
-                    [--format text|json|sarif|markdown] [--root <path>]
-                    [--no-color]
+                    [--format text|json|sarif|markdown | --json]
+                    [--root <path>] [--no-color]
 
 The verb takes no operand. A word after `check` is refused, and the message names `check` as a verb the binary does not carry.
 
 ## Description
 
-`headwater check` runs every check that the taxonomy in `.headwater/taxonomy.lock` generates over the corpus that `.headwater/taxonomy.yml` declares. It reports the census, the graph, every finding, the coverage account and the obligation register. The report is one artifact in one of four vocabularies, and `--format` picks the vocabulary.
+`headwater check` runs every check that the taxonomy in `.headwater/taxonomy.lock` generates over the corpus that `.headwater/taxonomy.yml` declares. It reports the census, the graph, every finding, the coverage account and the obligation register. The report is one artifact in one of four vocabularies. `--format` picks the vocabulary, and `--json` is a second spelling of `--format json`.
 
 **The run is advisory unless `--strict` is passed.** A finding of any severity leaves the exit status at 0, which [spec 6](../spec/06-engine-architecture.md#exit-codes) fixes as the default. A tool that blocks on first contact is a tool somebody removes, and a removed tool catches nothing.
 
@@ -63,6 +63,7 @@ The verb takes no operand. A word after `check` is refused, and the message name
 | `--read-set <path>` | Write the read set of this run to a file as well as into the report. `headwater gate` is the reader. |
 | `--register <path>` | Write the obligation and control register of this run to a file as well as into the report. The bytes are the bytes already in the report. |
 | `--format text\|json\|sarif\|markdown` | The vocabulary the report is written in. `text` is the default and the one a person reads. `sarif` is what a forge ingests, `markdown` is a job summary or a review comment, and `json` is the finding shape that [spec 4](../spec/04-assurance-model.md) declares. Each target states what it could not carry. The flag moves no verdict and no exit status. |
+| `--json` | The same artifact `--format json` writes, byte for byte. A command line that states both is refused, because two names for one target is a question answered twice. The flag moves no verdict and no exit status. |
 | `--root <path>` | The repository to read. It defaults to the working directory. |
 | `--no-color` | Write no color. Every run of this binary already writes none, on either stream and in every format, so the flag confirms that state and changes no byte. It is declared so that a caller who writes it out of habit gets an answer rather than a refusal. |
 | `--wide` | How wide the help is laid out. It reaches this verb, and this verb refuses it: `headwater check --wide` exits 1 and names the reason. The flag lays out the help and lays out nothing else. The report of this verb is composed rather than laid out at a width. [#340](https://github.com/headwater-ai/headwater/issues/340) carries that width. `headwater check --wide --help` is the one run here that the flag does lay out. |
@@ -77,7 +78,7 @@ The verb takes no operand. A word after `check` is refused, and the message name
 
 | The reason | Where it is decided |
 |---|---|
-| A flag that names a value has none after it. Or `--now` is not `YYYY-MM-DD`. Or the command line holds a word this verb does not read | the parse, before the verb is entered |
+| A flag that names a value has none after it. Or `--now` is not `YYYY-MM-DD`. Or the command line holds a word this verb does not read. Or it names one target twice, as `--json` beside `--format` | the parse, before the verb is entered |
 | `--format` names a target that is not one of the four | `check`, before the corpus is walked |
 | The host has no readable clock and no `--now` was passed | `check`, before the corpus is walked |
 | `--change` names a manifest that did not read | `check`, before the corpus is walked |
@@ -93,7 +94,7 @@ Two of those are worth separating. **A refused patch is not a finding**, so no a
 
 ## Environment
 
-**No environment variable reaches this verb.** The date is `--now`, the corpus is `--root`, and the taxonomy is the lock. `HEADWATER_BLESS`, `HEADWATER_SHA256_ORACLE` and `HEADWATER_SARIF_VALIDATOR` are read by test targets alone and reach no shipped code path.
+**No environment variable reaches this verb.** The date is `--now`, the corpus is `--root`, and the taxonomy is the lock. Five variables are read by test targets alone and reach no shipped code path. `HEADWATER_BLESS` re-records a fixture. `HEADWATER_STOCK_VALIDATOR`, `HEADWATER_SARIF_VALIDATOR`, `HEADWATER_SHA256_ORACLE` and `HEADWATER_JSON_ORACLE` each turn a reading taken by a tool outside this repository from a note into a requirement. The continuous-integration job sets all four, so a lost dependency fails the job rather than going quiet.
 
 **One variable reaches this binary, and a run of this verb never reads it.** `COLUMNS` says how wide the help is laid out. `engine/crates/cli/src/paint.rs` reads it, and only where the raw command line carries `--wide`, which this verb refuses. That call is the one `std::env::var` under `engine/crates/` outside a test target. So a run of this verb is a function of the command line, the tree and the lock, and of nothing a shell exported.
 
