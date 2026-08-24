@@ -1216,6 +1216,14 @@ pub const BUNDLES: &str = "bundles";
 /// is closed rather than the message repaired. Every message [`identity`] adds
 /// is composed from `beside` and a literal key, and never from a derived path,
 /// which is why none of them can go false the same way.
+///
+/// **Both of the arms that survived now compose from `under` rather than from
+/// [`display`].** `under` is `packages/` and the flattened declared name, and
+/// [`identity`] has already held that name to the grammar, so there is no state
+/// in which it renders a path the sentence is not about. `display(root, &target)`
+/// was safe there too, but safe by an invariant one function away rather than by
+/// construction. The two render the same string for every name the grammar
+/// admits, so no message moved and no fixture changed.
 pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<ResolveError>> {
     let name = display(root, fetched);
     let record =
@@ -1238,13 +1246,13 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
             }
             Err(ReleaseError::Absent(_)) => {
                 return Err(refusal(
-                    &display(root, &target),
+                    &under,
                     "a directory is there and it carries no release record, so it is a package \
                      somebody maintains rather than one that was vendored. Move it before \
                      vendoring over it",
                 ))
             }
-            Err(error) => return Err(release::as_error(&display(root, &target), &error)),
+            Err(error) => return Err(release::as_error(&under, &error)),
         }
     }
     copy_tree(fetched, &target).map_err(|why| refusal(&name, &why))?;
