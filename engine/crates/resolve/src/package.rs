@@ -300,38 +300,117 @@ fn agrees(manifest: &str, declaration: &Mapping, source: &Source) -> Result<(), 
     };
     let mut refused = Vec::new();
 
-    let named = text(declaration, "package").unwrap_or_default();
-    let carries = text(root, "taxonomy").unwrap_or_default();
-    if named != carries {
-        refused.extend(refusal(
+    let named = text(declaration, "package");
+    let carries = text(root, "taxonomy");
+    match (named.as_deref(), carries.as_deref()) {
+        (Some(a), Some(b)) if a == b => {}
+        (Some(a), Some(b)) => refused.extend(refusal(
             manifest,
             &format!(
-                "this declares `package: {named}` and the taxonomy source it names, {}, declares \
-                 `taxonomy: {carries}`. One package states two names of itself, and each of them \
+                "this declares `package: {a}` and the taxonomy source it names, {}, declares \
+                 `taxonomy: {b}`. One package states two names of itself, and each of them \
                  is what some reader downstream takes the package to be",
                 source.name
             ),
-        ));
+        )),
+        (declaration_value, source_value) => refused.extend(absent(
+            manifest,
+            &source.name,
+            "name",
+            "package",
+            declaration_value,
+            "taxonomy",
+            source_value,
+        )),
     }
 
-    let declared = text(declaration, "version").unwrap_or_default();
-    let carried = text(root, "version").unwrap_or_default();
-    if declared != carried {
-        refused.extend(refusal(
+    let declared = text(declaration, "version");
+    let carried = text(root, "version");
+    match (declared.as_deref(), carried.as_deref()) {
+        (Some(a), Some(b)) if a == b => {}
+        (Some(a), Some(b)) => refused.extend(refusal(
             manifest,
             &format!(
-                "this declares version `{declared}` and the taxonomy source it names, {}, \
-                 declares `{carried}`. One package states two versions of itself, and each of \
+                "this declares version `{a}` and the taxonomy source it names, {}, \
+                 declares `{b}`. One package states two versions of itself, and each of \
                  them is what some reader downstream takes the package to be",
                 source.name
             ),
-        ));
+        )),
+        (declaration_value, source_value) => refused.extend(absent(
+            manifest,
+            &source.name,
+            "version",
+            "version",
+            declaration_value,
+            "version",
+            source_value,
+        )),
     }
 
     if refused.is_empty() {
         return Ok(());
     }
     Err(refused)
+}
+
+/// The absent-adjacent half of [`agrees`]'s comparison: one side of the pair
+/// is missing its key entirely, or both sides are. [`agrees`] itself peels off
+/// the case where both sides are present — equal or different — before falling
+/// through to this, so a call here only ever sees at least one `None`.
+///
+/// A key can be missing from a mapping entirely, or present with an empty or
+/// blank value; `text` already collapses "present but blank" (a YAML null,
+/// stored as the literal text `~`) and "present, explicit empty string" into
+/// ordinary `Some` values, so `None` here means only one thing: the key is
+/// absent. That distinction is what separates a message about a missing line
+/// from a message about a blank one.
+///
+/// `subject` names what is being compared ("name" or "version") for the
+/// both-absent message. `declaration_key`/`source_key` name the two keys —
+/// distinct for the name pair (`package` vs `taxonomy`), identical for the
+/// version pair (`version` vs `version`) — so the same wording serves both
+/// callers.
+fn absent(
+    manifest: &str,
+    source_name: &str,
+    subject: &str,
+    declaration_key: &str,
+    declaration_value: Option<&str>,
+    source_key: &str,
+    source_value: Option<&str>,
+) -> Vec<ResolveError> {
+    match (declaration_value, source_value) {
+        (None, None) => refusal(
+            manifest,
+            &format!(
+                "this declares no `{declaration_key}` key, and the taxonomy source it names, \
+                 {source_name}, declares no `{source_key}` key either. A package must state its \
+                 own {subject} in at least one of the two, and this one states it in neither"
+            ),
+        ),
+        (None, Some(b)) => refusal(
+            manifest,
+            &format!(
+                "this declares no `{declaration_key}` key, and the taxonomy source it names, \
+                 {source_name}, declares `{source_key}: {b}`. The {subject} is present in \
+                 {source_name} and absent from this manifest — one of the two lines is \
+                 missing, not blank"
+            ),
+        ),
+        (Some(a), None) => refusal(
+            manifest,
+            &format!(
+                "this declares `{declaration_key}: {a}` and the taxonomy source it names, \
+                 {source_name}, declares no `{source_key}` key. The {subject} is present in \
+                 this manifest and absent from {source_name} — one of the two lines is \
+                 missing, not blank"
+            ),
+        ),
+        (Some(_), Some(_)) => {
+            unreachable!("agrees peels off the both-present case before calling absent")
+        }
+    }
 }
 
 /// The bundles the consumer selected and the overlay it declares, on top of the
