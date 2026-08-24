@@ -590,8 +590,55 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
 /// [#271]: https://github.com/headwater-ai/headwater/issues/271
 pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<ResolveError>> {
     let (directory, manifest) = find(root, name)?;
-    let contents = contents_of(&manifest);
-    let declared = manifest_name(root, &directory);
+    publish_at(root, &directory, &manifest, out)
+}
+
+/// Write the published artifact of a package whose directory the caller
+/// already holds, bypassing [`find`].
+///
+/// [`find`] locates a package by the name its own manifest declares, under
+/// `packages/`, and that lookup is what [`publish`] and `taxonomy resolve`
+/// share. A repository that both publishes a package and consumes it cannot
+/// use that lookup for both roles over one directory: `taxonomy vendor`
+/// refuses to install over a directory that carries no release record, so it
+/// refuses the very directory a maintained source sits in, and two
+/// directories that both declare the package's name resolve to whichever
+/// sorts first — a collision [`vendor`]'s own doc comment already records
+/// under [#354](https://github.com/headwater-ai/headwater/issues/354). So a
+/// repository in that position keeps its authored source somewhere `find`
+/// never walks for consumption, and needs a way to publish it that does not
+/// go through `find` either.
+///
+/// This is that way. It reads the manifest at `directory` directly and runs
+/// every step [`publish`] runs beyond the lookup: the same reachability
+/// check, the same two-declarations-agree check, the same migration-payload
+/// check, and the same stage-then-write-then-unwind sequence. Nothing here is
+/// a new publish, which is why it is one line different from [`publish`]
+/// rather than a second copy of the function.
+///
+/// `directory` need not sit under `packages/` at all, and ordinarily does
+/// not: it is the caller's own maintained source, wherever that source lives
+/// in the repository.
+pub fn publish_from(
+    root: &Path,
+    directory: &Path,
+    out: &Path,
+) -> Result<Release, Vec<ResolveError>> {
+    let manifest = manifest_at(directory)?;
+    publish_at(root, directory, &manifest, out)
+}
+
+/// The publish sequence shared by [`publish`] and [`publish_from`], once each
+/// has settled on a directory and the manifest inside it by whichever route
+/// it uses.
+fn publish_at(
+    root: &Path,
+    directory: &Path,
+    manifest: &Mapping,
+    out: &Path,
+) -> Result<Release, Vec<ResolveError>> {
+    let contents = contents_of(manifest);
+    let declared = manifest_name(root, directory);
 
     // Every declared path is held to the tree here, before the first reader of
     // one runs. `taxonomy_source` reads `contents.taxonomy` for the resolver,
@@ -601,21 +648,21 @@ pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<Resol
     // which names neither the manifest nor the key and carries the `..` that
     // publication exists to remove. One position for one rule, and `stage` no
     // longer holds a second copy of the call.
-    reachable(root, &declared, &directory, &contents)?;
+    reachable(root, &declared, directory, &contents)?;
 
-    let source = taxonomy_source(root, &directory, &contents)?;
-    agrees(&declared, &manifest, &source)?;
+    let source = taxonomy_source(root, directory, &contents)?;
+    agrees(&declared, manifest, &source)?;
 
     let found = found::observe(out).map_err(|why| refusal(&display(root, out), &why))?;
 
-    migrations(root, &directory, &manifest, source)?;
+    migrations(root, directory, manifest, source)?;
 
-    let staged = stage(root, &directory, &manifest)?;
+    let staged = stage(root, directory, manifest)?;
 
     let written = put(out, &staged)
         .map_err(|why| refusal(&display(root, out), &why))
         .and_then(|()| {
-            let record = release::compute(out, &manifest)
+            let record = release::compute(out, manifest)
                 .map_err(|error| release::as_error(&display(root, out), &error))?;
             std::fs::write(out.join(release::RECORD), release::render(&record))
                 .map_err(|error| refusal(release::RECORD, &format!("cannot write it: {error}")))?;
