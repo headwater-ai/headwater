@@ -1236,9 +1236,9 @@ pub const BUNDLES: &str = "bundles";
 ///
 /// That holds under a copy that returns an error and under a process killed at
 /// any point in the run. The old tree is destroyed only after the new one
-/// stands in its place. What a failure or a kill can leave is a complete tree
-/// under a sibling name that no package name can spell, and never a partial
-/// tree under the package's own name. This is what
+/// stands in its place. What a failure or a kill can leave is a tree under a
+/// sibling name that no package name can spell, and never a partial tree under
+/// the package's own name. This is what
 /// [#312](https://github.com/headwater-ai/headwater/issues/312) asked for.
 ///
 /// The sequence is: clear this verb's own scratch, copy the artifact into
@@ -1283,11 +1283,14 @@ pub const BUNDLES: &str = "bundles";
 /// **Why the suffix is `~` and not a dot.** [`find`] sorts the entries of
 /// `packages/` and returns the first whose manifest declares the name, with no
 /// filter on the name of the entry itself, and it is the only listing of
-/// `packages/` anywhere in this engine. A dot-prefixed staging directory
+/// `packages/` in this engine that reads what it finds as a package.
+/// `markdown_under`, in the CLI, walks every directory under the root while
+/// `init` counts markdown, and `packages/` is one of them; it interprets
+/// nothing it finds there. A dot-prefixed staging directory
 /// therefore sorts *before* the real package and wins the lookup — measured,
-/// with `taxonomy resolve` reporting the staged version. `~` is 0x7E and
-/// [`names_a_package`] admits nothing above `_` at 0x5F, so no package the
-/// grammar accepts can derive one of these directories, and both of them sort
+/// with `taxonomy resolve` reporting the staged version. `~` is 0x7E, and the
+/// highest byte [`names_a_package`] admits is `z` at 0x7A, so no package the
+/// grammar accepts can derive one of these directories and both of them sort
 /// after every flattened name. `~aside` sorts before `~staged`, so a run killed
 /// in the one-rename window leaves [`find`] returning the old complete tree
 /// rather than the new one. **This leans on that sort order**, which
@@ -1313,6 +1316,15 @@ pub const BUNDLES: &str = "bundles";
 /// back, so it exits 0 with the package installed. Before this it exited 0 with
 /// an empty directory.
 ///
+/// **Every wrong version of this sequence compiles.** Swapping the two renames,
+/// dropping the clear of one sibling path, and giving the two siblings suffixes
+/// the grammar admits were each built and run: the type system refused none of
+/// them, so nothing here is unrepresentable and the fixtures are the whole of
+/// what holds the order. The clear of the staging path is the one step no other
+/// case in the suite pins, and
+/// `a_file_an_earlier_run_left_in_the_staging_directory_is_not_installed` is
+/// there because 48 of the other 49 pass with it deleted.
+///
 /// **Two `vendor` runs of one package contend for one staging path.** They
 /// contend for the target today, so nothing here is made worse, and there is no
 /// lock anywhere in this engine to hang a repair on.
@@ -1321,6 +1333,32 @@ pub const BUNDLES: &str = "bundles";
 /// under `packages/<name>~aside`, and nothing tells the adopter.** The next
 /// `vendor` of that package clears it, and [`find`] answers from it in the
 /// meantime, so the adopter still resolves.
+///
+/// **A kill inside the staging copy leaves a partial tree under
+/// `packages/<name>~staged`, and that is the one residue that is not complete.**
+/// Where a package is installed, [`find`] answers from the installed one, which
+/// sorts first, and never reaches it. Where none is — a first install — `find`
+/// has nothing else to answer from and reads the partial tree. Measured, over
+/// an artifact of 4003 files laid out so the manifest and the taxonomy source
+/// copy before the rest: a run killed at 103 of 4003 files resolved exactly as
+/// the complete package does. So a killed first install can leave a package
+/// that resolves and is not all there. The next `vendor` of that package clears
+/// it, and until then nothing says so. Staging one level down, under
+/// `packages/~staging/<name>`, closes it, because `find` reads one level and
+/// skips a directory with no manifest beside it. That is
+/// [#357](https://github.com/headwater-ai/headwater/issues/357), and it is not
+/// this change: what this change removes is the same state under the package's
+/// own name, where `find` reads it whether or not anything else is installed.
+///
+/// **Neither residue is inert to the rest of the engine, and whether it is
+/// depends on the adopter's configuration rather than on the residue.**
+/// [`headwater_census::walk`] walks the corpus root and every directory under
+/// it. This repository declares `corpus.root: docs`, so `packages/` is outside
+/// the walk and a residue changes no census number here. An adopter whose root
+/// includes `packages/` counts every file of one: measured by an independent
+/// verification pass on such an adopter, a `~staged` residue took the census
+/// from 55 files and 38 untyped to 107 and 76. Say which of the two
+/// configurations a claim about a residue is about.
 pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<ResolveError>> {
     let name = display(root, fetched);
     let record =
@@ -1339,15 +1377,32 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
     // The reading phase. Nothing below this writes until the staging copy, and
     // the staging copy does not touch `target`.
     let holds = settled(fetched);
-    for shown in [&under, &staged_under] {
-        let path = packages.join(shown.trim_start_matches(&format!("{PACKAGES}/")));
-        if inside(&holds, &settled(&path)) {
+    for (path, shown) in [
+        (&target, &under),
+        (&staged, &staged_under),
+        (&aside, &aside_under),
+    ] {
+        if inside(&holds, &settled(path)) {
             return Err(refusal(
                 &name,
                 &format!(
                     "this artifact directory holds `{shown}` inside it, so installing it would \
                      copy the artifact into a directory inside itself and never finish. Vendor \
                      from a copy of the artifact that sits outside `{PACKAGES}/`"
+                ),
+            ));
+        }
+    }
+    for (path, shown) in [(&staged, &staged_under), (&aside, &aside_under)] {
+        if at_or_inside(&settled(path), &holds) {
+            return Err(refusal(
+                &name,
+                &format!(
+                    "`{shown}` is a directory this verb writes and removes while it installs a \
+                     package, so it cannot also be the artifact to install: this run would have \
+                     deleted it before reading it. A run that was stopped part-way leaves the \
+                     package under that name. Move it outside `{PACKAGES}/` and vendor it from \
+                     there"
                 ),
             ));
         }
@@ -1503,6 +1558,20 @@ fn settled(path: &Path) -> PathBuf {
 /// than being refused.
 fn inside(ancestor: &Path, path: &Path) -> bool {
     path != ancestor && path.starts_with(ancestor)
+}
+
+/// Whether `path` is `ancestor` or sits under it.
+///
+/// **The two sibling names need the equality that [`inside`] excludes, and the
+/// exclusion was wrong for them.** `packages/<name>` may be handed to
+/// [`vendor`] as the artifact, because a package vendors over itself. The two
+/// directories `vendor` stages through may not, because the first thing the
+/// write phase does is remove them: handed one of them, the verb deletes the
+/// artifact it verified a moment earlier. The staging path is worse than the
+/// aside path, because `copy_tree` recreates what it deleted as an empty
+/// directory and copies zero files out of it without an error.
+fn at_or_inside(ancestor: &Path, path: &Path) -> bool {
+    path.starts_with(ancestor)
 }
 
 /// Whether the vendored directory standing at the target is the package the

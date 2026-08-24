@@ -2286,9 +2286,9 @@ fn an_artifact_that_holds_the_target_inside_it_is_refused() {
 /// declares the name, with no filter on the name of the entry itself, so a
 /// staging tree — which carries a manifest like any other — answers the lookup
 /// if it sorts first. A dot-prefixed name does sort first, measured. `~` is
-/// 0x7E and the package-name grammar admits nothing above `_` at 0x5F, so the
-/// two names this verb writes sort after every package directory and no package
-/// can be created under one of them.
+/// 0x7E, and the highest byte the package-name grammar admits is `z` at 0x7A, so
+/// the two names this verb writes sort after every package directory and no
+/// package can be created under one of them.
 ///
 /// **The vendor at the end is what holds the second property.** The residues
 /// here are planted by hand, because a vendor that succeeded leaves none, and a
@@ -2334,6 +2334,151 @@ fn a_directory_this_verb_stages_into_never_wins_the_lookup() {
         vec!["acme-fixture".to_string()],
         "the vendor left the residues of an earlier run standing, so the names this file plants \
          are not the names the verb writes"
+    );
+}
+
+/// An artifact that is one of the directories this verb stages through is
+/// refused, and the artifact is still there.
+///
+/// # The reachable state, and why the natural gesture is the destructive one
+///
+/// A run killed after the staging copy and before the first rename leaves
+/// exactly `packages/<name>~staged`, complete, with nothing at the target. A run
+/// killed between the two renames leaves `packages/<name>~aside`, complete, with
+/// nothing at the target. In both states the adopter holds one copy of the
+/// package, it is under a name they did not choose, and pointing this verb at it
+/// is what finishing the install looks like from outside. The refusal for the
+/// second one says the package "is complete under `packages/<name>~aside`", so
+/// the message names the directory the gesture would use.
+///
+/// The first step of the write phase clears both of those paths. Handed one of
+/// them as the artifact, the verb deletes the artifact it verified moments
+/// earlier. `copy_tree` then calls `create_dir_all(to)` before `read_dir(from)`,
+/// and for the staging path `to` and `from` are one directory, so the delete is
+/// undone as an empty directory, the listing succeeds over it, nothing copies,
+/// the swap installs it and the verb **exits 0 over an empty package** with a
+/// success line naming the release. The aside path fails `read_dir` instead and
+/// refuses, having eaten the adopter's only complete copy.
+///
+/// So this is [#312](https://github.com/headwater-ai/headwater/issues/312)'s own
+/// defect, reachable only through a state the fix for it creates.
+#[test]
+fn an_artifact_that_is_a_directory_this_verb_stages_through_is_refused() {
+    for suffix in [package::STAGED, package::ASIDE] {
+        let case = format!("staged-as-artifact{suffix}");
+        let scratch = Scratch::new(&case);
+        let (adopter, _, digest) = adopter_holding(&scratch);
+
+        // The state a kill leaves: one complete copy, under the sibling name,
+        // and nothing at the target.
+        let residue = adopter
+            .join(package::PACKAGES)
+            .join(format!("acme-fixture{suffix}"));
+        std::fs::rename(
+            adopter.join(package::PACKAGES).join("acme-fixture"),
+            &residue,
+        )
+        .expect("the package moves to the name a kill would leave it under");
+
+        let errors = package::vendor(&adopter, &residue, &digest)
+            .expect_err("an artifact that is a directory this verb stages through is refused");
+
+        let mut left: Vec<String> = std::fs::read_dir(&residue)
+            .expect("the artifact this verb refused is still a directory")
+            .filter_map(|entry| entry.ok())
+            .map(|entry| entry.file_name().to_string_lossy().into_owned())
+            .collect();
+        left.sort();
+        assert_eq!(
+            left,
+            vec![
+                "package.yml".to_string(),
+                "release.yml".to_string(),
+                "taxonomy.yml".to_string()
+            ],
+            "the verb took files out of the artifact it was handed"
+        );
+        assert_eq!(
+            package::find_version(&adopter, "acme/fixture"),
+            Some("1.0.0".to_string()),
+            "the package the adopter still held stopped resolving"
+        );
+
+        let said = errors
+            .iter()
+            .map(|error| format!("{error}"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(
+            said.contains("cannot also be the artifact to install"),
+            "the refusal does not say why this directory cannot be the artifact: {said}"
+        );
+
+        // And the gesture that does work is the one the refusal names.
+        let moved = scratch.path().join(format!("moved{suffix}"));
+        std::fs::rename(&residue, &moved).expect("the artifact moves out of `packages/`");
+        package::vendor(&adopter, &moved, &digest)
+            .expect("the artifact vendors once it sits outside `packages/`");
+        assert_eq!(
+            packages_under(&adopter),
+            vec!["acme-fixture".to_string()],
+            "the install from outside `packages/` did not land cleanly"
+        );
+    }
+}
+
+/// A file left in the staging directory by an earlier run does not reach the
+/// package this run installs.
+///
+/// # The regression this exists for passes every other case in this file
+///
+/// The write phase clears both sibling paths before it stages. Clearing only
+/// the aside path, and leaving the staging path as it is, passes 48 of the 49
+/// cases here: `copy_tree` calls `create_dir_all` on a directory that is
+/// already there, writes the artifact over the top of whatever it holds, and
+/// the swap then installs the union of the two. Every assertion about the
+/// *artifact's* files still holds. What does not hold is that the installed
+/// package is only the artifact.
+///
+/// So the assertion is over a file that no artifact carries. A stale staging
+/// directory is what a run killed inside the staging copy leaves, which is a
+/// state this change creates and the doc comment on `vendor` records, so this
+/// is not a hypothetical input.
+#[test]
+fn a_file_an_earlier_run_left_in_the_staging_directory_is_not_installed() {
+    let scratch = Scratch::new("stale-staging");
+    let (adopter, _, _) = adopter_holding(&scratch);
+
+    let stale = adopter
+        .join(package::PACKAGES)
+        .join(format!("acme-fixture{}", package::STAGED));
+    std::fs::create_dir_all(&stale).expect("the stale staging directory is made");
+    std::fs::write(stale.join("poison.txt"), "not from any artifact")
+        .expect("the stale directory holds a file no artifact carries");
+
+    let later_root = publisher_declaring_at(&scratch, "later", "acme/fixture", "2.0.0");
+    let later_out = scratch.path().join("artifact-2");
+    let later = package::publish(&later_root, "acme/fixture", &later_out).expect("2.0.0 publishes");
+    package::vendor(&adopter, &later_out, &later.digest).expect("2.0.0 vendors over 1.0.0");
+
+    assert_eq!(
+        installed_files(&adopter),
+        vec![
+            "package.yml".to_string(),
+            "release.yml".to_string(),
+            "taxonomy.yml".to_string()
+        ],
+        "a file an earlier run left in the staging directory reached the installed package"
+    );
+    assert_eq!(
+        package::find_version(&adopter, "acme/fixture"),
+        Some("2.0.0".to_string()),
+        "the upgrade did not land over the stale staging directory"
+    );
+    assert_eq!(
+        packages_under(&adopter),
+        vec!["acme-fixture".to_string()],
+        "the stale staging directory is still there after a vendor that succeeded"
     );
 }
 
