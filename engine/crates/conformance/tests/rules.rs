@@ -647,3 +647,119 @@ fn every_waiver_this_repository_declares_names_a_shipped_rule() {
         assert!(!waiver.owner.is_empty());
     }
 }
+
+// ---------------------------------------------------------------------------
+// #366's follow-up: a diverged installed package is not a rule set to trust
+// ---------------------------------------------------------------------------
+
+/// A scratch package under `packages/`, with a manifest, a taxonomy source and
+/// a conformance rule set naming two rules on one level — `lock.current` and
+/// `corpus.classified`, both real readings — and a real release record over
+/// all three files, computed the way `taxonomy publish` computes one.
+fn diverged_package_root(label: &str) -> (PathBuf, PathBuf) {
+    let root = std::env::temp_dir().join(format!(
+        "headwater-conformance-rules-{}-{label}",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&root);
+    let dir = root.join("packages/acme-taxonomy");
+    std::fs::create_dir_all(&dir).expect("the package directory");
+    std::fs::write(
+        dir.join("package.yml"),
+        "package: acme/taxonomy\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  \
+         conformance: conformance.yml\n",
+    )
+    .expect("the manifest");
+    std::fs::write(
+        dir.join("taxonomy.yml"),
+        "taxonomy: acme/taxonomy\nversion: 1.0.0\n",
+    )
+    .expect("a source");
+    std::fs::write(
+        dir.join("conformance.yml"),
+        "conformance:\n  format: 1\n  rules:\n    - name: lock.current\n      title: The lock is \
+         current\n      decided_by: tree\n      statement: it is\n      remediation: run resolve\n    \
+         - name: corpus.classified\n      title: Everything is classified\n      decided_by: tree\n      \
+         statement: it is\n      remediation: declare a kind\n  levels:\n    - name: L0\n      title: \
+         Pointed at\n      rules: [lock.current, corpus.classified]\n",
+    )
+    .expect("the rule set");
+
+    let members = headwater_resolve::release::members(&dir).expect("the members");
+    let release = headwater_resolve::release::Release {
+        package: "acme/taxonomy".to_string(),
+        version: "1.0.0".to_string(),
+        requires_engine: None,
+        digest: headwater_resolve::release::digest_of(&members),
+        members,
+    };
+    std::fs::write(
+        dir.join(headwater_resolve::release::RECORD),
+        headwater_resolve::release::render(&release),
+    )
+    .expect("the record");
+    (root, dir)
+}
+
+fn taxonomy_consumer() -> headwater_resolve::package::Consumer {
+    headwater_resolve::package::Consumer {
+        package: "acme/taxonomy".to_string(),
+        version: "1.0.0".to_string(),
+        bundles: Vec::new(),
+        digest: None,
+        overlay: None,
+        corpus_root: "docs".to_string(),
+        exclusions: Vec::new(),
+    }
+}
+
+/// **The plain case: any hand edit to a vendored `conformance.yml` is refused
+/// before a single rule is read.**
+#[test]
+fn a_hand_edited_conformance_file_is_refused_before_any_rule_is_read() {
+    let (root, dir) = diverged_package_root("plain-edit");
+    let consumer = taxonomy_consumer();
+    assert!(
+        headwater_conformance::at(&root, &consumer).is_ok(),
+        "the freshly published rule set does not read"
+    );
+
+    let path = dir.join("conformance.yml");
+    let mut text = std::fs::read_to_string(&path).expect("it reads");
+    text.push_str("\n# hand-edited, never through `vendor`\n");
+    std::fs::write(&path, text).expect("the hand edit writes");
+
+    let refused = headwater_conformance::at(&root, &consumer)
+        .expect_err("a diverged rule set must not read as one this run can trust");
+    assert!(matches!(refused, SetError::Diverged(_)), "{refused}");
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// **The kill shot: stripping a rule out of the very level it would have
+/// reported the tamper under does not let the level pass, because the whole
+/// file is refused before any level is read at all.** Before `at` checked
+/// divergence, this edit would have narrowed `L0` to `corpus.classified`
+/// alone, and a run over the narrowed level would never have asked
+/// `lock.current` anything.
+#[test]
+fn stripping_a_rule_out_of_its_own_level_does_not_let_the_level_pass() {
+    let (root, dir) = diverged_package_root("kill-shot");
+    let consumer = taxonomy_consumer();
+
+    let path = dir.join("conformance.yml");
+    let text = std::fs::read_to_string(&path).expect("it reads");
+    assert!(text.contains("rules: [lock.current, corpus.classified]"));
+    let narrowed = text.replace(
+        "rules: [lock.current, corpus.classified]",
+        "rules: [corpus.classified]",
+    );
+    std::fs::write(&path, narrowed).expect("the narrowed level writes");
+
+    let refused = headwater_conformance::at(&root, &consumer)
+        .expect_err("a level narrowed inside a diverged file must not be read as trustworthy");
+    assert!(
+        matches!(refused, SetError::Diverged(_)),
+        "the refusal is not the divergence this test provoked: {refused}"
+    );
+    let _ = std::fs::remove_dir_all(&root);
+}
