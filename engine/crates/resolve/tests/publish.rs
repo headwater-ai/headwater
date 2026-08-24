@@ -3359,3 +3359,60 @@ fn the_corrected_spec_seven_example_publishes_and_its_bundle_reaches_a_consumer(
         "the taxonomy and the one bundle it selects"
     );
 }
+
+/// A manifest under `packages/` that parses but is not a mapping is named in
+/// the refusal, distinguishably from a plain "nothing declares that name".
+///
+/// Before this, `find` skipped a manifest of this shape in silence and the
+/// walk fell through to the same "no package under `packages/` declares"
+/// message a typo in the requested name produces. A reader chasing a typo
+/// and a reader chasing a corrupt, unrelated manifest saw the identical
+/// sentence.
+#[test]
+fn a_broken_manifest_under_packages_is_named_in_the_refusal() {
+    let scratch = Scratch::new("broken-manifest");
+    scratch.write("root/packages/broken/package.yml", "- one\n- two\n");
+    let root = scratch.path().join("root");
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish(&root, "acme/fixture", &out)
+        .expect_err("nothing here declares acme/fixture, and the broken sibling cannot either");
+    let message = headwater_resolve::render_errors(&refused);
+
+    assert!(
+        message.contains("packages/broken/package.yml"),
+        "the broken manifest is not named:\n{message}"
+    );
+    assert!(
+        message.contains("not a mapping"),
+        "the broken manifest's shape is not stated, so it reads like the plain \
+         not-found case:\n{message}"
+    );
+    assert!(
+        message.contains("no package under"),
+        "the summary line is dropped rather than joined beside the broken-file line:\n{message}"
+    );
+}
+
+/// A broken, unrelated manifest elsewhere under `packages/` does not stop a
+/// package that resolves fine from resolving.
+///
+/// This is the case that separates two designs `find` could have taken: stop
+/// the walk the moment any manifest fails to parse into a mapping, or keep
+/// looking and report the broken sibling only when the search comes up empty.
+/// The broken directory (`aaa-broken`) sorts before the real one
+/// (`acme-fixture`), so a hard-stop implementation would abort here before
+/// ever reaching the package this call actually asks for; the ruled design
+/// finds it anyway.
+#[test]
+fn a_broken_sibling_manifest_does_not_stop_a_package_that_resolves_fine() {
+    let scratch = Scratch::new("broken-sibling");
+    scratch.write("root/packages/aaa-broken/package.yml", "- one\n- two\n");
+    let root = publisher_of(&scratch, "root", "acme/fixture");
+    let out = scratch.path().join("artifact");
+
+    let record = package::publish(&root, "acme/fixture", &out)
+        .expect("a broken, unrelated sibling does not stop a package that resolves fine");
+
+    assert_eq!(record.package, "acme/fixture");
+}

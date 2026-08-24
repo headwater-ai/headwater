@@ -432,7 +432,6 @@ impl Adopted {
     }
 }
 
-/// The package directory whose manifest declares `name`.
 /// The version a package on disk declares, or `None` where no package under
 /// `packages/` carries that name.
 ///
@@ -477,6 +476,27 @@ pub fn manifest_at(directory: &Path) -> Result<Mapping, Vec<ResolveError>> {
     })
 }
 
+/// The directory a package sits in, and the manifest it declares.
+///
+/// # A manifest that is not a mapping is reported, and does not stop the search
+///
+/// `packages/` holds nothing anybody hand-edits — spec 7: only `taxonomy
+/// vendor` and `taxonomy publish --from` write under it — so a manifest that
+/// parses into something that is not a mapping is always an anomaly, never a
+/// scratch file this walk should quietly step around. But the anomaly belongs
+/// to the directory it sits in, not to the name being searched for, and the
+/// name asked for may still sit in a different, well-formed directory: a
+/// residue `vendor` already tolerates (`packages/<name>~aside`,
+/// `packages/~staging`), or simply a different package that happens to be
+/// broken while the one being resolved is not. [`sources`], [`publish`],
+/// [`find_version`], [`located`] and `vendor`'s own collision guard all want
+/// the package that resolves over a report about the first thing that went
+/// wrong, when the two are not the same directory. So this walk remembers
+/// every non-mapping manifest it meets and keeps looking; a match found
+/// afterward returns `Ok` as though the broken sibling had never been read.
+/// Only where the walk exhausts without a match do the remembered manifests
+/// join the refusal, ahead of the `no package... declares` line they would
+/// otherwise be mistaken for.
 fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>> {
     let packages = root.join(PACKAGES);
     let mut entries: Vec<PathBuf> = std::fs::read_dir(&packages)
@@ -490,6 +510,7 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
         .collect();
     entries.sort();
 
+    let mut broken: Vec<ResolveError> = Vec::new();
     for directory in entries {
         let manifest = directory.join(MANIFEST);
         if !manifest.is_file() {
@@ -497,6 +518,10 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
         }
         let loaded = crate::source::load(&manifest)?;
         let Some(map) = loaded.value.as_map() else {
+            broken.extend(refusal(
+                &manifest_name(root, &directory),
+                "the manifest is not a mapping",
+            ));
             continue;
         };
         if text(map, "package").as_deref() == Some(name) {
@@ -504,10 +529,11 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
         }
     }
 
-    Err(refusal(
+    broken.extend(refusal(
         PACKAGES,
         &format!("no package under `{PACKAGES}/` declares `{name}`"),
-    ))
+    ));
+    Err(broken)
 }
 
 /// Write the published artifact of a package into `out`.
