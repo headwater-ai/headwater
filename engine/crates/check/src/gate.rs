@@ -57,6 +57,7 @@
 
 use crate::context::Date;
 use crate::instance::Input;
+use headwater_yaml::json::Json;
 
 /// A read set as a gate reads it back.
 ///
@@ -195,6 +196,67 @@ pub enum Reason {
 }
 
 impl Reason {
+    /// The name a caller branches on.
+    ///
+    /// Deliberately not the first words of [`Reason::render`]. That is a
+    /// sentence written for a person and it is rewritten whenever the wording
+    /// improves; this is a token, and a consumer of `headwater gate --json`
+    /// that switched on it keeps working across such a rewrite.
+    pub fn token(&self) -> &'static str {
+        match self {
+            Reason::LockMoved { .. } => "lock_moved",
+            Reason::Barrier { .. } => "barrier",
+            Reason::ChangeScoped { .. } => "change_scoped",
+            Reason::DayMoved { .. } => "day_moved",
+            Reason::Moved { .. } => "moved",
+            Reason::Gone { .. } => "gone",
+            Reason::Unhashed { .. } => "unhashed",
+        }
+    }
+
+    /// One reason as JSON: the token, the sentence, and the values that
+    /// sentence was composed from.
+    ///
+    /// The values are members rather than only prose, because the whole point
+    /// of the machine form is that a caller does not have to take a digest back
+    /// out of a sentence. `says` is [`Reason::render`] rather than a second
+    /// wording of it.
+    fn json(&self) -> Json {
+        let mut members: Vec<(&'static str, Json)> = vec![
+            ("reason", Json::string(self.token())),
+            ("says", Json::string(self.render())),
+        ];
+        let text = |value: &String| Json::string(value.clone());
+        match self {
+            Reason::LockMoved { recorded, found } => {
+                members.extend([("recorded", text(recorded)), ("found", text(found))]);
+            }
+            Reason::Barrier { rule } | Reason::ChangeScoped { rule } => {
+                members.push(("rule", text(rule)));
+            }
+            Reason::DayMoved {
+                rule,
+                recorded,
+                asked,
+            } => members.extend([
+                ("rule", text(rule)),
+                ("recorded", Json::string(recorded.render())),
+                ("asked", Json::string(asked.render())),
+            ]),
+            Reason::Moved {
+                path,
+                recorded,
+                found,
+            } => members.extend([
+                ("path", text(path)),
+                ("recorded", text(recorded)),
+                ("found", text(found)),
+            ]),
+            Reason::Gone { path } | Reason::Unhashed { path } => members.push(("path", text(path))),
+        }
+        Json::object(members)
+    }
+
     pub fn render(&self) -> String {
         match self {
             Reason::LockMoved { recorded, found } => {
@@ -274,14 +336,54 @@ impl Verdict {
                 }
             }
         }
-        let _ = writeln!(
-            out,
-            "this states nothing about a document this tree gained. A read set lists what a run \
-             read, and never that those were all there was"
-        );
+        let _ = writeln!(out, "{LIMIT}");
         out
     }
+
+    /// The verdict as JSON, in the shape `headwater gate --json` writes.
+    ///
+    /// # Why `limit` is a member whose value never varies
+    ///
+    /// [`Verdict::render`] prints [`LIMIT`] on a carrying verdict as well as on
+    /// a voided one, and the doc comment above says why: a gate that printed
+    /// "the verdict carries" alone would be read as "the corpus is green". A
+    /// machine reader makes that mistake more easily than a person does, not
+    /// less, because `"carries": true` is exactly the shape a caller wants to
+    /// branch on. So the sentence is here, from the same constant the report
+    /// prints, and a consumer that renders this document to a person renders
+    /// the caveat with it.
+    ///
+    /// The destructuring below is exhaustive on purpose: a field added to
+    /// [`Verdict`] and not to this document does not compile.
+    pub fn render_json(&self) -> String {
+        let Verdict { reasons, listed } = self;
+        Json::object([
+            ("version", Json::string(VERSION)),
+            ("carries", Json::Bool(self.carries())),
+            ("listed", Json::Raw(listed.to_string())),
+            (
+                "reasons",
+                Json::Array(reasons.iter().map(Reason::json).collect()),
+            ),
+            ("limit", Json::string(LIMIT)),
+        ])
+        .render_pretty()
+    }
 }
+
+/// The version of the document [`Verdict::json`] writes.
+///
+/// The document's own shape and never the engine's, which is the rule the
+/// finding shape states for the same reason: a consumer outside this repository
+/// holds no clone of the engine, so the bytes have to name what they are.
+pub const VERSION: &str = "1.0";
+
+/// The sentence that keeps this artifact honest, printed on every verdict.
+///
+/// One constant with two readers — [`Verdict::render`] and [`Verdict::json`] —
+/// rather than two literals that agree until somebody edits one of them.
+pub const LIMIT: &str = "this states nothing about a document this tree gained. A read set lists \
+                         what a run read, and never that those were all there was";
 
 /// Hold a published read set against the tree in front of it.
 ///

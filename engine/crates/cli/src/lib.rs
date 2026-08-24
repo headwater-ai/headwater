@@ -60,6 +60,36 @@
 
 pub mod paint;
 
+/// What `--json` says on a verb that also declares `--format`.
+///
+/// One constant with four readers rather than four literals that agree until
+/// somebody edits one of them. It is not the copy of the verb list that
+/// [#257](https://github.com/headwater-ai/headwater/issues/257) rules against:
+/// it is one sentence about one flag, and the flag means the same thing at
+/// every declaration of it because [`Verb`]'s dispatch maps all four onto the
+/// one value `--format json` already named.
+///
+/// **Stating both is refused and never resolved.** `conflicts_with` is what
+/// refuses it, so the refusal is `clap`'s message under this binary's exit 1.
+/// The alternative was a precedence rule, and a precedence rule is how a caller
+/// states a value and the engine substitutes its own — which is the defect
+/// [#337](https://github.com/headwater-ai/headwater/issues/337) and
+/// [#338](https://github.com/headwater-ai/headwater/issues/338) are open about.
+const JSON_BESIDE_FORMAT: &str = "write this run as one JSON document on standard output. It is \
+    the artifact `--format json` writes, byte for byte. A run that states both is refused rather \
+    than resolved, because two names for one target is a question answered twice";
+
+/// What `--json` says on a verb that declares no `--format`.
+///
+/// These four have two renderings and not four, so the flag is a boolean rather
+/// than a second `--format` whose closed set would hold two values. `--format`
+/// stays where it is on the four verbs that have it, because #321 asks that
+/// `--json` be accepted where `--format json` already is and never that it
+/// replace anything.
+const JSON_ALONE: &str = "write this run as one JSON document on standard output, instead of the \
+    report a person reads. The document names its own shape in a `version` member, so a consumer \
+    pins that rather than the version of this engine. It moves no exit status";
+
 use clap::{Command, CommandFactory, FromArgMatches, Parser, Subcommand};
 use headwater_check::Date;
 use std::path::PathBuf;
@@ -235,6 +265,8 @@ pub enum Verb {
                     declares, for an adapter nobody here wrote. Each names what it could not carry"
         )]
         format: Option<String>,
+        #[arg(long, conflicts_with = "format", help = JSON_BESIDE_FORMAT)]
+        json: bool,
     },
     Gate {
         // Optional here and required by the verb, so that the refusal a caller
@@ -256,6 +288,8 @@ pub enum Verb {
                     that read the clock is void on any other day"
         )]
         now: Option<Date>,
+        #[arg(long, help = JSON_ALONE)]
+        json: bool,
     },
     Conformance {
         #[arg(
@@ -273,6 +307,8 @@ pub enum Verb {
             help = "the date to evaluate against, as `YYYY-MM-DD`. Defaults to today"
         )]
         now: Option<Date>,
+        #[arg(long, help = JSON_ALONE)]
+        json: bool,
     },
     Route {
         #[arg(
@@ -290,6 +326,8 @@ pub enum Verb {
                     default"
         )]
         budget: Option<usize>,
+        #[arg(long, help = JSON_ALONE)]
+        json: bool,
     },
     Explain {
         #[arg(
@@ -298,6 +336,8 @@ pub enum Verb {
                     it declares"
         )]
         target: Option<String>,
+        #[arg(long, help = JSON_ALONE)]
+        json: bool,
     },
     Query {
         #[arg(
@@ -314,6 +354,8 @@ pub enum Verb {
                     numbers for a program. Neither carries a reading the store does not hold"
         )]
         format: Option<String>,
+        #[arg(long, conflicts_with = "format", help = JSON_BESIDE_FORMAT)]
+        json: bool,
     },
     Mcp {
         #[arg(
@@ -476,6 +518,8 @@ pub enum Verb {
                     produces. It holds every export the taxonomy names a path for to regeneration"
         )]
         check: bool,
+        #[arg(long, conflicts_with = "format", help = JSON_BESIDE_FORMAT)]
+        json: bool,
     },
     Sweep {
         #[command(subcommand)]
@@ -556,6 +600,8 @@ pub enum SweepWord {
                     shape spec 4 declares with the provenance and the evidence a sweep adds"
         )]
         format: Option<String>,
+        #[arg(long, conflicts_with = "format", help = JSON_BESIDE_FORMAT)]
+        json: bool,
     },
     #[command(external_subcommand)]
     Other(Vec<String>),

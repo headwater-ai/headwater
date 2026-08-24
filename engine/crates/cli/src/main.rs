@@ -165,6 +165,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             read_set,
             register,
             format,
+            json,
         } => check(
             root,
             Asked {
@@ -174,18 +175,22 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 now,
                 read_set,
                 register_out: register,
-                format,
+                format: chosen(json, format),
                 change,
             },
         ),
-        Verb::Gate { read_set, now } => gate(root, read_set, now),
-        Verb::Route { task, budget } => match task.is_empty() {
+        Verb::Gate {
+            read_set,
+            now,
+            json,
+        } => gate(root, read_set, now, json),
+        Verb::Route { task, budget, json } => match task.is_empty() {
             true => fail("`route` takes a task description. Try `headwater route \"add rate limiting to the ingest API\"`"),
-            false => route(root, &task.join(" "), budget),
+            false => route(root, &task.join(" "), budget, json),
         },
-        Verb::Explain { target } => match target {
+        Verb::Explain { target, json } => match target {
             None => fail("`explain` takes a path or an identifier"),
-            Some(target) => explain(root, &target),
+            Some(target) => explain(root, &target, json),
         },
         Verb::Mcp { now, write } => mcp(root, now, write),
         Verb::New {
@@ -200,19 +205,19 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             ),
             Some(kind) => new(root, &kind, title, &relates, &facet, now),
         },
-        Verb::Capture { format } => capture(root, format),
+        Verb::Capture { format, json } => capture(root, chosen(json, format)),
         Verb::Sweep { word } => match word {
             None => fail(&format!(
                 "`sweep` takes a second word: {}",
                 headwater_verbs::words_of("sweep")
             )),
             Some(SweepWord::Plan { under }) => sweep_plan(root, under),
-            Some(SweepWord::Report { path, format }) => match path {
+            Some(SweepWord::Report { path, format, json }) => match path {
                 None => fail(
                     "`sweep report` takes the path of the file an agent wrote back. \
                      `headwater sweep plan` prints the shape of it",
                 ),
-                Some(path) => sweep_report(root, Path::new(&path), format),
+                Some(path) => sweep_report(root, Path::new(&path), chosen(json, format)),
             },
             Some(SweepWord::Other(words)) => no_such_second_word("sweep", &words),
         },
@@ -261,7 +266,8 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             format,
             at,
             check,
-        } => export(root, profile, format, at, check),
+            json,
+        } => export(root, profile, chosen(json, format), at, check),
         Verb::Init { corpus, package } => init(root, corpus, package),
         Verb::Infer {
             owner,
@@ -269,7 +275,9 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             write,
             now,
         } => infer(root, owner, until, write, now),
-        Verb::Conformance { level, now } => conformance(root, level.as_deref(), now),
+        Verb::Conformance { level, now, json } => {
+            conformance(root, level.as_deref(), now, json)
+        }
         // Spec 6 lists this verb and no document of the specification states
         // what an expression is. The engine names the gap rather than invent a
         // form, which is the posture the resolver takes over a `$package`
@@ -335,6 +343,32 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             words.first().map(String::as_str).unwrap_or_default(),
             headwater_verbs::listed()
         )),
+    }
+}
+
+/// `--json`, resolved against `--format`.
+///
+/// # Why this is a spelling and not a second switch
+///
+/// [#321](https://github.com/headwater-ai/headwater/issues/321) asks that
+/// "`--json` is accepted wherever `--format json` already is". So the two names
+/// reach one value here, and every verb below receives the `--format` it always
+/// received. Nothing downstream of this function can tell which name a caller
+/// typed, which is the property that makes the two artifacts byte-identical
+/// rather than merely similar.
+///
+/// **`json` is true only where `--format` was absent**, because the parser
+/// declares the two in conflict. So the arm below is a substitution and never a
+/// precedence rule over a value a caller stated. A precedence rule is how a
+/// flag comes to do nothing silently, which is what
+/// [#337](https://github.com/headwater-ai/headwater/issues/337) and
+/// [#338](https://github.com/headwater-ai/headwater/issues/338) are open about,
+/// and `engine/crates/cli/tests/json.rs` holds the refusal on every verb that
+/// declares both.
+fn chosen(json: bool, format: Option<String>) -> Option<String> {
+    match json {
+        true => Some("json".to_string()),
+        false => format,
     }
 }
 
@@ -702,7 +736,7 @@ fn audit(root: &Path, now: Option<Date>) -> ExitCode {
 /// it the verb asks one question — is this repository at that rung — and a live
 /// waiver answers for the rule it covers. The level the report states is
 /// computed from met rules alone and no waiver reaches it.
-fn conformance(root: &Path, level: Option<&str>, now: Option<Date>) -> ExitCode {
+fn conformance(root: &Path, level: Option<&str>, now: Option<Date>, json: bool) -> ExitCode {
     let loaded = match load(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
@@ -777,18 +811,41 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>) -> ExitCode 
             return ExitCode::FAILURE;
         }
     };
-    print!("{}", report.render());
+    // The text report is printed before the gate is asked, which is the order a
+    // reader of this verb has always had: a refusal naming an undeclared rung
+    // arrives under the gaps it is about. The document cannot take that order,
+    // because the gate is a member of it, so it is written after.
+    if !json {
+        print!("{}", report.render());
+    }
+    let gated = match level {
+        None => None,
+        Some(level) => match report.gate(level) {
+            Err(why) => return fail(&why),
+            Ok(passes) => Some((level, passes)),
+        },
+    };
+    if json {
+        print!("{}", headwater_conformance::json::report(&report, gated));
+    }
 
-    let Some(level) = level else {
+    // One reading of `Report::gate` per run. The exit status below reads the
+    // value the document carries rather than asking the report a second time.
+    let Some((level, passes)) = gated else {
         return ExitCode::SUCCESS;
     };
-    match report.gate(level) {
-        Err(why) => fail(&why),
-        Ok(true) => {
-            println!("\n{level} passes, with every gap under it covered by a live waiver or met");
+    match passes {
+        true => {
+            // Under `--json` the whole of standard output is the document, so
+            // this sentence is its `gate` member rather than a line after it.
+            if !json {
+                println!(
+                    "\n{level} passes, with every gap under it covered by a live waiver or met"
+                );
+            }
             ExitCode::SUCCESS
         }
-        Ok(false) => {
+        false => {
             eprintln!(
                 "headwater: {level} is not passed. Each gap above states the remediation the \
                  package wrote for it"
@@ -2032,7 +2089,7 @@ impl Loaded {
 /// It exits 0 whether or not it offers a pointer. Spec 5 makes silence a
 /// result: "below the threshold it says nothing", and a non-zero exit would
 /// make an agent's shell treat a considered silence as a failure.
-fn route(root: &Path, task: &str, budget: Option<usize>) -> ExitCode {
+fn route(root: &Path, task: &str, budget: Option<usize>, json: bool) -> ExitCode {
     let loaded = match load(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
@@ -2041,7 +2098,15 @@ fn route(root: &Path, task: &str, budget: Option<usize>) -> ExitCode {
         Some(pointers) => Budget { pointers },
         None => Budget::default(),
     };
-    print!("{}", loaded.surface().route(task, budget).render());
+    let route = loaded.surface().route(task, budget);
+    // One route, rendered two ways, and the JSON document carries the text form
+    // inside it. `.claude/hooks/intent.sh` is the caller that needs both out of
+    // one run: it decides on the pointer set and then puts the report a person
+    // reads into an agent's context.
+    match json {
+        true => print!("{}", headwater_query::json::route(&route)),
+        false => print!("{}", route.render()),
+    }
     ExitCode::SUCCESS
 }
 
@@ -2050,7 +2115,7 @@ fn route(root: &Path, task: &str, budget: Option<usize>) -> ExitCode {
 /// A target that names no document exits non-zero. That is not a finding about
 /// a corpus, it is a question about a document that is not there, and a caller
 /// who mistyped a path needs to know from the exit status.
-fn explain(root: &Path, target: &str) -> ExitCode {
+fn explain(root: &Path, target: &str, json: bool) -> ExitCode {
     let loaded = match load(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
@@ -2058,7 +2123,14 @@ fn explain(root: &Path, target: &str) -> ExitCode {
     match loaded.surface().explain(target) {
         Some(explanation) => {
             let explanation: headwater_query::Explanation = explanation;
-            print!("{}", explanation.render());
+            // A target that names no document is refused below, on standard
+            // error and with the same exit status either way. `--json` selects
+            // the artifact and never the status: a refusal is not a document
+            // with a member missing from it.
+            match json {
+                true => print!("{}", headwater_query::json::explain(&explanation)),
+                false => print!("{}", explanation.render()),
+            }
             ExitCode::SUCCESS
         }
         None => {
@@ -3498,7 +3570,7 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
 /// It walks no corpus and it resolves no taxonomy. That is the whole economy of
 /// the artifact: the answer costs one hash per listed input, and it costs no
 /// run. It is also the limit of the answer, which the report states every time.
-fn gate(root: &Path, read_set: Option<PathBuf>, now: Option<Date>) -> ExitCode {
+fn gate(root: &Path, read_set: Option<PathBuf>, now: Option<Date>, json: bool) -> ExitCode {
     let Some(path) = read_set else {
         return fail(
             "`gate` holds a read set against this tree and takes the file that carries one. \
@@ -3541,7 +3613,13 @@ fn gate(root: &Path, read_set: Option<PathBuf>, now: Option<Date>) -> ExitCode {
             .ok()
             .map(|bytes| headwater_hash::digest(&bytes))
     });
-    print!("{}", verdict.render());
+    // The sentence about what a read set cannot say is in both forms: the
+    // report ends on it and the document carries it as `limit`, out of the one
+    // constant both read.
+    match json {
+        true => print!("{}", verdict.render_json()),
+        false => print!("{}", verdict.render()),
+    }
     match verdict.carries() {
         true => ExitCode::SUCCESS,
         // Spec 12: "a false invalidation costs one run. A false survival ships

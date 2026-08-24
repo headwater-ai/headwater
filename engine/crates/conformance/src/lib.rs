@@ -60,6 +60,7 @@ use headwater_resolve::release::{self, ReleaseError};
 use headwater_yaml::Mapping;
 use std::path::Path;
 
+pub mod json;
 pub mod render;
 
 /// The format of the rule set file. A reader that meets a later one says so

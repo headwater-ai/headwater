@@ -51,6 +51,7 @@
 //! open the document, and no body ever crosses this boundary.
 
 pub mod explain;
+pub mod json;
 pub mod mcp;
 pub mod route;
 

@@ -93,6 +93,23 @@ pub enum Silence {
 }
 
 impl Silence {
+    /// The name a caller branches on.
+    ///
+    /// It is deliberately not [`Silence::name`]. That is a sentence written for
+    /// a person and it is rewritten whenever the wording improves; this is a
+    /// token, and a consumer of `headwater route --json` that switched on it
+    /// keeps working across such a rewrite. Spec 5 keeps the four reasons apart
+    /// because they are different facts about the corpus, and a machine reader
+    /// that had to match on prose could not tell them apart at all.
+    pub fn token(&self) -> &'static str {
+        match self {
+            Silence::NoPurposes => "no_purposes",
+            Silence::NoTerms => "no_terms",
+            Silence::NoPurposeMatched => "no_purpose_matched",
+            Silence::NoDocumentReached => "no_document_reached",
+        }
+    }
+
     pub fn name(&self) -> &'static str {
         match self {
             Silence::NoPurposes => "the taxonomy declares no purposes, so a task matches nothing",
