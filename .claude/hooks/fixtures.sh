@@ -66,6 +66,23 @@ skip() {
     skipped=$((skipped + 1))
 }
 
+# A stand-in for the engine, writing one document of this runner's choosing.
+#
+# `intent.sh` decides on a member of what `headwater route --json` writes, and
+# two of the states that member can be in are states no corpus produces on
+# demand: a document that will not parse, and a pointer set whose report says
+# something this runner can recognize. A stand-in is the only way to state
+# either. It writes the argument verbatim, so the case above reads as the bytes
+# the hook meets.
+#
+# It needs `$open_root`, so it is only callable inside the fail-open block.
+stub_route() {
+    printf '%s\n' "$1" > "$open_root/document.json"
+    printf '#!/bin/sh\ncat "%s"\n' "$open_root/document.json" \
+        > "$open_root/engine/target/release/headwater"
+    chmod u+x "$open_root/engine/target/release/headwater"
+}
+
 printf '# intent.sh, on UserPromptSubmit\n'
 if [ -x "$engine" ]; then
     expect 'a task the corpus answers reaches the agent as pointers' \
@@ -244,12 +261,59 @@ if [ -x "$engine" ]; then
         write.sh 0 '' "$deny_payload"
     rm -f "$open_root/bin/python3"
 
+    # The same three sabotages at the intent position, over the same root. A
+    # prompt proceeds whatever happens here, so silence is the ambient outcome
+    # at this position too and only a control makes it mean anything. The
+    # control is a task this corpus answers, which reaches the agent as
+    # pointers.
+    intent_payload='{"hook_event_name":"UserPromptSubmit","user_input":"what does a check know about the front matter of a document"}'
+    intent_fails_open() {
+        expect "the control for: $1" intent.sh 0 'docs/spec/' "$intent_payload"
+        eval "$2"
+        expect "$1" intent.sh 0 '' "$intent_payload"
+        eval "$3"
+    }
+
+    intent_fails_open 'no built engine at all, and the prompt proceeds in silence' \
+        'rm -f "$open_root/engine/target/release/headwater"' \
+        'cp "$engine" "$open_root/engine/target/release/headwater"'
+
+    intent_fails_open 'a python3 that answers non-zero, and the prompt proceeds in silence' \
+        'printf "#!/bin/sh\nexit 1\n" > "$open_root/bin/python3"; chmod u+x "$open_root/bin/python3"' \
+        'rm -f "$open_root/bin/python3"'
+
+    # A route document this hook cannot parse. `headwater route --json` is the
+    # one thing this position reads, so a stand-in that writes something else is
+    # the only way to state the case: no corpus produces it and no payload can
+    # ask for it.
+    intent_fails_open 'a route document that will not parse, and the prompt proceeds in silence' \
+        'stub_route "not a document at all"' \
+        'cp "$engine" "$open_root/engine/target/release/headwater"'
+
+    # The pointer set is what this position decides on, and these two state it
+    # directly rather than through whatever this corpus answers for a task.
+    #
+    # The second is also the proof that the hook renders no line of its own. The
+    # marker it asserts is in the document's `text` member and in none of its
+    # pointers, so a hook that composed a pointer line out of the members could
+    # not print it. That is the property #321 asks for: one rendering, in the
+    # engine, read by the terminal and by an agent alike.
+    stub_route '{"version":"1.0","task":"t","pointers":[],"text":"route \"t\"\n  no declared purpose answers this task\n"}'
+    expect 'an empty pointer set is a silence, whatever the report beside it says' \
+        intent.sh 0 '' "$intent_payload"
+
+    stub_route '{"version":"1.0","task":"t","pointers":[{"path":"docs/a.md","kind":"decision","unwarranted":false}],"text":"only-the-rendered-report-carries-this\n"}'
+    expect 'a pointer set with something in it hands back the report the engine rendered' \
+        intent.sh 0 'only-the-rendered-report-carries-this' "$intent_payload"
+
+    cp "$engine" "$open_root/engine/target/release/headwater"
+
     PATH=$real_path
     HEADWATER_HOOK_ROOT="$root"
     export HEADWATER_HOOK_ROOT PATH
     rm -rf "$open_root"
 else
-    skip 'write.sh fail-open cases' 'no built engine'
+    skip 'write.sh and intent.sh fail-open cases' 'no built engine'
 fi
 
 printf '\n# review.sh, on Stop\n'
