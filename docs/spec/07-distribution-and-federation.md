@@ -162,7 +162,7 @@ Consuming is two steps, and the split is what keeps the network out of the engin
 
 **The replacement never leaves part of a package behind.** `vendor` writes the new package beside the old one, and then puts the new one in place. So `packages/<name>` holds a complete package or nothing at every moment, under a failure and under a run that a person stops. A `vendor` that fails leaves the package that was installed, and the refusal says which state the directory is in.
 
-**A run that a person stops can leave a directory beside the package.** `packages/<name>~aside` holds the package that was installed, and the engine still finds it there. `packages/<name>~staged` holds the copy the run was making, and that copy can be a part of a package ([#357](https://github.com/headwater-ai/headwater/issues/357)). The next `vendor` of the package removes both. `vendor` refuses to install either of them as an artifact, so an adopter who finds one removes it.
+**A run that a person stops can leave one of two directories behind.** `packages/<name>~aside` holds the package that was installed, and the engine still finds it there. `packages/~staging/<name>` holds the copy the run was making. The engine never finds it there. `find` reads one level of `packages/` and skips a directory with no manifest beside it, and `packages/~staging` itself carries none ([#357](https://github.com/headwater-ai/headwater/issues/357)). The next `vendor` of the package removes both. `vendor` refuses to install either of them as an artifact, so an adopter who finds one removes it.
 
 ### Profiles are publisher overlays
 
