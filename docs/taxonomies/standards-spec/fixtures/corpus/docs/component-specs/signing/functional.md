@@ -35,4 +35,6 @@ Requirement 1 of `SCR-STD-api-design` is met by the error table in the signer AP
 
 Requirement 3 of `SCR-STD-api-design` is met by the key identifier, which makes a repeated sign request return the same signature for the same payload and key.
 
-This document is a planted defect of this corpus twice over. No technical specification realizes it, and its `status_since` is old enough that the 90-day window on the `functional-realized` expectation has closed. It also does not name back the `realizes` edge that `SCR-TS-signing` declares.
+This document is the far end of one planted defect of this corpus. `SCR-TS-signing` declares `realizes: SCR-FS-signing` and this document does not name that edge back, so a run reports the missing half against the technical specification.
+
+No participation finding fires here, and the reason is worth stating. The `functional-realized` expectation is satisfied by the half either document wrote, and `SCR-TS-signing` wrote one. An old `status_since` therefore costs this document nothing. `docs/component-specs/webhooks/functional.md` is where that finding lands, because neither half of a `realizes` pair exists anywhere for it.

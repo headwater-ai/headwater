@@ -4,7 +4,7 @@ status: draft
 status_since: "{{today}}"
 last_verified: "{{today}}"
 summary: "{{one sentence a reader scans, which is the scent and not the title}}"
-spec_layer: technical
+spec_layer: technical_spec
 provenance:
   warrant: accepted
   agency: "{{human | agent | mixed}}"
