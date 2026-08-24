@@ -94,7 +94,7 @@ Two of those are worth separating. **A refused patch is not a finding**, so no a
 
 ## Environment
 
-**No environment variable reaches this verb.** The date is `--now`, the corpus is `--root`, and the taxonomy is the lock. Five variables are read by test targets alone and reach no shipped code path. `HEADWATER_BLESS` re-records a fixture. `HEADWATER_STOCK_VALIDATOR`, `HEADWATER_SARIF_VALIDATOR`, `HEADWATER_SHA256_ORACLE` and `HEADWATER_JSON_ORACLE` each turn a reading taken by a tool outside this repository from a note into a requirement. The continuous-integration job sets all four, so a lost dependency fails the job rather than going quiet.
+**No environment variable reaches this verb.** The date is `--now`, the corpus is `--root`, and the taxonomy is the lock. Six variables are read by test targets alone and reach no shipped code path. `HEADWATER_BLESS` re-records a fixture. `HEADWATER_STOCK_VALIDATOR`, `HEADWATER_SARIF_VALIDATOR`, `HEADWATER_SHA256_ORACLE`, `HEADWATER_JSON_ORACLE` and `HEADWATER_SHELL_ORACLE` each turn a reading taken by a tool outside this repository from a note into a requirement. The last of the five is `bash`, which is the only reader that can say a completion script loads. The continuous-integration job sets all five, so a lost dependency fails the job rather than going quiet.
 
 **One variable reaches this binary, and a run of this verb never reads it.** `COLUMNS` says how wide the help is laid out. `engine/crates/cli/src/paint.rs` reads it, and only where the raw command line carries `--wide`, which this verb refuses. That call is the one `std::env::var` under `engine/crates/` outside a test target. So a run of this verb is a function of the command line, the tree and the lock, and of nothing a shell exported.
 

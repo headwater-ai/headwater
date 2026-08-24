@@ -175,8 +175,10 @@ fn every_shell_writes_one_script_to_standard_output_and_nothing_beside_it() {
 fn no_escape_byte_reaches_a_completion_script() {
     for shell in SHELLS {
         let written = ran(&["completions", shell]);
-        for (stream, bytes) in [("standard output", &written.out), ("standard error", &written.err)]
-        {
+        for (stream, bytes) in [
+            ("standard output", &written.out),
+            ("standard error", &written.err),
+        ] {
             assert!(
                 !bytes.windows(2).any(|pair| pair == b"\x1b["),
                 "`{shell}` wrote an escape byte on {stream}"
@@ -233,7 +235,10 @@ fn a_shell_this_binary_does_not_carry_is_refused_with_the_four_printed() {
     );
     let said = refused.said();
     for shell in SHELLS {
-        assert!(said.contains(shell), "the refusal names no `{shell}`: {said}");
+        assert!(
+            said.contains(shell),
+            "the refusal names no `{shell}`: {said}"
+        );
     }
 }
 
@@ -250,7 +255,10 @@ fn a_run_with_no_shell_names_the_four_and_writes_no_script() {
     assert!(refused.out.is_empty(), "{refused:?}");
     let said = refused.said();
     for shell in SHELLS {
-        assert!(said.contains(shell), "the refusal names no `{shell}`: {said}");
+        assert!(
+            said.contains(shell),
+            "the refusal names no `{shell}`: {said}"
+        );
     }
     assert!(
         said.contains("> f"),

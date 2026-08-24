@@ -76,6 +76,11 @@ jobs:
           HEADWATER_SARIF_VALIDATOR: required
           HEADWATER_SHA256_ORACLE: required
           HEADWATER_JSON_ORACLE: required
+          # `bash` is the only reader that can say a completion script loads,
+          # so `engine/crates/cli/tests/completions.rs` runs the command line
+          # clause 8 of #321 states through it. A runner that lost `bash`
+          # fails here rather than reporting a script nothing read.
+          HEADWATER_SHELL_ORACLE: required
 
   headwater:
     name: headwater check (advisory)
