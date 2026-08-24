@@ -781,6 +781,152 @@ fn two_names_that_flatten_to_one_directory_do_not_delete_each_other() {
     );
 }
 
+/// After #320's rename remedy is followed a second time, the second collision
+/// is refused rather than silently duplicated.
+///
+/// This extends [`two_names_that_flatten_to_one_directory_do_not_delete_each_other`]
+/// past the point that case stops at. `widgets/core-schema` and
+/// `widgets-core/schema` both flatten to `packages/widgets-core-schema`, so the
+/// second name collides with the first exactly as `acme/my-taxonomy` and
+/// `acme-my/taxonomy` do above. Renaming the target once, per the refusal's own
+/// remedy, lets the second package land — that still has to work, or the
+/// remedy is broken. Upgrading the *first* package then collides again,
+/// because it still derives the directory the second package now holds.
+/// Renaming the target aside a second time used to let that upgrade land too,
+/// leaving two directories that both declare `widgets/core-schema` — one of
+/// them, `packages/a-moved-aside`, holding the package the adopter renamed
+/// away in the first place. That is [#354](https://github.com/headwater-ai/headwater/issues/354):
+/// `find` would then answer from whichever of the two sorts first while
+/// `vendor` reports installing the other. This case asserts that the second
+/// rename is refused instead, naming the directory the package already
+/// resolves from, and that `packages/` never ends with two directories
+/// declaring one name.
+///
+/// **The permanent limitation stays, and is asserted rather than hidden.**
+/// Nothing here lets `widgets/core-schema` upgrade past `1.0.0`: it derives a
+/// directory `widgets-core/schema` now holds, and `vendor` only ever writes to
+/// the name-derived directory. The adopter is told this at the vendor that
+/// would have created the duplicate, which is the whole of what this issue
+/// asks for.
+#[test]
+fn a_second_rename_around_a_collision_is_refused_rather_than_duplicated() {
+    let scratch = Scratch::new("collide-twice");
+
+    // Step 1: publish and vendor `widgets/core-schema` 1.0.0.
+    let a1_root = publisher_declaring_at(&scratch, "a1", "widgets/core-schema", "1.0.0");
+    let a1_out = scratch.path().join("artifact-a1");
+    let a1 = package::publish(&a1_root, "widgets/core-schema", &a1_out).expect("1.0.0 a publishes");
+    assert!(
+        release::verify(&a1_out, &a1.digest).is_ok(),
+        "the artifact does not verify against its own digest, so what follows measures the pin"
+    );
+
+    let adopter = scratch.path().join("adopter");
+    std::fs::create_dir_all(&adopter).expect("the adopter root is made");
+    package::vendor(&adopter, &a1_out, &a1.digest).expect("widgets/core-schema 1.0.0 vendors");
+    assert_eq!(
+        packages_under(&adopter),
+        vec!["widgets-core-schema".to_string()],
+        "the first vendor did not land where expected"
+    );
+
+    // Step 2: publish `widgets-core/schema` 1.0.0 and vendor it — refused by
+    // #320's existing guard, because the target holds a different package.
+    let b1_root = publisher_declaring_at(&scratch, "b1", "widgets-core/schema", "1.0.0");
+    let b1_out = scratch.path().join("artifact-b1");
+    let b1 = package::publish(&b1_root, "widgets-core/schema", &b1_out).expect("1.0.0 b publishes");
+    assert!(
+        release::verify(&b1_out, &b1.digest).is_ok(),
+        "the artifact does not verify against its own digest, so what follows measures the pin"
+    );
+    package::vendor(&adopter, &b1_out, &b1.digest)
+        .expect_err("widgets-core/schema collides with the installed widgets/core-schema");
+
+    // The adopter follows the remedy: rename the target aside.
+    let packages = adopter.join(package::PACKAGES);
+    std::fs::rename(
+        packages.join("widgets-core-schema"),
+        packages.join("a-moved-aside"),
+    )
+    .expect("the first rename lands");
+
+    // Vendoring `widgets-core/schema` again still has to land — this is
+    // done-when #2, the one-time remedy still works.
+    package::vendor(&adopter, &b1_out, &b1.digest).expect("the remedy still works, followed once");
+    assert_eq!(
+        package::find_version(&adopter, "widgets/core-schema"),
+        Some("1.0.0".to_string()),
+        "the moved package no longer resolves after the remedy"
+    );
+    assert_eq!(
+        package::find_version(&adopter, "widgets-core/schema"),
+        Some("1.0.0".to_string()),
+        "the remedied vendor did not land"
+    );
+
+    // Step 3: publish `widgets/core-schema` 2.0.0 and vendor it — refused,
+    // because the target now holds `widgets-core/schema`.
+    let a2_root = publisher_declaring_at(&scratch, "a2", "widgets/core-schema", "2.0.0");
+    let a2_out = scratch.path().join("artifact-a2");
+    let a2 = package::publish(&a2_root, "widgets/core-schema", &a2_out).expect("2.0.0 publishes");
+    assert!(
+        release::verify(&a2_out, &a2.digest).is_ok(),
+        "the artifact does not verify against its own digest, so what follows measures the pin"
+    );
+    let refused = package::vendor(&adopter, &a2_out, &a2.digest)
+        .expect_err("the target holds widgets-core/schema, not widgets/core-schema");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(message.contains("widgets-core/schema"), "{message}");
+    assert!(message.contains("widgets/core-schema"), "{message}");
+
+    // Step 4: the adopter follows the same remedy a second time.
+    std::fs::rename(
+        packages.join("widgets-core-schema"),
+        packages.join("b-moved-aside"),
+    )
+    .expect("the second rename lands");
+
+    // Vendoring `widgets/core-schema` 2.0.0 again must now be refused — today,
+    // pre-fix, this exits `Ok` and is the regression this issue closes.
+    let refused = package::vendor(&adopter, &a2_out, &a2.digest).expect_err(
+        "widgets/core-schema already resolves from a-moved-aside, and vendoring here would          leave two directories declaring it",
+    );
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("a-moved-aside"),
+        "the refusal does not name where the package already resolves from:\n{message}"
+    );
+    assert!(message.contains("widgets/core-schema"), "{message}");
+
+    // Step 5: exactly two directories stand, and neither declares the other's
+    // name — packages/ never ends with two directories declaring one name.
+    assert_eq!(
+        packages_under(&adopter),
+        vec!["a-moved-aside".to_string(), "b-moved-aside".to_string()],
+        "the refused vendor left a third directory, or removed one of the first two"
+    );
+    let a_moved = std::fs::read_to_string(packages.join("a-moved-aside").join(package::MANIFEST))
+        .expect("a-moved-aside carries a manifest");
+    assert!(
+        a_moved.contains("package: widgets/core-schema"),
+        "{a_moved}"
+    );
+    let b_moved = std::fs::read_to_string(packages.join("b-moved-aside").join(package::MANIFEST))
+        .expect("b-moved-aside carries a manifest");
+    assert!(
+        b_moved.contains("package: widgets-core/schema"),
+        "{b_moved}"
+    );
+
+    // Step 6: the moved package is unaffected, and permanently stuck at
+    // 1.0.0 — the accepted, now clearly reported limitation.
+    assert_eq!(
+        package::find_version(&adopter, "widgets/core-schema"),
+        Some("1.0.0".to_string()),
+        "the refused vendor changed what the moved package resolves to"
+    );
+}
+
 /// A later version of the package that is installed still replaces it.
 ///
 /// **This case separates an executed replace from a silent no-op, and that is
@@ -2503,6 +2649,66 @@ fn a_directory_this_verb_stages_into_never_wins_the_lookup() {
         vec!["acme-fixture".to_string()],
         "the vendor left the residues of an earlier run standing, so the names this file plants \
          are not the names the verb writes"
+    );
+}
+
+/// A plain retry vendor of a package killed mid-swap still lands, because the
+/// new collision check excludes this run's own `~staged` and `~aside` paths.
+///
+/// #354's own hardening must not regress #312's self-heal. [`vendor`]'s doc
+/// comment already states the reachable state: a kill inside the one-rename
+/// window leaves the installed package complete under `<name>~aside`, and
+/// [`package::find`] answers from it in the meantime, sorting before
+/// `<name>~staged`. The *next* `vendor` of that same package is what clears
+/// both residues, which is the self-heal [#312](https://github.com/headwater-ai/headwater/issues/312)
+/// asked for. A version of #354's new check that compared only
+/// `found_at != target` — without excluding `staged` and `aside` — would run
+/// before that clearing, find the same package resolving from `<name>~aside`,
+/// and refuse the legitimate retry. This proves the exclusion holds: the
+/// residues are planted by hand exactly as
+/// [`a_directory_this_verb_stages_into_never_wins_the_lookup`] plants them,
+/// with the target itself removed first to stand in for the kill, and the
+/// plain retry below must still succeed.
+#[test]
+fn a_plain_retry_after_a_kill_mid_swap_still_lands() {
+    let scratch = Scratch::new("kill-mid-swap-retry");
+    let (adopter, _, _) = adopter_holding(&scratch);
+
+    // Simulate a kill mid-swap: the target is gone, and both siblings stand,
+    // each declaring the package that was installed.
+    let packages = adopter.join(package::PACKAGES);
+    std::fs::remove_dir_all(packages.join("acme-fixture"))
+        .expect("the target is cleared to simulate the kill");
+    for suffix in [package::STAGED, package::ASIDE] {
+        let residue = packages.join(format!("acme-fixture{suffix}"));
+        std::fs::create_dir_all(&residue).expect("the residue is made");
+        std::fs::write(
+            residue.join(package::MANIFEST),
+            "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
+        )
+        .expect("the residue carries a manifest");
+    }
+    assert_eq!(
+        package::find_version(&adopter, "acme/fixture"),
+        Some("1.0.0".to_string()),
+        "the aside residue should still answer the lookup, per vendor's own doc comment"
+    );
+
+    // A plain retry of the same package must self-heal rather than be refused
+    // as a collision with itself.
+    let retry_root = publisher_declaring_at(&scratch, "retry", "acme/fixture", "1.0.0");
+    let retry_out = scratch.path().join("artifact-retry");
+    let retry =
+        package::publish(&retry_root, "acme/fixture", &retry_out).expect("the retry publishes");
+    package::vendor(&adopter, &retry_out, &retry.digest).expect(
+        "a retry of the same package must land, not be refused as though it collided with \
+         itself",
+    );
+
+    assert_eq!(
+        packages_under(&adopter),
+        vec!["acme-fixture".to_string()],
+        "the retry did not clear the residues an earlier, killed run left"
     );
 }
 
