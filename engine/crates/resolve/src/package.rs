@@ -1167,12 +1167,26 @@ pub const BUNDLES: &str = "bundles";
 /// artifact declares.
 ///
 /// **The cost is that two colliding packages cannot both sit under their derived
-/// names, and the adopter pays one rename for it.** [`find`] matches the
+/// names, and the refusal names a rename that works once.** [`find`] matches the
 /// `package:` of each manifest under `packages/` and never the name of the
 /// directory that carries it, so a package moved out of the way keeps resolving
-/// from wherever it lands. That is the same move the `pin.current` remediation
-/// of `packages/headwater-standard/conformance.yml` already asks an adopter to
-/// make, and the refusal says it, because nothing else the adopter reads does.
+/// from wherever it lands, and every downstream verb reads it there. Measured,
+/// through `taxonomy resolve` and `headwater check`. It is the same move the
+/// `pin.current` remediation of `packages/headwater-standard/conformance.yml`
+/// already asks an adopter to make, and the refusal says it because nothing else
+/// the adopter reads does.
+///
+/// **What the rename costs is not in the refusal, and it belongs here until it
+/// is.** The adopter moves the first package aside and vendors the second into
+/// the cleared path. From then on the first package cannot be vendored again:
+/// every later artifact of it derives the directory the second one now holds, so
+/// this verb refuses every upgrade of it. Following the message a second time
+/// exits 0 and leaves two directories declaring one name, where [`find`] returns
+/// the one that sorts first — measured, with `taxonomy vendor` installing 2.0.0
+/// and `taxonomy resolve` then reporting the package here as 1.0.0. So an
+/// adopter can upgrade exactly one of two packages that contend for a directory.
+/// [#354](https://github.com/headwater-ai/headwater/issues/354) holds the
+/// hardening, and this paragraph is the record until it lands.
 ///
 /// **A remapping was the other repair and the grammar closes it, not this
 /// verb.** [`names_a_package`] admits any number of segments, so `a/b` and

@@ -783,12 +783,20 @@ fn two_names_that_flatten_to_one_directory_do_not_delete_each_other() {
 
 /// A later version of the package that is installed still replaces it.
 ///
-/// **This is the case that separates the guard from a blanket refusal of every
-/// second vendor.** A guard that refused whatever it found under the target
-/// passes the collision case above and every other case in this file, because
-/// [`vendoring_over_a_maintained_package_is_refused`] vendors one artifact
-/// twice and an identical replace is indistinguishable from no replace at all.
-/// Moving the version is what makes the replace arm say whether it ran.
+/// **This case separates an executed replace from a silent no-op, and that is
+/// what it adds.** [`vendoring_over_a_maintained_package_is_refused`] vendors
+/// one artifact twice, so the bytes it expects are the bytes that are already
+/// there and a guard that quietly did nothing would satisfy it. Moving the
+/// version is what makes the replace arm say whether it ran.
+///
+/// **A blanket refusal is not what this alone catches, and the measurement says
+/// so.** Patch the equal arm of `holds_the_same_package` to refuse whatever it
+/// finds and the target reports `40 passed; 2 failed`: this case, and
+/// [`vendoring_over_a_maintained_package_is_refused`], which ends in
+/// `.expect("the second replaces it")` and so observes an `Err` whatever the
+/// bytes are. A refusal is visible to that case. A guard that returns `Ok` and
+/// lets nothing happen is visible only to this one, which is the reason to keep
+/// it rather than the reason it was written.
 ///
 /// Both version keys move together, because a package that states two versions
 /// of itself is refused at publish. [`publisher_declaring_at`] is the knob.
@@ -822,6 +830,75 @@ fn a_later_version_of_the_installed_package_still_replaces_it() {
         package::find_version(&adopter, "acme/fixture"),
         Some("2.0.0".to_string()),
         "the upgrade did not land, so the guard refuses a package its own name"
+    );
+    assert_eq!(
+        packages_under(&adopter),
+        vec!["acme-fixture".to_string()],
+        "the upgrade wrote a second tree instead of replacing the first"
+    );
+}
+
+/// The resident's manifest decides, and its release record does not.
+///
+/// A vendored directory states its name twice: `package.yml`, which the release
+/// digest covers, and the header of `release.yml`, which the digest cannot cover
+/// because it is one of the lines the digest is written over.
+/// [`a_record_that_renames_the_artifact_does_not_steer_the_vendor_target`] holds
+/// that distinction for the *artifact* being vendored. This holds it for the
+/// directory already installed, which is the other end of the same comparison
+/// and reaches it through [`holds_the_same_package`] rather than through
+/// [`identity`].
+///
+/// **Without this the choice is pinned only by absence.** Every other case here
+/// reaches the guard over a resident whose two names agree, or over one with no
+/// readable manifest at all, so a guard that read the record's header instead
+/// would pass all of them. Here the two names disagree, and only one answer
+/// leaves the upgrade running.
+///
+/// The version moves, so what is asserted is that the replace ran rather than
+/// that nothing was refused.
+#[test]
+fn the_resident_manifest_decides_and_its_record_header_does_not() {
+    let scratch = Scratch::new("resident-header");
+
+    let root = publisher_declaring_at(&scratch, "publisher", "acme/fixture", "1.0.0");
+    let out = scratch.path().join("artifact-1");
+    let first = package::publish(&root, "acme/fixture", &out).expect("1.0.0 publishes");
+
+    let adopter = scratch.path().join("adopter");
+    std::fs::create_dir_all(&adopter).expect("the adopter root is made");
+    package::vendor(&adopter, &out, &first.digest).expect("the first vendor lands");
+
+    // Rewrite the installed record's header to name a different package, and
+    // leave the manifest beside it alone. The digest covers the manifest and
+    // not this line, which is why the two can disagree at all.
+    let installed = adopter.join(package::PACKAGES).join("acme-fixture");
+    let record = installed.join(release::RECORD);
+    let text = std::fs::read_to_string(&record).expect("the record is there");
+    let forged = text.replace("package: acme/fixture", "package: acme/somebody-else");
+    assert_ne!(text, forged, "the record header did not name the package");
+    std::fs::write(&record, forged).expect("the record writes");
+    assert!(
+        release::at(&installed).is_ok(),
+        "the edited record no longer reads, so the guard is never reached"
+    );
+    assert!(
+        std::fs::read_to_string(installed.join(package::MANIFEST))
+            .expect("the manifest is there")
+            .contains("package: acme/fixture"),
+        "the manifest moved with the record, so the two no longer disagree"
+    );
+
+    let later_root = publisher_declaring_at(&scratch, "later", "acme/fixture", "2.0.0");
+    let later_out = scratch.path().join("artifact-2");
+    let later = package::publish(&later_root, "acme/fixture", &later_out).expect("2.0.0 publishes");
+
+    package::vendor(&adopter, &later_out, &later.digest)
+        .expect("the manifest names this package, so the upgrade lands");
+    assert_eq!(
+        package::find_version(&adopter, "acme/fixture"),
+        Some("2.0.0".to_string()),
+        "the guard read the record's header, which the release digest does not cover"
     );
     assert_eq!(
         packages_under(&adopter),
