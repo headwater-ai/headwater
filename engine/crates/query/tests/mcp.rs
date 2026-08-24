@@ -319,6 +319,50 @@ fn the_session_runs_to_the_recorded_transcript() {
     assert_eq!(expected, actual);
 }
 
+/// `serverInfo.version` names [`headwater_resolve::release::ENGINE`] and not
+/// this crate's own `env!("CARGO_PKG_VERSION")`.
+///
+/// [`the_session_runs_to_the_recorded_transcript`] would also catch a
+/// regression here, but only by accident: it compares the whole transcript
+/// byte for byte, so its failure message is a giant diff rather than a
+/// statement about a version disagreeing, and `HEADWATER_BLESS=1` absorbs the
+/// drift into the golden file with nobody the wiser (#308 shipped exactly
+/// this way). This asserts the one field, by name, against the constant.
+#[test]
+fn serverinfo_version_names_the_engine_constant() {
+    let built = fixture_tree();
+    let server = built.server(RECORDED_AT);
+    let response = once(&server, SESSION[0]);
+    let version = headwater_yaml::load(&response)
+        .expect("a response is JSON")
+        .value
+        .as_map()
+        .expect("an object")
+        .get("result")
+        .expect("a result")
+        .value
+        .as_map()
+        .expect("an object")
+        .get("serverInfo")
+        .expect("serverInfo")
+        .value
+        .as_map()
+        .expect("an object")
+        .get("version")
+        .expect("version")
+        .value
+        .as_scalar()
+        .expect("a scalar")
+        .text
+        .clone();
+    assert_eq!(
+        version,
+        headwater_resolve::release::ENGINE,
+        "serverInfo.version names this crate's own env!(\"CARGO_PKG_VERSION\") rather than the \
+         constant a `requires_engine` range is read against"
+    );
+}
+
 /// A server with no switch registers the query class and nothing else.
 ///
 /// This is the whole of the property the write class replaced, held for the
