@@ -10,7 +10,7 @@ relations:
 
 # decisions
 
-33 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+34 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -143,3 +143,7 @@ relations:
 ## Q33 — Whether the command line is derived, and who a flag belongs to
 
 [HW-DR-0033](../decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md) — `clap` derives the command line for 17 lock entries, and a flag belongs to the verb that reads it rather than to the binary. (asserted, and no human has accepted it)
+
+## Q34 — Whether acceptance means merged to main, and what an agent may write before that
+
+[HW-DR-0034](../decisions/0034-q34-whether-acceptance-means-merged-to-main-and-what-an-agent-may-write-before-that.md) — Acceptance is the merge onto main. A provenance block on an unmerged branch is a proposal, so an agent may write `accepted_by` there, and stop rule 5 binds main rather than the byte. (asserted, and no human has accepted it)
