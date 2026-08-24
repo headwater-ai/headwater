@@ -1410,7 +1410,14 @@ fn the_package_in_this_repository_publishes_and_its_digest_covers_what_is_on_dis
     let root = Path::new("../../..");
     let out = scratch.path().join("artifact");
 
-    let record = package::publish(root, "headwater/standard", &out).expect("it publishes");
+    // `package::publish` by name finds `packages/headwater-standard/` first,
+    // and #366 made that refuse: the directory carries a release record, so
+    // it is a vendored copy and not the maintained source. The maintained
+    // source is `taxonomy-source/headwater-standard/`, and `--from` is how a
+    // real publish of this repository's own package reaches it.
+    let record =
+        package::publish_from(root, &root.join("taxonomy-source/headwater-standard"), &out)
+            .expect("it publishes");
 
     let on_disk = release::members(&out).expect("the artifact reads");
     assert_eq!(

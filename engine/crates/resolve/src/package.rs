@@ -637,8 +637,30 @@ fn publish_at(
     manifest: &Mapping,
     out: &Path,
 ) -> Result<Release, Vec<ResolveError>> {
-    let contents = contents_of(manifest);
     let declared = manifest_name(root, directory);
+
+    // A directory that already carries a release record was written by
+    // `vendor`, never by a person, on the same terms `vendor`'s own guard
+    // takes in the opposite direction ([`holds_the_same_package`]'s doc
+    // comment on the sibling function). Publishing it would republish
+    // whatever bytes `vendor` last installed there, which is not necessarily
+    // what the maintained source declares now: `find` matches a directory by
+    // the name its manifest states, and a vendored copy's manifest still
+    // states the same name `vendor` copied it under. So `--package <name>`
+    // reaches this directory again once nothing else declares that name,
+    // silently republishing a stale vendored copy under a normal-looking
+    // `published …` line.
+    if release::at(directory).is_ok() {
+        return Err(refusal(
+            &declared,
+            "this directory carries a release record, so `taxonomy vendor` installed it rather \
+             than a person maintaining it by hand. Publishing it would republish whatever bytes \
+             `vendor` last put there, which may no longer be what the maintained source \
+             declares. Name the maintained source directly with `--from <dir>` instead",
+        ));
+    }
+
+    let contents = contents_of(manifest);
 
     // Every declared path is held to the tree here, before the first reader of
     // one runs. `taxonomy_source` reads `contents.taxonomy` for the resolver,

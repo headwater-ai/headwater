@@ -132,6 +132,32 @@ fn publish_from(root: &Path, out: &Path) -> (Option<i32>, String) {
     )
 }
 
+/// `taxonomy publish --from` over this repository's own maintained source.
+///
+/// `--package headwater/standard` now finds `packages/headwater-standard/`,
+/// and #366 made that refuse: the directory carries a release record, so it
+/// was vendored rather than maintained by hand. `taxonomy-source/headwater-standard/`
+/// is the maintained source, and this is the real, substantial artifact this
+/// case needs — not a synthetic one — so it names that directory with `--from`
+/// rather than switching to a smaller fixture.
+fn publish_real_source_into(out: &Path) -> (Option<i32>, String) {
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .arg("taxonomy")
+        .arg("publish")
+        .arg("--from")
+        .arg(repository().join("taxonomy-source/headwater-standard"))
+        .arg("--out")
+        .arg(out)
+        .arg("--root")
+        .arg(repository())
+        .output()
+        .expect("the binary runs");
+    (
+        output.status.code(),
+        String::from_utf8_lossy(&output.stderr).into_owned(),
+    )
+}
+
 impl Drop for Root {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.0);
@@ -244,7 +270,7 @@ fn a_publish_into_a_directory_it_cannot_read_writes_nothing_into_it() {
     std::fs::write(out.join("theirs.txt"), "the caller's own file").expect("their file is written");
     mode(&out, 0o300);
 
-    let (code, message) = publish_from(&repository(), &out);
+    let (code, message) = publish_real_source_into(&out);
     mode(&out, 0o700);
 
     let left: Vec<String> = std::fs::read_dir(&out)

@@ -66,7 +66,17 @@ impl Root {
         std::fs::create_dir_all(&at).expect("the root is made");
 
         let repository = repository();
-        copy(&repository.join("packages"), &at.join("packages"));
+        // `packages/headwater-standard/` is a vendored artifact since #366
+        // (it carries a `release.yml`, and `taxonomy publish` now refuses to
+        // publish a directory in that state — the guard this fixture would
+        // otherwise trip, since every case here calls `taxonomy publish` by
+        // name with no `--from`). The maintained source is
+        // `taxonomy-source/headwater-standard/`, copied here to the path the
+        // by-name lookup expects.
+        copy(
+            &repository.join("taxonomy-source/headwater-standard"),
+            &at.join("packages/headwater-standard"),
+        );
         copy(
             &repository.join("docs/taxonomies"),
             &at.join("docs/taxonomies"),
