@@ -284,7 +284,13 @@ fn oracle(artifact: &str) -> Option<String> {
         .output();
     let reason = match ran {
         Ok(output) if output.status.success() => return None,
-        Ok(output) => String::from_utf8_lossy(&output.stderr).trim().to_string(),
+        // A stand-in that answers non-zero with nothing on its stderr is the
+        // shape a shadowed interpreter takes, so the status is the reason where
+        // there is no other.
+        Ok(output) => match String::from_utf8_lossy(&output.stderr).trim() {
+            "" => format!("it exited {}", output.status),
+            said => said.to_string(),
+        },
         Err(error) => error.to_string(),
     };
     // A parser that ran and refused is the finding. A parser that could not run
