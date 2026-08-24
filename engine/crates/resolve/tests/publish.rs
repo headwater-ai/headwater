@@ -2435,7 +2435,7 @@ fn a_packages_directory_that_cannot_be_written_takes_nothing_from_the_installed_
         .collect::<Vec<_>>()
         .join("\n");
     assert!(
-        said.contains("acme-fixture~staged"),
+        said.contains("~staging") && said.contains("acme-fixture"),
         "the refusal does not name the staging path it could not make: {said}"
     );
     assert!(
@@ -2615,11 +2615,13 @@ fn an_artifact_that_holds_the_target_inside_it_is_refused() {
 fn a_directory_this_verb_stages_into_never_wins_the_lookup() {
     let scratch = Scratch::new("staging-shadow");
     let (adopter, _, _) = adopter_holding(&scratch);
+    let packages = adopter.join(package::PACKAGES);
 
-    for suffix in [package::STAGED, package::ASIDE] {
-        let residue = adopter
-            .join(package::PACKAGES)
-            .join(format!("acme-fixture{suffix}"));
+    let residues = [
+        package::staging_path(&packages, "acme-fixture"),
+        packages.join(format!("acme-fixture{}", package::ASIDE)),
+    ];
+    for residue in residues {
         std::fs::create_dir_all(&residue).expect("the residue is made");
         std::fs::write(
             residue.join(package::MANIFEST),
@@ -2653,14 +2655,16 @@ fn a_directory_this_verb_stages_into_never_wins_the_lookup() {
 }
 
 /// A plain retry vendor of a package killed mid-swap still lands, because the
-/// new collision check excludes this run's own `~staged` and `~aside` paths.
+/// collision check excludes this run's own staging and aside paths.
 ///
 /// #354's own hardening must not regress #312's self-heal. [`vendor`]'s doc
 /// comment already states the reachable state: a kill inside the one-rename
 /// window leaves the installed package complete under `<name>~aside`, and
-/// [`package::find`] answers from it in the meantime, sorting before
-/// `<name>~staged`. The *next* `vendor` of that same package is what clears
-/// both residues, which is the self-heal [#312](https://github.com/headwater-ai/headwater/issues/312)
+/// [`package::find`] answers from it in the meantime. The staging residue
+/// under `packages/~staging/<name>` never answers a lookup at all, complete
+/// or not, which is [#357](https://github.com/headwater-ai/headwater/issues/357).
+/// The *next* `vendor` of that same package is what clears both residues,
+/// which is the self-heal [#312](https://github.com/headwater-ai/headwater/issues/312)
 /// asked for. A version of #354's new check that compared only
 /// `found_at != target` — without excluding `staged` and `aside` — would run
 /// before that clearing, find the same package resolving from `<name>~aside`,
@@ -2679,8 +2683,11 @@ fn a_plain_retry_after_a_kill_mid_swap_still_lands() {
     let packages = adopter.join(package::PACKAGES);
     std::fs::remove_dir_all(packages.join("acme-fixture"))
         .expect("the target is cleared to simulate the kill");
-    for suffix in [package::STAGED, package::ASIDE] {
-        let residue = packages.join(format!("acme-fixture{suffix}"));
+    let residues = [
+        package::staging_path(&packages, "acme-fixture"),
+        packages.join(format!("acme-fixture{}", package::ASIDE)),
+    ];
+    for residue in residues {
         std::fs::create_dir_all(&residue).expect("the residue is made");
         std::fs::write(
             residue.join(package::MANIFEST),
@@ -2718,13 +2725,20 @@ fn a_plain_retry_after_a_kill_mid_swap_still_lands() {
 /// # The reachable state, and why the natural gesture is the destructive one
 ///
 /// A run killed after the staging copy and before the first rename leaves
-/// exactly `packages/<name>~staged`, complete, with nothing at the target. A run
-/// killed between the two renames leaves `packages/<name>~aside`, complete, with
-/// nothing at the target. In both states the adopter holds one copy of the
-/// package, it is under a name they did not choose, and pointing this verb at it
-/// is what finishing the install looks like from outside. The refusal for the
-/// second one says the package "is complete under `packages/<name>~aside`", so
-/// the message names the directory the gesture would use.
+/// exactly `packages/~staging/<name>`, complete, with nothing at the target.
+/// [`find`] never reads it there, which is what
+/// [#357](https://github.com/headwater-ai/headwater/issues/357) closes: this
+/// state does not resolve at all, complete or not, until a further `vendor`
+/// clears it. A run killed between the two renames leaves
+/// `packages/<name>~aside`, complete, with nothing at the target, and `find`
+/// does read that one — it is a flat sibling of the target, one level down
+/// like any package — which is the state
+/// [#312](https://github.com/headwater-ai/headwater/issues/312) asked to keep
+/// resolving. The aside case is where the adopter holds one copy of the
+/// package under a name they did not choose, and pointing this verb at it is
+/// what finishing the install looks like from outside; the refusal there says
+/// the package "is complete under `packages/<name>~aside`", so the message
+/// names the directory the gesture would use.
 ///
 /// The first step of the write phase clears both of those paths. Handed one of
 /// them as the artifact, the verb deletes the artifact it verified moments
@@ -2739,21 +2753,23 @@ fn a_plain_retry_after_a_kill_mid_swap_still_lands() {
 /// defect, reachable only through a state the fix for it creates.
 #[test]
 fn an_artifact_that_is_a_directory_this_verb_stages_through_is_refused() {
-    for suffix in [package::STAGED, package::ASIDE] {
-        let case = format!("staged-as-artifact{suffix}");
+    for kind in ["staging", "aside"] {
+        let case = format!("staged-as-artifact-{kind}");
         let scratch = Scratch::new(&case);
         let (adopter, _, digest) = adopter_holding(&scratch);
+        let packages = adopter.join(package::PACKAGES);
 
         // The state a kill leaves: one complete copy, under the sibling name,
         // and nothing at the target.
-        let residue = adopter
-            .join(package::PACKAGES)
-            .join(format!("acme-fixture{suffix}"));
-        std::fs::rename(
-            adopter.join(package::PACKAGES).join("acme-fixture"),
-            &residue,
-        )
-        .expect("the package moves to the name a kill would leave it under");
+        let residue = match kind {
+            "staging" => package::staging_path(&packages, "acme-fixture"),
+            _ => packages.join(format!("acme-fixture{}", package::ASIDE)),
+        };
+        if let Some(parent) = residue.parent() {
+            std::fs::create_dir_all(parent).expect("the residue's parent exists");
+        }
+        std::fs::rename(packages.join("acme-fixture"), &residue)
+            .expect("the package moves to the name a kill would leave it under");
 
         let errors = package::vendor(&adopter, &residue, &digest)
             .expect_err("an artifact that is a directory this verb stages through is refused");
@@ -2773,11 +2789,18 @@ fn an_artifact_that_is_a_directory_this_verb_stages_through_is_refused() {
             ],
             "the verb took files out of the artifact it was handed"
         );
-        assert_eq!(
-            package::find_version(&adopter, "acme/fixture"),
-            Some("1.0.0".to_string()),
-            "the package the adopter still held stopped resolving"
-        );
+        match kind {
+            "aside" => assert_eq!(
+                package::find_version(&adopter, "acme/fixture"),
+                Some("1.0.0".to_string()),
+                "the package the adopter still held stopped resolving"
+            ),
+            _ => assert_eq!(
+                package::find_version(&adopter, "acme/fixture"),
+                None,
+                "a residue under `~staging/` resolved, which #357 says it must not, complete or not"
+            ),
+        }
 
         let said = errors
             .iter()
@@ -2790,7 +2813,7 @@ fn an_artifact_that_is_a_directory_this_verb_stages_through_is_refused() {
         );
 
         // And the gesture that does work is the one the refusal names.
-        let moved = scratch.path().join(format!("moved{suffix}"));
+        let moved = scratch.path().join(format!("moved-{kind}"));
         std::fs::rename(&residue, &moved).expect("the artifact moves out of `packages/`");
         package::vendor(&adopter, &moved, &digest)
             .expect("the artifact vendors once it sits outside `packages/`");
@@ -2824,9 +2847,7 @@ fn a_file_an_earlier_run_left_in_the_staging_directory_is_not_installed() {
     let scratch = Scratch::new("stale-staging");
     let (adopter, _, _) = adopter_holding(&scratch);
 
-    let stale = adopter
-        .join(package::PACKAGES)
-        .join(format!("acme-fixture{}", package::STAGED));
+    let stale = package::staging_path(&adopter.join(package::PACKAGES), "acme-fixture");
     std::fs::create_dir_all(&stale).expect("the stale staging directory is made");
     std::fs::write(stale.join("poison.txt"), "not from any artifact")
         .expect("the stale directory holds a file no artifact carries");
@@ -2854,6 +2875,164 @@ fn a_file_an_earlier_run_left_in_the_staging_directory_is_not_installed() {
         packages_under(&adopter),
         vec!["acme-fixture".to_string()],
         "the stale staging directory is still there after a vendor that succeeded"
+    );
+}
+
+/// A partial staging tree with a readable manifest and nothing installed does
+/// not resolve, on a first install.
+///
+/// This is [#357](https://github.com/headwater-ai/headwater/issues/357)'s own
+/// Done-when: a residue under `packages/~staging/<name>` carries a manifest
+/// like any other package directory, but [`find`] reads only one level of
+/// `packages/`, and `packages/~staging` itself carries no manifest beside it.
+/// So the residue never reaches the comparison that would answer this lookup,
+/// whether it is complete or, as here, missing everything but its manifest.
+#[test]
+fn a_partial_staging_tree_with_no_package_installed_does_not_resolve() {
+    let scratch = Scratch::new("partial-staging-first-install");
+    let adopter = scratch.path().join("adopter");
+    std::fs::create_dir_all(adopter.join(package::PACKAGES)).expect("adopter root");
+
+    let staging = package::staging_path(&adopter.join(package::PACKAGES), "acme-fixture");
+    std::fs::create_dir_all(&staging).expect("the partial staging tree is made");
+    std::fs::write(
+        staging.join(package::MANIFEST),
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
+    )
+    .expect("the residue carries a readable manifest, and nothing else");
+
+    assert_eq!(
+        package::find_version(&adopter, "acme/fixture"),
+        None,
+        "a partial staging tree resolved as though it were the installed package"
+    );
+    assert_eq!(
+        packages_under(&adopter),
+        vec!["~staging".to_string()],
+        "packages/ should hold only the shared staging parent, not a package name"
+    );
+}
+
+/// A successful vendor of a first install leaves no shared staging parent
+/// behind.
+///
+/// The other cases in this file assert `packages_under` after an upgrade,
+/// which would already fail if `~staging` survived — this one pins the
+/// fresh-install case on its own and names the path directly, since a shared
+/// parent standing after a clean run is exactly what
+/// [#357](https://github.com/headwater-ai/headwater/issues/357)'s cost —
+/// removing it on every exit path — is about.
+#[test]
+fn a_successful_first_vendor_removes_the_shared_staging_parent() {
+    let scratch = Scratch::new("staging-parent-tidied");
+    let root = publisher_declaring_at(&scratch, "publisher", "acme/fixture", "1.0.0");
+    let out = scratch.path().join("artifact-1");
+    let record = package::publish(&root, "acme/fixture", &out).expect("1.0.0 publishes");
+
+    let adopter = scratch.path().join("adopter");
+    std::fs::create_dir_all(&adopter).expect("the adopter root is made");
+    package::vendor(&adopter, &out, &record.digest).expect("the vendor lands");
+
+    let staging_root = adopter.join(package::PACKAGES).join(package::STAGING);
+    assert!(
+        !staging_root.exists(),
+        "a successful vendor left the shared staging parent behind"
+    );
+}
+
+/// A copy failure still removes the shared staging parent this run created.
+///
+/// The parent is made by `create_dir_all` inside `copy_tree`'s first call, and
+/// mode `0500` set here on the parent itself — rather than on `packages/` as
+/// the other permission-injected cases in this file do — blocks only the leaf
+/// underneath: the one write the copy needs and the one this run made. That
+/// isolates the copy-phase cleanup site from the earlier `clear` calls and
+/// from the read phase above them, both of which still succeed. `remove_dir`
+/// on the now-empty parent needs write only on `packages/`, which this mode
+/// leaves alone, so the assertion below needs no mode restored first.
+#[cfg(unix)]
+#[test]
+fn a_copy_failure_still_removes_the_shared_staging_parent_it_created() {
+    let scratch = Scratch::new("copy-fails-tidies-parent");
+    if !modes_hold(&scratch) {
+        eprintln!("skipped: this process is root, and root writes through mode 0500");
+        return;
+    }
+    let root = publisher_declaring_at(&scratch, "publisher", "acme/fixture", "1.0.0");
+    let out = scratch.path().join("artifact-1");
+    let record = package::publish(&root, "acme/fixture", &out).expect("1.0.0 publishes");
+
+    let adopter = scratch.path().join("adopter");
+    let packages = adopter.join(package::PACKAGES);
+    std::fs::create_dir_all(&packages).expect("the adopter holds an empty `packages/`");
+    let staging_root = packages.join(package::STAGING);
+    std::fs::create_dir_all(&staging_root).expect(
+        "the shared staging parent exists already, as a concurrent sibling's vendor might leave it",
+    );
+    mode(&staging_root, 0o500);
+
+    let refused = package::vendor(&adopter, &out, &record.digest);
+    refused.expect_err("a staging parent this run cannot write into refuses the vendor");
+
+    assert!(
+        !staging_root.exists(),
+        "a copy failure left the shared staging parent behind"
+    );
+}
+
+/// A vendor's cleanup never removes another package's own staging
+/// subdirectory, or the shared parent while that subdirectory still stands.
+///
+/// Two concurrent vendors of different packages now share the literal
+/// `packages/~staging` parent as a mkdir/rmdir target, which they did not
+/// before this repair — each used to write its own flat `<name>~staged`
+/// sibling and never touched the other's path at all. [`tidy`]'s
+/// non-recursive `remove_dir`, rather than `remove_dir_all`, is the safety
+/// property, and this plants a second package's own subdirectory under the
+/// shared parent before vendoring the first, so the parent is never empty at
+/// the moment this run's own cleanup runs.
+#[test]
+fn a_concurrent_siblings_staging_subdirectory_is_never_touched() {
+    let scratch = Scratch::new("concurrent-sibling-staging");
+    let root = publisher_declaring_at(&scratch, "publisher", "acme/fixture", "1.0.0");
+    let out = scratch.path().join("artifact-1");
+    let record = package::publish(&root, "acme/fixture", &out).expect("1.0.0 publishes");
+
+    let adopter = scratch.path().join("adopter");
+    let packages = adopter.join(package::PACKAGES);
+    std::fs::create_dir_all(&packages).expect("the adopter holds an empty `packages/`");
+
+    // A sibling package's own vendor is staging into the shared parent right
+    // now, and this run must neither remove it nor be blocked by it.
+    let sibling = package::staging_path(&packages, "widgets-core-schema");
+    std::fs::create_dir_all(&sibling).expect("the sibling's own staging subdirectory exists");
+    std::fs::write(
+        sibling.join("marker.txt"),
+        "the sibling's own scratch, mid-copy",
+    )
+    .expect("the sibling's own file is there");
+
+    package::vendor(&adopter, &out, &record.digest).expect("the vendor of the other package lands");
+
+    assert_eq!(
+        package::find_version(&adopter, "acme/fixture"),
+        Some("1.0.0".to_string()),
+        "the vendor that ran alongside a sibling's staging subdirectory did not land"
+    );
+    let staging_root = packages.join(package::STAGING);
+    assert!(
+        staging_root.exists(),
+        "the shared staging parent was removed while a sibling's own subdirectory still stood in it"
+    );
+    assert!(
+        sibling.join("marker.txt").exists(),
+        "a concurrent sibling's own staging subdirectory was touched by this run's cleanup"
+    );
+    assert_eq!(
+        packages_under(&adopter),
+        vec!["acme-fixture".to_string(), package::STAGING.to_string()],
+        "the successful vendor left something under `packages/` besides the package and the \
+         still-occupied shared parent"
     );
 }
 
