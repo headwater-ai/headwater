@@ -2797,3 +2797,180 @@ fn corrupting_the_vendored_release_records_digest_reopens_pin_current() {
         "the refusal does not say the record was edited after it was written: {message}"
     );
 }
+
+/// Every file the corrected manifest block of [spec 7's example](../../../../docs/spec/07-distribution-and-federation.md#publishing)
+/// names, so `publish` sees exactly what a publisher who copied that block
+/// would hand it.
+///
+/// `broken` places `bundles` and `migrations` at the manifest's top level,
+/// which is where the example read before this fix moved them under
+/// `contents`. The directories on disk are identical either way — only the
+/// manifest's own placement of the two keys differs — because the defect this
+/// fixture exists for is exactly that placement, and not a missing file.
+fn spec_seven_example(scratch: &Scratch, at: &str, broken: bool) -> PathBuf {
+    let under_contents = if broken {
+        String::new()
+    } else {
+        String::from("  bundles: bundles/\n  migrations: migrations/\n")
+    };
+    let top_level = if broken {
+        String::from("bundles: bundles/\nmigrations: migrations/\n")
+    } else {
+        String::new()
+    };
+
+    let manifest = format!(
+        "package: acme/headwater-taxonomy\n\
+         version: 3.2.0\n\
+         contents:\n\
+         \u{20}\u{20}taxonomy: taxonomy.yml\n\
+         \u{20}\u{20}conformance: conformance.yml\n\
+         {under_contents}\
+         \u{20}\u{20}doctrine: doctrine/\n\
+         \u{20}\u{20}templates: templates/\n\
+         profiles: [service-repo, docs-only, platform]\n\
+         {top_level}\
+         interview: interview.yml\n"
+    );
+    let package_dir = format!("{at}/packages/acme-headwater-taxonomy");
+    scratch.write(&format!("{package_dir}/package.yml"), &manifest);
+    scratch.write(
+        &format!("{package_dir}/taxonomy.yml"),
+        "\
+taxonomy: acme/headwater-taxonomy
+version: 3.2.0
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+",
+    );
+    scratch.write(
+        &format!("{package_dir}/conformance.yml"),
+        "conformance: {}\n",
+    );
+    scratch.write(
+        &format!("{package_dir}/bundles/extra/bundle.yml"),
+        "\
+overlay: acme/headwater-taxonomy
+add:
+  purposes:
+    procedure: {intent: state how a task is carried out}
+",
+    );
+    scratch.write(
+        &format!("{package_dir}/doctrine/doctrine.md"),
+        "# Doctrine\n\nProse that explains the method, vendored to consumers.\n",
+    );
+    scratch.write(
+        &format!("{package_dir}/templates/note.md"),
+        "# Templates\n\nProse for a publisher's own authors, not a scaffolder source.\n",
+    );
+    scratch.write(&format!("{package_dir}/interview.yml"), "questions: []\n");
+    // `migrations/` is a real, existing directory — empty is the ordinary state
+    // of a package that has published no major version yet.
+    std::fs::create_dir_all(scratch.path().join(format!("{package_dir}/migrations")))
+        .expect("the migrations directory is made");
+
+    scratch.path().join(at)
+}
+
+/// A consumer who pins this package and selects its one bundle.
+fn takes_the_example(scratch: &Scratch, at: &str, digest: &str) {
+    scratch.write(
+        &format!("{at}/.headwater/taxonomy.yml"),
+        &format!(
+            "\
+taxonomy:
+  package: acme/headwater-taxonomy
+  version: 3.2.0
+  bundles: [extra]
+  digest: {digest}
+corpus:
+  root: docs
+"
+        ),
+    );
+}
+
+/// **The old placement publishes, and a consumer who selects the bundle it
+/// ships is refused anyway.**
+///
+/// This is the defect the issue filed against spec 7's example: `bundles` sat
+/// at the manifest's top level, where `reachable` and `stage` never look, so
+/// nothing about `publish` itself catches the misplacement — the bundle
+/// directory is copied into the artifact regardless, because the whole-tree
+/// walk that `stage` runs carries every file the package directory holds,
+/// declared or not. The claim only breaks where the manifest is read back:
+/// `package::sources` looks up `contents.bundles` to find a bundle a consumer
+/// names, and a `bundles` key sitting outside `contents` is invisible to that
+/// lookup. So the artifact publishes clean, and the one adopter who asked for
+/// the bundle it carries is turned away — the exact "claim a publisher makes
+/// and a consumer never sees" that spec 7 names.
+#[test]
+fn the_old_top_level_placement_of_bundles_publishes_but_refuses_the_consumer_who_selects_one() {
+    let scratch = Scratch::new("spec7-broken");
+    let root = spec_seven_example(&scratch, "publisher", true);
+    let out = scratch.path().join("artifact");
+
+    let record = package::publish(&root, "acme/headwater-taxonomy", &out).expect(
+        "the misplaced manifest still publishes — nothing at publish time reads a \
+                 top-level `bundles` any differently from an unused key",
+    );
+    assert!(
+        out.join("bundles/extra/bundle.yml").is_file(),
+        "the bundle directory is copied whether or not `contents` names it, since `stage` \
+         carries the whole package directory regardless of what any key declares"
+    );
+
+    takes_the_example(&scratch, "consumer", &record.digest);
+    let consumer_root = scratch.path().join("consumer");
+    package::vendor(&consumer_root, &out, &record.digest).expect("it vendors");
+    let declaration = package::consumer(&consumer_root).expect("it reads");
+
+    let refused = package::sources(&consumer_root, &declaration)
+        .expect_err("a consumer who selects a bundle that `contents` never named is refused");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("this selects 1 bundles and acme/headwater-taxonomy ships none"),
+        "the refusal does not name the gap between what the consumer asked for and what \
+         `contents` declares: {message}"
+    );
+}
+
+/// **The corrected placement publishes, and the same consumer's selection of
+/// the same bundle succeeds.**
+///
+/// Same package name, same bundle directory, same consumer declaration as the
+/// case above — the only difference is where `bundles` and `migrations` sit in
+/// the manifest. Moving them under `contents` is the whole of the fix, and
+/// this is the proof that moving them is what closes the gap: nothing else
+/// about the fixture changed.
+#[test]
+fn the_corrected_spec_seven_example_publishes_and_its_bundle_reaches_a_consumer() {
+    let scratch = Scratch::new("spec7-corrected");
+    let root = spec_seven_example(&scratch, "publisher", false);
+    let out = scratch.path().join("artifact");
+
+    let record = package::publish(&root, "acme/headwater-taxonomy", &out)
+        .expect("the corrected example publishes");
+    assert!(out.join("bundles/extra/bundle.yml").is_file());
+    assert!(out.join("doctrine/doctrine.md").is_file());
+    assert!(out.join("templates/note.md").is_file());
+    assert!(out.join("interview.yml").is_file());
+
+    let manifest = std::fs::read_to_string(out.join(package::MANIFEST)).expect("it is there");
+    assert!(manifest.contains("bundles: bundles"), "{manifest}");
+    assert!(manifest.contains("migrations: migrations"), "{manifest}");
+
+    takes_the_example(&scratch, "consumer", &record.digest);
+    let consumer_root = scratch.path().join("consumer");
+    package::vendor(&consumer_root, &out, &record.digest).expect("it vendors");
+    let declaration = package::consumer(&consumer_root).expect("it reads");
+
+    let sources = package::sources(&consumer_root, &declaration)
+        .expect("the corrected placement resolves for the consumer who selects the bundle");
+    assert_eq!(
+        sources.len(),
+        2,
+        "the taxonomy and the one bundle it selects"
+    );
+}
