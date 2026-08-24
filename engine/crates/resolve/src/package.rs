@@ -1243,8 +1243,8 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
 /// [`vendor`] derives the target from a name and the derivation is not
 /// injective, so a directory that carries a release record is not evidence that
 /// the record covers this package. This asks the directory what it is, and it
-/// is the whole of what keeps the removal below from taking a package it is not
-/// replacing.
+/// is the whole of what keeps the removal in [`vendor`] from taking a package it
+/// is not replacing.
 ///
 /// **It runs before the first write and it writes nothing**, so it is one more
 /// read in the phase that already reads. That is where
