@@ -26,7 +26,7 @@ release:
   package: headwater/standard
   version: 3.2.0
   requires_engine: ">=0.1 <2"
-  digest: sha256:1f21e609a0447e7c475d5dc8e652f8ec68fa0286c8ac95c0a1b708e097211d36
+  digest: sha256:4b09910033403b46a962afdb6518ed9cf39fa0dc698c8a59dd3f3753025c7bc5
   members:
     - path: bundles/README.md
       digest: sha256:d745062e663597082acbe54fcdfa5356c3bc15c5bba65f77c954177cfe9aaeb5
@@ -123,6 +123,6 @@ release:
     - path: conformance.yml
       digest: sha256:9ff0735e955bea021067c9949782bb01b5bd2ea46ef7be87c929d3fe9094f0db
     - path: package.yml
-      digest: sha256:ce00537e9e2e0743c4a7af6057daa1430f6012ccf24321b637f392e076b9a2a3
+      digest: sha256:af963f9e0cf5707a04d7362565e2175f5f85f06ee40a0a3262b3f4728d2a6415
     - path: taxonomy.yml
       digest: sha256:20ffa9a77f53da02e919111fd076de2b904c43978a4236ae9b2029aca3cc2971
