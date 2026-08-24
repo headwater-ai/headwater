@@ -1,8 +1,8 @@
-249 files under the corpus root
+259 files under the corpus root
     205 typed
       4 generated
       2 untyped
-     36 excluded
+     46 excluded
       2 not a document
      33 typed decision
       1 typed decision_register
@@ -17,7 +17,7 @@
       1 typed tutorial
 
 exclusions
-     36 `docs/taxonomies/**`
+     46 `docs/taxonomies/**`
         package content. This directory is the canonical taxonomy library, and a taxonomy package that lives inside the corpus it types has no home in the shelf model. Nothing in the base package or in either entry says whether package content is corpus content, and spec 13 records the gap; this repository answers it locally, here, with a reason. A fixture corpus under an entry is package content twice over, because it is a corpus that another root is meant to walk.
 
 docs/LICENSE
@@ -103,6 +103,26 @@ docs/taxonomies/design-spec/templates/obligation_register.md
 docs/taxonomies/design-spec/templates/review_prompt.md
   excluded: docs/taxonomies/**
 docs/taxonomies/design-spec/templates/review_record.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis/bundle.yml
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis/doctrine.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis/fixtures/README.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis/fixtures/corpus/docs/decisions/0001-sign-every-payload.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis/fixtures/corpus/docs/specifications/beacon-overview.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis/fixtures/corpus/docs/specifications/getting-started-with-beacon.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis/fixtures/corpus/docs/specifications/publish-a-release.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis/fixtures/corpus/docs/specifications/rotate-a-signing-key.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis/fixtures/corpus/docs/specifications/the-delivery-api.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/diataxis/fixtures/corpus/docs/specifications/why-delivery-is-at-least-once.md
   excluded: docs/taxonomies/**
 docs/w3id/.htaccess
   not a document: not a Markdown file
