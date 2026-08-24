@@ -1380,7 +1380,9 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
         false => format!("nothing is installed at `{under}`"),
     };
 
-    // The write phase.
+    // The write phase. Whatever stands under the two sibling names goes, and
+    // nothing an adopter created can stand there: the grammar refuses `~`, so
+    // neither name is one a package can be vendored under.
     for (path, shown) in [(&staged, &staged_under), (&aside, &aside_under)] {
         clear(path).map_err(|error| {
             refusal(
@@ -1821,6 +1823,14 @@ fn splice(source: &str, span: headwater_yaml::Span, with: &str) -> Option<String
 }
 
 /// Copy a directory tree, creating what it needs.
+///
+/// **`to` must not lie inside `from`.** The `create_dir_all(to)` below runs
+/// before the `read_dir(from)`, so a destination under the source is one of the
+/// entries the listing returns and the recursion descends into what it is
+/// writing. It ends at `ENAMETOOLONG` some hundred levels down, having written
+/// a tree nobody asked for. This takes two paths and cannot check that itself
+/// without deciding what a caller meant by them; [`vendor`] holds the check,
+/// and its doc comment records the shape.
 fn copy_tree(from: &Path, to: &Path) -> Result<(), String> {
     std::fs::create_dir_all(to)
         .map_err(|error| format!("cannot create {}: {error}", to.display()))?;
