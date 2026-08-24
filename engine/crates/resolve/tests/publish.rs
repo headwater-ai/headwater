@@ -1396,6 +1396,185 @@ fn a_fetched_artifact_that_states_two_names_is_refused() {
     assert!(message.contains("taxonomy.yml"), "{message}");
 }
 
+/// A package can leave its name off both declarations at once, and before this
+/// fix each side's absence fell back to the same empty string, so the two
+/// blanks compared equal and nothing refused it. The six cases below hold
+/// each of the two pairs — name and version — against every way one side of
+/// it can be absent, and each asserts on the words the message uses rather
+/// than merely that it refuses, because a present-but-blank value has to read
+/// differently from a key that is not there at all.
+///
+/// The two manifest-absent cases cannot reach [`package::find`]: `find`
+/// locates a package by the `package:` key its own manifest declares, and a
+/// manifest without that key is not a match `find` can look up. They go
+/// through [`package::publish_from`] instead, which reads the manifest at a
+/// directory the caller already holds.
+#[test]
+fn a_manifest_that_declares_no_package_key_is_refused_against_a_named_source() {
+    let scratch = Scratch::new("name-absent-manifest");
+    scratch.write(
+        "publisher/source/package.yml",
+        "version: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
+    );
+    scratch.write("publisher/source/taxonomy.yml", TAXONOMY);
+    let root = scratch.path().join("publisher");
+    let directory = root.join("source");
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish_from(&root, &directory, &out)
+        .expect_err("a manifest with no `package` key does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+
+    assert!(
+        message.contains("no `package` key"),
+        "the missing key is not named:\n{message}"
+    );
+    assert!(
+        message.contains("taxonomy: acme/fixture"),
+        "the source's declared name is not shown:\n{message}"
+    );
+    assert!(message.contains("absent"), "{message}");
+    assert!(
+        !message.contains("`package: `"),
+        "a blank value was printed rather than a missing key:\n{message}"
+    );
+}
+
+/// The other side of the same pair: the source declares no `taxonomy` key at
+/// all, and the manifest still names the package.
+#[test]
+fn a_source_that_declares_no_taxonomy_key_is_refused_against_a_named_manifest() {
+    let scratch = Scratch::new("name-absent-source");
+    let root = publisher_at(&scratch, None, "1.0.0");
+    let path = root.join("packages/acme-fixture/taxonomy.yml");
+    let text = std::fs::read_to_string(&path).expect("the source was just written");
+    let stripped = text.replace("taxonomy: acme/fixture\n", "");
+    assert_ne!(
+        text, stripped,
+        "the source did not declare `taxonomy:` to begin with"
+    );
+    std::fs::write(&path, stripped).expect("the source writes");
+
+    let out = scratch.path().join("artifact");
+    let refused = package::publish(&root, "acme/fixture", &out)
+        .expect_err("a source with no `taxonomy` key does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+
+    assert!(message.contains("package: acme/fixture"), "{message}");
+    assert!(message.contains("no `taxonomy` key"), "{message}");
+    assert!(message.contains("absent"), "{message}");
+    assert!(!message.contains("`taxonomy: `"), "{message}");
+}
+
+/// Neither declaration names the package at all. Before this fix both sides
+/// fell back to an equal empty string and the publish went through in
+/// silence — this is the case Done-when names directly.
+#[test]
+fn a_manifest_and_source_that_both_declare_no_name_key_are_refused() {
+    let scratch = Scratch::new("name-absent-both");
+    scratch.write(
+        "publisher/source/package.yml",
+        "version: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
+    );
+    scratch.write(
+        "publisher/source/taxonomy.yml",
+        "version: 1.0.0\npurposes:\n  rationale: {intent: explain why a choice was made and what it forecloses}\n",
+    );
+    let root = scratch.path().join("publisher");
+    let directory = root.join("source");
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish_from(&root, &directory, &out)
+        .expect_err("a package that names itself nowhere used to publish silently");
+    let message = headwater_resolve::render_errors(&refused);
+
+    assert!(
+        message.contains("states it in neither"),
+        "the both-absent message is not present:\n{message}"
+    );
+    assert!(message.contains("package.yml"), "{message}");
+    assert!(message.contains("taxonomy.yml"), "{message}");
+}
+
+/// The version pair, one side absent: the manifest states no `version` key at
+/// all and the source still declares one.
+#[test]
+fn a_manifest_that_declares_no_version_key_is_refused_against_a_versioned_source() {
+    let scratch = Scratch::new("version-absent-manifest");
+    scratch.write(
+        "publisher/packages/acme-fixture/package.yml",
+        "package: acme/fixture\ncontents:\n  taxonomy: taxonomy.yml\n",
+    );
+    scratch.write("publisher/packages/acme-fixture/taxonomy.yml", TAXONOMY);
+    let root = scratch.path().join("publisher");
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish(&root, "acme/fixture", &out)
+        .expect_err("a manifest with no `version` key does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+
+    assert!(
+        message.contains("no `version` key"),
+        "the missing key is not named:\n{message}"
+    );
+    assert!(message.contains("version: 1.0.0"), "{message}");
+    assert!(message.contains("absent"), "{message}");
+}
+
+/// The other side of the version pair: the source declares no `version` key
+/// at all and the manifest still pins one.
+#[test]
+fn a_source_that_declares_no_version_key_is_refused_against_a_versioned_manifest() {
+    let scratch = Scratch::new("version-absent-source");
+    scratch.write(
+        "publisher/packages/acme-fixture/package.yml",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
+    );
+    scratch.write(
+        "publisher/packages/acme-fixture/taxonomy.yml",
+        "taxonomy: acme/fixture\npurposes:\n  rationale: {intent: explain why a choice was made and what it forecloses}\n",
+    );
+    let root = scratch.path().join("publisher");
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish(&root, "acme/fixture", &out)
+        .expect_err("a source with no `version` key does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+
+    assert!(message.contains("version: 1.0.0"), "{message}");
+    assert!(message.contains("no `version` key"), "{message}");
+    assert!(message.contains("absent"), "{message}");
+}
+
+/// Neither declaration states a version. The manifest still names the
+/// package, so `find` still locates it — only the version pair is absent on
+/// both sides.
+#[test]
+fn a_manifest_and_source_that_both_declare_no_version_key_are_refused() {
+    let scratch = Scratch::new("version-absent-both");
+    scratch.write(
+        "publisher/packages/acme-fixture/package.yml",
+        "package: acme/fixture\ncontents:\n  taxonomy: taxonomy.yml\n",
+    );
+    scratch.write(
+        "publisher/packages/acme-fixture/taxonomy.yml",
+        "taxonomy: acme/fixture\npurposes:\n  rationale: {intent: explain why a choice was made and what it forecloses}\n",
+    );
+    let root = scratch.path().join("publisher");
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish(&root, "acme/fixture", &out)
+        .expect_err("a package that states no version anywhere used to publish silently");
+    let message = headwater_resolve::render_errors(&refused);
+
+    assert!(
+        message.contains("states it in neither"),
+        "the both-absent message is not present:\n{message}"
+    );
+    assert!(message.contains("package.yml"), "{message}");
+    assert!(message.contains("taxonomy.yml"), "{message}");
+}
+
 /// The two declarations of this repository's own package name one thing.
 ///
 /// The cases above prove the refusal fires. This one proves it is not firing on
