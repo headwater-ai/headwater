@@ -3416,3 +3416,127 @@ fn a_broken_sibling_manifest_does_not_stop_a_package_that_resolves_fine() {
 
     assert_eq!(record.package, "acme/fixture");
 }
+
+/// Two directories that each carry a well-formed manifest declaring the same
+/// `package:` name are detected and reported, naming both, instead of
+/// resolving silently to whichever sorts first.
+///
+/// `aaa-vendored` sorts before `zzz-copied-source`, so the pre-fix walk
+/// returns the first one the instant it matches and never reads the second at
+/// all — the exact silent-duplicate defect #369 files. The second directory
+/// is written by a plain `Scratch::write`, the shape a person gets by copying
+/// a package directory in beside one `vendor` already installed, following
+/// `headwater init`'s own suggested workflow, and not through `package::vendor`
+/// itself.
+#[test]
+fn two_directories_declaring_one_name_are_both_named_rather_than_resolved_silently() {
+    let scratch = Scratch::new("duplicate-declared-name");
+    scratch.write(
+        "root/packages/aaa-vendored/package.yml",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
+    );
+    scratch.write("root/packages/aaa-vendored/taxonomy.yml", TAXONOMY);
+    scratch.write(
+        "root/packages/zzz-copied-source/package.yml",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
+    );
+    scratch.write("root/packages/zzz-copied-source/taxonomy.yml", TAXONOMY);
+    let root = scratch.path().join("root");
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish(&root, "acme/fixture", &out)
+        .expect_err("two directories declaring one name must not resolve silently");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("packages/aaa-vendored"),
+        "the first colliding directory is not named:\n{message}"
+    );
+    assert!(
+        message.contains("packages/zzz-copied-source"),
+        "the second colliding directory is not named:\n{message}"
+    );
+}
+
+/// The same collision, caught through [`package::sources`] rather than
+/// [`package::publish`] — the literal path `taxonomy resolve` runs, and the
+/// one a reader who has gone no further than "copy a package directory in,
+/// then resolve" actually exercises.
+///
+/// The consumer declaration is built directly rather than read from a written
+/// `.headwater/taxonomy.yml`, because the collision this proves lives entirely
+/// under `packages/` and a hand-built [`package::Consumer`] is the smaller
+/// fixture for it.
+#[test]
+fn two_directories_declaring_one_name_are_caught_by_sources_too() {
+    let scratch = Scratch::new("duplicate-declared-name-sources");
+    scratch.write(
+        "root/packages/aaa-vendored/package.yml",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
+    );
+    scratch.write("root/packages/aaa-vendored/taxonomy.yml", TAXONOMY);
+    scratch.write(
+        "root/packages/zzz-copied-source/package.yml",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
+    );
+    scratch.write("root/packages/zzz-copied-source/taxonomy.yml", TAXONOMY);
+    let root = scratch.path().join("root");
+
+    let consumer = package::Consumer {
+        package: "acme/fixture".to_string(),
+        version: "1.0.0".to_string(),
+        bundles: Vec::new(),
+        digest: None,
+        overlay: None,
+        corpus_root: "docs".to_string(),
+        exclusions: Vec::new(),
+    };
+
+    let refused = package::sources(&root, &consumer).expect_err(
+        "`sources`, the path `taxonomy resolve` runs, must not resolve a duplicate \
+                     name silently either",
+    );
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("packages/aaa-vendored"),
+        "the first colliding directory is not named:\n{message}"
+    );
+    assert!(
+        message.contains("packages/zzz-copied-source"),
+        "the second colliding directory is not named:\n{message}"
+    );
+}
+
+/// A manifest that fails to parse at all — a genuine YAML syntax error, not
+/// merely a value that parses but is not a mapping — sitting in a directory
+/// that sorts after a package that resolves fine, does not stop that package
+/// from resolving.
+///
+/// Before this fix, `find` returned the instant it matched `acme-fixture` and
+/// never read `zzz-broken-syntax` at all, so a syntax error there was
+/// invisible by construction. Removing the early return to detect duplicate
+/// names means the walk now reaches every directory regardless of where the
+/// match sits, including ones after it — and `crate::source::load`'s own
+/// `?` would have turned this manifest's parse failure into a hard error for
+/// the whole call, regressing the "a broken sibling does not stop a package
+/// that resolves fine" guarantee #296 already shipped. Folding a load failure
+/// into `broken` the same way a non-mapping manifest already is folds this
+/// case in too. `package: [oops` is unclosed flow-sequence syntax that
+/// `headwater_yaml` refuses outright, confirmed directly against
+/// [`headwater_resolve::source::load`] before this fixture was written.
+#[test]
+fn a_yaml_syntax_error_after_a_match_does_not_stop_the_match_from_resolving() {
+    let scratch = Scratch::new("syntax-error-after-match");
+    let root = publisher_of(&scratch, "root", "acme/fixture");
+    scratch.write(
+        "root/packages/zzz-broken-syntax/package.yml",
+        "package: [oops\nversion: 1.0.0\n",
+    );
+    let out = scratch.path().join("artifact");
+
+    let record = package::publish(&root, "acme/fixture", &out).expect(
+        "a manifest that fails to parse, sitting after a match the walk now has to keep reading \
+         past, must not stop the match from resolving",
+    );
+
+    assert_eq!(record.package, "acme/fixture");
+}
