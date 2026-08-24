@@ -394,6 +394,110 @@ fn the_version_flag_prints_the_engine_constant_outside_a_corpus() {
     }
 }
 
+/// The gap the doc comment above names, closed: this reads the source text of
+/// the `--version` arm and holds it to naming the shared constant rather than
+/// a local `env!("CARGO_PKG_VERSION")` read.
+///
+/// [`the_version_flag_prints_the_engine_constant_outside_a_corpus`] cannot tell
+/// the two apart, because every crate agrees on the number today. This case
+/// reads `main.rs` itself, so a regression to a local `env!` read fails here
+/// even while every crate's manifest version still matches by coincidence
+/// (#308: `grade::VERSION`, `mcp.rs`'s `serverInfo.version` and
+/// `headwater_resolve_version()` each read their own crate's `env!` and
+/// disagreed the moment one manifest moved on its own — reproduced by hand:
+/// give `resolve`, `probe` and `query` the distinct versions `0.1.7`, `0.1.8`,
+/// `0.1.9`, rebuild, and `--version` still said `0.1.7` while
+/// `serverInfo.version` said `0.1.9` and `probe plan`'s `harness:` said
+/// `0.1.8`, three numbers from one binary, none of them wrong on its own
+/// terms).
+#[test]
+fn the_version_flag_reads_the_named_constant_and_not_a_local_env_read() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/main.rs");
+    let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let (_, after) = text.split_once("if cli.version {").unwrap_or_else(|| {
+        panic!("`if cli.version` is no longer the shape of the version arm in main.rs")
+    });
+    // The block's own statements are indented eight spaces and its closing
+    // brace sits at four, so the split below cannot land inside the `{}` of
+    // the `println!` format string the way a plain `split_once('}')` would.
+    let (arm, _) = after.split_once("\n    }").unwrap_or_else(|| {
+        panic!("no closing brace found for the `if cli.version` arm in main.rs")
+    });
+    assert!(
+        arm.contains("headwater_resolve::release::ENGINE"),
+        "the version arm no longer names the shared constant:\n{arm}"
+    );
+    assert!(
+        !arm.contains("env!(\"CARGO_PKG_VERSION\")"),
+        "the version arm reads env!(\"CARGO_PKG_VERSION\") directly, which is the crate main.rs \
+         happens to sit in and not the number a `requires_engine` range is read against:\n{arm}"
+    );
+}
+
+/// Every `.rs` file under `engine/`, recursively, skipping `target`.
+fn source_files(dir: &Path, out: &mut Vec<PathBuf>) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            if path.file_name().and_then(|name| name.to_str()) == Some("target") {
+                continue;
+            }
+            source_files(&path, out);
+        } else if path.extension().and_then(|ext| ext.to_str()) == Some("rs") {
+            out.push(path);
+        }
+    }
+}
+
+/// The permanent form of the grep issue #308 ran by hand: exactly one site
+/// under `engine/` may define the engine version from `CARGO_PKG_VERSION`, and
+/// it is `release.rs`'s own constant. Every other reader takes
+/// [`headwater_resolve::release::ENGINE`] rather than reading the number a
+/// second time from its own crate's manifest.
+///
+/// A line that only mentions the read in prose (a comment or a doc comment)
+/// is not a second site, so a line whose trimmed text starts with `//` is
+/// skipped — which is why this needle is an escaped string rather than a raw
+/// one: a raw string literal would put the plain, unescaped text
+/// `env!("CARGO_PKG_VERSION")` into this very file, and the walk below would
+/// then count its own search pattern as a second site.
+#[test]
+fn exactly_one_site_defines_the_engine_version_constant() {
+    let needle = "env!(\"CARGO_PKG_VERSION\")";
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut files = Vec::new();
+    source_files(&root, &mut files);
+    let mut sites: Vec<(PathBuf, usize)> = Vec::new();
+    for path in files {
+        let Ok(text) = std::fs::read_to_string(&path) else {
+            continue;
+        };
+        for (index, line) in text.lines().enumerate() {
+            if line.trim_start().starts_with("//") {
+                continue;
+            }
+            if line.contains(needle) {
+                sites.push((path.clone(), index + 1));
+            }
+        }
+    }
+    assert_eq!(
+        sites.len(),
+        1,
+        "a second env!(\"CARGO_PKG_VERSION\") read appeared outside the one site that defines \
+         the constant: {sites:?}"
+    );
+    let defined_in = root.join("crates/resolve/src/release.rs");
+    assert_eq!(
+        sites[0].0.canonicalize().unwrap(),
+        defined_in.canonicalize().unwrap(),
+        "the one site reading CARGO_PKG_VERSION is not release.rs's own definition: {sites:?}"
+    );
+}
+
 /// A command line this binary cannot parse is refused in a few lines, and the
 /// grammar is one command away rather than under the sentence.
 ///

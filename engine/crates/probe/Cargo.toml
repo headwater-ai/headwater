@@ -44,5 +44,10 @@ headwater-hash = { path = "../hash" }
 # dialect, one parser, one set of spans in a refusal.
 headwater-yaml = { path = "../yaml" }
 
+# The engine's own release number, named once so a grader and a harness report
+# the same number a `requires_engine` range reads, rather than each reading
+# its own crate's manifest version.
+headwater-resolve = { path = "../resolve" }
+
 [lints]
 workspace = true

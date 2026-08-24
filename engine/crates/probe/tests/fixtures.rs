@@ -427,6 +427,25 @@ fn the_regression_plan_over_the_fixture_corpus_is_recorded() {
     compare(&fixtures_dir().join("plan.txt"), &regression().render());
 }
 
+/// A plan's `harness` field names [`headwater_resolve::release::ENGINE`] and
+/// not this crate's own `env!("CARGO_PKG_VERSION")`.
+///
+/// The recorded fixture above would also catch a regression here, but only by
+/// accident: `harness` is one line inside a much larger recorded document, so
+/// a drift there reads as a whole-fixture diff rather than a named version
+/// disagreement, and `HEADWATER_BLESS=1` re-records over it without a word
+/// said about the version (#308 shipped exactly this way). This asserts the
+/// one field, by name, against the constant.
+#[test]
+fn the_plan_names_the_harness_by_the_shared_constant() {
+    assert_eq!(
+        regression().harness,
+        headwater_resolve::release::ENGINE,
+        "harness names this crate's own env!(\"CARGO_PKG_VERSION\") rather than the constant a \
+         `requires_engine` range is read against"
+    );
+}
+
 #[test]
 fn the_record_over_the_transcript_is_recorded() {
     compare(

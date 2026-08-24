@@ -30,10 +30,13 @@ headwater-yaml = { path = "../yaml" }
 # audit read one definition of it.
 headwater-doc = { path = "../doc" }
 
+# The engine's own release number, which the MCP handshake's `serverInfo`
+# reports by name rather than by its own crate's manifest version.
+headwater-resolve = { path = "../resolve" }
+
 [dev-dependencies]
 # The reads run over this repository's own corpus in the fixture test, which
 # needs its taxonomy resolved and its lock read.
-headwater-resolve = { path = "../resolve" }
 headwater-lock = { path = "../lock" }
 
 [lints]
