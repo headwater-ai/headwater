@@ -2654,3 +2654,139 @@ fn walk_files(at: &Path) -> usize {
         })
         .sum()
 }
+
+/// #336's first fixture: hand-editing the vendored taxonomy source, bypassing
+/// `vendor` entirely, is what `taxonomy resolve --check` exists to catch.
+///
+/// The committed lock records a digest of each source's raw text
+/// (`headwater_lock::write` hashes `source.text`, and [`Source`]'s own doc
+/// comment states why: "the lock records a digest of it, so that a stale lock
+/// can name the file that moved without resolving anything"). This proves the
+/// half of that claim [`package::sources`] is responsible for: a hand edit to
+/// the vendored file, made without going through `vendor`, changes the text
+/// that a second call to [`package::sources`] reads back, which is what makes
+/// a previously-recorded digest of it stale.
+///
+/// The corruption is a single appended comment line in the vendored
+/// `taxonomy.yml`, written directly to the file `vendor` installed rather than
+/// through any verb of this engine — the shape #336's adjudication asked for,
+/// "bypassing `vendor` itself".
+#[test]
+fn hand_editing_the_vendored_taxonomy_source_moves_the_digest_a_lock_would_hold() {
+    let scratch = Scratch::new("hand-edited-vendored-source");
+    let (adopter, _, digest) = adopter_holding(&scratch);
+
+    let consumer = package::Consumer {
+        package: "acme/fixture".to_string(),
+        version: "1.0.0".to_string(),
+        bundles: Vec::new(),
+        digest: Some(digest.clone()),
+        overlay: None,
+        corpus_root: "docs".to_string(),
+        exclusions: Vec::new(),
+    };
+
+    // The digest a `taxonomy resolve` run would have recorded in the lock for
+    // the base source, over the package exactly as `vendor` installed it.
+    let sources = package::sources(&adopter, &consumer).expect("the vendored package resolves");
+    let base = sources
+        .iter()
+        .find(|source| source.role == headwater_resolve::Role::Taxonomy)
+        .expect("the base source is one of them");
+    let digest_before = headwater_hash::digest(base.text.as_bytes());
+
+    // Nothing here goes through `vendor`. This is a person, or a script, that
+    // reached into `packages/` directly.
+    let taxonomy = adopter
+        .join(package::PACKAGES)
+        .join("acme-fixture")
+        .join("taxonomy.yml");
+    let before_edit = std::fs::read_to_string(&taxonomy).expect("the vendored source reads");
+    let mut edited = before_edit.clone();
+    edited.push_str("\n# a hand edit, never written by `vendor`\n");
+    std::fs::write(&taxonomy, &edited).expect("the hand edit writes");
+    assert_ne!(
+        before_edit, edited,
+        "the corruption did not change the file it was meant to change"
+    );
+
+    // The same read, over the tree as it stands now.
+    let sources_after =
+        package::sources(&adopter, &consumer).expect("the edited package still resolves");
+    let base_after = sources_after
+        .iter()
+        .find(|source| source.role == headwater_resolve::Role::Taxonomy)
+        .expect("the base source is still one of them");
+    let digest_after = headwater_hash::digest(base_after.text.as_bytes());
+
+    assert_ne!(
+        digest_before, digest_after,
+        "hand-editing the vendored taxonomy source did not move the digest a committed lock \
+         would hold for it, so `taxonomy resolve --check` would have read the edited bytes as \
+         unchanged"
+    );
+}
+
+/// #336's second fixture: corrupting the vendored release record's declared
+/// digest, after a real vendor, reopens `pin.current` even though the lock
+/// above is untouched.
+///
+/// `headwater_conformance::pin_current` (`crates/conformance/src/lib.rs`)
+/// reads `release::at(directory)` and compares `record.digest` against the
+/// consumer's pin. This exercises `release::at` directly rather than pulling
+/// in `headwater-conformance` as a second dev-dependency: the comparison
+/// `pin_current` runs is exactly the one [`release::read`] makes internally,
+/// between the header's declared digest and the digest recomputed over the
+/// member list beside it, and that comparison lives in this crate.
+#[test]
+fn corrupting_the_vendored_release_records_digest_reopens_pin_current() {
+    let scratch = Scratch::new("corrupted-release-record");
+    let (adopter, _, digest) = adopter_holding(&scratch);
+    let installed = adopter.join(package::PACKAGES).join("acme-fixture");
+
+    // Sanity: before the corruption, the pin this fixture will read is met,
+    // the same way `pin_current` reports `Verdict::Met` when the two digests
+    // agree.
+    let before = release::at(&installed).expect("the freshly vendored record reads");
+    assert_eq!(
+        before.digest, digest,
+        "the freshly vendored artifact does not carry the pinned digest"
+    );
+
+    // Corrupt the declared digest in the header, leaving the member list under
+    // it untouched. This is exactly a withdrawal: the record no longer states
+    // an accurate account of the bytes it lists.
+    let record = installed.join(release::RECORD);
+    let text = std::fs::read_to_string(&record).expect("the release record reads");
+    let corrupted = text.replacen(
+        &digest,
+        "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        1,
+    );
+    assert_ne!(
+        text, corrupted,
+        "the digest to corrupt was not found in the record"
+    );
+    std::fs::write(&record, corrupted).expect("the corrupted record writes");
+
+    let after = release::at(&installed);
+    let error = after.expect_err(
+        "a release record whose declared digest disagrees with its own member list must not read \
+         as a valid release",
+    );
+    assert!(
+        matches!(error, ReleaseError::RecordMoved { .. }),
+        "the corruption was not reported as the record's own digest disagreeing with its member \
+         list: {error:?}"
+    );
+
+    // `pin_current` reports exactly this shape of error as a gap, on the same
+    // terms as every other unreadable record — `Verdict::Gap(other.to_string())`
+    // in `crates/conformance/src/lib.rs`. The message names both digests, which
+    // is what a reader of the reopened gap needs.
+    let message = error.to_string();
+    assert!(
+        message.contains("The record was edited after it was written"),
+        "the refusal does not say the record was edited after it was written: {message}"
+    );
+}
