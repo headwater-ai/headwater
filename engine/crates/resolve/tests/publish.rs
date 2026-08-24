@@ -2655,14 +2655,16 @@ fn a_directory_this_verb_stages_into_never_wins_the_lookup() {
 }
 
 /// A plain retry vendor of a package killed mid-swap still lands, because the
-/// new collision check excludes this run's own `~staged` and `~aside` paths.
+/// collision check excludes this run's own staging and aside paths.
 ///
 /// #354's own hardening must not regress #312's self-heal. [`vendor`]'s doc
 /// comment already states the reachable state: a kill inside the one-rename
 /// window leaves the installed package complete under `<name>~aside`, and
-/// [`package::find`] answers from it in the meantime, sorting before
-/// `<name>~staged`. The *next* `vendor` of that same package is what clears
-/// both residues, which is the self-heal [#312](https://github.com/headwater-ai/headwater/issues/312)
+/// [`package::find`] answers from it in the meantime. The staging residue
+/// under `packages/~staging/<name>` never answers a lookup at all, complete
+/// or not, which is [#357](https://github.com/headwater-ai/headwater/issues/357).
+/// The *next* `vendor` of that same package is what clears both residues,
+/// which is the self-heal [#312](https://github.com/headwater-ai/headwater/issues/312)
 /// asked for. A version of #354's new check that compared only
 /// `found_at != target` — without excluding `staged` and `aside` — would run
 /// before that clearing, find the same package resolving from `<name>~aside`,
