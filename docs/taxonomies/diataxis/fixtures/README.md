@@ -62,6 +62,12 @@ So the line is what makes the entry resolve at all. This is also the measurement
 
 **Control B: attach the facet to `kinds.decision` instead of to `kinds.governed_document`.** The taxonomy validates and resolves, and the run still reports `facet.value.not_permitted` against `publish-a-release.md`, which is a `specification`. So the attachment satisfies the relevance canon and does not scope the value check. `facet.value.not_permitted` generates an instance for every kind that does not `forbid` an enumerated facet, and neither kind here forbids one.
 
+## What the audit says, and why one line of it is an artifact
+
+`headwater taxonomy audit` over the same root reports `reader_mode` as carrying no role, four values declared, five of the seven documents carrying it, and five distinct values in use. The fifth value is `cookbook`, which is the planted defect counted as data.
+
+It also reports that **`reader_mode` fixes `status` over the five documents that carry both**. That is the orthogonality canon, and here it is an artifact of a seven-document corpus in which every document is `current`. Any facet in this corpus fixes `status`. The audit states that nothing declares where the line is and that no share it prints carries a verdict, and this is a corpus that shows why: the canon is corpus-measured, and a corpus this small measures its own size.
+
 ## What a run does not report, and cannot
 
 **`beacon-overview.md` mixes two modes and the run says nothing about it.** The page argues for the model in prose and then lists the fields of the model in a table. It is the failure the method exists to name, and it is invisible to every rule in this engine. `OB-DX-1` is declared with an `unverifiable` disposition for exactly this, and the [doctrine](../doctrine.md#a-document-that-mixes-modes) states the reasoning.
