@@ -563,6 +563,18 @@ pub enum Verb {
         )]
         verb: Vec<String>,
     },
+    // `headwater completions <shell>`, whose operand is optional to the parser
+    // for the reason every other required operand here is: a bare
+    // `headwater completions` names the four shells and says where a script
+    // goes, and `clap`'s missing-argument message says neither.
+    Completions {
+        #[arg(
+            value_name = "shell",
+            help = "the shell to write a script for. A name outside the four is refused with the \
+                    four printed, and no script is written"
+        )]
+        shell: Option<Shell>,
+    },
     // A first word this binary does not carry.
     //
     // It reaches the message that names every word it does carry, which is the
@@ -571,6 +583,55 @@ pub enum Verb {
     // `unrecognized subcommand` and name at most one near miss.
     #[command(external_subcommand)]
     Other(Vec<String>),
+}
+
+/// The shells `headwater completions` writes a script for.
+///
+/// # Four, where `clap_complete` offers five
+///
+/// `clap_complete::Shell` carries `Elvish` as well. It is not here, and the
+/// reason is spec 6's own rule about the CLI grammar block: a name that block
+/// declares either runs or states its wait. Clause 8 of
+/// [#321](https://github.com/headwater-ai/headwater/issues/321) names four
+/// shells, the grammar block names the same four, and each of the four is a
+/// script this repository has run rather than a name passed through to a
+/// generator. A fifth would be a name in the grammar that nothing here has
+/// ever executed.
+///
+/// A name outside the four is refused by `clap` with the four printed, because
+/// this is the value parser rather than a match arm underneath one.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]
+pub enum Shell {
+    Bash,
+    Zsh,
+    Fish,
+    Powershell,
+}
+
+impl From<Shell> for clap_complete::Shell {
+    fn from(shell: Shell) -> Self {
+        match shell {
+            Shell::Bash => clap_complete::Shell::Bash,
+            Shell::Zsh => clap_complete::Shell::Zsh,
+            Shell::Fish => clap_complete::Shell::Fish,
+            Shell::Powershell => clap_complete::Shell::PowerShell,
+        }
+    }
+}
+
+impl Shell {
+    /// The name a caller types, which is the name the refusal prints.
+    pub fn typed(self) -> &'static str {
+        match self {
+            Shell::Bash => "bash",
+            Shell::Zsh => "zsh",
+            Shell::Fish => "fish",
+            Shell::Powershell => "powershell",
+        }
+    }
+
+    /// The four, in the order a caller meets them in the help.
+    pub const ALL: &'static [Shell] = &[Shell::Bash, Shell::Zsh, Shell::Fish, Shell::Powershell];
 }
 
 // The second word of `sweep`.
