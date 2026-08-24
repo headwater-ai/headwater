@@ -523,7 +523,7 @@ pub fn respond(server: &Server<'_>, session: &mut Session, request: &str) -> Opt
                 "serverInfo",
                 Json::object([
                     ("name", Json::string("headwater")),
-                    ("version", Json::string(env!("CARGO_PKG_VERSION"))),
+                    ("version", Json::string(headwater_resolve::release::ENGINE)),
                 ]),
             ),
         ])),

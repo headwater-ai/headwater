@@ -303,6 +303,7 @@ dependencies = [
  "headwater-doc",
  "headwater-graph",
  "headwater-hash",
+ "headwater-resolve",
  "headwater-yaml",
 ]
 

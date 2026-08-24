@@ -67,8 +67,11 @@ use crate::plan::{Examined, Selected};
 use crate::{Arm, Category, Expectation, Tier};
 
 /// The grader version, which a result names for the reason a reading names its
-/// lock digest.
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+/// lock digest. This is the engine version, read from the one constant that
+/// defines it, rather than this crate's own manifest version — the two are
+/// the same number by the workspace's own design, and reading the constant
+/// directly is what keeps them from drifting apart.
+pub const VERSION: &str = headwater_resolve::release::ENGINE;
 
 /// The confidence coefficient of the reported interval, at 95%.
 const Z: f64 = 1.959_964;

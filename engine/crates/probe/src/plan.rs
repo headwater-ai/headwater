@@ -975,7 +975,7 @@ fn arms(envelope: &Envelope, narrowing: Option<Arm>) -> Vec<Arm> {
 /// `requires_engine` range already reads, and two versions that drift name two
 /// harnesses.
 fn headwater_resolve_version() -> &'static str {
-    env!("CARGO_PKG_VERSION")
+    headwater_resolve::release::ENGINE
 }
 
 #[cfg(test)]
