@@ -414,15 +414,15 @@ fn the_version_flag_prints_the_engine_constant_outside_a_corpus() {
 fn the_version_flag_reads_the_named_constant_and_not_a_local_env_read() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/main.rs");
     let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-    let (_, after) = text
-        .split_once("if cli.version {")
-        .unwrap_or_else(|| panic!("`if cli.version` is no longer the shape of the version arm in main.rs"));
+    let (_, after) = text.split_once("if cli.version {").unwrap_or_else(|| {
+        panic!("`if cli.version` is no longer the shape of the version arm in main.rs")
+    });
     // The block's own statements are indented eight spaces and its closing
     // brace sits at four, so the split below cannot land inside the `{}` of
     // the `println!` format string the way a plain `split_once('}')` would.
-    let (arm, _) = after
-        .split_once("\n    }")
-        .unwrap_or_else(|| panic!("no closing brace found for the `if cli.version` arm in main.rs"));
+    let (arm, _) = after.split_once("\n    }").unwrap_or_else(|| {
+        panic!("no closing brace found for the `if cli.version` arm in main.rs")
+    });
     assert!(
         arm.contains("headwater_resolve::release::ENGINE"),
         "the version arm no longer names the shared constant:\n{arm}"
