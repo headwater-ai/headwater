@@ -3006,8 +3006,11 @@ fn a_concurrent_siblings_staging_subdirectory_is_never_touched() {
     // now, and this run must neither remove it nor be blocked by it.
     let sibling = package::staging_path(&packages, "widgets-core-schema");
     std::fs::create_dir_all(&sibling).expect("the sibling's own staging subdirectory exists");
-    std::fs::write(sibling.join("marker.txt"), "the sibling's own scratch, mid-copy")
-        .expect("the sibling's own file is there");
+    std::fs::write(
+        sibling.join("marker.txt"),
+        "the sibling's own scratch, mid-copy",
+    )
+    .expect("the sibling's own file is there");
 
     package::vendor(&adopter, &out, &record.digest).expect("the vendor of the other package lands");
 
