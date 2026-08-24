@@ -21,12 +21,16 @@
 //!
 //! # The root it runs over
 //!
-//! `packages/headwater-standard` copied out of this repository, and nothing
+//! This repository's own maintained source of `headwater/standard` —
+//! `taxonomy-source/headwater-standard/` since #336 moved it out of
+//! `packages/` — copied to where `--package` looks a package up, and nothing
 //! else. That is the state `headwater init` sends a newcomer into: its refusal
 //! says *"package headwater/standard is not under `packages/`, and nothing here
 //! fetches one"*, and the copy that line invites carries a manifest whose
 //! `contents.bundles` climbs out with `../..` into a library that the copy left
-//! behind.
+//! behind. `packages/headwater-standard/` itself is no longer this fixture,
+//! because #336 also made it a vendored artifact whose manifest carries the
+//! library inside it rather than climbing out to reach one.
 //!
 //! [#271]: https://github.com/headwater-ai/headwater/issues/271
 
@@ -68,7 +72,7 @@ impl Root {
     fn colliding(label: &str) -> Root {
         let root = Root::scratch(label);
         copy(
-            &repository().join("packages/headwater-standard"),
+            &repository().join("taxonomy-source/headwater-standard"),
             &root.0.join("packages/headwater-standard"),
         );
         copy(
@@ -83,7 +87,8 @@ impl Root {
         root
     }
 
-    /// This repository's package directory, copied, with no library beside it.
+    /// This repository's maintained source, copied to where `--package` looks
+    /// a package up, with no library beside it.
     fn copied(label: &str) -> Root {
         let at = std::env::temp_dir().join(format!(
             "headwater-cli-publish-{}-{label}",
@@ -92,7 +97,7 @@ impl Root {
         let _ = std::fs::remove_dir_all(&at);
         std::fs::create_dir_all(&at).expect("the root is made");
         copy(
-            &repository().join("packages/headwater-standard"),
+            &repository().join("taxonomy-source/headwater-standard"),
             &at.join("packages/headwater-standard"),
         );
         assert!(
@@ -319,5 +324,66 @@ fn a_failed_write_leaves_neither_the_output_directory_nor_the_path_to_it() {
     assert!(
         !nested.exists(),
         "the run that published nothing left the directories it made: {message}"
+    );
+}
+
+/// #336's `--from <dir>`, exercised as a person would type it: two flags that
+/// name the same thing are refused together, and `--from` alone publishes a
+/// directory `--package` would never find under `packages/`.
+///
+/// The directory this hands `--from` is `taxonomy-source/headwater-standard/`
+/// itself, in this repository's own tree rather than a copy of it, precisely
+/// because the point of the flag is that it reads a manifest `find` would never
+/// walk to (it does not sit under `packages/` at all). A copy would test the
+/// read and hide the one thing worth proving: this path bypasses the lookup by
+/// name entirely.
+#[test]
+fn from_and_package_together_are_refused_and_from_alone_publishes_the_relocated_source() {
+    let source = repository().join("taxonomy-source/headwater-standard");
+    let out_root = Root::scratch("from-flag");
+    let out = out_root.path().join("release");
+
+    let both = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["taxonomy", "publish", "--package", "headwater/standard"])
+        .arg("--from")
+        .arg(&source)
+        .arg("--out")
+        .arg(&out)
+        .arg("--root")
+        .arg(repository())
+        .output()
+        .expect("the binary runs");
+    assert_eq!(both.status.code(), Some(1));
+    let both_err = String::from_utf8_lossy(&both.stderr);
+    assert!(
+        both_err.contains("--package") && both_err.contains("--from"),
+        "the refusal does not name both flags: {both_err}"
+    );
+    assert!(!out.exists(), "the refused run wrote into --out anyway");
+
+    let from_alone = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["taxonomy", "publish"])
+        .arg("--from")
+        .arg(&source)
+        .arg("--out")
+        .arg(&out)
+        .arg("--root")
+        .arg(repository())
+        .output()
+        .expect("the binary runs");
+    let stdout = String::from_utf8_lossy(&from_alone.stdout).into_owned();
+    assert_eq!(
+        from_alone.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&from_alone.stderr)
+    );
+    assert!(
+        stdout.contains("published headwater/standard"),
+        "the run did not report a publish: {stdout}"
+    );
+    assert!(
+        out.join("release.yml").is_file(),
+        "publishing `--from` a directory outside `packages/` wrote no release record"
     );
 }

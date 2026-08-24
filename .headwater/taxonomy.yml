@@ -17,36 +17,20 @@
 taxonomy:
   package: headwater/standard
   version: 3.2.0
+  digest: sha256:1f21e609a0447e7c475d5dc8e652f8ec68fa0286c8ac95c0a1b708e097211d36
   bundles: [design-spec, decision-record]
   overlay: .headwater/overlay.yml
 
-# Where a deviation from a conformance rule is declared, and the only key
-# `headwater conformance` reads here. Spec 7 (Waivers) gives the reason it is in
-# this file rather than beside the rule it waives: `headwater taxonomy vendor`
-# replaces a vendored package directory whole, so a shipped rule is never edited
-# locally and a waiver written next to one would not survive an upgrade.
-#
-# Four fields and every one is required. The expiry is what makes this different
-# from a decision nobody revisits: an expired waiver is reported as expired and
-# covers nothing, so the rule under it is evaluated as though no waiver stood
-# there.
-#
-# No key here declares a level, and there is no such key to add. The report
-# derives the level from the rules that pass, and a waiver moves the exit status
-# of a `--level` run and never the level the report states.
-conformance:
-  waivers:
-    - rule: pin.current
-      reason: accepted_deviation
-      owner: j.baxter
-      until: 2027-02-28
-      note: >-
-        This repository publishes the package it also consumes, and it takes it
-        from source under `packages/` rather than from an artifact that
-        `headwater taxonomy publish` wrote. So there is no release record to
-        pin a digest against. The rule is right and the gap stands: the report
-        still counts L0 as unreached, and this waiver buys a green
-        `--level L0` run and nothing else.
+# No waiver stands here for `pin.current` any more. Until #336 this repository
+# consumed the package it publishes from source under `packages/`, which
+# carried no release record for the digest above to name. #336 moved the
+# authored source to `taxonomy-source/headwater-standard/` and ran `taxonomy
+# publish --from` it, `taxonomy vendor` and `taxonomy resolve` once, by hand,
+# so `packages/headwater-standard/` now holds a real vendored artifact with a
+# real `release.yml`, and the digest above is the one that run printed.
+# `headwater conformance` reads `pin.current` as met against it, and the
+# `conformance:` key this file used to carry is gone with the waiver: absent
+# is how a consumer declaration says it takes no deviation.
 
 # The gap on `corpus.classified` carries no waiver. Two files under the corpus
 # root are on no shelf, and the remedy is a declaration rather than a

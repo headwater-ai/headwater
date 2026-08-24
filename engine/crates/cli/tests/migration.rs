@@ -243,9 +243,21 @@ impl Root {
         let mut text = std::fs::read_to_string(&manifest).expect("the manifest reads");
         text = text.replacen("version: 1.0.0", "version: 2.0.0", 1);
         if let Some(payload) = payload {
+            // `packages/headwater-standard/` is copied off this repository's
+            // own package (#336), and that package is now a vendored artifact
+            // rather than a hand-maintained source: `taxonomy publish` already
+            // rewrote `contents.bundles` from `../../docs/taxonomies` to
+            // `bundles`, carrying the library inside the artifact. This
+            // fixture's own copy of the manifest carries that rewritten form,
+            // so the insertion below has to match it rather than the
+            // unpublished form `taxonomy-source/headwater-standard/` carries.
+            assert!(
+                text.contains("  bundles: bundles"),
+                "the copied manifest is not in the vendored form this insertion assumes: {text}"
+            );
             text = text.replacen(
-                "  bundles: ../../docs/taxonomies",
-                "  bundles: ../../docs/taxonomies\n  migrations: migrations",
+                "  bundles: bundles",
+                "  bundles: bundles\n  migrations: migrations",
                 1,
             );
             let directory = self.at.join("packages/headwater-standard/migrations");

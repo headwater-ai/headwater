@@ -75,4 +75,4 @@ contents:
   # copies them into `bundles/` inside the artifact and rewrites this one
   # scalar, so the `..` is a property of this tree and no published package
   # carries it.
-  bundles: bundles
+  bundles: ../../docs/taxonomies
