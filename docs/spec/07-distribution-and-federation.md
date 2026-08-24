@@ -50,13 +50,12 @@ requires_engine: ">=1.4 <2"
 contents:
   taxonomy: taxonomy.yml
   conformance: conformance.yml # the rules an adopter is evaluated against, and the levels over them
+  bundles: bundles/            # named overlays that add, selected at init
+  migrations: migrations/
   doctrine: doctrine/          # prose explaining the method, vendored to consumers
   templates: templates/
-  plugins: plugins/            # organization-specific checks
 profiles: [service-repo, docs-only, platform]   # named overlays that remove
-bundles: bundles/            # named overlays that add, selected at init
 interview: interview.yml     # the questions init asks, and the bundle each answer selects
-migrations: migrations/
 ```
 
 Publishing is a release: a semantic version, a changelog, an integrity digest, and a migration payload for any major bump. Distribution is over the registry or repository that the organization already uses. The engine requires only that it can check the digest of a version that somebody fetched.
@@ -64,6 +63,8 @@ Publishing is a release: a semantic version, a changelog, an integrity digest, a
 `headwater taxonomy publish` writes the artifact. It is a directory, because the engine carries no archive format and needs none: whatever moves a directory in the organization moves this one. Beside the manifest it writes a **release record**. The record names every file in the artifact with the digest of its bytes, and it carries one digest over that list. The record does not cover itself, so the digest is over what the artifact holds rather than over the file that states it. So the header of the record is outside the digest. `headwater taxonomy vendor` does not read the package identity from it. It takes the name, the version and the engine range from the manifest, which the digest does cover. It refuses a record whose header disagrees with the manifest.
 
 **Every `contents` path a publisher writes is read.** `taxonomy`, `bundles`, `conformance` and `migrations` each reach a verb. A key that no verb reads is a claim that a publisher makes and a consumer never sees. That is the defect `requires_engine` refuses from the other side, and `contents.migrations` was it until [the payload](#the-migration-payload) had a reader. A value under `contents` names one path, and the kind of that path is the kind its reader opens. `taxonomy` and `conformance` each name a file, because each one is read as text. `bundles` and `migrations` each name a directory, because each one is read as a listing. A publish refuses a value of the other kind, and it refuses an empty value before either check. An empty value names the package directory, which no key means. A list or a mapping there is refused, because no verb reads one and the rules that hold a path cannot hold it.
+
+**`doctrine` and `templates` are the deliberate exception.** Each is prose that a publisher ships and a person reads, and no verb opens it as a path. [Q11](09-decisions.md#q11--license-and-distribution-posture) and [the first-contact evaluation](../evaluations/first-contact.md#the-decision--q11) draw the boundary for `doctrine`'s license. [Spec 3](03-authoring-and-lifecycle.md#templates-and-scaffolding) draws the same boundary for `templates`.
 
 **A `contents` key states what the engine reads, and not what the artifact carries.** Publication takes the package directory whole, and it takes the bundle tree as well where `contents.bundles` names one outside the package. So the artifact carries a file that no key names. A key that names a directory holding no file points at nothing the artifact carries. The two readings are separate. The block above is a list of what the engine reads, and not an inventory of the artifact.
 

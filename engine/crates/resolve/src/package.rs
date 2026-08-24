@@ -908,7 +908,7 @@ impl Kind {
 /// **A key that is not here keeps the existence check and nothing more.** That
 /// is the seam of this table. [`reachable`] still walks the keys the manifest
 /// declares rather than this list, so a key nobody reads yet — spec 7's example
-/// block declares `doctrine`, `templates` and `plugins` — is held to being
+/// block declares `doctrine` and `templates` — is held to being
 /// there, and gains a kind on the day something reads it. Adding a row here is
 /// the whole change that takes.
 fn required_kind(key: &str) -> Option<Kind> {
