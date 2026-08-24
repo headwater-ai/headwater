@@ -127,6 +127,22 @@ fn publisher_of(scratch: &Scratch, at: &str, package: &str) -> PathBuf {
     scratch.path().join(at)
 }
 
+/// A residue directory, planted by hand the way a killed `vendor` would
+/// actually leave it: a manifest, and a release record computed over exactly
+/// what stands beside it. [`package::find`]'s residue check demands this
+/// record as proof of provenance, so a residue this file plants without one
+/// would no longer be told apart from a hand-copied directory that merely
+/// reuses the reserved suffix.
+fn plant_residue(residue: &Path, manifest_text: &str) {
+    std::fs::create_dir_all(residue).expect("the residue directory is made");
+    std::fs::write(residue.join(package::MANIFEST), manifest_text)
+        .expect("the residue carries a manifest");
+    let manifest = package::manifest_at(residue).expect("the manifest just written reads back");
+    let record = release::compute(residue, &manifest).expect("the digest computes");
+    std::fs::write(residue.join(release::RECORD), release::render(&record))
+        .expect("the residue carries a release record");
+}
+
 /// A consumer declaration inside the publisher tree, pinning what it takes.
 fn takes(scratch: &Scratch, version: &str) {
     scratch.write(
@@ -2622,12 +2638,10 @@ fn a_directory_this_verb_stages_into_never_wins_the_lookup() {
         packages.join(format!("acme-fixture{}", package::ASIDE)),
     ];
     for residue in residues {
-        std::fs::create_dir_all(&residue).expect("the residue is made");
-        std::fs::write(
-            residue.join(package::MANIFEST),
+        plant_residue(
+            &residue,
             "package: acme/fixture\nversion: 9.9.9\ncontents:\n  taxonomy: taxonomy.yml\n",
-        )
-        .expect("the residue carries a manifest");
+        );
     }
 
     assert_eq!(
@@ -2688,12 +2702,10 @@ fn a_plain_retry_after_a_kill_mid_swap_still_lands() {
         packages.join(format!("acme-fixture{}", package::ASIDE)),
     ];
     for residue in residues {
-        std::fs::create_dir_all(&residue).expect("the residue is made");
-        std::fs::write(
-            residue.join(package::MANIFEST),
+        plant_residue(
+            &residue,
             "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
-        )
-        .expect("the residue carries a manifest");
+        );
     }
     assert_eq!(
         package::find_version(&adopter, "acme/fixture"),
@@ -3539,4 +3551,52 @@ fn a_yaml_syntax_error_after_a_match_does_not_stop_the_match_from_resolving() {
     );
 
     assert_eq!(record.package, "acme/fixture");
+}
+
+/// A directory that merely carries the reserved `~aside` suffix, with no
+/// release record proving `vendor` ever made it, is a real collision and must
+/// not be silently treated as residue.
+///
+/// The grammar refuses `~` in a `package:` name, never in a directory name a
+/// person chooses by hand, so nothing stops someone from copying a package
+/// directory into `packages/` and naming it `<name>~aside` — the shape
+/// `headwater init`'s own suggested workflow invites, at any name at all. This
+/// is not residue: a directory `vendor` actually leaves at that name always
+/// carries a release record, because it is the rename of a directory that was
+/// itself vendored from a published artifact, and every published artifact
+/// carries one. This directory carries none, so it must be held to the same
+/// "two directories declare one name" refusal as any other collision, rather
+/// than answered from silently as the vendor-tolerated fallback.
+#[test]
+fn a_directory_merely_named_with_the_reserved_suffix_is_a_real_collision_not_residue() {
+    let scratch = Scratch::new("suffix-without-release-record");
+    let root = publisher_of(&scratch, "root", "acme/fixture");
+
+    // A hand-made directory, never touched by `vendor`, carrying no release
+    // record -- declaring the same name at a different version, and named
+    // with the suffix `vendor`'s own atomic swap reserves. Naming it this way
+    // must not make it invisible to the collision check.
+    scratch.write(
+        "root/packages/acme-fixture~aside/package.yml",
+        "package: acme/fixture\nversion: 2.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
+    );
+    scratch.write(
+        "root/packages/acme-fixture~aside/taxonomy.yml",
+        &TAXONOMY.replace("version: 1.0.0", "version: 2.0.0"),
+    );
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish(&root, "acme/fixture", &out).expect_err(
+        "a directory that merely carries the reserved suffix, with no release record proving \
+         `vendor` made it, must not be silently treated as residue",
+    );
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("more than one package"),
+        "the collision is not reported as a collision:\n{message}"
+    );
+    assert!(
+        message.contains("packages/acme-fixture~aside"),
+        "the suffixed directory is not named as a real collision:\n{message}"
+    );
 }
