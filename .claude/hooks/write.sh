@@ -33,17 +33,22 @@
 # This is the one script spec 16 registers under three names: `.claude/`,
 # `.codex/hooks.json` and `.github/hooks/*.json` all point a `PreToolUse` and
 # a `PostToolUse` position at this file, because a binding calls a verb that
-# ships and carries no rule of its own. The three harnesses agree on the field
-# names read above — `hook_event_name`, `tool_input.file_path` — with one
-# exception: Codex's edit tool is `apply_patch`, and it passes the patch text
-# under `tool_input.command` rather than a bare path. `hw_patch_path` in
-# `lib.sh` is the one place that reads that shape.
+# ships and carries no rule of its own. `hook_event_name` and `tool_name`
+# agree across all three, confirmed live, and the one path a call names is the
+# one field that does not: Claude Code passes `tool_input.file_path`, Copilot
+# passes `tool_input.path` on the same `Write`/`Edit` tool names, and Codex's
+# edit tool is `apply_patch`, which passes the patch text under
+# `tool_input.command` rather than a bare path at all. `hw_patch_path` in
+# `lib.sh` is the one place that reads that last shape.
 
 . "$(dirname "$0")/lib.sh"
 
 input=$(cat)
 event=$(hw_field "$input" hook_event_name) || exit 0
-path=$(hw_field "$input" tool_input file_path) || path=$(hw_patch_path "$input") || exit 0
+path=$(hw_field "$input" tool_input file_path) \
+    || path=$(hw_field "$input" tool_input path) \
+    || path=$(hw_patch_path "$input") \
+    || exit 0
 [ -n "$path" ] || exit 0
 
 # The path as the corpus names it: relative to the repository root.

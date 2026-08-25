@@ -130,6 +130,16 @@ expect 'a file that is not Markdown passes' \
     write.sh 0 '' \
     '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"docs/obligations/notes.txt"}}'
 
+printf '\n# write.sh, on PreToolUse: Copilot names the same field `path`\n'
+# Confirmed live: Copilot passes `Write`/`Edit` tool names like Claude Code,
+# but `tool_input.path` rather than `tool_input.file_path`.
+expect 'a Copilot-shaped write of a new document under the corpus root is refused the same way' \
+    write.sh 0 'headwater new' \
+    '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"path":"docs/obligations/9999-a-record-nobody-scaffolded.md","file_text":"placeholder"}}'
+expect 'a Copilot-shaped edit of a document that already exists passes' \
+    write.sh 0 '' \
+    '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"path":"docs/spec/05-ai-integration.md","old_str":"a","new_str":"b"}}'
+
 printf '\n# write.sh, on PreToolUse: an apply_patch command in place of a file_path\n'
 # Codex names its edit tool `apply_patch` and passes the patch text under
 # `tool_input.command` rather than a bare path, spec 16's C4 row for that
@@ -379,6 +389,15 @@ if [ -x "$engine" ]; then
         '{"hook_event_name":"Stop","stop_hook_active":false}'
     expect 'the refusal carries the remediation the commit gate prints' \
         review.sh 2 'headwater check' \
+        '{"hook_event_name":"Stop","stop_hook_active":false}'
+
+    # Confirmed live: Copilot's `Stop` does not honor exit 2 the way Claude
+    # Code and Codex do. An exit-2 hook there is logged and the turn ends
+    # anyway, and the block instead reads a `{"decision":"block",...}` object
+    # on standard output at exit 0. `COPILOT_CLI` is the one environment
+    # variable that told the two mechanisms apart in that test.
+    COPILOT_CLI=1 expect 'on Copilot the same refusal is an exit-0 decision, not exit 2' \
+        review.sh 0 '"decision":"block"' \
         '{"hook_event_name":"Stop","stop_hook_active":false}'
 
     # The loop guard, and it is asserted here rather than over a clean tree on
