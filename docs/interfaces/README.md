@@ -2,7 +2,7 @@
 
 # The command surface
 
-`headwater` dispatches 19 verbs. 6 of them have a contract on this shelf, and 13 have none.
+`headwater` dispatches 19 verbs. 12 of them have a contract on this shelf, and 7 have none.
 
 A verb with no contract carries a mark in the last column, and that cell is what this file is for. An index of the contracts that exist would say nothing about the verbs nobody has described yet.
 
@@ -13,18 +13,18 @@ The headings and the second column are the groups and the summaries that `headwa
 | Verb | What it does | What a caller types | Contract |
 |---|---|---|---|
 | `check` | run the pipeline over the corpus, against the committed lock | `headwater check` | [headwater check](headwater-check.md) |
-| `gate` | hold an earlier run's read set against the tree in front of it | `headwater gate` | **no contract** |
-| `conformance` | evaluate this repository against a package's conformance rules | `headwater conformance` | **no contract** |
+| `gate` | hold an earlier run's read set against the tree in front of it | `headwater gate` | [headwater gate](headwater-gate.md) |
+| `conformance` | evaluate this repository against a package's conformance rules | `headwater conformance` | [headwater conformance](headwater-conformance.md) |
 
 ## Reading a corpus
 
 | Verb | What it does | What a caller types | Contract |
 |---|---|---|---|
-| `route` | resolve a task description to the documents that govern it | `headwater route` | **no contract** |
-| `explain` | why a document is the kind it is, and what it serves | `headwater explain` | **no contract** |
+| `route` | resolve a task description to the documents that govern it | `headwater route` | [headwater route](headwater-route.md) |
+| `explain` | why a document is the kind it is, and what it serves | `headwater explain` | [headwater explain](headwater-explain.md) |
 | `query` | listed in spec 6, and no document says what an expression is | `headwater query` | [headwater query](headwater-query.md) |
-| `capture` | read the capture-cost store back | `headwater capture` | **no contract** |
-| `mcp` | serve the reads and one run of the checks to an agent | `headwater mcp` | **no contract** |
+| `capture` | read the capture-cost store back | `headwater capture` | [headwater capture](headwater-capture.md) |
+| `mcp` | serve the reads and one run of the checks to an agent | `headwater mcp` | [headwater mcp](headwater-mcp.md) |
 
 ## Writing a corpus
 

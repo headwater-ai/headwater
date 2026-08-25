@@ -140,7 +140,7 @@ if [ -x "$engine" ]; then
         '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":".claude/hooks/intent.sh"}}'
     expect 'an edit to a path nothing governs is silent' \
         write.sh 0 '' \
-        '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/src/route.rs"}}'
+        '{"hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"engine/crates/query/src/unrelated.rs"}}'
     # HW-OBL-0104. A `governs` edge reaches the path it names and no path
     # under it, so this fixture records the silence rather than asserting the
     # containment that a reader of spec 5 expects.
