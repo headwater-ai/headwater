@@ -538,6 +538,15 @@ fn validate(root: &Path) -> ExitCode {
         println!("  {source}");
     }
 
+    // Between the sources and the rules, because a founding is a fact about the
+    // sources and the order they were applied in, and not about the resolved
+    // taxonomy that the rules read. It prints at zero for the reason
+    // `rules::render` prints its own count: a block that vanished when it
+    // emptied would leave a reader unable to tell a quiet corpus from a reading
+    // nobody ran. Nothing here refuses, and `founded.rs` carries why.
+    println!();
+    print!("{}", repository.resolution.foundings());
+
     let findings = repository.resolution.validate();
     println!("\nrules");
     print!("{}", headwater_resolve::rules::render());
@@ -561,6 +570,16 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
+    // One call site for both the write path and `--check`, placed before any
+    // lock work so that neither can reach a verdict without it. Standard error,
+    // on the precedent this file states for the hit count: a fact about a run
+    // goes there so that a byte comparison of the verdict is untouched, and
+    // `--check`'s one line of standard output stays one line. Only when the
+    // count is non-zero, because a resolve that founds nothing has nothing to
+    // say and `taxonomy validate` is where the accounting always prints.
+    if !repository.resolution.founded.is_empty() {
+        eprint!("{}", repository.resolution.foundings());
+    }
     let sources = match headwater_resolve::package::sources(root, &repository.consumer) {
         Ok(sources) => sources,
         Err(errors) => {
