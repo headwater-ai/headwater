@@ -75,7 +75,7 @@ Four terms hold for a binding to any harness, and the first three restate the ho
 
 ## The support table
 
-The Claude Code column is bound in `.claude/`. Two suites hold it: `.claude/hooks/fixtures.sh` for the positions, and `.claude/skills/fixtures.sh` for the skills. The other two columns are read from vendor documentation on 2026-08-25. Nothing in this repository runs either harness, and no fixture holds a cell of theirs. A cell names the mechanism the vendor documents, and never a behavior anyone here measured.
+The Claude Code column is bound in `.claude/`. Two suites hold it: `.claude/hooks/fixtures.sh` for the positions, and `.claude/skills/fixtures.sh` for the skills. The Codex and Copilot rows for C3 through C6 bind the same way, in `.codex/hooks.json` and `.github/hooks/*.json`. The same suite holds their cases, and a live run of each harness confirmed every one first. The remaining cells of both columns are read from vendor documentation dated 2026-08-25, and no fixture holds them.
 
 | Capability | Claude Code | GitHub Copilot | OpenAI Codex |
 |---|---|---|---|
@@ -89,13 +89,15 @@ The Claude Code column is bound in `.claude/`. Two suites hold it: `.claude/hook
 | C8 skills | `.claude/skills/*/SKILL.md` | `.github/skills/`, and it reads `.claude/skills/` and `.agents/skills/` | `.agents/skills/`, selected by name in the composer |
 | C9 isolated agents | `.claude/agents/*.md` | `.github/agents/*.agent.md` | subagents in the CLI |
 | C10 tool registration | `.mcp.json` in the checkout | a workspace file in the IDE, repository settings for the cloud agent | `[mcp_servers]` in `config.toml`, operator configuration |
-| position registration | `.claude/settings.json` | `.github/hooks/*.json`, and the IDE also reads `.claude/settings.json` | `.codex/hooks.json`, or `~/.codex/hooks.json`, behind a feature flag |
+| position registration | `.claude/settings.json` | `.github/hooks/*.json`, and the IDE also reads `.claude/settings.json` | `.codex/hooks.json`, or `~/.codex/hooks.json`, behind a feature flag that ships on |
 
-Every Claude Code cell except C2 is bound. No cell of the other two columns is bound, and the paragraphs below are what the record shows rather than what anything here enforces.
+Every Claude Code cell except C2 is bound. The Codex and Copilot rows for C3 through C6 are bound the same way, each held by `.claude/hooks/fixtures.sh` and confirmed against a live run. Every other cell of both columns is a file this repository ships or a claim vendor documentation makes, and no fixture holds either kind.
 
 **The shape converged, and it is the shape this repository already ships.** All three harnesses read a `SKILL.md` under a per-skill directory. All three name the same four positions, and all three read a standing file from the checkout. Two of them read this repository's own files: Copilot's IDE discovers hooks in `.claude/settings.json`, and its skill loader reads `.claude/skills/`. So part of the Claude Code binding is loaded by a second harness through that harness's own choice, which nothing here has measured. A binding for either other column is registration of the same verbs, not a port of any logic, because the scripts carry none.
 
 **The posture inversion is the one hazard the vocabulary has to name.** Every position of this repository fails open, and one harness documents a pre-tool position that fails closed on error. The second term of the binding contract above exists for that cell.
+
+**A second inversion held on the turn gate, and a live run is what found it.** Copilot's `agentStop` does not fail closed on exit 2. An exit-2 hook there is logged, and the turn ends anyway. The block that works is a `decision: block` object on standard output at exit 0. `.claude/hooks/review.sh` branches on the `COPILOT_CLI` environment variable for that one difference, and Claude Code and Codex keep the exit-2 path the hook contract states.
 
 **The IDE differs from the CLI under one vendor name.** Copilot's completion surface reads none of this table, and its IDE cannot block a turn where its CLI can. Its code reviewer reads instructions from the base branch rather than the feature branch. The column records the most capable surface, and a person binding one surface reads the vendor's own reference for that surface.
 
