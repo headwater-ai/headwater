@@ -210,6 +210,20 @@ pub fn apply(root: &Path, composed: &[Composed]) -> Result<(), Refusal> {
 }
 
 /// Put one edge half into a document's front matter, and read the result back.
+///
+/// # Replace when the target is already there, append otherwise
+///
+/// A relation's item list holds at most one entry per target — spec 2 states
+/// that no attribute name collides with `to`, and the importer's own
+/// `RepeatedLink` refusal holds it at plan time, so two entries for one
+/// target is not a shape this system produces on purpose. When `half.relation`
+/// already carries an entry whose identity (the mapping form's `to`, or the
+/// bare form's own scalar) matches `half.id`, this function replaces that
+/// entry's lines in place rather than appending a second one beside it. Every
+/// attribute value, `half`'s own included, is ignored for the match — that is
+/// exactly the field an update is for, most visibly `verified_revision` when
+/// a re-import runs after the snapshot's revision moved. Only when no entry
+/// matches does the function fall back to the append it always did.
 pub fn splice(source: &str, half: &Half) -> Result<String, Refusal> {
     let refuse = |why: &str| Refusal::ReciprocalUnwritable {
         path: half.path.clone(),
@@ -256,9 +270,14 @@ pub fn splice(source: &str, half: &Half) -> Result<String, Refusal> {
                     block.extend(entry);
                     lines.splice(end..end, block);
                 }
-                Some((_, items_end)) => {
-                    lines.splice(items_end..items_end, entry);
-                }
+                Some((_, items_end)) => match existing_entry(source, half) {
+                    Some((start, end)) => {
+                        lines.splice(start..end, entry);
+                    }
+                    None => {
+                        lines.splice(items_end..items_end, entry);
+                    }
+                },
             }
         }
     }
@@ -315,6 +334,62 @@ fn holds(value: &headwater_yaml::Value, half: &Half) -> bool {
             .all(|(name, expected)| text(name) == Some(expected.as_str()))
 }
 
+/// The 0-indexed, half-open line range of the entry already in `half.relation`'s
+/// list that targets `half.id`, read from `source` as it stood before this
+/// splice's own surgery.
+///
+/// `None` covers three cases the caller treats alike: the relation holds no
+/// such entry, the document declares no such relation at all, and `source`
+/// fails to reparse — which should not happen, since it is always
+/// previously-valid text, but a caller that meets it anyway falls through to
+/// the append this function performed unconditionally before this match
+/// existed.
+///
+/// # The span arithmetic, and why it differs by form
+///
+/// A bare-form entry's span is inclusive at the line level: `start.line ==
+/// end.line` for a one-line item. A mapping-form entry's span is exclusive
+/// past the end: `end.line` is the file line *after* the item's last content
+/// line, which is what lets a multi-line item's range compose with the next
+/// one without overlap. Both were measured against the real parser rather
+/// than assumed. Converting 1-indexed span lines to the 0-indexed half-open
+/// range [`Vec::splice`] wants, and unifying the two forms, takes one line of
+/// arithmetic: the end is `end.line - 1`, floored at one past the start so a
+/// bare entry's inclusive single line still yields a range that covers it.
+fn existing_entry(source: &str, half: &Half) -> Option<(usize, usize)> {
+    let parsed = headwater_doc::parse(source).ok()?;
+    let items = parsed
+        .facets
+        .get("relations")?
+        .value
+        .as_map()?
+        .get(&half.relation)?
+        .value
+        .as_seq()?;
+    let item = items
+        .iter()
+        .find(|item| identity(&item.value) == Some(half.id.as_str()))?;
+    let start = item.span.start.line - 1;
+    let end = (item.span.end.line - 1).max(start + 1);
+    Some((start, end))
+}
+
+/// The target identity an entry names: the mapping form's `to`, or the bare
+/// form's own scalar. Every attribute value is ignored on purpose — spec 2's
+/// "no attribute name collides with `to`" makes this injective over what
+/// legitimately varies between two proposals for the same target, and
+/// `verified_revision` is exactly the attribute a re-import at a moved
+/// revision means to overwrite rather than match on.
+fn identity(value: &headwater_yaml::Value) -> Option<&str> {
+    match value.as_map() {
+        Some(map) => map
+            .get("to")
+            .and_then(|node| node.value.as_scalar())
+            .map(|scalar| scalar.text.as_str()),
+        None => value.as_scalar().map(|scalar| scalar.text.as_str()),
+    }
+}
+
 /// The extent of a block that opens with `header`, between two line numbers.
 ///
 /// The block runs from its header to the first later line indented no further
@@ -332,4 +407,161 @@ fn block_of(header: &str, lines: &[String], from: usize, to: usize) -> Option<(u
         end += 1;
     }
     Some((start, end))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn half(id: &str, attributes: &[(&str, &str)]) -> Half {
+        Half {
+            relation: "audited_by".to_string(),
+            path: "corpus/spec/02-the-second-part.md".to_string(),
+            id: id.to_string(),
+            attributes: attributes
+                .iter()
+                .map(|(name, value)| (name.to_string(), value.to_string()))
+                .collect(),
+        }
+    }
+
+    /// A target already present is replaced, not duplicated — growing from
+    /// the bare form to the mapping form because the new half carries an
+    /// attribute the old entry did not.
+    #[test]
+    fn a_present_target_is_replaced_not_duplicated_when_it_grows() {
+        let source = "\
+---
+id: DR-FIX-0009
+relations:
+  audited_by:
+    - 12345
+---
+
+# A document
+";
+        let spliced = splice(source, &half("12345", &[("verified_revision", "8")]))
+            .expect("a present bare target replaces");
+        assert_eq!(
+            spliced.matches("12345").count(),
+            1,
+            "one entry, not two:\n{spliced}"
+        );
+        assert!(spliced.contains("    - to: 12345\n      verified_revision: 8"));
+        assert!(!spliced.contains("    - 12345\n"));
+    }
+
+    /// The same direction, shrinking: a mapping-form entry with two
+    /// attributes is replaced by one with a single attribute, and the line
+    /// the old entry no longer needs does not survive the splice.
+    #[test]
+    fn a_present_target_is_replaced_not_duplicated_when_it_shrinks() {
+        let source = "\
+---
+id: DR-FIX-0010
+relations:
+  audited_by:
+    - to: 12345
+      verified_revision: 7
+      note: something
+---
+
+# A document
+";
+        let spliced = splice(source, &half("12345", &[("verified_revision", "8")]))
+            .expect("a present mapping target replaces");
+        assert_eq!(
+            spliced.matches("12345").count(),
+            1,
+            "one entry, not two:\n{spliced}"
+        );
+        assert!(spliced.contains("    - to: 12345\n      verified_revision: 8"));
+        assert!(!spliced.contains("verified_revision: 7"));
+        assert!(!spliced.contains("note: something"));
+    }
+
+    /// The decisive shape for #384: same attribute name, a revision that
+    /// moved. The line count does not change, and the value still updates in
+    /// place rather than appending a second entry.
+    #[test]
+    fn a_present_target_is_replaced_when_only_an_attribute_value_moves() {
+        let source = "\
+---
+id: DR-FIX-0011
+relations:
+  audited_by:
+    - to: 12345
+      verified_revision: 7
+---
+
+# A document
+";
+        let spliced = splice(source, &half("12345", &[("verified_revision", "8")]))
+            .expect("a present mapping target replaces");
+        assert_eq!(
+            spliced.matches("12345").count(),
+            1,
+            "one entry, not two:\n{spliced}"
+        );
+        assert!(spliced.contains("    - to: 12345\n      verified_revision: 8"));
+        assert!(!spliced.contains("verified_revision: 7"));
+    }
+
+    /// A target not already present is still appended, on a relation the
+    /// document declares with no items under it yet.
+    #[test]
+    fn an_absent_target_is_appended_on_an_empty_relation() {
+        let source = "\
+---
+id: DR-FIX-0012
+relations:
+  audited_by:
+---
+
+# A document
+";
+        let spliced =
+            splice(source, &half("12345", &[])).expect("an empty relation still takes an entry");
+        assert!(spliced.contains("  audited_by:\n    - 12345"));
+    }
+
+    /// A target not already present is still appended when the document has
+    /// no `audited_by` relation at all, only other relations populated.
+    #[test]
+    fn an_absent_target_is_appended_on_a_document_with_other_relations() {
+        let source = "\
+---
+id: DR-FIX-0013
+relations:
+  superseded_by:
+    - DR-FIX-0001
+---
+
+# A document
+";
+        let spliced = splice(source, &half("12345", &[]))
+            .expect("a document with other relations still takes a new one");
+        assert!(spliced.contains("  audited_by:\n    - 12345"));
+        assert!(spliced.contains("  superseded_by:\n    - DR-FIX-0001"));
+    }
+
+    /// A target not already present is still appended alongside other
+    /// targets already declared under the same relation.
+    #[test]
+    fn an_absent_target_is_appended_beside_other_targets_of_the_same_relation() {
+        let source = "\
+---
+id: DR-FIX-0014
+relations:
+  audited_by:
+    - 99999
+---
+
+# A document
+";
+        let spliced = splice(source, &half("12345", &[("verified_revision", "8")]))
+            .expect("a new target appends beside an existing one");
+        assert!(spliced.contains("    - 99999"));
+        assert!(spliced.contains("    - to: 12345\n      verified_revision: 8"));
+    }
 }
