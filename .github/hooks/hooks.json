@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          { "type": "command", "command": "sh .claude/hooks/intent.sh", "timeoutSec": 15 }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "sh .claude/hooks/write.sh", "timeoutSec": 15 }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "sh .claude/hooks/write.sh", "timeoutSec": 15 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "sh .claude/hooks/review.sh", "timeoutSec": 120 }
+        ]
+      }
+    ]
+  }
+}

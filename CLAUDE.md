@@ -51,6 +51,8 @@ Each one calls a verb that already ships, and none carries a rule of its own. Th
 
 None of them binds. A `Bash` call that writes a file matches no matcher, `disableAllHooks` turns all of them off with no record anywhere, and `git commit --no-verify` skips the gate below them. What holds a change is the commit gate and the CI job. `sh .claude/hooks/fixtures.sh` runs all four positions against recorded input, including every refusal.
 
+The same three scripts are registered a second and a third time, in `.codex/hooks.json` and `.github/hooks/*.json`, for the two harnesses [spec 16](docs/spec/16-harness-support.md) records. `sh .claude/hooks/fixtures-live.sh` is what holds that binding rather than the shape it assumes: a real `codex exec` and a real `copilot -p`, over a scratch clone, spending real AI credits against a real login. It skips a harness that is not installed or not authenticated rather than failing on it, nothing gates on it, and no CI job runs it, the same posture as `headwater probe`.
+
 **The escape hatches, and what each one means.** A directive on the offending block marks a deliberate exception, with the reason in the source where a reader will find it:
 
     …the term the cited authors use. <!-- headwater allow=language.retired_term.used scope=block until=2027-12-31 reason=false_positive note=quoting Star and Griesemer -->
