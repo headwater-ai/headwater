@@ -48,6 +48,8 @@ rules, and for each the scope that binds it
     document scope, one document and its front matter
   relation.target.unresolved
     edge scope, one relation instance and both endpoints
+  relation.target.suspect
+    edge scope, one relation instance and both endpoints
   relation.reciprocity.missing
     edge scope, one relation instance and both endpoints
   relation.endpoint.not_permitted
@@ -114,6 +116,7 @@ register
       1 with criteria
       1 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 2 suppressed
+  relation.target.suspect reaches no obligation, so it names none
   relation.endpoint.not_permitted reaches OB-FIX-5, OB-FIX-17, and a finding names one obligation, so it names none
   lifecycle.dependency.on_terminal reaches no obligation, so it names none
   identifier.claimed_twice reaches no obligation, so it names none

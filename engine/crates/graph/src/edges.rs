@@ -336,23 +336,7 @@ impl Target {
     /// [`headwater_check`'s cache](../../../../docs/spec/12-check-layer.md#determinism-concretely)
     /// resolves every doubtful case in.
     pub fn resolution(&self) -> String {
-        // STAGE B OF #82 — TEMPORARY. This is the pre-#82 rendering, which
-        // omits the anchor's revision, so that the intermediate state can be
-        // measured rather than assumed. Reverted to the derived `Debug` in the
-        // next commit.
-        match self {
-            Target::Anchor {
-                anchor_kind,
-                resolver,
-                normalized,
-                excluded_by,
-                revision: _,
-            } => format!(
-                "Anchor {{ anchor_kind: {anchor_kind:?}, resolver: {resolver:?}, normalized: \
-                 {normalized:?}, excluded_by: {excluded_by:?} }}"
-            ),
-            other => format!("{other:?}"),
-        }
+        format!("{self:?}")
     }
 }
 

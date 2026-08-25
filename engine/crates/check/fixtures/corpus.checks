@@ -48,6 +48,8 @@ rules, and for each the scope that binds it
     document scope, one document and its front matter
   relation.target.unresolved
     edge scope, one relation instance and both endpoints
+  relation.target.suspect
+    edge scope, one relation instance and both endpoints
   relation.reciprocity.missing
     edge scope, one relation instance and both endpoints
   relation.endpoint.not_permitted
@@ -110,4 +112,4 @@ register
       4 permanently advisory
       2 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 4 suppressed
-  every rule this engine carries reaches one obligation
+  relation.target.suspect reaches no obligation, so it names none

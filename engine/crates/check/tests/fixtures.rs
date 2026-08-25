@@ -1438,6 +1438,7 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             Grain::Edge,
             Grain::Edge,
             Grain::Edge,
+            Grain::Edge,
             Grain::Neighbourhood { depth: 1 },
             // The two Graph-origin rules whose grain is the document. Each one
             // routes a phase-A defect that stops an edge from existing, so
@@ -1511,18 +1512,22 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
     assert!(!run.served[2].scope.needs_body());
     assert_eq!(run.served[2].rule, headwater_check::identifier::RULE);
 
-    // The four Graph-origin rules are consecutive, and the target rule is the
+    // The five Graph-origin rules are consecutive, and the target rule is the
     // first of them. Whether a target resolved is prior to every other question
-    // an edge rule asks about it.
+    // an edge rule asks about it, and whether the upstream item behind a
+    // resolved target has moved is the second, because a target that bound to
+    // nothing has no revision to have moved.
     assert_eq!(
         [
             run.served[4].rule,
             run.served[5].rule,
             run.served[6].rule,
-            run.served[7].rule
+            run.served[7].rule,
+            run.served[8].rule
         ],
         [
             target::RULE,
+            headwater_check::suspect::RULE,
             reciprocity::RULE,
             endpoint::RULE,
             headwater_check::dependency::RULE
@@ -1543,15 +1548,15 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         [declaration::RULE, identity::RULE, duplicate::RULE]
     );
     assert_eq!(
-        run.served[9].scope.render(),
+        run.served[10].scope.render(),
         "document scope, one document and its front matter, and what phase A could not make of it"
     );
     // The same declaration at the other grain, and the sentence says what the
     // difference is: one document's news against the identity of every
     // document. A reader counting the barriers finds the word here.
-    assert_eq!(run.served[11].rule, duplicate::RULE);
+    assert_eq!(run.served[12].rule, duplicate::RULE);
     assert_eq!(
-        run.served[11].scope.render(),
+        run.served[12].scope.render(),
         "corpus scope, every row of the census, and what phase A could not make of each \
          document's identity, and it is a barrier"
     );
@@ -1565,9 +1570,9 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         .map(|served| served.rule)
         .collect();
     assert_eq!(clocked, [participation::RULE]);
-    assert_eq!(run.served[8].rule, participation::RULE);
+    assert_eq!(run.served[9].rule, participation::RULE);
     assert_eq!(
-        run.served[8].scope.render(),
+        run.served[9].scope.render(),
         "neighbourhood scope, one document and the documents one relation away from it, \
          and the injected clock"
     );
