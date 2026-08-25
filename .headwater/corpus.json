@@ -13,13 +13,18 @@
       "taxonomy": {
         "package": "headwater/standard",
         "version": "3.3.0",
-        "lock": "sha256:a07ad716d6cb98c3c1ba063675607da065e2d1cb229d54d7cadaeb11df80b2aa"
+        "lock": "sha256:61dc7f0bfd5e035bfaad4ce302a13e08c69fc0d164ab7be3d801d2b67db5a3e6"
       },
       "entry_points": [
         {
           "shelf": "decisions",
           "path": "docs/decisions/0001-implementation-language.md",
           "id": "HW-DR-0001"
+        },
+        {
+          "shelf": "acceptance_criteria",
+          "path": "docs/acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md",
+          "id": "HW-AC-0001"
         },
         {
           "shelf": "evaluations",
@@ -40,6 +45,11 @@
           "shelf": "probes",
           "path": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
           "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor"
+        },
+        {
+          "shelf": "requirements",
+          "path": "docs/requirements/0001-the-engine-reaches-no-network-at-check-time.md",
+          "id": "HW-REQ-0001"
         },
         {
           "shelf": "reviews",
