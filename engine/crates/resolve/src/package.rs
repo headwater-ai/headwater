@@ -1102,17 +1102,20 @@ impl Kind {
 ///   `read_dir`, and the resolver then reads `<bundles>/<name>/bundle.yml`.
 /// - `migrations` is a directory: [`crate::migration::at`] reads it with
 ///   `read_dir` and globs `*.yml` out of it.
+/// - `doctrine` is a directory: [`doctrine_at`] resolves it against the fetched
+///   artifact inside [`vendor`], and the CLI names the installed path. That
+///   reader opens a listing and never a file.
 ///
 /// **A key that is not here keeps the existence check and nothing more.** That
 /// is the seam of this table. [`reachable`] still walks the keys the manifest
 /// declares rather than this list, so a key nobody reads yet — spec 7's example
-/// block declares `doctrine` and `templates` — is held to being
-/// there, and gains a kind on the day something reads it. Adding a row here is
-/// the whole change that takes.
+/// block declares `templates` — is held to being there, and gains a kind on the
+/// day something reads it. Adding a row here is the whole change that takes.
+/// `doctrine` is the row that arrived that way, with its reader beside it.
 fn required_kind(key: &str) -> Option<Kind> {
     match key {
         "taxonomy" | "conformance" => Some(Kind::File),
-        BUNDLES | crate::migration::CONTENTS_KEY => Some(Kind::Directory),
+        BUNDLES | DOCTRINE | crate::migration::CONTENTS_KEY => Some(Kind::Directory),
         _ => None,
     }
 }
@@ -1472,6 +1475,14 @@ fn migrations(
 
 /// Where a published package keeps the bundles it ships.
 pub const BUNDLES: &str = "bundles";
+
+/// Where a published package keeps the prose that explains its method.
+///
+/// [`vendor`] resolves it against the artifact it is about to install, and
+/// [`doctrine_at`] is that reader. The key names a directory inside the package
+/// and never a path that leaves it, so unlike [`BUNDLES`] there is nothing for
+/// [`publish`] to carry inside and rewrite.
+pub const DOCTRINE: &str = "doctrine";
 
 /// Check a fetched artifact against the digest this repository pinned, and
 /// install it under `packages/`.

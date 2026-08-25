@@ -86,6 +86,27 @@ fn publisher_at(scratch: &Scratch, requires_engine: Option<&str>, source: &str) 
     scratch.path().join("publisher")
 }
 
+/// The prose a publisher ships under `contents.doctrine`.
+const METHOD: &str = "# Method\n\nWhy this taxonomy shelves what it shelves.\n";
+
+/// A publisher whose manifest declares `contents.doctrine`, with prose at the
+/// path it names. The bundles key stays where [`publisher`] puts it, because
+/// nothing here is about a bundle.
+///
+/// The prose is written at `doctrine/method.md` whatever the declared value is.
+/// A case that declares something else — a file, or a path that leaves the
+/// package — plants that itself, so what each refusal is about is stated in the
+/// case rather than derived here from the string it passed.
+fn publisher_with_doctrine(scratch: &Scratch, doctrine: &str) -> PathBuf {
+    let root = publisher(scratch, None);
+    let manifest = root.join("packages/acme-fixture/package.yml");
+    let text = std::fs::read_to_string(&manifest).expect("the manifest was just written");
+    std::fs::write(&manifest, format!("{text}  doctrine: {doctrine}\n"))
+        .expect("the manifest writes");
+    scratch.write("publisher/packages/acme-fixture/doctrine/method.md", METHOD);
+    root
+}
+
 /// The same publisher, with the name its taxonomy source declares set by the
 /// caller.
 ///
@@ -3777,5 +3798,37 @@ fn a_directory_merely_named_with_the_reserved_suffix_is_a_real_collision_not_res
     assert!(
         message.contains("packages/acme-fixture~aside"),
         "the suffixed directory is not named as a real collision:\n{message}"
+    );
+}
+
+/// `contents.doctrine` that names a file is refused at publish, because the
+/// verb that reads the key reads a listing.
+///
+/// The existence check alone passes this: `method.md` is there. Only the kind
+/// check catches it, and `required_kind` answered `None` for this key while
+/// nothing read it. So the key was declarable as a file, published as one, and
+/// the reader that now opens it as a directory would have found a file on the
+/// consumer's machine.
+#[test]
+fn contents_doctrine_that_names_a_file_is_refused_at_publish() {
+    let scratch = Scratch::new("doctrine-file");
+    let root = publisher_with_doctrine(&scratch, "method.md");
+    scratch.write("publisher/packages/acme-fixture/method.md", METHOD);
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish(&root, "acme/fixture", &out)
+        .expect_err("a `contents.doctrine` that names a file is refused");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("`contents.doctrine` names method.md, which is a file"),
+        "the refusal does not name the kind it found:\n{message}"
+    );
+    assert!(
+        message.contains("reads a directory"),
+        "the refusal does not name the kind the reader opens:\n{message}"
+    );
+    assert!(
+        !out.exists(),
+        "the publish that was refused wrote an artifact anyway"
     );
 }
