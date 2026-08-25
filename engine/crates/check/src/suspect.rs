@@ -171,12 +171,20 @@ fn message(id: &str, name: &str, raw: &str, verified: &str, current: &str) -> St
 
 /// What to do about it, which is one sentence because there is one remedy.
 ///
-/// It is a hand edit and not a re-import, and that is measured rather than
-/// preferred. `headwater_import::write::declares` reads "same target, different
-/// revision" as absent, so a second import proposes the edge again, and
-/// `headwater_scaffold::write::splice` appends an entry rather than rewriting
-/// the one that is there. So a re-import over a moved revision writes a second
-/// entry for one target, which the graph then reports as a repeated triple.
+/// It is a hand edit and not a re-import, and that is a choice about who looks
+/// at the changed item rather than about what a splice writes.
+/// `headwater_import::write::declares` reads "same target, different revision"
+/// as absent on purpose, so that a moved revision keeps proposing the edge
+/// rather than going quiet — silencing it there would defeat the drift report
+/// this whole rule exists for. `headwater_scaffold::write::splice` then
+/// replaces the one entry a target already has rather than appending beside it
+/// ([#384](https://github.com/headwater-ai/headwater/issues/384)), so a
+/// re-import over a moved revision now writes the correct single entry rather
+/// than a second one. What it still would not do is have a person decide
+/// whether the edge holds against the item as it now reads — see the `patch:
+/// None` comment above this function's call site — and that decision is the
+/// whole reason the remedy stays a sentence naming the field a person sets by
+/// hand, not an instruction to run the import again.
 fn remediation(current: &str) -> String {
     format!(
         "re-read the upstream item, and where the edge still holds set \
