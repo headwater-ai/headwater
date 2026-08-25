@@ -29,12 +29,21 @@
 # nothing on its own.
 #
 # It fails open, silently, on every path it cannot decide.
+#
+# This is the one script spec 16 registers under three names: `.claude/`,
+# `.codex/hooks.json` and `.github/hooks/*.json` all point a `PreToolUse` and
+# a `PostToolUse` position at this file, because a binding calls a verb that
+# ships and carries no rule of its own. The three harnesses agree on the field
+# names read above — `hook_event_name`, `tool_input.file_path` — with one
+# exception: Codex's edit tool is `apply_patch`, and it passes the patch text
+# under `tool_input.command` rather than a bare path. `hw_patch_path` in
+# `lib.sh` is the one place that reads that shape.
 
 . "$(dirname "$0")/lib.sh"
 
 input=$(cat)
 event=$(hw_field "$input" hook_event_name) || exit 0
-path=$(hw_field "$input" tool_input file_path) || exit 0
+path=$(hw_field "$input" tool_input file_path) || path=$(hw_patch_path "$input") || exit 0
 [ -n "$path" ] || exit 0
 
 # The path as the corpus names it: relative to the repository root.

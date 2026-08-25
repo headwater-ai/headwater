@@ -130,6 +130,21 @@ expect 'a file that is not Markdown passes' \
     write.sh 0 '' \
     '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"docs/obligations/notes.txt"}}'
 
+printf '\n# write.sh, on PreToolUse: an apply_patch command in place of a file_path\n'
+# Codex names its edit tool `apply_patch` and passes the patch text under
+# `tool_input.command` rather than a bare path, spec 16's C4 row for that
+# column. `hw_patch_path` in lib.sh is the one place that reads it, and these
+# hold it to the same refusals the `file_path` shape above already holds.
+expect 'an apply_patch add of a new document under the corpus root is refused the same way' \
+    write.sh 0 'headwater new' \
+    '{"hook_event_name":"PreToolUse","tool_name":"apply_patch","tool_input":{"command":"*** Begin Patch\n*** Add File: docs/obligations/9999-a-record-nobody-scaffolded.md\n+placeholder\n*** End Patch"}}'
+expect 'an apply_patch update of a document that already exists passes' \
+    write.sh 0 '' \
+    '{"hook_event_name":"PreToolUse","tool_name":"apply_patch","tool_input":{"command":"*** Begin Patch\n*** Update File: docs/spec/05-ai-integration.md\n@@\n-old\n+new\n*** End Patch"}}'
+expect 'a tool_input with neither a file_path nor an apply_patch command is silent' \
+    write.sh 0 '' \
+    '{"hook_event_name":"PreToolUse","tool_name":"some_other_tool","tool_input":{"argument":"nothing this hook reads"}}'
+
 printf '\n# write.sh, on PostToolUse: impact detection\n'
 if [ -x "$engine" ]; then
     expect 'an edit to a path a document governs names that document' \
