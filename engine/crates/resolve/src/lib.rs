@@ -129,9 +129,19 @@ pub struct Resolution {
 /// taxonomy removed.
 ///
 /// So the resolver records it, `taxonomy diff` reads it as the `addressability`
-/// dimension, and no verb refuses on it yet.
-/// [#193](https://github.com/headwater-ai/headwater/issues/193) carries whether
-/// `taxonomy validate` should.
+/// dimension, `taxonomy validate` states the record on standard output and
+/// `taxonomy resolve` reports it on standard error. No verb refuses on it,
+/// under any flag, and no exit status moves because of it.
+/// [#193](https://github.com/headwater-ai/headwater/issues/193) ruled that, and
+/// the reason is that a founding is a property of the application order and not
+/// of the resolved taxonomy. Two overlays that write leaves nowhere near each
+/// other commute, and the one that reaches into a kind records a founding only
+/// in the orders where it runs before the one that declares it. A refusal would
+/// therefore refuse one legal order of a pair that spec 2's confluence rule
+/// certifies as one resolution, and accept the other.
+/// `a_commuting_pair_records_a_founding_in_one_order_and_not_the_other` in
+/// `tests/founded.rs` is that reason as a case, over the committed
+/// `two-adds-into-one-kind` fixture.
 ///
 /// # It is derived from the merge and not from a second walk
 ///
@@ -185,6 +195,38 @@ impl Resolution {
     /// nothing.
     pub fn validate(&self) -> Vec<ResolveError> {
         rules::check(&self.taxonomy)
+    }
+
+    /// Every operation that makes what it addresses, as the text two verbs print.
+    ///
+    /// One copy, because `taxonomy validate` states it and `taxonomy resolve`
+    /// reports it, and two renderings could disagree about what a founding is.
+    /// The wording of each line is [`Founding::sentence`], which
+    /// `headwater_compat::addressability` also prints, so a reader who meets the
+    /// reading at two verbs meets one sentence.
+    ///
+    /// The heading carries its own count, on the precedent
+    /// [`rules::render`] sets for `WAITING`: a list that empties says so rather
+    /// than looking like a list nobody printed. The trailing note prints only
+    /// when the count is non-zero, and it is the one place the reason lives.
+    pub fn foundings(&self) -> String {
+        let mut out = format!(
+            "operations that make what they address: {}\n",
+            self.founded.len()
+        );
+        for founding in &self.founded {
+            out.push_str(&format!("  {}\n", self.sources[founding.source]));
+            out.push_str(&format!("    {}\n", founding.sentence()));
+        }
+        if !self.founded.is_empty() {
+            out.push_str(
+                "  Nothing here refuses a founding. The precondition of an `add` is about the \
+                 addressed key alone, so the resolver creates what it needs on the way down and \
+                 two overlays commute. `taxonomy diff` reads this record as the `addressability` \
+                 dimension, where a base that dropped the declaration is a break.\n",
+            );
+        }
+        out
     }
 }
 

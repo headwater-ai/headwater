@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# One overlay, one operation, and nothing under it declares `kinds.playbook`.
+# The resolver creates the mapping on the way down and records the operation as
+# a founding, which is the case that holds the reading against a base that
+# never declared what the address reaches into.
+#
+# `two-adds-into-one-kind` records a founding in one order and not the other,
+# because a second overlay there declares the kind. Here there is no other
+# overlay, so the founding is a property of the set rather than of the order.
+
+taxonomy: acme
+extends: headwater/standard@1.0.0
+
+add:
+  kinds.playbook.purpose: behavior
