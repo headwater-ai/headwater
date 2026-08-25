@@ -30,6 +30,12 @@ purposes:
       - "how do I set this up"
       - "what are the steps"
     intent: "state the steps a reader follows, and the state each step reaches"
+  requirement:
+    answers:
+      - "what must this do"
+      - "what does done mean here"
+      - "what would show that this is met"
+    intent: "state what must hold before a thing is built, and what decides that it holds"
 vocabularies:
   lifecycle_state:
     - value: draft
@@ -153,6 +159,20 @@ facets:
     role: name
     type: string
     volatility: stable
+  verification_method:
+    guidance:
+      analysis: "reason from a model, a calculation or a result already established, where a run is not possible and not needed"
+      demonstration: "operate the system and observe the behavior the fit criterion states, with no instrument beyond the observation"
+      inspection: "read the artifact against the fit criterion, and run nothing"
+      test: "run the system and compare a measured result against the fit criterion"
+    required: false
+    type: string
+    values:
+      - test
+      - demonstration
+      - inspection
+      - analysis
+    volatility: mutable
   waiting_on:
     guidance:
       adopter: "an outside corpus has to exist before anything can move"
@@ -197,6 +217,10 @@ regimes:
         - change_narration
         - phased_rollout
     narrative: {}
+    prospective:
+      forbid:
+        - change_narration
+        - phased_rollout
   language:
     default:
       tag: en-US
@@ -280,6 +304,22 @@ kinds:
       require:
         - Scope
         - Behavior
+  acceptance_criterion:
+    facets:
+      require:
+        - title
+        - verification_method
+    identifier:
+      scheme: acceptance_criterion_id
+    is_a: governed_document
+    language: ste_house
+    lifecycle: standard
+    purpose: requirement
+    sections:
+      require:
+        - "Fit criterion"
+        - Method
+    voice: prospective
   decision_register:
     facets:
       require:
@@ -414,6 +454,33 @@ kinds:
         - "Run identity"
         - Events
     voice: narrative
+  requirement:
+    facets:
+      require:
+        - title
+    identifier:
+      scheme: requirement_id
+    is_a: governed_document
+    language: ste_house
+    lifecycle: standard
+    purpose: requirement
+    relations:
+      expect:
+        - id: requirement-verified
+          relation: verified_by
+          to_kind: acceptance_criterion
+          when:
+            status: current
+          within: 90d
+          since: state_entered
+          severity: warn
+          rationale: "a requirement that nothing verifies is a claim nobody can settle"
+    sections:
+      require:
+        - Context
+        - Requirement
+        - Verification
+    voice: prospective
   review_prompt:
     facets:
       require:
@@ -566,6 +633,17 @@ relations:
       - probe_transcript
     to:
       - probe
+  verified_by:
+    cardinality: many
+    created_by: scaffold
+    family: evidence
+    from:
+      - requirement
+    inverse: verifies
+    reciprocal: required
+    to:
+      - acceptance_criterion
+      - probe
 shelves:
   decisions:
     path: "docs/decisions/**"
@@ -576,6 +654,11 @@ shelves:
     path: "docs/specifications/**"
     homogeneous: true
     kind: specification
+  acceptance_criteria:
+    homogeneous: true
+    kind: acceptance_criterion
+    layout: "{seq:04d}-{slug}.md"
+    path: "docs/acceptance-criteria/**"
   evaluations:
     homogeneous: true
     kind: evaluation
@@ -601,6 +684,11 @@ shelves:
     homogeneous: true
     kind: probe
     path: "docs/probes/**"
+  requirements:
+    homogeneous: true
+    kind: requirement
+    layout: "{seq:04d}-{slug}.md"
+    path: "docs/requirements/**"
   reviews:
     discriminator: doc_type
     homogeneous: false
@@ -626,6 +714,10 @@ identifier_schemes:
     pattern: "{namespace}-DR-{seq:04d}"
     allocation: reconcile-first
     namespace: HW
+  acceptance_criterion_id:
+    allocation: reconcile-first
+    namespace: HW
+    pattern: "{namespace}-AC-{seq:04d}"
   evaluation_id:
     allocation: minted-once
     namespace: HW
@@ -646,6 +738,10 @@ identifier_schemes:
     allocation: minted-once
     namespace: HW
     pattern: "{namespace}-REG-{slug}"
+  requirement_id:
+    allocation: reconcile-first
+    namespace: HW
+    pattern: "{namespace}-REQ-{seq:04d}"
   result_id:
     allocation: minted-once
     namespace: HW

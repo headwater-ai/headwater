@@ -1,4 +1,4 @@
-11 schemes
+13 schemes
 
 decision_id
   pattern    {namespace}-DR-{seq:04d}
@@ -6,6 +6,16 @@ decision_id
   render     HW-DR-0000
   needs      seq:4
   mint       HW-DR-0042
+  admits     true
+  sequence   42
+  refuses    true
+
+acceptance_criterion_id
+  pattern    {namespace}-AC-{seq:04d}
+  namespace  HW
+  render     HW-AC-0000
+  needs      seq:4
+  mint       HW-AC-0042
   admits     true
   sequence   42
   refuses    true
@@ -59,6 +69,16 @@ register_id
   admits     true
   sequence   -
   refuses    false
+
+requirement_id
+  pattern    {namespace}-REQ-{seq:04d}
+  namespace  HW
+  render     HW-REQ-0000
+  needs      seq:4
+  mint       HW-REQ-0042
+  admits     true
+  sequence   42
+  refuses    true
 
 result_id
   pattern    {namespace}-RESULT-{slug}
