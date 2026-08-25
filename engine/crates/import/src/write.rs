@@ -43,7 +43,12 @@ use std::path::Path;
 /// than per snapshot. When a later fetch advances the pin, the edges whose
 /// recorded revision no longer matches the snapshot's are the suspect ones, and
 /// the finding names the document whose author can act.
-pub const VERIFIED_REVISION: &str = "verified_revision";
+///
+/// The name moved to `headwater_graph::edges` when `relation.target.suspect`
+/// arrived, because the rule that reads it is in a crate this one depends on.
+/// It is re-exported here so that a reader of the writer still meets it beside
+/// the splice that writes it.
+pub use headwater_graph::edges::VERIFIED_REVISION;
 
 /// One document, patched and not yet on disk.
 #[derive(Clone, Debug)]

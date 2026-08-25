@@ -91,6 +91,18 @@ pub struct Edge {
 /// `taxonomy audit` counts the halves that carry one.
 pub const CUE: &str = "cue";
 
+/// The instance attribute that carries the pinned revision an imported edge was
+/// checked against.
+///
+/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)
+/// declares it by this name, owned by the edge. It is here beside [`CUE`] for
+/// the reason [`CUE`] is here: two crates read it and neither may depend on the
+/// other. `headwater_import::write` writes it, `headwater_check::suspect`
+/// compares it against the revision the resolver answered with, and
+/// `headwater-import` already depends on `headwater-check`, so the name has to
+/// sit under both of them.
+pub const VERIFIED_REVISION: &str = "verified_revision";
+
 /// The declaring end of an edge.
 #[derive(Clone, Debug)]
 pub struct Source {
