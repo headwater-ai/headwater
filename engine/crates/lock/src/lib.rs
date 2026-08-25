@@ -59,11 +59,26 @@
 //! where the payload lives in as many words: "the payload is large on a large
 //! corpus, and it sits in the lock, which is committed and reviewed".
 //!
-//! So [`Lock::adoption`] carries it and [`FORMAT`] is 2. The bump is not
+//! So [`Lock::adoption`] carries it and [`FORMAT`] moved to 2. The bump is not
 //! decoration. A payload moves a finding out of the report, so an engine that
 //! reads the block and an engine that skips it disagree about one corpus. An
 //! engine that cannot honor a payload has to refuse the lock rather than report
 //! a louder verdict than the adopter agreed to.
+//!
+//! # A lock also binds to the rule set that validated it
+//!
+//! [`write`] runs every rule of `taxonomy validate` and [`read`] runs none of
+//! them: it checks the format and the digest, and it has always trusted that
+//! whatever wrote the lock ran the rules current at the time. Between one write
+//! and a later read the rules themselves can move — a taxonomy that validated
+//! under an older rule set may not validate under this engine's — and a lock
+//! current against its sources says nothing about which rule set validated it.
+//! [`Lock::rules`] closes that gap: it is [`headwater_resolve::rules::RULE_SET`]
+//! at write time, and [`read`] refuses a lock whose `rules` does not match the
+//! `RULE_SET` this build carries. [`FORMAT`] moved to 3 to carry the field, so a
+//! lock from before this field existed is refused as an old format rather than
+//! as a stale rule set, and only a lock that carries the field but disagrees
+//! with the current rule set takes the new refusal.
 //!
 //! **The block is authored and every other line of this file is generated.**
 //! The rest of the lock is a function of the sources. An owner is not, an expiry
@@ -96,10 +111,16 @@ pub const LOCK: &str = ".headwater/taxonomy.lock";
 /// The format of the lock file. A reader that meets a later one says so rather
 /// than guessing.
 ///
-/// 1 carried a resolution alone. 2 admits [`Lock::adoption`], and the bump is
-/// the refusal an older engine owes an adopter: a payload it cannot read is a
-/// set of findings it would report that the adopter already accounted for.
-pub const FORMAT: u32 = 2;
+/// 1 carried a resolution alone. 2 admitted [`Lock::adoption`], and the bump
+/// was the refusal an older engine owes an adopter: a payload it cannot read is
+/// a set of findings it would report that the adopter already accounted for. 3
+/// admits [`Lock::rules`], the marker that binds a lock to the resolver rule
+/// set that validated it. A lock at format 3 with no `rules` field, or one at
+/// an earlier format, is refused here as an old shape; a lock at format 3
+/// whose `rules` disagrees with [`headwater_resolve::rules::RULE_SET`] is
+/// refused by [`LockError::RuleSet`] instead, because it has the field and the
+/// field is stale.
+pub const FORMAT: u32 = 3;
 
 /// One lock, read or about to be written.
 #[derive(Clone, Debug)]
@@ -114,6 +135,12 @@ pub struct Lock {
     /// [spec 6](../../../../docs/spec/06-engine-architecture.md#ci-adapters) means
     /// by "the taxonomy lock hash".
     pub digest: String,
+    /// The resolver's [`headwater_resolve::rules::RULE_SET`] this lock was
+    /// validated under. [`read`] refuses a lock whose `rules` does not equal
+    /// the `RULE_SET` this build carries, because the rules a lock was written
+    /// against are the only guarantee a reader of it has, and a rule can move
+    /// between the write and the read.
+    pub rules: u32,
     /// The resolved taxonomy itself.
     pub taxonomy: Mapping,
     /// The adoption payload, as it was written, or `None` where the file
@@ -152,6 +179,16 @@ pub enum LockError {
         declared: String,
         actual: String,
     },
+    /// The lock carries a `rules` field, and it names a rule set other than
+    /// the one this engine runs. `found` is `None` only in a state `read`
+    /// cannot actually reach at format 3, because the `Format` check above
+    /// already refuses a lock with no `rules` field as an old shape; the
+    /// variant still carries the option so the message reads the same in
+    /// either case rather than mishandling one of them silently.
+    RuleSet {
+        found: Option<String>,
+        current: u32,
+    },
 }
 
 impl std::fmt::Display for LockError {
@@ -174,6 +211,14 @@ impl std::fmt::Display for LockError {
                 f,
                 "the lock declares the digest {declared} and its taxonomy hashes to {actual}. \
                  One of the two was edited by hand. Run `headwater taxonomy resolve`"
+            ),
+            LockError::RuleSet { found, current } => write!(
+                f,
+                "the lock declares rule set {} and this engine validates against {current}. The \
+                 rules that ran when this lock was written are not the rules this engine would \
+                 run now, so nothing here says the lock still holds. Run `headwater taxonomy \
+                 resolve`",
+                found.as_deref().unwrap_or("none")
             ),
         }
     }
@@ -220,6 +265,7 @@ pub fn write(
             })
             .collect(),
         digest: digest(&canonical),
+        rules: headwater_resolve::rules::RULE_SET,
         taxonomy: resolution.taxonomy.clone(),
         adoption: adoption.cloned(),
     };
@@ -244,6 +290,24 @@ pub fn read(text: &str) -> Result<Lock, LockError> {
     if format != FORMAT.to_string() {
         return Err(LockError::Format {
             found: format.to_string(),
+        });
+    }
+
+    // A lock at `FORMAT` 3 or later always carries `rules`, because the check
+    // above already refuses a lock with no `rules` field as an old format. So
+    // `text_of` returning `None` here is unreachable rather than a state this
+    // has to guess at, and the parse failure alongside it is the one real case:
+    // a `rules` field this engine cannot read as a number.
+    let rules = text_of(header, "rules")
+        .and_then(|found| found.parse::<u32>().ok())
+        .ok_or_else(|| LockError::RuleSet {
+            found: text_of(header, "rules").map(str::to_string),
+            current: headwater_resolve::rules::RULE_SET,
+        })?;
+    if rules != headwater_resolve::rules::RULE_SET {
+        return Err(LockError::RuleSet {
+            found: Some(rules.to_string()),
+            current: headwater_resolve::rules::RULE_SET,
         });
     }
 
@@ -301,6 +365,7 @@ pub fn read(text: &str) -> Result<Lock, LockError> {
         version: text_of(header, "version").unwrap_or_default().to_string(),
         sources,
         digest: declared.to_string(),
+        rules,
         taxonomy,
         adoption,
     })
@@ -466,6 +531,12 @@ fn render(lock: &Lock, canonical: &str) -> String {
 # below. Everything downstream reads this file and never the sources, so a check
 # result depends on a hash that a reviewer sees in this diff.
 #
+# `rules` names the resolver rule set that validated this lock at write time. A
+# lock whose `rules` disagrees with the rule set this engine runs now is
+# refused, because the rules that ran when this file was written are the only
+# guarantee a reader of it has, and the rules can move between a write and a
+# later read.
+#
 # The exception is the `adoption` block, where one appears. That block is
 # authored, and `headwater taxonomy resolve` carries it through rather than
 # producing it. It is the only part of this file that is not a function of the
@@ -478,11 +549,12 @@ fn render(lock: &Lock, canonical: &str) -> String {
 lock:
   format: {FORMAT}
   digest: {}
+  rules: {}
   package: {}
   version: {}
   sources:
 ",
-        lock.package, lock.version, lock.digest, lock.package, lock.version
+        lock.package, lock.version, lock.digest, lock.rules, lock.package, lock.version
     ));
     for source in &lock.sources {
         out.push_str(&format!(
@@ -1064,5 +1136,114 @@ tasks:
             diverged(&tampered, &text),
             Divergence::Unreadable(LockError::Tampered { .. })
         ));
+    }
+
+    /// The decisive case this field exists for: a lock current against its
+    /// sources, at the current [`FORMAT`], whose `rules` is one behind
+    /// [`headwater_resolve::rules::RULE_SET`] and whose taxonomy holds a shape
+    /// that `headwater_resolve::rules::check` refuses under the current set.
+    ///
+    /// `read` has never re-run the resolver's rules. Only `write` does, at
+    /// write time, through `Resolution::validate`. So before the `rules` field
+    /// existed, a lock like this one — validated once under an older rule set
+    /// that happened to accept this shape, current against sources that have
+    /// not moved since — would read back with no complaint. Reverting just the
+    /// read-side change below (keep the field, drop the comparison) turns this
+    /// test red: `read` returns `Ok` for a taxonomy `rules::check` refuses.
+    /// With the comparison, `read` never calls `rules::check`, or anything
+    /// under `headwater_resolve::rules`, at all — it is refused on the `rules`
+    /// number alone, which is the whole of what makes this a marker comparison
+    /// and not a second validation pass.
+    ///
+    /// The shape is `a_shape_built_by_hand_still_holds_two_readings_that_differ`
+    /// in `headwater_check::lifecycle_state`, carried into a full taxonomy
+    /// rather than invented fresh: `leaves` carries the `terminal-retained`
+    /// role and the machine gives it an exit to `sealed`, and `sealed` gets no
+    /// exit and no role names it terminal either. `lifecycle_soundness` refuses
+    /// both readings, for the same reason spec 2 states it: a state is
+    /// terminal to the role and to the machine, or to neither.
+    #[test]
+    fn a_lock_current_against_its_sources_but_validated_under_a_stale_rule_set_is_refused() {
+        const MISMATCHED: &str = "\
+taxonomy: acme/fixture
+version: 1.0.0
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+facets:
+  status:
+    role: state
+    values:
+      - {value: draft, role: initial}
+      - {value: current, role: live}
+      - {value: leaves, role: terminal-retained}
+      - {value: sealed}
+    required: true
+    volatility: mutable
+    guidance: {draft: it is being argued over, current: it states what holds now}
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current], current: [leaves, sealed], leaves: [sealed]}
+kinds:
+  decision:
+    purpose: rationale
+    lifecycle: standard
+    facets: {require: [status]}
+shelves:
+  decisions: {path: \"docs/decisions/**\", homogeneous: true, kind: decision}
+core:
+  requires:
+    - facet_role: state
+";
+        let (sources, resolution) = resolved(MISMATCHED);
+
+        // `resolve` merges and runs the meta-schema; it is `Resolution::validate`
+        // that runs `lifecycle_soundness`, so this shape resolves cleanly and
+        // only `validate` sees the mismatch. That gap between the two is
+        // exactly what let a stale-rule-set lock through before this field.
+        let refusals = resolution.validate();
+        assert!(
+            !refusals.is_empty(),
+            "the fixture no longer exhibits the mismatch `lifecycle_soundness` refuses"
+        );
+
+        // Built by hand rather than through `write`, which calls `validate`
+        // and would refuse this taxonomy outright. What is under test is
+        // what `read` does with a lock a *stale* validator already let
+        // through, and `write` can never produce that lock today.
+        let canonical = resolution.render();
+        let stale = headwater_resolve::rules::RULE_SET - 1;
+        let lock = Lock {
+            package: "acme/fixture".to_string(),
+            version: "1.0.0".to_string(),
+            sources: sources
+                .iter()
+                .map(|source| SourceDigest {
+                    path: source.name.clone(),
+                    digest: headwater_hash::digest(source.text.as_bytes()),
+                })
+                .collect(),
+            digest: digest(&canonical),
+            rules: stale,
+            taxonomy: resolution.taxonomy.clone(),
+            adoption: None,
+        };
+        let text = render(&lock, &canonical);
+
+        let error = read(&text).expect_err("a lock validated under a stale rule set is refused");
+        assert!(
+            matches!(
+                &error,
+                LockError::RuleSet { found, current }
+                    if found.as_deref() == Some(&stale.to_string())
+                        && *current == headwater_resolve::rules::RULE_SET
+            ),
+            "{error:?}"
+        );
+        assert!(
+            error.to_string().contains("headwater taxonomy resolve"),
+            "{error}"
+        );
     }
 }

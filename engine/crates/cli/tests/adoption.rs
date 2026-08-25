@@ -343,8 +343,8 @@ fn a_first_resolve_with_no_lock_writes_one() {
 fn a_lock_a_newer_engine_wrote_stops_a_resolve() {
     let root = Root::new("newer-format");
     root.author();
-    let ahead = root.text().replacen("  format: 2\n", "  format: 3\n", 1);
-    assert!(ahead.contains("format: 3"), "the format line moved");
+    let ahead = root.text().replacen("  format: 3\n", "  format: 4\n", 1);
+    assert!(ahead.contains("format: 4"), "the format line moved");
     root.write(&ahead);
 
     let resolved = root.run(&["taxonomy", "resolve"]);

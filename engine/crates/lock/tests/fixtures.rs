@@ -208,6 +208,77 @@ fn the_committed_lock_is_what_the_sources_resolve_to() {
     compare(&fixtures_dir().join("corpus.lock"), &out);
 }
 
+/// A freshly written lock always carries the rule set this engine runs, and
+/// reads back clean under it.
+#[test]
+fn a_freshly_written_lock_always_carries_the_current_rule_set_and_reads_back_clean() {
+    let root = repository_root();
+    let repository = headwater_resolve::repository(&root).expect("this repository resolves");
+    let sources =
+        headwater_resolve::package::sources(&root, &repository.consumer).expect("its sources");
+    let text = headwater_lock::write(
+        &repository.consumer.package,
+        &repository.consumer.version,
+        &sources,
+        &repository.resolution,
+        headwater_lock::authored_at(&root).payload(),
+    )
+    .expect("it validates");
+    assert!(
+        text.contains(&format!(
+            "  rules: {}\n",
+            headwater_resolve::rules::RULE_SET
+        )),
+        "{text}"
+    );
+
+    let lock = headwater_lock::read(&text).expect("the lock reads");
+    assert_eq!(lock.rules, headwater_resolve::rules::RULE_SET);
+}
+
+/// A lock at the current `FORMAT` whose `rules` no longer names this engine's
+/// rule set is refused, and the refusal names the remedy.
+///
+/// A missing `rules` field is a different case, already covered by `FORMAT`:
+/// a lock old enough to lack the field is at an earlier format and is refused
+/// there, before this one's code path is reached. This is the case only the
+/// new field itself distinguishes: the field is present, and it is stale.
+#[test]
+fn a_lock_whose_rules_field_is_stale_is_refused_and_names_the_remedy() {
+    let root = repository_root();
+    let repository = headwater_resolve::repository(&root).expect("this repository resolves");
+    let sources =
+        headwater_resolve::package::sources(&root, &repository.consumer).expect("its sources");
+    let text = headwater_lock::write(
+        &repository.consumer.package,
+        &repository.consumer.version,
+        &sources,
+        &repository.resolution,
+        headwater_lock::authored_at(&root).payload(),
+    )
+    .expect("it validates");
+
+    let current = headwater_resolve::rules::RULE_SET;
+    let stale = text.replacen(
+        &format!("  rules: {current}\n"),
+        &format!("  rules: {}\n", current + 1),
+        1,
+    );
+    assert_ne!(stale, text, "the fixture did not move the `rules` field");
+
+    let error = headwater_lock::read(&stale).expect_err("a stale rule set is refused");
+    assert!(
+        matches!(
+            &error,
+            headwater_lock::LockError::RuleSet { found, current: seen }
+                if found.as_deref() == Some(&(current + 1).to_string()) && *seen == current
+        ),
+        "{error:?}"
+    );
+    let message = error.to_string();
+    assert!(message.contains("headwater taxonomy resolve"), "{message}");
+}
+
 /// Every permutation of `count` items, as index lists. Heap's algorithm.
 fn permutations(count: usize) -> Vec<Vec<usize>> {
     let mut current: Vec<usize> = (0..count).collect();

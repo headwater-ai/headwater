@@ -1,6 +1,6 @@
-224 nodes, 495 declared edge halves
-    406 to a document
-     89 to an anchor
+225 nodes, 497 declared edge halves
+    407 to a document
+     90 to an anchor
 0 prose links that did not resolve
 
 anchors
@@ -9,6 +9,7 @@ anchors
       1 code_path `.claude/hooks/lib.sh` via source-tree
       1 code_path `.claude/hooks/review.sh` via source-tree
       1 code_path `.claude/hooks/write.sh` via source-tree
+      1 code_path `.claude/settings.json` via source-tree
       1 code_path `.claude/skills/fixtures.sh` via source-tree
       2 code_path `.claude/skills/headwater-authoring/SKILL.md` via source-tree
       1 code_path `.claude/skills/headwater-sweep/SKILL.md` via source-tree

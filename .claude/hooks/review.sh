@@ -19,6 +19,16 @@
 # never had it. The commit hook still holds the commit, and the CI job still
 # holds the pull request, and neither of those is skippable by the agent that
 # wrote the defect. This position only makes the finding arrive sooner.
+#
+# Two harnesses, one blocking mechanism apiece, confirmed live against each.
+# Claude Code and Codex both fail this position closed on exit 2 with the
+# report on standard error. GitHub Copilot's CLI does not: an exit-2 `Stop`
+# hook there is logged and the turn ends anyway, and the block instead reads a
+# `{"decision":"block","reason":...}` object on standard output at exit 0.
+# `COPILOT_CLI` is the one environment variable that told the two mechanisms
+# apart in that test, so it decides which shape this hook writes. Getting the
+# detection wrong fails the same way either mechanism already fails open: the
+# turn ends and the commit gate holds the result regardless.
 
 . "$(dirname "$0")/lib.sh"
 
@@ -36,6 +46,14 @@ report=$(cd "$hw_root" && "$gate" 2>&1)
 status=$?
 [ "$status" -eq 0 ] && exit 0
 
-printf 'The commit gate, run at the end of this turn rather than at the next commit.\n' >&2
-printf '%s\n' "$report" >&2
+message="The commit gate, run at the end of this turn rather than at the next commit.
+$report"
+
+if [ -n "${COPILOT_CLI:-}" ]; then
+    quoted=$(hw_quote "$message") || exit 0
+    printf '{"decision":"block","reason":%s}\n' "$quoted"
+    exit 0
+fi
+
+printf '%s\n' "$message" >&2
 exit 2

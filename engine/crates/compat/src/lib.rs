@@ -402,6 +402,28 @@ pub fn instance_validity(before: &Run, after: &Run) -> (Outcome, BTreeSet<String
     (Outcome::over(breaks), moved)
 }
 
+/// The summary word for `instance_validity` alone.
+///
+/// A break here is a rule that stopped agreeing between the two runs, and
+/// [`verdict`] writes exactly one reading that means the rule declined to
+/// decide: `skipped: {why}`. A break whose `now` is that reading is a rule
+/// that handed off, not a document that stopped validating, and the two are
+/// counted apart so the printed word never says one document count for two
+/// different things. [#221](https://github.com/headwater-ai/headwater/issues/221).
+///
+/// This does not change which breaks are read, only how many of them are
+/// printed under which word: `Outcome::forces_major` still answers `true` for
+/// a skip-only movement, because whether a skip should force a major version
+/// is a different question than this one, and issue #221 leaves it open.
+fn instance_validity_word(breaks: &[Break]) -> String {
+    let skipped = breaks
+        .iter()
+        .filter(|entry| entry.now.starts_with("skipped: "))
+        .count();
+    let failed = breaks.len() - skipped;
+    format!("BROKEN, {failed} failed / {skipped} skipped")
+}
+
 /// The documents of this corpus that one step of a migration payload names.
 ///
 /// Derived from [`migrate::sites`], which answers the same question at the
@@ -634,7 +656,11 @@ impl Report {
         out.push_str(self.base.sentence());
         out.push_str("\n\n");
         for (name, outcome) in self.measured.dimensions() {
-            out.push_str(&format!("  {name:<18} {}\n", outcome.word()));
+            let word = match (name, outcome) {
+                ("instance_validity", Outcome::Broken(breaks)) => instance_validity_word(breaks),
+                _ => outcome.word(),
+            };
+            out.push_str(&format!("  {name:<18} {word}\n"));
         }
         for (name, outcome) in self.measured.dimensions() {
             let breaks = outcome.breaks();

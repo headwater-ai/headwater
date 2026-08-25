@@ -5,6 +5,12 @@
 # below. Everything downstream reads this file and never the sources, so a check
 # result depends on a hash that a reviewer sees in this diff.
 #
+# `rules` names the resolver rule set that validated this lock at write time. A
+# lock whose `rules` disagrees with the rule set this engine runs now is
+# refused, because the rules that ran when this file was written are the only
+# guarantee a reader of it has, and the rules can move between a write and a
+# later read.
+#
 # The exception is the `adoption` block, where one appears. That block is
 # authored, and `headwater taxonomy resolve` carries it through rather than
 # producing it. It is the only part of this file that is not a function of the
@@ -15,8 +21,9 @@
 # disagreement.
 
 lock:
-  format: 2
+  format: 3
   digest: sha256:a07ad716d6cb98c3c1ba063675607da065e2d1cb229d54d7cadaeb11df80b2aa
+  rules: 1
   package: headwater/standard
   version: 3.3.0
   sources:

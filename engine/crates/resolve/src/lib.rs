@@ -93,7 +93,7 @@ use std::path::Path;
 
 /// Where every rule of `taxonomy validate` runs. See [`rules::RULES`], which is
 /// the table, and [`rules::WAITING`], which is what no phase decides yet.
-pub use rules::{Ran, RULES, WAITING};
+pub use rules::{Ran, RULES, RULE_SET, WAITING};
 
 /// One resolution.
 #[derive(Clone, Debug)]
