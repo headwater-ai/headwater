@@ -6,8 +6,8 @@
       2 not a document
      34 typed decision
       1 typed decision_register
-     15 typed design_spec
-     15 typed evaluation
+     13 typed design_spec
+     17 typed evaluation
      19 typed interface_contract
     129 typed obligation_record
       1 typed obligation_register
