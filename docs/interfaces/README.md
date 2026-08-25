@@ -2,7 +2,7 @@
 
 # The command surface
 
-`headwater` dispatches 19 verbs. 2 of them have a contract on this shelf, and 17 have none.
+`headwater` dispatches 19 verbs. 4 of them have a contract on this shelf, and 15 have none.
 
 A verb with no contract carries a mark in the last column, and that cell is what this file is for. An index of the contracts that exist would say nothing about the verbs nobody has described yet.
 
@@ -22,7 +22,7 @@ The headings and the second column are the groups and the summaries that `headwa
 |---|---|---|---|
 | `route` | resolve a task description to the documents that govern it | `headwater route` | **no contract** |
 | `explain` | why a document is the kind it is, and what it serves | `headwater explain` | **no contract** |
-| `query` | listed in spec 6, and no document says what an expression is | `headwater query` | **no contract** |
+| `query` | listed in spec 6, and no document says what an expression is | `headwater query` | [headwater query](headwater-query.md) |
 | `capture` | read the capture-cost store back | `headwater capture` | **no contract** |
 | `mcp` | serve the reads and one run of the checks to an agent | `headwater mcp` | **no contract** |
 
@@ -41,7 +41,7 @@ The headings and the second column are the groups and the summaries that `headwa
 | Verb | What it does | What a caller types | Contract |
 |---|---|---|---|
 | `sweep` | the two halves of the coherence sweep | `headwater sweep plan`, `headwater sweep report` | [headwater sweep](headwater-sweep.md) |
-| `probe` | the four parts of the probe harness | `headwater probe plan`, `headwater probe record`, `headwater probe grade`, `headwater probe stale` | **no contract** |
+| `probe` | the four parts of the probe harness | `headwater probe plan`, `headwater probe record`, `headwater probe grade`, `headwater probe stale` | [headwater probe](headwater-probe.md) |
 
 ## The taxonomy
 
