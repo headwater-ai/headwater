@@ -270,8 +270,9 @@ snapshot:
 
         // And the same snapshot at a later fetch answers with the later
         // revision under one identity, which is the whole of the drift.
-        let advanced = crate::snapshot::read(&PAYLOAD.replace("revision: \"7\"", "revision: \"8\""))
-            .expect("the payload reads");
+        let advanced =
+            crate::snapshot::read(&PAYLOAD.replace("revision: \"7\"", "revision: \"8\""))
+                .expect("the payload reads");
         let Binding::Resolved { revision, .. } =
             Items::of("ado-snapshot", &advanced).resolve("12345")
         else {

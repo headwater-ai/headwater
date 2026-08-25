@@ -126,7 +126,7 @@ headwater taxonomy resolve
 
 ```
 headwater: the taxonomy did not resolve, so no lock is possible
-  .headwater/taxonomy.yml: this takes headwater/standard 0.0.0, and the package here is 3.2.0
+  .headwater/taxonomy.yml: this takes headwater/standard 0.0.0, and the package here is 3.3.0
 ```
 
 **Check.** `echo $?` prints `1`.
@@ -135,12 +135,12 @@ headwater: the taxonomy did not resolve, so no lock is possible
 
 ### Step 5 — Pin the version, and meet the second refusal
 
-Open `.headwater/taxonomy.yml`, and change the line `  version: 0.0.0` to `  version: 3.2.0`.
+Open `.headwater/taxonomy.yml`, and change the line `  version: 0.0.0` to `  version: 3.3.0`.
 
 **Check.** `grep 'version:' .headwater/taxonomy.yml` prints one line:
 
 ```
-  version: 3.2.0
+  version: 3.3.0
 ```
 
 Now resolve again.
@@ -372,9 +372,9 @@ Trimmed to the head of the register and to its last line. The same run printed b
 
 ```
   register
-    27 obligations: 27 verified, 0 gap, 0 unverifiable, 0 with no disposition
+    28 obligations: 28 verified, 0 gap, 0 unverifiable, 0 with no disposition
        11 high, 11 verified
-       11 medium, 11 verified
+       12 medium, 12 verified
         5 low, 5 verified
 ```
 
@@ -382,11 +382,11 @@ Trimmed to the head of the register and to its last line. The same run printed b
     every rule this engine carries reaches one obligation
 ```
 
-**Check.** `headwater check 2>/dev/null | grep 'obligations:'` prints the `27 obligations:` line of the register block above, and nothing else.
+**Check.** `headwater check 2>/dev/null | grep 'obligations:'` prints the `28 obligations:` line of the register block above, and nothing else.
 
-**One of those readings is about the package and one is about your run.** The twenty-seven obligations and their severities come from `headwater/standard`, so they read the same on your first day and your thousandth. The last line is derived from the run in front of you. It says that no rule fired at you without an obligation behind it, and that is what makes the identifier in your finding worth reading.
+**One of those readings is about the package and one is about your run.** The twenty-eight obligations and their severities come from `headwater/standard`, so they read the same on your first day and your thousandth. The last line is derived from the run in front of you. It says that no rule fired at you without an obligation behind it, and that is what makes the identifier in your finding worth reading.
 
-**Your corpus will not show you a gap, and the reason is worth knowing.** A `gap` is a disposition that a package author writes, with an owner, for an obligation that no mechanism verifies. The base package declares none, so this row reads `0 gap` on every run of yours and no step here moves it. Headwater's own corpus takes a bundle that declares three obligations no mechanism verifies. The same block there reads `30 obligations: 27 verified, 2 gap, 1 unverifiable`, and it names the owner of each gap. The number worth watching is the one that is not `verified`.
+**Your corpus will not show you a gap, and the reason is worth knowing.** A `gap` is a disposition that a package author writes, with an owner, for an obligation that no mechanism verifies. The base package declares none, so this row reads `0 gap` on every run of yours and no step here moves it. Headwater's own corpus takes a bundle that declares three obligations no mechanism verifies. The same block there reads `31 obligations: 28 verified, 2 gap, 1 unverifiable`, and it names the owner of each gap. The number worth watching is the one that is not `verified`.
 
 The word `mechanical` on the fix line is the second thing to read. A rule is an error when the repair takes no judgment, and advisory when the repair is a rewrite. This one takes no judgment, so the next step is a command rather than an edit.
 
@@ -477,13 +477,13 @@ levels
   L2 Regenerated — not reached, 2 of 4 rules met
     2 gaps, 0 of them waived
 
-no level reached, against headwater/standard 3.2.0
+no level reached, against headwater/standard 3.3.0
   a level states what this repository wired up. It measures nothing about the
   corpus, no key declares one, and a waiver moves the exit status and never the
   level.
 ```
 
-**Check.** The last line of the levels block reads `no level reached, against headwater/standard 3.2.0`.
+**Check.** The last line of the levels block reads `no level reached, against headwater/standard 3.3.0`.
 
 Your corpus passes every check and reaches no level, and both statements are correct. A level measures what you wired up rather than what your documents say. One of the two gaps closes with a command:
 

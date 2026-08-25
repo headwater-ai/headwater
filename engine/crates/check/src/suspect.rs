@@ -142,7 +142,13 @@ impl EdgeCheck for Suspect<'_> {
             path: edge.source.path.clone(),
             line,
             column,
-            message: message(&edge.source.id, &edge.name, &edge.raw_target, verified, current),
+            message: message(
+                &edge.source.id,
+                &edge.name,
+                &edge.raw_target,
+                verified,
+                current,
+            ),
             remediation: remediation(current),
             // No fix. The repair is a person re-reading an upstream item and
             // deciding whether the edge still holds, which is judgment rather

@@ -91,9 +91,9 @@ rules, and for each the scope that binds it
   control.mechanism.unimplemented
     taxonomy scope, the resolved taxonomy, and no document
 register
-  26 obligations: 21 verified, 2 gap, 1 unverifiable, 2 with no disposition
+  27 obligations: 22 verified, 2 gap, 1 unverifiable, 2 with no disposition
      10 high, 9 verified
-      8 medium, 6 verified
+      9 medium, 7 verified
       8 low, 6 verified
   OB-FIX-7 verified, 1 finding escaped under it
   OB-FIX-8 verified, 1 finding escaped under it
@@ -103,20 +103,19 @@ register
   OB-FIX-17 verified, and it states a gap as well, which is two dispositions
   OB-FIX-18 with no disposition, and CT-FIX-15 claims to discharge it under a mechanism this engine does not implement
   OB-FIX-20 gap, owner the fixture tree, and no target, and CT-FIX-17 claims to discharge it under a mechanism this engine does not implement, which is two dispositions
-  23 controls
-     22 posture advisory
+  24 controls
+     23 posture advisory
       1 posture blocking
-     22 acts detective
+     23 acts detective
       1 acts preventive
-     19 name a rule this engine carries
+     20 name a rule this engine carries
       1 name a phase this engine runs
       2 name a mechanism this engine does not implement
       1 name a mechanism outside this engine
-     21 with no promotion record, so nothing states what would promote them
+     22 with no promotion record, so nothing states what would promote them
       1 with criteria
       1 producing facts rather than findings
   escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 2 suppressed
-  relation.target.suspect reaches no obligation, so it names none
   relation.endpoint.not_permitted reaches OB-FIX-5, OB-FIX-17, and a finding names one obligation, so it names none
   lifecycle.dependency.on_terminal reaches no obligation, so it names none
   identifier.claimed_twice reaches no obligation, so it names none

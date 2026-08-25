@@ -1,6 +1,6 @@
 ## `headwater check`
 
-42 findings, 24 of them errors across 22 of 25 documents, against `headwater/fixture` 1.0.0 at `0d5deef4f0b065206f6e33e9641af29c0de5411b4e8c5d9eedaf22d68f04c746`, evaluated at 2026-08-12.
+42 findings, 24 of them errors across 22 of 25 documents, against `headwater/fixture` 1.0.0 at `f56bcd0fbdb55db9caf432a8df7904bc47d417d9333f5561baceece2d6f94037`, evaluated at 2026-08-12.
 
 **Coverage.** This run saw 25 files and classified 23 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 267 check instances, and 67 of them reached no verdict.
 
@@ -67,4 +67,4 @@
 
 </details>
 
-24 documents in the read set, and 2 barriers that no gate carries across a merge. 26 obligations, 21 verified.
+24 documents in the read set, and 2 barriers that no gate carries across a merge. 27 obligations, 22 verified.

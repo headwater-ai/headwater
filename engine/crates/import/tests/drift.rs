@@ -218,7 +218,11 @@ fn an_edge_whose_verified_revision_moved_is_reported_at_the_document_that_declar
     assert!(finding.message.contains('7'), "{}", finding.message);
     assert!(finding.message.contains('8'), "{}", finding.message);
     assert!(finding.message.contains("12345"), "{}", finding.message);
-    assert!(finding.message.contains("audited_by"), "{}", finding.message);
+    assert!(
+        finding.message.contains("audited_by"),
+        "{}",
+        finding.message
+    );
     assert!(
         finding.remediation.contains("verified_revision"),
         "{}",

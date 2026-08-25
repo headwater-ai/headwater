@@ -1,4 +1,4 @@
-headwater/standard 3.2.0
+headwater/standard 3.3.0
 
 sources, in application order
   packages/headwater-standard/taxonomy.yml
@@ -80,7 +80,7 @@ operations
 
 declarations, by member count
   taxonomy: headwater/standard
-  version: 3.2.0
+  version: 3.3.0
   purposes: 5 members
   vocabularies: 1 member
   facets: 13 members
@@ -92,8 +92,8 @@ declarations, by member count
   identifier_schemes: 11 members
   core: 1 member
   projections: 5 items
-  obligations: 30 members
-  controls: 27 members
+  obligations: 31 members
+  controls: 28 members
 
 `taxonomy validate`: valid
 

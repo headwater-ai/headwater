@@ -257,6 +257,12 @@ obligations:
     class: cohesion
     prevents: content.incomplete
     severity: high
+  OB-FIX-27:
+    statement: An edge an import wrote names its upstream item at the revision the edge was verified against
+    rationale: An upstream item moves under an edge that nobody touched, and the author who could re-verify it is the one person the advance never reaches
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
   OB-FIX-23:
     statement: An identifier is a string the scheme its kind names admits
     rationale: An identifier travels into tickets and commit messages, and one outside its own namespace collides with a corpus that nobody here can rewrite
@@ -457,6 +463,18 @@ controls:
   CT-FIX-23:
     mechanism: check:identifier.unusable
     discharges: [OB-FIX-26]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+
+  # This corpus declares no relation with `created_by: import`, so the rule
+  # this control names reaches zero instances here and reports nothing. The
+  # pair is declared all the same: a rule with no control emits findings that
+  # name no obligation, which spec 4 forbids, and the register would report the
+  # rule as reaching none on every run over this tree.
+  CT-FIX-24:
+    mechanism: check:relation.target.suspect
+    discharges: [OB-FIX-27]
     trigger: pull_request
     posture: advisory
     acts: detective

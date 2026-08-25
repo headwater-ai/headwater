@@ -77,7 +77,7 @@ What replaces the fake metrics is *verifiable machinery*. From a real run of `he
 | Findings reported | 523 |
 | Findings suppressed, each by a dated directive with a stated reason | 4 |
 | Migration-pending findings | 0 |
-| Taxonomy in force | `headwater/standard 3.2.0` |
+| Taxonomy in force | `headwater/standard 3.3.0` |
 | CLI verbs shipped | 30, across 14 verb families |
 | Milestones | M1–M5 closed; M6 (distribution) and M7 (measurement) open |
 
@@ -203,4 +203,4 @@ Specifics for the designer:
 - [TrustGraph](https://trustgraph.ai/) · [trustgraph on GitHub](https://github.com/trustgraph-ai/trustgraph) · [TrustGraph docs](https://docs.trustgraph.ai/)
 - [Vale](https://vale.sh/) · [Vale docs](https://docs.vale.sh/) · [vale on GitHub](https://github.com/vale-cli/vale)
 - Internal: `docs/decisions/0016-public-presence.md`, `docs/evaluations/first-contact.md`, `docs/spec/11-adjacent-work.md` §I and §J, `docs/spec/00-vision-and-scope.md`, `README.md`
-- Measured: `headwater check` against this repository, 2026-08-23, taxonomy `headwater/standard 3.2.0`
+- Measured: `headwater check` against this repository, 2026-08-23, taxonomy `headwater/standard 3.3.0`
