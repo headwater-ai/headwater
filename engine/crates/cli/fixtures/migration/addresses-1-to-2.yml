@@ -25,7 +25,7 @@ steps:
   # anything. That is the state this step exists to end.
   - subject: overlay_address
     from: kinds.specification
-    to: [kinds.standard]
+    to: [kinds.norm]
     because: >-
       The kind named the document and the tradition it belongs to, and an
       adopter with one specification per subsystem had no word for the second.

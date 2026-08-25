@@ -114,6 +114,38 @@ const KIND: [(&[&str], &[&str]); 2] = [
     ),
 ];
 
+/// The candidate that renames a kind one of the package's *bundles* declares.
+///
+/// `decision_register` is declared by `docs/taxonomies/design-spec/bundle.yml`
+/// and by no other source of this package, so neither end of the rename is
+/// visible in the base taxonomy: the base declares no `decision_register` to
+/// move and no `ruling_register` to move it to. The rename is performed here in
+/// the bundle, so the artifact the publish writes really does carry the new name
+/// and really does not carry the old one.
+///
+/// Two edits and not one. The declaration is what a `kind` step names, and
+/// `shelves.spec_series.kinds` is the one other place in the bundle that names
+/// the kind rather than the facet value of the same spelling.
+const BUNDLE_KIND: [(&str, &str); 2] = [
+    ("  kinds.decision_register:", "  kinds.ruling_register:"),
+    (
+        "    kinds: [design_spec, decision_register, obligation_register]",
+        "    kinds: [design_spec, ruling_register, obligation_register]",
+    ),
+];
+
+/// A payload whose one `kind` step moves the bundle-declared `decision_register`
+/// to whatever target the case names.
+fn register_payload(target: &str) -> String {
+    format!(
+        "# SPDX-License-Identifier: Apache-2.0\n\nmigration:\n  format: 1\n  from: \">=1 <2\"\n  \
+         to: \">=2 <3\"\n\nsteps:\n  - subject: kind\n    from: decision_register\n    to: \
+         [{target}]\n    because: >-\n      The register of settled decisions and the decisions \
+         themselves were one\n      kind, and a reader of the shelf could not tell which one a \
+         document was.\n"
+    )
+}
+
 /// The candidate that renames a kind the adopter's overlay addresses.
 ///
 /// The three `CANDIDATE` edits, and two more that rename the `specification`
@@ -121,17 +153,20 @@ const KIND: [(&[&str], &[&str]); 2] = [
 /// moves, so a run over this candidate writes a document and an overlay entry
 /// in one set.
 ///
-/// The rename is of a kind the *base* declares, and that is a constraint rather
-/// than a preference: `headwater_resolve::migration::holds` checks a payload
-/// against the base taxonomy alone, so no step of a payload may name a
-/// declaration that one of the package's bundles makes
-/// ([#194](https://github.com/headwater-ai/headwater/issues/194)).
+/// The new name is `norm` and not `standard`, which is what it was until the
+/// publish began holding the payload against the package with every bundle it
+/// ships. `docs/taxonomies/standards-spec/bundle.yml` declares
+/// `add.kinds.standard`, and an `add` over a key the base declares is refused at
+/// merge, so a base that renamed `specification` to `standard` would be a
+/// package no consumer of that bundle could resolve. Spec 7 makes every subset
+/// resolvable a property of the release, so the refusal is right and the
+/// candidate was quietly wrong while nothing read a bundle here.
 fn address() -> Vec<(&'static [&'static str], &'static [&'static str])> {
     let mut edits: Vec<(&[&str], &[&str])> = CANDIDATE.to_vec();
-    edits.push((&["  specification:"], &["  standard:"]));
+    edits.push((&["  specification:"], &["  norm:"]));
     edits.push((
         &["  specifications: {path: docs/specifications/**, homogeneous: true, kind: specification}"],
-        &["  specifications: {path: docs/specifications/**, homogeneous: true, kind: standard}"],
+        &["  specifications: {path: docs/specifications/**, homogeneous: true, kind: norm}"],
     ));
     edits
 }
@@ -141,12 +176,13 @@ fn address() -> Vec<(&'static [&'static str], &'static [&'static str])> {
 /// This repository's own overlay addresses exactly one kind that the base
 /// declares. It is `kinds.decision.language`, which
 /// [Q27](../../../../docs/spec/09-decisions.md#q27--whether-a-decision-record-is-governed-prose)
-/// added, and `specification` is the base kind it does not reach. A payload may
-/// not name a kind that a bundle declares (see [`address`]), so this section
-/// needs an entry over a base kind and the overlay's one entry is over the
-/// wrong member. The copied overlay therefore gains this one, and it is an
-/// ordinary entry — a base kind with no identifier scheme, given the scheme the
-/// same overlay declares two blocks above.
+/// added, and `specification` is the base kind it does not reach. This section
+/// needs an entry over a base kind that the candidate renames, and the overlay's
+/// one entry is over the wrong member: [`Root::without`] explains that renaming
+/// `decision` takes three document rules off three documents and makes two
+/// dimensions report the same set. The copied overlay therefore gains this one,
+/// and it is an ordinary entry — a base kind with no identifier scheme, given
+/// the scheme the same overlay declares two blocks above.
 const ENTRY: &str = "\n  kinds.specification.identifier: {scheme: spec_id}\n";
 
 /// A repository root that removes itself.
@@ -262,6 +298,26 @@ impl Root {
             std::fs::write(directory.join("1-to-2.yml"), payload).expect("the payload writes");
         }
         std::fs::write(&manifest, text).expect("the manifest writes");
+    }
+
+    /// Rewrite one bundle of the package in place.
+    ///
+    /// [`Root::candidate_of`] rewrites the base taxonomy, and the cases about
+    /// bundle-declared content need the other file. The package declares
+    /// `contents.bundles: ../../docs/taxonomies`, so the bundles of this scratch
+    /// root are the copied `docs/taxonomies` tree.
+    fn in_bundle(&self, bundle: &str, edits: &[(&str, &str)]) {
+        let at = self
+            .at
+            .join("docs/taxonomies")
+            .join(bundle)
+            .join("bundle.yml");
+        let mut text = std::fs::read_to_string(&at).expect("the bundle reads");
+        for (from, to) in edits {
+            assert!(text.contains(from), "the bundle still carries `{from}`");
+            text = text.replacen(from, to, 1);
+        }
+        std::fs::write(&at, text).expect("the bundle writes");
     }
 
     fn diff(&self, name: &str) -> Ran {
@@ -658,6 +714,106 @@ fn a_kind_step_is_accounted_against_classification() {
 }
 
 // ---------------------------------------------------------------------------
+// Which taxonomy each half of a payload step is held against.
+// ---------------------------------------------------------------------------
+
+/// A rename a bundle declares both ends of publishes.
+///
+/// The publisher moved `decision_register` in `design-spec/bundle.yml`, so after
+/// the edit no source of this package declares the old name and one source
+/// declares the new one. The payload that states the move is correct and
+/// complete, and it is the payload a publisher of an optional shelf writes.
+///
+/// Held against the base taxonomy alone the target end is invisible — the base
+/// declares three kinds and neither of these is one of them — so before
+/// [#194](https://github.com/headwater-ai/headwater/issues/194) this refused
+/// with `the taxonomy this publishes declares no kind` and a publisher of a
+/// bundle had no correct payload to write. The target is now held against the
+/// base with every bundle the package ships, which is the most any consumer
+/// selects.
+#[test]
+fn a_rename_of_a_kind_a_bundle_declares_publishes() {
+    let root = Root::new("bundle-kind-renamed");
+    root.in_bundle("design-spec", &BUNDLE_KIND);
+    let payload = format!(
+        "{}\n  - subject: overlay_address\n    from: kinds.decision_register\n    to: \
+         [kinds.ruling_register]\n    because: >-\n      An overlay entry under the old address \
+         adds the old kind back rather than\n      failing to address anything.\n",
+        register_payload("ruling_register")
+    );
+    root.candidate_of(&[], Some(&payload));
+
+    let ran = root.publish("2.0.0");
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+}
+
+/// The widening of the target half is a widening and not a deletion.
+///
+/// The same candidate, and a target that no source of the package declares —
+/// not the base and not any of the five bundles. The publish refuses, and the
+/// message says which set was asked. Without this case
+/// [`a_rename_of_a_kind_a_bundle_declares_publishes`] is satisfied by removing
+/// the target check outright.
+#[test]
+fn a_target_no_bundle_declares_stops_the_publish() {
+    let root = Root::new("bundle-kind-no-target");
+    root.in_bundle("design-spec", &BUNDLE_KIND);
+    root.candidate_of(&[], Some(&register_payload("no_source_declares_this")));
+
+    let ran = root.publish("2.0.0");
+    assert_eq!(ran.code, Some(1), "{ran:?}");
+    assert!(ran.err.contains("nothing was published"), "{ran:?}");
+    assert!(
+        ran.err.contains("nor any bundle it ships"),
+        "the message names the set the target was held against: {ran:?}"
+    );
+    assert!(
+        !root.released("2.0.0").exists(),
+        "a refused publish writes no artifact"
+    );
+}
+
+/// The two halves are held against two taxonomies, and this is the case that
+/// says the asymmetry is deliberate.
+///
+/// The bundle is left declaring `decision_register`, and the payload says it
+/// became `specification`. Nothing moved for the consumers who selected that
+/// bundle, so the step is wrong for them — and the publish accepts it, because
+/// the source half is held against the base alone.
+///
+/// The base alone is what a consumer who selects no bundle resolves, and a
+/// bundle is add-only ([spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition)),
+/// so a value the base declares is declared under every selection. That is what
+/// "renames something that did not move" means, and it is the only reading of it
+/// a publisher can certify. A value only a bundle declares moved for the
+/// consumers who selected that bundle and for no other, and a payload step
+/// states no condition. Widening this half would refuse the migration spec 7
+/// most expects instead: content moving out of the base and into a bundle, told
+/// to base-only consumers as a re-statement.
+///
+/// `headwater taxonomy diff` is the end that holds both the consumer's taxonomy
+/// and the artifact's and can decide it, and
+/// [#388](https://github.com/headwater-ai/headwater/issues/388) is that work.
+/// A later change that makes the two halves symmetric fails here.
+#[test]
+fn a_source_only_a_bundle_declares_is_not_the_publishers_to_refuse() {
+    let root = Root::new("bundle-source-stands");
+    root.candidate_of(&[], Some(&register_payload("specification")));
+
+    let ran = root.publish("2.0.0");
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(
+        std::fs::read_to_string(
+            root.released("2.0.0")
+                .join("bundles/design-spec/bundle.yml")
+        )
+        .expect("the published bundle reads")
+        .contains("kinds.decision_register:"),
+        "the artifact still declares the kind the step says moved"
+    );
+}
+
+// ---------------------------------------------------------------------------
 // `taxonomy migrate --apply`: the half that writes.
 // ---------------------------------------------------------------------------
 
@@ -976,7 +1132,7 @@ fn a_step_over_an_address_reports_the_overlay_entries_it_reaches() {
     assert_eq!(ran.code, Some(0), "{ran:?}");
     for line in [
         "overlay_address kinds.specification",
-        "mechanical, and it becomes `kinds.standard`",
+        "mechanical, and it becomes `kinds.norm`",
         "remedies addressability",
         "1 entry of this repository's overlay is addressed at or under it",
     ] {
@@ -999,8 +1155,8 @@ fn a_step_over_an_address_the_new_taxonomy_still_declares_stops_the_publish() {
     root.addresses(ENTRY);
     assert_eq!(root.publish("1.0.0").code, Some(0));
     let payload = addresses().replacen(
-        "    from: kinds.specification\n    to: [kinds.standard]",
-        "    from: kinds.decision\n    to: [kinds.standard]",
+        "    from: kinds.specification\n    to: [kinds.norm]",
+        "    from: kinds.decision\n    to: [kinds.norm]",
         1,
     );
     root.candidate_of(&address(), Some(&payload));
@@ -1064,14 +1220,14 @@ fn apply_rewrites_the_overlay_address_beside_the_document() {
     assert!(
         ran.out.contains(
             ".headwater/overlay.yml  add.kinds.specification.identifier  becomes \
-                      `kinds.standard.identifier`"
+                      `kinds.norm.identifier`"
         ),
         "{ran:?}"
     );
 
     let overlay = root.read(".headwater/overlay.yml");
     assert!(
-        overlay.contains("kinds.standard.identifier: {scheme: spec_id}"),
+        overlay.contains("kinds.norm.identifier: {scheme: spec_id}"),
         "the address moved and the value beside it did not: {overlay}"
     );
     assert!(

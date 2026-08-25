@@ -2437,6 +2437,195 @@ fn a_contents_migrations_naming_a_file_is_refused() {
     assert!(!out_of(&scratch).exists(), "an artifact was written anyway");
 }
 
+/// A payload one bundle of the package declares both ends of, and the two
+/// bundles that cannot be selected together.
+const COLLIDING: &str = "\
+bundle: NAME
+extends: acme/fixture
+add:
+  purposes:
+    duplicate: {intent: two bundles of one package declare this one purpose}
+";
+
+/// The payload the case below rides on. It moves a value out of the taxonomy the
+/// publisher is at, which is what makes 1.0.0 a version the payload migrates to
+/// rather than away from.
+const PAYLOAD: &str = "\
+migration:
+  format: 1
+  from: \">=0 <1\"
+  to: \">=1 <2\"
+
+steps:
+  - subject: kind
+    from: gone
+    to: [rationale]
+    because: the case is about the bundle set and never about the step
+";
+
+/// A publisher whose two bundles both add one purpose, so no consumer can select
+/// them together.
+fn publisher_with_colliding_bundles(scratch: &Scratch, at: &str, payload: bool) -> PathBuf {
+    let mut manifest =
+        String::from("package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: bundles\n");
+    if payload {
+        manifest.push_str("  migrations: migrations\n");
+        scratch.write(
+            &format!("{at}/packages/acme-fixture/migrations/0-to-1.yml"),
+            PAYLOAD,
+        );
+    }
+    scratch.write(
+        &format!("{at}/packages/acme-fixture/package.yml"),
+        &manifest,
+    );
+    scratch.write(
+        &format!("{at}/packages/acme-fixture/taxonomy.yml"),
+        TAXONOMY,
+    );
+    for name in ["one", "two"] {
+        scratch.write(
+            &format!("{at}/packages/acme-fixture/bundles/{name}/bundle.yml"),
+            &COLLIDING.replace("NAME", name),
+        );
+    }
+    scratch.path().join(at)
+}
+
+/// A bundle set that does not resolve is refused, and the message says which
+/// question reached it.
+///
+/// Two bundles of one package add the same purpose, so the maximal selection —
+/// the base with every bundle — does not resolve. Spec 2 makes every subset
+/// resolvable a property of an add-only bundle set, so this is a defect of the
+/// artifact rather than a limit of the check, and a consumer who selected both
+/// would be the one who found out.
+///
+/// The second half is the arbitrary part, recorded rather than argued. The same
+/// two bundles publish with exit 0 the moment the payload is taken away, because
+/// nothing else in `publish` resolves a bundle at all.
+/// [#387](https://github.com/headwater-ai/headwater/issues/387) is the work that
+/// ends that, and this case is what changes when it lands.
+#[test]
+fn a_bundle_set_that_does_not_resolve_is_refused_where_a_payload_reaches_it() {
+    let scratch = Scratch::new("colliding-bundles");
+
+    let with = publisher_with_colliding_bundles(&scratch, "with", true);
+    let refused = package::publish_from(
+        &with,
+        &with.join("packages/acme-fixture"),
+        &scratch.path().join("artifact-with"),
+    )
+    .expect_err("a bundle set that does not resolve does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains(
+            "the payload is held against this package with every bundle it ships, \
+                          and that set does not resolve:"
+        ),
+        "the refusal does not say which question reached it: {message}"
+    );
+    assert!(
+        message.contains("duplicate"),
+        "the refusal does not name the address the two bundles collide on: {message}"
+    );
+    assert!(
+        !scratch.path().join("artifact-with").exists(),
+        "a refused publish writes no artifact"
+    );
+
+    let without = publisher_with_colliding_bundles(&scratch, "without", false);
+    package::publish_from(
+        &without,
+        &without.join("packages/acme-fixture"),
+        &scratch.path().join("artifact-without"),
+    )
+    .expect("the same two bundles publish where no payload reaches them");
+}
+
+/// The bundle order the maximal selection is built in decides nothing.
+///
+/// `package::shipped` sorts the bundle directories by name, and the sort is a
+/// formality rather than a guarantee: `confluence::check` runs before anything
+/// merges and certifies that every legal order of an add-only set yields one
+/// taxonomy. The one artifact of a resolution that does depend on order is
+/// `founded`, which `a_commuting_pair_records_a_founding_in_one_order_and_not_the_other`
+/// in `founded.rs` pins — and the payload check reads `.taxonomy` and discards
+/// it, so the order-dependent output never reaches a verdict.
+///
+/// The five bundles of this repository are the set, because a pair cut down to
+/// what one case needs would commute for reasons that say nothing about a real
+/// bundle tree.
+#[test]
+fn the_order_the_shipped_bundles_are_read_in_decides_nothing() {
+    use headwater_resolve::migration::{declares, Subject};
+    use headwater_resolve::{resolve, Role, Source};
+
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let read = |path: PathBuf, role| {
+        let name = path.display().to_string();
+        Source::read(&path, &name, role).unwrap_or_else(|_| panic!("{name} loads"))
+    };
+    let base = read(
+        root.join("taxonomy-source/headwater-standard/taxonomy.yml"),
+        Role::Taxonomy,
+    );
+    let mut names: Vec<String> = std::fs::read_dir(root.join("docs/taxonomies"))
+        .expect("the bundle root reads")
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| entry.path().join("bundle.yml").is_file())
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .collect();
+    names.sort();
+    assert_eq!(
+        names.len(),
+        5,
+        "the bundle set this case runs over: {names:?}"
+    );
+
+    let bundles: Vec<Source> = names
+        .iter()
+        .map(|name| {
+            read(
+                root.join("docs/taxonomies").join(name).join("bundle.yml"),
+                Role::Overlay,
+            )
+        })
+        .collect();
+
+    let forward: Vec<Source> = std::iter::once(base.clone())
+        .chain(bundles.clone())
+        .collect();
+    let reverse: Vec<Source> = std::iter::once(base)
+        .chain(bundles.into_iter().rev())
+        .collect();
+
+    let forward = resolve(&forward).expect("the maximal selection resolves");
+    let reverse = resolve(&reverse).expect("it resolves in the other order too");
+    assert_eq!(
+        forward.render(),
+        reverse.render(),
+        "the two orders resolve to one taxonomy"
+    );
+
+    // A kind exactly one bundle declares, so the answer is about the bundles
+    // rather than about the base both orders start from.
+    for (order, resolution) in [("forward", &forward), ("reverse", &reverse)] {
+        assert!(
+            declares(&resolution.taxonomy, &Subject::Kind, "decision_register"),
+            "the {order} order does not declare the bundle kind"
+        );
+        assert!(
+            !declares(
+                &resolution.taxonomy,
+                &Subject::Kind,
+                "no_bundle_declares_this"
+            ),
+            "the {order} order declares a kind nothing ships"
+        );
+    }
+}
+
 /// An empty value under any `contents` key is refused, and the refusal says the
 /// value is empty.
 ///
