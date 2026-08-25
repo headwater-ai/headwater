@@ -1,0 +1,3 @@
+refused
+
+overlay-adopter.yml `add.kinds.report.purpose` (17:3): `kinds.report.purpose` is already declared in base.yml, and `add` states a whole value. Reconcile the two declarations by hand: `add` and `override` differ in what the consumer inherits, so nothing promotes one to the other

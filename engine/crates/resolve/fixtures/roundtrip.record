@@ -1,4 +1,5 @@
 add-collides: refused, so nothing to write out
+add-collides-behind-remove: refused, so nothing to write out
 address-into-a-list: refused, so nothing to write out
 an-add-that-founds-what-it-addresses: 16 lines, identical after a round trip
 core-last-satisfier: refused, so nothing to write out

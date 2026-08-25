@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The route a reader of a collision tries first, and the one this engine
+# refuses: remove the address the base declares, then add it again with the
+# value the overlay wants. An `add` asserts its precondition about the base,
+# and a `remove` in the same overlay does not move the base, so the `add` is
+# refused whatever stands beside it. The report of a collision names two
+# remedies rather than three because of this case.
+
+taxonomy: acme
+extends: headwater/standard@1.0.0
+
+remove:
+  - kinds.report.purpose
+
+add:
+  kinds.report.purpose: rationale
