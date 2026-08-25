@@ -2,7 +2,7 @@
 
 # The command surface
 
-`headwater` dispatches 19 verbs. 12 of them have a contract on this shelf, and 7 have none.
+`headwater` dispatches 19 verbs. 19 of them have a contract on this shelf, and 0 have none.
 
 A verb with no contract carries a mark in the last column, and that cell is what this file is for. An index of the contracts that exist would say nothing about the verbs nobody has described yet.
 
@@ -30,11 +30,11 @@ The headings and the second column are the groups and the summaries that `headwa
 
 | Verb | What it does | What a caller types | Contract |
 |---|---|---|---|
-| `new` | scaffold a document of a kind | `headwater new` | **no contract** |
-| `infer` | report the debt this taxonomy raises over this corpus | `headwater infer` | **no contract** |
-| `generate` | write every projection the taxonomy declares | `headwater generate` | **no contract** |
-| `import` | write the edges a committed snapshot declares | `headwater import` | **no contract** |
-| `export` | emit a declared export profile through an emitter target | `headwater export` | **no contract** |
+| `new` | scaffold a document of a kind | `headwater new` | [headwater new](headwater-new.md) |
+| `infer` | report the debt this taxonomy raises over this corpus | `headwater infer` | [headwater infer](headwater-infer.md) |
+| `generate` | write every projection the taxonomy declares | `headwater generate` | [headwater generate](headwater-generate.md) |
+| `import` | write the edges a committed snapshot declares | `headwater import` | [headwater import](headwater-import.md) |
+| `export` | emit a declared export profile through an emitter target | `headwater export` | [headwater export](headwater-export.md) |
 
 ## Sampling, which never gates
 
@@ -47,8 +47,8 @@ The headings and the second column are the groups and the summaries that `headwa
 
 | Verb | What it does | What a caller types | Contract |
 |---|---|---|---|
-| `init` | scaffold the consumer declaration and the overlay | `headwater init` | **no contract** |
-| `taxonomy` | read, write, publish and compare a taxonomy package | `headwater taxonomy validate`, `headwater taxonomy resolve`, `headwater taxonomy audit`, `headwater taxonomy publish`, `headwater taxonomy vendor`, `headwater taxonomy diff`, `headwater taxonomy migrate` | **no contract** |
+| `init` | scaffold the consumer declaration and the overlay | `headwater init` | [headwater init](headwater-init.md) |
+| `taxonomy` | read, write, publish and compare a taxonomy package | `headwater taxonomy validate`, `headwater taxonomy resolve`, `headwater taxonomy audit`, `headwater taxonomy publish`, `headwater taxonomy vendor`, `headwater taxonomy diff`, `headwater taxonomy migrate` | [headwater taxonomy](headwater-taxonomy.md) |
 
 ## Getting help
 

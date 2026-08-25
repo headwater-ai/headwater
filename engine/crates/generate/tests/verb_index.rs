@@ -417,8 +417,7 @@ fn a_document_with_no_name_declines_the_whole_file() {
 /// that a reader of it is holding.
 ///
 /// `generate --check` already holds the bytes, and this holds the count that
-/// #257 asks for by name: an index with two rows is a list of work already
-/// done, whatever else is right about it.
+/// issue #399 asks for by name: every dispatched verb has a contract row.
 #[test]
 fn the_committed_index_carries_one_row_for_every_verb_this_binary_dispatches() {
     let path = repository_root().join("docs/interfaces/README.md");
@@ -442,8 +441,8 @@ fn the_committed_index_carries_one_row_for_every_verb_this_binary_dispatches() {
         .iter()
         .filter(|row| row.contains("**no contract**"))
         .count();
-    assert!(
-        undescribed > 0,
-        "an index whose every cell is filled is an index nobody needs to read"
+    assert_eq!(
+        undescribed, 0,
+        "the committed index still marks a dispatched verb without a contract"
     );
 }

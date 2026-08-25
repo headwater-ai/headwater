@@ -1,6 +1,6 @@
-217 nodes, 474 declared edge halves
+224 nodes, 495 declared edge halves
     406 to a document
-     68 to an anchor
+     89 to an anchor
 0 prose links that did not resolve
 
 anchors
@@ -19,17 +19,22 @@ anchors
         inside `docs/taxonomies/**`, which this corpus declares is not corpus content
       1 code_path `engine/Cargo.toml` via source-tree
       1 code_path `engine/README.md` via source-tree
+      1 code_path `engine/crates/audit/src/lib.rs` via source-tree
       1 code_path `engine/crates/check/src/dependency.rs` via source-tree
       1 code_path `engine/crates/check/src/gate.rs` via source-tree
       1 code_path `engine/crates/check/src/language.rs` via source-tree
       1 code_path `engine/crates/check/src/lib.rs` via source-tree
       1 code_path `engine/crates/check/src/lifecycle_state.rs` via source-tree
       1 code_path `engine/crates/cli/Cargo.toml` via source-tree
-      9 code_path `engine/crates/cli/src/lib.rs` via source-tree
-     12 code_path `engine/crates/cli/src/main.rs` via source-tree
+     16 code_path `engine/crates/cli/src/lib.rs` via source-tree
+     19 code_path `engine/crates/cli/src/main.rs` via source-tree
+      1 code_path `engine/crates/compat/src/lib.rs` via source-tree
       1 code_path `engine/crates/conformance/src/json.rs` via source-tree
       1 code_path `engine/crates/conformance/src/lib.rs` via source-tree
       1 code_path `engine/crates/conformance/src/render.rs` via source-tree
+      1 code_path `engine/crates/generate/src/export.rs` via source-tree
+      1 code_path `engine/crates/generate/src/lib.rs` via source-tree
+      1 code_path `engine/crates/import/src/lib.rs` via source-tree
       1 code_path `engine/crates/meta/meta-schema.yml` via source-tree
       1 code_path `engine/crates/probe/src/lib.rs` via source-tree
       1 code_path `engine/crates/query/src/explain.rs` via source-tree
@@ -37,7 +42,9 @@ anchors
       3 code_path `engine/crates/query/src/lib.rs` via source-tree
       1 code_path `engine/crates/query/src/mcp.rs` via source-tree
       1 code_path `engine/crates/query/src/route.rs` via source-tree
+      1 code_path `engine/crates/resolve/src/lib.rs` via source-tree
       2 code_path `engine/crates/resolve/src/rules.rs` via source-tree
+      1 code_path `engine/crates/scaffold/src/lib.rs` via source-tree
       3 code_path `engine/crates/scaffold/src/reading.rs` via source-tree
       1 code_path `engine/crates/sweep/src/intake.rs` via source-tree
       2 code_path `engine/crates/sweep/src/lib.rs` via source-tree
