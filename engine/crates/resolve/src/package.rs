@@ -449,6 +449,65 @@ fn selected(
     Ok(out)
 }
 
+/// The base and every bundle the package ships, in name order: the maximal
+/// selection a consumer could make.
+///
+/// This is not any consumer's taxonomy and it is not meant to be. It is the most
+/// the artifact can hold, and it is what a payload target is held against: a
+/// value some selection can hold is a value this artifact can hold.
+/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition)
+/// is what makes it a taxonomy at all — a bundle is add-only, so any subset of
+/// them commutes and resolves, and the maximal subset is the one that contains
+/// every declared closure. That last clause is the reason this is one set rather
+/// than a loop over the bundles one at a time: a bundle declares `requires:`, and
+/// `decision-record` requires `design-spec`, so base plus that one bundle is not
+/// a configuration any consumer can hold.
+///
+/// The order is the sorted directory name, and it is a formality: the confluence
+/// check certifies that every legal order yields one taxonomy, and the `founded`
+/// record that does depend on order is discarded by the one caller.
+///
+/// A directory under the bundle root that holds no `bundle.yml` is skipped
+/// rather than refused. It is a bundle no consumer can select, which is a
+/// publish-time question this path does not own, and a refusal here would fire
+/// only where a migration payload happens to exist. `bundles/README.md`, a
+/// regular file this repository's own bundle root carries, is skipped by the
+/// same rule.
+fn shipped(
+    root: &Path,
+    directory: &Path,
+    contents: &Mapping,
+    base: Source,
+) -> Result<Vec<Source>, Vec<ResolveError>> {
+    let mut out = vec![base];
+
+    let Some(bundles) = text(contents, "bundles") else {
+        return Ok(out);
+    };
+    let at = directory.join(&bundles);
+    let mut names: Vec<std::ffi::OsString> = std::fs::read_dir(&at)
+        .map_err(|error| {
+            refusal(
+                &manifest_name(root, directory),
+                &format!(
+                    "`contents.bundles` names `{bundles}`, and there is no directory to read \
+                     there: {error}"
+                ),
+            )
+        })?
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| at.join(entry.file_name()).join("bundle.yml").is_file())
+        .map(|entry| entry.file_name())
+        .collect();
+    names.sort();
+
+    for name in names {
+        let path = at.join(name).join("bundle.yml");
+        out.push(Source::read(&path, &display(root, &path), Role::Overlay)?);
+    }
+    Ok(out)
+}
+
 /// The adopter's own overlay, read on its own and merged into nothing.
 ///
 /// # Why the bundles are not here
@@ -733,10 +792,12 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
 /// key that nothing reads is a claim a publisher makes and a consumer never
 /// sees, which is the defect `requires_engine` exists to refuse from the other
 /// side. So [`crate::migration::at`] reads every payload the manifest declares
-/// and [`crate::migration::holds`] checks each one against the taxonomy being
-/// published and the version it is published as. A payload the publisher cannot
-/// ship correctly stops the publish, rather than reaching a digest that makes it
-/// permanent.
+/// and [`crate::migration::holds`] checks each one against the taxonomies being
+/// published and the version it is published as. Two taxonomies and not one,
+/// because a package with bundles ships one for each selection a consumer makes:
+/// [`migrations`] says which half of a step reads which end of that set. A
+/// payload the publisher cannot ship correctly stops the publish, rather than
+/// reaching a digest that makes it permanent.
 ///
 /// **The two version declarations are held to each other before a byte is
 /// copied.** A publish does not resolve for a consumer, so it does not pass
@@ -1432,17 +1493,29 @@ fn put(out: &Path, staged: &[Staged]) -> Result<(), String> {
     Ok(())
 }
 
-/// Every migration payload the manifest declares, read and held to the taxonomy
-/// this publish ships.
+/// Every migration payload the manifest declares, read and held to the
+/// taxonomies this publish ships.
 ///
-/// It resolves the package's own taxonomy source and nothing else. The base
-/// alone is what the publisher is shipping: a bundle is an overlay a consumer
-/// selects and an adopter overlay is not the publisher's at all, so a step
-/// checked against either would be checked against a taxonomy that this
-/// artifact does not carry.
+/// It resolves twice, because a package with bundles ships one taxonomy for each
+/// selection a consumer can make and the two halves of a step read the two ends
+/// of that set. The base alone is the least any consumer resolves, because a
+/// consumer may select no bundle. [`shipped`] is the most: the base with every
+/// bundle, which
+/// [spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition)
+/// makes a taxonomy that resolves because a bundle is add-only and any subset of
+/// them commutes. `crate::migration::Scope` carries the two and
+/// `crate::migration::holds` argues which half reads which. The adopter overlay
+/// is in neither, because it is not the publisher's at all.
 ///
-/// The resolution happens only where a payload exists, so a package that has
-/// published no major version pays nothing for this.
+/// Both resolutions happen only where a payload exists, so a package that has
+/// published no major version pays nothing for this. That condition is arbitrary
+/// with respect to the confluence guarantee spec 7 states for every release, and
+/// [#387](https://github.com/headwater-ai/headwater/issues/387) is the work that
+/// moves the second resolution out to `publish_at` and lets this one reuse it.
+///
+/// The maximal selection reaches no validate layer, so the only failures it can
+/// take are `NotConfluent` and `AddCollides`. Both are defects of the artifact
+/// under spec 2, and the prefix says which question reached them.
 ///
 /// The source is handed in rather than read here. [`publish`] holds the two
 /// version declarations to each other and needs the same file to do it, and two
@@ -1460,12 +1533,27 @@ fn migrations(
         return Ok(());
     }
 
-    let resolution = crate::resolve(&[source])?;
+    let contents = contents_of(manifest);
+    let base = crate::resolve(std::slice::from_ref(&source))?;
+    let widest =
+        crate::resolve(&shipped(root, directory, &contents, source)?).map_err(|errors| {
+            let mut out = refusal(
+            &name,
+            "the payload is held against this package with every bundle it ships, and that set \
+             does not resolve:",
+        );
+            out.extend(errors);
+            out
+        })?;
+    let scope = crate::migration::Scope {
+        base: &base.taxonomy,
+        shipped: &widest.taxonomy,
+    };
     let version = text(manifest, "version").unwrap_or_default();
 
     let refusals: Vec<crate::migration::PayloadError> = payloads
         .iter()
-        .flat_map(|payload| crate::migration::holds(payload, &resolution.taxonomy, &version))
+        .flat_map(|payload| crate::migration::holds(payload, &scope, &version))
         .collect();
     match refusals.is_empty() {
         true => Ok(()),

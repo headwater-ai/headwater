@@ -38,6 +38,24 @@
 //! declared there renames a value into a taxonomy that has no such value. Both
 //! are defects the publisher can act on before the digest is taken.
 //!
+//! **"The taxonomy being published" is a set, and the two halves read its two
+//! ends.** A package with bundles ships one taxonomy for each selection a
+//! consumer makes, so [`holds`] takes a [`Scope`] rather than one tree. The
+//! target half is held against the widest end, the base with every bundle,
+//! because a value some selection can hold is a value this artifact can hold and
+//! only a target no selection can hold is a defect. The source half is held
+//! against the narrowest end, the base alone, because a consumer may select no
+//! bundle and a bundle is add-only, so a value the base declares is declared
+//! under every selection and a step naming it moved for nobody. A source that
+//! only a bundle declares moved for the consumers who selected that bundle and
+//! for no other, and a step carries no grammar for that condition, so this end
+//! neither refuses it nor certifies it and `taxonomy diff` is where it is
+//! reported ([#388](https://github.com/headwater-ai/headwater/issues/388)).
+//! Widening the source half as well would refuse the migration
+//! [spec 7](../../../../docs/spec/07-distribution-and-federation.md#the-migration-payload)
+//! most expects: content moving out of the base and into a bundle, stated to
+//! base-only consumers as a re-statement.
+//!
 //! **The consumer can check the taxonomy it holds and not the publisher's.** Its
 //! reading of the old side is the base under *its own* overlays, and an overlay
 //! may legitimately have removed the value a step names. So a step that names
@@ -348,13 +366,26 @@ pub enum PayloadError {
         from: String,
         version: String,
     },
-    /// A step whose source is still declared in the taxonomy being published.
+    /// A step whose source is still declared by the base of the package being
+    /// published.
+    ///
+    /// Held against the base alone, which is [`Scope::base`]. A consumer may
+    /// select no bundle, so the base is the least any consumer resolves, and a
+    /// bundle is add-only, so a value the base declares is declared under every
+    /// selection. Base-declared therefore means "moved for nobody", which is
+    /// what this refusal says. A value only a bundle declares moved for the
+    /// consumers who selected that bundle and for no other, and a step states no
+    /// condition, so this end neither refuses it nor certifies it.
     SourceStands {
         at: String,
         step: String,
         subject: &'static str,
     },
-    /// A step whose target is not declared in the taxonomy being published.
+    /// A step whose target no selection of the package being published declares.
+    ///
+    /// Held against [`Scope::shipped`], the base with every bundle. A value some
+    /// selection can hold is a value this artifact can hold, so the refusal is
+    /// for a target that no selection can hold at all.
     TargetAbsent {
         at: String,
         step: String,
@@ -447,8 +478,9 @@ impl std::fmt::Display for PayloadError {
                 subject,
             } => write!(
                 f,
-                "{at}, at {step}: the taxonomy this publishes declares no {subject} `{target}`, \
-                 so the step renames a value into a taxonomy that cannot hold it"
+                "{at}, at {step}: neither the taxonomy this publishes nor any bundle it ships \
+                 declares a {subject} `{target}`, so the step renames a value into a taxonomy \
+                 that no selection of this package can hold"
             ),
         }
     }
@@ -702,13 +734,31 @@ fn step(entry: &Mapping, at: &str) -> Result<Step, Vec<PayloadError>> {
     })
 }
 
-/// What the publisher can check about its own payload, against the taxonomy it
+/// The two taxonomies a payload is held against, and why they are two.
+///
+/// A package with bundles ships one taxonomy for each selection a consumer can
+/// make, so "the taxonomy this publishes" names a set rather than a tree. The
+/// two ends of that set are the two fields here, and the module comment above
+/// argues which half reads which.
+pub struct Scope<'a> {
+    /// The package's own source, resolved alone. The least any consumer
+    /// resolves, because a consumer may select no bundle. A value declared here
+    /// is declared under every selection, so a step whose source stands here
+    /// moved for nobody.
+    pub base: &'a Mapping,
+    /// The base with every bundle the package ships. The most any consumer
+    /// resolves, so a value declared here is a value this artifact can hold for
+    /// somebody.
+    pub shipped: &'a Mapping,
+}
+
+/// What the publisher can check about its own payload, against the taxonomies it
 /// is publishing and the version it is publishing it as.
 ///
 /// The other half — whether the source ever existed — needs the taxonomy the
 /// consumer holds, and the module comment says why that half is reported rather
 /// than refused.
-pub fn holds(payload: &Payload, taxonomy: &Mapping, version: &str) -> Vec<PayloadError> {
+pub fn holds(payload: &Payload, scope: &Scope, version: &str) -> Vec<PayloadError> {
     let mut refusals = Vec::new();
 
     match release::satisfies(&payload.to, version) {
@@ -739,7 +789,10 @@ pub fn holds(payload: &Payload, taxonomy: &Mapping, version: &str) -> Vec<Payloa
     }
 
     for step in &payload.steps {
-        if declares(taxonomy, &step.subject, &step.from) {
+        // The narrowest selection for the source half and the widest for the
+        // target half. One reader, two trees: `declares` is untouched and the
+        // asymmetry is here, where the module comment argues it.
+        if declares(scope.base, &step.subject, &step.from) {
             refusals.push(PayloadError::SourceStands {
                 at: payload.at.clone(),
                 step: step.at(),
@@ -747,7 +800,7 @@ pub fn holds(payload: &Payload, taxonomy: &Mapping, version: &str) -> Vec<Payloa
             });
         }
         for target in step.apply.targets() {
-            if !declares(taxonomy, &step.subject, target) {
+            if !declares(scope.shipped, &step.subject, target) {
                 refusals.push(PayloadError::TargetAbsent {
                     at: payload.at.clone(),
                     step: step.at(),
@@ -1083,6 +1136,14 @@ mod tests {
         assert!(!built.covers("0.9.0", "2.0.0").expect("both read"));
     }
 
+    /// One scope over one tree, for the cases that are not about the two ends.
+    fn alone(taxonomy: &Mapping) -> Scope<'_> {
+        Scope {
+            base: taxonomy,
+            shipped: taxonomy,
+        }
+    }
+
     /// The publisher's half: a source that still stands, and a target that is
     /// not there.
     #[test]
@@ -1094,26 +1155,71 @@ mod tests {
         .expect("it reads");
 
         let moved = taxonomy("facets:\n  status:\n    values: [outline, current]\n");
-        assert!(holds(&built, &moved, "2.0.0").is_empty());
+        assert!(holds(&built, &alone(&moved), "2.0.0").is_empty());
 
         let unmoved = taxonomy("facets:\n  status:\n    values: [draft, outline]\n");
         assert!(matches!(
-            holds(&built, &unmoved, "2.0.0")[..],
+            holds(&built, &alone(&unmoved), "2.0.0")[..],
             [PayloadError::SourceStands { .. }]
         ));
 
         let dangling = taxonomy("facets:\n  status:\n    values: [current]\n");
         assert!(matches!(
-            holds(&built, &dangling, "2.0.0")[..],
+            holds(&built, &alone(&dangling), "2.0.0")[..],
             [PayloadError::TargetAbsent { .. }]
         ));
 
         // A payload for another release, carried by this one.
-        assert!(holds(&built, &moved, "3.0.0")
+        assert!(holds(&built, &alone(&moved), "3.0.0")
             .iter()
             .any(|error| matches!(error, PayloadError::NotThisVersion { .. })));
-        assert!(holds(&built, &moved, "1.5.0")
+        assert!(holds(&built, &alone(&moved), "1.5.0")
             .iter()
             .any(|error| matches!(error, PayloadError::FromItself { .. })));
+    }
+
+    /// The two ends of the scope, and all four quadrants of the one step.
+    ///
+    /// The cheapest place a regression to one tree is caught: three of these
+    /// four answers change if either half starts reading the other's tree.
+    #[test]
+    fn each_half_of_a_step_reads_its_own_end_of_the_scope() {
+        let step = |from: &str, to: &str| {
+            payload(&format!(
+                "  - subject: facet_value\n    facet: status\n    from: {from}\n    to: \
+                 [{to}]\n    because: why\n"
+            ))
+            .expect("it reads")
+        };
+        // The base declares `draft` and `current`; the widest selection adds
+        // `outline`, which is what a bundle of this package would contribute.
+        let base = taxonomy("facets:\n  status:\n    values: [draft, current]\n");
+        let widest = taxonomy("facets:\n  status:\n    values: [draft, current, outline]\n");
+        let scope = Scope {
+            base: &base,
+            shipped: &widest,
+        };
+
+        // A target only the widest selection declares is a value this artifact
+        // can hold for somebody, so it is accepted.
+        assert!(holds(&step("retired", "outline"), &scope, "2.0.0").is_empty());
+
+        // A target neither end declares is a value no selection can hold.
+        assert!(matches!(
+            holds(&step("retired", "nowhere"), &scope, "2.0.0")[..],
+            [PayloadError::TargetAbsent { .. }]
+        ));
+
+        // A source the base declares moved for nobody, and it is in both ends,
+        // so this arm would also fire under a reading that used the widest.
+        assert!(matches!(
+            holds(&step("draft", "outline"), &scope, "2.0.0")[..],
+            [PayloadError::SourceStands { .. }]
+        ));
+
+        // A source only the widest selection declares moved for the consumers
+        // who selected that bundle and for no other, and this end says nothing.
+        // This is the assertion that fails if the source half is widened.
+        assert!(holds(&step("outline", "current"), &scope, "2.0.0").is_empty());
     }
 }
