@@ -231,7 +231,10 @@ core:
 
     #[test]
     fn a_sequence_is_written_from_column_zero() {
-        assert_eq!(only("here:\n  - draft\n  - current\n"), "- draft\n- current");
+        assert_eq!(
+            only("here:\n  - draft\n  - current\n"),
+            "- draft\n- current"
+        );
         assert_eq!(
             only("here:\n  - {value: draft, role: initial}\n"),
             "- value: draft\n  role: initial"

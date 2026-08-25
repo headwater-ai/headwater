@@ -333,6 +333,11 @@ fn a_declaration_that_breaks_a_document_names_that_document() {
 /// preserved would be the strongest possible claim made out of a failure, so
 /// each one says it did not run, and the verb exits non-zero because it could
 /// not measure rather than because it measured something bad.
+///
+/// Below the table the run prints the collision as a judgment task: both
+/// declarations, the file that carries each, and the two operations that
+/// settle it. The exit code and the five unmeasured dimensions are asserted in
+/// this same test on purpose, so that neither can drift away from it.
 #[test]
 fn an_overlay_address_the_new_base_takes_is_the_addressability_dimension() {
     let root = Root::new("addressability");
@@ -391,6 +396,54 @@ fn an_overlay_address_the_new_base_takes_is_the_addressability_dimension() {
         ran.out
             .contains("the base did not resolve, so there is no second text to compare"),
         "{ran:?}"
+    );
+
+    // Both declarations, and each one on its own side. Two fields of the
+    // scheme differ and the two patterns are the same tokens in two orders, so
+    // a report that swapped the sides would still contain every value it
+    // should. The split is what makes this a test of which source said what.
+    let (base_half, overlay_half) = ran
+        .out
+        .split_once(".headwater/overlay.yml adds it")
+        .unwrap_or_else(|| panic!("the report names the overlay side: {ran:?}"));
+    assert!(
+        base_half.contains("released/2.0.0"),
+        "the report names the base file: {ran:?}"
+    );
+    assert!(
+        base_half.contains(r#"pattern: "SPEC-{namespace}-{slug}""#),
+        "the base's pattern is not on the base's side: {ran:?}"
+    );
+    assert!(base_half.contains("allocation: reconcile-first"), "{ran:?}");
+    assert!(
+        overlay_half.contains(r#"pattern: "{namespace}-SPEC-{slug}""#),
+        "the overlay's pattern is not on the overlay's side: {ran:?}"
+    );
+    assert!(overlay_half.contains("allocation: minted-once"), "{ran:?}");
+    assert!(
+        overlay_half.contains("at add.identifier_schemes.spec_id"),
+        "{ran:?}"
+    );
+    // The remedy, and the fact that it is a choice.
+    assert!(
+        ran.out
+            .contains("the two declarations differ, so what this repository inherits is a choice"),
+        "{ran:?}"
+    );
+    assert!(
+        ran.out.contains("inherit the base declaration whole"),
+        "{ran:?}"
+    );
+    assert!(ran.out.contains("restate it as an `override`"), "{ran:?}");
+    // The section sits below the table rather than inside it. A multi-line
+    // value that leaked into a `was`/`now` slot would still satisfy every
+    // assertion above.
+    assert!(
+        ran.out
+            .find("1 `add` collision")
+            .zip(ran.out.find("addressability     BROKEN"))
+            .is_some_and(|(task, table)| task > table),
+        "the judgment task is inside the dimension table: {ran:?}"
     );
 }
 
