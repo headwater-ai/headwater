@@ -1042,6 +1042,32 @@ fn vendor(root: &Path, fetched: &Path, expect: Option<&str>) -> ExitCode {
         record.members.len()
     );
     println!("  digest {}", record.digest);
+
+    // The path is read back off the installed manifest rather than returned by
+    // `package::vendor`, because `Release` is the release record and a doctrine
+    // path is not one of its fields. That verb has already held the same key to
+    // the artifact and refused every value it could not open, so this reads a
+    // key one line above proved readable.
+    let flattened = record.package.replace('/', "-");
+    let installed = root
+        .join(headwater_resolve::package::PACKAGES)
+        .join(&flattened);
+    let doctrine = headwater_resolve::package::manifest_at(&installed)
+        .ok()
+        .and_then(|manifest| headwater_resolve::package::doctrine(&manifest));
+    if let Some(at) = doctrine {
+        println!(
+            "  doctrine at {}/{}/{}",
+            headwater_resolve::package::PACKAGES,
+            flattened,
+            at.display()
+        );
+        println!(
+            "\nThe doctrine directory is prose the publisher wrote for a person to read. It is \
+             not schema, nothing resolves it, and no check reads it."
+        );
+    }
+
     println!(
         "\nThe digest says these are the bytes the pin was written for. It is not a signature, \
          so it says nothing about who published them. Run `headwater taxonomy resolve` to write \
