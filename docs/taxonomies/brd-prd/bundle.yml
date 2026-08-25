@@ -66,11 +66,11 @@ add:
   # `declarative` on these two kinds reports the tradition itself.
   #
   # The precedent is in this library. The design-spec entry declares
-  # `regimes.voice.narrative` with an empty forbid list for evidence documents,
-  # on the ground that they are time-bound by nature. This regime stops short of
-  # that. `change_narration` and `phased_rollout` still bite, because a
-  # requirements document that narrates last quarter's rename, or that sequences
-  # its own delivery into phases, is wrong in this tradition too.
+  # `regimes.voice.narrative` as an empty regime, which forbids nothing, and it
+  # binds that on evidence documents because they are time-bound by nature. This
+  # regime stops short of that. `change_narration` and `phased_rollout` still
+  # bite, because a requirements document that narrates last quarter's rename, or
+  # that sequences its own delivery into phases, is wrong in this tradition too.
   #
   # The fixture corpus measures what `declarative` would have reported over the
   # same prose, and fixtures/README.md records the number.
@@ -182,8 +182,10 @@ add:
   # exists. Reciprocity reports an unlinked PRD as a generation defect at the end
   # that wrote the edge.
   #
-  # The name is the tradition's own verb. BABOK's progressive elaboration and the
-  # Pragmatic lineage's translation of the why into the how are the same movement.
+  # The name is the tradition's own verb. BABOK's classification schema says a
+  # business requirement is elaborated into the tier below it, and the Pragmatic
+  # lineage says the product document translates the why into the how. The two
+  # describe one movement.
   # `derives_from` was refused: spec 2 uses that string as a generic example
   # spelling for the whole derivation family, and an entry that claims the most
   # general name in a family closes it to every later entry.
