@@ -67,7 +67,7 @@ The run reports **8 findings, 2 error and 6 warn**, against 4 findings, 2 error 
 | `docs/requirements/self-serve-onboarding/prd.md:47:1` | `to be decided` |
 | `docs/requirements/tenant-billing/brd.md:23:1` | `to be decided` |
 
-Each sentence is one a practitioner writes. Two of them defer a number that finance or a content designer owns. One forecasts the market the initiative answers, and one defers a requirement to the quarter after. A requirements document states what a product must do before it exists, and the base's only voice regime forbids the construction that says so. The rule makes one instance per document, and the run prints 7 instances over 7 documents. So four documents is the measure, and not four sentences.
+Each sentence is one a practitioner writes. Two of them defer a number that finance or a content designer owns. One forecasts the market the initiative answers, and one defers a requirement to the quarter after. Three of the four were added after a first probe measured one document rather than four. The first draft of this corpus was written by an author who was avoiding the detector, which is a bias of its own. Read the four and judge whether any is padding, because that judgment is the whole weight this measurement carries. A requirements document states what a product must do before it exists, and the base's only voice regime forbids the construction that says so. The rule makes one instance per document, and the run prints 7 instances over 7 documents. So four documents is the measure, and not four sentences.
 
 The probe is not committed. No document of this corpus carries a change, and the two lines of the bundle were reverted. [Finding 2](../doctrine.md#findings) of this entry is what the number is evidence for.
 

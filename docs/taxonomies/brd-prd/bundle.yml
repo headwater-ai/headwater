@@ -13,7 +13,9 @@
 #
 # Three things about this bundle are worth naming before the operations.
 #
-# It declares `requires: []`, and it is the third entry with an empty closure.
+# It declares `requires: []`, and it is the fourth entry with an empty closure.
+# Only decision-record requires anything, and it requires design-spec for one
+# address.
 # The issue that asked for it offered a dependency on the standards-spec entry,
 # and this entry declines it. The only edge that dependency would buy runs from
 # a product requirements document to a functional specification, and the natural
@@ -182,10 +184,11 @@ add:
   # exists. Reciprocity reports an unlinked PRD as a generation defect at the end
   # that wrote the edge.
   #
-  # The name is the tradition's own verb. BABOK's classification schema says a
-  # business requirement is elaborated into the tier below it, and the Pragmatic
-  # lineage says the product document translates the why into the how. The two
-  # describe one movement.
+  # The name is the tradition's own verb. BABOK writes of progressive elaboration
+  # and of elaborating requirements, though its classification schema spells the
+  # movement between tiers as a bridge. The Pragmatic lineage says the product
+  # document translates the why into the how. Both describe one movement, and
+  # doctrine.md carries the exact wording of each source.
   # `derives_from` was refused: spec 2 uses that string as a generic example
   # spelling for the whole derivation family, and an entry that claims the most
   # general name in a family closes it to every later entry.
