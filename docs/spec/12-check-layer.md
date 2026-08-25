@@ -21,6 +21,7 @@ relations:
     - HW-EVAL-shacl-worked-example
     - HW-EVAL-the-measurement-layer
     - HW-EVAL-the-serving-boundary
+    - HW-EVAL-theoretical-foundations
     - HW-EVAL-warrant-and-adjudication
     - HW-EVAL-what-a-check-can-know
 ---
@@ -147,7 +148,7 @@ The small one is that a verdict about a listed document is worth what it looks w
 
 The large one is that a document a merge adds generates instances that no earlier run held. So a gate reports the reach of its own answer, on a carrying verdict as well as on a voided one. It never reports that a corpus is green. That sentence is in the output of the verb rather than in this file alone. A reader of a green line does not open a specification first.
 
-This is where the design gets something free that a database has to add. A serializable database tracks read sets at run time to detect write skew. Git detects nothing of the kind, because it holds no read set at all. Scope enforcement built ours for a different purpose ([spec 10 §F.6](10-theoretical-foundations.md#f6-write-skew-names-the-anomaly-and-read-sets-detect-it)).
+This is where the design gets something free that a database has to add. A serializable database tracks read sets at run time to detect write skew. Git detects nothing of the kind, because it holds no read set at all. Scope enforcement built ours for a different purpose ([HW-EVAL-theoretical-foundations §F.6](../evaluations/theoretical-foundations.md#f6-write-skew-names-the-anomaly-and-read-sets-detect-it)).
 
 **Corpus-scoped checks are the barriers, and this is where decision 3 consumes the answer.** A corpus-scoped instance decides its verdict from the extent of the census rather than from the contents of any member of it. `identifier.claimed_twice` fires on the presence of a second claimant, so its verdict rests on the absence of a document. A list of members states no extent, so no comparison over one rescues such a verdict. `lifecycle.deletion.not_permitted` is the second barrier. It decides from an extent the census does not hold: the paths a change named and this corpus has no row at. The artifact names each barrier on a `barrier` line, and a gate voids every one of them whatever the listed hashes did. Their count is the work that every merge repeats, and it is readable from the declarations rather than discovered under load.
 

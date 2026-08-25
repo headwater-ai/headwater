@@ -36,7 +36,7 @@ The corpus reports the result. It holds seven edges onto a `code_path` anchor, a
 
 The corpus owes either the actor or the correction.
 
-The claim that these two relations have a mechanical creator carries weight that no reader can check. The walkthrough uses it to argue that the base taxonomy is a design rather than a bet on author diligence. [Spec 10](../spec/10-theoretical-foundations.md#b5-traceability-information-models--our-idea-has-a-name-and-a-literature) says that author-maintained links decay because the payer is not the beneficiary. Under today's engine both relations sit on the decaying side, and one document says otherwise.
+The claim that these two relations have a mechanical creator carries weight that no reader can check. The walkthrough uses it to argue that the base taxonomy is a design rather than a bet on author diligence. [HW-EVAL-theoretical-foundations](../evaluations/theoretical-foundations.md#b5-traceability-information-models--our-idea-has-a-name-and-a-literature) says that author-maintained links decay because the payer is not the beneficiary. Under today's engine both relations sit on the decaying side, and one document says otherwise.
 
 Which document governs which code is a judgment. The [stop rules](../spec/05-ai-integration.md#the-stop-rules) forbid an agent that invents structure. So a deterministic hook cannot read a diff and decide that a specification governs a file. That is what makes this a ruling rather than a task, and the honest actor may be `agent` rather than `hook`. The closed set holds both.
 

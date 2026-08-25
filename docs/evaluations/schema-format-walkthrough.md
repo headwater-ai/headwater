@@ -15,8 +15,6 @@ relations:
   cited_by:
     - HW-REG-decisions
     - HW-SPEC-taxonomy-model
-    - HW-SPEC-theoretical-foundations
-    - HW-SPEC-adjacent-work
 ---
 
 # Choosing the schema format — a cognitive-dimensions walkthrough

@@ -16,14 +16,14 @@ provenance:
 relations:
   traces_to:
     - HW-SPEC-taxonomy-model
-    - HW-SPEC-adjacent-work
+    - HW-EVAL-adjacent-work
 ---
 
 # A declared `invalid_when` reaches no check, and two live contradictory decisions pass in silence
 
 ## Context
 
-The base declares `conflicts_with` with `invalid_when: {both: {status: current}}`. [Spec 2](../spec/02-taxonomy-model.md#the-decision-relation-vocabulary) lists that state first among the four checks that the decision-relation vocabulary brings. [Spec 11](../spec/11-adjacent-work.md) calls it a deterministic, blocking-eligible check that the design held all along. It also records that spec 4 gave the same job to the sampled sweep.
+The base declares `conflicts_with` with `invalid_when: {both: {status: current}}`. [Spec 2](../spec/02-taxonomy-model.md#the-decision-relation-vocabulary) lists that state first among the four checks that the decision-relation vocabulary brings. [HW-EVAL-adjacent-work](../evaluations/adjacent-work.md) calls it a deterministic, blocking-eligible check that the design held all along. It also records that spec 4 gave the same job to the sampled sweep.
 
 ## Obligation
 

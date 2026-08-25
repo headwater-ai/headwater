@@ -15,11 +15,13 @@ provenance:
   evidence_basis: evidenced
 relations:
   cites_evidence:
+    - HW-EVAL-adjacent-work
     - HW-EVAL-first-contact
     - HW-EVAL-relation-storage
     - HW-EVAL-shacl-worked-example
     - HW-EVAL-the-measurement-layer
     - HW-EVAL-the-serving-boundary
+    - HW-EVAL-theoretical-foundations
     - HW-EVAL-warrant-and-adjudication
     - HW-EVAL-what-a-check-can-know
 ---
@@ -365,7 +367,7 @@ Coverage answers "what did this run look at?". One question sits beside it and t
 
 > Validity is not preserved under merge. Two changes that are each valid against the merge base can produce an invalid corpus, and no run against either branch tip reports it.
 
-Git does not catch this, because the conflict is semantic rather than textual. The name for it is a **semantic conflict**, and databases named the same anomaly first. Under snapshot isolation, two transactions that read overlapping data and write disjoint data each preserve an invariant that the pair violates. That is **write skew**, and git permits it for the same reason that snapshot isolation does. Both detect a write-write overlap and neither holds a read set ([spec 10 §F.6](10-theoretical-foundations.md#f6-write-skew-names-the-anomaly-and-read-sets-detect-it)).
+Git does not catch this, because the conflict is semantic rather than textual. The name for it is a **semantic conflict**, and databases named the same anomaly first. Under snapshot isolation, two transactions that read overlapping data and write disjoint data each preserve an invariant that the pair violates. That is **write skew**, and git permits it for the same reason that snapshot isolation does. Both detect a write-write overlap and neither holds a read set ([HW-EVAL-theoretical-foundations §F.6](../evaluations/theoretical-foundations.md#f6-write-skew-names-the-anomaly-and-read-sets-detect-it)).
 
 It presses harder here than in most systems, and the reason is our own performance bet. Change-scoped evaluation is what makes a 200 ms hook possible ([spec 6](06-engine-architecture.md#performance-targets)). Semantic conflict is the failure class that change-scoped evaluation is worst at, because neither change looks wrong inside the scope that evaluated it.
 
@@ -430,4 +432,4 @@ The controls above verify *form*. One question is semantic: does a specification
 
 Headwater's obligations, controls, and gaps live in Headwater's own corpus and are checked in Headwater's own CI. The same command that an adopter runs generates the coverage numbers that we publish for the project. If we exempt ourselves from something, that exemption is visible in the register. That is exactly the property that we ask adopters to accept.
 
-**The public surface is under the same rule, because it is a projection too.** The site that describes Headwater is generated from this corpus ([Q16](09-decisions.md#q16--public-presence)). So **every number on it comes from the register, and a claim with no instrument is generated as unmeasured**. That is [principle 11](00-vision-and-scope.md#design-principles) given a publication surface. Two consequences follow. A hand-written figure on the site is a finding, in the way that a hand-edited shelf index is. And a self-assessment states that it is self-published, because [spec 11 §I.4](11-adjacent-work.md#i4-two-things-to-be-careful-about) applies that standard to a neighbor and [principle 8](00-vision-and-scope.md#design-principles) applies it here.
+**The public surface is under the same rule, because it is a projection too.** The site that describes Headwater is generated from this corpus ([Q16](09-decisions.md#q16--public-presence)). So **every number on it comes from the register, and a claim with no instrument is generated as unmeasured**. That is [principle 11](00-vision-and-scope.md#design-principles) given a publication surface. Two consequences follow. A hand-written figure on the site is a finding, in the way that a hand-edited shelf index is. And a self-assessment states that it is self-published, because [HW-EVAL-adjacent-work §I.4](../evaluations/adjacent-work.md#i4-two-things-to-be-careful-about) applies that standard to a neighbor and [principle 8](00-vision-and-scope.md#design-principles) applies it here.

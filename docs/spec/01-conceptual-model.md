@@ -15,6 +15,7 @@ provenance:
   evidence_basis: evidenced
 relations:
   cites_evidence:
+    - HW-EVAL-adjacent-work
     - HW-EVAL-graph-export-and-federation
     - HW-EVAL-relation-storage
     - HW-EVAL-the-serving-boundary
@@ -213,7 +214,7 @@ Every document carries exactly one warrant. The set is closed, the engine owns i
 
 **The first three are three mechanisms, and no order runs between them.** A projection is not weaker than an accepted document. It restates one, and it takes that document's standing through the derivation family. The one order that the design needs is that `asserted` sits below the other three, and the difference is not a matter of taste. It is the difference between a defect that some mechanism finds and a defect that no mechanism finds.
 
-**An absent value is a finding, never a default.** A reader cannot tell an unknown value from a missing field. SPDX made the same ruling when it gave a license field both `NONE` and `NOASSERTION` ([spec 11 §P](11-adjacent-work.md#p--provenance-endorsement-and-the-record-of-a-judgment)).
+**An absent value is a finding, never a default.** A reader cannot tell an unknown value from a missing field. SPDX made the same ruling when it gave a license field both `NONE` and `NOASSERTION` ([HW-EVAL-adjacent-work §P](../evaluations/adjacent-work.md#p--provenance-endorsement-and-the-record-of-a-judgment)).
 
 **Agency and warrant are different fields.** An agent may draft a document that a human then accepts, and the warrant of that document is `accepted`. `asserted` marks content that nobody accepted, whoever wrote it. To read the author as the boundary loses the case that matters, which is unreviewed content at a volume where review does not scale ([Q15](09-decisions.md#q15--a-synthesized-content-tier)).
 

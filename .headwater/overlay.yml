@@ -343,7 +343,7 @@ add:
   kinds.decision.language:            ste_house
 
   # An evaluation is this repository's own argument, and the specification cites
-  # it as evidence. 14 of the 15 records under `docs/evaluations/` declare
+  # it as evidence. 16 of the 17 records under `docs/evaluations/` declare
   # `cited_by` and no review record and no probe declares one, which is the line
   # between prose this repository wrote and text it recorded.
   # [Q28](../docs/spec/09-decisions.md#q28--whether-an-evaluation-is-governed-prose)

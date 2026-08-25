@@ -27,7 +27,7 @@ relations:
 
 `engine/crates/check/src/readset.rs` states a different rule. A gate compares each input of the published read set against the tree that it now holds. An input whose hash moved invalidates the instances that read it.
 
-The two are not one test. A diff reads two trees, so it sees a file that the merge added. A read set lists the inputs that the checks opened. A file that no instance read reaches no list, so it moves no hash. The database literature that [spec 10](../spec/10-theoretical-foundations.md#f6-write-skew-names-the-anomaly-and-read-sets-detect-it) cites names this class of miss a phantom. It is the part of the transfer that the specification did not carry.
+The two are not one test. A diff reads two trees, so it sees a file that the merge added. A read set lists the inputs that the checks opened. A file that no instance read reaches no list, so it moves no hash. The database literature that [HW-EVAL-theoretical-foundations](../evaluations/theoretical-foundations.md#f6-write-skew-names-the-anomaly-and-read-sets-detect-it) cites names this class of miss a phantom. It is the part of the transfer that the specification did not carry.
 
 ## Obligation
 
@@ -53,7 +53,7 @@ The cache and the gate read one artifact by two procedures, and that is why one 
 
 **The clock voids a verdict.** The artifact names each rule that read the injected clock on a `windowed` line. A gate asked about another day voids those rules, and no tree change is needed for that.
 
-**Membership of the census is an input, and a list of members carries no membership.** A read set records what a run read. It never records that those were all the documents there were. So nothing this design holds carries a corpus-scoped verdict across a merge. The artifact names each such rule on a `barrier` line, and a gate voids every barrier whatever the listed hashes did. [Spec 10 §F.6](../spec/10-theoretical-foundations.md#f6-write-skew-names-the-anomaly-and-read-sets-detect-it) names the piece the transfer dropped: a read set is not a predicate lock.
+**Membership of the census is an input, and a list of members carries no membership.** A read set records what a run read. It never records that those were all the documents there were. So nothing this design holds carries a corpus-scoped verdict across a merge. The artifact names each such rule on a `barrier` line, and a gate voids every barrier whatever the listed hashes did. [HW-EVAL-theoretical-foundations §F.6](../evaluations/theoretical-foundations.md#f6-write-skew-names-the-anomaly-and-read-sets-detect-it) names the piece the transfer dropped: a read set is not a predicate lock.
 
 **The construction in the section above runs against the engine.** Two trees each hold one claimant of one identifier, and each tree passes `headwater check --strict`. The merge holds both claimants and fails it. A gate that holds the first tree's read set against the merged tree reports that the verdict does not carry, and it names the barrier. The same gate over the same artifact with the `barrier` line struck out reports that the verdict carries. That second run is the phantom itself, measured rather than argued.
 

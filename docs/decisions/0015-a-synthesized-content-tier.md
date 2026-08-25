@@ -36,7 +36,7 @@ Every document carries a **warrant**: the mechanism by which the corpus can defe
 | `transcribed` | It is a byte-faithful copy of a pinned external snapshot ([Q19](0019-inbound-integration-an-external-system-of-record.md)) |
 | `asserted` | Nothing |
 
-**Yes, Headwater admits `asserted` content.** The mark is positive and never an absent field, which is what SPDX settled when it made `NOASSERTION` a value beside `NONE`. Wikipedia is the observed case at the largest available scale. Its 2025 speedy-deletion criterion for machine output fires on the absence of review, and not on the presence of a model ([spec 11 §P](../spec/11-adjacent-work.md#p--provenance-endorsement-and-the-record-of-a-judgment)).
+**Yes, Headwater admits `asserted` content.** The mark is positive and never an absent field, which is what SPDX settled when it made `NOASSERTION` a value beside `NONE`. Wikipedia is the observed case at the largest available scale. Its 2025 speedy-deletion criterion for machine output fires on the absence of review, and not on the presence of a model ([HW-EVAL-adjacent-work §P](../evaluations/adjacent-work.md#p--provenance-endorsement-and-the-record-of-a-judgment)).
 
 ## Consequences
 

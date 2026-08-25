@@ -23,8 +23,8 @@ relations:
     - HW-SPEC-engine-architecture
     - HW-SPEC-distribution-and-federation
     - HW-REG-open-questions
-    - HW-SPEC-theoretical-foundations
-    - HW-SPEC-adjacent-work
+    - HW-EVAL-theoretical-foundations
+    - HW-EVAL-adjacent-work
     - HW-SPEC-glossary
 ---
 
@@ -39,9 +39,9 @@ Point-in-time record, 2026-08-10. During the ASD-STE100 house-profile pass over 
 | [spec 4](../spec/04-assurance-model.md), degraded-controls discussion | "An uncovered control cannot hide" — context (gaps attach to obligations; controls degrade) suggests the intended word is *obligation*, not *control* | Confirm and correct the noun |
 | [spec 4](../spec/04-assurance-model.md), same section | "A reader who cannot tell the maintainer … is a control that does not exist" equates a person with a control; the intended referent is probably the missing feedback channel | Decide whether the metonymy is intended |
 | [spec 9](../spec/09-open-questions.md), Q17 | "a determined reader can difference" uses *difference* as a verb; reads as intentional diff-terminology but is nonstandard | Keep deliberately or change to "diff"/"compare" |
-| [spec 10](../spec/10-theoretical-foundations.md), B.2 | Source read "every enum facet's value document how to choose"; the pass rendered it "every enum facet value must document how to choose it" — the original may have been a typo for "facet's values document" | Confirm the rendered meaning is the intended one |
+| [spec 10](../evaluations/theoretical-foundations.md), B.2 | Source read "every enum facet's value document how to choose"; the pass rendered it "every enum facet value must document how to choose it" — the original may have been a typo for "facet's values document" | Confirm the rendered meaning is the intended one |
 | [spec 3](../spec/03-authoring-and-lifecycle.md), absence-class sentence | "is the same absence class" was rendered "is in the same absence class"; flag in case the identity phrasing (a class, not membership) was intentional | Confirm |
-| [spec 11](../spec/11-adjacent-work.md), §A intro | "the `validate` / `audit` split arrived at [spec 6]" is the source author's own construction and reads oddly | Optional rephrase |
+| [spec 11](../evaluations/adjacent-work.md), §A intro | "the `validate` / `audit` split arrived at [spec 6]" is the source author's own construction and reads oddly | Optional rephrase |
 
 ## Terminology and spelling decisions (corpus-wide rulings needed)
 

@@ -24,7 +24,7 @@ relations:
 
 ## Context
 
-[Stop rule 5](../spec/05-ai-integration.md#the-stop-rules) states the bar. An agent never writes `accepted_by`, and it never moves a warrant to `accepted`. It drafts, and it marks what it drafted as `asserted` where no human read the result. [Spec 11](../spec/11-adjacent-work.md#l5-onboarding-ships-the-synthesized-tier-and-marks-nothing) names the failure the rule prevents: a stamp that an agent applies to its own output, with a false name attached.
+[Stop rule 5](../spec/05-ai-integration.md#the-stop-rules) states the bar. An agent never writes `accepted_by`, and it never moves a warrant to `accepted`. It drafts, and it marks what it drafted as `asserted` where no human read the result. [HW-EVAL-adjacent-work](../evaluations/adjacent-work.md#l5-onboarding-ships-the-synthesized-tier-and-marks-nothing) names the failure the rule prevents: a stamp that an agent applies to its own output, with a false name attached.
 
 A count over the corpus root, excluding the package content that the descriptor excludes:
 

@@ -2,7 +2,7 @@
 
 # spec_series
 
-18 documents on this shelf, in the reading order this corpus derives.
+16 documents on this shelf, in the reading order this corpus derives.
 
 - [HW-SPEC-vision-and-scope](00-vision-and-scope.md) — What Headwater is for, the three qualities it aims at, the eleven design principles, and what it refuses to build.
 - [HW-SPEC-conceptual-model](01-conceptual-model.md) — The vocabulary that the rest of the specification uses, from corpus and shelf to warrant, projection, and the TBox and ABox split.
@@ -16,8 +16,6 @@
 - [HW-REG-decisions](09-decisions.md) — An index of the twenty-one design decisions and the ones that the build raised, where the record of each one lives, and the evidence that closed it.
 - [HW-REG-open-obligations](13-open-obligations.md) — The work that the closed decisions left behind, which is unmeasured claims, items that wait on an adopter, and unblocked design work.
 - [HW-REG-open-questions](09-open-questions.md)
-- [HW-SPEC-theoretical-foundations](10-theoretical-foundations.md) — Where the research literature confirms, sharpens, or contradicts the design, and what changed in the specification as a result.
-- [HW-SPEC-adjacent-work](11-adjacent-work.md) — Practitioner tools and standards that solve adjacent problems, and what this design specifies that somebody already built.
 - [HW-SPEC-check-layer](12-check-layer.md) — What a check is, how a scope constrains it, where it comes from, and what the check layer owes the engine.
 - [HW-SPEC-the-recorder-contract](15-the-recorder-contract.md) — Everything an external recorder writes into a transcript, the closed key sets that refuse a file, and the one member of the run identity this engine compares. (asserted, and no human has accepted it)
 - [HW-SPEC-harness-support](16-harness-support.md) — The ten capabilities a harness supplies at the four moments, stated once for every harness, and the recorded support of Claude Code, GitHub Copilot and OpenAI Codex.

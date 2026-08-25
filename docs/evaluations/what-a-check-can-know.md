@@ -18,8 +18,6 @@ relations:
     - HW-SPEC-authoring-and-lifecycle
     - HW-SPEC-assurance-model
     - HW-SPEC-engine-architecture
-    - HW-SPEC-theoretical-foundations
-    - HW-SPEC-adjacent-work
     - HW-SPEC-check-layer
   traces_to:
     - engine/crates/check/src/language.rs
@@ -220,7 +218,7 @@ Twelve changes follow, and all are applied.
 | [Spec 6](../spec/06-engine-architecture.md#ci-adapters) | A run reports its tree, its lock hash and its read set. The engine emits and never orders the landing |
 | [Spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) | New section: the read set, the merge as an ordinary change, and the barrier cost of corpus scope |
 | [Spec 12](../spec/12-check-layer.md#the-correctness-roots) | Sentence segmentation and the author-owned span join the parser's entry in the correctness roots |
-| [Spec 10 §F.6](../spec/10-theoretical-foundations.md#f6-write-skew-names-the-anomaly-and-read-sets-detect-it) | New subsection and references: snapshot isolation, write skew, and serializable snapshot isolation |
-| [Spec 11 §Q](../spec/11-adjacent-work.md#q--what-a-lexical-rule-gets-wrong-and-what-a-merge-queue-buys) | New section: controlled-language checkers, static-analysis tolerance, merge queues, incremental reuse, terminology migrations |
+| [HW-EVAL-theoretical-foundations §F.6](../evaluations/theoretical-foundations.md#f6-write-skew-names-the-anomaly-and-read-sets-detect-it) | New subsection and references: snapshot isolation, write skew, and serializable snapshot isolation |
+| [HW-EVAL-adjacent-work §Q](../evaluations/adjacent-work.md#q--what-a-lexical-rule-gets-wrong-and-what-a-merge-queue-buys) | New section: controlled-language checkers, static-analysis tolerance, merge queues, incremental reuse, terminology migrations |
 
 Two entries in [spec 9](../spec/09-open-questions.md) are rewritten as closed entries, and the glossary gains **read set**, **retired term** and **semantic conflict**.

@@ -16,7 +16,6 @@ relations:
     - HW-REG-decisions
     - HW-SPEC-assurance-model
     - HW-SPEC-engine-architecture
-    - HW-SPEC-adjacent-work
     - HW-SPEC-check-layer
 ---
 

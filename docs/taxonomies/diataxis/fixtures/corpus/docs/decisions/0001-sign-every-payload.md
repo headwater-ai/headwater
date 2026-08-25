@@ -26,4 +26,4 @@ Beacon signs every payload with the newest key of a set, and it publishes the wh
 
 Every receiver has to verify, and a receiver that skips the check gains nothing from the signature. The key set has to be reachable without authentication, which is what makes a rotation a two-step operation rather than a swap.
 
-This document carries no `reader_mode`. It is one of the kinds spec 10 names as distorting under the four modes: it is a record of a choice and its authority, and no reader arrives at it in a reader mode.
+This document carries no `reader_mode`. It is one of the kinds the theoretical-foundations evaluation names as distorting under the four modes: it is a record of a choice and its authority, and no reader arrives at it in a reader mode.
