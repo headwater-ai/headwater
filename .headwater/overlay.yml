@@ -581,6 +581,19 @@ add:
   # the natural names. The collision is safe today and it is a constraint on any
   # later entry.
   #
+  # **What a promotion to `docs/taxonomies/` would have to rename, stated here
+  # so that work does not rediscover it.** Three addresses collide with the
+  # `brd-prd` entry: `purposes.requirement`, `shelves.requirements` at
+  # `docs/requirements/**`, and `shelves.acceptance_criteria`, which claims a
+  # sibling path under the same reading of that tradition. The shelf is the hard
+  # one. `brd-prd` declares `docs/requirements/**` heterogeneous over
+  # `[brd, prd]` with a `requirement_tier` discriminator, and the shelf below is
+  # homogeneous over one kind, so the two shapes cannot merge. Criterion 6's
+  # second remedy, a declared dependency where both entries mean the same thing,
+  # is therefore unavailable, and a rename is the only route. Whoever writes
+  # that entry renames all three, or proposes that the two become one entry that
+  # rules on the tier question first.
+  #
   # **The purpose is new, and each of the five that exist was read first.**
   # `rationale` is retrospective and belongs to a choice already made.
   # `behavior` states what the system does now, and a requirement states what a
@@ -642,13 +655,19 @@ add:
   # an anchor at either end declares no reciprocal, and the interface-contract
   # block above states why.
   #
-  # **`created_by: scaffold`, and that is what makes the pair one command.**
+  # **`created_by: scaffold`, and that is what lets one command write the pair.**
   # `headwater new --relates` is refused unless the relation declares it, and it
   # accepts the inverse name, so `--relates verifies=HW-REQ-0001` on a new
   # acceptance criterion writes the far half into the requirement.
-  # `created_by: author` would have made the whole pair hand entry and left
-  # reciprocity with no producer. This is the argument `applied_in` and
-  # `elaborates` already used.
+  # `created_by: author` would have made the whole pair hand entry. This is the
+  # argument `applied_in` and `elaborates` already used.
+  #
+  # **The scaffolder is a convenience here and not the guarantee.** A hand
+  # written half plus `headwater check --fix` reaches the same complete pair,
+  # because a missing reciprocal link is one of the corrections that verb
+  # writes. What is enforced is narrower and stronger than any producer:
+  # `relation.reciprocity.missing` is an error, so no half-written pair survives
+  # a strict run, whoever wrote the half.
   #
   # **29148 names four verifying artifacts, and two of them get no edge.** The
   # four are an acceptance criterion, a probe, a check rule and a test. A test
@@ -744,6 +763,36 @@ add:
   # settle. So a `current` requirement with no `verified_by` edge is reported
   # after 90 days, at `warn`, which is the posture `evidence-cited` takes on an
   # evaluation in the base package.
+  #
+  # **It names `acceptance_criterion`, `verified_by` admits two kinds, and the
+  # gap between those two facts is a cost this block states rather than hides.**
+  # `to_kind` is one name and a relation's `to:` is a list, so this expectation
+  # recognizes the first endpoint and not the second. A `current` requirement
+  # that a probe alone verifies is reported after 90 days as reaching nothing,
+  # and the remediation tells its author to declare an edge already declared.
+  # That is a false report, at `warn`, over a case no document in this corpus
+  # holds today: the one requirement here is verified by an acceptance
+  # criterion.
+  #
+  # **It is declared this way because no other declaration validates.**
+  # `Participation::satisfied` reads an absent `to_kind` as "any neighbour on
+  # this relation", which is exactly the reading wanted here, and the
+  # meta-schema declares `to_kind` a required member, so that branch is a
+  # decline point no declaration can reach.
+  # [HW-OBL-0128](../docs/obligations/0128-nothing-holds-a-crate-to-having-a-contract-under-a-root-that-excludes-it.md)
+  # already records that sentence, and
+  # [HW-OBL-0039](../docs/obligations/0039-a-participation-expectation-names-one-target-kind.md)
+  # holds the obligation. That record proposes an abstract kind over the target
+  # kinds as the remedy, and this declaration measured it: `to_kind:
+  # governed_document` is refused twice by expectation well-formedness, once for
+  # naming a kind no shelf reaches and once because `verified_by` does not admit
+  # it at its target end. So the recorded remedy does not run either, and
+  # closing this needs the meta-schema member to become optional.
+  #
+  # `engine/crates/check/tests/participation_target.rs` is the fixture the rule
+  # had no case for. It holds two kinds that differ in this one clause over one
+  # tree, so the cost above is a number a reader can check rather than a worry,
+  # and the day the meta-schema yields, that test already says what changes.
   kinds.requirement:
     is_a: governed_document
     purpose: requirement

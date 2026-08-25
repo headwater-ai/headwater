@@ -34,7 +34,7 @@ lock:
     - path: packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:dfac204c8b8bddba13a81a5345633ace234d69b9eceef310ed3e0606c9a3b852
     - path: .headwater/overlay.yml
-      digest: sha256:83c44ef9b76bc60166c0487bb6754bfaf55332c77258bb37f83e8b2da05cd575
+      digest: sha256:d44a1718b8387804c48cb4faa104e3bc5f7bcf9b76ad4e853703d0f5b73fe498
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.

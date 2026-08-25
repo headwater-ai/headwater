@@ -21,13 +21,15 @@ relations:
 
 ## Fit criterion
 
-Two facts, and both are true of the tree at the commit that carries this document.
+Two facts, and both are true of the tree at the commit that carries this document. Neither is a standing guarantee. The method below is `inspection`, so it establishes the state of one tree at one commit. Nothing re-establishes it on the next commit, and a reader who needs the property today reads it again today.
 
-**No source file names a network API.** This command returns no line.
+**No source file names one of six network APIs.** This command returns no line.
 
     grep -rn "std::net\|reqwest\|hyper\|ureq\|tokio::net\|TcpStream" engine/crates/ --include=*.rs
 
-Measured on 2026-08-25 against `9a87b75`, which returned 0 lines. The six names are the transport surfaces a Rust crate reaches a socket through. They are the standard library module, the three common client crates, the async transport, and the raw socket type.
+Measured on 2026-08-25 against `9a87b75`, which returned 0 lines. The six names are the standard library module, the three common client crates, the async transport, and the raw socket type.
+
+**The six are the surfaces this criterion checks, and they are not every route to a socket.** A crate reaches one through `socket2`, through `mio`, through a `libc` call, or through `std::process::Command` running a program that does. This grep sees none of those four. Two things bound what that omission can hide. The second fact below reads the whole locked set by name, so a crate that arrives to supply one of those routes is visible there. And a workspace that took one of them would still have to name the crate that carries it. Widening the grep to those routes is work this criterion does not do, and it names the work rather than hiding it.
 
 **No locked dependency provides one.** `engine/Cargo.lock` names 53 packages, and 23 of them are crates of this workspace. The other 30 are `clap` and its `anstyle` family, `pulldown-cmark`, `saphyr-parser`, `thiserror` and `unicase`. The rest are `memchr`, `bitflags`, `arraydeque`, `strsim`, `heck`, the two `windows` shims, and the proc-macro crates that the two derive macros need. None of the 30 opens a socket. None of them has a transitive dependency that does either, because a lock file holds the whole transitive closure rather than the direct set.
 
