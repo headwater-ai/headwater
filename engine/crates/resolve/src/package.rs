@@ -1102,17 +1102,20 @@ impl Kind {
 ///   `read_dir`, and the resolver then reads `<bundles>/<name>/bundle.yml`.
 /// - `migrations` is a directory: [`crate::migration::at`] reads it with
 ///   `read_dir` and globs `*.yml` out of it.
+/// - `doctrine` is a directory: [`doctrine_at`] resolves it against the fetched
+///   artifact inside [`vendor`], and the CLI names the installed path. That
+///   reader opens a listing and never a file.
 ///
 /// **A key that is not here keeps the existence check and nothing more.** That
 /// is the seam of this table. [`reachable`] still walks the keys the manifest
 /// declares rather than this list, so a key nobody reads yet — spec 7's example
-/// block declares `doctrine` and `templates` — is held to being
-/// there, and gains a kind on the day something reads it. Adding a row here is
-/// the whole change that takes.
+/// block declares `templates` — is held to being there, and gains a kind on the
+/// day something reads it. Adding a row here is the whole change that takes.
+/// `doctrine` is the row that arrived that way, with its reader beside it.
 fn required_kind(key: &str) -> Option<Kind> {
     match key {
         "taxonomy" | "conformance" => Some(Kind::File),
-        BUNDLES | crate::migration::CONTENTS_KEY => Some(Kind::Directory),
+        BUNDLES | DOCTRINE | crate::migration::CONTENTS_KEY => Some(Kind::Directory),
         _ => None,
     }
 }
@@ -1473,6 +1476,137 @@ fn migrations(
 /// Where a published package keeps the bundles it ships.
 pub const BUNDLES: &str = "bundles";
 
+/// Where a published package keeps the prose that explains its method.
+///
+/// [`vendor`] resolves it against the artifact it is about to install, and
+/// [`doctrine_at`] is that reader. The key names a directory inside the package
+/// and never a path that leaves it, so unlike [`BUNDLES`] there is nothing for
+/// [`publish`] to carry inside and rewrite.
+pub const DOCTRINE: &str = "doctrine";
+
+/// The `contents.doctrine` node a manifest declares, and nothing where it
+/// declares none.
+///
+/// One lookup, two readers: [`doctrine_at`] holds the value to an artifact and
+/// reports every shape it refuses, and [`doctrine`] answers the shallow
+/// question the CLI asks after that verb returned. Where the key sits in a
+/// manifest is stated here alone.
+fn declared_doctrine(
+    manifest: &Mapping,
+) -> Option<&headwater_yaml::Spanned<headwater_yaml::Value>> {
+    manifest
+        .get("contents")
+        .and_then(|node| node.value.as_map())
+        .and_then(|contents| contents.get(DOCTRINE))
+}
+
+/// The directory a manifest declares its prose in, relative to the package.
+///
+/// Shallow on purpose. It answers what the key says, and [`doctrine_at`] is
+/// what holds that value to an artifact. `headwater taxonomy vendor` reads it
+/// off the manifest of the package it has just installed, so every shape this
+/// answers `None` for — an absent key, a list, an empty value — is a shape
+/// [`vendor`] refused before it installed anything.
+///
+/// This is what keeps [`Release`] a record of bytes. A doctrine path is not one
+/// of the record's fields, and widening the record so that one line of a report
+/// could be printed would make it one.
+pub fn doctrine(manifest: &Mapping) -> Option<PathBuf> {
+    let text = declared_doctrine(manifest)?.value.as_scalar()?.text.clone();
+    match text.is_empty() {
+        true => None,
+        false => Some(PathBuf::from(text)),
+    }
+}
+
+/// The prose a fetched artifact declares, held to that artifact before
+/// [`vendor`] installs any of it.
+///
+/// **It reads, and it writes nothing.** It runs in `vendor`'s reading phase,
+/// above the first [`clear`], so an artifact whose manifest names prose it does
+/// not carry is refused before `packages/~staging/<flattened>` exists and
+/// before the installed package is renamed aside. The all-or-nothing install
+/// that [#312](https://github.com/headwater-ai/headwater/issues/312) and
+/// [#357](https://github.com/headwater-ai/headwater/issues/357) built is
+/// therefore untouched by where this sits rather than by a second undo path.
+/// The natural placement — a post-condition over the installed directory, after
+/// the swap — is past the point of no return, and it would turn a publisher's
+/// manifest mistake into a half-installed adopter tree.
+///
+/// **The common case is `Ok(None)`, and it costs one lookup.** Every package
+/// this repository publishes and every other fixture in the suite declares no
+/// `contents.doctrine`, and none of them may start being refused for it.
+///
+/// **[`reachable`] holds the same path at publish, and that is not this read.**
+/// `publish` reads a package directory that a publisher wrote. `vendor` reads
+/// an artifact that arrived by a route no crate of this engine can see, and
+/// nothing says the two ran on one machine or on one version of this engine.
+/// The digest proves the manifest and the prose are the bytes the pin was
+/// written for, and it proves nothing about whether any verb ever read either.
+/// So the side that is about to name a path to an adopter is the side that
+/// opens it.
+///
+/// The result is relative to the artifact, because what a reader wants is
+/// `packages/<flattened>/<doctrine>` and the flattened name belongs to the
+/// caller.
+fn doctrine_at(
+    fetched: &Path,
+    manifest: &Mapping,
+    name: &str,
+) -> Result<Option<PathBuf>, Vec<ResolveError>> {
+    let Some(declared) = declared_doctrine(manifest) else {
+        return Ok(None);
+    };
+    let Some(scalar) = declared.value.as_scalar() else {
+        return Err(refusal(
+            name,
+            &format!(
+                "`contents.{DOCTRINE}` is not a path. The key names one directory inside the \
+                 package, and a consumer is told where that directory lands"
+            ),
+        ));
+    };
+    let declared = scalar.text.as_str();
+    if declared.is_empty() {
+        return Err(refusal(
+            name,
+            &format!(
+                "`contents.{DOCTRINE}` is empty, which names the package directory itself. Write \
+                 the directory the prose sits in, or take the key out"
+            ),
+        ));
+    }
+
+    let at = fetched.join(declared);
+    if !at_or_inside(&settled(fetched), &settled(&at)) {
+        return Err(refusal(
+            name,
+            &format!(
+                "`contents.{DOCTRINE}` names {declared}, which resolves outside this artifact. \
+                 Only `contents.{BUNDLES}` may name a path outside the package it is declared in, \
+                 because publishing carries what that one points at inside the artifact and \
+                 rewrites the scalar. A doctrine path that leaves the artifact names prose no \
+                 consumer received"
+            ),
+        ));
+    }
+    if !at.is_dir() {
+        let found = match at.exists() {
+            true => "it is a file",
+            false => "it is not there",
+        };
+        return Err(refusal(
+            name,
+            &format!(
+                "`contents.{DOCTRINE}` names {declared}, and {found}. The key names the directory \
+                 of prose that this artifact ships, and vendoring it would tell the adopter to \
+                 read a directory that never arrived. Nothing was vendored"
+            ),
+        ));
+    }
+    Ok(Some(PathBuf::from(declared)))
+}
+
 /// Check a fetched artifact against the digest this repository pinned, and
 /// install it under `packages/`.
 ///
@@ -1804,6 +1938,15 @@ pub fn vendor(root: &Path, fetched: &Path, pinned: &str) -> Result<Release, Vec<
             ));
         }
     }
+
+    // The prose the artifact declares, held to the artifact. [`doctrine_at`]
+    // writes nothing and this is the last read, so a manifest that names
+    // doctrine the artifact does not carry returns above every write below:
+    // nothing is staged, nothing is renamed aside, and an installed package
+    // stands as it stood. The value is dropped here because `Release` is a
+    // record of bytes and this is not one of them -- the CLI reads the key back
+    // off the installed manifest to name the path it printed.
+    let _ = doctrine_at(fetched, &manifest_at(fetched)?, &name)?;
 
     // Every refusal below leaves one state, and this is that state said once.
     let stands = match installed {
