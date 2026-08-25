@@ -28,8 +28,8 @@
         },
         {
           "shelf": "interfaces",
-          "path": "docs/interfaces/headwater-check.md",
-          "id": "HW-IFACE-headwater-check"
+          "path": "docs/interfaces/headwater-capture.md",
+          "id": "HW-IFACE-headwater-capture"
         },
         {
           "shelf": "obligations",

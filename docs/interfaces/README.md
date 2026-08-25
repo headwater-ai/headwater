@@ -2,7 +2,7 @@
 
 # The command surface
 
-`headwater` dispatches 19 verbs. 2 of them have a contract on this shelf, and 17 have none.
+`headwater` dispatches 19 verbs. 19 of them have a contract on this shelf, and 0 have none.
 
 A verb with no contract carries a mark in the last column, and that cell is what this file is for. An index of the contracts that exist would say nothing about the verbs nobody has described yet.
 
@@ -13,46 +13,46 @@ The headings and the second column are the groups and the summaries that `headwa
 | Verb | What it does | What a caller types | Contract |
 |---|---|---|---|
 | `check` | run the pipeline over the corpus, against the committed lock | `headwater check` | [headwater check](headwater-check.md) |
-| `gate` | hold an earlier run's read set against the tree in front of it | `headwater gate` | **no contract** |
-| `conformance` | evaluate this repository against a package's conformance rules | `headwater conformance` | **no contract** |
+| `gate` | hold an earlier run's read set against the tree in front of it | `headwater gate` | [headwater gate](headwater-gate.md) |
+| `conformance` | evaluate this repository against a package's conformance rules | `headwater conformance` | [headwater conformance](headwater-conformance.md) |
 
 ## Reading a corpus
 
 | Verb | What it does | What a caller types | Contract |
 |---|---|---|---|
-| `route` | resolve a task description to the documents that govern it | `headwater route` | **no contract** |
-| `explain` | why a document is the kind it is, and what it serves | `headwater explain` | **no contract** |
-| `query` | listed in spec 6, and no document says what an expression is | `headwater query` | **no contract** |
-| `capture` | read the capture-cost store back | `headwater capture` | **no contract** |
-| `mcp` | serve the reads and one run of the checks to an agent | `headwater mcp` | **no contract** |
+| `route` | resolve a task description to the documents that govern it | `headwater route` | [headwater route](headwater-route.md) |
+| `explain` | why a document is the kind it is, and what it serves | `headwater explain` | [headwater explain](headwater-explain.md) |
+| `query` | listed in spec 6, and no document says what an expression is | `headwater query` | [headwater query](headwater-query.md) |
+| `capture` | read the capture-cost store back | `headwater capture` | [headwater capture](headwater-capture.md) |
+| `mcp` | serve the reads and one run of the checks to an agent | `headwater mcp` | [headwater mcp](headwater-mcp.md) |
 
 ## Writing a corpus
 
 | Verb | What it does | What a caller types | Contract |
 |---|---|---|---|
-| `new` | scaffold a document of a kind | `headwater new` | **no contract** |
-| `infer` | report the debt this taxonomy raises over this corpus | `headwater infer` | **no contract** |
-| `generate` | write every projection the taxonomy declares | `headwater generate` | **no contract** |
-| `import` | write the edges a committed snapshot declares | `headwater import` | **no contract** |
-| `export` | emit a declared export profile through an emitter target | `headwater export` | **no contract** |
+| `new` | scaffold a document of a kind | `headwater new` | [headwater new](headwater-new.md) |
+| `infer` | report the debt this taxonomy raises over this corpus | `headwater infer` | [headwater infer](headwater-infer.md) |
+| `generate` | write every projection the taxonomy declares | `headwater generate` | [headwater generate](headwater-generate.md) |
+| `import` | write the edges a committed snapshot declares | `headwater import` | [headwater import](headwater-import.md) |
+| `export` | emit a declared export profile through an emitter target | `headwater export` | [headwater export](headwater-export.md) |
 
 ## Sampling, which never gates
 
 | Verb | What it does | What a caller types | Contract |
 |---|---|---|---|
 | `sweep` | the two halves of the coherence sweep | `headwater sweep plan`, `headwater sweep report` | [headwater sweep](headwater-sweep.md) |
-| `probe` | the four parts of the probe harness | `headwater probe plan`, `headwater probe record`, `headwater probe grade`, `headwater probe stale` | **no contract** |
+| `probe` | the four parts of the probe harness | `headwater probe plan`, `headwater probe record`, `headwater probe grade`, `headwater probe stale` | [headwater probe](headwater-probe.md) |
 
 ## The taxonomy
 
 | Verb | What it does | What a caller types | Contract |
 |---|---|---|---|
-| `init` | scaffold the consumer declaration and the overlay | `headwater init` | **no contract** |
-| `taxonomy` | read, write, publish and compare a taxonomy package | `headwater taxonomy validate`, `headwater taxonomy resolve`, `headwater taxonomy audit`, `headwater taxonomy publish`, `headwater taxonomy vendor`, `headwater taxonomy diff`, `headwater taxonomy migrate` | **no contract** |
+| `init` | scaffold the consumer declaration and the overlay | `headwater init` | [headwater init](headwater-init.md) |
+| `taxonomy` | read, write, publish and compare a taxonomy package | `headwater taxonomy validate`, `headwater taxonomy resolve`, `headwater taxonomy audit`, `headwater taxonomy publish`, `headwater taxonomy vendor`, `headwater taxonomy diff`, `headwater taxonomy migrate` | [headwater taxonomy](headwater-taxonomy.md) |
 
 ## Getting help
 
 | Verb | What it does | What a caller types | Contract |
 |---|---|---|---|
-| `help` | the long description of one verb, or this screen | `headwater help` | **no contract** |
-| `completions` | write the completion script of one shell | `headwater completions` | **no contract** |
+| `help` | the long description of one verb, or this screen | `headwater help` | [headwater help](headwater-help.md) |
+| `completions` | write the completion script of one shell | `headwater completions` | [headwater completions](headwater-completions.md) |
