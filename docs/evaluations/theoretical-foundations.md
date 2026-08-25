@@ -1,11 +1,9 @@
 ---
-id: HW-SPEC-theoretical-foundations
+id: HW-EVAL-theoretical-foundations
 status: current
 status_since: 2026-08-01
 last_verified: 2026-08-11
 summary: Where the research literature confirms, sharpens, or contradicts the design, and what changed in the specification as a result.
-doc_type: design_spec
-sequence: 10
 provenance:
   warrant: accepted
   agency: mixed
@@ -14,19 +12,22 @@ provenance:
   accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
-  cites_evidence:
-    - HW-EVAL-schema-format-walkthrough
-    - HW-EVAL-the-measurement-layer
-    - HW-EVAL-what-a-check-can-know
+  cited_by:
+    - HW-SPEC-vision-and-scope
+    - HW-SPEC-taxonomy-model
+    - HW-SPEC-assurance-model
+    - HW-SPEC-ai-integration
+    - HW-SPEC-check-layer
+    - HW-SPEC-glossary
 ---
 
-# 10 — Theoretical foundations
+# Theoretical foundations
 
 The design so far was derived from practice. This document tests it against the research literature — mainly discourse linguistics, knowledge organization, and architecture-knowledge management. It records where the theory **confirms**, **sharpens**, or **contradicts** what specs 0–9 say.
 
 Each entry states what the theory claims, what it gives us, and what changes as a result. Entries that change nothing still have value: they tell us which decisions are defensible, not only ours.
 
-> **Status.** All twenty changes were applied to the specification — the five structural ones first, then the additive remainder. The table in [§G](#g-summary-of-changes-this-document-proposes) records where each landed. This document is now a record of *why* the design is shaped as it is, not a list of pending work.
+> **Status.** All twenty changes were applied to the specification — the five structural ones first, then the additive remainder. The table in [§G](#g-summary-of-changes-this-document-proposes) records where each landed. This document is now a record of *why* the design is shaped as it is, not a list of pending work. It was specification 10 of the numbered series until 2026-08-25, when it moved to the evaluations shelf.
 
 ---
 
@@ -144,7 +145,7 @@ Three consequences:
 2. Genres are **emergent and social**, not imposed. A taxonomy handed down and frozen will be worked around. This is the strongest theoretical argument for overlays and versioned evolution — and against a single blessed taxonomy.
 3. **Genre systems are sequences**, and we do not model sequence at all. Proposal → decision → specification → evidence is a genre system. So is incident → postmortem → standard change.
 
-> **Change:** add optional **sequence expectations** to the taxonomy — declared chains of kinds where one is expected to follow another. This yields the detective control that we currently lack. It finds decisions with no downstream specification, incidents with no postmortem, and proposals that were accepted and then never implemented. That is drift that the cohesion checks cannot see, and it is the failure mode that people complain about most. (As first applied, these were a separate top-level declaration. The core-concepts review showed that every declared chain was a single windowed hop, and folded them into [relation participation](02-taxonomy-model.md#participation-expectations). That fold also forced the window-origin definition that the mechanism lacked.)
+> **Change:** add optional **sequence expectations** to the taxonomy — declared chains of kinds where one is expected to follow another. This yields the detective control that we currently lack. It finds decisions with no downstream specification, incidents with no postmortem, and proposals that were accepted and then never implemented. That is drift that the cohesion checks cannot see, and it is the failure mode that people complain about most. (As first applied, these were a separate top-level declaration. The core-concepts review showed that every declared chain was a single windowed hop, and folded them into [relation participation](../spec/02-taxonomy-model.md#participation-expectations). That fold also forced the window-origin definition that the mechanism lacked.)
 
 ### C.2 Boundary objects — publisher and consumer
 
@@ -192,7 +193,7 @@ This is the theoretical justification for spec 5's pointers-with-summaries desig
 
 The computational descendants sharpen it further, and they decide where a cue lives. SNIF-ACT and the Bloodhound line model a link choice as a utility computed over **the links available at the current position**. They model patch leaving as that utility falling below what another patch offers. Scent is therefore never an absolute property of a target. It is a comparison over the options at the point of decision, which means that every scent measure owes a comparison set. For a summary, that set is the documents a reader is choosing between. For a cue on a relation, it is the other links that the same document offers.
 
-> **Change:** treat summary quality as an assurance concern in its own right rather than a front-matter formality. Frame the routing confidence gate in scent terms. The engine stays silent when scent is weak, because a cue that misleads costs more than an absent one. Probe categories map directly onto foraging outcomes. (As first applied, spec 5 called the `summary` facet the entire scent surface. [Q20](09-decisions.md#q20--where-scent-lives) later found that the theory places a second cue on the referring edge, and that each measure states the set it compares against.)
+> **Change:** treat summary quality as an assurance concern in its own right rather than a front-matter formality. Frame the routing confidence gate in scent terms. The engine stays silent when scent is weak, because a cue that misleads costs more than an absent one. Probe categories map directly onto foraging outcomes. (As first applied, spec 5 called the `summary` facet the entire scent surface. [Q20](../spec/09-decisions.md#q20--where-scent-lives) later found that the theory places a second cue on the referring edge, and that each measure states the set it compares against.)
 
 ### E.2 Cognitive dimensions — how to evaluate the schema language
 
@@ -254,9 +255,9 @@ Fekete, Liarokapis, O'Neil, O'Neil and Shasha ("Making Snapshot Isolation Serial
 
 The transfer is precise and it is favorable. Detection of this anomaly needs a read set. A database adds read tracking to get one, and git has none at all. Headwater already computes a read set per check instance, because scope enforcement makes the cache key a hash of exactly the in-scope inputs. The ingredient is a byproduct of a decision taken for caching.
 
-**The transfer has a limit, and the same literature names it.** A read set is a list of the items that a transaction read. An item that no transaction read reaches no list, so a predicate over the *absence* of an item is on no list either. Databases call that a **phantom**, and Eswaran, Gray, Lorie and Traiger ("The Notions of Consistency and Predicate Locks in a Database System", *CACM* 1976) answered it with a predicate lock rather than with a read set. Headwater holds no predicate lock. A corpus-scoped verdict has the extent of the corpus for its subject rather than any member of it. Nothing in this design carries such a verdict across a merge ([spec 12](12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)).
+**The transfer has a limit, and the same literature names it.** A read set is a list of the items that a transaction read. An item that no transaction read reaches no list, so a predicate over the *absence* of an item is on no list either. Databases call that a **phantom**, and Eswaran, Gray, Lorie and Traiger ("The Notions of Consistency and Predicate Locks in a Database System", *CACM* 1976) answered it with a predicate lock rather than with a read set. Headwater holds no predicate lock. A corpus-scoped verdict has the extent of the corpus for its subject rather than any member of it. Nothing in this design carries such a verdict across a merge ([spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict)).
 
-> **Change:** state that validity is not preserved under merge, as a property of a verdict rather than as a caution ([spec 4](04-assurance-model.md#a-verdict-is-about-one-state-of-the-corpus)). Report the read set with every run, and hold it against a later tree by the one test that [spec 12](12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) states. Fail toward re-running, as serializable snapshot isolation fails toward aborting. Carry no verdict whose subject is the extent of the corpus, because a read set is not a predicate lock.
+> **Change:** state that validity is not preserved under merge, as a property of a verdict rather than as a caution ([spec 4](../spec/04-assurance-model.md#a-verdict-is-about-one-state-of-the-corpus)). Report the read set with every run, and hold it against a later tree by the one test that [spec 12](../spec/12-check-layer.md#the-read-set-and-what-a-merge-does-to-a-verdict) states. Fail toward re-running, as serializable snapshot isolation fails toward aborting. Carry no verdict whose subject is the extent of the corpus, because a read set is not a predicate lock.
 
 ---
 
@@ -286,28 +287,28 @@ The transfer is precise and it is favorable. Detection of this anomaly needs a r
 | 20 | Add `reconstructed` as a third provenance value | 3 | Parnas & Clements | **applied** |
 | 21 | State that validity is not preserved under merge. Report the read set | 4, 12 | Berenson et al., Cahill et al. | **applied** |
 
-All are applied. The first twenty came from one sweep of the literature, and change 21 arrived later with [Q21](09-decisions.md#q21--terminological-succession-and-validity-under-merge). The five structural changes (2, 4, 12, 13, 15) landed first, because they altered the schema itself. Change 3 came with them, since change 4's precedence semantics needed families to exist first. The remaining fourteen were additive and landed against the schema as it then stood.
+All are applied. The first twenty came from one sweep of the literature, and change 21 arrived later with [Q21](../spec/09-decisions.md#q21--terminological-succession-and-validity-under-merge). The five structural changes (2, 4, 12, 13, 15) landed first, because they altered the schema itself. Change 3 came with them, since change 4's precedence semantics needed families to exist first. The remaining fourteen were additive and landed against the schema as it then stood.
 
 Where they ended up:
 
 | Spec | What these changes added |
 |---|---|
-| [1 — Conceptual model](01-conceptual-model.md) | Purpose on kinds, family and nuclearity on relations, windowed participation expectations |
-| [2 — Taxonomy model](02-taxonomy-model.md) | The five structural changes, plus the decision-relation vocabulary, `created_by`, PROV alignment, facet acceptance tests, the rigidity rule, overlay confluence, and cross-taxonomy mappings |
-| [3 — Authoring](03-authoring-and-lifecycle.md) | Three-state evidence basis, recorded provenance with `accepted_by`, and the assisted-fraction metric |
-| [4 — Assurance](04-assurance-model.md) | The cohesion/coherence split, defect-derived obligations, transition continuity, absence findings, cost-aware adaptive reporting, and what a verdict is about |
-| [5 — AI integration](05-ai-integration.md) | Purpose-first routing, satellite-first pruning, and scent measurement |
-| [6 — Engine](06-engine-architecture.md) | The `validate` / `audit` split and the enlarged check inventory |
-| [7 — Distribution](07-distribution-and-federation.md) | The invariant core, measured compatibility, and federation by mapping |
-| [9 — The decision register](09-decisions.md) | A decision procedure for Q2, and the cross-taxonomy half of Q9 closed |
-| [12 — Check layer](12-check-layer.md) | The read set of a run, and the merge treated as an ordinary change |
+| [1 — Conceptual model](../spec/01-conceptual-model.md) | Purpose on kinds, family and nuclearity on relations, windowed participation expectations |
+| [2 — Taxonomy model](../spec/02-taxonomy-model.md) | The five structural changes, plus the decision-relation vocabulary, `created_by`, PROV alignment, facet acceptance tests, the rigidity rule, overlay confluence, and cross-taxonomy mappings |
+| [3 — Authoring](../spec/03-authoring-and-lifecycle.md) | Three-state evidence basis, recorded provenance with `accepted_by`, and the assisted-fraction metric |
+| [4 — Assurance](../spec/04-assurance-model.md) | The cohesion/coherence split, defect-derived obligations, transition continuity, absence findings, cost-aware adaptive reporting, and what a verdict is about |
+| [5 — AI integration](../spec/05-ai-integration.md) | Purpose-first routing, satellite-first pruning, and scent measurement |
+| [6 — Engine](../spec/06-engine-architecture.md) | The `validate` / `audit` split and the enlarged check inventory |
+| [7 — Distribution](../spec/07-distribution-and-federation.md) | The invariant core, measured compatibility, and federation by mapping |
+| [9 — The decision register](../spec/09-decisions.md) | A decision procedure for Q2, and the cross-taxonomy half of Q9 closed |
+| [12 — Check layer](../spec/12-check-layer.md) | The read set of a run, and the merge treated as an ordinary change |
 
 ### What the theory did not settle
 
-The application of every change does not mean that the design is finished. Three things that the literature sharpened but could not decide, all still open in [spec 13](13-open-obligations.md):
+The application of every change does not mean that the design is finished. Three things that the literature sharpened but could not decide, all still open in [spec 13](../spec/13-open-obligations.md):
 
 - **Whether the assisted fraction actually rises.** The strongest claim in the design — that agent-assisted authoring answers the capture-cost objection that killed every prior rationale system — is now falsifiable, measured, and untested. Nothing here proves it.
-- **Whether the taxonomy language survives contact with authors.** The [walkthrough](../evaluations/schema-format-walkthrough.md) has run, and it kept the format that the rest of the spec is written in. What it could not do is meet a real author. It scored notations against scenarios, and a scenario is not an adopter.
+- **Whether the taxonomy language survives contact with authors.** The [walkthrough](schema-format-walkthrough.md) has run, and it kept the format that the rest of the spec is written in. What it could not do is meet a real author. It scored notations against scenarios, and a scenario is not an adopter.
 - **Whether coherence measurement is worth its noise.** Transition continuity is a proxy, defensible in theory, unvalidated in practice. If its distribution is stable across healthy and unhealthy corpora alike, it measures nothing and should be cut.
 
 ## H. Theory considered and set aside

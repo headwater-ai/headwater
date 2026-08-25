@@ -18,7 +18,6 @@ relations:
     - HW-SPEC-vision-and-scope
     - HW-SPEC-taxonomy-model
     - HW-SPEC-distribution-and-federation
-    - HW-SPEC-adjacent-work
     - HW-SPEC-glossary
 ---
 
@@ -173,13 +172,13 @@ Four facets, one abstract kind, two concrete kinds, two shelves, five relations,
 
 ### Three things the derivation contradicts
 
-**The smallest column of spec 2's worked example does not satisfy spec 2's core.** The example gives the small team the `rationale` and `procedure` purposes. The core requires `rationale` and `behavior`. A taxonomy with no behavior-serving kind has nowhere to say what the system does, and [spec 0](../spec/00-vision-and-scope.md) promises that a task or a code path resolves to the documents that govern it. Such a corpus has nothing for a code path to resolve to. The core is right and the column is wrong, which is worth stating in that order: the core came from [theory](../spec/10-theoretical-foundations.md) and the column was a sketch.
+**The smallest column of spec 2's worked example does not satisfy spec 2's core.** The example gives the small team the `rationale` and `procedure` purposes. The core requires `rationale` and `behavior`. A taxonomy with no behavior-serving kind has nowhere to say what the system does, and [spec 0](../spec/00-vision-and-scope.md) promises that a task or a code path resolves to the documents that govern it. Such a corpus has nothing for a code path to resolve to. The core is right and the column is wrong, which is worth stating in that order: the core came from [theory](../evaluations/theoretical-foundations.md) and the column was a sketch.
 
 **No default relation attaches the corpus to code.** Spec 2 enables four by default, and it selected all four from the Kruchten decision-relation vocabulary. That vocabulary runs between decisions by construction, so the count was taken over a set that could not contain the edge in question. Add a behavior kind to that base and every document of that kind is unlinked, which is an orphan finding under the base's own generated checks. `governs`, which ends on the `code_path` anchor, is what fixes it. It also supplies write-time impact detection ([spec 5](../spec/05-ai-integration.md)), which is the most valuable thing the corpus does for a coding agent, and no default edge carried it.
 
 **Two of the default four have no mechanical creator.** Spec 2 states that every relation the default enables is creatable by scaffold, generator, or hook, and it explains why. A default that works only if assisted authoring raises edge capture is a bet rather than a design. Write the base out and the claim fails on its own list. A scaffold can propose `supersedes`, and a hook can propose `traces_to` and `governs` from the change. Nothing mechanical proposes `conflicts_with` or `constrains`. Both come from the coherence sweep, which is an agent.
 
-The rule that does the intended work is narrower than the one spec 2 states: **no relation in the base is `created_by: author`.** That preserves the point, because the claim under test is that unassisted human capture decays, and it stops the base from asserting a creator it does not have. It also makes the bet visible instead of hiding it. Two of the base's five edges depend on the agent-authoring claim, which [spec 10](../spec/10-theoretical-foundations.md#what-the-theory-did-not-settle) records as the least-tested claim in the system. `taxonomy audit` already reports edge counts and staleness by creator, so the instrument to measure the dependence exists.
+The rule that does the intended work is narrower than the one spec 2 states: **no relation in the base is `created_by: author`.** That preserves the point, because the claim under test is that unassisted human capture decays, and it stops the base from asserting a creator it does not have. It also makes the bet visible instead of hiding it. Two of the base's five edges depend on the agent-authoring claim, which [HW-EVAL-theoretical-foundations](../evaluations/theoretical-foundations.md#what-the-theory-did-not-settle) records as the least-tested claim in the system. `taxonomy audit` already reports edge counts and staleness by creator, so the instrument to measure the dependence exists.
 
 ## Bundles, and why one line per relation does not generalize
 

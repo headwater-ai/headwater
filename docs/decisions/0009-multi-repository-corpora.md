@@ -37,7 +37,7 @@ Query fan-out does not happen. The tier harvests. Each source corpus carries a p
 
 Three arguments agree with the harvest ruling, and the specification already made all three. [Spec 0](../spec/00-vision-and-scope.md#non-negotiables) forbids the network at check time. [Spec 6](../spec/06-engine-architecture.md#performance-targets) budgets 100 ms for a route query, and a fan-out across estates does not fit. And a fan-out that meets an unreachable source either fails whole or returns less with no notice. That second outcome is the silent pass that [spec 4](../spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for) forbids. So a pinned export that the tier cannot read is a finding that names the pin.
 
-**What the prior art settled.** SPARQL's `SILENT` keyword is the documented form of the failure above. The digital-library field ran the fan-out experiment for two decades, and its aggregators harvest through tiers of intermediaries. GraphQL federation is the counter-example that proves the rule, because runtime fan-out works there on three conditions that Headwater cannot meet ([spec 11 §N.7](../spec/11-adjacent-work.md#n7-harvest-beat-fan-out-and-graphql-federation-says-why)).
+**What the prior art settled.** SPARQL's `SILENT` keyword is the documented form of the failure above. The digital-library field ran the fan-out experiment for two decades, and its aggregators harvest through tiers of intermediaries. GraphQL federation is the counter-example that proves the rule, because runtime fan-out works there on three conditions that Headwater cannot meet ([HW-EVAL-adjacent-work §N.7](../evaluations/adjacent-work.md#n7-harvest-beat-fan-out-and-graphql-federation-says-why)).
 
 ### The aggregator authors its own facts
 
@@ -49,7 +49,7 @@ So the federation layer is not a merge target at all. It is a **corpus at a high
 
 This also decides where authority sits, in the terms that [principle 2](../spec/00-vision-and-scope.md#design-principles) already sets: one source of truth **per fact**, not per store. A document's content is canonical in its own repository. A cross-estate edge is canonical in the solution corpus that declares it. The merged graph is canonical for nothing, and the ruling above removes it entirely. The question "is the graph or the Markdown authoritative?" has no answer because it is the wrong question — nothing is authoritative *as a store*.
 
-Backstage is this shape in production. Its catalog re-derives entities from descriptors that live beside the code, and it generates the `relations` field rather than accepting one. It also admits entities registered as static configuration ([spec 11 §N.3](../spec/11-adjacent-work.md#n3-backstage--the-catalog-is-a-read-model-that-authors-its-own-entries)).
+Backstage is this shape in production. Its catalog re-derives entities from descriptors that live beside the code, and it generates the `relations` field rather than accepting one. It also admits entities registered as static configuration ([HW-EVAL-adjacent-work §N.3](../evaluations/adjacent-work.md#n3-backstage--the-catalog-is-a-read-model-that-authors-its-own-entries)).
 
 ### What this fixed for Q17
 

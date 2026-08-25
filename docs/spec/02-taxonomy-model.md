@@ -15,11 +15,13 @@ provenance:
   evidence_basis: evidenced
 relations:
   cites_evidence:
+    - HW-EVAL-adjacent-work
     - HW-EVAL-default-taxonomy-first-run
     - HW-EVAL-graph-export-and-federation
     - HW-EVAL-relation-storage
     - HW-EVAL-schema-format-walkthrough
     - HW-EVAL-the-serving-boundary
+    - HW-EVAL-theoretical-foundations
     - HW-EVAL-warrant-and-adjudication
     - HW-EVAL-what-a-check-can-know
 ---
@@ -28,7 +30,7 @@ relations:
 
 **This is the central design of the system.** Everything else is downstream of it.
 
-> **Revision note.** This document contains five structural changes that [theoretical foundations](10-theoretical-foundations.md) proposed. The changes are: nuclearity on relations, windowed participation expectations, an immutable semantic core, versioning by measured compatibility, and purpose as an explicit declaration. Reading precedence is derived from nuclearity, succession, and the governance family. Relation families arrived as a dependency of the precedence change. The [core-concepts review](../reviews/) later cut the per-relation `dominance` declaration, which was redundant wherever nuclearity or succession already determined the order. The review also called it unused elsewhere. The [schema-format walkthrough](../evaluations/schema-format-walkthrough.md) found that governance was unanswered rather than unused, and the derivation now carries a clause for it. That walkthrough made four further changes here. Endpoints are the only declaration of a permitted relation, abstract kinds have semantics, compatibility gained an `addressability` dimension, and the migration payload rewrites overlays. The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md) then made three more, all in what the default taxonomy enables. The base enables `governs`, no base relation is `created_by: author`, and optional content ships as add-only bundles.
+> **Revision note.** This document contains five structural changes that [the theoretical-foundations evaluation](../evaluations/theoretical-foundations.md) proposed. The changes are: nuclearity on relations, windowed participation expectations, an immutable semantic core, versioning by measured compatibility, and purpose as an explicit declaration. Reading precedence is derived from nuclearity, succession, and the governance family. Relation families arrived as a dependency of the precedence change. The [core-concepts review](../reviews/) later cut the per-relation `dominance` declaration, which was redundant wherever nuclearity or succession already determined the order. The review also called it unused elsewhere. The [schema-format walkthrough](../evaluations/schema-format-walkthrough.md) found that governance was unanswered rather than unused, and the derivation now carries a clause for it. That walkthrough made four further changes here. Endpoints are the only declaration of a permitted relation, abstract kinds have semantics, compatibility gained an `addressability` dimension, and the migration payload rewrites overlays. The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md) then made three more, all in what the default taxonomy enables. The base enables `governs`, no base relation is `created_by: author`, and optional content ships as add-only bundles.
 
 ## The problem being solved
 
@@ -420,7 +422,7 @@ The default taxonomy assumes that remedy from the start. **No relation that it e
 
 An earlier statement of this rule named scaffold, generator, and hook as the permitted creators, and the base contradicts it. A scaffold proposes `supersedes`. A hook proposes `traces_to` and `governs` from the change. Nothing mechanical proposes `conflicts_with` or `constrains`, because both come from the coherence sweep, which is an agent. The narrower rule is the one that does the intended work, because the claim under test is that unassisted human capture decays.
 
-The claim that assisted authoring raises edge capture is the strongest and least-tested in the system ([spec 10](10-theoretical-foundations.md#what-the-theory-did-not-settle)). A default that only works if the claim holds is a bet, and a default that survives when the claim fails is a design. Two of the base's five edges depend on that claim. `taxonomy audit` reports edge counts and staleness by creator, so the dependence is measurable rather than assumed.
+The claim that assisted authoring raises edge capture is the strongest and least-tested in the system ([HW-EVAL-theoretical-foundations](../evaluations/theoretical-foundations.md#what-the-theory-did-not-settle)). A default that only works if the claim holds is a bet, and a default that survives when the claim fails is a design. Two of the base's five edges depend on that claim. `taxonomy audit` reports edge counts and staleness by creator, so the dependence is measurable rather than assumed.
 
 ### Endpoints are the only permission
 
@@ -472,7 +474,7 @@ The `derivation` and `succession` families map onto W3C PROV: `derives_from` to 
 
 It also brings PROV's agent dimension, which now matters: humans, agents, and both together draft documents. See [authoring and lifecycle](03-authoring-and-lifecycle.md#provenance-is-recorded-not-assumed).
 
-**The alignment stops one field short, and the specification says so rather than implying more.** PROV records what happened to an entity and who took part. It has no vocabulary for endorsement, so it cannot say that a party stands behind a result. `accepted_by` is that addition, and the [warrant](01-conceptual-model.md#warrant) is what makes the addition visible. PROV does supply one warrant value under a standard name. `prov:Quotation` is the repeat of part or all of an entity by somebody who may not be its original author. That is the `transcribed` value exactly ([spec 11 §P](11-adjacent-work.md#p--provenance-endorsement-and-the-record-of-a-judgment)).
+**The alignment stops one field short, and the specification says so rather than implying more.** PROV records what happened to an entity and who took part. It has no vocabulary for endorsement, so it cannot say that a party stands behind a result. `accepted_by` is that addition, and the [warrant](01-conceptual-model.md#warrant) is what makes the addition visible. PROV does supply one warrant value under a standard name. `prov:Quotation` is the repeat of part or all of an entity by somebody who may not be its original author. That is the `transcribed` value exactly ([HW-EVAL-adjacent-work §P](../evaluations/adjacent-work.md#p--provenance-endorsement-and-the-record-of-a-judgment)).
 
 ### Behavior at the limits
 

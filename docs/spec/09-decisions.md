@@ -17,6 +17,7 @@ relations:
   supersedes:
     - HW-REG-open-questions
   cites_evidence:
+    - HW-EVAL-adjacent-work
     - HW-EVAL-default-taxonomy-first-run
     - HW-EVAL-first-contact
     - HW-EVAL-graph-export-and-federation
@@ -88,7 +89,7 @@ A repository holds one or more corpora, the tier above harvests pinned exports, 
 
 ### The aggregator authors its own facts
 
-The federation layer is a corpus at a higher altitude. It authors the facts that live between repositories, and it reads exports for everything else. This heading stays because [11 — Adjacent work](11-adjacent-work.md) cites it twice. The text is now [a subsection of the record](../decisions/0009-multi-repository-corpora.md#the-aggregator-authors-its-own-facts).
+The federation layer is a corpus at a higher altitude. It authors the facts that live between repositories, and it reads exports for everything else. This heading stays because [HW-EVAL-adjacent-work](../evaluations/adjacent-work.md) cites it twice. The text is now [a subsection of the record](../decisions/0009-multi-repository-corpora.md#the-aggregator-authors-its-own-facts).
 
 ## Q10 — Naming
 

@@ -21,7 +21,6 @@ relations:
     - HW-SPEC-ai-integration
     - HW-SPEC-engine-architecture
     - HW-SPEC-distribution-and-federation
-    - HW-SPEC-adjacent-work
     - HW-SPEC-check-layer
     - HW-SPEC-glossary
 ---
@@ -76,7 +75,7 @@ Fourteen rulings constrain this evaluation, and it may not revisit any of them.
 
 **No forge is privileged in the core.** The engine emits findings, and adapters translate them ([spec 6](../spec/06-engine-architecture.md#ci-adapters)).
 
-**A filter in the tool layer is advisory, and the shipped example says so.** Serena's `ignored_memory_patterns` controls one reading path while the bytes stay readable along another ([spec 11 §L.6](../spec/11-adjacent-work.md#l6-a-filter-in-the-tool-layer-is-advisory-and-the-documentation-says-so)).
+**A filter in the tool layer is advisory, and the shipped example says so.** Serena's `ignored_memory_patterns` controls one reading path while the bytes stay readable along another ([HW-EVAL-adjacent-work §L.6](../evaluations/adjacent-work.md#l6-a-filter-in-the-tool-layer-is-advisory-and-the-documentation-says-so)).
 
 Those fourteen settle more of the three questions than any of the three entries noticed. Two of them settle a question outright, and the entry that asked it did not cite them.
 
@@ -224,7 +223,7 @@ This is the substantive entry, and the constraint that the previous group handed
 
 The entry reads: "Per-repository Markdown stays canonical and carries the host platform's repository permissions. The federated graph is a filtered view, and the filtering happens there."
 
-The federated tier is the wrong place, on the entry's own argument. [Q9](../spec/09-open-questions.md#q9--multi-repository-corpora) established that a harvesting tier holds pinned, committed exports. The bytes are in the tier's repository. A filter that the tier applies when it *serves* is a filter over bytes that already crossed the boundary, which is [Serena's failure](../spec/11-adjacent-work.md#l6-a-filter-in-the-tool-layer-is-advisory-and-the-documentation-says-so) at one remove. The entry diagnosed that failure correctly and then reproduced it.
+The federated tier is the wrong place, on the entry's own argument. [Q9](../spec/09-open-questions.md#q9--multi-repository-corpora) established that a harvesting tier holds pinned, committed exports. The bytes are in the tier's repository. A filter that the tier applies when it *serves* is a filter over bytes that already crossed the boundary, which is [Serena's failure](../evaluations/adjacent-work.md#l6-a-filter-in-the-tool-layer-is-advisory-and-the-documentation-says-so) at one remove. The entry diagnosed that failure correctly and then reproduced it.
 
 So the serving boundary is the **export step of each publishing corpus**. A corpus decides what leaves it. What arrives at a tier is already what that tier may hold.
 
@@ -332,7 +331,7 @@ An adopter who cannot tolerate that leaks the structure, and the honest instruct
 
 #### The sub-question: what may be a node
 
-[Spec 11 §A.1](../spec/11-adjacent-work.md#a1-the-solution-layer-presses-on-that-boundary) sets out the choice. A solution layer that holds a `Service` node describing an actual service has left the corpus and started to model the world, and it acquires an obligation to stay true that nothing in the design carries.
+[HW-EVAL-adjacent-work §A.1](../evaluations/adjacent-work.md#a1-the-solution-layer-presses-on-that-boundary) sets out the choice. A solution layer that holds a `Service` node describing an actual service has left the corpus and started to model the world, and it acquires an obligation to stay true that nothing in the design carries.
 
 **The leaning is right, and it lands: a solution-layer node is a declared anchor.** It carries an identifier, a name and an owner, and asserts nothing further. Every substantive claim stays inside a document, where freshness and the check layer reach it. This is what `code_path` already does, and its generalization costs no new machinery.
 
@@ -454,7 +453,7 @@ Twenty-seven changes follow, and all are applied.
 | [Spec 7](../spec/07-distribution-and-federation.md#waivers) | A withholding rule is not waivable |
 | [Spec 12](../spec/12-check-layer.md#the-correctness-roots) | The filter of an export profile is the one correctness root whose defect nobody can repair |
 
-[Spec 11 §O](../spec/11-adjacent-work.md#o--the-serving-boundary-descriptors-redaction-and-the-write-path) records the sources above, with what each one confirms, sharpens, or contradicts. Sections [§A.1](../spec/11-adjacent-work.md#a1-the-solution-layer-presses-on-that-boundary), [§E](../spec/11-adjacent-work.md#e-opengeo--same-substrate-opposite-direction), [§I.5](../spec/11-adjacent-work.md#i5-the-presentation-is-the-lesson) and [§L.6](../spec/11-adjacent-work.md#l6-a-filter-in-the-tool-layer-is-advisory-and-the-documentation-says-so) move from recorded to decided, and §I.5 carries a correction: the `llms.txt` file that it called Q14 already shipped by somebody else is now measured, and almost nobody reads it.
+[HW-EVAL-adjacent-work §O](../evaluations/adjacent-work.md#o--the-serving-boundary-descriptors-redaction-and-the-write-path) records the sources above, with what each one confirms, sharpens, or contradicts. Sections [§A.1](../evaluations/adjacent-work.md#a1-the-solution-layer-presses-on-that-boundary), [§E](../evaluations/adjacent-work.md#e-opengeo--same-substrate-opposite-direction), [§I.5](../evaluations/adjacent-work.md#i5-the-presentation-is-the-lesson) and [§L.6](../evaluations/adjacent-work.md#l6-a-filter-in-the-tool-layer-is-advisory-and-the-documentation-says-so) move from recorded to decided, and §I.5 carries a correction: the `llms.txt` file that it called Q14 already shipped by somebody else is now measured, and almost nobody reads it.
 
 The [glossary](../spec/glossary.md) gains **corpus descriptor**, **export profile**, **tombstone grain** and **withholding**. Its **export**, **external anchor**, **MCP server**, **projection** and **promotion** entries are corrected, and two pairs join the table of distinctions that the design depends on.
 

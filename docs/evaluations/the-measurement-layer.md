@@ -18,8 +18,6 @@ relations:
     - HW-SPEC-assurance-model
     - HW-SPEC-ai-integration
     - HW-SPEC-engine-architecture
-    - HW-SPEC-theoretical-foundations
-    - HW-SPEC-adjacent-work
     - HW-SPEC-check-layer
     - HW-SPEC-glossary
 ---
@@ -56,7 +54,7 @@ Twenty claims across the specification and the evaluations name an instrument. T
 | Publishing the read set lets a gate skip a re-run ([Q21](../spec/09-open-questions.md#q21--terminological-succession-and-validity-under-merge)) | the fraction of merges whose read set the other side never touched | history measurement | Needs the engine. The exposure prior is measured |
 | Declarative voice is detectable at useful precision ([Q5](../spec/09-open-questions.md#q5--voice-checking-depth)) | an adjudicated sample of 50 findings per category | human adjudication | Specified in full, and unrun |
 | Working-tree write tools raise the assisted fraction ([Q7](../spec/09-open-questions.md#q7--scope-of-the-mcp-surface)) | the assisted fraction with the tools on and off | engine metric, paired | **No design exists for the pair.** One team cannot author the same corpus twice, and the arms contaminate each other. The metric now has a store, and the store carries no term that names which arm produced a reading. [HW-OBL-0004](../obligations/0004-working-tree-write-tools-have-no-measured-effect.md) records that the issue registering a write tool owes one |
-| Transition continuity measures coherence ([spec 10 §G](../spec/10-theoretical-foundations.md#what-the-theory-did-not-settle)) | the distribution across healthy and unhealthy corpora | comparison | **The comparison set does not exist**, and nothing in the specification defines what labels a corpus healthy |
+| Transition continuity measures coherence ([HW-EVAL-theoretical-foundations §G](../evaluations/theoretical-foundations.md#what-the-theory-did-not-settle)) | the distribution across healthy and unhealthy corpora | comparison | **The comparison set does not exist**, and nothing in the specification defines what labels a corpus healthy |
 
 ### What the audit shows
 
@@ -66,7 +64,7 @@ Twenty claims across the specification and the evaluations name an instrument. T
 
 **Fourteen of the twenty claims are not the probe layer's problem at all.** They belong to `taxonomy audit`, the coverage report, fixture sets, or human adjudication. Every one of them is equally unbuilt, so the probe layer is not the bottleneck that the sweep's language implies. What the probe layer owns is the claim that no other instrument can reach: that the corpus changes what an agent does.
 
-**Two promises name instruments that cannot exist as written.** [Q7](../spec/09-open-questions.md#q7--scope-of-the-mcp-surface) wants an A/B over authoring behavior, where the unit is a team over months and the arms cannot be isolated. [Spec 10](../spec/10-theoretical-foundations.md#what-the-theory-did-not-settle) wants a comparison across healthy and unhealthy corpora, and nothing defines the labels. Both are recorded here rather than repaired, because each belongs to the entry that made it.
+**Two promises name instruments that cannot exist as written.** [Q7](../spec/09-open-questions.md#q7--scope-of-the-mcp-surface) wants an A/B over authoring behavior, where the unit is a team over months and the arms cannot be isolated. [HW-EVAL-theoretical-foundations](../evaluations/theoretical-foundations.md#what-the-theory-did-not-settle) wants a comparison across healthy and unhealthy corpora, and nothing defines the labels. Both are recorded here rather than repaired, because each belongs to the entry that made it.
 
 ## What the specification already fixed
 
@@ -74,7 +72,7 @@ Nine rulings bind this group, and neither entry may revisit them.
 
 **No LLM in the validation path, and no network at check time.** [Spec 0](../spec/00-vision-and-scope.md#non-negotiables) and [spec 5](../spec/05-ai-integration.md#what-we-do-not-do) put both beyond argument. A probe calls a model over a network, so a probe is never a check and never gates.
 
-**The grader is never the system under test, and a published claim carries its counterfactual.** [Spec 5](../spec/05-ai-integration.md#measuring-whether-any-of-this-works) and [spec 11 §M](../spec/11-adjacent-work.md#m--what-the-survey-shows-as-a-whole-convergence-is-not-evidence) settle both, against measured evidence about what a weak grader returns.
+**The grader is never the system under test, and a published claim carries its counterfactual.** [Spec 5](../spec/05-ai-integration.md#measuring-whether-any-of-this-works) and [HW-EVAL-adjacent-work §M](../evaluations/adjacent-work.md#m--what-the-survey-shows-as-a-whole-convergence-is-not-evidence) settle both, against measured evidence about what a weak grader returns.
 
 **A sampler is not a check.** [Spec 12](../spec/12-check-layer.md#where-the-llm-coherence-sweep-fits) puts the coherence sweep outside the cached reproducible path, marks its provenance `agent`, and forbids it from gating. A probe is the same class of component.
 
@@ -98,11 +96,11 @@ Nine rulings bind this group, and neither entry may revisit them.
 
 The transfer is exact and it contradicts Q20's own premise. Q20 says that edge cues "have no such place" for a sibling comparison. They do. The comparison set for a document's summary is the other documents a reader is choosing between. The comparison set for a cue on an edge is **the other outbound cues of the document the reader is holding**. That is the choice set at the moment of traversal, and foraging theory says it is exactly where scent is evaluated.
 
-**The CHI work on programmer navigation confirms the placement of the cue.** Lawrance, Bogart, Burnett and colleagues model debugging as foraging over a code base, and their PFIS family of models scores the cues a programmer can see from the current position. The cue is the word or the link in the source, not a property of the destination. This session could not fetch the paper, and the claim rests on memory. It agrees with what [spec 11 §L.3](../spec/11-adjacent-work.md#l3-where-scent-lives--the-first-substantive-disagreement) already recorded from Serena's shipped convention, which is an observed application at the scale of tens of thousands of repositories.
+**The CHI work on programmer navigation confirms the placement of the cue.** Lawrance, Bogart, Burnett and colleagues model debugging as foraging over a code base, and their PFIS family of models scores the cues a programmer can see from the current position. The cue is the word or the link in the source, not a property of the destination. This session could not fetch the paper, and the claim rests on memory. It agrees with what [HW-EVAL-adjacent-work §L.3](../evaluations/adjacent-work.md#l3-where-scent-lives--the-first-substantive-disagreement) already recorded from Serena's shipped convention, which is an observed application at the scale of tens of thousands of repositories.
 
 **Information-retrieval evaluation supplies the cost structure of a test collection, and one durable warning.** The Cranfield paradigm builds a reusable collection once — topics, documents, and relevance judgments — and amortizes it over many systems. TREC scaled that with pooling, because judging every document against every topic does not scale. Two lessons transfer. A probe suite is a test collection, so its cost is a large one-time authoring cost and a small per-run cost, which is the opposite of the recurring-spend model that Q8 assumes. And Voorhees measured what happens when the judgments themselves vary between assessors: absolute scores move, and the **relative ranking of systems is stable**. This session could not re-fetch that paper. The transfer stands on its own terms and is the reason the design measures a difference between two arms rather than a level.
 
-**LLM-as-judge validity is measured, and it decides the grader.** Zheng and colleagues name position bias, verbosity bias, self-enhancement bias, and limited reasoning, and report over 80% agreement with human preference for a strong judge. That figure is the case *for* the instrument, and the corpus already records the case against it. [Spec 11 §M.3](../spec/11-adjacent-work.md#m3-the-grader-decides-the-answer-and-the-literature-proves-it) records a systematic comparison whose verdict reversed when the grading method changed, and an order reversal that produced opposite judgments. Read together: an LLM judge is good enough to agree with humans on average and not good enough to carry a claim that its author has an interest in. Headwater's answer is not a better judge. It is to have no judge.
+**LLM-as-judge validity is measured, and it decides the grader.** Zheng and colleagues name position bias, verbosity bias, self-enhancement bias, and limited reasoning, and report over 80% agreement with human preference for a strong judge. That figure is the case *for* the instrument, and the corpus already records the case against it. [HW-EVAL-adjacent-work §M.3](../evaluations/adjacent-work.md#m3-the-grader-decides-the-answer-and-the-literature-proves-it) records a systematic comparison whose verdict reversed when the grading method changed, and an order reversal that produced opposite judgments. Read together: an LLM judge is good enough to agree with humans on average and not good enough to carry a claim that its author has an interest in. Headwater's answer is not a better judge. It is to have no judge.
 
 **RAG evaluation practice already splits the two halves that this ruling separates.** RAGAS scores retrieval and generation on different axes: whether the retrieved context is relevant and focused, and whether the answer is faithful to it. The retrieval half is computable against a known answer set. The generation half needs a judge. The design below keeps the first half and refuses the second, which is the same split arrived at from the corpus side rather than the retrieval side.
 
@@ -112,7 +110,7 @@ The transfer is exact and it contradicts Q20's own premise. Q20 says that edge c
 
 **Golden sets and regression suites are the shipped industry pattern, and their shape is the cadence answer.** Every evaluation harness in current practice ships the same two tiers: a small fixed set that runs often against a recorded baseline to catch regressions, and a larger offline evaluation that runs rarely to establish a result. Canary and shadow evaluation in production machine learning is the same shape at a different scale. Nobody runs the powered comparison on every change, because it costs what it costs and because most changes do not move it.
 
-**The observed application for the counterfactual is that almost nobody runs one.** [Spec 11 §M.2](../spec/11-adjacent-work.md#m2-what-the-field-has-actually-measured) tabulates six adjacent projects, and not one compares behavior with its structure present against the same behavior without it. The closest published measurement of a machine-facing documentation surface is the `llms.txt` result that [Q14](../spec/09-open-questions.md#q14--discovery-surface) already carries: about 137,000 domains publish one and 97% of the valid files went unread in a month. That is what an unmeasured instrument surface looks like after it ships.
+**The observed application for the counterfactual is that almost nobody runs one.** [HW-EVAL-adjacent-work §M.2](../evaluations/adjacent-work.md#m2-what-the-field-has-actually-measured) tabulates six adjacent projects, and not one compares behavior with its structure present against the same behavior without it. The closest published measurement of a machine-facing documentation surface is the `llms.txt` result that [Q14](../spec/09-open-questions.md#q14--discovery-surface) already carries: about 137,000 domains publish one and 97% of the valid files went unread in a month. That is what an unmeasured instrument surface looks like after it ships.
 
 ## The decision — Q8
 
@@ -198,7 +196,7 @@ Two consequences follow, and both are cost rulings as much as cadence rulings.
 
 **A campaign runs as one batch or it is not one measurement.** A campaign spread over weeks is a campaign whose model may have moved inside it, which the drift measurement above makes concrete. One batch, one model version, one selection.
 
-**The regression tier cannot establish an effect and must not be read as if it does.** It runs one arm, so it has no counterfactual. Its output is a comparison against the previous run of itself, and a claim built on it is exactly the class that [spec 11 §M.2](../spec/11-adjacent-work.md#m2-what-the-field-has-actually-measured) tabulates.
+**The regression tier cannot establish an effect and must not be read as if it does.** It runs one arm, so it has no counterfactual. Its output is a comparison against the previous run of itself, and a claim built on it is exactly the class that [HW-EVAL-adjacent-work §M.2](../evaluations/adjacent-work.md#m2-what-the-field-has-actually-measured) tabulates.
 
 ### The envelope, derived
 
@@ -222,7 +220,7 @@ That does not remove the envelope, because an adopter's corpus is not this one. 
 
 ### The suite has its own health metric, and it is the same rule as every other rule
 
-[Principle 6](../spec/00-vision-and-scope.md#design-principles) applies to the instrument. **A probe whose two arms never differ measures nothing about the corpus** and is a candidate for deletion, in exactly the way that [spec 10](../spec/10-theoretical-foundations.md#what-the-theory-did-not-settle) says a transition-continuity distribution stable across every corpus measures nothing. A probe suite also ages, because a corpus tuned to a fixed suite stops learning from it — the contamination that the benchmark field spends most of its effort on. So the anti-overfitting rules that [spec 5](../spec/05-ai-integration.md#anti-overfitting) already carries gain one constraint: **a paraphrase varies the task statement and never the expectation**, and the rotation seed is part of the run identity so that a selection is reproducible even though a behavior is not.
+[Principle 6](../spec/00-vision-and-scope.md#design-principles) applies to the instrument. **A probe whose two arms never differ measures nothing about the corpus** and is a candidate for deletion, in exactly the way that [HW-EVAL-theoretical-foundations](../evaluations/theoretical-foundations.md#what-the-theory-did-not-settle) says a transition-continuity distribution stable across every corpus measures nothing. A probe suite also ages, because a corpus tuned to a fixed suite stops learning from it — the contamination that the benchmark field spends most of its effort on. So the anti-overfitting rules that [spec 5](../spec/05-ai-integration.md#anti-overfitting) already carries gain one constraint: **a paraphrase varies the task statement and never the expectation**, and the rotation seed is part of the run identity so that a selection is reproducible even though a behavior is not.
 
 ## The decision — Q20
 
@@ -305,7 +303,7 @@ The first is the one to watch, because it is the whole argument for the cue. If 
 
 **Transcript retention.** A transcript is a committed snapshot, so it grows the repository like any other pin. The obvious policy is to keep every transcript of a published campaign and the last few regression runs, and nobody has measured the size of one.
 
-**Two promises that this evaluation records and does not repair.** [Q7](../spec/09-open-questions.md#q7--scope-of-the-mcp-surface)'s authoring A/B has no runnable design, because the arms cannot be isolated inside one team. [Spec 10](../spec/10-theoretical-foundations.md#what-the-theory-did-not-settle)'s healthy-against-unhealthy corpus comparison names a set that nothing defines. Each belongs to the entry that made it.
+**Two promises that this evaluation records and does not repair.** [Q7](../spec/09-open-questions.md#q7--scope-of-the-mcp-surface)'s authoring A/B has no runnable design, because the arms cannot be isolated inside one team. [HW-EVAL-theoretical-foundations](../evaluations/theoretical-foundations.md#what-the-theory-did-not-settle)'s healthy-against-unhealthy corpus comparison names a set that nothing defines. Each belongs to the entry that made it.
 
 **Whether an adopter ever runs a campaign at all.** The regression tier is cheap enough that it will run. A campaign costs a batch and a day, which is small in money and real in attention. If no adopter ever pays it, then principle 11 describes an obligation that nobody discharges, and the honest response is to say so rather than to lower the bar.
 
@@ -331,7 +329,7 @@ Eighteen changes follow, and all are applied.
 | [Spec 4](../spec/04-assurance-model.md#the-adaptive-layer-reports-cost-not-just-coverage) | The adaptive layer reports the cost of its own instrument, and efficacy is reported with an interval |
 | [Spec 4](../spec/04-assurance-model.md#a-verdict-is-about-one-state-of-the-corpus) | A probe result is a verdict about one state of the corpus, and the read set governs it |
 | [Spec 6](../spec/06-engine-architecture.md#cli) | `headwater probe` takes a tier and an arm, and the run identity is what it reports |
-| [Spec 10 §E.1](../spec/10-theoretical-foundations.md#e1-information-foraging--routing-has-a-theory) | Scent is a comparison over a choice set, which is what the foraging models compute |
+| [HW-EVAL-theoretical-foundations §E.1](../evaluations/theoretical-foundations.md#e1-information-foraging--routing-has-a-theory) | Scent is a comparison over a choice set, which is what the foraging models compute |
 | [Spec 12](../spec/12-check-layer.md#the-correctness-roots) | The probe grader joins the correctness roots, because a wrong grader produces systematically green results |
 
-[Spec 11 §R](../spec/11-adjacent-work.md#r--measuring-whether-the-corpus-works) records the sources above, with what each one confirms, sharpens, or contradicts. Two entries in [spec 9](../spec/09-open-questions.md) are rewritten as closed entries, and the [glossary](../spec/glossary.md) gains **probe**, **probe result**, **probe transcript**, **arm**, **campaign** and **cue**, with **counterfactual probe**, **efficacy** and **probe suite** corrected.
+[HW-EVAL-adjacent-work §R](../evaluations/adjacent-work.md#r--measuring-whether-the-corpus-works) records the sources above, with what each one confirms, sharpens, or contradicts. Two entries in [spec 9](../spec/09-open-questions.md) are rewritten as closed entries, and the [glossary](../spec/glossary.md) gains **probe**, **probe result**, **probe transcript**, **arm**, **campaign** and **cue**, with **counterfactual probe**, **efficacy** and **probe suite** corrected.

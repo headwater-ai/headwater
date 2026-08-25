@@ -32,7 +32,7 @@ The owner named LeanCTX and TrustGraph. **Neither is a competitor**, and the spe
 
 [LeanCTX](https://github.com/yvgude/lean-ctx) is a context-engineering layer for coding agents: one local Rust binary between agent and model that compresses what passes through. Apache-2.0, ~3.6k GitHub stars, 261k installs claimed, created March 2026, near-daily releases, roughly nine-tenths of commits from one author.
 
-- **The overlap is the Open Knowledge Format**, which LeanCTX defines and exports to. Spec 11 §I already rules: *"LeanCTX has our file format and none of our TBox… a shared serialization costs us nothing and threatens nothing."* Q13 places an OKF emitter **fifth** in the emitter order, triggered by LeanCTX as the named consumer.
+- **The overlap is the Open Knowledge Format**, which LeanCTX defines and exports to. HW-EVAL-adjacent-work §I already rules: *"LeanCTX has our file format and none of our TBox… a shared serialization costs us nothing and threatens nothing."* Q13 places an OKF emitter **fifth** in the emitter order, triggered by LeanCTX as the named consumer.
 - **Their pitch is token economics** (60–90% fewer tokens). Headwater's is whether the documents are *true*. Different layer, and the site should say so in one sentence rather than avoid the name.
 - **Commercially**: free open source for individuals, premium team features and cloud sync through Thinkery GmbH. The same free-core-paid-hosted shape Headwater is heading for.
 - **Their landing page**, for reference: hero problem statement *"Your agents re-read everything. Every single time."*, a logo wall, a named customer case study with two percentages, four capabilities, three vanity metrics (installs, stars, energy saved), an FAQ, and a one-line install. Eighteen languages. Product / Use Cases / Pricing / Enterprise navigation, 81 docs pages.
@@ -41,11 +41,11 @@ The owner named LeanCTX and TrustGraph. **Neither is a competitor**, and the spe
 
 [TrustGraph](https://trustgraph.ai/) is a containerized context-engineering platform, Apache-2.0, San Francisco, enterprise logos including Nvidia, AstraZeneca, McKinsey and the UK Government. Headline: *"Build a unified semantic context layer with a hypergraph."*
 
-Spec 11 §J states the difference exactly, and it is the cleanest sentence available for a comparison page:
+HW-EVAL-adjacent-work §J states the difference exactly, and it is the cleanest sentence available for a comparison page:
 
 > In Headwater, authors **declare** the graph: documents are the nodes, front-matter references are the typed edges, and no LLM issues a verdict. In TrustGraph, an LLM **extracts** the graph: documents are feedstock, dissolved into triples. Nothing in the platform governs the source documents — it mines them.
 
-Spec 11 also records TrustGraph as a **candidate integration, not a rival**: a governed corpus is an unusually good input to an extraction platform, because kinds, facets and declared edges arrive as structure the extractor would otherwise guess at.
+HW-EVAL-adjacent-work also records TrustGraph as a **candidate integration, not a rival**: a governed corpus is an unusually good input to an extraction platform, because kinds, facets and declared edges arrive as structure the extractor would otherwise guess at.
 
 **Commercially**: no published pricing. Three CTAs in the hero (Get Started → GitHub, a video, and a Calendly "Schedule a Chat"), a gated Playground preview, and inferred enterprise consulting. This is the *services* pattern, and it is the closer analogue to what Headwater wants to sell.
 
@@ -87,7 +87,7 @@ This also gives the site its best single line, which is already written in Q16:
 
 > A comparison page that carries its own counter-evidence is unusual enough to be the difference, and it is already written.
 
-Spec 11 contains arguments *against* Headwater — OpenGEO declining the standards stack for a neighbouring problem, TrustGraph shipping the opposite mechanism, Vale being the closest analog and in another language, and §M stating that the survey licenses no efficacy conclusion at all. Publishing that is the differentiator.
+HW-EVAL-adjacent-work contains arguments *against* Headwater — OpenGEO declining the standards stack for a neighbouring problem, TrustGraph shipping the opposite mechanism, Vale being the closest analog and in another language, and §M stating that the survey licenses no efficacy conclusion at all. Publishing that is the differentiator.
 
 ---
 
@@ -101,7 +101,7 @@ Marketing pages are hand-built. Everything under `/docs` and `/spec` is the gene
 |---|---|---|
 | `/` — landing | Answer "is this for me?" in under 30 seconds for a platform lead | Primary CTA: install line + tutorial. Secondary: book a call |
 | `/how-it-works` | Taxonomy → graph → checks → projections, in four diagrams | Sources: spec 1, 6, 12 |
-| `/compare` | LeanCTX, TrustGraph, Vale, plain linters, static-site generators — *including the arguments against us* | The strongest page. Content already exists in spec 11 |
+| `/compare` | LeanCTX, TrustGraph, Vale, plain linters, static-site generators — *including the arguments against us* | The strongest page. Content already exists in HW-EVAL-adjacent-work |
 | `/services` | Audit, consulting, and "hosted, later" | The revenue page. See §6 |
 | `/audit` | Fixed-price corpus audit — what you get, what it costs, how to start | The conversion page that is deliverable today |
 | `/proof` | Self-assessment. Live numbers from our own run, benchmark row explicitly empty | Marked self-published, per §I.4's standard applied to ourselves |
@@ -202,5 +202,5 @@ Specifics for the designer:
 - [LeanCTX](https://leanctx.com/) · [lean-ctx on GitHub](https://github.com/yvgude/lean-ctx) · [LeanCTX docs](https://leanctx.com/docs/)
 - [TrustGraph](https://trustgraph.ai/) · [trustgraph on GitHub](https://github.com/trustgraph-ai/trustgraph) · [TrustGraph docs](https://docs.trustgraph.ai/)
 - [Vale](https://vale.sh/) · [Vale docs](https://docs.vale.sh/) · [vale on GitHub](https://github.com/vale-cli/vale)
-- Internal: `docs/decisions/0016-public-presence.md`, `docs/evaluations/first-contact.md`, `docs/spec/11-adjacent-work.md` §I and §J, `docs/spec/00-vision-and-scope.md`, `README.md`
+- Internal: `docs/decisions/0016-public-presence.md`, `docs/evaluations/first-contact.md`, `docs/evaluations/adjacent-work.md` §I and §J, `docs/spec/00-vision-and-scope.md`, `README.md`
 - Measured: `headwater check` against this repository, 2026-08-23, taxonomy `headwater/standard 3.3.0`

@@ -19,6 +19,7 @@ relations:
     - HW-EVAL-graph-export-and-federation
     - HW-EVAL-the-measurement-layer
     - HW-EVAL-the-serving-boundary
+    - HW-EVAL-theoretical-foundations
     - HW-EVAL-warrant-and-adjudication
 ---
 
@@ -778,7 +779,7 @@ Each pair below is two concepts that read as one. The specification treats each 
 
 ## Where the borrowed terms come from
 
-Several terms are not ours. [Spec 10](10-theoretical-foundations.md) records the confrontation with each source, and this table gives the attribution in one place.
+Several terms are not ours. [HW-EVAL-theoretical-foundations](../evaluations/theoretical-foundations.md) records the confrontation with each source, and this table gives the attribution in one place.
 
 | Term | Source | What it contributes |
 |---|---|---|

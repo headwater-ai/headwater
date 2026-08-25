@@ -53,7 +53,7 @@ The corpus owes a statement of what the number measures, because two readings of
 
 Under the first reading the assisted fraction is a measure of the scaffolder against the declarations it can fill. That is what the arithmetic does, it is reproducible, and it is a useful design budget for a taxonomy. It is not a measure of author burden.
 
-Under the second reading it is the answer to Grudin, which [spec 10](../spec/10-theoretical-foundations.md#what-the-theory-did-not-settle) names as the strongest claim in the design. Capture cost is what an author pays. Under this reading a metric that never counts prose measures the cheap half of the work and reports a high number for it.
+Under the second reading it is the answer to Grudin, which [HW-EVAL-theoretical-foundations](../evaluations/theoretical-foundations.md#what-the-theory-did-not-settle) names as the strongest claim in the design. Capture cost is what an author pays. Under this reading a metric that never counts prose measures the cheap half of the work and reports a high number for it.
 
 Spec 3 uses the fraction in both ways in one section. It calls a rise in hand entry a sign that the taxonomy demands more than the tooling supports, which is the first reading. It then makes the fraction the test of the agent-authoring claim, which is the second.
 

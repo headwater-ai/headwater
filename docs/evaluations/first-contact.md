@@ -18,7 +18,6 @@ relations:
     - HW-SPEC-assurance-model
     - HW-SPEC-engine-architecture
     - HW-SPEC-distribution-and-federation
-    - HW-SPEC-adjacent-work
 ---
 
 # First contact — the Q11, Q12 and Q16 evaluation
@@ -83,7 +82,7 @@ Two more rulings constrain the site itself.
 
 ## Prior art and observed applications
 
-[Principle 10](../spec/00-vision-and-scope.md#design-principles) asks for the research literature and at least one observed industry application. The sources below are recorded in [spec 11 §S](../spec/11-adjacent-work.md#s--terms-on-ramps-and-being-found). What each one confirmed, sharpened or contradicted is stated here.
+[Principle 10](../spec/00-vision-and-scope.md#design-principles) asks for the research literature and at least one observed industry application. The sources below are recorded in [HW-EVAL-adjacent-work §S](../evaluations/adjacent-work.md#s--terms-on-ramps-and-being-found). What each one confirmed, sharpened or contradicted is stated here.
 
 ### What a relicensing costs, measured in forks
 
@@ -101,7 +100,7 @@ Two things transfer, and one of them contradicts a common reading.
 
 **What it contradicts.** The reading that a relicensing simply destroys a project is not what these cases show. Terraform and Elasticsearch both still exist and both still sell. What the cases show is narrower and more useful: the license change bought the licensor a permanent, well-funded fork, transferred stewardship of the open version to a foundation controlled by others, and cost the name. Valkey and OpenTofu both live under the Linux Foundation. The trademark was the only asset that stayed.
 
-Three details could not be verified within this evaluation's budget and are marked rather than presented as read: the number of companies and engineers pledged to OpenTofu, the dates and license identifiers of the 2021 Elastic change and the OpenSearch fork, and Redis's own relicensing sequence. The web-search budget for this session was exhausted, and the pages above were fetched directly. This is [spec 11 §R](../spec/11-adjacent-work.md#r--measuring-whether-the-corpus-works)'s convention, applied to a source that was not reachable rather than to one that was paywalled.
+Three details could not be verified within this evaluation's budget and are marked rather than presented as read: the number of companies and engineers pledged to OpenTofu, the dates and license identifiers of the 2021 Elastic change and the OpenSearch fork, and Redis's own relicensing sequence. The web-search budget for this session was exhausted, and the pages above were fetched directly. This is [HW-EVAL-adjacent-work §R](../evaluations/adjacent-work.md#r--measuring-whether-the-corpus-works)'s convention, applied to a source that was not reachable rather than to one that was paywalled.
 
 ### The contribution agreement is the relicensing lever
 
@@ -153,7 +152,7 @@ Read against the three entries, the mapping is exact and it explains the sequenc
 
 | Attribute | What supplies it here | State |
 |---|---|---|
-| Relative advantage | Spec 0's thesis, and spec 11's comparison against every adjacent tool | Argued, unmeasured ([principle 11](../spec/00-vision-and-scope.md#design-principles)) |
+| Relative advantage | Spec 0's thesis, and the comparison against every adjacent tool in [HW-EVAL-adjacent-work](adjacent-work.md) | Argued, unmeasured ([principle 11](../spec/00-vision-and-scope.md#design-principles)) |
 | Compatibility | Principle 1 — the adopter's taxonomy, not ours. Q13's emitters | Specified |
 | Complexity | Q3's minimal base and the interview | Specified |
 | Trialability | Q11's terms, and Q12's on-ramp | Q11 pending, Q12 closes here |
@@ -187,7 +186,7 @@ Two of the five are refused by rulings already made, and one is refused for the 
 
 **Base package and bundles: the same terms as the engine.** Constraint 3 requires only that they impose nothing on a derived taxonomy, and Apache-2.0 does not. A separate public-domain dedication would also satisfy the constraint and would cost a second license to explain. One set of terms for everything a machine reads is the simpler position, and simplicity is a Q11 criterion because the adopter reads this before they read anything else.
 
-**Doctrine prose: Creative Commons Attribution 4.0.** The doctrine is prose that explains a method, vendored into consumers under [spec 7](../spec/07-distribution-and-federation.md#what-is-shared-and-what-is-not). A software license applied to prose is a category error that a reviewer will notice, and [spec 11 §P.7](../spec/11-adjacent-work.md#p7-debian-settles-redistribution-by-segregating-the-archive) already records the precedent for separating terms by content class. The boundary is mechanical rather than a matter of judgment: `contents.doctrine` in the package declaration is one of the six content paths, so the line is already drawn in the schema.
+**Doctrine prose: Creative Commons Attribution 4.0.** The doctrine is prose that explains a method, vendored into consumers under [spec 7](../spec/07-distribution-and-federation.md#what-is-shared-and-what-is-not). A software license applied to prose is a category error that a reviewer will notice, and [HW-EVAL-adjacent-work §P.7](../evaluations/adjacent-work.md#p7-debian-settles-redistribution-by-segregating-the-archive) already records the precedent for separating terms by content class. The boundary is mechanical rather than a matter of judgment: `contents.doctrine` in the package declaration is one of the six content paths, so the line is already drawn in the schema.
 
 **Contributions: the Developer Certificate of Origin, and no CLA.** State the reason positively. The unique power a CLA confers is the power to relicense later without asking, and the recommendation is not to want that power. A DCO makes that promise structural. This forecloses a future dual-licensing business, and that is the intent.
 
@@ -266,7 +265,7 @@ That claim is therefore **unmeasured**, as [principle 11](../spec/00-vision-and-
 
 ### Registration is publication into a channel whose reader is already obliged
 
-Q14 refused registration on the ground that no file inside a corpus performs it. That is right, and it is a symptom rather than the reason. The reason is that **registration is an act of publication, and a publication needs a channel whose reader is already obliged to read it.** A file inside a corpus fails because it is not in anybody's channel. `llms.txt` fails for the same reason at a larger radius: about 137,000 domains, 97% of valid files unread in a month, no provider obliged to read one ([spec 11 §O.3](../spec/11-adjacent-work.md#o3-llmstxt-is-the-measured-failure-of-a-descriptor-with-no-obliged-reader)). It is not a discovery surface, however cheap it is to write.
+Q14 refused registration on the ground that no file inside a corpus performs it. That is right, and it is a symptom rather than the reason. The reason is that **registration is an act of publication, and a publication needs a channel whose reader is already obliged to read it.** A file inside a corpus fails because it is not in anybody's channel. `llms.txt` fails for the same reason at a larger radius: about 137,000 domains, 97% of valid files unread in a month, no provider obliged to read one ([HW-EVAL-adjacent-work §O.3](../evaluations/adjacent-work.md#o3-llmstxt-is-the-measured-failure-of-a-descriptor-with-no-obliged-reader)). It is not a discovery surface, however cheap it is to write.
 
 Once registration is defined that way, the machine half closes with no new machinery, because Headwater already uses two channels that have obliged readers.
 
@@ -299,7 +298,7 @@ The entry says to draft the sitemap early because it is a forcing function, and 
 |---|---|---|
 | How it works, architecture | [Spec 6](../spec/06-engine-architecture.md), [spec 1](../spec/01-conceptual-model.md), [spec 12](../spec/12-check-layer.md) | Answered |
 | Benchmarks, metrics | Nothing. Every efficacy claim is marked unmeasured | **Empty, and must stay empty** |
-| Comparisons | [Spec 11](../spec/11-adjacent-work.md), [spec 8](../spec/08-design-departures.md), spec 0's table of what we do not build | Answered, and the strongest row |
+| Comparisons | [HW-EVAL-adjacent-work](../evaluations/adjacent-work.md), [spec 8](../spec/08-design-departures.md), spec 0's table of what we do not build | Answered, and the strongest row |
 | Use cases | The five adopters of the [Q3 walkthrough](default-taxonomy-first-run.md#five-first-runs) | Answered, from an evaluation |
 | Compatibility, integrations | [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate)'s six emitters, of which two ship | Answered, and the answer is "two" |
 | Docs, getting started | [Spec 3](../spec/03-authoring-and-lifecycle.md) and the [interview](../spec/07-distribution-and-federation.md#the-interview) | Partial. No quickstart, because there is nothing to start |
@@ -312,7 +311,7 @@ The entry says to draft the sitemap early because it is a forcing function, and 
 
 Four rows are answered from the specification, one from an evaluation, one is partial, two are blocked on Q11, one is empty by principle 11, and one is worth approximately nothing. **The forcing function worked, and what it found is that the largest hole in the public story is the one the project has decided it may not fill.** The benchmark row is empty not because the work is pending but because principle 11 forbids a number that no run produced, and it will stay empty until a campaign runs.
 
-The second finding is quieter and more useful. The comparison row is the strongest asset this project has, because spec 11 already carries counter-evidence against Headwater — OpenGEO declining the stack, TrustGraph shipping the opposite mechanism, Vale being the closest analog and being in another language, and §M stating that the survey licenses no efficacy conclusion at all. A comparison page that includes the arguments against the thing is unusual enough to be the differentiator, and it costs nothing because it is already written.
+The second finding is quieter and more useful. The comparison row is the strongest asset this project has, because [HW-EVAL-adjacent-work](adjacent-work.md) already carries counter-evidence against Headwater — OpenGEO declining the stack, TrustGraph shipping the opposite mechanism, Vale being the closest analog and being in another language, and §M stating that the survey licenses no efficacy conclusion at all. A comparison page that includes the arguments against the thing is unusual enough to be the differentiator, and it costs nothing because it is already written.
 
 ### Honest before impressive, made mechanical
 
@@ -359,7 +358,7 @@ That sentence was true when this evaluation ran, and it is no longer true. The o
 | 7 | Registration is publication into a channel with an obliged reader, and the package channel and the served page are the two that exist | [Spec 7](../spec/07-distribution-and-federation.md#arriving-at-a-corpus-cold) |
 | 8 | A registry or directory of Headwater corpora is refused, not deferred | [Spec 0](../spec/00-vision-and-scope.md#what-we-do-not-build) |
 | 9 | The public site is a projection of this corpus, rendered by a third-party generator, and every published number comes from the evidence register | [Spec 4](../spec/04-assurance-model.md#the-systems-own-assurance) |
-| 10 | The prior art for terms, on-ramps and being found | [Spec 11 §S](../spec/11-adjacent-work.md#s--terms-on-ramps-and-being-found) and its summary table |
+| 10 | The prior art for terms, on-ramps and being found | [HW-EVAL-adjacent-work §S](../evaluations/adjacent-work.md#s--terms-on-ramps-and-being-found) and its summary table |
 | 11 | The register is no longer a list of deferrals, and what remains live across it is stated once rather than reconstructed | [Spec 9](../spec/09-open-questions.md) |
 | 12 | The repository has no stated license, and a reader should learn that from the README rather than from its absence | [README](../../README.md) |
 

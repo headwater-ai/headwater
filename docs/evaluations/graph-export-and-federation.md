@@ -18,7 +18,6 @@ relations:
     - HW-SPEC-taxonomy-model
     - HW-SPEC-engine-architecture
     - HW-SPEC-distribution-and-federation
-    - HW-SPEC-adjacent-work
     - HW-SPEC-check-layer
     - HW-SPEC-glossary
 ---
@@ -93,7 +92,7 @@ This contradicts the casual half of the Q6 leaning, which offered "a committed J
 
 **CodeQL is the honest contradiction.** A CodeQL database is created from source, uploaded as an artifact, and *is* the query surface. A derived store as the query surface is a shipped design at very large scale. What CodeQL never does is treat the database as canonical for the code, and nobody reviews a database in a pull request. Headwater declines the pattern on its own stated constraints — offline, deterministic, reviewable in a diff — and not on a claim that the pattern fails. That distinction belongs in the record.
 
-**OKF and TrustGraph point the other way and are already recorded.** [Spec 11 §I.2](../spec/11-adjacent-work.md#i2-the-arrow-points-the-other-way-and-that-is-the-whole-difference) and [§J](../spec/11-adjacent-work.md#j-trustgraph--the-same-pitch-the-opposite-mechanism) hold a durable graph store with text projected out of it. Both work. Neither shares spec 0's non-negotiables.
+**OKF and TrustGraph point the other way and are already recorded.** [HW-EVAL-adjacent-work §I.2](../evaluations/adjacent-work.md#i2-the-arrow-points-the-other-way-and-that-is-the-whole-difference) and [§J](../evaluations/adjacent-work.md#j-trustgraph--the-same-pitch-the-opposite-mechanism) hold a durable graph store with text projected out of it. Both work. Neither shares spec 0's non-negotiables.
 
 ### Model-first emission, and what happens when emitters chain
 
@@ -209,7 +208,7 @@ So a source export that the aggregator cannot read is a **finding that names the
 
 **The census is the mechanism for the tombstone rule.** Q17 requires that a filtered view reports "3 documents withheld" and never looks complete. A redaction is a loss with a reason, and the projection census already reports exactly that shape. Q17 needs no new machinery for its most important constraint.
 
-**Harvest moves the filtering point, and this is the constraint that Q17 most needs.** The aggregator holds bytes that a publishing corpus gave it. A filter applied at the aggregator's read step is applied after the bytes crossed the boundary, which is [Serena's failure](../spec/11-adjacent-work.md#l6-a-filter-in-the-tool-layer-is-advisory-and-the-documentation-says-so) restated at a different layer. Filtering belongs to the publishing corpus's export step.
+**Harvest moves the filtering point, and this is the constraint that Q17 most needs.** The aggregator holds bytes that a publishing corpus gave it. A filter applied at the aggregator's read step is applied after the bytes crossed the boundary, which is [Serena's failure](../evaluations/adjacent-work.md#l6-a-filter-in-the-tool-layer-is-advisory-and-the-documentation-says-so) restated at a different layer. Filtering belongs to the publishing corpus's export step.
 
 **`exportable_as` and the loss set give a redaction somewhere generated and checked to live.** Q17 does not have to invent a declaration surface.
 
@@ -255,7 +254,7 @@ Fourteen changes follow, and all are applied.
 | [Spec 7](../spec/07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it) | The aggregator is a solution corpus plus one anchor kind. There is no merged graph |
 | [Spec 7](../spec/07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it) | Harvest and never fan-out, with an unreadable pin as a finding |
 | [Spec 7](../spec/07-distribution-and-federation.md#upstream-awareness) | One pin pattern, three instances |
-| [Spec 11 §N](../spec/11-adjacent-work.md#n--transmission-harvest-and-the-declared-subset) | The ten sources above, and what each confirms, sharpens, or contradicts |
+| [HW-EVAL-adjacent-work §N](../evaluations/adjacent-work.md#n--transmission-harvest-and-the-declared-subset) | The ten sources above, and what each confirms, sharpens, or contradicts |
 | [Spec 12](../spec/12-check-layer.md#exportable_as-is-a-set-with-a-partition-rule) | `exportable_as` as a target set, the partition rule, and the equivalence bar |
 | [Spec 12](../spec/12-check-layer.md#the-correctness-roots) | The graph projector's correctness root is the census, and the Q6 reference is updated |
 

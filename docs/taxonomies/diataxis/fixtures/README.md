@@ -27,7 +27,7 @@ The entry sits outside the corpus root on purpose. A run that walked it would co
 | `docs/specifications/the-delivery-api.md` | `specification` | `reference` | The description: fields, types and admitted values, and no reasoning |
 | `docs/specifications/why-delivery-is-at-least-once.md` | `specification` | `explanation` | The argument: no task and no field list |
 | `docs/specifications/beacon-overview.md` | `specification` | unset | The page that mixes explanation and reference, which nobody has split |
-| `docs/decisions/0001-sign-every-payload.md` | `decision` | unset | The kind that no mode fits, which spec 10 names |
+| `docs/decisions/0001-sign-every-payload.md` | `decision` | unset | The kind that no mode fits, which the theoretical-foundations evaluation names |
 | `docs/specifications/publish-a-release.md` | `specification` | `cookbook` | The planted defect: a fifth name for a mode the set already has |
 
 ## What a run reports

@@ -14,12 +14,11 @@ provenance:
 relations:
   cited_by:
     - HW-REG-decisions
-    - HW-SPEC-adjacent-work
 ---
 
 # The Headwater taxonomy in LinkML — a worked example
 
-Evidence for [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate). [Spec 11](../spec/11-adjacent-work.md#c-linkml--the-uncomfortable-one) claimed LinkML covers the "structural half" of [spec 2](../spec/02-taxonomy-model.md) and none of the "governance half". Writing it out shows that framing was wrong — and the real boundary is more useful than the one I guessed.
+Evidence for [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate). [HW-EVAL-adjacent-work](../evaluations/adjacent-work.md#c-linkml--the-uncomfortable-one) claimed LinkML covers the "structural half" of [spec 2](../spec/02-taxonomy-model.md) and none of the "governance half". Writing it out shows that framing was wrong — and the real boundary is more useful than the one I guessed.
 
 ## The schema
 
@@ -262,7 +261,7 @@ Three of the twenty research-derived changes (SKOS mappings, PROV alignment, adv
 
 ## Where it stops — and the boundary is not the one I claimed
 
-Spec 11 said the split was **structural versus governance**. It is not. Look at what actually fails:
+[HW-EVAL-adjacent-work](adjacent-work.md) said the split was **structural versus governance**. It is not. Look at what actually fails:
 
 - **Reciprocity.** `supersedes` requires the target to link back. LinkML cannot say this. Neither can SHACL without dropping to SPARQL.
 - **`conflicts_with` invalid when both endpoints are current.** The rule above enforces the one constraint whose slots live on a single instance. The constraint we actually want reads *the target's* `status` — and per-instance validation does not see it.

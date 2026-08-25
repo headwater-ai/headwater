@@ -41,7 +41,7 @@ There is a coherent version of the proposal. Name it, so that no one adopts it b
 
 ### The boundary is the export step, not the tier
 
-The open-question entry placed enforcement at the federated layer: "the federated graph is a filtered view, and the filtering happens there". That is one tier too far out, on the entry's own argument. A harvesting tier holds pinned, committed exports, so a filter that the tier applies acts on bytes that already crossed the boundary. That is [Serena's failure](../spec/11-adjacent-work.md#l6-a-filter-in-the-tool-layer-is-advisory-and-the-documentation-says-so) at one remove, and the entry diagnosed that failure and then reproduced it.
+The open-question entry placed enforcement at the federated layer: "the federated graph is a filtered view, and the filtering happens there". That is one tier too far out, on the entry's own argument. A harvesting tier holds pinned, committed exports, so a filter that the tier applies acts on bytes that already crossed the boundary. That is [Serena's failure](../evaluations/adjacent-work.md#l6-a-filter-in-the-tool-layer-is-advisory-and-the-documentation-says-so) at one remove, and the entry diagnosed that failure and then reproduced it.
 
 So the serving boundary is the **export step of each publishing corpus** ([spec 6](../spec/06-engine-architecture.md#an-export-profile-carries-a-filter)). A corpus decides what leaves it, and what reaches a tier is already what that tier may hold.
 
@@ -49,7 +49,7 @@ So the serving boundary is the **export step of each publishing corpus** ([spec 
 
 A filter that runs at export runs when nobody is reading. There is no request, no session, and no reader to identify. So a corpus filters for an **audience** and never for a person, and Headwater has no principals.
 
-That is the model with an enforcement story rather than a limitation accepted reluctantly. The bytes of a filtered export live in a repository. The platform's permissions on that repository decide who reads them, exactly as they do for the Markdown. Two permission systems become one, which is what the entry asked for and could not reach while it imagined a filter at request time. The identity branch closes with it. Capability systems and centralized authorization services answer whether a principal may act on an object now, and Headwater never asks that ([spec 11 §O](../spec/11-adjacent-work.md#o--the-serving-boundary-descriptors-redaction-and-the-write-path)).
+That is the model with an enforcement story rather than a limitation accepted reluctantly. The bytes of a filtered export live in a repository. The platform's permissions on that repository decide who reads them, exactly as they do for the Markdown. Two permission systems become one, which is what the entry asked for and could not reach while it imagined a filter at request time. The identity branch closes with it. Capability systems and centralized authorization services answer whether a principal may act on an object now, and Headwater never asks that ([HW-EVAL-adjacent-work §O](../evaluations/adjacent-work.md#o--the-serving-boundary-descriptors-redaction-and-the-write-path)).
 
 ### The mechanism, and what it did not need
 
@@ -89,7 +89,7 @@ Shelf and kind names leak organizational structure. Counts and edge shapes leak 
 
 ### What may be a node
 
-**Declared anchors, and there are now two arguments.** The first is the entry's, and it is about truth. A node that asserts a service's properties takes on an obligation to stay true, and nothing in the design carries it. Its drift then reads as structural rather than editorial ([spec 11 §A.1](../spec/11-adjacent-work.md#a1-the-solution-layer-presses-on-that-boundary)).
+**Declared anchors, and there are now two arguments.** The first is the entry's, and it is about truth. A node that asserts a service's properties takes on an obligation to stay true, and nothing in the design carries it. Its drift then reads as structural rather than editorial ([HW-EVAL-adjacent-work §A.1](../evaluations/adjacent-work.md#a1-the-solution-layer-presses-on-that-boundary)).
 
 The second is about enforcement, and it did not exist before the ruling above. A filter has nothing to attach to on a node that carries properties. A document has facets that a predicate reads, and an anchor is carried whole or withheld whole. Declared anchors are what make a solution-layer export filterable at all ([spec 7](../spec/07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)). Revisit only against a concrete need that the anchor form cannot meet, argued as the model change that it would be.
 
@@ -109,7 +109,7 @@ So the project takes on three things, and they arrive with the first filtered pr
 
 **The trigger is a published claim, which is more useful than a category.** One vendor's servicing criteria decide whether a report earns a security fix by asking whether it violates a **published** boundary. The same document lists what is deliberately not one. A project does not become security software by writing a filter. It becomes security software by publishing a sentence that says a boundary holds. So [spec 6](../spec/06-engine-architecture.md#what-a-filtered-export-claims-and-what-it-does-not) states one claim and five non-claims. The non-claims are the more useful half, because they turn the tombstone channel, the shape leak and the revocation lag into stated limits.
 
-**One hole under the premise, recorded rather than answered.** Enforcement rests on the platform's repository permissions, and commits in a fork network stay reachable across that network by the platform's own account ([spec 11 §O.12](../spec/11-adjacent-work.md#o12-the-platform-permission-that-this-design-leans-on-has-a-documented-hole)). The premise holds for the current tip of a repository that was never forked and never changed visibility. It is qualified otherwise, and no alternative placement is better.
+**One hole under the premise, recorded rather than answered.** Enforcement rests on the platform's repository permissions, and commits in a fork network stay reachable across that network by the platform's own account ([HW-EVAL-adjacent-work §O.12](../evaluations/adjacent-work.md#o12-the-platform-permission-that-this-design-leans-on-has-a-documented-hole)). The premise holds for the current tip of a repository that was never forked and never changed visibility. It is qualified otherwise, and no alternative placement is better.
 
 **Sub-repository filtering is refused, not deferred.** Within one repository a clone is total, so any filter placed there controls one reading path while the bytes stay readable along another. An adopter who needs a contractor to read one shelf and not another puts the other shelf in a second repository and federates it in. The cost is real and stated. The alternative is a control that we would have to call advisory in the one place where advisory is a defect.
 
