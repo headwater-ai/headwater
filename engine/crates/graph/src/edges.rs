@@ -91,6 +91,18 @@ pub struct Edge {
 /// `taxonomy audit` counts the halves that carry one.
 pub const CUE: &str = "cue";
 
+/// The instance attribute that carries the pinned revision an imported edge was
+/// checked against.
+///
+/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#instance-attributes-and-which-end-owns-each-one)
+/// declares it by this name, owned by the edge. It is here beside [`CUE`] for
+/// the reason [`CUE`] is here: two crates read it and neither may depend on the
+/// other. `headwater_import::write` writes it, `headwater_check::suspect`
+/// compares it against the revision the resolver answered with, and
+/// `headwater-import` already depends on `headwater-check`, so the name has to
+/// sit under both of them.
+pub const VERIFIED_REVISION: &str = "verified_revision";
+
 /// The declaring end of an edge.
 #[derive(Clone, Debug)]
 pub struct Source {
@@ -119,6 +131,10 @@ pub enum Target {
         normalized: String,
         /// The corpus exclusion that claims the target, when one does.
         excluded_by: Option<String>,
+        /// What the resolver's source says the target is at now, carried
+        /// through from [`crate::anchors::Binding::Resolved`]. `None` for every
+        /// resolver but a committed snapshot's.
+        revision: Option<String>,
     },
     /// The source withheld the target under a declared export filter. Never a
     /// defect, and never counted as one.
@@ -557,6 +573,7 @@ fn bind(
             Binding::Resolved {
                 normalized,
                 excluded_by,
+                revision,
             } => Target::Anchor {
                 anchor_kind: anchor_kind.to_string(),
                 resolver: declarations
@@ -565,6 +582,7 @@ fn bind(
                     .unwrap_or_default(),
                 normalized,
                 excluded_by,
+                revision,
             },
             Binding::Withheld { profile } => Target::Withheld {
                 anchor_kind: anchor_kind.to_string(),
@@ -650,6 +668,19 @@ mod tests {
             resolver: "source-tree".to_string(),
             normalized: ".claude/hooks/lib.sh".to_string(),
             excluded_by: None,
+            revision: None,
+        }
+    }
+
+    /// The same anchor, at a revision. A snapshot resolver answers with one and
+    /// the source tree never does, so this is the second shape of one binding.
+    fn pinned(revision: &str) -> Target {
+        Target::Anchor {
+            anchor_kind: "ado_work_item".to_string(),
+            resolver: "ado-snapshot".to_string(),
+            normalized: "12345".to_string(),
+            excluded_by: None,
+            revision: Some(revision.to_string()),
         }
     }
 
@@ -698,10 +729,18 @@ mod tests {
             resolver: "source-tree".to_string(),
             normalized: ".claude/hooks/lib.sh".to_string(),
             excluded_by: Some("engine/**".to_string()),
+            revision: None,
         };
         let others = [
             excluded,
             gone(),
+            // One identity at two revisions. Nothing else about these two
+            // differs: same anchor kind, same resolver, same normalized
+            // string. A rendering that dropped the revision would give them one
+            // key, and `relation.target.suspect` would then be served its own
+            // stale verdict on every run after the first.
+            pinned("7"),
+            pinned("8"),
             Target::Withheld {
                 anchor_kind: "code_path".to_string(),
                 profile: "public".to_string(),

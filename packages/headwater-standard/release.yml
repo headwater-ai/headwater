@@ -24,12 +24,36 @@
 release:
   format: 1
   package: headwater/standard
-  version: 3.2.0
+  version: 3.3.0
   requires_engine: ">=0.1 <2"
-  digest: sha256:4b09910033403b46a962afdb6518ed9cf39fa0dc698c8a59dd3f3753025c7bc5
+  digest: sha256:2cdbf136ef7da4210f2e425a9e4089bad92d1a5e338ea0fb0f66b8959afafc7f
   members:
     - path: bundles/README.md
-      digest: sha256:d745062e663597082acbe54fcdfa5356c3bc15c5bba65f77c954177cfe9aaeb5
+      digest: sha256:c229aebd91789a39e9af7f870c76d33d5ca9ce35cf1bc9ef16e785e5a73ef9d7
+    - path: bundles/brd-prd/bundle.yml
+      digest: sha256:50e8df839603cf3fe1ff58aa28866b28601e194f1986e0e7efe01760405530ff
+    - path: bundles/brd-prd/doctrine.md
+      digest: sha256:5bfe0592c128d93c74309a94aadd9c2385e3f6a8f00b9cdfdca31c8ed666dc0b
+    - path: bundles/brd-prd/fixtures/README.md
+      digest: sha256:8ade5abdd0f9d61f7b48e5bdb5cf8fd98dd62b61fffc2031d88a9850e030a134
+    - path: bundles/brd-prd/fixtures/corpus/docs/requirements/delivery-slo/brd.md
+      digest: sha256:09175bf48db47cbd7a1546d59e715d696c27d3939b8a38b61944bfa147b47ffa
+    - path: bundles/brd-prd/fixtures/corpus/docs/requirements/delivery-slo/prd.md
+      digest: sha256:913231ca40cdfea2712b02e1fd83b5076802961d7788362ef11e954dcded73da
+    - path: bundles/brd-prd/fixtures/corpus/docs/requirements/self-serve-onboarding/brd.md
+      digest: sha256:f2e43e7011df1dace89944e064154013fe99f22f9c8917f488a3ac5f85c0df14
+    - path: bundles/brd-prd/fixtures/corpus/docs/requirements/self-serve-onboarding/prd.md
+      digest: sha256:09b87d836261e08583080ca66dce39d151c220515ab0507a838b9cb5f2fd0a25
+    - path: bundles/brd-prd/fixtures/corpus/docs/requirements/tenant-billing/brd.md
+      digest: sha256:e70ce20a746810e065a6bc4a6b00b3f7ed139c1af477de9f719711602dd330a0
+    - path: bundles/brd-prd/fixtures/corpus/docs/requirements/webhook-replay/brd.md
+      digest: sha256:b6f9890217580e2a80046bde012bba92f6d77e2caf63b0dffe8c1ce7e9ba1075
+    - path: bundles/brd-prd/fixtures/corpus/docs/requirements/webhook-replay/prd.md
+      digest: sha256:08a326633af2485003ac7a41d0be027e864d9c6d08312b44e37fcc717aa06450
+    - path: bundles/brd-prd/templates/brd.md
+      digest: sha256:9e8af08e04e10db061401e5030693f0e0d58edd3dd340c82161f90ea05db25cf
+    - path: bundles/brd-prd/templates/prd.md
+      digest: sha256:30779e8b59e168d2bafb522d3b9341dde18706493670004962f4d9c444df77d9
     - path: bundles/decision-record/bundle.yml
       digest: sha256:dfac204c8b8bddba13a81a5345633ace234d69b9eceef310ed3e0606c9a3b852
     - path: bundles/decision-record/doctrine.md
@@ -120,9 +144,37 @@ release:
       digest: sha256:a04f526ddd1275a8aa49e3fa8e924ae2a41d2b89d15668e4cf1d30e2069f9292
     - path: bundles/diataxis/fixtures/corpus/docs/specifications/why-delivery-is-at-least-once.md
       digest: sha256:e31287e426f06e0621b46f7276a38683ad55c08b24065da7476f58f9992cf882
+    - path: bundles/standards-spec/bundle.yml
+      digest: sha256:a269874010fd3d980a8d317f76f1dd260c44040798fc281264656e3be5eaa83a
+    - path: bundles/standards-spec/doctrine.md
+      digest: sha256:d844d9f85040171a6ef4b68671dd1832d09e4ae4e14debef2f147a4ce33513bf
+    - path: bundles/standards-spec/fixtures/README.md
+      digest: sha256:0dfd27274424d4a6168e919540cc51fd525d4dfada6421bc3a88c3a4dcf7781c
+    - path: bundles/standards-spec/fixtures/corpus/docs/component-specs/delivery/functional.md
+      digest: sha256:d98cb4eff3beb110b881e0e20a23603caefc14b6b0f8b71ac52d2cd166f35399
+    - path: bundles/standards-spec/fixtures/corpus/docs/component-specs/delivery/technical.md
+      digest: sha256:a494fc55c6f2a4d7165e241167780017a9792e0a490b6e1c88415dbd29cfcc35
+    - path: bundles/standards-spec/fixtures/corpus/docs/component-specs/ingest/functional.md
+      digest: sha256:b7185fa3d8537656dbdb807c796169b6d89a6314c3f80375f87dc99a5b77d916
+    - path: bundles/standards-spec/fixtures/corpus/docs/component-specs/signing/functional.md
+      digest: sha256:ee5d350166cb9b03bcda2033edffe55a3383a2ce6b3c3ede7ec8b0f6ec88c594
+    - path: bundles/standards-spec/fixtures/corpus/docs/component-specs/signing/technical.md
+      digest: sha256:9f5315295104285ae7e32af03a4def48501ee113582e0d2ade1aaeb4a96b626c
+    - path: bundles/standards-spec/fixtures/corpus/docs/component-specs/webhooks/functional.md
+      digest: sha256:f6888864b10dca5d0341bcc72492b5ff7c677851ca16d12a6331427b844bbaf8
+    - path: bundles/standards-spec/fixtures/corpus/docs/standards/api-design.md
+      digest: sha256:07fc664ac4fcfa0f29558b3b6943e708aa000fcfc50ffba87d4129effd9c0860
+    - path: bundles/standards-spec/fixtures/corpus/docs/standards/logging-baseline.md
+      digest: sha256:8e736e2263f7b508cc768fa9d45fd7a7f7f77087894520479546b8faf7dd0db4
+    - path: bundles/standards-spec/templates/functional_spec.md
+      digest: sha256:90a9ece21501721a8c80d17799b5257c6a74fefe17e73aeb16b474a408588ffd
+    - path: bundles/standards-spec/templates/standard.md
+      digest: sha256:5a137a6cc94558ae9e971c3d1f3d374754952472a8b0719f43e6079265800a97
+    - path: bundles/standards-spec/templates/technical_spec.md
+      digest: sha256:4018e2fbd675ce28d94e73ca0f1cc986c83c0730fdb460606707c8e3f86af0cc
     - path: conformance.yml
       digest: sha256:9ff0735e955bea021067c9949782bb01b5bd2ea46ef7be87c929d3fe9094f0db
     - path: package.yml
-      digest: sha256:af963f9e0cf5707a04d7362565e2175f5f85f06ee40a0a3262b3f4728d2a6415
+      digest: sha256:494917c655d68a7132f5add8fd855b989fabba8580e5bf8424a0275c3f9bfe84
     - path: taxonomy.yml
-      digest: sha256:20ffa9a77f53da02e919111fd076de2b904c43978a4236ae9b2029aca3cc2971
+      digest: sha256:85e7be568b92ba19210c8dc3093a984814d9f28d5e7d966d18c5c596a88bec3a

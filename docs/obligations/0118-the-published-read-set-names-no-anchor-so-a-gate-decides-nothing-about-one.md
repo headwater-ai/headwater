@@ -42,7 +42,7 @@ The measurement is a hand run on 2026-08-14 over this repository, which declares
 
 **The barrier is what hides it, and the barrier is not a fix.** A corpus-scoped instance exists on every run, because `identifier.claimed_twice` takes one target that no declaration selects. So every artifact carries a `barrier` line, and `Verdict::carries` is false on every gate over this corpus. The answer is void before the input comparison begins. The limit above is real and it is unreachable through this verb today.
 
-**What makes it reachable is a per-rule answer.** Spec 12 says that "a per-instance answer wants a per-instance artifact, and this is not one". Take a gate that voids the barrier alone and carries the verdicts of every rule that is no barrier. It reports that a `governs` verdict survives a tree that deleted the file the edge names. [#82](https://github.com/headwater-ai/headwater/issues/82) is the drift report, and it reads this artifact.
+**What makes it reachable is a per-rule answer.** Spec 12 says that "a per-instance answer wants a per-instance artifact, and this is not one". Take a gate that voids the barrier alone and carries the verdicts of every rule that is no barrier. It reports that a `governs` verdict survives a tree that deleted the file the edge names. [#82](https://github.com/headwater-ai/headwater/issues/82) built the drift report as `relation.target.suspect`, and it reads a run rather than this artifact. So the finding is sound and a gate that carried it is the half this record still holds open.
 
 ## Discharge
 

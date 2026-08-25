@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 3.2.0
+version: 3.3.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -762,6 +762,12 @@ obligations:
     class: cohesion
     prevents: content.inconsistent
     severity: high
+  OB-REL-6:
+    statement: "An edge an import wrote names its upstream item at the revision the edge was verified against"
+    rationale: "An upstream item moves under an edge that nobody touched, so the corpus keeps asserting a claim that was checked against a state the far end has left. The pin says the snapshot advanced and says nothing about which document now carries a stale claim, and the author who could re-verify the edge is the one person the advance never reaches"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
   OB-ID-2:
     statement: "A document that a relation may name declares one identifier that names it"
     rationale: "A document with no identifier is neither end of any edge, so every relation it declares and every relation that names it is lost while the document itself is reported as classified and checked"
@@ -993,6 +999,18 @@ controls:
       criteria:
         window: "one release of the taxonomy over an adopting corpus"
         threshold: "no false positive, because the rule reports what the graph build already threw away rather than reading the block a second time"
+        sample: "every finding of one run over the adopting corpus, adjudicated once"
+  CT-REL-6:
+    mechanism: "check:relation.target.suspect"
+    discharges:
+      - OB-REL-6
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: "one release of the taxonomy over an adopting corpus"
+        threshold: "no false positive, because the rule compares two values the corpus already holds and reports nothing where either one is absent"
         sample: "every finding of one run over the adopting corpus, adjudicated once"
   CT-ID-2:
     mechanism: "check:identifier.unusable"

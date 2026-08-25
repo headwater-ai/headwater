@@ -163,6 +163,7 @@ pub mod sections;
 pub mod shape;
 pub mod source_form;
 pub mod suppression;
+pub mod suspect;
 pub mod target;
 pub mod transition;
 pub mod voice;
@@ -199,12 +200,13 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 25] = [
+pub const RULES: [&str; 26] = [
     facet_required::RULE,
     facet_value::RULE,
     identifier::RULE,
     placement::RULE,
     target::RULE,
+    suspect::RULE,
     reciprocity::RULE,
     endpoint::RULE,
     dependency::RULE,
@@ -370,6 +372,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::edge_scope::<target::Targets<'_>>(),
             scope::edge_version::<target::Targets<'_>>(),
             scope::edge_exports::<target::Targets<'_>>(),
+        ),
+        (
+            suspect::RULE,
+            scope::edge_scope::<suspect::Suspect<'_>>(),
+            scope::edge_version::<suspect::Suspect<'_>>(),
+            scope::edge_exports::<suspect::Suspect<'_>>(),
         ),
         (
             reciprocity::RULE,
@@ -547,6 +555,8 @@ pub fn run(
         identifier::Identifier::over(declared.shape, &declared.config.identifier_facet);
     let placement = placement::Placement::over(declared.taxonomy);
     let targets = target::Targets::over(declared.relations);
+    // The drift rule, over the relations an importer may write. See [`suspect`].
+    let suspect = suspect::Suspect::over(declared.relations);
     let reciprocity = reciprocity::Reciprocity::over(declared.relations);
     let endpoints = endpoint::Endpoints::over(declared.relations, declared.shape);
     // A live document resting on a terminal one, over the relations whose
@@ -599,6 +609,9 @@ pub fn run(
     instances.extend(scope::over_documents(&placement, census, graph, ctx, cache));
     instances.extend(scope::over_edges(
         &targets, census, graph, &digests, ctx, cache,
+    ));
+    instances.extend(scope::over_edges(
+        &suspect, census, graph, &digests, ctx, cache,
     ));
     instances.extend(scope::over_edges(
         &reciprocity,

@@ -1,6 +1,6 @@
 ## `headwater check`
 
-41 findings, 24 of them errors across 23 of 25 documents, against `headwater/fixture` 1.0.0 at `0d5deef4f0b065206f6e33e9641af29c0de5411b4e8c5d9eedaf22d68f04c746`, evaluated at 2026-08-12.
+41 findings, 24 of them errors across 23 of 25 documents, against `headwater/fixture` 1.0.0 at `f56bcd0fbdb55db9caf432a8df7904bc47d417d9333f5561baceece2d6f94037`, evaluated at 2026-08-12.
 
 **Scoped to a change.** This run was told what one change carries, so the checks that read the version a document stood at before it could run at all. 10 documents were named: 2 that the change adds, 1 with a prior version this run read, and 3 whose prior version did not read, so every check that needed one was skipped over it. The findings above are over the whole corpus, as they are in a run that names no change.
 
@@ -82,4 +82,4 @@
 
 </details>
 
-26 documents in the read set, and 2 barriers that no gate carries across a merge. 26 obligations, 21 verified.
+26 documents in the read set, and 2 barriers that no gate carries across a merge. 27 obligations, 22 verified.

@@ -37,6 +37,8 @@ rules, and for each the scope that binds it
     document scope, one document and its front matter
   relation.target.unresolved
     edge scope, one relation instance and both endpoints
+  relation.target.suspect
+    edge scope, one relation instance and both endpoints
   relation.reciprocity.missing
     edge scope, one relation instance and both endpoints
   relation.endpoint.not_permitted
@@ -91,6 +93,7 @@ register
   identifier.pattern.not_met reaches no obligation, so it names none
   shelf.placement_is_primary reaches no obligation, so it names none
   relation.target.unresolved reaches no obligation, so it names none
+  relation.target.suspect reaches no obligation, so it names none
   relation.reciprocity.missing reaches no obligation, so it names none
   relation.endpoint.not_permitted reaches no obligation, so it names none
   lifecycle.dependency.on_terminal reaches no obligation, so it names none

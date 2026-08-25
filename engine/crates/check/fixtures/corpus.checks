@@ -48,6 +48,8 @@ rules, and for each the scope that binds it
     document scope, one document and its front matter
   relation.target.unresolved
     edge scope, one relation instance and both endpoints
+  relation.target.suspect
+    edge scope, one relation instance and both endpoints
   relation.reciprocity.missing
     edge scope, one relation instance and both endpoints
   relation.endpoint.not_permitted
@@ -89,23 +91,23 @@ rules, and for each the scope that binds it
   control.mechanism.unimplemented
     taxonomy scope, the resolved taxonomy, and no document
 register
-  30 obligations: 27 verified, 2 gap, 1 unverifiable, 0 with no disposition
+  31 obligations: 28 verified, 2 gap, 1 unverifiable, 0 with no disposition
      12 high, 11 verified
-     13 medium, 11 verified
+     14 medium, 12 verified
       5 low, 5 verified
   OB-LANG-1 verified, 3 findings escaped under it
   OB-LANG-3 verified, 1 finding escaped under it
   OB-DR-1 gap, owner the decision-record entry, target a change-scoped rule that reads the prior version, which spec 12 already supplies as `needs_prior`
   OB-DR-2 gap, owner the decision-record entry, target a rule over state dwell time, which `taxonomy audit` already measures and no check reads
   OB-DR-3 unverifiable, To count the decisions in a document is to reason about what the prose asserts, which spec 1 forswears. The shelf is homogeneous and the section contract requires one `Decision` heading, and a second decision under that heading is invisible to both
-  27 controls
-     24 posture advisory
+  28 controls
+     25 posture advisory
       3 posture blocking
-     27 acts detective
-     25 name a rule this engine carries
+     28 acts detective
+     26 name a rule this engine carries
       2 name a phase this engine runs
      12 with no promotion record, so nothing states what would promote them
-      6 with criteria
+      7 with criteria
       3 at a final posture
       4 permanently advisory
       2 producing facts rather than findings
