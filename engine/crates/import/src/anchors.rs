@@ -69,8 +69,14 @@ pub struct Items {
     resolver: String,
     /// The upstream system as the snapshot labels itself, for a message.
     source: String,
-    /// Every item identity the snapshot pinned, verbatim.
-    ids: Vec<String>,
+    /// Every item identity the snapshot pinned, verbatim, with the revision
+    /// the snapshot pinned it at.
+    ///
+    /// The revision travels because the binding carries it and the graph keys
+    /// on it. It is what `headwater_check::suspect` compares an edge's
+    /// `verified_revision` against, and it is what stops a cached verdict about
+    /// that edge outliving the advance that falsifies it.
+    items: Vec<(String, String)>,
     /// Why this resolver holds no items. Set where the snapshot did not open,
     /// and every string is then refused with it.
     unavailable: Option<String>,
@@ -82,7 +88,11 @@ impl Items {
         Items {
             resolver: resolver.to_string(),
             source: snapshot.source.clone(),
-            ids: snapshot.items.iter().map(|item| item.id.clone()).collect(),
+            items: snapshot
+                .items
+                .iter()
+                .map(|item| (item.id.clone(), item.revision.clone()))
+                .collect(),
             unavailable: None,
         }
     }
@@ -94,14 +104,14 @@ impl Items {
         Items {
             resolver: resolver.to_string(),
             source: String::new(),
-            ids: Vec::new(),
+            items: Vec::new(),
             unavailable: Some(why),
         }
     }
 
     /// How many item identities this resolver can bind.
     pub fn held(&self) -> usize {
-        self.ids.len()
+        self.items.len()
     }
 }
 
@@ -118,18 +128,22 @@ impl Resolver for Items {
         if id.is_empty() {
             return Binding::Unresolved("an empty anchor names nothing".to_string());
         }
-        match self.ids.iter().any(|held| held == id) {
+        match self.items.iter().find(|(held, _)| held == id) {
             // The identity is the string the far end spells, so the normalized
-            // form is that string and never a form this engine invented.
-            true => Binding::Resolved {
+            // form is that string and never a form this engine invented. The
+            // revision beside it is what the snapshot says the item is at now,
+            // and it is the only thing in the answer that can move while the
+            // identity stands still.
+            Some((_, revision)) => Binding::Resolved {
                 normalized: id.to_string(),
                 excluded_by: None,
+                revision: Some(revision.clone()),
             },
             // A corpus exclusion is about a path in this repository, and an
             // external item is under no path here, so `excluded_by` above is
             // always empty and nothing is withheld: an export filter is
             // declared over this corpus and never over somebody else's.
-            false => Binding::Unresolved(format!(
+            None => Binding::Unresolved(format!(
                 "the snapshot of {} holds no item `{id}`",
                 self.source
             )),
@@ -227,8 +241,43 @@ snapshot:
             Binding::Resolved {
                 normalized: "12345".to_string(),
                 excluded_by: None,
+                revision: Some("7".to_string()),
             }
         );
+    }
+
+    /// The binding carries the revision the snapshot pinned, and that is the
+    /// one thing about an item that moves while its identity stands still.
+    ///
+    /// Two components read it. `headwater_check::suspect` compares it against
+    /// the `verified_revision` an import wrote onto the edge, and
+    /// `headwater_graph::Target::resolution` renders it into the cache key, so
+    /// an advance divides the key of every instance about that edge
+    /// ([#160](https://github.com/headwater-ai/headwater/issues/160)).
+    #[test]
+    fn the_binding_carries_the_revision_the_snapshot_pinned() {
+        let items = Items::of("ado-snapshot", &snapshot());
+        let Binding::Resolved {
+            normalized,
+            revision,
+            ..
+        } = items.resolve("12345")
+        else {
+            panic!("the item the snapshot pins did not bind");
+        };
+        assert_eq!(normalized, "12345");
+        assert_eq!(revision.as_deref(), Some("7"));
+
+        // And the same snapshot at a later fetch answers with the later
+        // revision under one identity, which is the whole of the drift.
+        let advanced = crate::snapshot::read(&PAYLOAD.replace("revision: \"7\"", "revision: \"8\""))
+            .expect("the payload reads");
+        let Binding::Resolved { revision, .. } =
+            Items::of("ado-snapshot", &advanced).resolve("12345")
+        else {
+            panic!("the item the snapshot pins did not bind");
+        };
+        assert_eq!(revision.as_deref(), Some("8"));
     }
 
     /// The case the whole module exists for. A resolver that answered anything

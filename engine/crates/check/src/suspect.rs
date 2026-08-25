@@ -112,7 +112,7 @@ impl EdgeCheck for Suspect<'_> {
             return Outcome::Skipped(NO_HALF.to_string());
         };
 
-        let Target::Anchor { .. } = &edge.target else {
+        let Target::Anchor { revision, .. } = &edge.target else {
             return Outcome::Passed;
         };
 
@@ -126,9 +126,7 @@ impl EdgeCheck for Suspect<'_> {
             return Outcome::Passed;
         };
 
-        // Stage A of #82: the resolver's answer does not carry a revision yet.
-        let current: Option<&str> = None;
-        let Some(current) = current else {
+        let Some(current) = revision.as_deref() else {
             return Outcome::Passed;
         };
 

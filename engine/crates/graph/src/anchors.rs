@@ -58,6 +58,24 @@ pub enum Binding {
         /// that a reader is not told a document governs something the corpus
         /// has said it does not hold.
         excluded_by: Option<String>,
+        /// What the resolver's source says the target is at now, and `None`
+        /// where the resolver has no such notion.
+        ///
+        /// A committed snapshot is the one resolver that has one: it pins an
+        /// identity and a revision for every item in it, so the answer carries
+        /// both. [`SourceTree`] answers `None`, because a path in a working
+        /// tree is at no revision that this engine can name, and inventing a
+        /// commit for it would put a value in a cache key that no source
+        /// stated.
+        ///
+        /// Two components read it. `headwater_check::suspect` compares it
+        /// against the `verified_revision` an import wrote onto the edge, which
+        /// is the drift report [spec 7](../../../../docs/spec/07-distribution-and-federation.md#upstream-awareness)
+        /// asks for per edge. And `Target::resolution` renders it into the
+        /// cache key of every edge instance, so a verdict about an edge cannot
+        /// outlive the advance that falsifies it
+        /// ([#160](https://github.com/headwater-ai/headwater/issues/160)).
+        revision: Option<String>,
     },
     /// A defect, and the message says which one.
     Unresolved(String),
@@ -172,6 +190,9 @@ impl Resolver for SourceTree {
         Binding::Resolved {
             normalized,
             excluded_by,
+            // A path in a working tree is at no revision this resolver can
+            // name. See the field.
+            revision: None,
         }
     }
 }

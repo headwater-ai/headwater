@@ -198,6 +198,10 @@ impl Graph {
                 resolver,
                 normalized,
                 excluded_by,
+                // An anchor node is one entry per identity, and a revision is a
+                // property of one state of that identity rather than of the
+                // node. `Target::resolution` is where it has to appear.
+                revision: _,
             } = &edge.target
             else {
                 continue;
