@@ -3570,6 +3570,16 @@ fn the_corrected_spec_seven_example_publishes_and_its_bundle_reaches_a_consumer(
         2,
         "the taxonomy and the one bundle it selects"
     );
+
+    // Spec 7's own example writes `doctrine: doctrine/` with the comment "prose
+    // explaining the method, vendored to consumers". This is that comment held
+    // to this engine rather than left as a claim about it.
+    assert!(
+        consumer_root
+            .join("packages/acme-headwater-taxonomy/doctrine/doctrine.md")
+            .is_file(),
+        "the prose spec 7's example says is vendored to consumers did not reach one"
+    );
 }
 
 /// A manifest under `packages/` that parses but is not a mapping is named in
@@ -3826,6 +3836,239 @@ fn contents_doctrine_that_names_a_file_is_refused_at_publish() {
     assert!(
         message.contains("reads a directory"),
         "the refusal does not name the kind the reader opens:\n{message}"
+    );
+    assert!(
+        !out.exists(),
+        "the publish that was refused wrote an artifact anyway"
+    );
+}
+
+/// Remove the doctrine directory from a published artifact, and rewrite the
+/// release record so that the artifact still verifies against the digest this
+/// hands back.
+///
+/// **The digest has to keep verifying, or the case measures the wrong thing.**
+/// A doctored artifact that failed its pin would be refused by
+/// `release::verify`, above every read `vendor` performs, and the doctrine
+/// reader would never run — the trap
+/// [`two_names_that_flatten_to_one_directory_do_not_delete_each_other`]'s own
+/// doc comment names. So the record is recomputed the way [`plant_residue`]
+/// computes one, and the verification is asserted here rather than left to each
+/// caller to remember.
+fn without_its_doctrine(out: &Path) -> String {
+    std::fs::remove_dir_all(out.join("doctrine")).expect("the artifact carried doctrine");
+    let manifest = package::manifest_at(out).expect("the artifact manifest reads");
+    let record = release::compute(out, &manifest).expect("the digest computes");
+    std::fs::write(out.join(release::RECORD), release::render(&record))
+        .expect("the artifact carries the record it was just given");
+    assert!(
+        release::verify(out, &record.digest).is_ok(),
+        "the doctored artifact does not verify against its own digest, so what follows would \
+         measure the pin rather than the doctrine reader"
+    );
+    record.digest
+}
+
+/// The prose a publisher ships reaches the consumer, byte for byte.
+///
+/// **This passes on the code that reads no `contents.doctrine` at all**, and
+/// that is what it is for. `stage` walks the whole package directory and
+/// `copy_tree` copies the whole artifact, so the prose lands under
+/// `packages/<flattened>/` whether or not any key names it. The milestone bar
+/// is that the library entries ship with their doctrine prose, and nothing in
+/// this suite asserted that the prose reaches a *consumer* — the one doctrine
+/// assertion here stopped at the artifact. A later change to either walk that
+/// stopped carrying a directory no `contents` key names would break the bar and
+/// pass every other case in this file.
+#[test]
+fn a_vendored_package_carries_its_doctrine_into_the_consumers_tree() {
+    let scratch = Scratch::new("doctrine-consumer");
+    let root = publisher_with_doctrine(&scratch, "doctrine/");
+    let out = scratch.path().join("artifact");
+
+    let record = package::publish(&root, "acme/fixture", &out).expect("it publishes");
+    let paths: Vec<&str> = record.members.iter().map(|m| m.path.as_str()).collect();
+    assert!(
+        paths.contains(&"doctrine/method.md"),
+        "the release record does not name the prose the publisher shipped: {paths:?}"
+    );
+
+    consumer(&scratch, &record.digest);
+    let consumer_root = scratch.path().join("consumer");
+    package::vendor(&consumer_root, &out, &record.digest).expect("it vendors");
+
+    let landed = consumer_root.join("packages/acme-fixture/doctrine/method.md");
+    assert!(
+        landed.is_file(),
+        "the prose did not reach the consumer at {}",
+        landed.display()
+    );
+    assert_eq!(
+        std::fs::read_to_string(&landed).expect("the prose reads back"),
+        METHOD,
+        "the prose reached the consumer as different bytes"
+    );
+}
+
+/// An artifact whose manifest names doctrine the artifact does not carry is
+/// refused, and the refusal happens before the first byte is written.
+///
+/// The digest still verifies, so the refusal is the doctrine reader's and not
+/// the pin's. `packages/` is made by hand and empty, because an adopter with an
+/// empty `packages/` is the ordinary state before a first install, and the
+/// assertion is that the refused run left it exactly that way: no target, no
+/// `packages/~staging/<name>`, and no `packages/<name>~aside`.
+#[test]
+fn a_fetched_artifact_whose_doctrine_is_not_there_is_refused_before_anything_is_written() {
+    let scratch = Scratch::new("doctrine-absent");
+    let root = publisher_with_doctrine(&scratch, "doctrine/");
+    let out = scratch.path().join("artifact");
+
+    let record = package::publish(&root, "acme/fixture", &out).expect("it publishes");
+    assert!(
+        record
+            .members
+            .iter()
+            .any(|m| m.path == "doctrine/method.md"),
+        "the fixture published no prose, so the subtraction below removes nothing"
+    );
+    let digest = without_its_doctrine(&out);
+
+    let adopter = scratch.path().join("adopter");
+    std::fs::create_dir_all(adopter.join(package::PACKAGES))
+        .expect("the adopter holds an empty `packages/`");
+
+    let refused = package::vendor(&adopter, &out, &digest)
+        .expect_err("an artifact that declares prose it does not carry is refused");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("`contents.doctrine`"),
+        "the refusal does not name the key it read:\n{message}"
+    );
+    assert!(
+        message.contains("doctrine/"),
+        "the refusal does not name the declared value:\n{message}"
+    );
+
+    assert_eq!(
+        packages_under(&adopter),
+        Vec::<String>::new(),
+        "the refused run wrote under `packages/`, which is the defect"
+    );
+}
+
+/// A doctrine refusal on an upgrade leaves the installed package standing.
+///
+/// This is the [#312](https://github.com/headwater-ai/headwater/issues/312) and
+/// [#357](https://github.com/headwater-ai/headwater/issues/357) regression
+/// guard for the one new refusal this change adds. A doctrine check placed
+/// after the swap — the natural placement, and the one that compiles — would
+/// pass every case above and fail this one, because by then the installed
+/// package has already been renamed aside and the new tree is in its place.
+///
+/// **`packages_under` is asserted as the whole vector and not as a
+/// membership.** A residue at `acme-fixture~aside` or `~staging` answers
+/// `find_version` correctly and is exactly what a refusal below the first write
+/// leaves behind.
+///
+/// **The surviving package is read and not only found**, for the reason
+/// [`two_names_that_flatten_to_one_directory_do_not_delete_each_other`] gives:
+/// `find_version` reads the manifest alone, so a removal that then wrote a
+/// partial tree answers it correctly.
+#[test]
+fn a_doctrine_refusal_on_an_upgrade_leaves_the_installed_package_standing() {
+    let scratch = Scratch::new("doctrine-upgrade");
+    let root = publisher_with_doctrine(&scratch, "doctrine/");
+
+    let first = scratch.path().join("artifact-one");
+    let one = package::publish(&root, "acme/fixture", &first).expect("the first version publishes");
+    let adopter = scratch.path().join("adopter");
+    std::fs::create_dir_all(&adopter).expect("the adopter root is made");
+    package::vendor(&adopter, &first, &one.digest).expect("the first version vendors");
+    assert_eq!(
+        package::find_version(&adopter, "acme/fixture"),
+        Some("1.0.0".to_string()),
+        "the first version is not installed, so what follows measures nothing"
+    );
+
+    // The second version, out of the same tree with both of the two version
+    // declarations moved, and then subtracted the way the case above subtracts.
+    for relative in [
+        "packages/acme-fixture/package.yml",
+        "packages/acme-fixture/taxonomy.yml",
+    ] {
+        let path = root.join(relative);
+        let text = std::fs::read_to_string(&path).expect("the file is there");
+        let moved = text.replace("version: 1.0.0", "version: 2.0.0");
+        assert_ne!(text, moved, "the version did not move in {relative}");
+        std::fs::write(&path, moved).expect("the file writes");
+    }
+    let second = scratch.path().join("artifact-two");
+    let two =
+        package::publish(&root, "acme/fixture", &second).expect("the second version publishes");
+    assert_eq!(two.version, "2.0.0", "the upgrade is not an upgrade");
+    let digest = without_its_doctrine(&second);
+
+    let refused = package::vendor(&adopter, &second, &digest)
+        .expect_err("an upgrade that declares prose it does not carry is refused");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("`contents.doctrine`"),
+        "the refusal does not name the key it read:\n{message}"
+    );
+
+    assert_eq!(
+        packages_under(&adopter),
+        vec!["acme-fixture".to_string()],
+        "the refused upgrade left something under `packages/` beside the installed package"
+    );
+    assert_eq!(
+        package::find_version(&adopter, "acme/fixture"),
+        Some("1.0.0".to_string()),
+        "the refused upgrade moved the version the adopter resolves"
+    );
+    let installed = adopter.join(package::PACKAGES).join("acme-fixture");
+    let source =
+        std::fs::read_to_string(installed.join("taxonomy.yml")).expect("the source is there");
+    assert!(
+        source.contains("version: 1.0.0"),
+        "the installed package is not the one that was installed:\n{source}"
+    );
+    let prose = std::fs::read_to_string(installed.join("doctrine/method.md"))
+        .expect("the installed prose is there");
+    assert_eq!(
+        prose, METHOD,
+        "the refused upgrade moved the installed prose"
+    );
+}
+
+/// `contents.doctrine` may not name a path that leaves the package.
+///
+/// **This passes on the code that reads no `contents.doctrine`**, and the
+/// refusal it asserts is the one `reachable` already writes for every key that
+/// is not `contents.bundles`. It is here to stop a later change from granting
+/// doctrine the second escape: bundles earned that exemption because a bundle
+/// library is shared across the packages of one repository, and doctrine prose
+/// belongs to the package that explains itself. The refusal is stronger than a
+/// rewrite would be, because nothing has to be spliced for the artifact to
+/// carry no path a consumer cannot follow.
+#[test]
+fn contents_doctrine_may_not_name_a_path_outside_the_package() {
+    let scratch = Scratch::new("doctrine-escapes");
+    let root = publisher_with_doctrine(&scratch, "../../elsewhere");
+    scratch.write("publisher/elsewhere/method.md", METHOD);
+    let out = scratch.path().join("artifact");
+
+    let refused = package::publish(&root, "acme/fixture", &out)
+        .expect_err("a `contents.doctrine` that leaves the package is refused");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("`contents.doctrine` names ../../elsewhere"),
+        "the refusal does not name the key and the value:\n{message}"
+    );
+    assert!(
+        message.contains("Only `contents.bundles` may name a path outside the package"),
+        "the refusal is not the one rule that names the single exemption:\n{message}"
     );
     assert!(
         !out.exists(),

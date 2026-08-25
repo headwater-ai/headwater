@@ -1491,7 +1491,9 @@ pub const DOCTRINE: &str = "doctrine";
 /// reports every shape it refuses, and [`doctrine`] answers the shallow
 /// question the CLI asks after that verb returned. Where the key sits in a
 /// manifest is stated here alone.
-fn declared_doctrine(manifest: &Mapping) -> Option<&headwater_yaml::Spanned<headwater_yaml::Value>> {
+fn declared_doctrine(
+    manifest: &Mapping,
+) -> Option<&headwater_yaml::Spanned<headwater_yaml::Value>> {
     manifest
         .get("contents")
         .and_then(|node| node.value.as_map())
