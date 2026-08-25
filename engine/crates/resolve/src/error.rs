@@ -30,6 +30,27 @@ impl ResolveError {
     }
 }
 
+/// The two declarations an `add` collision names.
+///
+/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition)
+/// makes a collision "always a task for a human", and a task a person can act
+/// on shows both sides. The values are rendered in the canonical form
+/// [`crate::render`] writes the lock in, so what a reader compares is the text
+/// the two sources resolve to rather than the bytes their authors typed.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Collision {
+    /// The address both sources declare.
+    pub address: String,
+    /// The file that carries the declaration already there. Empty where the
+    /// raise knew the value and not who wrote it, which is [`crate::merge`]'s
+    /// own leaf-grained raise: the tree it walks holds no source index.
+    pub declared_in: String,
+    /// That declaration, canonically rendered, with no trailing newline.
+    pub declared: String,
+    /// The value this `add` states, in the same form.
+    pub adds: String,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ResolveErrorKind {
     /// The source does not load, or the meta-schema refuses it. The engine
@@ -49,7 +70,7 @@ pub enum ResolveErrorKind {
     /// base release that adds a key an overlay already added is a collision,
     /// and a collision is a task for a human rather than a promotion to
     /// `override`.
-    AddCollides(String),
+    AddCollides(Collision),
     /// `override` keeps every field the consumer did not restate, so the path
     /// must exist.
     OverrideMissing(String),
@@ -138,11 +159,16 @@ impl std::fmt::Display for ResolveError {
                 f,
                 "does not commute with `{other_at}` in {other_source}: both reach `{path}`, and {why}"
             ),
-            AddCollides(address) => write!(
+            AddCollides(both) => write!(
                 f,
-                "`{address}` is already declared, and `add` states a whole value. \
+                "`{}` is already declared{}, and `add` states a whole value. \
                  Reconcile the two declarations by hand: `add` and `override` differ in what \
-                 the consumer inherits, so nothing promotes one to the other"
+                 the consumer inherits, so nothing promotes one to the other",
+                both.address,
+                match both.declared_in.is_empty() {
+                    true => String::new(),
+                    false => format!(" in {}", both.declared_in),
+                }
             ),
             OverrideMissing(address) => {
                 write!(f, "`{address}` is not declared, and `override` replaces a value that is there")
@@ -189,6 +215,90 @@ impl std::fmt::Display for ResolveError {
     }
 }
 
+/// Every `add` collision of one refused resolution, as the judgment task
+/// [spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition)
+/// owes a consumer: both declarations, both files, the address, and the two
+/// operations that settle it.
+///
+/// Empty where no refusal is a collision, so a caller prints this or prints
+/// nothing and needs no second question. `apply` returns on the first refusal,
+/// so one run produces at most one — the plural is here because the type
+/// permits a list and a renderer that assumed one would be a claim about the
+/// caller.
+///
+/// The two declarations are compared as rendered text rather than through
+/// [`crate::merge::same`], because the rendered text is what the reader
+/// compares, and a report that called two texts the same over two a reader can
+/// see differ would be worse than one that said nothing.
+pub fn collisions(errors: &[ResolveError]) -> String {
+    let found: Vec<(&ResolveError, &Collision)> = errors
+        .iter()
+        .filter_map(|error| match &error.kind {
+            ResolveErrorKind::AddCollides(both) => Some((error, both)),
+            _ => None,
+        })
+        .collect();
+    if found.is_empty() {
+        return String::new();
+    }
+
+    let mut out = format!(
+        "\n{} `add` collision{}. Spec 2 makes a collision a task for a person, and no run \
+         settles one\n",
+        found.len(),
+        if found.len() == 1 { "" } else { "s" }
+    );
+    for (error, both) in found {
+        out.push('\n');
+        out.push_str(&format!("  {}\n", both.address));
+        out.push_str(&match both.declared_in.is_empty() {
+            true => String::from("    a declaration already in the merged tree declares it\n"),
+            false => format!("    {} declares it\n", both.declared_in),
+        });
+        out.push_str(&block(&both.declared));
+        out.push_str(&format!("    {} adds it, at {}\n", error.source, error.at));
+        out.push_str(&block(&both.adds));
+        out.push_str(&match both.declared == both.adds {
+            true => String::from(
+                "    the two declarations are the same text, so removing this `add` changes \
+                 nothing the corpus reads\n",
+            ),
+            false => String::from(
+                "    the two declarations differ, so what this repository inherits is a choice\n",
+            ),
+        });
+        out.push_str(REMEDY);
+    }
+    out
+}
+
+/// The remedy of every collision, which is the same remedy every time.
+///
+/// Spec 2 admits two operations at a declared address, and which of the two a
+/// consumer wants is the judgment. The last sentence names the route the
+/// engine refuses, because it is the route a reader tries first;
+/// `fixtures/cases/add-collides-behind-remove/` is what holds that claim.
+const REMEDY: &str = concat!(
+    "    task  `remove` this `add` from the overlay and inherit the base declaration whole,\n",
+    "          or restate it as an `override`, which keeps every field of the base\n",
+    "          declaration this overlay does not restate. Those are the two. A `remove`\n",
+    "          with the same `add` written again behind it is not a third: an `add`\n",
+    "          asserts its precondition about the base, and a `remove` in the same\n",
+    "          overlay does not move the base\n",
+);
+
+/// A rendered value, six spaces in. An empty value is a side with nothing on
+/// it, and a blank block would read as a value that is the empty string.
+fn block(value: &str) -> String {
+    if value.is_empty() {
+        return String::from("      (no value)\n");
+    }
+    value
+        .lines()
+        .map(|line| format!("      {line}\n"))
+        .collect()
+}
+
 /// Every refusal, in the order the resolver found them.
 pub fn render(errors: &[ResolveError]) -> String {
     let mut out = String::new();
@@ -216,4 +326,90 @@ pub fn render(errors: &[ResolveError]) -> String {
         }
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn collision(declared: &str, adds: &str) -> ResolveError {
+        ResolveError::new(
+            ResolveErrorKind::AddCollides(Collision {
+                address: "identifier_schemes.spec_id".to_string(),
+                declared_in: "released/2.0.0/taxonomy.yml".to_string(),
+                declared: declared.to_string(),
+                adds: adds.to_string(),
+            }),
+            ".headwater/overlay.yml",
+            "add.identifier_schemes.spec_id",
+            Span::default(),
+        )
+    }
+
+    #[test]
+    fn a_refusal_that_is_not_a_collision_produces_no_section_at_all() {
+        let error = ResolveError::new(
+            ResolveErrorKind::RemoveMissing("kinds.report".to_string()),
+            ".headwater/overlay.yml",
+            "remove.kinds.report",
+            Span::default(),
+        );
+        assert_eq!(collisions(&[error]), "");
+    }
+
+    /// Each declaration under the label of the source that wrote it.
+    ///
+    /// The two values a report puts side by side are the only part of it a
+    /// reader cannot get anywhere else, and a report that named them both
+    /// under one label would read as correct while being useless.
+    #[test]
+    fn each_declaration_prints_under_the_source_that_wrote_it() {
+        let report = collisions(&[collision(
+            "namespace: HW\nallocation: reconcile-first",
+            "{}",
+        )]);
+        let (base_half, overlay_half) = report
+            .split_once(".headwater/overlay.yml adds it")
+            .expect("the report names the overlay side");
+        assert!(base_half.contains("released/2.0.0/taxonomy.yml declares it"));
+        assert!(base_half.contains("      allocation: reconcile-first\n"));
+        assert!(!base_half.contains("{}"));
+        assert!(overlay_half.contains("      {}\n"));
+        assert!(overlay_half.contains("at add.identifier_schemes.spec_id"));
+    }
+
+    /// A base that grew exactly the declaration the overlay adds is the one
+    /// collision that costs nothing to settle, and a report that called it a
+    /// choice would send a reader to weigh two identical texts.
+    #[test]
+    fn a_collision_between_two_identical_declarations_is_not_reported_as_a_choice() {
+        let report = collisions(&[collision("purpose: behavior", "purpose: behavior")]);
+        assert!(
+            report.contains("changes nothing the corpus reads"),
+            "{report}"
+        );
+        assert!(!report.contains("is a choice"), "{report}");
+    }
+
+    /// An `add` with no value is a source the meta-schema refuses, so this arm
+    /// is unreachable through `resolve`. It prints a word rather than a blank
+    /// run of six spaces, which a reader would read as an empty string value.
+    #[test]
+    fn a_side_with_nothing_on_it_says_so() {
+        let report = collisions(&[collision("purpose: behavior", "")]);
+        assert!(report.contains("      (no value)\n"), "{report}");
+    }
+
+    /// The remedy names two operations, and names the third route as refused.
+    /// `fixtures/cases/add-collides-behind-remove/` is the case that holds it.
+    #[test]
+    fn the_remedy_names_two_operations_and_the_route_that_is_not_a_third() {
+        let report = collisions(&[collision("purpose: behavior", "purpose: rationale")]);
+        assert!(
+            report.contains("inherit the base declaration whole"),
+            "{report}"
+        );
+        assert!(report.contains("restate it as an `override`"), "{report}");
+        assert!(report.contains("is not a third"), "{report}");
+    }
 }

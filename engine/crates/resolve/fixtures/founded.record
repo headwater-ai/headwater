@@ -1,4 +1,5 @@
 add-collides: refused, so nothing is made
+add-collides-behind-remove: refused, so nothing is made
 address-into-a-list: refused, so nothing is made
 an-add-that-founds-what-it-addresses: 1 operation makes what it addresses
   overlay-1-adopter.yml: add.kinds.playbook.purpose makes `kinds.playbook` rather than reaching into it, so the address resolves because this operation creates what it addresses

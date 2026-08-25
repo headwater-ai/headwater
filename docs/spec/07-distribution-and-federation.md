@@ -262,7 +262,7 @@ The publisher measures compatibility against its own reference corpora and refer
 
 **The documents and the overlay are one write set.** An overlay re-addressed beside a document that still holds the old value is a corpus in neither state. So an overlay that no process may write leaves every document of the run untouched, and the refusal names the file. A crash between two writes is not covered, and nothing inside one program covers that without a journal.
 
-**One of the three writes is still open, and it is open for a stated reason.** Nothing writes the lock, for the reason the [next section](#between-majors-the-corpus-is-legitimately-between-valid-states) gives. Beside the three, each `add` collision with the new base is still owed a judgment task that shows both definitions ([spec 2](02-taxonomy-model.md#customization-by-composition), [#195](https://github.com/headwater-ai/headwater/issues/195)).
+**One of the three writes is still open, and it is open for a stated reason.** Nothing writes the lock, for the reason the [next section](#between-majors-the-corpus-is-legitimately-between-valid-states) gives. Beside the three, `taxonomy diff` prints each `add` collision with the new base as a judgment task that shows both declarations ([spec 2](02-taxonomy-model.md#customization-by-composition)).
 
 **A kind that a homogeneous shelf carries has no byte to rewrite.** Placement carries the kind there, so the document declares it nowhere and the remedy is to move the file. The run reports the shelf that carries the kind, rather than nothing about the document. A step that reached no writable byte and printed no line is a step a reader reads as applied.
 

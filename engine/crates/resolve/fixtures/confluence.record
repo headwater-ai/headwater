@@ -1,4 +1,5 @@
 add-collides: 1 permutation, all refused
+add-collides-behind-remove: 1 permutation, all refused
 address-into-a-list: 1 permutation, all refused
 an-add-that-founds-what-it-addresses: 1 permutation, all resolve to one taxonomy
 core-last-satisfier: 1 permutation, all refused

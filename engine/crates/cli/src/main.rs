@@ -1613,7 +1613,9 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     // is the one dimension whose subject is the schema rather than the corpus.
     let candidate = headwater_resolve::package::sources_at(root, fetched, &manifest, &consumer)
         .and_then(|sources| headwater_resolve::resolve(&sources));
-    let (resolution, addressability) = match candidate {
+    // The third element is the judgment task an `add` collision owes a
+    // consumer, empty where no refusal is one. See `headwater_resolve::error`.
+    let (resolution, addressability, tasks) = match candidate {
         Ok(resolution) => {
             // The quiet half. The candidate resolved, and it may have resolved
             // because an overlay `add` created the declaration the new base
@@ -1623,7 +1625,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
                 &resolution.sources,
                 Vec::new(),
             );
-            (Some(resolution), outcome)
+            (Some(resolution), outcome, String::new())
         }
         Err(errors) => {
             let breaks: Vec<headwater_compat::Break> = errors
@@ -1642,7 +1644,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
                 )),
                 false => headwater_compat::Outcome::over(breaks),
             };
-            (None, outcome)
+            (None, outcome, headwater_resolve::error::collisions(&errors))
         }
     };
 
@@ -1659,6 +1661,7 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
             ),
         };
         print!("{}", report.render());
+        print!("{tasks}");
         eprintln!(
             "headwater: the candidate did not resolve, so five of the six dimensions were not \
              measured. The lines above are what this run does know"

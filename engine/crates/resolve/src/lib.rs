@@ -407,13 +407,24 @@ fn apply(
         // An `add` asserts its precondition about the base and not about
         // whatever another overlay has already put in the tree. See
         // [`merge`], which is where the reason is.
-        if operation.kind == OpKind::Add && merge::lookup(start, path).is_some() {
-            return Err(vec![ResolveError::new(
-                ResolveErrorKind::AddCollides(full),
-                &names[operation.source],
-                &operation.at(),
-                operation.span,
-            )]);
+        if operation.kind == OpKind::Add {
+            if let Some(declared) = merge::lookup(start, path) {
+                return Err(vec![ResolveError::new(
+                    ResolveErrorKind::AddCollides(error::Collision {
+                        address: full,
+                        declared_in: names.first().cloned().unwrap_or_default(),
+                        declared: render::value(&declared.value),
+                        adds: operation
+                            .value
+                            .as_ref()
+                            .map(|value| render::value(&value.value))
+                            .unwrap_or_default(),
+                    }),
+                    &names[operation.source],
+                    &operation.at(),
+                    operation.span,
+                )]);
+            }
         }
         let result = match (operation.kind, &operation.value) {
             (OpKind::Add, Some(value)) => merge::graft_leaves(&tree, path, value, &full),

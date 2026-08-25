@@ -1,4 +1,5 @@
 add-collides: 1 order, refused
+add-collides-behind-remove: 1 order, refused
 address-into-a-list: 1 order, refused
 an-add-that-founds-what-it-addresses: 1 order, sha256:c81b5c5e170c5f4d86aabf2cedc6d829409ade1fd8fe7aa44aabe5f0df725673
 core-last-satisfier: 1 order, refused

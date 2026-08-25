@@ -152,7 +152,14 @@ fn graft_at(
 
     if tail.is_empty() {
         match (found, mode) {
-            (Some(_), Mode::Add) => return Err(ResolveErrorKind::AddCollides(full.to_string())),
+            (Some(index), Mode::Add) => {
+                return Err(ResolveErrorKind::AddCollides(crate::error::Collision {
+                    address: full.to_string(),
+                    declared_in: String::new(),
+                    declared: crate::render::value(&entries[index].value.value),
+                    adds: crate::render::value(&value.value),
+                }))
+            }
             (None, Mode::Override) => {
                 return Err(ResolveErrorKind::OverrideMissing(full.to_string()))
             }
