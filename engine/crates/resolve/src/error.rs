@@ -30,6 +30,27 @@ impl ResolveError {
     }
 }
 
+/// The two declarations an `add` collision names.
+///
+/// [Spec 2](../../../../docs/spec/02-taxonomy-model.md#customization-by-composition)
+/// makes a collision "always a task for a human", and a task a person can act
+/// on shows both sides. The values are rendered in the canonical form
+/// [`crate::render`] writes the lock in, so what a reader compares is the text
+/// the two sources resolve to rather than the bytes their authors typed.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Collision {
+    /// The address both sources declare.
+    pub address: String,
+    /// The file that carries the declaration already there. Empty where the
+    /// raise knew the value and not who wrote it, which is [`crate::merge`]'s
+    /// own leaf-grained raise: the tree it walks holds no source index.
+    pub declared_in: String,
+    /// That declaration, canonically rendered, with no trailing newline.
+    pub declared: String,
+    /// The value this `add` states, in the same form.
+    pub adds: String,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ResolveErrorKind {
     /// The source does not load, or the meta-schema refuses it. The engine
@@ -49,7 +70,7 @@ pub enum ResolveErrorKind {
     /// base release that adds a key an overlay already added is a collision,
     /// and a collision is a task for a human rather than a promotion to
     /// `override`.
-    AddCollides(String),
+    AddCollides(Collision),
     /// `override` keeps every field the consumer did not restate, so the path
     /// must exist.
     OverrideMissing(String),
@@ -138,11 +159,16 @@ impl std::fmt::Display for ResolveError {
                 f,
                 "does not commute with `{other_at}` in {other_source}: both reach `{path}`, and {why}"
             ),
-            AddCollides(address) => write!(
+            AddCollides(both) => write!(
                 f,
-                "`{address}` is already declared, and `add` states a whole value. \
+                "`{}` is already declared{}, and `add` states a whole value. \
                  Reconcile the two declarations by hand: `add` and `override` differ in what \
-                 the consumer inherits, so nothing promotes one to the other"
+                 the consumer inherits, so nothing promotes one to the other",
+                both.address,
+                match both.declared_in.is_empty() {
+                    true => String::new(),
+                    false => format!(" in {}", both.declared_in),
+                }
             ),
             OverrideMissing(address) => {
                 write!(f, "`{address}` is not declared, and `override` replaces a value that is there")

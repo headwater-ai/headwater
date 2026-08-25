@@ -27,6 +27,26 @@ pub fn render(map: &Mapping) -> String {
     out
 }
 
+/// One value written the way [`render`] writes it: no key above it, no
+/// indentation of its own, and no trailing newline.
+///
+/// What a report shows when it puts two declarations side by side, so that a
+/// reader compares the text the two sources resolve to rather than the bytes
+/// their authors typed. The lock never calls it: a lock holds a whole mapping
+/// and [`render`] is the writer for that.
+pub fn value(value: &Value) -> String {
+    let mut out = String::new();
+    match value {
+        Value::Scalar(scalar) => return write_scalar(scalar),
+        Value::Map(inner) if inner.is_empty() => return String::from("{}"),
+        Value::Seq(items) if items.is_empty() => return String::from("[]"),
+        Value::Map(inner) => mapping(inner, 0, &mut out),
+        Value::Seq(items) => sequence(items, 0, &mut out),
+    }
+    out.truncate(out.trim_end_matches('\n').len());
+    out
+}
+
 fn mapping(map: &Mapping, indent: usize, out: &mut String) {
     for entry in map {
         let pad = " ".repeat(indent);
@@ -179,5 +199,42 @@ core:
     #[test]
     fn an_empty_collection_keeps_its_form() {
         round_trip("regimes:\n  voice:\n    narrative: {}\nmappings: []\n");
+    }
+
+    /// The value under `here` of a one-key source, as [`value`] writes it.
+    fn only(source: &str) -> String {
+        let loaded = headwater_yaml::load(source).expect("the fixture loads");
+        let map = loaded.value.as_map().expect("a mapping");
+        let found = crate::merge::lookup(map, &["here".to_string()]).expect("the one key");
+        value(&found.value)
+    }
+
+    #[test]
+    fn one_value_is_written_with_no_key_and_no_trailing_newline() {
+        assert_eq!(only("here: behavior\n"), "behavior");
+        assert_eq!(only("here: \"a b\"\n"), "\"a b\"");
+    }
+
+    #[test]
+    fn an_empty_collection_is_written_in_its_flow_form() {
+        assert_eq!(only("here: {}\n"), "{}");
+        assert_eq!(only("here: []\n"), "[]");
+    }
+
+    #[test]
+    fn a_mapping_is_written_from_column_zero() {
+        assert_eq!(
+            only("here: {pattern: \"SPEC-{slug}\", namespace: HW}\n"),
+            "pattern: \"SPEC-{slug}\"\nnamespace: HW"
+        );
+    }
+
+    #[test]
+    fn a_sequence_is_written_from_column_zero() {
+        assert_eq!(only("here:\n  - draft\n  - current\n"), "- draft\n- current");
+        assert_eq!(
+            only("here:\n  - {value: draft, role: initial}\n"),
+            "- value: draft\n  role: initial"
+        );
     }
 }
