@@ -1,8 +1,8 @@
-274 files under the corpus root
+286 files under the corpus root
     206 typed
       4 generated
       2 untyped
-     60 excluded
+     72 excluded
       2 not a document
      34 typed decision
       1 typed decision_register
@@ -17,7 +17,7 @@
       1 typed tutorial
 
 exclusions
-     60 `docs/taxonomies/**`
+     72 `docs/taxonomies/**`
         package content. This directory is the canonical taxonomy library, and a taxonomy package that lives inside the corpus it types has no home in the shelf model. Nothing in the base package or in either entry says whether package content is corpus content, and spec 13 records the gap; this repository answers it locally, here, with a reason. A fixture corpus under an entry is package content twice over, because it is a corpus that another root is meant to walk.
 
 docs/LICENSE
@@ -33,6 +33,30 @@ docs/spec/09-open-questions.md
 docs/spec/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/taxonomies/README.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/brd-prd/bundle.yml
+  excluded: docs/taxonomies/**
+docs/taxonomies/brd-prd/doctrine.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/brd-prd/fixtures/README.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/brd-prd/fixtures/corpus/docs/requirements/delivery-slo/brd.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/brd-prd/fixtures/corpus/docs/requirements/delivery-slo/prd.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/brd-prd/fixtures/corpus/docs/requirements/self-serve-onboarding/brd.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/brd-prd/fixtures/corpus/docs/requirements/self-serve-onboarding/prd.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/brd-prd/fixtures/corpus/docs/requirements/tenant-billing/brd.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/brd-prd/fixtures/corpus/docs/requirements/webhook-replay/brd.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/brd-prd/fixtures/corpus/docs/requirements/webhook-replay/prd.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/brd-prd/templates/brd.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/brd-prd/templates/prd.md
   excluded: docs/taxonomies/**
 docs/taxonomies/decision-record/bundle.yml
   excluded: docs/taxonomies/**
