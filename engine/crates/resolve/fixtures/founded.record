@@ -1,0 +1,11 @@
+add-collides: refused, so nothing is made
+address-into-a-list: refused, so nothing is made
+an-add-that-founds-what-it-addresses: 1 operation makes what it addresses
+  overlay-1-adopter.yml: add.kinds.playbook.purpose makes `kinds.playbook` rather than reaching into it, so the address resolves because this operation creates what it addresses
+core-last-satisfier: refused, so nothing is made
+list-operations: 0 operations make what they address
+not-confluent: refused, so nothing is made
+remove-a-required-member: refused, so nothing is made
+remove-breaks-a-reference: refused, so nothing is made
+two-adds-into-one-kind: 0 operations make what they address
+worked-overlay: 0 operations make what they address

@@ -186,6 +186,38 @@ impl Resolution {
     pub fn validate(&self) -> Vec<ResolveError> {
         rules::check(&self.taxonomy)
     }
+
+    /// Every operation that makes what it addresses, as the text two verbs print.
+    ///
+    /// One copy, because `taxonomy validate` states it and `taxonomy resolve`
+    /// reports it, and two renderings could disagree about what a founding is.
+    /// The wording of each line is [`Founding::sentence`], which
+    /// `headwater_compat::addressability` also prints, so a reader who meets the
+    /// reading at two verbs meets one sentence.
+    ///
+    /// The heading carries its own count, on the precedent
+    /// [`rules::render`] sets for `WAITING`: a list that empties says so rather
+    /// than looking like a list nobody printed. The trailing note prints only
+    /// when the count is non-zero, and it is the one place the reason lives.
+    pub fn foundings(&self) -> String {
+        let mut out = format!(
+            "operations that make what they address: {}\n",
+            self.founded.len()
+        );
+        for founding in &self.founded {
+            out.push_str(&format!("  {}\n", self.sources[founding.source]));
+            out.push_str(&format!("    {}\n", founding.sentence()));
+        }
+        if !self.founded.is_empty() {
+            out.push_str(
+                "  Nothing here refuses a founding. The precondition of an `add` is about the \
+                 addressed key alone, so the resolver creates what it needs on the way down and \
+                 two overlays commute. `taxonomy diff` reads this record as the `addressability` \
+                 dimension, where a base that dropped the declaration is a break.\n",
+            );
+        }
+        out
+    }
 }
 
 /// A repository resolved: what it walks, and the taxonomy it walks it with.

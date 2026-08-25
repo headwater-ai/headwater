@@ -162,6 +162,45 @@ fn no_permutation_of_an_overlay_set_changes_the_result() {
     compare(&fixtures_dir().join("confluence.record"), &out);
 }
 
+/// What each case's overlays make, rather than reach into.
+///
+/// [`headwater_resolve::Founding`] is recorded by the merge and printed by two
+/// verbs, and a reading that fires where it should not is worse than one that
+/// never fires. The record holds every case at once, so a change to
+/// [`headwater_resolve::apply`] that started founding on an address whose
+/// parent is there moves a line here rather than passing in silence.
+///
+/// The counts are the ones the declared overlay order produces, which is the
+/// order `sources` reads and the order a consumer declaration selects. A pair
+/// that commutes can record a founding in one order and not the other, and
+/// `founded.rs` is where that is a case.
+#[test]
+fn every_case_records_what_its_overlays_make() {
+    let mut out = String::new();
+    for case in cases() {
+        let Ok(resolution) = resolve(&sources(&case)) else {
+            out.push_str(&format!("{}: refused, so nothing is made\n", name(&case)));
+            continue;
+        };
+        let founded = &resolution.founded;
+        out.push_str(&match founded.len() {
+            1 => format!("{}: 1 operation makes what it addresses\n", name(&case)),
+            count => format!(
+                "{}: {count} operations make what they address\n",
+                name(&case)
+            ),
+        });
+        for founding in founded {
+            out.push_str(&format!(
+                "  {}: {}\n",
+                resolution.sources[founding.source],
+                founding.sentence()
+            ));
+        }
+    }
+    compare(&fixtures_dir().join("founded.record"), &out);
+}
+
 /// The round trip: a resolved taxonomy is a taxonomy source.
 ///
 /// The result is written out, loaded again as a package with no overlays, and
