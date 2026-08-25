@@ -75,7 +75,7 @@ Four terms hold for a binding to any harness, and the first three restate the ho
 
 ## The support table
 
-The Claude Code column is bound in `.claude/`. Two suites hold it: `.claude/hooks/fixtures.sh` for the positions, and `.claude/skills/fixtures.sh` for the skills. The Codex and Copilot rows for C3 through C6 bind the same way, in `.codex/hooks.json` and `.github/hooks/*.json`. The same suite holds their cases, and a live run of each harness confirmed every one first. The remaining cells of both columns are read from vendor documentation dated 2026-08-25, and no fixture holds them.
+The Claude Code column is bound in `.claude/`. Two suites hold it: `.claude/hooks/fixtures.sh` for the positions, and `.claude/skills/fixtures.sh` for the skills. The Codex and Copilot rows for C3 through C6 bind the same way, in `.codex/hooks.json` and `.github/hooks/*.json`, and `.claude/hooks/fixtures.sh` holds their cases too. `.claude/hooks/fixtures-live.sh` reruns the live confirmation against a real install of each harness, and nothing gates on it, the same posture as `headwater probe`. The remaining cells of both columns are read from vendor documentation dated 2026-08-25, and no fixture holds them.
 
 | Capability | Claude Code | GitHub Copilot | OpenAI Codex |
 |---|---|---|---|
@@ -91,7 +91,7 @@ The Claude Code column is bound in `.claude/`. Two suites hold it: `.claude/hook
 | C10 tool registration | `.mcp.json` in the checkout | a workspace file in the IDE, repository settings for the cloud agent | `[mcp_servers]` in `config.toml`, operator configuration |
 | position registration | `.claude/settings.json` | `.github/hooks/*.json`, and the IDE also reads `.claude/settings.json` | `.codex/hooks.json`, or `~/.codex/hooks.json`, behind a feature flag that ships on |
 
-Every Claude Code cell except C2 is bound. The Codex and Copilot rows for C3 through C6 are bound the same way, each held by `.claude/hooks/fixtures.sh` and confirmed against a live run. Every other cell of both columns is a file this repository ships or a claim vendor documentation makes, and no fixture holds either kind.
+Every Claude Code cell except C2 is bound. The Codex and Copilot rows for C3 through C6 are bound the same way, each held by `.claude/hooks/fixtures.sh`. `.claude/hooks/fixtures-live.sh` is the live confirmation behind that, and it reruns against a real install rather than resting on one session. Every other cell of both columns is a file this repository ships or a claim vendor documentation makes, and no fixture holds either kind.
 
 **The shape converged, and it is the shape this repository already ships.** All three harnesses read a `SKILL.md` under a per-skill directory. All three name the same four positions, and all three read a standing file from the checkout. Two of them read this repository's own files: Copilot's IDE discovers hooks in `.claude/settings.json`, and its skill loader reads `.claude/skills/`. So part of the Claude Code binding is loaded by a second harness through that harness's own choice, which nothing here has measured. A binding for either other column is registration of the same verbs, not a port of any logic, because the scripts carry none.
 
