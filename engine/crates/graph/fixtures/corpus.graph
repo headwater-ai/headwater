@@ -1,6 +1,6 @@
-226 nodes, 501 declared edge halves
-    411 to a document
-     90 to an anchor
+228 nodes, 505 declared edge halves
+    413 to a document
+     92 to an anchor
 0 prose links that did not resolve
 
 anchors
@@ -18,6 +18,7 @@ anchors
       1 code_path `.headwater/taxonomy.yml` via source-tree
       2 code_path `docs/taxonomies/decision-record/bundle.yml` via source-tree
         inside `docs/taxonomies/**`, which this corpus declares is not corpus content
+      1 code_path `engine/Cargo.lock` via source-tree
       1 code_path `engine/Cargo.toml` via source-tree
       1 code_path `engine/README.md` via source-tree
       1 code_path `engine/crates/audit/src/lib.rs` via source-tree
@@ -35,6 +36,7 @@ anchors
       1 code_path `engine/crates/conformance/src/render.rs` via source-tree
       1 code_path `engine/crates/generate/src/export.rs` via source-tree
       1 code_path `engine/crates/generate/src/lib.rs` via source-tree
+      1 code_path `engine/crates/graph/src/anchors.rs` via source-tree
       1 code_path `engine/crates/import/src/lib.rs` via source-tree
       1 code_path `engine/crates/meta/meta-schema.yml` via source-tree
       1 code_path `engine/crates/probe/src/lib.rs` via source-tree

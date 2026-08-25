@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:a07ad716d6cb98c3c1ba063675607da065e2d1cb229d54d7cadaeb11df80b2aa
+  digest: sha256:61dc7f0bfd5e035bfaad4ce302a13e08c69fc0d164ab7be3d801d2b67db5a3e6
   rules: 1
   package: headwater/standard
   version: 3.3.0
@@ -34,7 +34,7 @@ lock:
     - path: packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:dfac204c8b8bddba13a81a5345633ace234d69b9eceef310ed3e0606c9a3b852
     - path: .headwater/overlay.yml
-      digest: sha256:b7f0d9a8d58f0ee8006a1d62d86ee4cabf04cd1ed11970bd783a8a95477a5cdb
+      digest: sha256:d44a1718b8387804c48cb4faa104e3bc5f7bcf9b76ad4e853703d0f5b73fe498
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -91,6 +91,12 @@ resolved:
         - "how do I set this up"
         - "what are the steps"
       intent: "state the steps a reader follows, and the state each step reaches"
+    requirement:
+      answers:
+        - "what must this do"
+        - "what does done mean here"
+        - "what would show that this is met"
+      intent: "state what must hold before a thing is built, and what decides that it holds"
   vocabularies:
     lifecycle_state:
       - value: draft
@@ -214,6 +220,20 @@ resolved:
       role: name
       type: string
       volatility: stable
+    verification_method:
+      guidance:
+        analysis: "reason from a model, a calculation or a result already established, where a run is not possible and not needed"
+        demonstration: "operate the system and observe the behavior the fit criterion states, with no instrument beyond the observation"
+        inspection: "read the artifact against the fit criterion, and run nothing"
+        test: "run the system and compare a measured result against the fit criterion"
+      required: false
+      type: string
+      values:
+        - test
+        - demonstration
+        - inspection
+        - analysis
+      volatility: mutable
     waiting_on:
       guidance:
         adopter: "an outside corpus has to exist before anything can move"
@@ -258,6 +278,10 @@ resolved:
           - change_narration
           - phased_rollout
       narrative: {}
+      prospective:
+        forbid:
+          - change_narration
+          - phased_rollout
     language:
       default:
         tag: en-US
@@ -341,6 +365,22 @@ resolved:
         require:
           - Scope
           - Behavior
+    acceptance_criterion:
+      facets:
+        require:
+          - title
+          - verification_method
+      identifier:
+        scheme: acceptance_criterion_id
+      is_a: governed_document
+      language: ste_house
+      lifecycle: standard
+      purpose: requirement
+      sections:
+        require:
+          - "Fit criterion"
+          - Method
+      voice: prospective
     decision_register:
       facets:
         require:
@@ -475,6 +515,33 @@ resolved:
           - "Run identity"
           - Events
       voice: narrative
+    requirement:
+      facets:
+        require:
+          - title
+      identifier:
+        scheme: requirement_id
+      is_a: governed_document
+      language: ste_house
+      lifecycle: standard
+      purpose: requirement
+      relations:
+        expect:
+          - id: requirement-verified
+            relation: verified_by
+            to_kind: acceptance_criterion
+            when:
+              status: current
+            within: 90d
+            since: state_entered
+            severity: warn
+            rationale: "a requirement that nothing verifies is a claim nobody can settle"
+      sections:
+        require:
+          - Context
+          - Requirement
+          - Verification
+      voice: prospective
     review_prompt:
       facets:
         require:
@@ -627,6 +694,17 @@ resolved:
         - probe_transcript
       to:
         - probe
+    verified_by:
+      cardinality: many
+      created_by: scaffold
+      family: evidence
+      from:
+        - requirement
+      inverse: verifies
+      reciprocal: required
+      to:
+        - acceptance_criterion
+        - probe
   shelves:
     decisions:
       path: "docs/decisions/**"
@@ -637,6 +715,11 @@ resolved:
       path: "docs/specifications/**"
       homogeneous: true
       kind: specification
+    acceptance_criteria:
+      homogeneous: true
+      kind: acceptance_criterion
+      layout: "{seq:04d}-{slug}.md"
+      path: "docs/acceptance-criteria/**"
     evaluations:
       homogeneous: true
       kind: evaluation
@@ -662,6 +745,11 @@ resolved:
       homogeneous: true
       kind: probe
       path: "docs/probes/**"
+    requirements:
+      homogeneous: true
+      kind: requirement
+      layout: "{seq:04d}-{slug}.md"
+      path: "docs/requirements/**"
     reviews:
       discriminator: doc_type
       homogeneous: false
@@ -687,6 +775,10 @@ resolved:
       pattern: "{namespace}-DR-{seq:04d}"
       allocation: reconcile-first
       namespace: HW
+    acceptance_criterion_id:
+      allocation: reconcile-first
+      namespace: HW
+      pattern: "{namespace}-AC-{seq:04d}"
     evaluation_id:
       allocation: minted-once
       namespace: HW
@@ -707,6 +799,10 @@ resolved:
       allocation: minted-once
       namespace: HW
       pattern: "{namespace}-REG-{slug}"
+    requirement_id:
+      allocation: reconcile-first
+      namespace: HW
+      pattern: "{namespace}-REQ-{seq:04d}"
     result_id:
       allocation: minted-once
       namespace: HW

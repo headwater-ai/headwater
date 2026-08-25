@@ -1,0 +1,119 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The taxonomy the participation-target tree is checked against, and the
+# smallest shape the question needs: one relation that admits two target kinds,
+# and two expectations over it that differ only in whether they name a
+# `to_kind`.
+#
+# `Expectation.to_kind` is an `Option<String>`, so an expectation names one
+# target kind or none. A relation names a *list*. When the relation admits two
+# kinds and the expectation names one of them, a document verified by the other
+# is reported as if it were verified by nothing. That is what `narrow` holds,
+# and `broad` is the same declaration with the clause removed.
+#
+# The two kinds are otherwise identical, character for character, so the only
+# thing that can move an arm of this file is the `to_kind` clause itself. This
+# is the shape `retention.taxonomy.yml` uses for `retain_terminal`: put the one
+# member under test in its own regime and let every other member match.
+#
+# `verified_by` declares no `inverse` and no `reciprocal`, so no instance of the
+# reciprocity rule is generated over it. The subject here is which neighbour
+# satisfies a window, and a fixture that had to satisfy two rules at once is one
+# nobody can read.
+
+facets:
+  status:
+    role: state
+    required: true
+    values:
+      - {value: draft,   role: initial}
+      - {value: current, role: live}
+      - {value: retired, role: terminal-retained}
+  status_since:
+    role: state_entered
+    required: true
+  summary:
+    role: scent
+    required: true
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current], current: [retired]}
+
+identifier_schemes:
+  fixture_id: {pattern: "PT-{namespace}-{slug}", namespace: FIX, allocation: minted-once}
+
+kinds:
+  # The defect shape. It names `acceptance_criterion`, which is one of the two
+  # kinds `verified_by` admits, so a document this relation legitimately points
+  # at a `probe` is reported as reaching nothing.
+  requirement_narrow:
+    identifier: {scheme: fixture_id}
+    lifecycle: standard
+    facets: {require: [status, status_since, summary]}
+    relations:
+      expect:
+        - id: narrow-verified
+          relation: verified_by
+          to_kind: acceptance_criterion
+          when: {status: current}
+          within: 90d
+          since: state_entered
+          severity: warn
+          rationale: a requirement that nothing verifies is a claim nobody can settle
+
+  # The fixed shape, and the whole of the difference is the absent clause.
+  # `Participation::satisfied` reads `None => true`, so any neighbour on this
+  # relation satisfies the window, and the relation's own `to:` list is what
+  # says which neighbours may exist at all.
+  requirement_broad:
+    identifier: {scheme: fixture_id}
+    lifecycle: standard
+    facets: {require: [status, status_since, summary]}
+    relations:
+      expect:
+        - id: broad-verified
+          relation: verified_by
+          when: {status: current}
+          within: 90d
+          since: state_entered
+          severity: warn
+          rationale: a requirement that nothing verifies is a claim nobody can settle
+
+  acceptance_criterion:
+    identifier: {scheme: fixture_id}
+    lifecycle: standard
+    facets: {require: [status, status_since, summary]}
+
+  probe:
+    identifier: {scheme: fixture_id}
+    lifecycle: standard
+    facets: {require: [status, status_since, summary]}
+
+relations:
+  verified_by:
+    family: evidence
+    from: [requirement_narrow, requirement_broad]
+    to:   [acceptance_criterion, probe]
+    cardinality: many
+    created_by: author
+
+shelves:
+  narrow_requirements:
+    path: participation-target/narrow/**
+    homogeneous: true
+    kind: requirement_narrow
+  broad_requirements:
+    path: participation-target/broad/**
+    homogeneous: true
+    kind: requirement_broad
+  criteria:
+    path: participation-target/criteria/**
+    homogeneous: true
+    kind: acceptance_criterion
+  probes:
+    path: participation-target/probes/**
+    homogeneous: true
+    kind: probe

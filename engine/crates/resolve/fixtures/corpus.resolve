@@ -76,20 +76,30 @@ operations
   add.identifier_schemes.tutorial_id (.headwater/overlay.yml)
   add.kinds.tutorial (.headwater/overlay.yml)
   add.shelves.tutorials (.headwater/overlay.yml)
+  add.purposes.requirement (.headwater/overlay.yml)
+  add.regimes.voice.prospective (.headwater/overlay.yml)
+  add.facets.verification_method (.headwater/overlay.yml)
+  add.identifier_schemes.requirement_id (.headwater/overlay.yml)
+  add.identifier_schemes.acceptance_criterion_id (.headwater/overlay.yml)
+  add.kinds.requirement (.headwater/overlay.yml)
+  add.kinds.acceptance_criterion (.headwater/overlay.yml)
+  add.relations.verified_by (.headwater/overlay.yml)
+  add.shelves.requirements (.headwater/overlay.yml)
+  add.shelves.acceptance_criteria (.headwater/overlay.yml)
   add_to.projections (.headwater/overlay.yml)
 
 declarations, by member count
   taxonomy: headwater/standard
   version: 3.3.0
-  purposes: 5 members
+  purposes: 6 members
   vocabularies: 1 member
-  facets: 13 members
+  facets: 14 members
   regimes: 3 members
   anchors: 1 member
-  kinds: 15 members
-  relations: 11 members
-  shelves: 11 members
-  identifier_schemes: 11 members
+  kinds: 17 members
+  relations: 12 members
+  shelves: 13 members
+  identifier_schemes: 13 members
   core: 1 member
   projections: 5 items
   obligations: 31 members
