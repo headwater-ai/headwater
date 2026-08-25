@@ -50,6 +50,35 @@ pub enum Ran {
     },
 }
 
+/// The identity of the rule set that [`RULES`] and [`check`] carry, for
+/// [`headwater_lock`](../../../../engine/crates/lock/src/lib.rs) to bind a lock
+/// to.
+///
+/// [`headwater_lock::read`] checks a lock's format and its digest, and neither
+/// says whether the 23 rules that validated it are the 23 rules this build of
+/// the engine would run. A lock is written once, at `taxonomy resolve` time,
+/// and a rule can gain or lose ground between that write and any later read —
+/// this crate's own history, not a hypothetical: `#219` widened lifecycle
+/// soundness from "reachable within the regime that names a state" to
+/// "reachable in some lifecycle regime", which took a lock that a resolve had
+/// already validated and made it accept taxonomies the same rule now refuses.
+/// A hand-maintained number is what stands in for "this is what validated it",
+/// because [`env!("CARGO_PKG_VERSION")`] is the wrong grain: it moves on a
+/// change to this crate that touches no rule, and it stays put on a rule moved
+/// out of this crate into another one this crate depends on.
+///
+/// **Any edit to a function this array reaches, or to [`check`] itself, that
+/// changes what a taxonomy it accepted before now refuses, or the reverse,
+/// must increment this number.** That is every one of the 23 rules spec 2
+/// lists: the 18 called from [`check`] below, plus the five that gate earlier
+/// in the pipeline and never reach this file — structural conformance and
+/// reference well-formedness at [`Source::validate`](crate::Source::validate),
+/// core satisfiability, edge provenance and overlay confluence in
+/// [`crate::resolve`] and [`crate::confluence`]. A rule whose wording changed
+/// with no change to what it accepts or refuses does not need the bump; a rule
+/// whose *verdict* over some taxonomy changed does.
+pub const RULE_SET: u32 = 1;
+
 /// Every rule that [spec 2](../../../../docs/spec/02-taxonomy-model.md#the-meta-schema)
 /// lists for `taxonomy validate`, in spec 2's own order, and where each runs.
 ///
