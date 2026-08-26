@@ -23,7 +23,8 @@ use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::Shape;
 use headwater_generate::{
-    check, descriptor, plan, write, Emitter, Identity, Plan, Projections, Report, Runs, Verdict,
+    check, descriptor, plan, write, Emitter, Identity, Kind, Plan, Projections, Report, Runs,
+    Verdict,
 };
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -570,19 +571,23 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its two artifacts, and it says why for everything
+/// This repository generates its six artifacts, and it says why for everything
 /// else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
-/// is what a prose edit must not change. Four files are written. The descriptor
+/// is what a prose edit must not change. Six files are written. The descriptor
 /// sits at the path Q14 fixes, and the index of the specification shelf sits at
 /// the path this repository's overlay declares. That second one is the list the
 /// root README used to carry by hand. The third is the index of the decisions
 /// shelf, which the package has declared since the first-run walkthrough and
 /// which produced a reason rather than a file until #124 filled that shelf. The
-/// package still declares an index for one shelf this tree holds no document on,
-/// so that one produces a reason, and the register produces a second.
+/// fourth is the redirect map that the open-questions tombstone carries, and the
+/// fifth is the verb index #257 asked for. The sixth is the graph export #414
+/// names: the whole graph, for the reader Q16 draws with no principal to filter
+/// for. The package still declares an index for one shelf this tree holds no
+/// document on, so that one produces a reason, and the register produces a
+/// second.
 ///
 /// **The order is the plan's order, and it is asserted.** A declared projection
 /// is planned before the engine-defined descriptor, so a taxonomy that declares
@@ -593,7 +598,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_five_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_six_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -631,10 +636,12 @@ fn this_repository_generates_its_five_artifacts_and_accounts_for_the_rest() {
             "docs/spec/README.md",
             "docs/spec/09-open-questions.md",
             "docs/interfaces/README.md",
+            ".headwater/export.json",
             descriptor::PATH
         ],
         "this repository writes the decisions index, the specification index, the \
-         redirect map, the verb index and the descriptor, in that order"
+         redirect map, the verb index, the graph export and the descriptor, in that \
+         order"
     );
     // One declared shelf that holds no document, one declared projection whose
     // source this corpus does not hold, and the register. Nothing is passed
@@ -1304,5 +1311,110 @@ projections:
             .iter()
             .any(|error| error.message.contains("one filter")),
         "the refusal does not say why: {errors:?}"
+    );
+}
+
+/// A `graph_export` declared the way `.headwater/overlay.yml` declares one —
+/// one profile, no filter, no `format` — held to regeneration through
+/// `plan()`, `write()` and `check()`, the same functions `generate` and
+/// `generate --check` call.
+///
+/// The two tests above call `export::emit()` directly against a hand-built
+/// `Profile`, so neither one reaches `plan()`'s `Kind::GraphExport` arm. This
+/// one does, over the crate's own `fixture_tree()`: it fails before the file
+/// exists, fails after a hand edit that strips the marker, fails after a
+/// deletion, and passes again once `write()` regenerates it — the four
+/// branches the issue's own "generate fixture suite covers the new emitter"
+/// bar names.
+#[test]
+fn a_declared_graph_export_is_held_to_regeneration() {
+    let (built, _root) = fixture_tree();
+    let surface = built.surface();
+    let source = "\
+projections:
+  - kind: graph_export
+    profile: site
+    output: exports/site.json
+";
+    let root = headwater_yaml::load(source)
+        .expect("it loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let projections = Projections::read(&root).expect("the projections read");
+    let plan = plan(
+        &surface,
+        &built.census,
+        &projections,
+        &fixture_identity(),
+        &Runs::default(),
+        headwater_verbs::VERBS,
+    );
+    let output = plan
+        .outputs
+        .iter()
+        .find(|output| output.path == "exports/site.json")
+        .expect("the declaration produced an output");
+    assert_eq!(output.kind, Kind::GraphExport);
+
+    // (a) before the file exists, the plan's own check would write it.
+    let tree = empty_tree("graph-export-missing");
+    let missing = check(&tree, &plan);
+    assert!(
+        missing.has_errors(),
+        "an ungenerated graph_export has to fail the gate before it is ever written"
+    );
+
+    let first = write(&tree, &plan);
+    assert!(
+        !first.has_errors(),
+        "the first write failed: {}",
+        first.render()
+    );
+    let bytes_after_write =
+        std::fs::read_to_string(tree.join("exports/site.json")).expect("it was written");
+    let clean = check(&tree, &plan);
+    assert!(
+        !clean.has_errors(),
+        "a fresh write does not satisfy its own check: {}",
+        clean.render()
+    );
+
+    // (b) a hand edit strips the marker, and the gate has to catch it.
+    std::fs::write(tree.join("exports/site.json"), "{\"tampered\": true}\n")
+        .expect("the hand edit");
+    let tampered = check(&tree, &plan);
+    assert!(
+        tampered.has_errors(),
+        "a hand-edited graph_export with no marker has to fail the gate"
+    );
+
+    // (c) a deletion is the same failure the missing-file case above is.
+    std::fs::remove_file(tree.join("exports/site.json")).expect("the deletion");
+    let deleted = check(&tree, &plan);
+    assert!(
+        deleted.has_errors(),
+        "a deleted graph_export has to fail the gate"
+    );
+
+    // (d) regeneration restores byte-identical output and a clean check.
+    let second = write(&tree, &plan);
+    assert!(
+        !second.has_errors(),
+        "regeneration failed: {}",
+        second.render()
+    );
+    let bytes_after_regen =
+        std::fs::read_to_string(tree.join("exports/site.json")).expect("it is there again");
+    assert_eq!(
+        bytes_after_write, bytes_after_regen,
+        "regeneration did not restore byte-identical output"
+    );
+    let restored = check(&tree, &plan);
+    assert!(
+        !restored.has_errors(),
+        "check does not pass again after regeneration: {}",
+        restored.render()
     );
 }
