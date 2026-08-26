@@ -157,6 +157,49 @@ jobs:
         run: |
           python3 -m pip install --user mkdocs==1.6.1
           python3 -m mkdocs build --strict
+      - name: The build wrote nothing into the deployed site
+        # `site/` is the hand-built half HW-DR-0037 governs, `wrangler.jsonc`
+        # names it as the asset directory with no build command, and Cloudflare
+        # deploys it on every push to the default branch. `mkdocs build` cleans
+        # `site_dir` before it writes, and MkDocs's default `site_dir` is
+        # `site`. So deleting one line of `mkdocs.yml` empties the live site,
+        # exits 0 and emits no warning under `--strict`. Measured three ways,
+        # on throwaway configurations: the line deleted, `site_dir: site`, and
+        # a subdirectory config with `site_dir: ../site`.
+        #
+        # This observes the damage rather than the configuration, which is why
+        # it catches the third of those: an assertion on the resolved
+        # `site_dir` reads the one config file it is named, and a config file
+        # in a subdirectory is one it was never named. It also catches a
+        # mechanism nobody has thought of yet — a plugin, a `hooks:` entry, a
+        # future emitter — because it asks git what moved and matches no string
+        # at all. A gate that matches a string can be satisfied by a corpus
+        # that writes the string, which is the blind spot the grep in the step
+        # below actually has: two rendered pages quote `rel="describedby"` in
+        # their own prose.
+        #
+        # It cannot fire on a legitimate change. The working tree equals `HEAD`
+        # when this job starts, so what it reports is what the steps above it
+        # did and never what the pull request carries.
+        #
+        # Above the step below rather than after it: with `site_dir` moved,
+        # `.headwater/site-build` is never created and that step's `cp` fails
+        # first, which would end the job with `cp: cannot create regular file`
+        # and none of this diagnosis.
+        #
+        # `.githooks/pre-commit` carries the other half of this, and shares no
+        # line with it. This holds the merge; that holds the push, which is
+        # what Cloudflare deploys.
+        run: |
+          moved=$(git status --porcelain -- site/)
+          if ! git diff --quiet HEAD -- site/ || [ -n "$moved" ]; then
+            echo "the MkDocs build wrote into \`site/\`, which is the deployed site and not a" >&2
+            echo "build output. \`mkdocs build\` cleans \`site_dir\` before it writes, and a" >&2
+            echo "\`site_dir\` that resolves onto \`site/\` empties it and exits 0. Read the" >&2
+            echo "comment above \`site_dir:\` in \`mkdocs.yml\`. What moved:" >&2
+            git status --porcelain -- site/ >&2
+            exit 1
+          fi
       - name: Every rendered page points at the corpus descriptor
         # This blocks, and it catches what the step above cannot see. Measured
         # on a throwaway worktree: with `theme.custom_dir` deleted,

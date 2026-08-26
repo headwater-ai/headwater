@@ -233,6 +233,58 @@ status=$?
 judge 'a path a manifest line cannot carry is refused before it is written' 1 "$status" \
     'holds a tab' "$(cat "$hold/why")"
 
+printf '# the deployed site, which no engine reads\n'
+
+# `site/` is what Cloudflare serves as https://headwater.tools/, with no build
+# step, so the bytes a commit removes from it are the bytes that go off the air.
+# The clause that refuses them sits above the engine check in the hook and reads
+# the index rather than the working tree, so every case below stages its change.
+#
+# The file the pair of cases moves is `site/_headers`, and the choice is
+# measured rather than arbitrary. It is the one file under `site/` that no
+# relation of this corpus names: HW-DR-0037 declares `governs` over
+# `site/index.html` and `site/ns/index.html` and `traces_to`
+# `site/DESIGN-BRIEF.md`, and removing any of those three raises
+# `relation.target.unresolved` whatever this clause decides. So `_headers` is
+# the only one whose removal the engine has no second opinion about, which is
+# what lets the release case below reach exit 0 and mean what it says.
+reset
+git -C "$scratch" rm -q site/_headers
+out=$(gate); status=$?
+judge 'a commit that removes a file from the deployed site is refused' 1 "$status" \
+    'deletes a file from `site/`' "$out"
+
+# The instrument. Without it the case above only proves the gate refuses
+# something about `site/`, rather than a deletion in particular.
+reset
+printf '\n<!-- a hand edit of the deployed site -->\n' >> "$scratch/site/index.html"
+git -C "$scratch" add site/index.html
+out=$(gate); status=$?
+judge 'a hand edit of a page of the deployed site is not refused' 0 "$status" '' "$out"
+
+reset
+printf '<p>a new page</p>\n' > "$scratch/site/about.html"
+git -C "$scratch" add site/about.html
+out=$(gate); status=$?
+judge 'a page added to the deployed site by hand is not refused' 0 "$status" '' "$out"
+
+# An escape hatch nobody has watched work is an escape hatch nobody knows works.
+reset
+git -C "$scratch" rm -q site/_headers
+out=$(cd "$scratch" && HEADWATER_ALLOW_SITE_DELETE=1 sh .githooks/pre-commit 2>&1); status=$?
+judge 'the same removal with the named variable set is allowed through' 0 "$status" '' "$out"
+
+# What the variable releases, and what it does not. It lifts this clause and
+# nothing else, so a page that a document of this corpus declares `governs`
+# over is refused a second time, by a rule the engine already runs. Nobody
+# designed that pairing and it is worth a case, because it is the reason the
+# case above names `_headers` and not `index.html`.
+reset
+git -C "$scratch" rm -q site/index.html
+out=$(cd "$scratch" && HEADWATER_ALLOW_SITE_DELETE=1 sh .githooks/pre-commit 2>&1); status=$?
+judge 'the variable releases this clause and not the rule that reads a governed path' 1 "$status" \
+    'relation.target.unresolved' "$out"
+
 reset
 printf '\n%s passed, %s failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]

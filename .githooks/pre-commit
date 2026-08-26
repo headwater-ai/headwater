@@ -1,5 +1,8 @@
 #!/bin/sh
-# The gate on this repository, which is `headwater check` and nothing else.
+# The gate on this repository, which is `headwater check` and one clause that
+# reads no engine at all: a commit that removes a file from `site/`, the
+# directory Cloudflare serves, is refused. That clause states its own reasons
+# where it stands, below.
 #
 # Install once per clone (the repo ships the hook, git does not install it):
 #     git config core.hooksPath .githooks
@@ -38,6 +41,41 @@
 # cost of failing closed is a repository nobody can commit to.
 
 root=$(git rev-parse --show-toplevel) || exit 0
+
+# `site/` is what Cloudflare serves as https://headwater.tools/, with no build
+# step, on every push to the default branch. `mkdocs build` cleans its
+# `site_dir` before it writes, so a configuration whose `site_dir` resolves
+# onto `site/` empties it and exits 0 with no warning. #430 is that hazard. The
+# CI job catches the configuration; this catches the bytes, which is the half
+# that is still ahead of the deploy on a push to `main`.
+#
+# It reads the index rather than the working tree, unlike every other reading
+# this hook takes, because what reaches Cloudflare is what the commit carries.
+#
+# Above the engine check on purpose: that check exits 0 on a clone with no
+# built engine, and this clause needs no engine.
+#
+# The variable releases this clause and nothing below it, and on this tree that
+# matters for three of the four files. HW-DR-0037 declares `governs` over
+# `site/index.html` and `site/ns/index.html` and `traces_to`
+# `site/DESIGN-BRIEF.md`, so removing any of those three is refused a second
+# time by `relation.target.unresolved`, which names the record that has to move
+# first. `site/_headers` is the one file the variable releases on its own, and
+# it is the one that carries the HSTS, `nosniff` and CSP headers. So this clause
+# is the whole gate on exactly the file whose loss is a security regression.
+if [ -z "${HEADWATER_ALLOW_SITE_DELETE:-}" ]; then
+    gone=$(git -C "$root" diff --cached --name-only --diff-filter=D -- site/)
+    if [ -n "$gone" ]; then
+        echo "headwater: this commit deletes a file from \`site/\`, which Cloudflare serves"
+        echo "  as https://headwater.tools/ with no build step. \`mkdocs build\` cleans its"
+        echo "  \`site_dir\` before it writes, so a configuration whose \`site_dir\` resolves"
+        echo "  onto \`site/\` empties it and exits 0. Deleted here:"
+        printf '%s\n' "$gone" | sed 's/^/    /'
+        echo "  If the removal is deliberate:"
+        echo "        HEADWATER_ALLOW_SITE_DELETE=1 git commit ..."
+        exit 1
+    fi
+fi
 
 engine="$root/engine/target/release/headwater"
 if [ ! -x "$engine" ]; then
