@@ -72,6 +72,12 @@ declarations:
 
   taxonomy: {scalar: string, required: true}
   version: {scalar: string, required: true}
+  # The engine reads nothing from this key today. A real reader would fetch or
+  # locate the named base package and layer this source over it as a second,
+  # transitive package, which is a resolver capability this repository has not
+  # built and a change to the lock that HW-OBL-0082 has not yet ruled on. Q40
+  # is the ruling: this stays a label a publisher states truthfully, and the
+  # meta-schema still validates its shape, but no comparison follows from it.
   extends: {one_of: [{scalar: string}, {scalar: null}]}
 
   vocabularies: {map: {seq: {one_of: [{scalar: string}, {block: vocabulary_value}]}}}
@@ -109,9 +115,24 @@ declarations:
 
 operations:
 
+  # The engine reads nothing from this key today. It restates the composed
+  # taxonomy's own name, and nothing records what an adopter's resolved
+  # taxonomy is named for the restatement to be checked against. Q40 rules the
+  # whole family below a label rather than a mechanism, for a reason stated
+  # once there rather than four times here.
   taxonomy: {scalar: string}
+  # The engine reads nothing from this key today. Every bundle this repository
+  # ships already agrees with its own directory name by inspection, and
+  # nothing exercises a mismatch. Q40.
   bundle: {scalar: string}
+  # The engine reads nothing from this key today. Nothing compares this value
+  # against the base package actually loaded, so a stale value here — as every
+  # one of this repository's own shipped bundles carries today — goes
+  # unreported. Q40.
   extends: {scalar: string}
+  # The engine reads nothing from this key today. The invariant it documents
+  # is already enforced by referential integrity at resolve time, on an
+  # unrelated path that predates this key. Q40.
   requires: {seq: {scalar: string}}
 
   # The key of an operation is an address rather than a segment, so it holds

@@ -54,7 +54,7 @@ A taxonomy is one logical document. The engine assembles it from a base package 
 ```yaml
 taxonomy: acme-engineering
 version: 3.2.0
-extends: headwater/standard@2.1.0        # base package, or null for from-scratch
+extends: headwater/standard@2.1.0        # base package, or null for from-scratch; unread today, Q40
 
 vocabularies:                          # authoring sugar: named value sets facets reference
   lifecycle_state:
@@ -245,6 +245,8 @@ projections:
     from: {anchor: ado_work_item}      # the resolver that owns the pin
     output: docs/requirements/
 ```
+
+**A taxonomy source states its base package once, at `extends`, and the engine reads nothing from it today.** The meta-schema requires the key to validate as a package reference or `null`, and validation stops there. What composes a corpus's taxonomy is the consumer declaration of [spec 7](07-distribution-and-federation.md#consuming) instead. It selects one package by name and version, and layers bundles and an overlay onto it. `extends` at a taxonomy source's own root plays no part in that selection. Nothing compares the value a publisher wrote there against the package the source actually sits under. [Q40](09-decisions.md#q40--whether-extends-bundle-requires-and-an-overlays-taxonomy-key-are-a-mechanism-or-a-label) rules the key a label today. A publisher states the base they wrote against, truthfully, and no comparison follows from it.
 
 ## The thirteen declarations
 
@@ -722,6 +724,8 @@ remove:
   - shelves.proposals            # we do not do time-boxed proposals
   - relations.refines
 ```
+
+**An overlay's own `taxonomy` and `extends` keys are unread as well, and for a different reason each.** `taxonomy` restates the composed taxonomy's own name. Nothing in this repository, or in any package it ships, uses the key outside this worked example and one meta-schema fixture. Nothing exists to hold a restatement against. `extends` here names the base an overlay was written against. The base's resolved version is loaded by the time an overlay is read. But every bundle this repository ships already carries a value here that has moved apart from the base underneath it, and no rule reports the gap. [Q40](09-decisions.md#q40--whether-extends-bundle-requires-and-an-overlays-taxonomy-key-are-a-mechanism-or-a-label) rules both keys a label rather than a mechanism. It rules a bundle's own `bundle` and `requires` keys the same way, and it states the reason for each one.
 
 Note what the lifecycle override does *not* break. The names change completely, the roles survive, and the core is satisfied. If the overlay dropped the `terminal-retained` role entirely, resolution would fail. The failure would not be because a key went missing, but because succession could no longer retain lineage, which the core requires.
 

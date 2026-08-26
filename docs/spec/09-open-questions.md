@@ -10,7 +10,7 @@ relations:
 
 # decisions
 
-39 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+40 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -167,3 +167,7 @@ relations:
 ## Q38 — Which link relation a rendered page carries to the served corpus descriptor
 
 [HW-DR-0038](../decisions/0038-q38-which-link-relation-a-rendered-page-carries-to-the-served-corpus-descriptor.md) — A rendered page points at the served descriptor with `rel="describedby"`, because the IANA registry carries that token and the Headwater extension address answers 404. (asserted, and no human has accepted it)
+
+## Q40 — Whether extends, bundle, requires and an overlay's taxonomy key are a mechanism or a label
+
+[HW-DR-0040](../decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md) — All four keys of the family are a label rather than a mechanism today, and the specification and the meta-schema now say so in plain prose. (asserted, and no human has accepted it)
