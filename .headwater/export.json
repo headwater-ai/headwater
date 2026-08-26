@@ -9,14 +9,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 299,
-      "carried": 299,
+      "in the graph": 300,
+      "carried": 300,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 506,
-      "carried": 506,
+      "in the graph": 509,
+      "carried": 509,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -979,6 +979,34 @@
           "relations": {
             "traces_to": [
               "HW-SPEC-authoring-and-lifecycle",
+              "HW-SPEC-engine-architecture"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md",
+        "kind": "decision",
+        "id": "HW-DR-0036",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0036",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "summary": "MkDocs is the pick. Its `nav:` is data and not code, and Astro has no native nav format to emit at all.",
+          "last_verified": "2026-08-26",
+          "title": "Q36 — Which of MkDocs, Docusaurus, or Astro this corpus emits navigation for, and why",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-SPEC-vision-and-scope",
+              "HW-SPEC-taxonomy-model",
               "HW-SPEC-engine-architecture"
             ]
           }
@@ -7715,6 +7743,39 @@
       },
       {
         "source": "docs/decisions/0035-q35-whether-one-requirement-kind-holds-an-imported-requirement-and-an-authored-one.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-engine-architecture",
+          "path": "docs/spec/06-engine-architecture.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-vision-and-scope",
+          "path": "docs/spec/00-vision-and-scope.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-taxonomy-model",
+          "path": "docs/spec/02-taxonomy-model.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
