@@ -10,4 +10,11 @@
 # none is slower and never different.
 .headwater/cache/
 
+# What `mkdocs build` writes, per `mkdocs.yml`. It is the rendered projection of
+# the corpus and every byte of it is recomputable from the tree beside it, so
+# nothing is lost by leaving it out. It is deliberately not the MkDocs default
+# of `site/`, which is the hand-built half HW-DR-0037 governs and which
+# Cloudflare deploys on every push.
+.headwater/site-build/
+
 __pycache__/

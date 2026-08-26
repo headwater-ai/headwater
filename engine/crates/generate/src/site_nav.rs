@@ -27,8 +27,19 @@
 //! and a plain YAML scalar breaks on either. So every string this module
 //! writes, the shelf name, the title, and the path alike, is written as a
 //! double-quoted scalar, never as a bare one.
+//!
+//! # Every path is relative to the corpus root
+//!
+//! MkDocs resolves a `nav:` path against `docs_dir` and never against the
+//! repository root. HW-DR-0036's third reason already reads `docs_dir` as this
+//! corpus's root, so a pointer's repository-relative path is not the value
+//! MkDocs reads: under `docs_dir: docs`, `docs/decisions/0001-a.md` resolves to
+//! `docs/docs/decisions/0001-a.md`, which is nothing. Each entry therefore
+//! carries [`crate::shelf_index::relative`] of the corpus root and the
+//! pointer's path. A corpus rooted at the repository root is unmoved by this,
+//! because the two forms coincide there.
 
-use crate::{pointers, shelf_of, Declaration, Kind, Output, Plan, Unwritten};
+use crate::{pointers, shelf_of, Declaration, Identity, Kind, Output, Plan, Unwritten};
 use headwater_census::census::Census;
 use headwater_query::{Pointer, Surface};
 
@@ -36,6 +47,7 @@ pub(crate) fn emit(
     surface: &Surface<'_>,
     _census: &Census,
     declaration: &Declaration,
+    identity: &Identity,
     plan: &mut Plan,
 ) {
     let taxonomy = surface.taxonomy();
@@ -76,7 +88,7 @@ pub(crate) fn emit(
     }
 
     plan.outputs.push(Output {
-        bytes: render(&declaration.output, &groups),
+        bytes: render(&declaration.output, &groups, &identity.corpus_root),
         path: declaration.output.clone(),
         kind: Kind::SiteNav,
     });
@@ -116,7 +128,7 @@ fn quoted(scalar: &str) -> String {
     out
 }
 
-fn render(output: &str, groups: &[(String, Vec<Pointer>)]) -> String {
+fn render(output: &str, groups: &[(String, Vec<Pointer>)], corpus_root: &str) -> String {
     let mut out = String::new();
     let mark = headwater_mark::marker(Kind::SiteNav.name(), output)
         .unwrap_or_else(|| format!("<!-- {} -->", headwater_mark::MARKER));
@@ -129,7 +141,7 @@ fn render(output: &str, groups: &[(String, Vec<Pointer>)]) -> String {
             out.push_str(&format!(
                 "      - {}: {}\n",
                 quoted(&label(pointer)),
-                quoted(&pointer.path)
+                quoted(&crate::shelf_index::relative(corpus_root, &pointer.path))
             ));
         }
     }

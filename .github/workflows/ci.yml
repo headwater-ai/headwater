@@ -132,6 +132,31 @@ jobs:
         # what lets it sit above the step that fixes the date for the three runs
         # after it.
         run: ./engine/target/release/headwater generate --check
+      - name: The site this corpus's navigation builds
+        # This blocks, and the failure it catches is the one that produced
+        # #425: a generated artifact that nobody ever fed to its consumer. The
+        # nav was held to regeneration by the step above for a week while every
+        # path in it named a file MkDocs could not find, because no run of
+        # anything asked MkDocs. It has to sit after that step, because a site
+        # built from a stale nav proves nothing.
+        #
+        # The version is pinned because MkDocs's validation defaults are the
+        # policy here: `exclude_docs` and the `validation` block arrived in
+        # 1.5, and `nav.omitted_files` levels in 1.6. An unpinned install would
+        # let a future release move this gate with no commit in this
+        # repository. The unpinned `jsonschema PyYAML` step above is not a
+        # precedent for a tool whose defaults are what `mkdocs.yml` reasons
+        # against.
+        #
+        # `pip install --user` works on this runner and it does not work
+        # everywhere. A PEP 668 environment, which is most current Debian and
+        # Ubuntu hosts, refuses it, and `python3 -m venv` fails there too where
+        # `ensurepip` is absent. A contributor reproducing this locally wants
+        # `pip install --target <dir>` with `PYTHONPATH`, or
+        # `--break-system-packages`.
+        run: |
+          python3 -m pip install --user mkdocs==1.6.1
+          python3 -m mkdocs build --strict
       - name: Every declared export profile is what this corpus produces
         # `export_plan()` is a separate code path from `plan()`: it re-filters
         # the declared projections by `--profile` rather than writing every

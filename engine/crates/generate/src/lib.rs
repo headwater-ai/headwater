@@ -601,7 +601,7 @@ pub fn plan(
                 probe_result::emit(surface, census, declaration, runs, identity, &mut plan);
             }
             Kind::VerbIndex => verb_index::emit(surface, declaration, verbs, &mut plan),
-            Kind::SiteNav => site_nav::emit(surface, census, declaration, &mut plan),
+            Kind::SiteNav => site_nav::emit(surface, census, declaration, identity, &mut plan),
             other => plan.unwritten.push(Unwritten {
                 at: declaration.output.clone(),
                 kind: other,
