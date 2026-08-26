@@ -1,0 +1,5 @@
+# Every crawler is welcome to read this corpus, AI crawlers included.
+# llms.txt (https://headwater.tools/llms.txt) is the curated index.
+# This file only says nothing here is disallowed.
+User-agent: *
+Allow: /
