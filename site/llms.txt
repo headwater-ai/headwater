@@ -1,0 +1,14 @@
+# Headwater — a documentation governance system
+
+> A typed, validated, self-describing corpus of documentation that machines can check and agents can navigate.
+
+## Docs
+
+- [Headwater changelog](https://headwater.tools/changelog/): This page is empty, because there is no tag and no release. The first tag brings the first entry with it.
+- [Headwater compared — LeanCTX, TrustGraph, Vale](https://headwater.tools/compare/): Authors declare the graph here and a language model extracts it there. The field side by side, including the arguments against Headwater.
+- [How Headwater works](https://headwater.tools/how-it-works/): Declare the taxonomy, build the graph, run the checks, project. The four steps of a Headwater run, and where its reasoning stops.
+- [Headwater — a documentation governance system](https://headwater.tools/): A typed, validated, self-describing corpus of documentation that machines can check and agents can navigate.
+- [The Headwater namespace — https://w3id.org/headwater/](https://headwater.tools/ns/): The permanent identifier that Headwater artifacts carry, what resolves under it, and why it is not the project domain.
+- [Headwater's self-assessment](https://headwater.tools/proof/): What a run of this engine over its own repository reports, including the ugly numbers, and the one row that stays deliberately empty.
+- [Headwater terms](https://headwater.tools/terms/): Apache-2.0 for the code, Creative Commons Attribution for the prose, the Developer Certificate of Origin for contributions, and no registered trademark.
+- [Your first governed corpus](https://headwater.tools/tutorial/): Sixteen steps take an empty directory to a passing strict check, and you leave holding shelf, kind, facet, overlay and obligation.
