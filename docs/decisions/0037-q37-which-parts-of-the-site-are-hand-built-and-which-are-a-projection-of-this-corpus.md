@@ -17,6 +17,9 @@ relations:
   governs:
     - site/index.html
     - site/ns/index.html
+    - site/how-it-works/index.html
+    - site/changelog/index.html
+    - site/terms/index.html
   traces_to:
     - site/DESIGN-BRIEF.md
 ---
@@ -59,4 +62,4 @@ relations:
 
 **Nothing on a hand-built page names a publication date or a price.** [Q31](0031-q31-whether-this-repository-becomes-public-and-when.md) rules that this repository becomes public and leaves the date to the owner. [HW-OBL-0130](../obligations/0130-the-publication-date-of-this-repository-is-unset-and-the-owner-alone-sets-it.md) refuses a date that an agent proposes, that a run reads off the board, or that a milestone implies. [HW-OBL-0094](../obligations/0094-where-a-commercial-tier-could-sit-and-how-thin-the-trademark.md) holds where a commercial tier could sit at `waiting_on: ruling`. Section 8 of the brief records that the price of the audit is stated nowhere.
 
-**This record governs two pages, and the rule covers every file under `site/`.** A `governs` edge reaches the path it names and no path under it, which [HW-OBL-0104](../obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md) prices. So the two edges above name the two pages that exist on this tree. A page added under `site/` owes an edge of its own.
+**This record governs each page by name, and the rule covers every file under `site/`.** A `governs` edge reaches the path it names and no path under it, which [HW-OBL-0104](../obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md) prices. So an edge above names each page on this tree, and no edge names a directory. A page added under `site/` owes an edge of its own, in the commit that adds the page. A target with no file is `relation.target.unresolved`, which is an error, so the edge also refuses a later deletion of the page.

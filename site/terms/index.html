@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The Headwater namespace — https://w3id.org/headwater/</title>
-<meta name="description" content="The permanent identifier that Headwater artifacts carry, what resolves under it, and why it is not the project domain.">
+<title>Headwater terms</title>
+<meta name="description" content="Apache-2.0 for the code, Creative Commons Attribution for the prose, the Developer Certificate of Origin for contributions, and no registered trademark.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🜄</text></svg>">
 <style>
   :root {
@@ -82,43 +82,53 @@
 
   <a class="back" href="/">← Headwater</a>
 
-  <h1>The Headwater namespace</h1>
-  <p class="uri">https://w3id.org/headwater/</p>
+  <h1>Terms</h1>
 
-  <p class="note"><strong>Status: the engine runs, and nothing is released.</strong> No artifact carries these identifiers yet, because nothing the engine emits today names them. This page reserves and documents them.</p>
+  <p class="note"><strong>Status: the engine runs, and nothing is released.</strong> The owner ratified every term below, and they hold whether or not a release exists.</p>
 
-  <p>Identifiers in an artifact that Headwater emits belong under this namespace. It is a permanent identifier served by <a href="https://w3id.org/">w3id.org</a>, which the W3C Permanent Identifier Community Group operates, and it redirects here.</p>
+  <h2>The code</h2>
 
-  <h2>What resolves under it</h2>
-  <div class="tablewrap">
-  <table>
-    <thead><tr><th>Prefix</th><th>What it identifies</th></tr></thead>
-    <tbody>
-      <tr><td><code>taxonomy/</code></td><td>Taxonomy schemas — shelves, document kinds, facets, relations. The LinkML form declares this as its default prefix.</td></tr>
-      <tr><td><code>shapes/</code></td><td>SHACL node shapes and constraints generated from a taxonomy.</td></tr>
-    </tbody>
-  </table>
-  </div>
+  <p>The engine, the library, the base package and the bundles are under Apache-2.0.</p>
 
-  <p>Both appear in worked examples that the repository holds, as a LinkML schema and as a set of SHACL shapes.</p>
+  <p>The choice of Apache-2.0 over MIT rests on two clauses. Apache-2.0 grants a patent license that MIT does not grant, and this tool emits artifacts into other people's compliance pipelines. Apache-2.0 also reserves the trademark.</p>
 
-  <h2>Why not this domain</h2>
+  <h2>The prose</h2>
 
-  <p>A namespace URI inside an emitted artifact is a promise about a name that outlives every release. A domain rented by the year is a weak vehicle for a promise of that length, and an adopter who holds a generated artifact should never depend on who renews what.</p>
+  <p>The prose under <code>docs/</code> is under Creative Commons Attribution 4.0. The code samples embedded in that prose stay under Apache-2.0, so that a reader who copies an example carries no attribution obligation.</p>
 
-  <p>So the identifier and the web address are separate assets. w3id.org holds the identifier, and it redirects to whatever location this project hosts. A later change of domain reaches no artifact anyone already holds. LinkML publishes its own metamodel at <code>https://w3id.org/linkml/</code> for the same reason.</p>
+  <h2>Contributions</h2>
 
-  <p>Q10 of this project's decision register records the ruling and the date it was taken.</p>
+  <p>Contributions arrive under the Developer Certificate of Origin, and a contribution carries a <code>Signed-off-by</code> line. There is no contributor license agreement.</p>
 
-  <h2>Terms</h2>
+  <p>The reason is stated positively rather than as a preference. The one power a contributor agreement adds is the power to change the terms later without asking, and this project does not want it.</p>
 
-  <p>Code is licensed under Apache-2.0, and the prose under <code>docs/</code> under Creative Commons Attribution 4.0. The project claims no registered trademark, and a <code>TRADEMARKS.md</code> in the repository states that position. Using an identifier from this namespace implies no claim about who holds any domain. <a href="/terms/">The terms page</a> states the whole position.</p>
+  <h2>Why not copyleft</h2>
+
+  <p>Copyleft was refused for a stated reason rather than by taste. The library has to embed in another process, and an obligation that reaches a linked work reaches software the adopter owns.</p>
+
+  <p>The base package and the bundles impose nothing on a taxonomy derived from them. An adopter's overlay resolves against the base, so the resolved lock contains base content. A share-alike term on the base would therefore reach an artifact that belongs to the adopter. Customizing the taxonomy never means forking the tooling, and this paragraph is that sentence in its legal form.</p>
+
+  <h2>Trademark</h2>
+
+  <p>The project claims no registered mark, and a <code>TRADEMARKS.md</code> in the repository states that position. Apache-2.0 section 6 grants no trademark rights, and that reservation was one of the two reasons to prefer these terms to MIT.</p>
+
+  <h2>Notices in the source</h2>
+
+  <p>A source file carries <code>SPDX-License-Identifier: Apache-2.0</code> on the first line that admits a comment, and it carries no per-file copyright line. The identifier is the whole header, because a copyright line goes stale and the commit history does not.</p>
+
+  <h2>Security reports</h2>
+
+  <p>A coordinated-disclosure process exists, and a <code>SECURITY.md</code> in the repository carries it. It reports that no engine has shipped, so no released artifact can carry a defect yet. It also states what is out of scope by design, which is a reader who can clone a repository and then reads it.</p>
+
+  <h2>The date</h2>
+
+  <p>These terms carry a date, and the date is 2026-08-11. A term with no date cannot later be shown to have changed, and a visible change is the whole value of the commitment.</p>
 
   <footer>
     <p>There is no link to the source or to the specification here, because the repository is not public. The project has decided that this repository becomes public, and the date belongs to the owner.</p>
     <a href="/how-it-works/">How it works</a>
-    <a href="/terms/">Terms</a>
     <a href="/changelog/">Changelog</a>
+    <a href="/ns/">Namespace</a>
     <a href="/">Home</a>
   </footer>
 

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Headwater works</title>
+<meta name="description" content="Declare the taxonomy, build the graph, run the checks, project. The four steps of a Headwater run, and where its reasoning stops.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🜄</text></svg>">
+<style>
+  :root {
+    --bg: #fbfaf8; --fg: #1a1917; --muted: #5f5b54;
+    --rule: #e2ddd4; --accent: #1d5c54; --code-bg: #f1eee8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161a; --fg: #e6e3dd; --muted: #9b968c;
+      --rule: #2a2e35; --accent: #6fb3a6; --code-bg: #1c1f25;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 17px/1.65 ui-serif, Charter, "Iowan Old Style", Georgia, serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 42rem; margin: 0 auto; padding: 3rem 1.5rem 6rem; }
+  .back {
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.85rem;
+    color: var(--muted); text-decoration: none; display: inline-block;
+    margin-bottom: 2.5rem;
+  }
+  .back:hover { color: var(--accent); }
+  h1 {
+    font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.015em;
+    margin: 0 0 0.4rem; font-weight: 600;
+  }
+  .uri {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.95rem; color: var(--accent); margin: 0 0 2.5rem;
+    word-break: break-all;
+  }
+  h2 {
+    font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.09em;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 650;
+    color: var(--muted); margin: 2.75rem 0 0.85rem;
+    padding-bottom: 0.5rem; border-bottom: 1px solid var(--rule);
+  }
+  p { margin: 0 0 1.1rem; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.87em; background: var(--code-bg);
+    padding: 0.12em 0.36em; border-radius: 3px;
+  }
+  .tablewrap { overflow-x: auto; margin: 0 0 1.4rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.94rem; }
+  th, td {
+    text-align: left; padding: 0.6rem 0.9rem 0.6rem 0;
+    border-bottom: 1px solid var(--rule); vertical-align: top;
+  }
+  th {
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted);
+    font-weight: 650;
+  }
+  .note {
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.9rem;
+    background: var(--code-bg); border-left: 3px solid var(--accent);
+    padding: 0.9rem 1.1rem; margin: 0 0 2rem; color: var(--muted);
+  }
+  .note strong { color: var(--fg); }
+  footer {
+    margin-top: 3.5rem; padding-top: 1.25rem; border-top: 1px solid var(--rule);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.87rem; color: var(--muted);
+  }
+  footer a { margin-right: 1.25rem; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <a class="back" href="/">← Headwater</a>
+
+  <h1>How Headwater works</h1>
+
+  <p>A run has four steps. Declare the taxonomy, build the graph, run the checks, and project what the graph supports. This page states each one, and then it states where the reasoning stops.</p>
+
+  <p class="note"><strong>Status: the engine runs, and nothing is released.</strong> The steps below describe the engine as it stands, and it checks this project's own documentation on every change.</p>
+
+  <h2>Declare the taxonomy</h2>
+
+  <p>A taxonomy declares what shelves exist, what document kinds live on them, what metadata each kind carries, and how documents may reference each other. All of it lives in one versioned schema. Customizing the taxonomy never means forking the tooling.</p>
+
+  <p>The split has a standard name, and the name is not decoration. Description logic calls the terminology a TBox and the assertions an ABox. A taxonomy is the terminology, and a corpus is the assertions. That is why the validation of a taxonomy and the check of a corpus are two different operations, rather than two halves of one operation.</p>
+
+  <p>Resolution merges a base package with the overlays above it, validates the result against a meta-schema, and writes a content-hashed lock. Everything downstream reads the lock and never the sources. A check result therefore depends on a hash that a reviewer can see in a diff.</p>
+
+  <h2>Build the graph</h2>
+
+  <p>The engine parses each file once and builds one typed graph. Documents become typed nodes, and front-matter references become typed edges. The graph, and not the file tree, is the working representation.</p>
+
+  <p>The obvious alternative is a separate linter for each concern, and it is the wrong decomposition. Each such tool re-walks the tree, re-parses the front matter, and re-derives what kind each document is. That is slow, and worse, it diverges. When two tools disagree about what a document is, the result is contradictory findings and an unfixable bug report.</p>
+
+  <p>The build also emits a census, which is every file under the corpus root and what became of each one. The census fixes the denominator before any check runs. So a document that failed to classify is counted, reported, and visibly unchecked, rather than absent.</p>
+
+  <p>Nothing stores the graph. Every run rebuilds it from the documents and the lock, and a cache only makes that derivation cheap. A cache that can change a verdict is a store under another name, and a test holds the difference.</p>
+
+  <h2>Run the checks</h2>
+
+  <p>A check is a pure function from a scoped view of the graph to a set of findings. It reads no file, it opens no socket, and it reads no clock. Everything that depends on time arrives as an injected value. That purity is what makes a result reproducible, cacheable, and safe to run in parallel.</p>
+
+  <p>Checks arrive from several origins. Shape checks and graph checks are generated from the taxonomy itself. A new facet or a new relation therefore brings its checks with it, and needs no code. Corpus checks read many documents at once. Document checks read the body, which is not in the graph. Plugin checks are the adopter's own. The last three are why a native engine exists at all. They are exactly what a schema language cannot express.</p>
+
+  <p>Every check declares its scope, and the engine enforces the declaration. A check sees one document, one edge, a neighborhood, one shelf, or the whole corpus, and it sees nothing else. That is what makes change-scoped evaluation exact, cache keys sound, and parallel execution safe.</p>
+
+  <p>A run has two phases, and the order answers a failure mode. Phase A classifies every file and builds the graph. Phase B runs the checks over what Phase A produced. The census is fixed first. So a document that fails to parse is counted and reported, rather than dropped from the run behind a clean result.</p>
+
+  <p>A finding carries a fix only when the correction is mechanical and total, which means one correct outcome derivable without judgment. Everything else carries remediation prose instead. A plausible automatic fix for a defect that needs judgment would be worse than none, because it would be applied unread.</p>
+
+  <h2>Project</h2>
+
+  <p>A projection is a derived artifact computed from the graph. A shelf index, the navigation for a documentation site, an agent instruction file, and a JSON export of the graph are all projections.</p>
+
+  <p>Three properties hold for every one of them. A projection is generated and never hand-authored. A projection is checked, so a build fails when a committed projection differs from a regenerated one. And a projection is declared by the schema, so a taxonomy can add one without a change to the engine.</p>
+
+  <p>A projection may be filtered, and a filtered projection says so. An export profile names an audience and a filter over facet values, and what it carries and what it withholds partition the corpus. A document held back is a loss with a declared reason, and the census reports it like any other loss. No profile may produce a view that presents itself as total.</p>
+
+  <h2>Where the reasoning stops</h2>
+
+  <p>The assertions here are about documents. This document exists, it is of this kind, it governs that code path, it supersedes that other document. They are not about the claims inside the prose.</p>
+
+  <p><em>The service returns 404 on a missing key</em> is a sentence. The system knows the document that contains it, and what that document governs. It does not know what the sentence asserts about the world. Reasoning stops at the document boundary, and a promise of semantic consistency past that boundary is a promise that this project cannot keep.</p>
+
+  <footer>
+    <p>There is no link to the source or to the specification here, because the repository is not public. The project has decided that this repository becomes public, and the date belongs to the owner.</p>
+    <a href="/terms/">Terms</a>
+    <a href="/changelog/">Changelog</a>
+    <a href="/ns/">Namespace</a>
+    <a href="/">Home</a>
+  </footer>
+
+</div>
+</body>
+</html>
