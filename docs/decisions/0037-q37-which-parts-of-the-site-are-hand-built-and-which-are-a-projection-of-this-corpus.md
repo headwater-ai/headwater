@@ -55,7 +55,7 @@ relations:
 
 **No language rule of this repository reads one word a visitor sees.** The `ste_house` regime binds kinds, and `site/` carries no document of any kind. So the sentence limit, the retired terms, the spelling table and the voice categories reach none of the marketing prose. Section 7 of the brief states the same rules as a direction to a writer, and the writer is what holds them.
 
-**A status band answers to the rule, because a status band is a claim about this repository.** The band states what a run or a query reports on the day it is written, and it names where a reader checks that. What the band may not carry is what two other records reserve.
+**A status band answers to the rule, because a status band is a claim about this repository.** The band states what a run or a query reports on the day it is written, and it carries no figure of its own. What the band may not carry is what two other records reserve.
 
 **Nothing on a hand-built page names a publication date or a price.** [Q31](0031-q31-whether-this-repository-becomes-public-and-when.md) rules that this repository becomes public and leaves the date to the owner. [HW-OBL-0130](../obligations/0130-the-publication-date-of-this-repository-is-unset-and-the-owner-alone-sets-it.md) refuses a date that an agent proposes, that a run reads off the board, or that a milestone implies. [HW-OBL-0094](../obligations/0094-where-a-commercial-tier-could-sit-and-how-thin-the-trademark.md) holds where a commercial tier could sit at `waiting_on: ruling`. Section 8 of the brief records that the price of the audit is stated nowhere.
 
