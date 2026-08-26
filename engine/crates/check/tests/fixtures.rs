@@ -1496,6 +1496,10 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             // The two register rules, which read the taxonomy and no document.
             Grain::Taxonomy,
             Grain::Taxonomy,
+            // `adoption.task.expired`, the same grain and for the same
+            // reason: it is a fact about the lock rather than about a
+            // document, so it creates no instance either.
+            Grain::Taxonomy,
         ]
     );
     let bodies: Vec<&str> = run

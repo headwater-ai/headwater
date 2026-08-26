@@ -30,6 +30,14 @@
 # names both files, both keys and both names.
 
 taxonomy: headwater/standard
+# 3.4.0 adds `OB-MIG-1` and `CT-MIG-1`, which are the obligation and the
+# control behind `adoption.task.expired`. Nothing is removed and nothing
+# already declared changes meaning, so it is a minor. What a consumer meets is
+# a rule that reads a member the adoption block has carried since Q12's
+# migration payload shipped: a task's own `until`, compared against the
+# injected clock. Spec 7 already said a migration state past its expiry is a
+# finding against the owner, and until now nothing raised it.
+#
 # 3.3.0 adds `OB-REL-6` and `CT-REL-6`, which are the obligation and the
 # control behind `relation.target.suspect`. Nothing is removed and nothing
 # already declared changes meaning, so it is a minor. What a consumer meets is a
@@ -86,7 +94,7 @@ taxonomy: headwater/standard
 # The two are required to agree: `resolve::package::agrees` refuses the package
 # on load where they differ, and it names both files and both numbers. A bump
 # moves both or neither. `package.yml` states why the value is declared twice.
-version: 3.3.0
+version: 3.4.0
 
 purposes:
   rationale:
@@ -480,6 +488,13 @@ obligations:
     prevents: process.traceability
     severity: high
 
+  OB-MIG-1:
+    statement: A migration task past its expiry raises a finding that names it and its owner
+    rationale: The expiry is the anti-parking device, on the same terms as a waiver's, and a lapse that raises nothing lets a corpus years past its deadline read exactly like one that declared no debt at all
+    class: cohesion
+    prevents: process.traceability
+    severity: high
+
 # A control names the mechanism that discharges an obligation. The engine reads
 # two mechanism prefixes. `check:` names the id of a rule, and that is the
 # binding a finding travels along: a rule reaches its obligation through the
@@ -758,3 +773,15 @@ controls:
     trigger: pull_request
     posture: advisory
     acts: detective
+
+  CT-MIG-1:
+    mechanism: check:adoption.task.expired
+    discharges: [OB-MIG-1]
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: one release of the taxonomy over an adopting corpus
+        threshold: no false positive, because the rule reports a date comparison between a task's own declared `until` and the injected clock, deriving nothing else
+        sample: every finding of one run over the adopting corpus, adjudicated once

@@ -151,12 +151,23 @@ impl Root {
     /// case that wants the collision asks for it by name rather than relying on
     /// which identifier the fixture happens to carry.
     fn author_as(&self, id: &str) {
+        self.author_until(id, "2027-06-30");
+    }
+
+    /// The same block under an identifier and an expiry the case chooses.
+    ///
+    /// `until: 2027-06-30` is `PAYLOAD`'s own date, baked into the string, so
+    /// this substitutes it the same way `author_as` substitutes the
+    /// identifier. It is what the three-arm `adoption.task.expired` fixture
+    /// below varies: one lock, one corpus, the date moved past and pulled
+    /// forward across the two cases that are not the baseline.
+    fn author_until(&self, id: &str, until: &str) {
         let text = self.text();
         assert!(
             !text.contains("\nadoption:\n"),
             "the fixture starts with no authored block"
         );
-        let payload = PAYLOAD.replace("AD-9", id);
+        let payload = PAYLOAD.replace("AD-9", id).replace("2027-06-30", until);
         self.write(&text.replacen("\nresolved:\n", &format!("{payload}\nresolved:\n"), 1));
     }
 
@@ -975,5 +986,103 @@ fn a_lock_whose_digest_does_not_match_is_told_to_resolve() {
     assert!(
         root.text().contains("AD-9"),
         "and the authored block survived it"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// `adoption.task.expired`: a lapsed task raises a finding rather than staying
+// silent. #311 measured the block as a place debt could park forever, because
+// nothing ever compared a task's own `until` against the clock. Three arms,
+// one shared corpus, only the block's date moved: absent, lapsed, renewed.
+// ---------------------------------------------------------------------------
+
+/// The baseline: no adoption block at all, and `--strict` still exits 0.
+///
+/// This is the arm the other two are read against. `root.corpus()` raises
+/// exactly one `language.controlled.not_met` finding, `warn` severity, which
+/// does not fail a strict run on its own.
+#[test]
+fn check_strict_exits_zero_with_no_adoption_task_declared() {
+    let root = Root::new("expired-baseline-absent");
+    root.corpus();
+
+    let checked = root.run(&["check", "--strict"]);
+    assert_eq!(
+        checked.code,
+        Some(0),
+        "a corpus with no declared task passes a strict run\n{}{}",
+        checked.out,
+        checked.err
+    );
+    assert!(
+        !checked.out.contains("adoption.task.expired ("),
+        "no task exists, so the rule fires zero times (the rule still names \
+         itself in the catalog of what ran, which is not a finding):\n{}",
+        checked.out
+    );
+}
+
+/// The decisive arm: a task past its `until` fails `--strict`, and the
+/// finding names the task and its owner.
+///
+/// Spec 7: "A migration state past its expiry is a finding against the
+/// owner." `2020-01-01` stays in the past for the life of this suite, so the
+/// case needs no `--now` flag the way none of this file's other cases do.
+#[test]
+fn check_strict_is_non_zero_when_a_declared_task_has_lapsed() {
+    let root = Root::new("expired-lapsed");
+    root.author_until("AD-9", "2020-01-01");
+    root.corpus();
+
+    let checked = root.run(&["check", "--strict"]);
+    assert_eq!(
+        checked.code,
+        Some(1),
+        "a lapsed task fails a strict run\n{}{}",
+        checked.out,
+        checked.err
+    );
+    assert!(
+        checked.out.contains("adoption.task.expired"),
+        "the rule fired:\n{}",
+        checked.out
+    );
+    assert!(
+        checked.out.contains("AD-9"),
+        "the finding names the task:\n{}",
+        checked.out
+    );
+    assert!(
+        checked.out.contains("a person"),
+        "and the owner PAYLOAD declares:\n{}",
+        checked.out
+    );
+}
+
+/// The other direction: the same task, renewed past today, moves the exit
+/// code back off the lapsed arm's and onto the absent arm's.
+///
+/// `FAR` (`2035-01-01`) is the date the rest of this file already uses for an
+/// expiry no case reaches, so a renewal here is the ordinary remedy
+/// `adoption::expired`'s own message names: move `until` to a new date.
+#[test]
+fn check_strict_exits_zero_when_a_declared_task_is_renewed() {
+    let root = Root::new("expired-renewed");
+    root.author_until("AD-9", FAR);
+    root.corpus();
+
+    let checked = root.run(&["check", "--strict"]);
+    assert_eq!(
+        checked.code,
+        Some(0),
+        "a renewed task passes a strict run, same as the absent arm\n{}{}",
+        checked.out,
+        checked.err
+    );
+    assert!(
+        !checked.out.contains("adoption.task.expired ("),
+        "the rule does not fire on an open task (the rule still names itself \
+         in the catalog of what ran, which is not a finding):\n{}",
+        checked.out
     );
 }

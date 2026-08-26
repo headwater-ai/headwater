@@ -81,6 +81,8 @@ rules, and for each the scope that binds it
     taxonomy scope, the resolved taxonomy, and no document
   control.mechanism.unimplemented
     taxonomy scope, the resolved taxonomy, and no document
+  adoption.task.expired
+    taxonomy scope, the resolved taxonomy, and no document
 register
   1 obligations: 1 verified, 0 gap, 0 unverifiable, 0 with no disposition
       1 high, 1 verified
@@ -115,6 +117,7 @@ register
   coverage.document_unchecked reaches no obligation, so it names none
   obligation.disposition.not_one reaches no obligation, so it names none
   control.mechanism.unimplemented reaches no obligation, so it names none
+  adoption.task.expired reaches no obligation, so it names none
 1 findings
       1 error
 
