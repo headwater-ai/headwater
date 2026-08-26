@@ -362,6 +362,57 @@ mod tests {
         assert_eq!(schema.declarations().len(), 17);
     }
 
+    /// [#295](https://github.com/headwater-ai/headwater/issues/295) found a
+    /// family of four keys that the resolver never reads: `extends` at a
+    /// taxonomy source's root, and `taxonomy`, `bundle`, `extends` and
+    /// `requires` at an overlay's root. [Q40](../../../../docs/decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md)
+    /// rules all four a label rather than a mechanism, and requires the
+    /// meta-schema to say so in prose beside every one of the five
+    /// declaration sites (the family's `extends` counts twice, once per
+    /// root). This test holds the disclosure to the raw text of the shipped
+    /// file, deliberately: the resolver's behavior for these keys is not
+    /// changing in this piece, so a test of resolver behavior would already
+    /// pass and would not be decisive. A marker that a later change deletes,
+    /// or a key that gains a real reader with no update to the prose beside
+    /// it, fails here.
+    #[test]
+    fn the_unread_disclosure_stands_beside_every_key_of_the_extends_family() {
+        const MARKER: &str = "The engine reads nothing from this key today.";
+        const WINDOW: usize = 6;
+
+        let lines: Vec<&str> = SOURCE.lines().collect();
+
+        let disclosed = |needle: &str| -> bool {
+            let at = lines
+                .iter()
+                .position(|line| line.contains(needle))
+                .unwrap_or_else(|| panic!("no line of the shipped meta-schema reads {needle:?}"));
+            let start = at.saturating_sub(WINDOW);
+            lines[start..at].iter().any(|line| line.contains(MARKER))
+        };
+
+        assert!(
+            disclosed("extends: {one_of: [{scalar: string}, {scalar: null}]}"),
+            "declarations.extends (a taxonomy source's root) carries no unread disclosure"
+        );
+        assert!(
+            disclosed("  taxonomy: {scalar: string}"),
+            "operations.taxonomy (an overlay's root) carries no unread disclosure"
+        );
+        assert!(
+            disclosed("  bundle: {scalar: string}"),
+            "operations.bundle carries no unread disclosure"
+        );
+        assert!(
+            disclosed("  extends: {scalar: string}"),
+            "operations.extends (an overlay's root) carries no unread disclosure"
+        );
+        assert!(
+            disclosed("  requires: {seq: {scalar: string}}"),
+            "operations.requires carries no unread disclosure"
+        );
+    }
+
     #[test]
     fn a_block_that_names_nothing_is_refused_when_the_meta_schema_loads() {
         let error = read("  kinds: {block: kind}\n", "  facet: {scalar: string}\n")
