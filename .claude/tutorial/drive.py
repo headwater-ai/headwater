@@ -35,12 +35,35 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 DOC = 'docs/tutorials/your-first-governed-corpus.md'
 STATED_DATE = '2026-08-17'
 
 failures = []
 checks = 0
+
+
+def today_reading(clock=time.time):
+    """The date this run substitutes, on the same clock the engine stamps.
+
+    `headwater_check::Context::from_system_clock`
+    (`engine/crates/check/src/context.rs:93`) reads
+    `SystemTime::now().duration_since(UNIX_EPOCH).as_secs() / 86_400` — the
+    whole day count since the Unix epoch, in UTC, with no zone applied at
+    all. `datetime.date.today()` reads the process's *local* calendar
+    instead, which names a different day than the engine's for part of every
+    day in any zone ahead of UTC — `Australia/Brisbane`, this machine's own
+    zone, included. So this function mirrors the engine's arithmetic on the
+    epoch second count rather than reading a local clock of any kind, and the
+    two can no longer disagree.
+
+    `clock` defaults to the real one and takes an injected one only so a
+    fixture can hold this exact function to a fixed instant rather than
+    wait for the real clock to reach an hour where a regression would show.
+    """
+    days = int(clock()) // 86_400
+    return (datetime.date(1970, 1, 1) + datetime.timedelta(days=days)).isoformat()
 
 
 def read_blocks(root):
@@ -132,7 +155,9 @@ def main():
     if len(blocks) != 45:
         raise SystemExit(f'tutorial: expected 45 code blocks and found {len(blocks)}')
 
-    today = datetime.date.today().isoformat()
+    # #302: today's date must come from today_reading(), never
+    # datetime.date.today() directly — see that function's docstring for why.
+    today = today_reading()
     scratch = tempfile.mkdtemp(prefix='headwater-tutorial-')
     env = dict(os.environ)
     env['PATH'] = os.path.dirname(binary) + os.pathsep + env['PATH']
