@@ -110,7 +110,7 @@
 
   <p>A check is a pure function from a scoped view of the graph to a set of findings. It reads no file, it opens no socket, and it reads no clock. Everything that depends on time arrives as an injected value. That purity is what makes a result reproducible, cacheable, and safe to run in parallel.</p>
 
-  <p>Checks arrive from several origins. Shape checks and graph checks are generated from the taxonomy itself. A new facet or a new relation therefore brings its checks with it, and needs no code. Corpus checks read many documents at once. Document checks read the body, which is not in the graph. Plugin checks are the adopter's own. The last three are why a native engine exists at all. They are exactly what a schema language cannot express.</p>
+  <p>Checks arrive from several origins. Shape checks and graph checks are generated from the taxonomy itself. A new facet or a new relation therefore brings its checks with it, and needs no code. Corpus checks read many documents at once. Document checks read the body, which is not in the graph. Plugin checks are the adopter's own, and that origin is specified rather than built. The last three are why a native engine exists at all. They are exactly what a schema language cannot express.</p>
 
   <p>Every check declares its scope, and the engine enforces the declaration. A check sees one document, one edge, a neighborhood, one shelf, or the whole corpus, and it sees nothing else. That is what makes change-scoped evaluation exact, cache keys sound, and parallel execution safe.</p>
 
@@ -122,7 +122,7 @@
 
   <p>A projection is a derived artifact computed from the graph. A shelf index, the navigation for a documentation site, an agent instruction file, and a JSON export of the graph are all projections.</p>
 
-  <p>Three properties hold for every one of them. A projection is generated and never hand-authored. A projection is checked, so a build fails when a committed projection differs from a regenerated one. And a projection is declared by the schema, so a taxonomy can add one without a change to the engine.</p>
+  <p>Three properties hold. A projection is generated and never hand-authored. A projection is checked, so a build fails when a committed projection differs from a regenerated one. And a projection is declared by the schema, within the set of projection kinds that the engine implements. So a taxonomy adds a projection of a kind the engine already has, and never a kind of its own.</p>
 
   <p>A projection may be filtered, and a filtered projection says so. An export profile names an audience and a filter over facet values, and what it carries and what it withholds partition the corpus. A document held back is a loss with a declared reason, and the census reports it like any other loss. No profile may produce a view that presents itself as total.</p>
 
