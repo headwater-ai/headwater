@@ -10,7 +10,7 @@ relations:
 
 # decisions
 
-36 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+37 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -71,6 +71,10 @@ relations:
 ## Q15 — A synthesized content tier
 
 [HW-DR-0015](../decisions/0015-a-synthesized-content-tier.md) — Every document carries a warrant from a closed set of four, and `asserted` content is admitted with limits.
+
+## Q37 — Which parts of the site are hand-built and which are a projection of this corpus
+
+[HW-DR-0037](../decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md) — Everything under `site/` is hand-built and the corpus is the generated projection. A hand-built page states no figure a person typed, and nothing checks that. (asserted, and no human has accepted it)
 
 ## Q16 — Public presence
 

@@ -1,6 +1,6 @@
-251 nodes, 509 declared edge halves
-    417 to a document
-     92 to an anchor
+252 nodes, 513 declared edge halves
+    418 to a document
+     95 to an anchor
 0 prose links that did not resolve
 
 anchors
@@ -52,5 +52,8 @@ anchors
       1 code_path `engine/crates/sweep/src/intake.rs` via source-tree
       2 code_path `engine/crates/sweep/src/lib.rs` via source-tree
       1 code_path `packages/headwater-standard/taxonomy.yml` via source-tree
+      1 code_path `site/DESIGN-BRIEF.md` via source-tree
+      1 code_path `site/index.html` via source-tree
+      1 code_path `site/ns/index.html` via source-tree
       1 code_path `spike` via source-tree
       1 code_path `tools/rdf-probe/emit.py` via source-tree
