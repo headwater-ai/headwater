@@ -274,12 +274,12 @@ The pattern is consistent with the LinkML finding. SHACL covers the **graph** la
 
 ## Two corrections to what Q13 recorded
 
-**The error-message objection was too strong.** I wrote that SHACL's violation reports are "famously hard to read", which is true of raw reports and irrelevant here. `sh:message` with `{$this}` / `{?var}` interpolation in SPARQL-based constraints makes messages exactly as good as they are authored — and since Headwater would *generate* the shapes, they would be as good as our generator. That objection should be withdrawn.
+**The error-message objection was too strong.** I wrote that SHACL's violation reports are "famously hard to read", which is true of raw reports and irrelevant here. `sh:message` with `{$this}` / `{?var}` interpolation in SPARQL-based constraints makes messages exactly as good as they are authored. Since Headwater would *generate* the shapes, they would be as good as our generator. That objection should be withdrawn.
 
 **The real objections are different, and sharper:**
 
 - **Line numbers are lost.** A SHACL `ValidationResult` carries `focusNode`, `resultPath`, `value`, `sourceShape`, `resultSeverity` and `resultMessage`. RDF has no notion of a byte offset in a Markdown file, so the `line` field that [spec 4](../spec/04-assurance-model.md#findings) requires cannot survive the round trip. Findings would need to be re-anchored to source positions by the Headwater side.
-- **No remediation, no fixability.** Spec 4 requires every finding to carry a remediation and a `fixable` flag. SHACL has no slot for either. They can be hung off the shape as custom properties and looked up via `sourceShape`, but that is a convention we would define, not something a stock SHACL consumer would understand.
+- **No remediation, no fixability.** Spec 4 requires every finding to carry a remediation and a `fixable` flag. SHACL has no slot for either. They can be hung off the shape as custom properties and looked up via `sourceShape`. But that is a convention we would define, not something a stock SHACL consumer would understand.
 - **Posture is not severity.** `sh:Violation` / `sh:Warning` / `sh:Info` map onto Headwater's severities, but Headwater's *posture* — advisory versus blocking, and the promotion criteria attached to it — is a property of the control, not of the shape. It lives in the runner either way.
 
 **And one objection dissolves.** Q13 noted that a SPARQL engine pulls against the single-binary, offline, sub-second constraints of spec 6. Embeddable Rust SPARQL engines exist, so an in-memory store over a corpus of this size is not obviously a problem. It needs measuring against the change-scoped budget rather than assuming, but it is not the blocker it looked like.
@@ -290,7 +290,7 @@ It reinforces **option 3**, and extends it. The LinkML example concluded: author
 
 > Emit **LinkML for the shape layer and SHACL for the graph layer**. Between them, an external consumer can validate a Headwater corpus to a genuinely useful depth without installing Headwater at all.
 
-The argument that decides it is the same one, and it is stronger here. Every interesting SHACL constraint above is embedded SPARQL. Hand-authored, that is *less* readable than the equivalent engine predicate and considerably harder to test. **Generated, nobody reads it** — and readability stops being a cost at all. That is the difference between adopting SHACL as the authoring surface (bad) and as a compilation target (good), and it is exactly the conclusion the LinkML exercise reached by a different route.
+The argument that decides it is the same one, and it is stronger here. Every interesting SHACL constraint above is embedded SPARQL. Hand-authored, that is *less* readable than the equivalent engine predicate and considerably harder to test. **Generated, nobody reads it** — and readability stops being a cost at all. That is the difference between adopting SHACL as the authoring surface (bad) and as a compilation target (good). It is exactly the conclusion the LinkML exercise reached by a different route.
 
 Two things stay Headwater-native regardless, and they should be stated as such rather than discovered later:
 

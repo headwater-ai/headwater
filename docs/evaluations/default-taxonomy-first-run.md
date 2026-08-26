@@ -23,7 +23,7 @@ relations:
 
 # What ships in the box — a first-run walkthrough
 
-Evidence for [Q3](../spec/09-open-questions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box). Q3 named three options and a leaning, and it argued them on adoption feel: too opinionated repels, too thin leaves a blank schema. Feel is not a method. This walkthrough replaces it with one. Author the candidate base package as real YAML, run five adopters through their first day against it, and count what each one types and what each one deletes.
+Evidence for [Q3](../spec/09-open-questions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box). Q3 named three options and a leaning, and it argued them on adoption feel: too opinionated repels, too thin leaves a blank schema. Feel is not a method. This walkthrough replaces it with one. Author the candidate base package as real YAML, and run five adopters through their first day against it. Count what each one types and what each one deletes.
 
 It produced four kinds of result.
 
@@ -174,11 +174,11 @@ Four facets, one abstract kind, two concrete kinds, two shelves, five relations,
 
 **The smallest column of spec 2's worked example does not satisfy spec 2's core.** The example gives the small team the `rationale` and `procedure` purposes. The core requires `rationale` and `behavior`. A taxonomy with no behavior-serving kind has nowhere to say what the system does, and [spec 0](../spec/00-vision-and-scope.md) promises that a task or a code path resolves to the documents that govern it. Such a corpus has nothing for a code path to resolve to. The core is right and the column is wrong, which is worth stating in that order: the core came from [theory](../evaluations/theoretical-foundations.md) and the column was a sketch.
 
-**No default relation attaches the corpus to code.** Spec 2 enables four by default, and it selected all four from the Kruchten decision-relation vocabulary. That vocabulary runs between decisions by construction, so the count was taken over a set that could not contain the edge in question. Add a behavior kind to that base and every document of that kind is unlinked, which is an orphan finding under the base's own generated checks. `governs`, which ends on the `code_path` anchor, is what fixes it. It also supplies write-time impact detection ([spec 5](../spec/05-ai-integration.md)), which is the most valuable thing the corpus does for a coding agent, and no default edge carried it.
+**No default relation attaches the corpus to code.** Spec 2 enables four by default, and it selected all four from the Kruchten decision-relation vocabulary. That vocabulary runs between decisions by construction, so the count was taken over a set that could not contain the edge in question. Add a behavior kind to that base and every document of that kind is unlinked. That is an orphan finding under the base's own generated checks. `governs`, which ends on the `code_path` anchor, is what fixes it. It also supplies write-time impact detection ([spec 5](../spec/05-ai-integration.md)), which is the most valuable thing the corpus does for a coding agent, and no default edge carried it.
 
 **Two of the default four have no mechanical creator.** Spec 2 states that every relation the default enables is creatable by scaffold, generator, or hook, and it explains why. A default that works only if assisted authoring raises edge capture is a bet rather than a design. Write the base out and the claim fails on its own list. A scaffold can propose `supersedes`, and a hook can propose `traces_to` and `governs` from the change. Nothing mechanical proposes `conflicts_with` or `constrains`. Both come from the coherence sweep, which is an agent.
 
-The rule that does the intended work is narrower than the one spec 2 states: **no relation in the base is `created_by: author`.** That preserves the point, because the claim under test is that unassisted human capture decays, and it stops the base from asserting a creator it does not have. It also makes the bet visible instead of hiding it. Two of the base's five edges depend on the agent-authoring claim, which [HW-EVAL-theoretical-foundations](../evaluations/theoretical-foundations.md#what-the-theory-did-not-settle) records as the least-tested claim in the system. `taxonomy audit` already reports edge counts and staleness by creator, so the instrument to measure the dependence exists.
+The rule that does the intended work is narrower than the one spec 2 states: **no relation in the base is `created_by: author`.** That preserves the point, because the claim under test is that unassisted human capture decays. It also stops the base from asserting a creator it does not have. It also makes the bet visible instead of hiding it. Two of the base's five edges depend on the agent-authoring claim, which [HW-EVAL-theoretical-foundations](../evaluations/theoretical-foundations.md#what-the-theory-did-not-settle) records as the least-tested claim in the system. `taxonomy audit` already reports edge counts and staleness by creator, so the instrument to measure the dependence exists.
 
 ## Bundles, and why one line per relation does not generalize
 
@@ -207,7 +207,7 @@ Abstract kinds pay for themselves here, and the payment was not predicted. They 
 
 [Spec 0](../spec/00-vision-and-scope.md) promises a doctrine starter kit: an opinionated default taxonomy and the prose that explains it. Spec 2 refers to a `headwater/standard` base package. Q3 reads as if these are one artifact, and they cannot be. The base has to be minimal so that bundles stay add-only. The starter kit has to be opinionated so that a new adopter does not face a blank schema.
 
-They are two artifacts over one mechanism. `headwater/starter` is the base, a bundle selection, and the doctrine prose that explains the selection. It is what `headwater init` produces when the adopter accepts every default, and it is exactly Q3's batteries-included option, expressed as a selection rather than as a base.
+They are two artifacts over one mechanism. `headwater/starter` is the base, a bundle selection, and the doctrine prose that explains the selection. It is what `headwater init` produces when the adopter accepts every default. It is exactly Q3's batteries-included option, expressed as a selection rather than as a base.
 
 This also settles a smaller inconsistency. Spec 2 states that the doctrine starter kit declares `en-US` with the STE house profile. A controlled-language profile that the *base* turns on meets an adopted corpus of two hundred documents with a wall of findings on the first run. That is the outcome Q3 exists to avoid. The declaration belongs to the starter kit, which is where spec 2 put it, and the base declares `controlled: none`. The two artifacts were never in conflict. The names were.
 
@@ -229,9 +229,9 @@ The base plus the `evidence` bundle covers it. `docs/spec/` holds specification 
 
 Two findings came out of that run, and neither is fixed here.
 
-**The open-questions register is one document that contains eighteen documents.** Each entry has a state, and three of them are closed. Each entry has a state-entry date that the prose states and no facet records. Entries link to each other: Q13 blocks Q1, and Q11 affects Q3 and Q7. Entries cite their evidence: Q1 cites the language evaluation and the spike results. Read structurally, every open question is a `decision` in the `draft` state, closing one is the ordinary transition to `current`, the blocking lines are `constrains` edges, and the citations are `traces_to` edges. The corpus needs no new kind for its most-edited artifact, which is real corroboration for a two-kind base, and it cannot express that artifact today because the artifact is a single file.
+**The open-questions register is one document that contains eighteen documents.** Each entry has a state, and three of them are closed. Each entry has a state-entry date that the prose states and no facet records. Entries link to each other: Q13 blocks Q1, and Q11 affects Q3 and Q7. Entries cite their evidence: Q1 cites the language evaluation and the spike results. Read structurally, every open question is a `decision` in the `draft` state, closing one is the ordinary transition to `current`. The blocking lines are `constrains` edges, and the citations are `traces_to` edges. The corpus needs no new kind for its most-edited artifact, which is real corroboration for a two-kind base, and it cannot express that artifact today because the artifact is a single file.
 
-**The specification documents serve two purposes at once.** Spec 2 states a model and argues for it in the same file, and spec 2 also states that a kind serving two unrelated purposes is a signal to split the kind. The repository is most of the way to its own answer already: `docs/evaluations/` carries the argument, `docs/spec/` carries the result, and the revision note at the top of each spec is the seam between them. What is left is the argument that stayed inline.
+**The specification documents serve two purposes at once.** Spec 2 states a model and argues for it in the same file, and spec 2 also states that a kind serving two unrelated purposes is a signal to split the kind. The repository is most of the way to its own answer already. `docs/evaluations/` carries the argument, `docs/spec/` carries the result, and the revision note at the top of each spec is the seam between them. What is left is the argument that stayed inline.
 
 ### What the counts show
 
@@ -243,7 +243,7 @@ Two findings came out of that run, and neither is fixed here.
 | D — regulated | ~16 | 0 | 0 |
 | E — Headwater | ~22 | 0 | 3 shelves |
 
-The right-hand column is the whole argument in one place. A batteries-included *base* costs three of five adopters a first experience that consists of `remove:` lines, and each one of those removals is the overlay operation with the most failure modes. Spec 2 reached the same conclusion for relations and stated the reason plainly: friction spent to delete things that nobody asked for. The bundle set makes the same ruling for shelves and kinds, and the confluence property makes it a guarantee instead of a preference.
+The right-hand column is the whole argument in one place. A batteries-included *base* costs three of five adopters a first experience that consists of `remove:` lines. Each one of those removals is the overlay operation with the most failure modes. Spec 2 reached the same conclusion for relations and stated the reason plainly: friction spent to delete things that nobody asked for. The bundle set makes the same ruling for shelves and kinds, and the confluence property makes it a guarantee instead of a preference.
 
 ## The interview
 
@@ -257,11 +257,11 @@ Q3's leaning says the interview matters more than the packages, and the runs abo
 
 **Every question is about the corpus, and no question is about the taxonomy.** "Do you write runbooks?" needs no model in the reader's head. "Do you want a `procedure` purpose?" needs the whole of spec 2 first. Abstraction gradient decided Q2, and it decides the question set here. Each answer selects a bundle, and no answer exposes a declaration name.
 
-**A question that an existing ruling answers is deleted rather than asked.** Spec 3 rules that identifiers are always namespaced, because retrofitting a namespace is expensive, so the interview never asks whether the adopter wants identifiers. Applied across the question set this removes most of what a first draft would ask, and it is the cheapest way to keep the interview short.
+**A question that an existing ruling answers is deleted rather than asked.** Spec 3 rules that identifiers are always namespaced, because retrofitting a namespace is expensive, so the interview never asks whether the adopter wants identifiers. Applied across the question set this removes most of what a first draft would ask. It is the cheapest way to keep the interview short.
 
 The bound on length follows from the same test. The interview asks only what changes the bundle selection, and everything else waits until a corpus exists for `taxonomy audit` to measure. A day-one guess about facet orthogonality is worse than a day-thirty measurement of it, and the audit already reports the distributions.
 
-**The honest cost is the one overlays already carry, one level up.** The resolved taxonomy is an artifact that nobody authored directly, and an interview adds a step where nobody authored the *answers* as configuration either. Spec 2 names the mitigation for the first case: `explain`, `resolve`, and a readable lock. The second needs one more thing, and it is cheap. The generated overlay carries a comment above each block that names the question and the answer that produced it. YAML preserves comments through a round trip, which the Q2 walkthrough scored as secondary notation, and re-running `init` re-asks with the current answers as defaults and rewrites the same blocks. An adopter who changes their mind edits an answer, not a taxonomy.
+**The honest cost is the one overlays already carry, one level up.** The resolved taxonomy is an artifact that nobody authored directly, and an interview adds a step where nobody authored the *answers* as configuration either. Spec 2 names the mitigation for the first case: `explain`, `resolve`, and a readable lock. The second needs one more thing, and it is cheap. The generated overlay carries a comment above each block that names the question and the answer that produced it. YAML preserves comments through a round trip, which the Q2 walkthrough scored as secondary notation. Re-running `init` re-asks with the current answers as defaults and rewrites the same blocks. An adopter who changes their mind edits an answer, not a taxonomy.
 
 ## The decision
 
@@ -286,14 +286,14 @@ Q3 presented three options as alternatives. All three survive as layers, and the
 | 5 | The base package and the doctrine starter kit are two artifacts, and spec 0 and spec 2 name them as if they were one. | [Spec 0 item 6](../spec/00-vision-and-scope.md#what-we-build) and [spec 7](../spec/07-distribution-and-federation.md#the-starter-kit-is-a-selection) |
 | 6 | The interview is package data rather than engine code, and it is `infer` with a second evidence source. | [Spec 7](../spec/07-distribution-and-federation.md#the-interview) and [Q12](../spec/09-open-questions.md#q12--migration-path-for-an-existing-corpus) |
 
-Findings 1, 2, and 3 have one cause between them. The smallest column of the worked example was drawn as an impression of a small corpus, and it was never derived from the core beside it. To write the base package out as YAML is what makes the three visible at once, and none of them is visible from reading the prose.
+Findings 1, 2, and 3 have one cause between them. The smallest column of the worked example was drawn as an impression of a small corpus, and it was never derived from the core beside it. To write the base package out as YAML is what makes the three visible at once. None of them is visible from reading the prose.
 
 ## What this walkthrough did not settle
 
-**The bundle set is provisional.** Six bundles is a guess about how adopters cluster, and no adopter exists yet. The set is data in a package, so it costs a release rather than an engine change, and the first real adopter is the evidence that revises it.
+**The bundle set is provisional.** Six bundles is a guess about how adopters cluster, and no adopter exists yet. The set is data in a package, so it costs a release rather than an engine change. The first real adopter is the evidence that revises it.
 
 **The base kind names are placeholders that carry weight anyway.** The core is semantic, so `specification` renames freely. But a name in the starter kit is what every new adopter reads first, and `specification` is heavier than what a solo maintainer writes. That is a doctrine question, and doctrine ships in the same package.
 
 **Two findings against this repository's own corpus stay open.** The open-questions register cannot be expressed while it is one file, and the specification documents serve two purposes at once. Both are ordinary corpus work rather than design defects, and both are the kind of thing that the system exists to report.
 
-**The license half of Q3 stays with [Q11](../spec/09-open-questions.md#q11--license-and-distribution-posture).** Whether the base, the bundles, and the doctrine ship under the terms of the engine is a licensing decision, and nothing here depends on the answer.
+**The license half of Q3 stays with [Q11](../spec/09-open-questions.md#q11--license-and-distribution-posture).** Whether the base, the bundles, and the doctrine ship under the terms of the engine is a licensing decision. Nothing here depends on the answer.

@@ -62,7 +62,7 @@ CUE represents option B in the detail below, because it is the strongest of the 
 
 ## The dimensions
 
-Q2 listed seven. Green and Petre's framework has fourteen, and the seven were a reasonable first cut. Three of the omitted seven earn a place here, and one dimension that the framework does not have earns a place because the framework predates the reader that this project is built for.
+Q2 listed seven. Green and Petre's framework has fourteen, and the seven were a reasonable first cut. Three of the omitted seven earn a place here. One dimension that the framework does not have earns a place too, because the framework predates the reader that this project is built for.
 
 **Closeness of mapping.** How directly does a notation express the eleven declarations? This is separable from role-expressiveness, which asks whether a *reader* can tell what a part is for.
 
@@ -183,7 +183,7 @@ Split `audience` into `audience_role` (engineer, operator, integrator, auditor) 
 
 ## What the scenario found about the design
 
-**Facet requirements are enumerated per kind, so the cost of any facet change is linear in the number of kinds.** This is the same amplifier that scenario 1 found in relation endpoints, and the same missing primitive fixes both. Two independent scenarios converging on one absent abstraction is the strongest single result this walkthrough produced, and spec 2 anticipated the shape of it: "the schema lacks a primitive — and the fix is a new primitive, not a special case".
+**Facet requirements are enumerated per kind, so the cost of any facet change is linear in the number of kinds.** This is the same amplifier that scenario 1 found in relation endpoints, and the same missing primitive fixes both. Two independent scenarios converging on one absent abstraction is the strongest single result this walkthrough produced. Spec 2 anticipated the shape of it: "the schema lacks a primitive — and the fix is a new primitive, not a special case".
 
 **The split is a major version by `instance_validity`, and the judgment half of its migration payload is the whole of it.** Mapping one old value onto two new ones is mechanical only when the old vocabulary was a product of the two. `senior_engineer` splits mechanically. `auditor` does not. Spec 2 already divides the payload into a mechanical half and a judgment half, so the machinery is correct. What the scenario adds is a requirement on the payload format: it must be able to say *one old value maps to a set, and the author chooses*. That is a task with a closed choice attached, and it is far more useful than remediation prose.
 
@@ -265,7 +265,7 @@ The standard workaround is a disjunction with a default, `path: *"docs/decisions
 
 **Dhall can express override, and that is what disqualifies it.** Dhall's record-merge operators give override directly, and an overlay is naturally a total function from taxonomy to taxonomy. Totality means it terminates, so it is safe to run.
 
-But spec 2 requires the resolver to check confluence **statically, before it applies anything**, by building the set of paths that each overlay addresses. For a simple Dhall overlay the normal form does reveal the fields it touches. As soon as the overlay branches on its input, the address set becomes input-dependent and no static reading is available. So the resolver either accepts a restricted subset — at which point it is a path-addressed patch language wearing Dhall syntax — or it gives up static confluence. **A statically checkable confluence property requires the overlay's address set to be readable off its syntax.**
+But spec 2 requires the resolver to check confluence **statically, before it applies anything**, by building the set of paths that each overlay addresses. For a simple Dhall overlay the normal form does reveal the fields it touches. As soon as the overlay branches on its input, the address set becomes input-dependent and no static reading is available. So the resolver has two options. It can accept a restricted subset, becoming a path-addressed patch language wearing Dhall syntax, or it can give up static confluence. **A statically checkable confluence property requires the overlay's address set to be readable off its syntax.**
 
 There is a second objection and it is independent. Spec 2 forbids conditionals and user-defined functions in the taxonomy language, and says the boundary is defended. Dhall's contribution is functions. To adopt it means either not using the feature that distinguishes it, or breaking a stated limit.
 
@@ -273,7 +273,7 @@ KCL has real control flow and mutation, so the confluence argument applies with 
 
 **The DSL gains nothing here.** It could give the overlay language exactly the operations it needs, and a `rebase` verb for step 3. The Headwater overlay language already has those operations in YAML, because the overlay language is Headwater's under every candidate. A DSL would add syntax for semantics that do not change.
 
-This is the walkthrough's most useful structural result. It does not merely prefer the overlay design that spec 2 sketched. **It derives it.** A first-order, path-addressed patch language with `override`, `add`, and `remove` is the only shape that supports static confluence, and static confluence is what makes order-independence a guarantee instead of a hope.
+This is the walkthrough's most useful structural result. It does not merely prefer the overlay design that spec 2 sketched. **It derives it.** A first-order, path-addressed patch language with `override`, `add`, and `remove` is the only shape that supports static confluence. Static confluence is what makes order-independence a guarantee instead of a hope.
 
 ---
 
@@ -301,7 +301,7 @@ That is worth recording as a result about the method. The framework earned its p
 
 **YAML 1.2 is the concrete syntax. The schema language, the reference sublanguage, the overlay language, and the meta-schema are Headwater's. JSON Schema is emitted and never authoritative.**
 
-The relationship between Headwater's meta-schema and the emitted JSON Schema is exactly the one Q13 established for LinkML and SHACL, for the same reason and with the same obligation. The export declares itself a subset. An external validator that reports a clean run while believing it checked everything is worse than one that knows what it skipped.
+The relationship between Headwater's meta-schema and the emitted JSON Schema is exactly the one Q13 established for LinkML and SHACL. The reason is the same, and so is the obligation. The export declares itself a subset. An external validator that reports a clean run while believing it checked everything is worse than one that knows what it skipped.
 
 ## The loader rulings
 
@@ -325,7 +325,7 @@ This is also the reason the loader rulings above cost nothing to enforce. A pars
 
 Q2's leaning said the resolved lock belongs in "a stricter representation" without saying what strict means. The lock is generated, so authorability is not one of its criteria. Determinism and diffability are.
 
-Strict therefore means a **canonical serialization**, not a typed configuration language: JSON with sorted keys, exactly one representation of each value, every reference resolved, and a content hash over the bytes. YAML admits several spellings of one value, and that alone disqualifies it for a hashed artifact. The lock carries the resolved taxonomy, the base and overlay identities and versions, the measured compatibility result, and the address map that overlay migration reads.
+Strict therefore means a **canonical serialization**, not a typed configuration language. That means JSON with sorted keys, exactly one representation of each value, every reference resolved, and a content hash over the bytes. YAML admits several spellings of one value, and that alone disqualifies it for a hashed artifact. The lock carries the resolved taxonomy, the base and overlay identities and versions, the measured compatibility result, and the address map that overlay migration reads.
 
 ## CUE as an optional front-end
 
@@ -351,4 +351,4 @@ Two of them turned out to be half-present rather than absent, which is worth rec
 
 # What the walkthrough did not settle
 
-The `$`-reference sublanguage now has three uses — a vocabulary reference, a package reference, and an overlay address — and no grammar. It has been written three times in three shapes. Before the meta-schema is published, that grammar needs one definition, because it is the part of the authored surface that no external tool will ever check.
+The `$`-reference sublanguage now has three uses — a vocabulary reference, a package reference, and an overlay address — and no grammar. It has been written three times in three shapes. Before the meta-schema is published, that grammar needs one definition. It is the part of the authored surface that no external tool will ever check.

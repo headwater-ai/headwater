@@ -402,7 +402,7 @@ Uniform findings make the rest cheap: one renderer per output format (human, Mar
 
 ## Suppression
 
-Suppression is permitted, bounded, and observable. It is scoped to a file or block, it carries an expiry, and it states a reason from a closed set. The reasons are `false_positive` (the finding is wrong) and `accepted_deviation` (the finding is right and tolerated for now). The coverage report includes an inventory of suppressions. A rule with fifty suppressions is not a rule — it is a finding about the taxonomy. One class of finding sits outside the mechanism. A [withholding](06-engine-architecture.md#an-export-profile-carries-a-filter) finding is not suppressible. A suppression is one author's local judgment, and the error that it releases is a disclosure that nobody recalls.
+Suppression is permitted, bounded, and observable. It is scoped to a file or block, it carries an expiry, and it states a reason from a closed set. The reasons are `false_positive` (the finding is wrong) and `accepted_deviation` (the finding is right and tolerated). The coverage report includes an inventory of suppressions. A rule with fifty suppressions is not a rule — it is a finding about the taxonomy. One class of finding sits outside the mechanism. A [withholding](06-engine-architecture.md#an-export-profile-carries-a-filter) finding is not suppressible. A suppression is one author's local judgment, and the error that it releases is a disclosure that nobody recalls.
 
 Both constraints were looser in an earlier draft, and each looseness broke something downstream. Expiry was optional here, while waiver expiry ([spec 7](07-distribution-and-federation.md#waivers)) was mandatory. That made the local mechanism — the one that an individual author reaches for at a red check — the leakier of the two, which is backwards. And an undifferentiated reason field conflated "wrong" with "tolerated". That made the false-positive rate unmeasurable, and that is the number that the promotion machinery above runs on.
 
@@ -422,7 +422,7 @@ The adaptive class exists to decide if the other three are worth what they cost.
 
 **The layer reports the cost of its own instrument.** Probes cost money per run, and a cost report that omits the cost of measuring is the failure that this section exists to prevent. So each probe tier declares a budget. The harness refuses a run whose projected cost exceeds it, and every run reports realized cost beside its result.
 
-Coverage alone is a number that only goes up. A system that optimizes it will happily add obligations that nobody can satisfy. When coverage is read against capture cost and efficacy, it becomes a trade: this much assurance, at this much author burden, with this much demonstrated effect. A rule that raises cost and moves neither of the others is a rule to delete. Deletion is a success, and it is recorded as one.
+Coverage alone is a number that only goes up. A system that optimizes it will happily add obligations that nobody can satisfy. When coverage is read against capture cost and efficacy, it becomes a trade. This much assurance, at this much author burden, with this much demonstrated effect. A rule that raises cost and moves neither of the others is a rule to delete. Deletion is a success, and it is recorded as one.
 
 ## Accuracy audit
 

@@ -78,7 +78,7 @@ Those twelve settle more of the three questions than any of the three entries no
 
 ### A derived index is a transmission format, not a store
 
-**SCIP replaced LSIF at Sourcegraph, and its design document states the rule outright.** "SCIP is meant to be a *transmission* format for sending data from some producers to some consumers — it is not meant as a *storage* format for querying." LSIF failed on the other half of the same distinction. It encoded a graph with opaque global integer identifiers, which imposed an ordering constraint on how symbols entered the index and made partial update of one document impractical. Sourcegraph replaced the integers with human-readable string symbol identifiers.
+**SCIP replaced LSIF at Sourcegraph, and its design document states the rule outright.** "SCIP is meant to be a *transmission* format for sending data from some producers to some consumers. It is not meant as a *storage* format for querying." LSIF failed on the other half of the same distinction. It encoded a graph with opaque global integer identifiers, which imposed an ordering constraint on how symbols entered the index and made partial update of one document impractical. Sourcegraph replaced the integers with human-readable string symbol identifiers.
 
 That last detail confirms a Headwater ruling that arrived for an unrelated reason. [Q4](../spec/09-open-questions.md#q4--relation-storage) made an edge identity a triple of stable strings, to give the `Edge` scope a computable key. Sourcegraph reached the same shape from incremental indexing. Two derivations, one result.
 
@@ -152,7 +152,7 @@ This answers the [SHACL evaluation](shacl-worked-example.md#problem-one-everythi
 
 The leaning survives on its ownership half and loses its architecture. Headwater owns the language, and standard formats come out of it. What the entry still assumed is a pipeline with LinkML near its head. That assumption is wrong.
 
-**Every emitter reads the resolved lock and the graph. No emitter reads another emitter's output.** Q13 already stated a version of this as a trap to avoid, and the evidence makes it a rule with a measurement behind it. LinkML's SHACL generator drops constructs that LinkML itself expresses. A chained pipeline would inherit that loss and declare nothing, which is the "clean run while believing it checked everything" failure that the subset declaration exists to prevent.
+**Every emitter reads the resolved lock and the graph. No emitter reads another emitter's output.** Q13 already stated a version of this as a trap to avoid, and the evidence makes it a rule with a measurement behind it. LinkML's SHACL generator drops constructs that LinkML itself expresses. A chained pipeline would inherit that loss and declare nothing. That is the "clean run while believing it checked everything" failure that the subset declaration exists to prevent.
 
 **The staging order, derived rather than preferred.** An emitter ships when its consumer exists. Two consumers exist today and the rest do not.
 
@@ -176,7 +176,7 @@ The leaning survives on its ownership half and loses its architecture. Headwater
 
 **The OKF half is not a separate question, and the entry misfiled it.** Q13 separated OKF from the substrate question correctly, on the grounds that one is about the TBox and the other about the ABox. It then left OKF inside Q13. But the native graph export is an ABox emitter too, and Q6 owns it. So OKF is a second ABox emitter beside the native one, on the same terms as every other: it reads the graph directly, declares a loss set, and emits a census.
 
-That placement makes the standing worry concrete. OKF's own conformance check is four advisory warnings, so a consumer that validates a bundle verifies almost nothing. The census is the answer. It is the emitter's own account of what it dropped, produced by the party that knows, and checked in the emitting repository rather than trusted by the receiving one.
+That placement makes the standing worry concrete. OKF's own conformance check is four advisory warnings, so a consumer that validates a bundle verifies almost nothing. The census is the answer. It is the emitter's own account of what it dropped, produced by the party that knows. It is checked in the emitting repository rather than trusted by the receiving one.
 
 ### Q9 — harvest, and there is no merged graph
 
@@ -188,7 +188,7 @@ Nothing in the engine changes. The lock is per corpus root. The census walks one
 
 **The aggregator is in scope, and it is not a component.** It is a solution corpus plus one anchor kind. [Q9](../decisions/0009-multi-repository-corpora.md#the-aggregator-authors-its-own-facts) already admitted the solution layer as an ordinary corpus. What was missing is how it reaches the corpora below it, and the answer is machinery that [spec 2](../spec/02-taxonomy-model.md#behavior-at-the-limits) already has. An anchor kind is declared, and exactly one resolver owns it. That resolver reads pinned, committed exports, in the way that `code_path`'s resolver reads a source tree and [Q19](../spec/09-open-questions.md#q19--inbound-integration-an-external-system-of-record)'s resolver reads a committed snapshot.
 
-**There is no merged graph, and the question about where merged graphs live dissolves.** Merging is anchor resolution. Anchor resolution produces nothing that outlives the run. The solution corpus holds its own documents and its own declared edges, and it resolves anchors against exports that it pinned. Q9 had already concluded that a merged graph is "canonical for nothing". The step it did not take is the obvious one: an artifact that is canonical for nothing, that nothing reviews, and that every run can rebuild, does not need to exist.
+**There is no merged graph, and the question about where merged graphs live dissolves.** Merging is anchor resolution. Anchor resolution produces nothing that outlives the run. The solution corpus holds its own documents and its own declared edges, and it resolves anchors against exports that it pinned. Q9 had already concluded that a merged graph is "canonical for nothing". The step it did not take is the obvious one. An artifact that is canonical for nothing, that nothing reviews, and that every run can rebuild, does not need to exist.
 
 **Harvest, never fan-out.** The solution corpus pins each source export by identity and content hash. It never queries a live endpoint. Three independent arguments agree.
 

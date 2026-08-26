@@ -93,7 +93,7 @@ Staleness is **detective, never blocking**. A block on staleness teaches authors
 
 Some kinds describe the world as it is. Some narrate change. A mix of the two is the most common failure in a documentation corpus. It is mechanically detectable at useful precision.
 
-- **Declarative regime** (specifications, standards, architecture): present tense, present state. No future intent ("will be", "planned"), no change narration ("we moved from X to Y"), no phased-rollout language, no comparatives against a prior state. If a reader cannot tell whether a sentence describes today or last quarter, the document failed.
+- **Declarative regime** (specifications, standards, architecture): present tense, present state. No future intent ("will be", "planned"), no change narration, no phased-rollout language, no comparatives against a prior state. If a reader cannot tell whether a sentence describes today or last quarter, the document failed.
 - **Narrative regime** (proposals, evidence, incident records): time-bound by nature, and exempt.
 
 Enforcement is lexical and thus imperfect. It uses a curated pattern set for each forbidden category, with per-file and per-block escape hatches that must state a reason. The escape hatch is itself a signal. A shelf that collects exemptions is a shelf whose kind assignment is wrong, and the engine reports that concentration.

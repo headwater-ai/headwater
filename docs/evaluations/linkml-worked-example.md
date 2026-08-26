@@ -299,7 +299,7 @@ Worth noting how this rhymes with the position already taken on distribution: a 
 
 Take **option 3** into the Q2 walkthrough as the leading candidate, with these consequences to weigh:
 
-- it removes the Q1 tension entirely — a Rust core emitting LinkML YAML has no dependency on LinkML's Python tooling;
+- It removes the Q1 tension entirely. A Rust core emitting LinkML YAML has no dependency on LinkML's Python tooling.
 - the SHACL question resolves itself: SHACL becomes an output artifact for external consumers, so its poor error messages never reach a Headwater author;
 - the cost is a generator plus fidelity tests proving the emitted schema accepts exactly the documents Headwater accepts, which is a real and ongoing cost;
 - and the shape/graph boundary needs to be stated in [spec 6](../spec/06-engine-architecture.md) as an architectural seam, because it is one.

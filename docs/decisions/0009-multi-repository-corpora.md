@@ -29,7 +29,7 @@ One [evaluation](../evaluations/graph-export-and-federation.md) settles this wit
 
 The aggregator is in scope, and it is not a component. It is a solution corpus plus one anchor kind ([spec 7](../spec/07-distribution-and-federation.md#the-tier-above-a-corpus-harvests-it)). An anchor kind is declared, and exactly one resolver owns it. That resolver reads pinned corpus exports, in the way that `code_path`'s resolver reads a source tree.
 
-There is no merged graph, so the question of where merged graphs live dissolves. Merging *is* anchor resolution, and anchor resolution leaves nothing behind when a run ends. A merged graph is canonical for nothing, and an artifact that is canonical for nothing, that nobody reviews, and that one rebuild reproduces does not need to exist.
+There is no merged graph, so the question of where merged graphs live dissolves. Merging *is* anchor resolution, and anchor resolution leaves nothing behind when a run ends. A merged graph is canonical for nothing. An artifact that is canonical for nothing, that nobody reviews, and that one rebuild reproduces does not need to exist.
 
 Query fan-out does not happen. The tier harvests. Each source corpus carries a pin: an identity, a content hash, and a location. A scheduled job fetches the export out of band and commits it, and the resolver reads the committed copy.
 
