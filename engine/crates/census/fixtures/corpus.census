@@ -1,11 +1,11 @@
-330 files under the corpus root
-    250 typed
+331 files under the corpus root
+    251 typed
       4 generated
       2 untyped
      72 excluded
       2 not a document
       1 typed acceptance_criterion
-     36 typed decision
+     37 typed decision
       1 typed decision_register
      13 typed design_spec
      17 typed evaluation
