@@ -9,14 +9,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 313,
-      "carried": 313,
+      "in the graph": 314,
+      "carried": 314,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 527,
-      "carried": 527,
+      "in the graph": 529,
+      "carried": 529,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1138,6 +1138,33 @@
             ],
             "governs": [
               "engine/crates/meta/meta-schema.yml"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0041-q41-whether-vale-becomes-a-declared-regime-backend.md",
+        "kind": "decision",
+        "id": "HW-DR-0041",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0041",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "summary": "Vale does not become a declared regime backend, and its findings are not translated into this engine's Finding shape. It stays where spec 00 already puts it, composable alongside, because four structural mismatches answer Q24's reopening condition a second time.",
+          "last_verified": "2026-08-26",
+          "title": "Q41 — Whether Vale becomes a declared regime backend",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0005",
+              "HW-DR-0024"
             ]
           }
         }
@@ -8156,6 +8183,28 @@
           "anchor_kind": "code_path",
           "id": "engine/crates/meta/meta-schema.yml",
           "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0041-q41-whether-vale-becomes-a-declared-regime-backend.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0005",
+          "path": "docs/decisions/0005-voice-checking-depth.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0041-q41-whether-vale-becomes-a-declared-regime-backend.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0024",
+          "path": "docs/decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md",
+          "kind": "decision"
         }
       },
       {

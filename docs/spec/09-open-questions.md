@@ -10,7 +10,7 @@ relations:
 
 # decisions
 
-40 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+41 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -171,3 +171,7 @@ relations:
 ## Q40 — Whether extends, bundle, requires and an overlay's taxonomy key are a mechanism or a label
 
 [HW-DR-0040](../decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md) — All four keys of the family are a label rather than a mechanism today, and the specification and the meta-schema now say so in plain prose. (asserted, and no human has accepted it)
+
+## Q41 — Whether Vale becomes a declared regime backend
+
+[HW-DR-0041](../decisions/0041-q41-whether-vale-becomes-a-declared-regime-backend.md) — Vale does not become a declared regime backend, and its findings are not translated into this engine's Finding shape. It stays where spec 00 already puts it, composable alongside, because four structural mismatches answer Q24's reopening condition a second time. (asserted, and no human has accepted it)

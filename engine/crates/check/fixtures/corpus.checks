@@ -1,35 +1,35 @@
-334 seen, 254 classified, 254 checked, 4697 check instances
+335 seen, 255 classified, 255 checked, 4716 check instances
       4 generated, held to regeneration by `headwater generate --check`
      21 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: the document at the target end, `HW-REG-open-questions`, declares no value for the state facet, so there is no state to read there
-    242 skipped: this document writes no fragment into itself
-    509 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+    243 skipped: this document writes no fragment into itself
+    511 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 adoption
   0 pairs open, 1 closed, holding 0 findings, in 1 task
   AD-1 0 open, 1 closed, holding 0 findings, owner the specification authors, until 2027-06-30
     The one entry of `.ste-lint-baseline.json` that this corpus still owes. The baseline held two when the linter retired. The other named a semicolon inside a block quotation, which the engine does not report at all, because the parser hands a quoted block to no lexical rule
-255 documents in the read set, and 2 barriers that no gate carries across a merge
-    254 instances of facet.required.missing
-    254 instances of facet.value.not_permitted
-    254 instances of identifier.pattern.not_met
-    254 instances of shelf.placement_is_primary
-    527 instances of relation.target.unresolved
+256 documents in the read set, and 2 barriers that no gate carries across a merge
+    255 instances of facet.required.missing
+    255 instances of facet.value.not_permitted
+    255 instances of identifier.pattern.not_met
+    255 instances of shelf.placement_is_primary
+    529 instances of relation.target.unresolved
      88 instances of relation.reciprocity.missing
-    336 instances of relation.endpoint.not_permitted
+    338 instances of relation.endpoint.not_permitted
       2 instances of lifecycle.dependency.on_terminal
      19 instances of relation.participation.overdue
-    254 instances of relation.declaration.unusable
-    254 instances of identifier.unusable
+    255 instances of relation.declaration.unusable
+    255 instances of identifier.unusable
       1 instances of identifier.claimed_twice
-    232 instances of voice.forbidden_construction
-    245 instances of language.controlled.not_met
-    245 instances of language.retired_term.used
-    245 instances of language.source_form.not_met
-    216 instances of section.required.missing
-    254 instances of link.fragment.unresolved
-    254 instances of warrant.promoted
-    254 instances of lifecycle.transition.not_permitted
-    254 instances of lifecycle.state.not_admitted
+    233 instances of voice.forbidden_construction
+    246 instances of language.controlled.not_met
+    246 instances of language.retired_term.used
+    246 instances of language.source_form.not_met
+    217 instances of section.required.missing
+    255 instances of link.fragment.unresolved
+    255 instances of warrant.promoted
+    255 instances of lifecycle.transition.not_permitted
+    255 instances of lifecycle.state.not_admitted
       1 instances of lifecycle.deletion.not_permitted
 rules, and for each the scope that binds it
   facet.required.missing
