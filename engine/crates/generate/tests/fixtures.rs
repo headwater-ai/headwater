@@ -1573,8 +1573,19 @@ projections:
             let entry_map = entry.as_mapping().expect("each entry is a one-key mapping");
             let (_, path_value) = entry_map.iter().next().expect("exactly one key");
             let path = path_value.as_str().expect("the path is a string");
+            // MkDocs resolves a `nav:` path against `docs_dir`, and `docs_dir`
+            // is the corpus root, so the entry names the document from the
+            // root rather than from the repository. `fixture_identity` roots
+            // this corpus at `generate`, and the prefix is stripped here by
+            // hand rather than through the emitter's own helper, so that the
+            // test states the expected form instead of restating the
+            // transform.
+            let expected_path = pointer
+                .path
+                .strip_prefix("generate/")
+                .expect("every fixture document sits under the fixture corpus root");
             assert_eq!(
-                path, pointer.path,
+                path, expected_path,
                 "{shelf_name}'s order does not match `by_precedence`"
             );
         }
