@@ -3,7 +3,7 @@ id: HW-DR-0037
 status: draft
 status_since: 2026-08-26
 summary: "Everything under `site/` is hand-built and the corpus is the generated projection. A hand-built page states no figure a person typed, and nothing checks that."
-last_verified: 2026-08-26
+last_verified: 2026-08-27
 title: "Q37 — Which parts of the site are hand-built and which are a projection of this corpus"
 provenance:
   warrant: asserted
@@ -21,6 +21,7 @@ relations:
     - site/compare/index.html
     - site/proof/index.html
     - site/tutorial/index.html
+    - site/glossary/index.html
   traces_to:
     - site/DESIGN-BRIEF.md
 ---
