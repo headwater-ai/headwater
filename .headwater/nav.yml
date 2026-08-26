@@ -39,6 +39,7 @@ nav:
       - "Q34 — Whether acceptance means merged to main, and what an agent may write before that": "decisions/0034-q34-whether-acceptance-means-merged-to-main-and-what-an-agent-may-write-before-that.md"
       - "Q35 — Whether one requirement kind holds an imported requirement and an authored one": "decisions/0035-q35-whether-one-requirement-kind-holds-an-imported-requirement-and-an-authored-one.md"
       - "Q36 — Which of MkDocs, Docusaurus, or Astro this corpus emits navigation for, and why": "decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md"
+      - "Q38 — Which link relation a rendered page carries to the served corpus descriptor": "decisions/0038-q38-which-link-relation-a-rendered-page-carries-to-the-served-corpus-descriptor.md"
   - "acceptance_criteria":
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
   - "evaluations":

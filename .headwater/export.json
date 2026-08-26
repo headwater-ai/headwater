@@ -9,14 +9,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 304,
-      "carried": 304,
+      "in the graph": 306,
+      "carried": 306,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 513,
-      "carried": 513,
+      "in the graph": 516,
+      "carried": 516,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1041,6 +1041,36 @@
             ],
             "traces_to": [
               "site/DESIGN-BRIEF.md"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0038-q38-which-link-relation-a-rendered-page-carries-to-the-served-corpus-descriptor.md",
+        "kind": "decision",
+        "id": "HW-DR-0038",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0038",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "summary": "A rendered page points at the served descriptor with `rel=\"describedby\"`, because the IANA registry carries that token and the Headwater extension address answers 404.",
+          "last_verified": "2026-08-26",
+          "title": "Q38 — Which link relation a rendered page carries to the served corpus descriptor",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "governs": [
+              "mkdocs-overrides/main.html"
+            ],
+            "traces_to": [
+              "HW-SPEC-distribution-and-federation",
+              "HW-DR-0014"
             ]
           }
         }
@@ -7253,6 +7283,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "mkdocs-overrides/main.html",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "packages/headwater-standard/taxonomy.yml",
         "resolver": "source-tree"
       },
@@ -7875,6 +7910,39 @@
           "anchor_kind": "code_path",
           "id": "site/DESIGN-BRIEF.md",
           "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0038-q38-which-link-relation-a-rendered-page-carries-to-the-served-corpus-descriptor.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "mkdocs-overrides/main.html",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0038-q38-which-link-relation-a-rendered-page-carries-to-the-served-corpus-descriptor.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-distribution-and-federation",
+          "path": "docs/spec/07-distribution-and-federation.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/decisions/0038-q38-which-link-relation-a-rendered-page-carries-to-the-served-corpus-descriptor.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0014",
+          "path": "docs/decisions/0014-discovery-surface.md",
+          "kind": "decision"
         }
       },
       {
