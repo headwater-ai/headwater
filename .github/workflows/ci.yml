@@ -18,9 +18,20 @@
 # promotion is one flag on one line, with the diff that added it as its audit
 # trail, rather than a `continue-on-error` that hides which rules block.
 #
-# No third-party action beyond `actions/checkout`. The runner image ships a
-# recent stable Rust, and a pinned floor is what the container command in
-# `engine/README.md` is for.
+# No third-party action beyond `actions/checkout`.
+#
+# Both jobs run on a self-hosted runner rather than `ubuntu-latest`, because
+# the org's included Actions minutes (2,000/month on the Free plan) are spent
+# for the month and its spending limit defaults to $0, which refuses a
+# GitHub-hosted job outright rather than billing it. A self-hosted runner's
+# compute is not metered against that limit at all. The runner carries its
+# own rustup-managed stable toolchain rather than a distro one, so the pinned
+# floor is still what the container command in `engine/README.md` is for, and
+# `--break-system-packages` on every `pip install --user` below is this
+# runner's Python being a PEP 668 environment, which the comment ahead of the
+# `mkdocs` install already names as a thing a contributor hits reproducing
+# this locally. Move back to `ubuntu-latest` once the org's spending limit is
+# raised, or add it back as a second choice of runner if both should work.
 
 name: CI
 
@@ -35,7 +46,7 @@ permissions:
 jobs:
   engine:
     name: Engine tests
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, headwater]
     steps:
       - uses: actions/checkout@v4
       - name: The toolchain this build needs
@@ -67,7 +78,7 @@ jobs:
         # Absent, each comparison skips, because the pinned build container
         # carries no Python. The two variables below turn a skip into a failure,
         # so neither gate can go quiet by losing a dependency.
-        run: python3 -m pip install --user jsonschema PyYAML
+        run: python3 -m pip install --user --break-system-packages jsonschema PyYAML
       - name: Test
         run: cargo test
         working-directory: engine
@@ -84,7 +95,7 @@ jobs:
 
   headwater:
     name: headwater check (advisory)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, headwater]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -155,7 +166,7 @@ jobs:
         # `pip install --target <dir>` with `PYTHONPATH`, or
         # `--break-system-packages`.
         run: |
-          python3 -m pip install --user mkdocs==1.6.1
+          python3 -m pip install --user --break-system-packages mkdocs==1.6.1
           python3 -m mkdocs build --strict
       - name: The build wrote nothing into the deployed site
         # `site/` is the hand-built half HW-DR-0037 governs, `wrangler.jsonc`
@@ -371,7 +382,7 @@ jobs:
         # wrote: it is an emitter defect, and a forge that rejects the upload
         # reports nothing at all.
         run: |
-          python3 -m pip install --user jsonschema
+          python3 -m pip install --user --break-system-packages jsonschema
           ./engine/target/release/headwater check --no-cache --now "$HEADWATER_NOW" --format sarif > headwater.sarif
           python3 engine/crates/adapter/tests/sarif_oracle.py \
             engine/crates/adapter/tests/sarif-schema-2.1.0.json headwater.sarif > oracle.txt
