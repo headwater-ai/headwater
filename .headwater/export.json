@@ -9,14 +9,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 309,
-      "carried": 309,
+      "in the graph": 314,
+      "carried": 314,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 519,
-      "carried": 519,
+      "in the graph": 525,
+      "carried": 525,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1040,7 +1040,10 @@
               "site/ns/index.html",
               "site/how-it-works/index.html",
               "site/changelog/index.html",
-              "site/terms/index.html"
+              "site/terms/index.html",
+              "site/compare/index.html",
+              "site/proof/index.html",
+              "site/tutorial/index.html"
             ],
             "traces_to": [
               "site/DESIGN-BRIEF.md"
@@ -1074,6 +1077,38 @@
             "traces_to": [
               "HW-SPEC-distribution-and-federation",
               "HW-DR-0014"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md",
+        "kind": "decision",
+        "id": "HW-DR-0039",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0039",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "summary": "The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run.",
+          "last_verified": "2026-08-26",
+          "title": "Q39 — How a figure reaches a hand-built page, now that a build interpolates one",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "constrains": [
+              "HW-DR-0037"
+            ],
+            "governs": [
+              "site/scripts/refresh-figures.sh"
+            ],
+            "traces_to": [
+              "site/DESIGN-BRIEF.md"
             ]
           }
         }
@@ -7306,6 +7341,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "site/compare/index.html",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "site/how-it-works/index.html",
         "resolver": "source-tree"
       },
@@ -7321,7 +7361,22 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "site/proof/index.html",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "site/scripts/refresh-figures.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "site/terms/index.html",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "site/tutorial/index.html",
         "resolver": "source-tree"
       },
       {
@@ -7954,6 +8009,39 @@
       },
       {
         "source": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "site/compare/index.html",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "site/proof/index.html",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "site/tutorial/index.html",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -7994,6 +8082,39 @@
           "id": "HW-DR-0014",
           "path": "docs/decisions/0014-discovery-surface.md",
           "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md",
+        "relation": "constrains",
+        "written_as": "constrains",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0037",
+          "path": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "site/scripts/refresh-figures.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "site/DESIGN-BRIEF.md",
+          "resolver": "source-tree"
         }
       },
       {

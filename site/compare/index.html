@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Headwater compared — LeanCTX, TrustGraph, Vale</title>
+<meta name="description" content="Authors declare the graph here and a language model extracts it there. The field side by side, including the arguments against Headwater.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🜄</text></svg>">
+<style>
+  :root {
+    --bg: #fbfaf8; --fg: #1a1917; --muted: #5f5b54;
+    --rule: #e2ddd4; --accent: #1d5c54; --code-bg: #f1eee8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161a; --fg: #e6e3dd; --muted: #9b968c;
+      --rule: #2a2e35; --accent: #6fb3a6; --code-bg: #1c1f25;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 17px/1.65 ui-serif, Charter, "Iowan Old Style", Georgia, serif;
+    -webkit-text-size-adjust: 100%; overflow-wrap: break-word;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  .sans { font-family: ui-sans-serif, system-ui, sans-serif; }
+
+  .topbar { height: 4px; background: var(--accent); }
+  .bar { max-width: 78rem; margin: 0 auto; padding: 0 3rem; }
+  nav.top {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 1.5rem; flex-wrap: wrap; padding-top: 1.2rem; padding-bottom: 1.2rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .brand {
+    font-weight: 600; font-size: 1.1rem; display: flex; align-items: center;
+    gap: 0.5rem; color: var(--fg); text-decoration: none;
+  }
+  .brand .glyph { color: var(--accent); font-size: 1.3rem; }
+  .navlinks {
+    display: flex; gap: 1.7rem; flex-wrap: wrap;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.82rem;
+  }
+  .navlinks a { color: var(--muted); text-decoration: none; }
+  .navlinks a:hover { color: var(--accent); }
+  .navlinks a.here { color: var(--fg); border-bottom: 2px solid var(--accent); }
+
+  section { border-top: 1px solid var(--rule); }
+  .pad { padding-top: 3.5rem; padding-bottom: 4rem; }
+  .tint { background: var(--code-bg); }
+
+  .eyebrow {
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.78rem;
+    text-transform: uppercase; letter-spacing: 0.14em; font-weight: 650;
+    color: var(--accent); margin: 0 0 1.5rem;
+  }
+  h1 {
+    font-size: 3.2rem; line-height: 1.08; letter-spacing: -0.02em;
+    font-weight: 600; margin: 0 0 1.4rem; max-width: 50rem; text-wrap: balance;
+  }
+  h1 em.a { color: var(--accent); }
+  h1 em.b { color: var(--muted); }
+  .lede { font-size: 1.15rem; max-width: 44rem; margin: 0; }
+
+  .sechead {
+    display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+  .secnum {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85rem; color: var(--accent);
+  }
+  h2 {
+    font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.12em;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 650;
+    color: var(--muted); margin: 0;
+  }
+  .secline { flex: 1; min-width: 2rem; border-top: 1px solid var(--rule); }
+
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92rem; min-width: 52rem; }
+  th, td { text-align: left; padding: 0.7rem 1.5rem 0.7rem 0; vertical-align: top; }
+  th { border-bottom: 2px solid var(--fg); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.78rem; font-weight: 650; }
+  th.us { border-bottom-color: var(--accent); color: var(--accent); font-weight: 700; }
+  th.corner { width: 10rem; }
+  th.rowlab { border-bottom: 1px solid var(--rule); }
+  th a { color: var(--fg); }
+  td { border-bottom: 1px solid var(--rule); color: var(--muted); }
+  td.us { color: var(--fg); }
+  th.corner, th.rowlab {
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem;
+    text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
+    font-weight: 650;
+  }
+  tr > *:last-child { padding-right: 0; }
+
+  .grid2 {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+    gap: 2rem 3rem; max-width: 60rem;
+  }
+  .against { border-left: 3px solid var(--muted); padding-left: 1.2rem; }
+  .against.ours { border-left-color: var(--accent); }
+  .against h3 { font-size: 1.05rem; font-weight: 600; margin: 0 0 0.4rem; }
+  .against p { font-size: 0.93rem; color: var(--muted); margin: 0; }
+
+  .note { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.8rem; color: var(--muted); margin: 1.2rem 0 0; }
+
+  footer { border-top: 1px solid var(--rule); }
+  .foot {
+    padding-top: 1.5rem; padding-bottom: 2.5rem;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.87rem;
+    color: var(--muted);
+  }
+  .foot p { margin: 0 0 1rem; max-width: 46rem; }
+  .footlinks { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+
+  @media (max-width: 62rem) {
+    .bar { padding-left: 1.5rem; padding-right: 1.5rem; }
+    h1 { font-size: 2.4rem; }
+  }
+  @media (max-width: 34rem) { h1 { font-size: 2rem; } }
+</style>
+</head>
+<body>
+
+<div class="topbar"></div>
+
+<div class="bar">
+  <nav class="top">
+    <a class="brand" href="/"><span class="glyph">🜄</span>Headwater</a>
+    <div class="navlinks">
+      <a href="/how-it-works/">How it works</a>
+      <a class="here" href="/compare/">Compare</a>
+      <a href="/proof/">Proof</a>
+      <a href="/tutorial/">Tutorial</a>
+    </div>
+  </nav>
+</div>
+
+<header class="bar" style="padding-top: 4.5rem; padding-bottom: 3.5rem;">
+  <p class="eyebrow">Comparison</p>
+  <h1>Authors <em class="a">declare</em> the graph here. A language model <em class="b">extracts</em> it there.</h1>
+  <p class="lede">None of these projects is a competitor, and this page says so by name. It also carries the arguments against us, because a comparison that hides its counter-evidence is not one you should trust.</p>
+</header>
+
+<section>
+  <div class="bar pad">
+    <div class="sechead">
+      <span class="secnum">01</span>
+      <h2>The field, side by side</h2>
+      <span class="secline"></span>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="corner" scope="col"></th>
+            <th class="us" scope="col">🜄 Headwater</th>
+            <th scope="col"><a href="https://github.com/yvgude/lean-ctx">LeanCTX ↗</a></th>
+            <th scope="col"><a href="https://github.com/trustgraph-ai/trustgraph">TrustGraph ↗</a></th>
+            <th scope="col"><a href="https://vale.sh">Vale ↗</a></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th class="rowlab" scope="row">What it is</th>
+            <td class="us">A documentation governance engine. Types the corpus, checks it as a graph.</td>
+            <td>A context-engineering layer for coding agents. One local binary that compresses what passes through.</td>
+            <td>A containerized context platform. Builds a semantic layer with a hypergraph.</td>
+            <td>A prose style checker. A command-line tool, with rules over lines of text.</td>
+          </tr>
+          <tr>
+            <th class="rowlab" scope="row">The pitch</th>
+            <td class="us">Whether the documents are <em>true</em>. “Is this corpus still true?”</td>
+            <td>Token economics. It offers an agent a smaller thing to read.</td>
+            <td>A unified semantic context layer.</td>
+            <td>Consistent prose, enforced in the build.</td>
+          </tr>
+          <tr>
+            <th class="rowlab" scope="row">The graph</th>
+            <td class="us">Authors declare it. Documents are typed nodes, front-matter references are typed edges.</td>
+            <td>No graph. A shared file format — the Open Knowledge Format, which it defines.</td>
+            <td>A language model extracts it. Documents are feedstock, dissolved into triples.</td>
+            <td>No graph. Lines of prose.</td>
+          </tr>
+          <tr>
+            <th class="rowlab" scope="row">Verdicts</th>
+            <td class="us">Deterministic. No language model issues a verdict, ever.</td>
+            <td>Not a validator. Nothing governs the source documents.</td>
+            <td>A language model is in the loop. Nothing governs the source documents — it mines them.</td>
+            <td>Deterministic, over style. Structure is out of scope.</td>
+          </tr>
+          <tr>
+            <th class="rowlab" scope="row">Terms</th>
+            <td class="us">Apache-2.0, Developer Certificate of Origin, no contributor agreement. No published pricing yet.</td>
+            <td>Apache-2.0. Free core, and paid team features.</td>
+            <td>Apache-2.0. No published pricing found.</td>
+            <td>MIT. A free command-line tool, and a hosted Studio from the maintainer.</td>
+          </tr>
+          <tr>
+            <th class="rowlab" scope="row">Where we meet</th>
+            <td class="us">—</td>
+            <td>An Open Knowledge Format emitter is staged in our emitter order, with LeanCTX as the named consumer. A shared serialization costs us nothing.</td>
+            <td>A candidate integration, not a rival. A governed corpus is an unusually good input to an extractor — kinds, facets and declared edges arrive as structure it would otherwise guess at.</td>
+            <td>Composable alongside. Vale checks the prose, Headwater checks the structure.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Descriptions of other projects paraphrase their own public materials, and the links above go to them — read their side too. Their claims are theirs: we have not measured them, and principle 11 keeps us from pretending otherwise. That is also why no row here carries a figure about anybody. The wider survey reads <a href="https://linkml.io">LinkML</a> and two further projects against this design as well.</p>
+  </div>
+</section>
+
+<section class="tint">
+  <div class="bar pad">
+    <div class="sechead">
+      <span class="secnum">02</span>
+      <h2>The arguments against us</h2>
+      <span class="secline"></span>
+    </div>
+    <p style="font-size: 1.15rem; max-width: 44rem; margin: 0 0 2rem;">Our own survey of adjacent work records these, and we publish them. A comparison page that carries its own counter-evidence is unusual enough to be the difference.</p>
+    <div class="grid2">
+      <div class="against">
+        <h3>A neighboring project declined this whole approach.</h3>
+        <p>A project solving a neighboring problem looked at the same standards stack and chose not to adopt it. Their reasons are recorded in our survey, and they are not paraphrased away.</p>
+      </div>
+      <div class="against">
+        <h3>The opposite mechanism has the enterprise adoption.</h3>
+        <p>TrustGraph ships extraction rather than declaration, and it is the one with named enterprise deployments. Declaration asks authors for work that extraction does not.</p>
+      </div>
+      <div class="against">
+        <h3>The closest analog is in another language.</h3>
+        <p>Vale is the nearest observed analog to this engine, and its lesson cuts both ways: the command-line checker is not the product. The place a person cannot easily self-host is.</p>
+      </div>
+      <div class="against ours">
+        <h3>The survey licenses no efficacy conclusion at all.</h3>
+        <p>Adjacent projects converge on this substrate, and almost none of them measured it. Convergence is a shared prior, not evidence. Every efficacy claim in this repository is marked unmeasured until the measurement layer, milestone M7, runs.</p>
+      </div>
+    </div>
+    <p class="note">The full record is this project's evaluation of adjacent work. It is not linked here, because the repository is not public yet. <a href="/proof/">The self-assessment states what a run of this engine measures instead.</a></p>
+  </div>
+</section>
+
+<footer>
+  <div class="bar foot">
+    <p>There is no link to the source or to the specification here, because the repository is not public. The project has decided that this repository becomes public, and the date belongs to the owner.</p>
+    <div class="footlinks">
+      <a href="/">Home</a>
+      <a href="/how-it-works/">How it works</a>
+      <a href="/proof/">Proof</a>
+      <a href="/tutorial/">Tutorial</a>
+      <a href="/terms/">Terms</a>
+      <a href="/changelog/">Changelog</a>
+      <a href="/ns/">Namespace</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

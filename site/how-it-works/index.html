@@ -10,136 +10,339 @@
   :root {
     --bg: #fbfaf8; --fg: #1a1917; --muted: #5f5b54;
     --rule: #e2ddd4; --accent: #1d5c54; --code-bg: #f1eee8;
+    --accent-on-ink: #6fb3a6;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #14161a; --fg: #e6e3dd; --muted: #9b968c;
       --rule: #2a2e35; --accent: #6fb3a6; --code-bg: #1c1f25;
+      --accent-on-ink: #1d5c54;
     }
   }
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--fg);
     font: 17px/1.65 ui-serif, Charter, "Iowan Old Style", Georgia, serif;
-    -webkit-text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%; overflow-wrap: break-word;
   }
-  .wrap { max-width: 42rem; margin: 0 auto; padding: 3rem 1.5rem 6rem; }
-  .back {
-    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.85rem;
-    color: var(--muted); text-decoration: none; display: inline-block;
-    margin-bottom: 2.5rem;
+  a { color: var(--accent); text-underline-offset: 2px; }
+  .sans { font-family: ui-sans-serif, system-ui, sans-serif; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+  .topbar { height: 4px; background: var(--accent); }
+  .bar { max-width: 78rem; margin: 0 auto; padding: 0 3rem; }
+  nav.top {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 1.5rem; flex-wrap: wrap; padding-top: 1.2rem; padding-bottom: 1.2rem;
+    border-bottom: 1px solid var(--rule);
   }
-  .back:hover { color: var(--accent); }
+  .brand {
+    font-weight: 600; font-size: 1.1rem; display: flex; align-items: center;
+    gap: 0.5rem; color: var(--fg); text-decoration: none;
+  }
+  .brand .glyph { color: var(--accent); font-size: 1.3rem; }
+  .navlinks {
+    display: flex; gap: 1.7rem; flex-wrap: wrap;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.82rem;
+  }
+  .navlinks a { color: var(--muted); text-decoration: none; }
+  .navlinks a:hover { color: var(--accent); }
+  .navlinks a.here { color: var(--fg); border-bottom: 2px solid var(--accent); }
+
+  section { border-top: 1px solid var(--rule); }
+  .pad { padding-top: 3.5rem; padding-bottom: 3.5rem; }
+  .tint { background: var(--code-bg); }
+
+  .eyebrow {
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.78rem;
+    text-transform: uppercase; letter-spacing: 0.14em; font-weight: 650;
+    color: var(--accent); margin: 0 0 1.5rem;
+  }
   h1 {
-    font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.015em;
-    margin: 0 0 0.4rem; font-weight: 600;
+    font-size: 3.2rem; line-height: 1.08; letter-spacing: -0.02em;
+    font-weight: 600; margin: 0 0 1.4rem; max-width: 46rem; text-wrap: balance;
   }
-  .uri {
+  .lede { font-size: 1.15rem; max-width: 44rem; margin: 0; }
+
+  .pipeline {
+    margin-top: 2.8rem; display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+    gap: 0.8rem; align-items: stretch;
+  }
+  .stage { display: flex; flex-direction: column; min-width: 0; }
+  .stagehead {
+    background: var(--accent); color: var(--bg);
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.85rem;
+    font-weight: 650; padding: 0.55rem 1rem; border-radius: 8px 8px 0 0;
+  }
+  .stagebody {
+    background: var(--code-bg); border: 1px solid var(--rule); border-top: none;
+    border-radius: 0 0 8px 8px; padding: 0.7rem 0.9rem;
+    display: flex; flex-wrap: wrap; gap: 0.4rem; align-content: flex-start;
+    flex: 1;
+  }
+  .chip {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 0.95rem; color: var(--accent); margin: 0 0 2.5rem;
-    word-break: break-all;
+    font-size: 0.7rem; background: var(--bg); border: 1px solid var(--rule);
+    padding: 0.15rem 0.55rem; border-radius: 99px;
   }
-  h2 {
-    font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.09em;
+  .chip.lit { border-color: var(--accent); color: var(--accent); }
+  .arrow { align-self: center; color: var(--accent); font-size: 1.5rem; }
+
+  .split {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+    gap: 3rem; align-items: start;
+  }
+  h2.step {
+    font-size: 2rem; font-weight: 600; margin: 0 0 0.7rem;
+  }
+  h2.step .n {
+    color: var(--accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 1.2rem; margin-right: 0.7rem;
+  }
+  h2.label {
+    font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.12em;
     font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 650;
-    color: var(--muted); margin: 2.75rem 0 0.85rem;
+    color: var(--muted); margin: 0 0 1.2rem;
     padding-bottom: 0.5rem; border-bottom: 1px solid var(--rule);
   }
-  p { margin: 0 0 1.1rem; }
-  a { color: var(--accent); text-underline-offset: 2px; }
+  p { margin: 0 0 1rem; }
+  .quiet { font-size: 0.95rem; color: var(--muted); margin: 0; }
+  pre.block, .box {
+    margin: 0; background: var(--code-bg); border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent); padding: 1.2rem 1.4rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.8rem; line-height: 1.75; color: var(--fg);
+  }
+  .tint pre.block, .tint .box { background: var(--bg); }
+  pre.block { white-space: pre; overflow-x: auto; }
+  pre.wrapped { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .node { display: inline-block; border: 1px solid var(--muted); padding: 0.4rem 0.8rem; background: var(--code-bg); }
+  .tint .node { background: var(--code-bg); }
+  .node.ghost { border-style: dashed; color: var(--muted); background: none; }
+  .edge { display: flex; align-items: center; gap: 0.8rem; margin: 0.4rem 0 0.4rem 1.4rem; }
+  .edgeline { border-left: 2px solid var(--accent); height: 2.8rem; }
+  .edgeline.quiet { border-color: var(--muted); height: 2.2rem; }
+  .key { color: var(--accent); }
+  .dim { color: var(--muted); }
+
   code {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.87em; background: var(--code-bg);
     padding: 0.12em 0.36em; border-radius: 3px;
   }
-  .tablewrap { overflow-x: auto; margin: 0 0 1.4rem; }
-  table { border-collapse: collapse; width: 100%; font-size: 0.94rem; }
-  th, td {
-    text-align: left; padding: 0.6rem 0.9rem 0.6rem 0;
-    border-bottom: 1px solid var(--rule); vertical-align: top;
+  .tint code { background: var(--bg); }
+  .cta {
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.95rem;
+    font-weight: 600; background: var(--accent); color: var(--bg);
+    text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 2px;
   }
-  th {
-    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.72rem;
-    text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted);
-    font-weight: 650;
+  .ctarow { display: flex; align-items: center; gap: 1.75rem; flex-wrap: wrap; }
+
+  footer { border-top: 1px solid var(--rule); }
+  .foot {
+    padding-top: 1.5rem; padding-bottom: 2.5rem;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.87rem;
+    color: var(--muted);
   }
-  .note {
-    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.9rem;
-    background: var(--code-bg); border-left: 3px solid var(--accent);
-    padding: 0.9rem 1.1rem; margin: 0 0 2rem; color: var(--muted);
+  .foot p { margin: 0 0 1rem; max-width: 46rem; }
+  .footlinks { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+
+  @media (max-width: 62rem) {
+    .bar { padding-left: 1.5rem; padding-right: 1.5rem; }
+    h1 { font-size: 2.4rem; }
+    .pipeline { grid-template-columns: 1fr; }
+    .arrow { display: none; }
   }
-  .note strong { color: var(--fg); }
-  footer {
-    margin-top: 3.5rem; padding-top: 1.25rem; border-top: 1px solid var(--rule);
-    font-family: ui-sans-serif, system-ui, sans-serif;
-    font-size: 0.87rem; color: var(--muted);
+  @media (max-width: 34rem) {
+    h1 { font-size: 2rem; }
+    h2.step { font-size: 1.6rem; }
   }
-  footer a { margin-right: 1.25rem; display: inline-block; }
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <a class="back" href="/">← Headwater</a>
+<div class="topbar"></div>
 
-  <h1>How Headwater works</h1>
-
-  <p>A run has four steps. Declare the taxonomy, build the graph, run the checks, and project what the graph supports. This page states each one, and then it states where the reasoning stops.</p>
-
-  <p class="note"><strong>Status: the engine runs, and nothing is released.</strong> The steps below describe the engine as it stands, and it checks this project's own documentation on every change.</p>
-
-  <h2>Declare the taxonomy</h2>
-
-  <p>A taxonomy declares what shelves exist, what document kinds live on them, what metadata each kind carries, and how documents may reference each other. All of it lives in one versioned schema. Customizing the taxonomy never means forking the tooling.</p>
-
-  <p>The split has a standard name, and the name is not decoration. Description logic calls the terminology a TBox and the assertions an ABox. A taxonomy is the terminology, and a corpus is the assertions. That is why the validation of a taxonomy and the check of a corpus are two different operations, rather than two halves of one operation.</p>
-
-  <p>Resolution merges a base package with the overlays above it, validates the result against a meta-schema, and writes a content-hashed lock. Everything downstream reads the lock and never the sources. A check result therefore depends on a hash that a reviewer can see in a diff.</p>
-
-  <h2>Build the graph</h2>
-
-  <p>The engine parses each file once and builds one typed graph. Documents become typed nodes, and front-matter references become typed edges. The graph, and not the file tree, is the working representation.</p>
-
-  <p>The obvious alternative is a separate linter for each concern, and it is the wrong decomposition. Each such tool re-walks the tree, re-parses the front matter, and re-derives what kind each document is. That is slow, and worse, it diverges. When two tools disagree about what a document is, the result is contradictory findings and an unfixable bug report.</p>
-
-  <p>The build also emits a census, which is every file under the corpus root and what became of each one. The census fixes the denominator before any check runs. So a document that failed to classify is counted, reported, and visibly unchecked, rather than absent.</p>
-
-  <p>Nothing stores the graph. Every run rebuilds it from the documents and the lock, and a cache only makes that derivation cheap. A cache that can change a verdict is a store under another name, and a test holds the difference.</p>
-
-  <h2>Run the checks</h2>
-
-  <p>A check is a pure function from a scoped view of the graph to a set of findings. It reads no file, it opens no socket, and it reads no clock. Everything that depends on time arrives as an injected value. That purity is what makes a result reproducible, cacheable, and safe to run in parallel.</p>
-
-  <p>Checks arrive from several origins. Shape checks and graph checks are generated from the taxonomy itself. A new facet or a new relation therefore brings its checks with it, and needs no code. Corpus checks read many documents at once. Document checks read the body, which is not in the graph. Plugin checks are the adopter's own, and that origin is specified rather than built. The last three are why a native engine exists at all. They are exactly what a schema language cannot express.</p>
-
-  <p>Every check declares its scope, and the engine enforces the declaration. A check sees one document, one edge, a neighborhood, one shelf, or the whole corpus, and it sees nothing else. That is what makes change-scoped evaluation exact, cache keys sound, and parallel execution safe.</p>
-
-  <p>A run has two phases, and the order answers a failure mode. Phase A classifies every file and builds the graph. Phase B runs the checks over what Phase A produced. The census is fixed first. So a document that fails to parse is counted and reported, rather than dropped from the run behind a clean result.</p>
-
-  <p>A finding carries a fix only when the correction is mechanical and total, which means one correct outcome derivable without judgment. Everything else carries remediation prose instead. A plausible automatic fix for a defect that needs judgment would be worse than none, because it would be applied unread.</p>
-
-  <h2>Project</h2>
-
-  <p>A projection is a derived artifact computed from the graph. A shelf index, the navigation for a documentation site, an agent instruction file, and a JSON export of the graph are all projections.</p>
-
-  <p>Three properties hold. A projection is generated and never hand-authored. A projection is checked, so a build fails when a committed projection differs from a regenerated one. And a projection is declared by the schema, within the set of projection kinds that the engine implements. So a taxonomy adds a projection of a kind the engine already has, and never a kind of its own.</p>
-
-  <p>A projection may be filtered, and a filtered projection says so. An export profile names an audience and a filter over facet values, and what it carries and what it withholds partition the corpus. A document held back is a loss with a declared reason, and the census reports it like any other loss. No profile may produce a view that presents itself as total.</p>
-
-  <h2>Where the reasoning stops</h2>
-
-  <p>The assertions here are about documents. This document exists, it is of this kind, it governs that code path, it supersedes that other document. They are not about the claims inside the prose.</p>
-
-  <p><em>The service returns 404 on a missing key</em> is a sentence. The system knows the document that contains it, and what that document governs. It does not know what the sentence asserts about the world. Reasoning stops at the document boundary, and a promise of semantic consistency past that boundary is a promise that this project cannot keep.</p>
-
-  <footer>
-    <p>There is no link to the source or to the specification here, because the repository is not public. The project has decided that this repository becomes public, and the date belongs to the owner.</p>
-    <a href="/terms/">Terms</a>
-    <a href="/changelog/">Changelog</a>
-    <a href="/ns/">Namespace</a>
-    <a href="/">Home</a>
-  </footer>
-
+<div class="bar">
+  <nav class="top">
+    <a class="brand" href="/"><span class="glyph">🜄</span>Headwater</a>
+    <div class="navlinks">
+      <a class="here" href="/how-it-works/">How it works</a>
+      <a href="/compare/">Compare</a>
+      <a href="/proof/">Proof</a>
+      <a href="/tutorial/">Tutorial</a>
+    </div>
+  </nav>
 </div>
+
+<header class="bar" style="padding-top: 4.5rem; padding-bottom: 3.5rem;">
+  <p class="eyebrow">How it works</p>
+  <h1>Taxonomy → graph → checks → projections.</h1>
+  <p class="lede">Four steps, each one derived from the last. Declare the structure once, and validation, navigation, templates, agent context and publishing all fall out of it. Every example below uses real documents and real output from this repository.</p>
+  <div class="pipeline">
+    <div class="stage">
+      <div class="stagehead">1 · taxonomy</div>
+      <div class="stagebody">
+        <span class="chip">taxonomy.yml</span>
+        <span class="chip">overlay.yml</span>
+        <span class="chip lit">taxonomy.lock</span>
+      </div>
+    </div>
+    <div class="arrow" aria-hidden="true">→</div>
+    <div class="stage">
+      <div class="stagehead">2 · graph</div>
+      <div class="stagebody">
+        <span class="chip">typed nodes</span>
+        <span class="chip">typed edges</span>
+        <span class="chip">ACME-DR-0001</span>
+      </div>
+    </div>
+    <div class="arrow" aria-hidden="true">→</div>
+    <div class="stage">
+      <div class="stagehead">3 · checks</div>
+      <div class="stagebody">
+        <span class="chip">census</span>
+        <span class="chip">findings</span>
+        <span class="chip">obligation register</span>
+      </div>
+    </div>
+    <div class="arrow" aria-hidden="true">→</div>
+    <div class="stage">
+      <div class="stagehead">4 · projections</div>
+      <div class="stagebody">
+        <span class="chip">indexes</span>
+        <span class="chip">site nav</span>
+        <span class="chip">agent context</span>
+        <span class="chip">graph export</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="bar pad split">
+    <div>
+      <h2 class="step"><span class="n">1 ·</span>Declare the taxonomy</h2>
+      <p style="max-width: 34rem;">A <strong>shelf</strong> is a region of the tree that carries a purpose. A <strong>kind</strong> is what a document permanently is — it names the facets a document must declare, the sections it must carry, and the relations it may declare. All of it is data in one versioned schema, so two organizations with different documentation cultures run the same engine over different taxonomies.</p>
+      <p style="max-width: 34rem;">The split has a standard name. Description logic calls the terminology a TBox and the assertions an ABox. A taxonomy is the terminology, and a corpus is the assertions. That is why the validation of a taxonomy and the check of a corpus are two different operations.</p>
+      <p class="quiet">Resolution merges the base package with the overlays above it, validates the result against a meta-schema, and writes a content-hashed lock. Everything downstream reads the lock and never the sources. Your <strong>overlay</strong> adds what a package cannot know: your namespace, your phrases, your extra kinds. Customizing the taxonomy never means forking the tooling.</p>
+    </div>
+    <pre class="block"><span class="dim"># packages/headwater-standard/taxonomy.yml</span>
+shelves:
+  decisions: docs/decisions/**
+kinds:
+  decision:
+    purpose: rationale
+    facets: [status, summary, last_verified]
+    sections: [Context, Decision, Consequences]
+    relations: [supersedes, governs, traces_to]
+
+<span class="dim"># .headwater/overlay.yml — yours</span>
+add:
+  identifier_schemes.decision_id.namespace: ACME</pre>
+  </div>
+</section>
+
+<section class="tint">
+  <div class="bar pad split">
+    <div>
+      <h2 class="step"><span class="n">2 ·</span>Authors declare the graph</h2>
+      <p style="max-width: 34rem;">The engine parses each file once and builds one typed graph. Documents are typed nodes. Front-matter references are typed edges, and an edge names its target by identifier rather than by path — a path dies at the first rename and an identifier does not. A relation that requires both ends owes both ends, and the engine writes the far half for you.</p>
+      <p style="max-width: 34rem;">The build also emits a census, which is every file under the corpus root and what became of each one. The census fixes the denominator before any check runs, so a document that failed to classify is counted, reported, and visibly unchecked, rather than absent.</p>
+      <p class="quiet">No language model issues a verdict. The graph is what the authors said, checked, and not what a model guessed. Nothing stores the graph either: every run rebuilds it from the documents and the lock, and a cache only makes that derivation cheap.</p>
+    </div>
+    <div class="box">
+      <div class="node">0002-deliver-at-least-once.md</div>
+      <div class="edge">
+        <span class="edgeline"></span>
+        <span><span class="key">supersedes ↓</span><br><span class="dim">↑ superseded_by</span></span>
+      </div>
+      <div class="node">0001-store-attempts-in-postgres.md</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="bar pad split">
+    <div>
+      <h2 class="step"><span class="n">3 ·</span>Every rule constrains that graph</h2>
+      <p style="max-width: 34rem;">A check is a pure function from a scoped view of the graph to a set of findings. It reads no file, it opens no socket, and it reads no clock. A finding names the rule, the location, the repair — and the <strong>obligation</strong> it discharges, in parentheses. An obligation is a claim the system makes about itself, with the rule that verifies it named beside it.</p>
+      <p style="max-width: 34rem;">A run has two phases, and the order answers a failure mode. Phase A classifies every file and builds the graph. Phase B runs the checks over what Phase A produced. The census is fixed first, so a document that fails to parse is counted and reported rather than dropped behind a clean result.</p>
+      <p class="quiet">A rule is an <em>error</em> when the repair takes no judgment, and <em>advisory</em> when the repair is a rewrite. Mechanical repairs are one command: <code>headwater check --fix</code>. A plausible automatic fix for a defect that needs judgment would be worse than none, because it would be applied unread.</p>
+    </div>
+    <div>
+      <pre class="block wrapped"><span class="key">docs/decisions/0002-deliver-at-least-once.md:9:7 error</span>
+relation.reciprocity.missing (OB-REL-1): `ACME-DR-0002`
+declares `supersedes: ACME-DR-0001`, and `supersedes`
+requires both ends, so 0001-store-attempts-in-postgres.md
+owes `superseded_by`
+fix (mechanical): add `superseded_by: ACME-DR-0002`</pre>
+      <!-- The register figures below are written by
+           tools/refresh-figures.sh from the `register` block of
+           `headwater check` over this repository. The denominator is the
+           obligation total on the first line. -->
+      <pre class="block wrapped" style="margin-top: 0.8rem;"><span class="dim">register
+  <span data-figure="oblig.total">31</span> obligations: <span data-figure="oblig.verified">28</span> verified, <span data-figure="oblig.gap">2</span> gap, <span data-figure="oblig.unverifiable">1</span> unverifiable
+     each gap names its owner
+  every rule this engine carries reaches one obligation</span></pre>
+      <p class="sans" style="font-size: 0.8rem; color: var(--muted); margin: 0.8rem 0 0;">That block is this repository's own run of <span data-figure="run.date">2026-08-26</span>. <a href="/proof/">The self-assessment carries the rest of it.</a></p>
+    </div>
+  </div>
+</section>
+
+<section class="tint">
+  <div class="bar pad split">
+    <div>
+      <h2 class="step"><span class="n">4 ·</span>Everything derived is a projection</h2>
+      <p style="max-width: 34rem;">Shelf indexes, decision-lineage views, site navigation, agent instruction context — generated from the graph, never maintained by hand. If a person can change a generated file and the system does not see it, that file will drift and readers will trust a file that is wrong.</p>
+      <p style="max-width: 34rem;">So the system checks that generated files agree with their sources. <code>headwater generate --check</code> fails the build when the two drift apart. This repository's own specification index and verb index both work that way.</p>
+      <p class="quiet">A projection may be filtered, and a filtered projection says so. An export profile names an audience and a filter over facet values, and what it carries and what it withholds partition the corpus. A document held back is a loss with a declared reason, and the census reports it like any other loss. No profile may produce a view that presents itself as total.</p>
+    </div>
+    <div class="box" style="line-height: 2.1;">
+      <div class="dim" style="margin-bottom: 0.2rem;">the graph, projected:</div>
+      <div>docs/spec/README.md <span class="dim">← shelf index</span></div>
+      <div>docs/interfaces/README.md <span class="dim">← verb index</span></div>
+      <div>decision lineage <span class="dim">← supersedes chains</span></div>
+      <div>site navigation <span class="dim">← MkDocs configuration</span></div>
+      <div>agent instruction context <span class="dim">← per task, per shelf</span></div>
+      <div class="key" style="margin-top: 0.4rem;">$ headwater generate --check</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="bar pad">
+    <h2 class="label">Where the reasoning stops</h2>
+    <p style="max-width: 44rem;">The assertions here are about documents. This document exists, it is of this kind, it governs that code path, it supersedes that other document. They are not about the claims inside the prose.</p>
+    <p style="max-width: 44rem;"><em>The service returns 404 on a missing key</em> is a sentence. The system knows the document that contains it, and what that document governs. It does not know what the sentence asserts about the world. Reasoning stops at the document boundary, and a promise of semantic consistency past that boundary is a promise that this project cannot keep.</p>
+  </div>
+</section>
+
+<section class="tint">
+  <div class="bar pad">
+    <p style="font-size: 1.3rem; max-width: 44rem; margin: 0 0 1.8rem;">Sixteen steps take an empty directory to a passing strict check, and every output block in the tutorial is held against the run that produced it — no example on it can go stale quietly.</p>
+    <div class="ctarow">
+      <a class="cta" href="/tutorial/">Run the tutorial →</a>
+      <a class="sans" href="/compare/">Or read the comparison</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="bar foot">
+    <p>There is no link to the source or to the specification here, because the repository is not public. The project has decided that this repository becomes public, and the date belongs to the owner.</p>
+    <div class="footlinks">
+      <a href="/">Home</a>
+      <a href="/compare/">Compare</a>
+      <a href="/proof/">Proof</a>
+      <a href="/tutorial/">Tutorial</a>
+      <a href="/terms/">Terms</a>
+      <a href="/changelog/">Changelog</a>
+      <a href="/ns/">Namespace</a>
+    </div>
+  </div>
+</footer>
+
 </body>
 </html>

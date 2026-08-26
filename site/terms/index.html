@@ -23,13 +23,7 @@
     font: 17px/1.65 ui-serif, Charter, "Iowan Old Style", Georgia, serif;
     -webkit-text-size-adjust: 100%;
   }
-  .wrap { max-width: 42rem; margin: 0 auto; padding: 3rem 1.5rem 6rem; }
-  .back {
-    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.85rem;
-    color: var(--muted); text-decoration: none; display: inline-block;
-    margin-bottom: 2.5rem;
-  }
-  .back:hover { color: var(--accent); }
+  .wrap { max-width: 42rem; margin: 0 auto; padding: 2.5rem 1.5rem 6rem; }
   h1 {
     font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.015em;
     margin: 0 0 0.4rem; font-weight: 600;
@@ -69,6 +63,28 @@
     padding: 0.9rem 1.1rem; margin: 0 0 2rem; color: var(--muted);
   }
   .note strong { color: var(--fg); }
+  .topbar { height: 4px; background: var(--accent); }
+  .navbar { max-width: 78rem; margin: 0 auto; padding: 0 3rem; }
+  nav.top {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 1.5rem; flex-wrap: wrap; padding: 1.2rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .brand {
+    font-weight: 600; font-size: 1.1rem; display: flex; align-items: center;
+    gap: 0.5rem; color: var(--fg); text-decoration: none;
+  }
+  .brand .glyph { color: var(--accent); font-size: 1.3rem; }
+  .navlinks {
+    display: flex; gap: 1.7rem; flex-wrap: wrap;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.82rem;
+  }
+  .navlinks a { color: var(--muted); text-decoration: none; margin: 0; }
+  .navlinks a:hover { color: var(--accent); }
+  .navlinks a.here { color: var(--fg); border-bottom: 2px solid var(--accent); }
+  @media (max-width: 62rem) {
+    .navbar { padding-left: 1.5rem; padding-right: 1.5rem; }
+  }
   footer {
     margin-top: 3.5rem; padding-top: 1.25rem; border-top: 1px solid var(--rule);
     font-family: ui-sans-serif, system-ui, sans-serif;
@@ -78,9 +94,22 @@
 </style>
 </head>
 <body>
+
+<div class="topbar"></div>
+<div class="navbar">
+  <nav class="top">
+    <a class="brand" href="/"><span class="glyph">🜄</span>Headwater</a>
+    <div class="navlinks">
+      <a href="/how-it-works/">How it works</a>
+      <a href="/compare/">Compare</a>
+      <a href="/proof/">Proof</a>
+      <a href="/tutorial/">Tutorial</a>
+    </div>
+  </nav>
+</div>
+
 <div class="wrap">
 
-  <a class="back" href="/">← Headwater</a>
 
   <h1>Terms</h1>
 
@@ -126,10 +155,13 @@
 
   <footer>
     <p>There is no link to the source or to the specification here, because the repository is not public. The project has decided that this repository becomes public, and the date belongs to the owner.</p>
+    <a href="/">Home</a>
     <a href="/how-it-works/">How it works</a>
+    <a href="/compare/">Compare</a>
+    <a href="/proof/">Proof</a>
+    <a href="/tutorial/">Tutorial</a>
     <a href="/changelog/">Changelog</a>
     <a href="/ns/">Namespace</a>
-    <a href="/">Home</a>
   </footer>
 
 </div>
