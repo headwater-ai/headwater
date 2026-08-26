@@ -9,14 +9,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 315,
-      "carried": 315,
+      "in the graph": 313,
+      "carried": 313,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 529,
-      "carried": 529,
+      "in the graph": 527,
+      "carried": 527,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1039,8 +1039,6 @@
               "site/index.html",
               "site/ns/index.html",
               "site/how-it-works/index.html",
-              "site/changelog/index.html",
-              "site/terms/index.html",
               "site/compare/index.html",
               "site/proof/index.html",
               "site/tutorial/index.html"
@@ -7367,11 +7365,6 @@
       },
       {
         "anchor_kind": "code_path",
-        "id": "site/changelog/index.html",
-        "resolver": "source-tree"
-      },
-      {
-        "anchor_kind": "code_path",
         "id": "site/compare/index.html",
         "resolver": "source-tree"
       },
@@ -7393,11 +7386,6 @@
       {
         "anchor_kind": "code_path",
         "id": "site/proof/index.html",
-        "resolver": "source-tree"
-      },
-      {
-        "anchor_kind": "code_path",
-        "id": "site/terms/index.html",
         "resolver": "source-tree"
       },
       {
@@ -8013,28 +8001,6 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "site/how-it-works/index.html",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": "site/changelog/index.html",
-          "resolver": "source-tree"
-        }
-      },
-      {
-        "source": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
-        "relation": "governs",
-        "written_as": "governs",
-        "target": {
-          "bound": "anchor",
-          "anchor_kind": "code_path",
-          "id": "site/terms/index.html",
           "resolver": "source-tree"
         }
       },
