@@ -15,7 +15,7 @@ Run yourself outside the builder's context. An agent that is mid-run has every r
 
 ## The two rules you apply
 
-**The value rule.** `.claude/commands/next-run.md` states it once, under *The value rule*. Read it there rather than from memory. In short: work must name a reader who is not this repository. `self-audit` is work with no such reader. `adopter-blocking` is work an outside adopter cannot proceed without.
+**The value rule.** `.claude/commands/next-run.md` states it once, under *The value rule*. Read it there rather than from memory. In short: work must name a reader who is not this repository. `self-audit` is work with no such reader, and it is recorded in [13 — Open obligations](../../docs/spec/13-open-obligations.md) rather than filed as an issue — a `self-audit`-labeled issue you still find open predates that rewrite. `adopter-blocking` is work an outside adopter cannot proceed without.
 
 **The milestone doctrine, stated canonically here.** A milestone that is never completed is a label, not a milestone. More than one may be open at once, and **every milestone open beyond the lowest must carry a written reason on its epic saying what it waits on or why it runs in parallel**. That reason is a dependency, an external blocker, or a stated decision to run two tracks. A milestone open with no such reason is a finding, and so is work closing inside it while a lower milestone with no reason still has open issues.
 
@@ -31,12 +31,13 @@ You own the **structure** of the board. You do not own **scope**. The line is th
 - **Create a milestone**, with a bar, when the release axis below calls for one or when work has accumulated with nowhere to sit.
 - **Move an issue between milestones**, when the work it describes belongs to a different milestone's bar than the one holding it.
 - **Assign a milestone** to an eligible issue that has none.
-- **Apply and remove `adopter-blocking` and `self-audit`.** You are the only party positioned to judge either, and until now neither had a writer. Say why on every one you change.
+- **Apply and remove `adopter-blocking`.** You are the only party positioned to judge it. Say why on every one you change.
 - **File an issue, under one condition**: you can quote the bar of an existing milestone that names work no open issue carries. The quote goes in the body. This is gap-filling against a stated bar, and it is the only kind of issue you file.
+- **Close an issue labeled `self-audit`, and only that kind of issue, once its content is recorded.** `self-audit` findings no longer get filed as issues at all — see the value rule in `.claude/commands/next-run.md` — so a `self-audit` issue you still find open is one filed before that rewrite. Migrate it yourself: scaffold it as an entry in [13 — Open obligations](../../docs/spec/13-open-obligations.md) (`headwater new obligation_record --facet waiting_on=adopter`) if nothing there already covers it, then close the issue with a comment naming the obligation's identifier and the words "recorded, not planned." This is the one exception to *never close an issue* below, and it is a filing act rather than a judgment that the work is done — the work still owes exactly what it owed before, now against a record built to carry it rather than a tracker built to drop it.
 
 **You may not write:**
 
-- **Never close an issue.** Whether work is done is the owner's call and the builder's evidence, not yours.
+- **Never close an issue whose work is undone.** Whether work is done is the owner's call and the builder's evidence, not yours. The `self-audit` migration above is the one exception, and it closes nothing as done — it closes a tracker entry once the same debt is recorded somewhere built to hold it.
 - **Never edit a Done-when, a bar, or the scope paragraph of any issue or epic.** If a bar is wrong, say so in part 5 and quote it.
 - **Never file work that is not traceable to an existing bar.** New capability is a requirement, requirements are the owner's, and an agent that files them will file the ones it can imagine rather than the ones somebody needs.
 - **Never re-plan in silence.** Every write you make is named in your report with the reason, in a form the owner can reverse.
