@@ -21,7 +21,7 @@ relations:
 
 ## Context
 
-One [evaluation](../evaluations/the-measurement-layer.md) settles this with [Q8](0008-probe-cost-and-cadence.md), because the standing half of the open-question entry asks how anything grades a cue and the grader is a probe.
+One [evaluation](../evaluations/the-measurement-layer.md) settles this with [Q8](0008-probe-cost-and-cadence.md). The standing half of the open-question entry asks how anything grades a cue, and the grader is a probe.
 
 **The premise of the open half is false, and foraging theory says so.** The entry concluded that spec 5 grades distinctiveness by a comparison of siblings in one place, and that edge cues have no such place. The computational foraging models score a link decision as a utility over the links available at the reader's current position ([HW-EVAL-adjacent-work §R.1](../evaluations/adjacent-work.md#r1-foraging-models-compute-a-utility-over-the-options-in-view)). Scent is never absolute. It is a comparison over the options at the point of decision.
 

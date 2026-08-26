@@ -273,13 +273,13 @@ None of that is "governance" as opposed to "structure". Reciprocity is as struct
 
 > **LinkML, SHACL, and JSON Schema all validate one instance against a shape. Everything Headwater does that they cannot is a property of the graph as a whole, or of the corpus over time.**
 
-That reframing matters, because it turns Q13 from *"does LinkML cover enough?"* into a better question: **is a two-layer architecture — a standard shape layer plus a Headwater graph layer — better than one custom layer?** Every mature validation stack in this space has that shape. It is not a compromise; it is the normal answer.
+That reframing matters, because it turns Q13 from *"does LinkML cover enough?"* into a better question: **is a two-layer architecture — a standard shape layer plus a Headwater graph layer — better than one custom layer?** Every mature validation stack in this space has that shape. It is not a compromise. It is the normal answer.
 
 ## The annotations problem
 
-Everything Headwater-specific above sits in `annotations`, and annotations are untyped pass-through. LinkML carries them and does nothing with them: no validation, no generator output, no error when `headwater:nuclearity` is misspelled or set to a value that does not exist.
+Everything Headwater-specific above sits in `annotations`, and annotations are untyped pass-through. LinkML carries them and does nothing with them. It gives no validation, no generator output, and no error when `headwater:nuclearity` is misspelled or set to a value that does not exist.
 
-So for precisely the half that is ours, the meta-schema benefit — the main reason to adopt LinkML — evaporates. We would still write a validator for the annotation vocabulary, and authors would face two languages in one file with no visual distinction between the half that is checked and the half that is not. That scores badly on role-expressiveness and error-proneness, which is exactly what the cognitive-dimensions walkthrough in [Q2](../spec/09-open-questions.md#q2--schema-format) is meant to catch.
+So for precisely the half that is ours, the meta-schema benefit — the main reason to adopt LinkML — evaporates. We would still write a validator for the annotation vocabulary. Authors would then face two languages in one file, with no visual distinction between the half that is checked and the half that is not. That scores badly on role-expressiveness and error-proneness, which is exactly what the cognitive-dimensions walkthrough in [Q2](../spec/09-open-questions.md#q2--schema-format) is meant to catch.
 
 Writing it out is what made this concrete. It reads fine until you notice that a third of the semantics is inert.
 
@@ -289,9 +289,9 @@ Neither "adopt LinkML" nor "stay independent" is right. A third option:
 
 > **Author in Headwater's language; emit LinkML as a compilation target.**
 
-The resolved taxonomy compiles to a LinkML schema covering the shape layer — which then compiles onward to JSON Schema, SHACL, OWL, and Pydantic through LinkML's own generators. The graph and temporal layers stay in the Headwater engine, where they were always going to live.
+The resolved taxonomy compiles to a LinkML schema covering the shape layer. That schema then compiles onward to JSON Schema, SHACL, OWL, and Pydantic through LinkML's own generators. The graph and temporal layers stay in the Headwater engine, where they were always going to live.
 
-That gets the interoperability without the two-languages problem: one authoring surface, fully validated, with a standards-based export that other tooling can consume. It also inverts the risk. Adopting LinkML as the authoring surface is close to irreversible; emitting it is a generator we can add, change, or drop.
+That gets the interoperability without the two-languages problem: one authoring surface, fully validated, with a standards-based export that other tooling can consume. It also inverts the risk. Adopting LinkML as the authoring surface is close to irreversible. Emitting it is a generator we can add, change, or drop.
 
 Worth noting how this rhymes with the position already taken on distribution: a resolved artifact, emitted, not authored.
 
@@ -300,6 +300,6 @@ Worth noting how this rhymes with the position already taken on distribution: a 
 Take **option 3** into the Q2 walkthrough as the leading candidate, with these consequences to weigh:
 
 - It removes the Q1 tension entirely. A Rust core emitting LinkML YAML has no dependency on LinkML's Python tooling.
-- the SHACL question resolves itself: SHACL becomes an output artifact for external consumers, so its poor error messages never reach a Headwater author;
-- the cost is a generator plus fidelity tests proving the emitted schema accepts exactly the documents Headwater accepts, which is a real and ongoing cost;
-- and the shape/graph boundary needs to be stated in [spec 6](../spec/06-engine-architecture.md) as an architectural seam, because it is one.
+- The SHACL question resolves itself. SHACL becomes an output artifact for external consumers, so its poor error messages never reach a Headwater author.
+- The cost is a generator plus fidelity tests proving the emitted schema accepts exactly the documents Headwater accepts, which is a real and ongoing cost.
+- The shape/graph boundary needs to be stated in [spec 6](../spec/06-engine-architecture.md) as an architectural seam, because it is one.

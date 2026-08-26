@@ -81,7 +81,7 @@ These are the tie-breakers when a design decision is genuinely contested.
 
 2. **One source of truth per fact, many paths to it.** You declare a fact once — including a fact *about the structure of the corpus*. Prose that restates the schema is generated from it or validated against it. No one maintains that prose in parallel.
 
-3. **Derived artifacts are always regenerable.** If a person can change a generated file by hand, and the system does not see the change, that file will drift. Readers will then trust a file that is wrong. Thus, the system checks that generated files agree with their sources. It does not only offer to regenerate them.
+3. **Derived artifacts are always regenerable.** If a person can change a generated file by hand, and the system does not see the change, that file will drift. Readers then trust a file that is wrong. Thus, the system checks that generated files agree with their sources. It does not only offer to regenerate them.
 
 4. **Visibility before blocking.** A new rule ships as advisory. It collects evidence about its false-positive rate. Only that evidence promotes the rule to blocking. The promotion criteria are recorded, not improvised. This holds while both of the rule's error classes are recoverable, which is the ordinary case. Where one error class is unrecoverable, the control ships at its final posture, because the promotion evidence measures the other one ([spec 4](04-assurance-model.md#where-promotion-does-not-apply)).
 

@@ -89,7 +89,7 @@ This is the closest prior art to what we build, and it validates three choices. 
 
 ### B.1 Kruchten's decision-relationship ontology
 
-Kruchten ("An Ontology of Architectural Design Decisions in Software-Intensive Systems", 2004) lists relationships between design decisions: *constrains, forbids, enables, subsumes, conflicts with, overrides, comprises, is bound to, is an alternative to, is related to, traces to, does not comply with.* <!-- headwater allow=language.controlled.not_met scope=block until=2027-12-31 reason=false_positive note=the relation vocabulary of Kruchten, quoted entire -->
+Kruchten ("An Ontology of Architectural Design Decisions in Software-Intensive Systems", 2004) lists relationships between design decisions: *constrains, forbids, enables, subsumes, conflicts with, overrides,* and *comprises*. The list continues with *is bound to, is an alternative to, is related to, traces to,* and *does not comply with*.
 
 Our decision relations are `supersedes` / `superseded_by` / `refines` — the temporal axis only. Kruchten's set is mostly *logical*: `conflicts with` and `constrains` say things about simultaneously live decisions that succession cannot express. A corpus that holds two current decisions that conflict is incoherent in a way that no reciprocity check will ever detect.
 
@@ -149,7 +149,7 @@ Three consequences:
 
 ### C.2 Boundary objects — publisher and consumer
 
-Star and Griesemer (*Social Studies of Science*, 1989) define **boundary objects** as artifacts "plastic enough to adapt to local needs… yet robust enough to maintain a common identity across sites", weakly structured in common use and strongly structured in local use. <!-- headwater allow=language.controlled.not_met scope=block until=2027-12-31 reason=false_positive note=a definition quoted word for word, and not ours to split --> <!-- headwater allow=language.retired_term.used scope=block until=2027-12-31 reason=false_positive note=the retired term is inside that quotation, and the rule reads an inline quotation as this author's prose -->
+Star and Griesemer (*Social Studies of Science*, 1989) define **boundary objects** as artifacts that adapt easily to local needs. They still survive that adaptation with one identity every site recognizes, weakly structured in common use and strongly structured in local use.
 
 That is the taxonomy package, stated better than spec 7 states it. But it carries a requirement that we do not yet meet: for identity to hold across sites, something must be *invariant*. Our overlay algebra currently lets a consumer override or remove almost anything, which means that two consumers of "the same" taxonomy may share nothing.
 

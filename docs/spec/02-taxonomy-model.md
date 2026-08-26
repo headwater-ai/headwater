@@ -514,7 +514,7 @@ specifications/ingest/parser/
     acceptance.yml       # identified, structured criteria
 ```
 
-The prose stays canonical for intent, and the sidecar is canonical for the exact shape. The prose references the sidecar and does not restate it. This is decomposition by **validation regime** — the two halves are checked by different means — not a new shelf and not a file split for its own sake.
+The prose stays canonical for intent, and the sidecar is canonical for the exact shape. The prose references the sidecar and does not restate it. This is decomposition by **validation regime**. The two halves are checked by different means. It is not a new shelf and not a file split for its own sake.
 
 What this unlocks is the more interesting part. Structured acceptance criteria with stable identifiers are a **test oracle**. The engine can derive a conformance check from the specification. Nobody then writes the check alongside the specification, and the check does not drift from it. The check asks the corpus what should be true, so coverage follows the specification automatically, with no parallel maintenance.
 
@@ -553,7 +553,7 @@ Expectations catch a failure class that nothing else catches. Every check in [sp
 - `check --fix` stamps the date only when the transition sits in the same diff. It never reconstructs a missing date after the fact. An invented origin silently rewrites every window measured from it. A human enters a lost entry date, or it stays a finding.
 - State changes caused by edges stamp too. `on_target: {set_state: superseded}` sets the target's state-entry date in the same operation. A state change with no stamp is a defect regardless of what caused the change.
 - **Re-entry into a state resets the window, deliberately.** The state-entry date describes the current state's entry, so a lifecycle machine with a cycle re-arms any expectation conditioned on the re-entered state. That is usually the right semantics — re-acceptance restarts the clock on realization. But it is a gaming route, so the churn is visible. `taxonomy audit`'s state-dwell and transition-count distributions make a flip-flop to re-arm a window a reportable pattern.
-- A document that lacks its origin facet — the normal condition of an adopted corpus at first contact — does not have a window invented for it. Expectation instances against it are skipped with reason `missing-origin` and counted in coverage ([spec 4](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)). The missing required facet is already its own finding, so the absence is loud while the window stays honest.
+- A document that lacks its origin facet — the normal condition of a newly adopted corpus — does not have a window invented for it. Expectation instances against it are skipped with reason `missing-origin` and counted in coverage ([spec 4](04-assurance-model.md#no-silent-passes-every-document-is-accounted-for)). The missing required facet is already its own finding, so the absence is loud while the window stays honest.
 
 Four constraints keep expectations honest:
 
@@ -628,7 +628,7 @@ Given a document path and its front matter, the engine resolves a kind in four s
 
 ### Placement is primary; metadata fills the gap
 
-Directory placement carries the primary classification, because it is the signal that a reader sees first and the one that a path glob can act on. Metadata materializes only what placement *cannot* express.
+Directory placement carries the primary classification. It is the signal that a reader sees first, and the one that a path glob can act on. Metadata materializes only what placement *cannot* express.
 
 This produces one rule with real teeth: **a homogeneous shelf forbids the discriminator facet.** If the directory already says what a document is, a restatement in front matter creates a second truth that can disagree with the first. The `shelf.placement_is_primary` check enforces the prohibition and does not trust authors to notice.
 
@@ -650,7 +650,7 @@ The mitigation is structural, not detective. Kinds that share a shelf should not
 
 The first three are decidable from the schema alone and run under `headwater taxonomy validate`. The last two require documents to measure against, and they run under `headwater taxonomy audit`, which is advisory by construction. A young corpus will fail differentiation simply because it is small.
 
-Orthogonality is the one that deserves attention. If a document's `shelf` tells you its `doc_type` with near-certainty, one of them does no work. The redundant one will eventually disagree with the other. The audit reports correlated facet pairs and does not reject them, because the right fix is a judgment. Sometimes you delete a facet, and sometimes you discover that the shelf split was wrong.
+Orthogonality is the one that deserves attention. If a document's `shelf` tells you its `doc_type` with near-certainty, one of them does no work. The redundant one drifts from the other. The audit reports correlated facet pairs and does not reject them, because the right fix is a judgment. Sometimes you delete a facet, and sometimes you discover that the shelf split was wrong.
 
 ## Abstract kinds
 
@@ -679,7 +679,7 @@ The rules are deliberately few.
 - **A kind names at most one parent, and a parent may name a parent.** Inheritance is a chain and never a lattice. Several parents bring back the contested-value problem that satellite inheritance already had to solve, and no case yet demands them.
 - **No document resolves to an abstract kind.** It may never be a shelf's declared kind, and never a discriminator value. [Kind resolution](#kind-resolution) is unchanged, because it resolves to concrete kinds only.
 - **Facet and section requirements union down the chain.** A child adds to what its parent requires. A child may never un-require what a parent requires, because that voids the parent's contract for a reader who trusts it. A parent that requires a facet that the child forbids is a validation error. **`facets.forbid` takes away and it adds nothing.** It removes a requirement that an ancestor stated, and it stops the generated value check from making an instance over that kind. No check reports a document that states a facet its kind forbids. An emitter that carried the prohibition as a constraint would therefore reject a document that this engine accepts. The discriminator rule below is a shelf rule and a different thing, and a check of its own enforces it.
-- **Purpose is required on every concrete kind, and it may arrive by inheritance.** An abstract kind may declare the purpose for its group. A concrete kind with no purpose of its own, under no parent that declares one, fails validation exactly as before.
+- **Purpose is required on every concrete kind, and it may arrive by inheritance.** An abstract kind may declare the purpose for its group. A concrete kind with no purpose of its own, under no parent that declares one, fails validation.
 - **Endpoints resolve through the chain.** `supersedes: {from: [governed_document]}` permits every concrete kind that has `governed_document` above it.
 - **An abstract kind is rigid.** The [rigidity rules](#kinds-are-rigid-states-are-not) apply to it in full. An abstract kind named `draft_document` is as wrong as a concrete one.
 
@@ -854,7 +854,7 @@ The publisher and the consumer play different roles here, and both are necessary
 - The **publisher** measures against its own reference corpora and reference overlays, and publishes the result as a compatibility claim attached to the release. That is the best that it can do. It does not have anyone else's documents, and it cannot enumerate every path that a consumer addresses.
 - The **consumer** measures against its own corpus before an upgrade. This *verifies* the publisher's claim rather than trusts it. A claim that fails locally is exactly the interesting case. It means that the consumer's corpus uses something that the publisher's reference corpora do not.
 
-A major version ships a **migration payload**: machine-readable steps that declare what moved, what was renamed, and what must be re-stated. [Spec 7](07-distribution-and-federation.md#the-migration-payload) states its form, and the split below runs through one step rather than between two lists of them. The steps are split into what the engine can apply mechanically (`headwater migrate --apply`) and what needs human or agent judgment (emitted as a task list with the affected documents attached). To adopt a new major version without a run of its migration is a hard failure, not a warning. The lock file records the taxonomy version and the measured compatibility result that each corpus was validated against.
+A major version ships a **migration payload**: machine-readable steps that declare what moved, what has a new name, and what must be re-stated. [Spec 7](07-distribution-and-federation.md#the-migration-payload) states its form, and the split below runs through one step rather than between two lists of them. The steps are split into what the engine can apply mechanically (`headwater migrate --apply`) and what needs human or agent judgment (emitted as a task list with the affected documents attached). To adopt a new major version without a run of its migration is a hard failure, not a warning. The lock file records the taxonomy version and the measured compatibility result that each corpus was validated against.
 
 **The payload migrates overlays, not only documents.** Every word of the paragraph above was written for documents. The overlay is the artifact most likely to break, and least likely to have a test. The rename map that the payload already carries is exactly what an overlay rewrite needs. `headwater migrate --apply` rewrites overlay addresses from that map, and `overlay_address` is the subject that names one ([spec 7](07-distribution-and-federation.md#the-migration-payload)). `taxonomy diff` prints each `add` collision as a judgment task: the base declaration beside the value the overlay adds, and the file behind each. A consumer reads the two declarations and the two operations that settle them, rather than reconstruct by hand what the publisher already knew.
 

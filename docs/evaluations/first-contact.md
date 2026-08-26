@@ -30,11 +30,11 @@ One of the three closes differently from every other question in this specificat
 
 The three entries describe one path, walked by one person who does not work here.
 
-They hear the name (Q16). They read enough to decide whether it is worth an hour (Q16). They check the terms, because an engineering organization that cannot answer "what is the license?" does not start (Q11). Then they point it at a corpus that was never written to any of this, and the first run tells them whether the next step is an afternoon or a quarter (Q12).
+They hear the name (Q16). They read enough to decide whether it is worth an hour (Q16). They check the terms, because an engineering organization that cannot answer "what is the license?" does not start (Q11). Then they point it at a corpus that was never written to any of this. The first run tells them whether the next step is an afternoon or a quarter (Q12).
 
-Each entry fails on its own. A site with nothing to try is a brochure. A permissive license that nobody has heard of buys nothing. An on-ramp that arrives after the first impression arrives late. Rogers' account of what predicts the adoption rate of an innovation names the two attributes that split cleanly across these three entries: **trialability** — can I try it before I commit? — and **observability** — can I see that anyone else is using it, and what it did for them? Q11 and Q12 are the whole of trialability. Q16 is the whole of observability. The theory says the two lower uncertainty by different routes and that neither substitutes for the other, which is the reason to settle them in one place.
+Each entry fails on its own. A site with nothing to try is a brochure. A permissive license that nobody has heard of buys nothing. An on-ramp that arrives after the first impression arrives late. Rogers' account of what predicts the adoption rate of an innovation names two attributes that split cleanly across these three entries. The first is **trialability**: can I try it before I commit? The second is **observability**: can I see that anyone else is using it, and what it did for them? Q11 and Q12 are the whole of trialability. Q16 is the whole of observability. The theory says the two lower uncertainty by different routes, and that neither substitutes for the other. That is the reason to settle them in one place.
 
-Q11 goes first inside that, because Q16 cannot fill two of its ten rows until Q11 is ratified, and because Q12's on-ramp is worth nothing to somebody who may not run the tool.
+Q11 goes first inside that, because Q16 cannot fill two of its ten rows until Q11 is ratified. It also goes first because Q12's on-ramp is worth nothing to somebody who may not run the tool.
 
 ## What the specification already fixed
 
@@ -48,7 +48,7 @@ Q11's entry names four postures: open source, source-available, internal-only, a
 
 **3. The base package is data that every adopter's taxonomy resolves over, and that decides its terms.** [Q3](../spec/09-open-questions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) ships a minimal base plus add-only bundles, and [Q2](../spec/09-open-questions.md#q2--schema-format) makes an overlay a patch whose resolution contains base content. An adopter's resolved taxonomy and lock therefore contain the base. A copyleft or share-alike term on the base propagates into that resolved artifact. [Spec 0](../spec/00-vision-and-scope.md#who-this-is-for) promises the opposite in its own words: the taxonomy is theirs to define. Organizations whose documentation culture does not match ours are explicitly served. **The base package and the bundles must impose nothing on a derived taxonomy.** That is the one part of Q11 that the specification decides on its own. It decides it against the entry's framing, which treated the package half as a preference.
 
-**4. [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate)'s staging order makes an external consumer the trigger for four of six emitters.** SHACL, RDF and SKOS, OKF and LinkML each ship when a named external consumer asks. Under internal-only there is never one. [Principle 9](../spec/00-vision-and-scope.md#design-principles) then has nothing to be better together with, four emitters are dead by construction, and the staging order is a fiction rather than a plan. **Internal-only is inconsistent with rulings already made.** It is not merely unattractive.
+**4. [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate)'s staging order makes an external consumer the trigger for four of six emitters.** SHACL, RDF and SKOS, OKF and LinkML each ship when a named external consumer asks. Under internal-only there is never one. [Principle 9](../spec/00-vision-and-scope.md#design-principles) then has nothing to be better together with, and four emitters are dead by construction. The staging order is a fiction rather than a plan. **Internal-only is inconsistent with rulings already made.** It is not merely unattractive.
 
 **5. [Q17](../spec/09-open-questions.md#q17--governed-access-and-the-solution-layer) made this security software with a published claim.** [Spec 6](../spec/06-engine-architecture.md#what-a-filtered-export-claims-and-what-it-does-not) states one claim and five non-claims, and Q17 takes on a coordinated-disclosure process and a class of defect that nobody can fix forward. Two consequences follow. A disclosure process needs a reporting channel and a route by which a fix reaches adopters, which is a distribution obligation. And a tool whose output enters other people's compliance pipelines is exactly where a patent claim would be expensive. MIT is silent on patents. Apache-2.0 grants a patent license and terminates it for a contributor who sues. That is a reason to prefer one permissive license to another, and it comes from Q17 rather than from taste.
 
@@ -60,15 +60,15 @@ Q11's entry names four postures: open source, source-available, internal-only, a
 
 ### For Q12: the migration state already has the shape, and one field blocks it
 
-[Spec 7](../spec/07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states) records a migration state in the lock: a from-version, a to-version, an owner, an expiry, and the open task list. While tasks remain open, checks run against the new schema, and a finding whose `(document, rule)` pair the migration payload expects to fail is reported as `migration-pending`. Such findings are counted, visible in coverage, never blocking, and never suppressed individually. The expiry is the anti-parking device, renewable only by an explicit move of the date.
+[Spec 7](../spec/07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states) records a migration state in the lock: a from-version, a to-version, an owner, an expiry, and the open task list. While tasks remain open, checks run against the new schema. A finding whose `(document, rule)` pair the migration payload expects to fail is reported as `migration-pending`. Such findings are counted, visible in coverage, never blocking, and never suppressed individually. The expiry is the anti-parking device, renewable only by an explicit move of the date.
 
-Read that list against first contact and only one item refers to a known-good starting point: the from-version. Every other property — the pair grain, the owner, the expiry, the counted-and-visible posture, the task list — is defined against the *new* schema and says nothing about what came before.
+Read that list against first contact and only one item refers to a known-good starting point: the from-version. Every other property is defined against the *new* schema and says nothing about what came before. That includes the pair grain, the owner, the expiry, the counted-and-visible posture, and the task list.
 
 Three further rulings bear on the on-ramp.
 
-- [Spec 4](../spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for) states three coverage obligations. Every file under the corpus root is classified or reported as unclassifiable, every classified document is routed to at least one check, and every run reports what it saw, classified, checked and skipped, with reasons. A document that is not checked is a finding, never an omission.
+- [Spec 4](../spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for) states three coverage obligations. Every file under the corpus root is classified or reported as unclassifiable, and every classified document is routed to at least one check. Every run reports what it saw, classified, checked and skipped, with reasons. A document that is not checked is a finding, never an omission.
 - [Spec 6](../spec/06-engine-architecture.md#cli) already carries `headwater check --changed-only`, and it exists for the 200 ms commit-hook budget. It is a performance scope.
-- [Spec 6](../spec/06-engine-architecture.md#cli) also states the posture in one sentence: the CLI is advisory by default, because a tool that blocks on first contact is removed, and a removed tool catches nothing.
+- [Spec 6](../spec/06-engine-architecture.md#cli) also states the posture in one sentence: the CLI is advisory by default. A tool that blocks on first contact is removed, and a removed tool catches nothing.
 - Q3 already applied the same instinct to content. The base package declares `controlled: none`. A controlled-language profile turned on by the *base* meets an adopted corpus of two hundred documents with a wall of findings on the first run.
 
 ### For Q16: Q14 handed this entry a definition, not only a task
@@ -78,7 +78,7 @@ Three further rulings bear on the on-ramp.
 Two more rulings constrain the site itself.
 
 - [Spec 0](../spec/00-vision-and-scope.md#what-we-do-not-build) refuses to build a documentation renderer, and names the alternative: emit navigation configuration for a static-site generator. [Spec 0](../spec/00-vision-and-scope.md#what-we-build) item 3 already lists site navigation among the projections.
-- [Principle 11](../spec/00-vision-and-scope.md#design-principles) publishes an unmeasured claim as unmeasured, and [spec 4](../spec/04-assurance-model.md#the-systems-own-assurance) already says that the same command an adopter runs generates the coverage numbers this project publishes.
+- [Principle 11](../spec/00-vision-and-scope.md#design-principles) publishes an unmeasured claim as unmeasured. [Spec 4](../spec/04-assurance-model.md#the-systems-own-assurance) already says that the same command an adopter runs generates the coverage numbers this project publishes.
 
 ## Prior art and observed applications
 
@@ -88,15 +88,15 @@ Two more rulings constrain the site itself.
 
 Three episodes are available and two of them were read directly.
 
-HashiCorp announced on 10 August 2023 that Terraform and its other products moved from MPL-2.0 to the Business Source License v1.1. The announcement permits "copying, modification, redistribution, non-commercial use, and commercial use under specific conditions", and excludes anyone "providing a competitive offering to HashiCorp". Fifteen days later a public fork appeared. The OpenTofu manifesto states the reason in the language of uncertainty rather than of principle: "every company, vendor, and developer using Terraform has to wonder whether what they are doing could be construed as competitive with HashiCorp's offerings." OpenTofu then joined the Linux Foundation. In its own words, it joined so that the project stays "truly open source and neutral and not at the whim of any one company."
+HashiCorp announced on 10 August 2023 that Terraform and its other products moved from MPL-2.0 to the Business Source License v1.1. The announcement permits "copying, modification, redistribution, non-commercial use, and commercial use under specific conditions", and excludes anyone "providing a competitive offering to HashiCorp". Fifteen days later a public fork appeared. The OpenTofu manifesto states the reason in the language of uncertainty rather than of principle. It reads: "every company, vendor, and developer using Terraform has to wonder whether what they are doing could be construed as competitive with HashiCorp's offerings." OpenTofu then joined the Linux Foundation. In its own words, it joined so that the project stays "truly open source and neutral and not at the whim of any one company."
 
-Elastic supplies the other half of the arc, and it is the more useful half because the company published a retrospective. Its founder wrote on 29 August 2024 that Elasticsearch and Kibana would add AGPL beside the existing Elastic License and SSPL. On the 2021 change he wrote: "We had issues with AWS and the market confusion their offering was causing." On the result: "Amazon is fully invested in their fork, the market confusion has been (mostly) resolved. Our partnership with AWS is stronger than ever." The post declines to call the original change a mistake. It does not have to. A relicensing whose stated goal was to prevent a competitor's offering produced a competitor's offering that is now permanent, and the licensor added an open-source license back three years later.
+Elastic supplies the other half of the arc, and it is the more useful half because the company published a retrospective. Its founder wrote on 29 August 2024 that Elasticsearch and Kibana would add AGPL beside the existing Elastic License and SSPL. On the 2021 change he wrote: "We had issues with AWS and the market confusion their offering was causing." On the result: "Amazon is fully invested in their fork, the market confusion has been (mostly) resolved. Our partnership with AWS is stronger than ever." The post declines to call the original change a mistake. It does not have to. A relicensing whose stated goal was to prevent a competitor's offering produced a competitor's offering that is now permanent. The licensor added an open-source license back three years later.
 
-Valkey is the third, and the site confirms the shape rather than the history: a BSD-licensed key-value datastore "backed by the Linux Foundation, ensuring it will remain open source forever", carrying BSD-licensed code from the original project and noting that the original name is a registered trademark of the original company.
+Valkey is the third, and the site confirms the shape rather than the history. It is a BSD-licensed key-value datastore "backed by the Linux Foundation, ensuring it will remain open source forever". It carries BSD-licensed code from the original project, and notes that the original name is a registered trademark of the original company.
 
 Two things transfer, and one of them contradicts a common reading.
 
-**What transfers.** A restriction on a competing offering does not read to a user as a restriction on a competitor. It reads as a question that the user cannot answer about themselves, and the OpenTofu manifesto is the primary evidence for that, in the words of the people who forked. This bears directly on [principle 9](../spec/00-vision-and-scope.md#design-principles). Headwater's stated plan is to build integrations with complementary projects rather than replacements for them, and [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate) names LeanCTX as the consumer that would trigger the fifth emitter. Under a source-available license, every adjacent project that considers an integration has to ask a lawyer whether it competes. That is a cost paid by exactly the parties principle 9 wants.
+**What transfers.** A restriction on a competing offering does not read to a user as a restriction on a competitor. It reads as a question that the user cannot answer about themselves. The OpenTofu manifesto is the primary evidence for that, in the words of the people who forked. This bears directly on [principle 9](../spec/00-vision-and-scope.md#design-principles). Headwater's stated plan is to build integrations with complementary projects rather than replacements for them. [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate) names LeanCTX as the consumer that would trigger the fifth emitter. Under a source-available license, every adjacent project that considers an integration has to ask a lawyer whether it competes. That is a cost paid by exactly the parties principle 9 wants.
 
 **What it contradicts.** The reading that a relicensing simply destroys a project is not what these cases show. Terraform and Elasticsearch both still exist and both still sell. What the cases show is narrower and more useful. The license change bought the licensor a permanent, well-funded fork, and it transferred stewardship of the open version to a foundation controlled by others. It also cost the name. Valkey and OpenTofu both live under the Linux Foundation. The trademark was the only asset that stayed.
 
@@ -106,21 +106,21 @@ Three details could not be verified within this evaluation's budget, so they are
 
 The mechanism that makes a unilateral relicensing possible is not the license. It is the inbound agreement.
 
-The Developer Certificate of Origin, version 1.1, is a certification and not a grant. A contributor certifies that they wrote the contribution or have the right to submit it under the project's license, that they understand the contribution is a public record, and nothing else. It transfers no additional rights to anybody.
+The Developer Certificate of Origin, version 1.1, is a certification and not a grant. A contributor certifies that they wrote the contribution or have the right to submit it under the project's license. They also certify that they understand the contribution is a public record, and nothing else. It transfers no additional rights to anybody.
 
-A contributor license agreement can transfer more, and the open-source guidance is explicit about when one is worth its friction. It lists four cases, and the fourth is the relevant one: the project "uses copyleft licensing but needs a proprietary version". The same guidance records the default: "For the vast majority of open source projects, an open source license implicitly serves as both the inbound (from contributors) and outbound (to other contributors and users) license." It also records a cost with a named example — Node.js removed its CLA to lower the barrier to entry and broaden the contributor base.
+A contributor license agreement can transfer more, and the open-source guidance is explicit about when one is worth its friction. It lists four cases, and the fourth is the relevant one: the project "uses copyleft licensing but needs a proprietary version". The same guidance records the default. It states: "For the vast majority of open source projects, an open source license implicitly serves as both the inbound (from contributors) and outbound (to other contributors and users) license." It also records a cost with a named example — Node.js removed its CLA to lower the barrier to entry and broaden the contributor base.
 
 This sharpens the recommendation below rather than merely informing it. The unique power a CLA gives a project is the power to change the terms later without asking. The evidence above is that exercising that power is what produced the forks. A project that does not want the power should not collect it. The DCO is the instrument that says so credibly, because it makes the promise structural rather than stated.
 
 ### Where the closest analog draws the commercial line
 
-[Spec 0](../spec/00-vision-and-scope.md#what-we-do-not-build) names Vale as the closest observed analog to this engine. Vale is MIT-licensed. Its author asks for sponsorship, and sells two hosted products beside the tool: a hosted authoring platform for building and maintaining style guides, and a hosted layer for managing configuration and rules in a browser. The command-line checker is not the product. The place where a person cannot easily self-host is.
+[Spec 0](../spec/00-vision-and-scope.md#what-we-do-not-build) names Vale as the closest observed analog to this engine. Vale is MIT-licensed. Its author asks for sponsorship, and sells two hosted products beside the tool. One is a hosted authoring platform for building and maintaining style guides. The other is a hosted layer for managing configuration and rules in a browser. The command-line checker is not the product. The place where a person cannot easily self-host is.
 
-That is the same line that Q7 and Q17 both left open — what a hosted server is, operationally — and the same line Q8 drew when it found that money is not the constraint on the measurement layer. The engine is cheap to run and expensive to build. A hosted authoring and measurement layer is expensive to run and is where a per-seat or per-run charge would land. The observed case draws the line where this specification's own open points already sit, which is stronger evidence than an argument would have been.
+That is the same line that Q7 and Q17 both left open — what a hosted server is, operationally. It is also the same line Q8 drew when it found that money is not the constraint on the measurement layer. The engine is cheap to run and expensive to build. A hosted authoring and measurement layer is expensive to run and is where a per-seat or per-run charge would land. The observed case draws the line where this specification's own open points already sit, which is stronger evidence than an argument would have been.
 
 ### Gradual adoption is a declaration in the tree, never a flag on the run
 
-The typed-language migrations are the closest analog to a corpus that was never valid, and the strongest of them is Sorbet, because it is the one that made the strictness level a property of the file.
+The typed-language migrations are the closest analog to a corpus that was never valid, and the strongest of them is Sorbet. Sorbet is the strongest because it made the strictness level a property of the file.
 
 Sorbet reads a `# typed:` sigil at the top of each Ruby file, with five levels: `ignore`, `false`, `true`, `strict` and `strong`. The default for a file with no sigil is `# typed: false`, at which only syntax, constant resolution and signature correctness are reported. The purpose of the levels is stated as gradual adoption: a team strengthens checking file by file rather than everywhere at once.
 
@@ -146,7 +146,7 @@ ESLint supplies the property this repository's own baseline lacks: a suppression
 
 ### What predicts adoption, and which attribute each entry supplies
 
-Rogers' account of diffusion names five attributes of an innovation that predict its rate of adoption: relative advantage, compatibility, complexity, observability and trialability. Trialability is the ability to experiment before committing, and observability is whether the benefits are visible and whether a potential adopter can see somebody else using it. Both work by reducing uncertainty rather than by increasing benefit.
+Rogers' account of diffusion names five attributes of an innovation that predict its rate of adoption: relative advantage, compatibility, complexity, observability and trialability. Trialability is the ability to experiment before committing. Observability is whether the benefits are visible, and whether a potential adopter can see somebody else using it. Both work by reducing uncertainty rather than by increasing benefit.
 
 Read against the three entries, the mapping is exact and it explains the sequencing.
 
@@ -182,15 +182,15 @@ Two of the five are refused by rulings already made, and one is refused for the 
 
 ### The recommendation
 
-**Engine and library: Apache-2.0.** It is permissive, so constraint 1 is satisfied and there is nothing for an adopter's legal review to resolve before a trial. It carries an express patent grant with a termination clause, which MIT lacks and which constraint 5 argues for directly. It reserves trademark rights explicitly, which is what keeps the name and the `w3id.org/headwater` namespace under the project's control while the code stays free — the one asset the observed relicensing episodes show a licensor keeps. It is also what the nearest neighbors use: LeanCTX is Apache-2.0, and Sorbet is Apache-2.0.
+**Engine and library: Apache-2.0.** It is permissive, so constraint 1 is satisfied and there is nothing for an adopter's legal review to resolve before a trial. It carries an express patent grant with a termination clause, which MIT lacks and which constraint 5 argues for directly. It reserves trademark rights explicitly. That is what keeps the name and the `w3id.org/headwater` namespace under the project's control while the code stays free. It is the one asset the observed relicensing episodes show a licensor keeps. It is also what the nearest neighbors use: LeanCTX is Apache-2.0, and Sorbet is Apache-2.0.
 
 **Base package and bundles: the same terms as the engine.** Constraint 3 requires only that they impose nothing on a derived taxonomy, and Apache-2.0 does not. A separate public-domain dedication would also satisfy the constraint and would cost a second license to explain. One set of terms for everything a machine reads is the simpler position, and simplicity is a Q11 criterion. The adopter reads this before they read anything else.
 
-**Doctrine prose: Creative Commons Attribution 4.0.** The doctrine is prose that explains a method, vendored into consumers under [spec 7](../spec/07-distribution-and-federation.md#what-is-shared-and-what-is-not). A software license applied to prose is a category error that a reviewer will notice, and [HW-EVAL-adjacent-work §P.7](../evaluations/adjacent-work.md#p7-debian-settles-redistribution-by-segregating-the-archive) already records the precedent for separating terms by content class. The boundary is mechanical rather than a matter of judgment: `contents.doctrine` in the package declaration is one of the six content paths, so the line is already drawn in the schema.
+**Doctrine prose: Creative Commons Attribution 4.0.** The doctrine is prose that explains a method, vendored into consumers under [spec 7](../spec/07-distribution-and-federation.md#what-is-shared-and-what-is-not). A software license applied to prose is a category error that a reviewer will notice. [HW-EVAL-adjacent-work §P.7](../evaluations/adjacent-work.md#p7-debian-settles-redistribution-by-segregating-the-archive) already records the precedent for separating terms by content class. The boundary is mechanical rather than a matter of judgment. `contents.doctrine` in the package declaration is one of the six content paths, so the line is already drawn in the schema.
 
 **Contributions: the Developer Certificate of Origin, and no CLA.** State the reason positively. The unique power a CLA confers is the power to relicense later without asking, and the recommendation is not to want that power. A DCO makes that promise structural. This forecloses a future dual-licensing business, and that is the intent.
 
-**Governance: a stated commitment now, a foundation as a named upgrade path.** OpenTofu and Valkey both used a foundation to make "this will not be relicensed" credible, and both did so *after* an incident. A community was already in place. At zero adopters a foundation is process with nobody to protect. What is available now and costs nothing is a dated statement of the terms, the DCO, and a written commitment that the license will not narrow — with the foundation named as what would be done if adoption made the commitment worth more than one person's word.
+**Governance: a stated commitment now, a foundation as a named upgrade path.** OpenTofu and Valkey both used a foundation to make "this will not be relicensed" credible, and both did so *after* an incident. A community was already in place. At zero adopters a foundation is process with nobody to protect. What is available now and costs nothing is a dated statement of the terms and the DCO. It is also a written commitment that the license will not narrow. The foundation is named as what would be done if adoption made the commitment worth more than one person's word.
 
 ### What ratifying this would mean, concretely
 
@@ -201,7 +201,7 @@ Q11 stays pending until these exist. Each is a file or a public statement, and t
 3. A `SECURITY.md` with the coordinated-disclosure process that [Q17](../spec/09-open-questions.md#q17--governed-access-and-the-solution-layer) already obliges, and which nothing currently discharges.
 4. The content license for `docs/`, marked where a reader will find it.
 5. A statement of the trademark position for the name and the domain — including, if that is the answer, that there is none.
-6. The date. A term with no date attached cannot later be shown to have changed, and the whole value of the commitment is that a change would be visible.
+6. The date. A term with no date attached cannot later be shown to have changed. The whole value of the commitment is that a change would be visible.
 
 ### What the specification cannot decide, stated plainly
 
@@ -213,7 +213,7 @@ Every constraint above rules an option *out*. Not one of them rules exactly one 
 
 The entry states the problem correctly: the migration state is defined against a known-good starting point, and a corpus that was never valid has none. The conclusion drawn from that — that first contact needs its own mechanism — does not follow. Only the from-version refers to the prior state. The pair grain, the owner, the expiry, the task list, and the counted-visible-never-blocking posture are all defined against the *new* schema.
 
-**So the from-version becomes optional, and everything else is unchanged.** Adoption is a migration whose source is the empty taxonomy. Before `headwater init` a corpus is governed by nothing and every document is trivially valid, so the set of findings that the new taxonomy produces over the existing tree *is* the migration payload of that taxonomy's first version. The publisher computes a payload from a diff between two majors. At first contact, `infer` computes it from a diff between nothing and one.
+**So the from-version becomes optional, and everything else is unchanged.** Adoption is a migration whose source is the empty taxonomy. Before `headwater init` a corpus is governed by nothing and every document is trivially valid. So the set of findings that the new taxonomy produces over the existing tree *is* the migration payload of that taxonomy's first version. The publisher computes a payload from a diff between two majors. At first contact, `infer` computes it from a diff between nothing and one.
 
 That gives one mechanism where the entry expected two. It also gives first contact four properties that no baseline file has. The first is a pair grain that keeps yesterday's defect loud while the declared debt stays patient. The other three are an owner, an expiry that is the anti-parking device, and a place in the coverage report.
 
@@ -227,15 +227,15 @@ Q3 settled that `infer` and the `init` interview are one command with two eviden
 | The misfit report | What the tree contains that no proposed shelf or kind explains | The entry |
 | The **adoption payload** | The `(document, rule)` pairs that the proposed taxonomy expects to fail, with an owner and an expiry | Here |
 
-`infer` cannot make the corpus valid by weakening the base, and that is a structural property rather than a rule anyone has to enforce. Q3 made bundles add-only over disjoint addresses, which is what makes every subset resolve. An add-only overlay has no operation that removes a base rule. So an inference that optimized for zero findings — which would encode the corpus's accidents as if they were intentions — is not expressible in the artifact `infer` is permitted to write.
+`infer` cannot make the corpus valid by weakening the base, and that is a structural property rather than a rule anyone has to enforce. Q3 made bundles add-only over disjoint addresses, which is what makes every subset resolve. An add-only overlay has no operation that removes a base rule. So an inference that optimized for zero findings would encode the corpus's accidents as if they were intentions. Such an inference is not expressible in the artifact `infer` is permitted to write.
 
 ### `--since <ref>` as a gate is refused, and the flag it would have duplicated already exists
 
 The leaning proposes an incremental adoption mode "where checks apply only to newly touched documents", as a first-release feature. Three arguments refuse it, and one of them is that the word already means something else in this specification.
 
-**It makes two runs over one tree disagree.** [Spec 6](../spec/06-engine-architecture.md#implementation-constraints) requires that the same corpus and the same lock produce byte-identical output. A flag that decides which findings count is a second input to the verdict that no reviewer sees, and [Q6](../spec/09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest) already refused the same shape for the cache: an artifact that can change a verdict is a store under another name.
+**It makes two runs over one tree disagree.** [Spec 6](../spec/06-engine-architecture.md#implementation-constraints) requires that the same corpus and the same lock produce byte-identical output. A flag that decides which findings count is a second input to the verdict that no reviewer sees. [Q6](../spec/09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest) already refused the same shape for the cache: an artifact that can change a verdict is a store under another name.
 
-**It converts an unchecked document into an unreported one.** Spec 4's coverage obligations require every classified document to reach a check and every run to account for what it skipped, with reasons. A run scoped to touched documents either reports the rest as skipped — in which case nothing was gained, since `migration-pending` already reports them better — or it does not, which is the silent pass that the whole coverage doctrine exists to forbid.
+**It converts an unchecked document into an unreported one.** Spec 4's coverage obligations require every classified document to reach a check and every run to account for what it skipped, with reasons. A run scoped to touched documents either reports the rest as skipped, or it does not. Reporting the rest as skipped gains nothing, since `migration-pending` already reports them better. Not reporting them is the silent pass that the whole coverage doctrine exists to forbid.
 
 **The name is taken.** `headwater check --changed-only` already exists, for the 200 ms commit-hook budget. It is a performance scope over a verdict that a full run would reach identically. Giving a second flag posture semantics would put two mechanisms with opposite properties behind nearly the same word. The one that reviewers already trust would be the one that gets confused.
 
@@ -243,9 +243,9 @@ The leaning proposes an incremental adoption mode "where checks apply only to ne
 
 ### No threshold ever converts an accounting into a silence
 
-RuboCop disables a cop entirely past 15 excluded files. First contact is the moment every rule exceeds any such limit, so a threshold of that shape would fire on the whole rule set at once, and the adopter would receive a green run over a corpus in which most rules had been switched off without anybody choosing that.
+RuboCop disables a cop entirely past 15 excluded files. First contact is the moment every rule exceeds any such limit. So a threshold of that shape would fire on the whole rule set at once. The adopter would then receive a green run over a corpus in which most rules had been switched off without anybody choosing that.
 
-**Headwater declares no such threshold.** The adoption payload holds `(document, rule)` pairs however many there are, and the honest cost is stated rather than avoided: on a large adopted corpus that payload is large, and it sits in the lock, which is committed and reviewed. That is the same trade the projection census makes — a full accounting is bigger than a summary, and being bigger is what makes it an accounting.
+**Headwater declares no such threshold.** The adoption payload holds `(document, rule)` pairs however many there are, and the honest cost is stated rather than avoided. On a large adopted corpus that payload is large, and it sits in the lock, which is committed and reviewed. That is the same trade the projection census makes. A full accounting is bigger than a summary, and being bigger is what makes it an accounting.
 
 **And the remaining count is reported on every run.** ESLint fails a run that carries a suppression which no longer matches, which is the property `.ste-lint-baseline.json` lacks. Headwater does not need the failure, because a pair that passes is a task that closes and the expiry already forces the conversation. What it needs is the number, reported beside coverage on every run. That way, a payload which is not shrinking is visible long before its expiry rather than at it.
 
@@ -256,16 +256,16 @@ This repository ran the pattern in miniature, and the numbers are real. `.ste-li
 Stated at the strength the evidence supports, which is lower than the number suggests:
 
 - The reduction is genuine and the mechanism is the hash key. An entry is keyed to file, rule and offending text, so editing the sentence invalidates its entry. The count cannot go backwards without somebody noticing.
-- The reduction is **not** evidence that anyone works a debt list. Most of it came from a commit that fixed the sentence splitter and then rewrote the sentences that were genuinely too long — that is, from prose touched for other reasons, and from a defect in the checker rather than in the corpus.
+- The reduction is **not** evidence that anyone works a debt list. Most of it came from a commit that fixed the sentence splitter and then rewrote the sentences that were genuinely too long. That is, from prose touched for other reasons, and from a defect in the checker rather than in the corpus.
 - The baseline has no owner and no expiry, which is exactly [Q21](../spec/09-open-questions.md#q21--terminological-succession-and-validity-under-merge)'s finding about it. So this measurement says nothing about whether an owned, expiring payload gets closed, which is the claim the adoption payload actually makes.
 
-That claim is therefore **unmeasured**, as [principle 11](../spec/00-vision-and-scope.md#design-principles) requires. The instrument is the remaining pair count of an adoption payload over time, per adopter, and the fraction of payloads that reach zero before their expiry. No adopter exists.
+That claim is therefore **unmeasured**, as [principle 11](../spec/00-vision-and-scope.md#design-principles) requires. The instrument is the remaining pair count of an adoption payload over time, per adopter. It is also the fraction of payloads that reach zero before their expiry. No adopter exists.
 
 ## The decision — Q16
 
 ### Registration is publication into a channel whose reader is already obliged
 
-Q14 refused registration on the ground that no file inside a corpus performs it. That is right, and it is a symptom rather than the reason. The reason is that **registration is an act of publication, and a publication needs a channel whose reader is already obliged to read it.** A file inside a corpus fails because it is not in anybody's channel. `llms.txt` fails for the same reason at a larger radius: about 137,000 domains, 97% of valid files unread in a month, no provider obliged to read one ([HW-EVAL-adjacent-work §O.3](../evaluations/adjacent-work.md#o3-llmstxt-is-the-measured-failure-of-a-descriptor-with-no-obliged-reader)). It is not a discovery surface, however cheap it is to write.
+Q14 refused registration on the ground that no file inside a corpus performs it. That is right, and it is a symptom rather than the reason. The reason is that **registration is an act of publication, and a publication needs a channel whose reader is already obliged to read it.** A file inside a corpus fails because it is not in anybody's channel. `llms.txt` fails for the same reason at a larger radius. About 137,000 domains, 97% of valid files unread in a month, no provider obliged to read one ([HW-EVAL-adjacent-work §O.3](../evaluations/adjacent-work.md#o3-llmstxt-is-the-measured-failure-of-a-descriptor-with-no-obliged-reader)). It is not a discovery surface, however cheap it is to write.
 
 Once registration is defined that way, the machine half closes with no new machinery, because Headwater already uses two channels that have obliged readers.
 
@@ -278,9 +278,9 @@ Once registration is defined that way, the machine half closes with no new machi
 
 Not deferred. Three rulings converge, and each one already refused a smaller version of the same thing.
 
-[Q9](../spec/09-open-questions.md#q9--multi-repository-corpora) refused query fan-out, in part because a fan-out that meets an unreachable source returns a smaller answer with no notice. Q14 refused a reserved path at the root of an origin, because it fixes one service to one site and needs control of the apex. A central directory is both failures at the largest radius, and it adds one that neither has: it would be the single piece of Headwater infrastructure that must stay online for discovery to work, in a system whose [non-negotiables](../spec/00-vision-and-scope.md#non-negotiables) include running offline with the same result as CI.
+[Q9](../spec/09-open-questions.md#q9--multi-repository-corpora) refused query fan-out, in part because a fan-out that meets an unreachable source returns a smaller answer with no notice. Q14 refused a reserved path at the root of an origin, because it fixes one service to one site and needs control of the apex. A central directory is both failures at the largest radius, and it adds one that neither has. It would be the single piece of Headwater infrastructure that must stay online for discovery to work. That is a system whose [non-negotiables](../spec/00-vision-and-scope.md#non-negotiables) include running offline with the same result as CI.
 
-The cost of the refusal is real and is stated. There is no way to enumerate Headwater corpora, and there will not be one. An organization that wants its corpora enumerated builds a solution corpus and pins them ([Q9](../spec/09-open-questions.md#q9--multi-repository-corpora)), which is enumeration at the scale where somebody owns the list.
+The cost of the refusal is real and is stated. There is no way to enumerate Headwater corpora, and there will not be one. An organization that wants its corpora enumerated builds a solution corpus and pins them ([Q9](../spec/09-open-questions.md#q9--multi-repository-corpora)). That is enumeration at the scale where somebody owns the list.
 
 ### The site is a projection of this corpus, and no generator is built
 
@@ -288,11 +288,11 @@ The cost of the refusal is real and is stated. There is no way to enumerate Head
 
 **Spec 0 already refuses to build a renderer, and already lists site navigation as a projection.** So the division is settled before the question is asked. Headwater emits the navigation configuration and the content from the corpus. A third-party static-site generator renders it. No site generator is a Headwater component, and this entry does not create one.
 
-That matters for a reason beyond scope. The owner's standing position is that the STE enforcement scaffolding in this repository is interim and should retire into Headwater's own check layer rather than grow. A Q16 ruling that quietly commissioned a bespoke site generator would repeat that mistake at a larger size. **Nothing here is built until the engine exists.** When it does, the site is an emitter target and a projection, which are two mechanisms that already have owners.
+That matters for a reason beyond scope. The owner's standing position is that the STE enforcement scaffolding in this repository is interim. It should retire into Headwater's own check layer rather than grow. A Q16 ruling that quietly commissioned a bespoke site generator would repeat that mistake at a larger size. **Nothing here is built until the engine exists.** When it does, the site is an emitter target and a projection, which are two mechanisms that already have owners.
 
 ### The sitemap, run now, against the specification
 
-The entry says to draft the sitemap early because it is a forcing function, and that every facet is a question the specification should already answer. That instruction was followed. The result is a measurement of the specification rather than a plan for a site.
+The entry says to draft the sitemap early because it is a forcing function. It also says that every facet is a question the specification should already answer. That instruction was followed. The result is a measurement of the specification rather than a plan for a site.
 
 | Facet | What answers it today | Verdict |
 |---|---|---|
@@ -309,23 +309,23 @@ The entry says to draft the sitemap early because it is a forcing function, and 
 
 **The getting-started row above is the measurement as it stood, and it has since moved.** *No quickstart, because there is nothing to start* was true on the day this sitemap ran. M1 and M2 shipped the verbs, and [the tutorial](../tutorials/your-first-governed-corpus.md) takes a reader from an empty directory to a passing strict run. [Q16](../decisions/0016-public-presence.md) carries the row that holds now, and the table above stays as it was measured.
 
-Four rows are answered from the specification, one from an evaluation, and one is partial. Two are blocked on Q11, one is empty by principle 11, and one is worth approximately nothing. **The forcing function worked, and what it found is that the largest hole in the public story is the one the project has decided it may not fill.** The benchmark row is empty not because the work is pending but because principle 11 forbids a number that no run produced, and it will stay empty until a campaign runs.
+Four rows are answered from the specification, one from an evaluation, and one is partial. Two are blocked on Q11, one is empty by principle 11, and one is worth approximately nothing. **The forcing function worked. What it found is that the largest hole in the public story is the one the project has decided it may not fill.** The benchmark row is empty not because the work is pending but because principle 11 forbids a number that no run produced. It will stay empty until a campaign runs.
 
-The second finding is quieter and more useful. The comparison row is the strongest asset this project has, because [HW-EVAL-adjacent-work](adjacent-work.md) already carries counter-evidence against Headwater. OpenGEO declines the stack, TrustGraph ships the opposite mechanism, and Vale is the closest analog but is written in another language. §M states that the survey licenses no efficacy conclusion at all. A comparison page that includes the arguments against the thing is unusual enough to be the differentiator, and it costs nothing because it is already written.
+The second finding is quieter and more useful. The comparison row is the strongest asset this project has, because [HW-EVAL-adjacent-work](adjacent-work.md) already carries counter-evidence against Headwater. OpenGEO declines the stack, TrustGraph ships the opposite mechanism, and Vale is the closest analog but is written in another language. §M states that the survey licenses no efficacy conclusion at all. A comparison page that includes the arguments against the thing is unusual enough to be the differentiator. It costs nothing because it is already written.
 
 ### Honest before impressive, made mechanical
 
 The entry's constraint is that the benchmark and self-assessment rows must be honest before they are impressive. As stated it is an intention, and intentions are what §I.4 records failing at a neighboring project, where the claims moved between README versions.
 
-Because the site is generated from the corpus, the constraint can be a mechanism instead. **Every number on the site is generated from the evidence register, and a claim with no instrument is generated as unmeasured.** [Spec 4](../spec/04-assurance-model.md#the-systems-own-assurance) already states that the same command an adopter runs produces the coverage numbers this project publishes. Extending that to the public surface costs nothing new: a figure can appear only where a run put it, and `generate --check` holds the page to its source exactly as it holds every other projection.
+Because the site is generated from the corpus, the constraint can be a mechanism instead. **Every number on the site is generated from the evidence register, and a claim with no instrument is generated as unmeasured.** [Spec 4](../spec/04-assurance-model.md#the-systems-own-assurance) already states that the same command an adopter runs produces the coverage numbers this project publishes. Extending that to the public surface costs nothing new. A figure can appear only where a run put it, and `generate --check` holds the page to its source exactly as it holds every other projection.
 
-Two consequences. A hand-written number on the site is a finding, in the same way that a hand-edited shelf index is. And the self-assessment states that it is self-published — the standard §I.4 applied to a neighbor, applied here to ourselves, which is what principle 8 means when it is inconvenient.
+Two consequences. A hand-written number on the site is a finding, in the same way that a hand-edited shelf index is. And the self-assessment states that it is self-published. That is the standard §I.4 applied to a neighbor, applied here to ourselves, which is what principle 8 means when it is inconvenient.
 
 ### Timing: the leaning survives, with the trigger derived
 
 The leaning defers the site until an engine makes it worth a visit. That is right, and the reason is stronger than "worth a visit". A site supplies observability. It cannot supply trialability, and the diffusion literature is clear that neither substitutes for the other. A site that describes a tool nobody can run produces interest with no path to adoption. It spends the first impression — which the entry itself identifies as the thing that arrives before anyone notices it matters.
 
-So: **the site ships when the engine ships.** The sitemap is drafted above, three of its rows are blocked on Q11, and one is blocked on a campaign run that has no corpus to run against. Those are the dependencies, and they are all recorded.
+So: **the site ships when the engine ships.** The sitemap is drafted above, and three of its rows are blocked on Q11. One more is blocked on a campaign run that has no corpus to run against. Those are the dependencies, and they are all recorded.
 
 ## What stays open
 
@@ -333,7 +333,7 @@ So: **the site ships when the engine ships.** The sitemap is drafted above, thre
 
 That sentence was true when this evaluation ran, and it is no longer true. The owner ratified Apache-2.0 on 2026-08-11, and all six artifacts exist. The paragraph stays as written, because this document records what the evaluation found rather than what the project later did. [Q11](../spec/09-open-questions.md#q11--license-and-distribution-posture) carries the current state.
 
-**What a hosted server is, operationally.** Q7 and Q17 both left this open and this evaluation does not close it. What it adds is that the two hosted surfaces — a server and a probe harness — are the only places in this specification where a commercial tier could sit, and that the closest observed analog draws its line there.
+**What a hosted server is, operationally.** Q7 and Q17 both left this open and this evaluation does not close it. What it adds is that the two hosted surfaces are a server and a probe harness. Those are the only places in this specification where a commercial tier could sit. It also adds that the closest observed analog draws its line there.
 
 **Whether any adopter ever pays for a campaign.** Q8's open question is a business-model question, and Q11's recommendation does not answer it. It only says that the answer does not belong in the engine's license.
 
@@ -342,7 +342,7 @@ That sentence was true when this evaluation ran, and it is no longer true. The o
 **Three claims are unmeasured**, as [principle 11](../spec/00-vision-and-scope.md#design-principles) requires.
 
 - An adoption payload should shrink. The instrument is its remaining `(document, rule)` count over time, per adopter, and the fraction of payloads that reach zero before the expiry. This repository's own baseline fell from 65 entries to 14, and the section above states why that is not the same measurement.
-- A permissive license should remove a step before a trial. The instrument is a count of adopters who report the terms as the reason they stopped, and it needs a public channel that does not exist yet.
+- A permissive license should remove a step before a trial. The instrument is a count of adopters who report the terms as the reason they stopped. It also needs a public channel that does not exist yet.
 - A generated site should let a reader answer "is this for me?" without reading the specification. The Discovery probe category is the instrument for the machine half, and the human half has none, which is worth saying rather than hiding.
 
 ## Consequences for the specification
@@ -350,7 +350,7 @@ That sentence was true when this evaluation ran, and it is no longer true. The o
 | # | Finding | Landed in |
 |---|---|---|
 | 1 | Q11 is pending ratification, and the field is narrowed rather than open. Internal-only and source-available are refused by rulings already made; strong copyleft is refused for the library | [Q11](../spec/09-open-questions.md#q11--license-and-distribution-posture) |
-| 2 | The base package and the bundles may impose nothing on a derived taxonomy, because an overlay resolution contains base content and spec 0 promises the taxonomy is the adopter's | [Spec 7](../spec/07-distribution-and-federation.md#publishing) and [Q11](../spec/09-open-questions.md#q11--license-and-distribution-posture) |
+| 2 | The base package and the bundles may impose nothing on a derived taxonomy. An overlay resolution contains base content, and spec 0 promises the taxonomy is the adopter's | [Spec 7](../spec/07-distribution-and-federation.md#publishing) and [Q11](../spec/09-open-questions.md#q11--license-and-distribution-posture) |
 | 3 | The from-version of a migration state is optional, and adoption is a migration from no taxonomy | [Spec 7](../spec/07-distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy) |
 | 4 | `infer` emits three artifacts: the overlay, the misfit report, and the adoption payload | [Spec 7](../spec/07-distribution-and-federation.md#the-interview) |
 | 5 | An adoption payload declares no threshold past which a rule is switched off, and every run reports the remaining pair count | [Spec 7](../spec/07-distribution-and-federation.md#first-contact-adoption-is-a-migration-from-no-taxonomy) and [spec 4](../spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for) |
