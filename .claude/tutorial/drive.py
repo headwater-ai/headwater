@@ -58,12 +58,46 @@ def today_reading(clock=time.time):
     epoch second count rather than reading a local clock of any kind, and the
     two can no longer disagree.
 
-    `clock` defaults to the real one and takes an injected one only so a
-    fixture can hold this exact function to a fixed instant rather than
-    wait for the real clock to reach an hour where a regression would show.
+    `clock` defaults to the real one and takes an injected one only so that
+    `clock_reads_the_engine_s_day_and_not_the_local_one`, below, can hold
+    this exact function to a fixed instant rather than wait for the real
+    clock to reach an hour where a regression would show.
     """
     days = int(clock()) // 86_400
     return (datetime.date(1970, 1, 1) + datetime.timedelta(days=days)).isoformat()
+
+
+def clock_reads_the_engine_s_day_and_not_the_local_one():
+    """The regression case for #302, held by behavior rather than by having
+    been fixed once: reverting `today_reading` to read `datetime.date.today()`
+    makes this fail, deterministically, on whatever day it happens to run.
+
+    `2026-01-01T12:00:00Z` is a fixed instant that falls on 2026-01-01 in UTC
+    and on 2026-01-02 under `Pacific/Kiritimati` (UTC+14, the zone furthest
+    ahead of UTC there is, and fixed year-round — no DST to add a second
+    variable). The two readings provably differ under it, on any day this
+    check itself runs.
+    """
+    instant = datetime.datetime(2026, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc).timestamp()
+    expect_utc = '2026-01-01'
+    previous = os.environ.get('TZ')
+    os.environ['TZ'] = 'Pacific/Kiritimati'
+    time.tzset()
+    try:
+        local_reading = datetime.date.fromtimestamp(instant).isoformat()
+        got = today_reading(clock=lambda: instant)
+    finally:
+        if previous is None:
+            os.environ.pop('TZ', None)
+        else:
+            os.environ['TZ'] = previous
+        time.tzset()
+    assert local_reading != expect_utc, (
+        'the fixed instant no longer diverges under Pacific/Kiritimati, so this '
+        'proves nothing; pick another instant')
+    detail = (f'today_reading said {got!r}; the engine (UTC) says {expect_utc!r}; '
+              f'a local read under Pacific/Kiritimati said {local_reading!r}')
+    return got == expect_utc, detail
 
 
 def read_blocks(root):
@@ -154,6 +188,9 @@ def main():
     blocks, trimmed = read_blocks(root)
     if len(blocks) != 45:
         raise SystemExit(f'tutorial: expected 45 code blocks and found {len(blocks)}')
+
+    ok, detail = clock_reads_the_engine_s_day_and_not_the_local_one()
+    assert_true("the substitution clock reads the engine's UTC day, not the local one", ok, detail)
 
     # #302: today's date must come from today_reading(), never
     # datetime.date.today() directly — see that function's docstring for why.
