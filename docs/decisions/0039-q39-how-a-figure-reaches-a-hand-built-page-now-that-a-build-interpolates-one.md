@@ -15,7 +15,7 @@ relations:
   constrains:
     - HW-DR-0037
   governs:
-    - site/scripts/refresh-figures.sh
+    - tools/refresh-figures.sh
   traces_to:
     - site/DESIGN-BRIEF.md
 ---
@@ -38,7 +38,7 @@ relations:
 
 **The interpolating form runs before the commit rather than after it.** HW-DR-0037 forecloses a build between the commit and the served bytes. It forecloses nothing on the machine of the person who writes the page. So the interpolation happens there, and the interpolated figure is in the bytes that the commit carries.
 
-**`site/scripts/refresh-figures.sh` is that build.** It runs the engine over this repository, reads the result, and rewrites the text of every element under `site/` that carries a `data-figure` attribute. A key with no measurement fails the run, and a measurement that reaches no page is reported.
+**`tools/refresh-figures.sh` is that build.** It runs the engine over this repository, reads the result, and rewrites the text of every element under `site/` that carries a `data-figure` attribute. A key with no measurement fails the run, and a measurement that reaches no page is reported.
 
 **Five sources supply every figure, and each one is a run.** `headwater check --json` gives the census, the findings, the rules wired, the taxonomy and the clock. The text output of the same verb gives the census lines that the JSON omits, and the obligation register. `docs/interfaces/README.md` gives the verb count and the group count, and `headwater generate --check` holds that file. `engine/crates/generate/src/profile.rs` gives the emitter split, read off the `Emitter` values and the arms of `is_built`. `headwater conformance` gives the level this repository reaches.
 

@@ -55,10 +55,10 @@
 #
 # USAGE
 #
-#   sh site/scripts/refresh-figures.sh            measure, and write the pages
-#   sh site/scripts/refresh-figures.sh --check    measure, write nothing, and
+#   sh tools/refresh-figures.sh            measure, and write the pages
+#   sh tools/refresh-figures.sh --check    measure, write nothing, and
 #                                                 exit 1 on any disagreement
-#   sh site/scripts/refresh-figures.sh --print    measure, and print the table
+#   sh tools/refresh-figures.sh --print    measure, and print the table
 #
 set -eu
 
@@ -70,7 +70,7 @@ case "${1:-}" in
   *) echo "refresh-figures.sh: unknown argument '$1'" >&2; exit 2 ;;
 esac
 
-ROOT=$(cd "$(dirname "$0")/../.." && pwd)
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT"
 
 HW="$ROOT/engine/target/release/headwater"
