@@ -1,42 +1,44 @@
-308 seen, 228 classified, 228 checked, 4276 check instances
+309 seen, 229 classified, 229 checked, 4297 check instances
       4 generated, held to regeneration by `headwater generate --check`
      21 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: the document at the target end, `HW-REG-open-questions`, declares no value for the state facet, so there is no state to read there
-    216 skipped: this document writes no fragment into itself
-    457 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+    217 skipped: this document writes no fragment into itself
+    459 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 adoption
   0 pairs open, 1 closed, holding 0 findings, in 1 task
   AD-1 0 open, 1 closed, holding 0 findings, owner the specification authors, until 2027-06-30
     The one entry of `.ste-lint-baseline.json` that this corpus still owes. The baseline held two when the linter retired. The other named a semicolon inside a block quotation, which the engine does not report at all, because the parser hands a quoted block to no lexical rule
-229 documents in the read set, and 2 barriers that no gate carries across a merge
-    228 instances of facet.required.missing
-    228 instances of facet.value.not_permitted
-    228 instances of identifier.pattern.not_met
-    228 instances of shelf.placement_is_primary
-    506 instances of relation.target.unresolved
+230 documents in the read set, and 2 barriers that no gate carries across a merge
+    229 instances of facet.required.missing
+    229 instances of facet.value.not_permitted
+    229 instances of identifier.pattern.not_met
+    229 instances of shelf.placement_is_primary
+    509 instances of relation.target.unresolved
      88 instances of relation.reciprocity.missing
-    326 instances of relation.endpoint.not_permitted
+    329 instances of relation.endpoint.not_permitted
       2 instances of lifecycle.dependency.on_terminal
      19 instances of relation.participation.overdue
-    228 instances of relation.declaration.unusable
-    228 instances of identifier.unusable
+    229 instances of relation.declaration.unusable
+    229 instances of identifier.unusable
       1 instances of identifier.claimed_twice
-    206 instances of voice.forbidden_construction
-    219 instances of language.controlled.not_met
-    219 instances of language.retired_term.used
-    219 instances of language.source_form.not_met
-    190 instances of section.required.missing
-    228 instances of link.fragment.unresolved
-    228 instances of warrant.promoted
-    228 instances of lifecycle.transition.not_permitted
-    228 instances of lifecycle.state.not_admitted
+    207 instances of voice.forbidden_construction
+    220 instances of language.controlled.not_met
+    220 instances of language.retired_term.used
+    220 instances of language.source_form.not_met
+    191 instances of section.required.missing
+    229 instances of link.fragment.unresolved
+    229 instances of warrant.promoted
+    229 instances of lifecycle.transition.not_permitted
+    229 instances of lifecycle.state.not_admitted
       1 instances of lifecycle.deletion.not_permitted
 suppressions
-  4 findings hidden by 4 directives
+  5 findings hidden by 5 directives
       4 false_positive
-      3 of language.controlled.not_met
+      1 accepted_deviation
+      4 of language.controlled.not_met
       1 of language.retired_term.used
       4 on the shelf evaluations
+      1 on the shelf decisions
 rules, and for each the scope that binds it
   facet.required.missing
     document scope, one document and its front matter
@@ -95,7 +97,7 @@ register
      12 high, 11 verified
      14 medium, 12 verified
       5 low, 5 verified
-  OB-LANG-1 verified, 3 findings escaped under it
+  OB-LANG-1 verified, 4 findings escaped under it
   OB-LANG-3 verified, 1 finding escaped under it
   OB-DR-1 gap, owner the decision-record entry, target a change-scoped rule that reads the prior version, which spec 12 already supplies as `needs_prior`
   OB-DR-2 gap, owner the decision-record entry, target a rule over state dwell time, which `taxonomy audit` already measures and no check reads
@@ -111,5 +113,5 @@ register
       3 at a final posture
       4 permanently advisory
       2 producing facts rather than findings
-  escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 4 suppressed
+  escaped findings, in the precedence spec 4 fixes: no waiver reaches a check finding, 0 migration-pending, 5 suppressed
   every rule this engine carries reaches one obligation
