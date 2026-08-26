@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glossary — Headwater</title>
+<meta name="description" content="Fifteen terms this site uses more than once, defined the way this site uses them. Not the full engine vocabulary — that lives in the specification.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🜄</text></svg>">
+<style>
+  :root {
+    --bg: #fbfaf8; --fg: #1a1917; --muted: #5f5b54;
+    --rule: #e2ddd4; --accent: #1d5c54; --code-bg: #f1eee8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161a; --fg: #e6e3dd; --muted: #9b968c;
+      --rule: #2a2e35; --accent: #6fb3a6; --code-bg: #1c1f25;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 17px/1.65 ui-serif, Charter, "Iowan Old Style", Georgia, serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 42rem; margin: 0 auto; padding: 2.5rem 1.5rem 6rem; }
+  h1 {
+    font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.015em;
+    margin: 0 0 0.4rem; font-weight: 600;
+  }
+  .uri {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.95rem; color: var(--accent); margin: 0 0 2.5rem;
+    word-break: break-all;
+  }
+  h2 {
+    font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.09em;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 650;
+    color: var(--muted); margin: 2.75rem 0 0.85rem;
+    padding-bottom: 0.5rem; border-bottom: 1px solid var(--rule);
+  }
+  p { margin: 0 0 1.1rem; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.87em; background: var(--code-bg);
+    padding: 0.12em 0.36em; border-radius: 3px;
+  }
+  .tablewrap { overflow-x: auto; margin: 0 0 1.4rem; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.94rem; }
+  th, td {
+    text-align: left; padding: 0.6rem 0.9rem 0.6rem 0;
+    border-bottom: 1px solid var(--rule); vertical-align: top;
+  }
+  th {
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted);
+    font-weight: 650;
+  }
+  .note {
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.9rem;
+    background: var(--code-bg); border-left: 3px solid var(--accent);
+    padding: 0.9rem 1.1rem; margin: 0 0 2rem; color: var(--muted);
+  }
+  .note strong { color: var(--fg); }
+  .topbar { height: 4px; background: var(--accent); }
+  .navbar { max-width: 78rem; margin: 0 auto; padding: 0 3rem; }
+  nav.top {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 1.5rem; flex-wrap: wrap; padding: 1.2rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .brand {
+    font-weight: 600; font-size: 1.1rem; display: flex; align-items: center;
+    gap: 0.5rem; color: var(--fg); text-decoration: none;
+  }
+  .brand .glyph { color: var(--accent); font-size: 1.3rem; }
+  .navlinks {
+    display: flex; gap: 1.7rem; flex-wrap: wrap;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.82rem;
+  }
+  .navlinks a { color: var(--muted); text-decoration: none; margin: 0; }
+  .navlinks a:hover { color: var(--accent); }
+  .navlinks a.here { color: var(--fg); border-bottom: 2px solid var(--accent); }
+  @media (max-width: 62rem) {
+    .navbar { padding-left: 1.5rem; padding-right: 1.5rem; }
+  }
+  footer {
+    margin-top: 3.5rem; padding-top: 1.25rem; border-top: 1px solid var(--rule);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.87rem; color: var(--muted);
+  }
+  footer a { margin-right: 1.25rem; display: inline-block; }
+  dl { margin: 0; }
+  dt {
+    font-weight: 600; font-size: 1.1rem; margin: 2.1rem 0 0.4rem;
+    scroll-margin-top: 1.5rem;
+  }
+  dt:first-of-type { margin-top: 0; }
+  dd { margin: 0 0 0.2rem; }
+</style>
+</head>
+<body>
+
+<div class="topbar"></div>
+<div class="navbar">
+  <nav class="top">
+    <a class="brand" href="/"><span class="glyph">🜄</span>Headwater</a>
+    <div class="navlinks">
+      <a href="/how-it-works/">How it works</a>
+      <a href="/compare/">Compare</a>
+      <a href="/proof/">Proof</a>
+      <a href="/tutorial/">Tutorial</a>
+    </div>
+  </nav>
+</div>
+
+<div class="wrap">
+
+  <h1>Glossary</h1>
+  <p class="uri">fifteen terms, as this site uses them</p>
+
+  <p class="note"><strong>This is not the full vocabulary.</strong> The specification carries a much longer glossary for someone already filing documents in this corpus. This page holds only the words that recur, more than once, across the pages you can already read from here — enough to keep reading without a second tab open.</p>
+
+  <dl>
+
+    <dt id="census">Census</dt>
+    <dd><p>The count of every file under the corpus root, and what became of each one, produced before any check runs. A file is typed, untyped and reported as such, or excluded by a declared rule that states its reason — nothing is silently unaccounted for. The <a href="/proof/">self-assessment</a> publishes this repository's own census.</p></dd>
+
+    <dt id="check">Check</dt>
+    <dd><p>A rule that reads a scoped view of the graph and reports findings. It reads no file itself, opens no socket, and reads no clock — everything it needs already arrived when the graph was built. <a href="/how-it-works/">How it works</a> walks through what a check reports and how a repair gets applied.</p></dd>
+
+    <dt id="corpus">Corpus</dt>
+    <dd><p>The documents themselves — the assertions on the shelves a taxonomy defines. A taxonomy is the terminology; a corpus is what gets written in it, the way a schema and the rows that fill it are two different things.</p></dd>
+
+    <dt id="facet">Facet</dt>
+    <dd><p>One named piece of metadata a document's front matter carries, such as its status, its summary, or the date it was last checked. A kind names which facets its documents must declare.</p></dd>
+
+    <dt id="finding">Finding</dt>
+    <dd><p>What a check reports: the rule that fired, the location, the repair, and the obligation the rule discharges. A finding is an error when the repair takes no judgment, and advisory when the repair is a rewrite a person has to make.</p></dd>
+
+    <dt id="front-matter">Front matter</dt>
+    <dd><p>The block at the top of a document that carries its facets and its relations to other documents. The engine parses it once per file and builds the typed graph from it.</p></dd>
+
+    <dt id="governs">Governs</dt>
+    <dd><p>The relation a document declares to state that it is the authority over a file or another document — for example, the decision record that governs each hand-built page of this site. A <code>governs</code> edge that names a path with no file behind it is itself a finding, which is what stops a governed page from being deleted without anyone noticing.</p></dd>
+
+    <dt id="graph">Graph</dt>
+    <dd><p>What the corpus is, once built: documents as typed nodes, and front-matter references between them as typed edges. Nothing stores the graph — every run rebuilds it from the documents themselves, and a cache only makes that rebuild cheap.</p></dd>
+
+    <dt id="kind">Kind</dt>
+    <dd><p>What a document permanently is. A kind names the facets a document of that kind must carry, the sections it must have, and the relations it may declare — a decision record and an obligation record are two different kinds, each with its own rules.</p></dd>
+
+    <dt id="obligation">Obligation</dt>
+    <dd><p>A claim the system makes about itself, with the rule that verifies it named beside it. The obligation register reports each one as verified, gap, or unverifiable, and every gap names an owner rather than sitting unassigned.</p></dd>
+
+    <dt id="overlay">Overlay</dt>
+    <dd><p>What an adopter's own repository adds on top of a shared taxonomy package — its namespace, any extra kinds it needs, its own phrasing. Customizing the taxonomy this way never means forking the engine that reads it.</p></dd>
+
+    <dt id="projection">Projection</dt>
+    <dd><p>Anything derived from the corpus rather than written by hand — an index, a navigation file, an exported graph. A projection that drifts from the documents it was built from fails the build rather than silently going stale.</p></dd>
+
+    <dt id="relation">Relation</dt>
+    <dd><p>A typed, declared link from one document to another, named in that document's front matter. <a href="#governs">Governs</a> is one relation among several a kind may declare.</p></dd>
+
+    <dt id="shelf">Shelf</dt>
+    <dd><p>A region of the directory tree that carries one purpose, and usually settles what kind a document placed on it is allowed to be.</p></dd>
+
+    <dt id="taxonomy">Taxonomy</dt>
+    <dd><p>The schema itself — the shelves, kinds, facets and relations a corpus is checked against. It is versioned and shared, and it is separate from the documents it governs, the way a grammar is separate from what gets written in it.</p></dd>
+
+  </dl>
+
+  <p style="font-size: 0.9rem; color: var(--muted); margin-top: 2.5rem;">More depth on any of this lives at <a href="/how-it-works/">how it works</a>, which walks the same four steps — taxonomy, graph, checks, projections — with real output from this repository.</p>
+
+  <footer>
+    <a href="/">Home</a>
+    <a href="/how-it-works/">How it works</a>
+    <a href="/compare/">Compare</a>
+    <a href="/proof/">Proof</a>
+    <a href="/tutorial/">Tutorial</a>
+    <a href="/ns/">Namespace</a>
+  </footer>
+
+</div>
+</body>
+</html>

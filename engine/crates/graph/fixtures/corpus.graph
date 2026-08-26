@@ -1,6 +1,6 @@
-256 nodes, 529 declared edge halves
+256 nodes, 530 declared edge halves
     426 to a document
-    103 to an anchor
+    104 to an anchor
 0 prose links that did not resolve
 
 anchors
@@ -55,6 +55,7 @@ anchors
       1 code_path `packages/headwater-standard/taxonomy.yml` via source-tree
       2 code_path `site/DESIGN-BRIEF.md` via source-tree
       1 code_path `site/compare/index.html` via source-tree
+      1 code_path `site/glossary/index.html` via source-tree
       1 code_path `site/how-it-works/index.html` via source-tree
       1 code_path `site/index.html` via source-tree
       1 code_path `site/ns/index.html` via source-tree

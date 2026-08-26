@@ -197,6 +197,16 @@ Specifics for the designer:
 
 ---
 
+## 9. The public glossary — scope and basis
+
+**This is a different document from `docs/spec/glossary.md`, for a different reader, and the difference is worth stating rather than assuming.** The spec glossary is scoped to someone already filing documents in this corpus. Its own text says so: "an author who files a document meets the eight in the next table. A taxonomy author meets roughly thirty-five." The full list runs to "about 175 terms," most of which "belong to the engine, the check layer, or the publisher," and no visitor deciding whether to spend an hour with this project needs any of that inventory in front of them.
+
+**The public glossary at `/glossary/` is scoped to that visitor instead** — someone who has read none of the documentation and is deciding whether to spend the hour. Its source is not editorial judgment about what sounds important. It is every term that recurs, more than once, in the visitor-facing prose the site already publishes: `index`, `how-it-works`, `compare`, `proof`, and `ns`. The tutorial is deliberately excluded as a source, because it is itself a technical walkthrough that defines its vocabulary inline as a reader meets each term, and restating that vocabulary here would be the same defect the removed terms page had against `ns`'s own Terms section — a second page competing with a first one that already says the thing.
+
+**The list is fifteen terms, bounded and named, not open-ended:** Census, Check, Corpus, Facet, Finding, Front matter, Governs, Graph, Kind, Obligation, Overlay, Projection, Relation, Shelf, Taxonomy. A term that appears once, already defined in the sentence that uses it — `ABox`, `TBox`, `warrant` — is left out, on the same reasoning: a definition beside a definition is not a lookup a visitor is missing. `Regime` is left out for a plainer reason: it does not appear anywhere in the five pages the list is drawn from, so including it would be a guess rather than a measurement. Adding a sixteenth term later needs the same basis this one used — a term recurring in the site's own prose — not a feeling that the page is thin.
+
+---
+
 ## Sources
 
 - [LeanCTX](https://leanctx.com/) · [lean-ctx on GitHub](https://github.com/yvgude/lean-ctx) · [LeanCTX docs](https://leanctx.com/docs/)
