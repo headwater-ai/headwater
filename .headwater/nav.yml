@@ -17,6 +17,7 @@ nav:
       - "Q13 — LinkML and SHACL as substrate": "docs/decisions/0013-linkml-and-shacl-as-substrate.md"
       - "Q14 — Discovery surface": "docs/decisions/0014-discovery-surface.md"
       - "Q15 — A synthesized content tier": "docs/decisions/0015-a-synthesized-content-tier.md"
+      - "Q37 — Which parts of the site are hand-built and which are a projection of this corpus": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md"
       - "Q16 — Public presence": "docs/decisions/0016-public-presence.md"
       - "Q17 — Governed access and the solution layer": "docs/decisions/0017-governed-access-and-the-solution-layer.md"
       - "Q18 — Recording adjudicated disagreements": "docs/decisions/0018-recording-adjudicated-disagreements.md"

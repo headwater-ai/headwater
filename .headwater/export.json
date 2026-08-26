@@ -9,14 +9,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 300,
-      "carried": 300,
+      "in the graph": 304,
+      "carried": 304,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 509,
-      "carried": 509,
+      "in the graph": 513,
+      "carried": 513,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1008,6 +1008,39 @@
               "HW-SPEC-vision-and-scope",
               "HW-SPEC-taxonomy-model",
               "HW-SPEC-engine-architecture"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+        "kind": "decision",
+        "id": "HW-DR-0037",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0037",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "summary": "Everything under `site/` is hand-built and the corpus is the generated projection. A hand-built page states no figure a person typed, and nothing checks that.",
+          "last_verified": "2026-08-26",
+          "title": "Q37 — Which parts of the site are hand-built and which are a projection of this corpus",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "constrains": [
+              "HW-DR-0016"
+            ],
+            "governs": [
+              "site/index.html",
+              "site/ns/index.html"
+            ],
+            "traces_to": [
+              "site/DESIGN-BRIEF.md"
             ]
           }
         }
@@ -7225,6 +7258,21 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "site/DESIGN-BRIEF.md",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "site/index.html",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "site/ns/index.html",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "spike",
         "resolver": "source-tree"
       },
@@ -7783,6 +7831,50 @@
           "id": "HW-SPEC-engine-architecture",
           "path": "docs/spec/06-engine-architecture.md",
           "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+        "relation": "constrains",
+        "written_as": "constrains",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0016",
+          "path": "docs/decisions/0016-public-presence.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "site/index.html",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "site/ns/index.html",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "site/DESIGN-BRIEF.md",
+          "resolver": "source-tree"
         }
       },
       {
