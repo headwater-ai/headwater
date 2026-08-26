@@ -2,7 +2,7 @@
 
 # decisions
 
-39 documents on this shelf, in the reading order this corpus derives.
+40 documents on this shelf, in the reading order this corpus derives.
 
 - [HW-DR-0001](0001-implementation-language.md) — The language is Rust, with a WebAssembly build of the same crate for editor and browser embedding.
 - [HW-DR-0002](0002-schema-format.md) — YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema.
@@ -43,3 +43,4 @@
 - [HW-DR-0035](0035-q35-whether-one-requirement-kind-holds-an-imported-requirement-and-an-authored-one.md) — The `requirement` and `acceptance_criterion` kinds serve the authored population alone. A transcribed requirement is a marked file that answers no contract, so a separate kind with an empty contract carries the imported case. (asserted, and no human has accepted it)
 - [HW-DR-0036](0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md) — MkDocs is the pick. Its `nav:` is data and not code, and Astro has no native nav format to emit at all. (asserted, and no human has accepted it)
 - [HW-DR-0038](0038-q38-which-link-relation-a-rendered-page-carries-to-the-served-corpus-descriptor.md) — A rendered page points at the served descriptor with `rel="describedby"`, because the IANA registry carries that token and the Headwater extension address answers 404. (asserted, and no human has accepted it)
+- [HW-DR-0040](0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md) — All four keys of the family are a label rather than a mechanism today, and the specification and the meta-schema now say so in plain prose. (asserted, and no human has accepted it)

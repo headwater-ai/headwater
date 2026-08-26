@@ -9,14 +9,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 314,
-      "carried": 314,
+      "in the graph": 315,
+      "carried": 315,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 525,
-      "carried": 525,
+      "in the graph": 529,
+      "carried": 529,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1109,6 +1109,37 @@
             ],
             "traces_to": [
               "site/DESIGN-BRIEF.md"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md",
+        "kind": "decision",
+        "id": "HW-DR-0040",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0040",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "summary": "All four keys of the family are a label rather than a mechanism today, and the specification and the meta-schema now say so in plain prose.",
+          "last_verified": "2026-08-26",
+          "title": "Q40 — Whether extends, bundle, requires and an overlay's taxonomy key are a mechanism or a label",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-SPEC-taxonomy-model",
+              "HW-SPEC-distribution-and-federation",
+              "HW-OBL-0082"
+            ],
+            "governs": [
+              "engine/crates/meta/meta-schema.yml"
             ]
           }
         }
@@ -8114,6 +8145,50 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "site/DESIGN-BRIEF.md",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-taxonomy-model",
+          "path": "docs/spec/02-taxonomy-model.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-distribution-and-federation",
+          "path": "docs/spec/07-distribution-and-federation.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0082",
+          "path": "docs/obligations/0082-the-lock-is-half-generated-and-half-authored-and-nothing.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/meta/meta-schema.yml",
           "resolver": "source-tree"
         }
       },
