@@ -53,7 +53,7 @@ Global `--root` selects the repository. `--help`, `--version`, `--wide` and `--n
 
 **0** when a subcommand completes, including when a probe refuses a run or a transcript contains findings. Probe results never gate.
 
-**1** when the command line is invalid, a named tier, arm or category is unknown, a required file cannot be read, the budget declaration is malformed, or the corpus cannot load. The message names the refusal.
+**1** when the command line is invalid, a named tier, arm or category is unknown, or a required file cannot be read. It is also 1 when the budget declaration is malformed or the corpus cannot load. The message names the refusal.
 
 ## Environment
 

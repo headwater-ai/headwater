@@ -285,7 +285,7 @@ When the last task closes, the state ends. The expiry is the anti-parking device
 
 An organization that adopts Headwater points it at a corpus that nobody wrote to any schema. That corpus was never valid, so it appears to fall outside the state above, which names a version that it came from. It does not. Only the from-version refers to a prior state. The `(document, rule)` grain, the owner, the expiry, the task list, and the counted-visible-never-blocking posture are all defined against the **new** schema ([Q12](09-decisions.md#q12--migration-path-for-an-existing-corpus)).
 
-**So the from-version is absent, and nothing else changes.** Before `headwater init` a corpus is governed by nothing, and every document in it is trivially valid. The findings that the proposed taxonomy raises over the existing tree are therefore the migration payload of that taxonomy's first version. A publisher computes a payload from the diff between two majors. At first contact, [`infer`](#the-interview) computes it from the diff between nothing and one. That payload is the **adoption payload**, and it is a migration state like any other.
+**So the from-version is absent, and nothing else changes.** Before `headwater init` a corpus is governed by nothing, and every document in it is trivially valid. The findings that the proposed taxonomy raises over the existing tree are therefore the migration payload of that taxonomy's first version. A publisher computes a payload from the diff between two majors. On first contact, [`infer`](#the-interview) computes it from the diff between nothing and one. That payload is the **adoption payload**, and it is a migration state like any other.
 
 The adopter thus gets a green build on the first run. Every document that does not yet fit carries a name, an expiry, and a line in the coverage report. That is what a grandfathering file gives, plus the three properties that such files omit.
 
@@ -303,7 +303,7 @@ Vendoring content is not adoption. A consumer can hold a perfect copy of the tax
 headwater conformance [--level <name>] [--now <date>]
 ```
 
-evaluates the repository against rules that the taxonomy package ships — checks wired in CI, gates required on the default branch, projections regenerated, hooks installed, pin current. It reports gaps with remediation. The rules ship *with the package*. Thus a pin advance brings newly-added requirements into force automatically. Improve the method, and the next upgrade of every consumer surfaces the new gap. That loop is what turns a published method into an adopted one.
+evaluates the repository against rules that the taxonomy package ships. The rules cover checks wired in CI, gates required on the default branch, projections regenerated, hooks installed, and pin current. It reports gaps with remediation. The rules ship *with the package*. Thus a pin advance brings newly-added requirements into force automatically. Improve the method, and the next upgrade of every consumer surfaces the new gap. That loop is what turns a published method into an adopted one.
 
 The verb reports and it gates nothing by itself. `--level <name>` is the one thing that moves its exit status. The section on levels below says what a level is before it says what that flag does.
 
