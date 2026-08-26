@@ -1,6 +1,6 @@
-254 nodes, 525 declared edge halves
-    421 to a document
-    104 to an anchor
+255 nodes, 527 declared edge halves
+    424 to a document
+    103 to an anchor
 0 prose links that did not resolve
 
 anchors
@@ -38,7 +38,7 @@ anchors
       1 code_path `engine/crates/generate/src/lib.rs` via source-tree
       1 code_path `engine/crates/graph/src/anchors.rs` via source-tree
       1 code_path `engine/crates/import/src/lib.rs` via source-tree
-      1 code_path `engine/crates/meta/meta-schema.yml` via source-tree
+      2 code_path `engine/crates/meta/meta-schema.yml` via source-tree
       1 code_path `engine/crates/probe/src/lib.rs` via source-tree
       1 code_path `engine/crates/query/src/explain.rs` via source-tree
       2 code_path `engine/crates/query/src/json.rs` via source-tree
@@ -54,14 +54,12 @@ anchors
       1 code_path `mkdocs-overrides/main.html` via source-tree
       1 code_path `packages/headwater-standard/taxonomy.yml` via source-tree
       2 code_path `site/DESIGN-BRIEF.md` via source-tree
-      1 code_path `site/changelog/index.html` via source-tree
       1 code_path `site/compare/index.html` via source-tree
       1 code_path `site/how-it-works/index.html` via source-tree
       1 code_path `site/index.html` via source-tree
       1 code_path `site/ns/index.html` via source-tree
       1 code_path `site/proof/index.html` via source-tree
-      1 code_path `site/scripts/refresh-figures.sh` via source-tree
-      1 code_path `site/terms/index.html` via source-tree
       1 code_path `site/tutorial/index.html` via source-tree
       1 code_path `spike` via source-tree
       1 code_path `tools/rdf-probe/emit.py` via source-tree
+      1 code_path `tools/refresh-figures.sh` via source-tree
