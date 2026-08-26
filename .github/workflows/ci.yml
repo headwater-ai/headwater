@@ -157,6 +157,41 @@ jobs:
         run: |
           python3 -m pip install --user mkdocs==1.6.1
           python3 -m mkdocs build --strict
+      - name: Every rendered page points at the corpus descriptor
+        # This blocks, and it catches what the step above cannot see. Measured
+        # on a throwaway worktree: with `theme.custom_dir` deleted,
+        # `mkdocs build --strict` still exits 0 with zero warnings while every
+        # page loses the element. MkDocs has no opinion about a `<link>` that
+        # a theme does not emit, so the gate on HW-DR-0038's ruling is this
+        # grep and never the build. That is the failure mode #430 records, met
+        # a second time. It is a step of its own rather than two more lines on
+        # the step above, because this file runs one step per defect and the
+        # two defects are independent: a red build means the nav or a page is
+        # broken, and a missing pointer means the theme override was dropped.
+        #
+        # The copy runs after the build, because `mkdocs build` cleans
+        # `site_dir` before it writes. `.headwater/corpus.json` sits outside
+        # `docs_dir`, so MkDocs copies none of it and no second copy is
+        # committed under `docs/`. A copy placed before the build is a silent
+        # no-op.
+        #
+        # The `|| true` is required. GitHub Actions runs `run:` under `bash
+        # -e`, `grep -L` exits 1 when it finds nothing, and a failing command
+        # substitution in an assignment trips `-e`. So the success case is
+        # what would end the job.
+        #
+        # `404.html` is the one page with no pointer, and that is structural
+        # rather than an oversight: MkDocs renders it from the theme's own
+        # `404.html`, which extends `base.html` and never reaches `main.html`.
+        # A reader who arrived at a 404 reached no corpus to be pointed at.
+        run: |
+          cp .headwater/corpus.json .headwater/site-build/corpus.json
+          missing=$(grep -rL 'rel="describedby"' .headwater/site-build --include='*.html' | grep -v '/404\.html$' || true)
+          if [ -n "$missing" ]; then
+            echo "pages with no pointer to the corpus descriptor:" >&2
+            printf '%s\n' "$missing" >&2
+            exit 1
+          fi
       - name: Every declared export profile is what this corpus produces
         # `export_plan()` is a separate code path from `plan()`: it re-filters
         # the declared projections by `--profile` rather than writing every

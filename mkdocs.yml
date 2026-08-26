@@ -25,6 +25,19 @@ site_dir: .headwater/site-build
 
 theme:
   name: mkdocs
+  # `mkdocs-overrides/main.html` is the whole of the custom directory, and
+  # HW-DR-0038 is why it exists: spec 7 requires that a rendered page carry a
+  # link relation to the served copy of the corpus descriptor, and Q38 rules
+  # that the relation is `describedby`. Not `overrides/`, because *override* is
+  # already this corpus's word for an entry in `.headwater/overlay.yml`.
+  #
+  # `.headwater/corpus.json` sits outside `docs_dir`, so no build copies it and
+  # the CI job puts it beside the built pages instead. A local `mkdocs build`
+  # therefore leaves that link dangling. Reproduce what CI serves with one
+  # command after the build:
+  #
+  #   cp .headwater/corpus.json .headwater/site-build/corpus.json
+  custom_dir: mkdocs-overrides
 
 # The site builds what the corpus types, and nothing else. This list mirrors
 # `.headwater/corpus.json` rather than deciding anything of its own.
