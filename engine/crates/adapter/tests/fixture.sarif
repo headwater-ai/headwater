@@ -414,6 +414,20 @@
                   "exportable_as": []
                 }
               }
+            },
+            {
+              "id": "adoption.task.expired",
+              "shortDescription": {
+                "text": "taxonomy scope, the resolved taxonomy, and no document"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "taxonomy",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
             }
           ]
         }

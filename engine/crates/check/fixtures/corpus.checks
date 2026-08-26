@@ -86,22 +86,24 @@ rules, and for each the scope that binds it
     taxonomy scope, the resolved taxonomy, and no document
   control.mechanism.unimplemented
     taxonomy scope, the resolved taxonomy, and no document
+  adoption.task.expired
+    taxonomy scope, the resolved taxonomy, and no document
 register
-  31 obligations: 28 verified, 2 gap, 1 unverifiable, 0 with no disposition
-     12 high, 11 verified
+  32 obligations: 29 verified, 2 gap, 1 unverifiable, 0 with no disposition
+     13 high, 12 verified
      14 medium, 12 verified
       5 low, 5 verified
   OB-DR-1 gap, owner the decision-record entry, target a change-scoped rule that reads the prior version, which spec 12 already supplies as `needs_prior`
   OB-DR-2 gap, owner the decision-record entry, target a rule over state dwell time, which `taxonomy audit` already measures and no check reads
   OB-DR-3 unverifiable, To count the decisions in a document is to reason about what the prose asserts, which spec 1 forswears. The shelf is homogeneous and the section contract requires one `Decision` heading, and a second decision under that heading is invisible to both
-  28 controls
-     25 posture advisory
+  29 controls
+     26 posture advisory
       3 posture blocking
-     28 acts detective
-     26 name a rule this engine carries
+     29 acts detective
+     27 name a rule this engine carries
       2 name a phase this engine runs
      12 with no promotion record, so nothing states what would promote them
-      7 with criteria
+      8 with criteria
       3 at a final posture
       4 permanently advisory
       2 producing facts rather than findings
