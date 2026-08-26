@@ -413,3 +413,98 @@ fn from_and_package_together_are_refused_and_from_alone_publishes_the_relocated_
         "publishing `--from` a directory outside `packages/` wrote no release record"
     );
 }
+
+/// The vendored bundles this repository ships agree with a fresh publish of
+/// its own maintained source, file for file and byte for byte.
+///
+/// #407: `taxonomy-source/headwater-standard/package.yml` declares `bundles:
+/// ../../docs/taxonomies`, and `headwater taxonomy publish` copies that
+/// directory into `bundles/` inside the artifact `taxonomy vendor` later
+/// installs at `packages/headwater-standard/bundles/`. Nothing re-takes that
+/// snapshot or compares it against the source it was taken from, so six of
+/// seventy-two files drifted before anyone noticed: every rule that reads
+/// this repository's corpus excludes `docs/taxonomies/**` (#350), and every
+/// rule that reads the lock reads `bundle.yml`, never `doctrine.md` or a
+/// fixtures `README.md`.
+///
+/// This is the comparison the issue's Done-when names, run against the real
+/// publisher rather than a description of it: publish this repository's own
+/// maintained source with [`publish_real_source_into`], the same call
+/// [`from_and_package_together_are_refused_and_from_alone_publishes_the_relocated_source`]
+/// makes, and diff the `bundles/` that publish just wrote against
+/// `packages/headwater-standard/bundles/`, the copy this repository ships. A
+/// path present on one side and not the other, or a path whose bytes differ,
+/// is exactly the drift #407 found by grepping for two deleted paths by
+/// hand.
+#[test]
+fn the_vendored_bundles_agree_with_a_fresh_publish_of_the_maintained_source() {
+    let root = Root::scratch("vendored-bundles");
+    let out = root.path().join("release");
+
+    let (code, message) = publish_real_source_into(&out);
+    assert_eq!(
+        code,
+        Some(0),
+        "the publish this comparison depends on failed: {message}"
+    );
+
+    let fresh = out.join("bundles");
+    let vendored = repository().join("packages/headwater-standard/bundles");
+
+    let mut fresh_paths = relative_files(&fresh);
+    let mut vendored_paths = relative_files(&vendored);
+    fresh_paths.sort();
+    vendored_paths.sort();
+
+    let only_in_fresh: Vec<&String> = fresh_paths
+        .iter()
+        .filter(|p| !vendored_paths.contains(p))
+        .collect();
+    let only_in_vendored: Vec<&String> = vendored_paths
+        .iter()
+        .filter(|p| !fresh_paths.contains(p))
+        .collect();
+    let differing: Vec<&String> = fresh_paths
+        .iter()
+        .filter(|p| vendored_paths.contains(p))
+        .filter(|p| {
+            std::fs::read(fresh.join(p)).expect("the fresh file reads")
+                != std::fs::read(vendored.join(p)).expect("the vendored file reads")
+        })
+        .collect();
+
+    assert!(
+        only_in_fresh.is_empty() && only_in_vendored.is_empty() && differing.is_empty(),
+        "packages/headwater-standard/bundles/ has drifted from docs/taxonomies/, the source \
+         taxonomy-source/headwater-standard/package.yml declares.\n\
+         only in a fresh publish, missing from the vendored copy: {only_in_fresh:?}\n\
+         only in the vendored copy, missing from a fresh publish: {only_in_vendored:?}\n\
+         present on both sides with different bytes: {differing:?}\n\
+         Republish and revendor: `headwater taxonomy publish --from \
+         taxonomy-source/headwater-standard --out <dir> && headwater taxonomy vendor <dir>`"
+    );
+}
+
+/// Every regular file under `root`, as a path relative to it, in no
+/// particular order.
+fn relative_files(root: &Path) -> Vec<String> {
+    fn walk(base: &Path, dir: &Path, into: &mut Vec<String>) {
+        for entry in std::fs::read_dir(dir).expect("the directory reads") {
+            let entry = entry.expect("the entry reads").path();
+            if entry.is_dir() {
+                walk(base, &entry, into);
+            } else {
+                into.push(
+                    entry
+                        .strip_prefix(base)
+                        .expect("every entry is under base")
+                        .to_string_lossy()
+                        .into_owned(),
+                );
+            }
+        }
+    }
+    let mut into = Vec::new();
+    walk(root, root, &mut into);
+    into
+}
