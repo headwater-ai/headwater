@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Headwater's self-assessment</title>
+<meta name="description" content="What a run of this engine over its own repository reports, including the ugly numbers, and the one row that stays deliberately empty.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🜄</text></svg>">
+<style>
+  :root {
+    --bg: #fbfaf8; --fg: #1a1917; --muted: #5f5b54;
+    --rule: #e2ddd4; --accent: #1d5c54; --code-bg: #f1eee8;
+    --accent-on-ink: #6fb3a6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161a; --fg: #e6e3dd; --muted: #9b968c;
+      --rule: #2a2e35; --accent: #6fb3a6; --code-bg: #1c1f25;
+      --accent-on-ink: #1d5c54;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 17px/1.65 ui-serif, Charter, "Iowan Old Style", Georgia, serif;
+    -webkit-text-size-adjust: 100%; overflow-wrap: break-word;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  .sans { font-family: ui-sans-serif, system-ui, sans-serif; }
+
+  .topbar { height: 4px; background: var(--accent); }
+  .bar { max-width: 78rem; margin: 0 auto; padding: 0 3rem; }
+  nav.top {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 1.5rem; flex-wrap: wrap; padding-top: 1.2rem; padding-bottom: 1.2rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .brand {
+    font-weight: 600; font-size: 1.1rem; display: flex; align-items: center;
+    gap: 0.5rem; color: var(--fg); text-decoration: none;
+  }
+  .brand .glyph { color: var(--accent); font-size: 1.3rem; }
+  .navlinks {
+    display: flex; gap: 1.7rem; flex-wrap: wrap;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.82rem;
+  }
+  .navlinks a { color: var(--muted); text-decoration: none; }
+  .navlinks a:hover { color: var(--accent); }
+  .navlinks a.here { color: var(--fg); border-bottom: 2px solid var(--accent); }
+
+  section { border-top: 1px solid var(--rule); }
+  .pad { padding-top: 3.5rem; padding-bottom: 4rem; }
+  .tint { background: var(--code-bg); }
+  .ink { background: var(--fg); color: var(--bg); border-top: none; }
+
+  .eyebrow {
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.78rem;
+    text-transform: uppercase; letter-spacing: 0.14em; font-weight: 650;
+    color: var(--accent); margin: 0 0 1.5rem;
+  }
+  h1 {
+    font-size: 3.2rem; line-height: 1.08; letter-spacing: -0.02em;
+    font-weight: 600; margin: 0 0 1.4rem; max-width: 48rem; text-wrap: balance;
+  }
+  .lede { font-size: 1.15rem; max-width: 46rem; margin: 0; }
+
+  .sechead {
+    display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+  .secnum {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85rem; color: var(--accent);
+  }
+  h2 {
+    font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.12em;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 650;
+    color: var(--muted); margin: 0;
+  }
+  .secline { flex: 1; min-width: 2rem; border-top: 1px solid var(--rule); }
+
+  .statgrid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr));
+    gap: 2.5rem; margin-bottom: 3rem;
+  }
+  .statnum {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 3rem; line-height: 1.1; color: var(--accent-on-ink);
+    font-weight: 600;
+  }
+  .statlab { font-size: 0.88rem; opacity: 0.75; }
+  .runs {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+    gap: 2rem; padding-top: 2rem; border-top: 1px solid var(--bg);
+    font-size: 0.95rem;
+  }
+  .runs div { opacity: 0.85; }
+  .runs b { color: var(--accent-on-ink); }
+
+  .emptyrow {
+    display: grid; grid-template-columns: 1fr auto; gap: 0 2rem;
+    padding: 0.8rem 0; border-top: 1px dashed var(--muted);
+    border-bottom: 1px dashed var(--muted); align-items: baseline;
+    max-width: 48rem;
+  }
+  .tag {
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
+    border: 1px dashed var(--muted); padding: 0.18rem 0.7rem;
+  }
+
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.94rem; min-width: 30rem; }
+  th, td { text-align: left; padding: 0.6rem 1.2rem 0.6rem 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th {
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted);
+    font-weight: 650;
+  }
+  tr > *:last-child { padding-right: 0; }
+  td.num {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--accent); white-space: nowrap;
+  }
+  .built { color: var(--accent); }
+
+  .rail { display: flex; align-items: center; margin-bottom: 1.4rem; max-width: 60rem; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); flex: none; }
+  .dot.open { background: none; border: 2px dashed var(--muted); }
+  .span { flex: 1; border-top: 2px solid var(--accent); }
+  .span.open { border-top: 2px dashed var(--muted); }
+  .raillabels {
+    display: flex; justify-content: space-between; gap: 0.5rem; max-width: 60rem;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.78rem;
+    color: var(--muted); margin-bottom: 1.8rem;
+  }
+
+  p { margin: 0 0 1.1rem; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.87em; background: var(--code-bg);
+    padding: 0.12em 0.36em; border-radius: 3px;
+  }
+  .tint code { background: var(--bg); }
+  .note { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.82rem; color: var(--muted); }
+
+  footer { border-top: 1px solid var(--rule); }
+  .foot {
+    padding-top: 1.5rem; padding-bottom: 2.5rem;
+    font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.87rem;
+    color: var(--muted);
+  }
+  .foot p { margin: 0 0 1rem; max-width: 46rem; }
+  .footlinks { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+
+  @media (max-width: 62rem) {
+    .bar { padding-left: 1.5rem; padding-right: 1.5rem; }
+    h1 { font-size: 2.4rem; }
+    .raillabels { display: none; }
+  }
+  @media (max-width: 34rem) {
+    h1 { font-size: 2rem; }
+    .statnum { font-size: 2.3rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"></div>
+
+<div class="bar">
+  <nav class="top">
+    <a class="brand" href="/"><span class="glyph">🜄</span>Headwater</a>
+    <div class="navlinks">
+      <a href="/how-it-works/">How it works</a>
+      <a href="/compare/">Compare</a>
+      <a class="here" href="/proof/">Proof</a>
+      <a href="/tutorial/">Tutorial</a>
+    </div>
+  </nav>
+</div>
+
+<header class="bar" style="padding-top: 4.5rem; padding-bottom: 3.5rem;">
+  <p class="eyebrow">Proof — self-assessment</p>
+  <h1>This repository runs the engine on itself, on every commit.</h1>
+  <!-- Every figure on this page is written into it by
+       site/scripts/refresh-figures.sh, which runs the engine and rewrites each
+       `data-figure` element from the result. The run date below is the clock
+       reading of that run, and it is a fact about a measurement rather than a
+       schedule. No date on this site refers to a release or to publication. -->
+  <p class="lede">Everything below came from a run of <code>headwater check</code> on this repository, dated <span data-figure="run.date">2026-08-26</span>. Nothing here was typed by a person: a script runs the engine and writes each figure into this page, and the same script fails when the page and the run disagree. The one thing we have not measured is labeled, and not omitted.</p>
+</header>
+
+<section class="ink">
+  <div class="bar pad">
+    <!-- Denominators. Every figure below is out of the file count on the first
+         tile, and the full partition of that count is stated in the first line
+         under the tiles. The refresh script checks that the partition adds up
+         rather than assuming it. `findings reported` and `findings suppressed`
+         partition the findings the run raised. -->
+    <div class="statgrid">
+      <div><div class="statnum" data-figure="census.seen">333</div><div class="statlab">files under the corpus root — the denominator for the five figures that follow</div></div>
+      <div><div class="statnum" data-figure="census.typed">253</div><div class="statlab">of those typed, and all <span data-figure="census.checked">253</span> of them checked</div></div>
+      <div><div class="statnum" data-figure="census.untyped">2</div><div class="statlab">of those untyped, and reported by name as such</div></div>
+      <div><div class="statnum" data-figure="census.excluded">72</div><div class="statlab">of those excluded by a declared rule that states its reason</div></div>
+      <div><div class="statnum" data-figure="census.unaccounted">0</div><div class="statlab">of those silently unaccounted for</div></div>
+      <div><div class="statnum" data-figure="findings.reported">524</div><div class="statlab">findings reported, every one named and located</div></div>
+    </div>
+    <div class="runs">
+      <div>Those <b data-figure="census.seen">333</b> files partition exactly. <b data-figure="census.typed">253</b> typed, <b data-figure="census.generated">4</b> generated projections held by <code>headwater generate --check</code>, <b data-figure="census.untyped">2</b> untyped, <b data-figure="census.excluded">72</b> excluded, and <b data-figure="census.notdoc">2</b> that are not a Markdown file at all.</div>
+      <div>The run raised <b data-figure="findings.raised">529</b> findings. <b data-figure="findings.reported">524</b> of them are reported and <b data-figure="findings.suppressed">5</b> are suppressed by <b data-figure="findings.directives">5</b> dated directives, each of which states a reason.</div>
+      <div>Of the <b data-figure="findings.reported">524</b> reported, <b data-figure="findings.errors">0</b> are errors and <b data-figure="findings.advisory">524</b> are advisory. An advisory finding is one whose repair is a rewrite rather than a mechanical edit.</div>
+      <div><b data-figure="census.instances">4677</b> check instances ran over the <b data-figure="census.typed">253</b> classified documents. <b data-figure="rules.wired">26</b> rules are wired, and <b data-figure="rules.fired">3</b> of them found anything.</div>
+      <div><b data-figure="oblig.total">31</b> obligations, of which <b data-figure="oblig.verified">28</b> are verified, <b data-figure="oblig.gap">2</b> are a gap and <b data-figure="oblig.unverifiable">1</b> is unverifiable. Each gap names its owner, and <b data-figure="oblig.nodisposition">0</b> carry no disposition at all.</div>
+      <div>The taxonomy in force is <b data-figure="taxonomy.package">headwater/standard</b> <b data-figure="taxonomy.version">3.3.0</b>, and the lock a verdict came from is <b data-figure="taxonomy.lock">sha256:adc7c31b700e…</b></div>
+      <div>The command surface is <b data-figure="verbs.count">19</b> verbs in <b data-figure="verbs.groups">6</b> groups. <b data-figure="verbs.contracts">19</b> of them carry a written contract, and <b data-figure="verbs.nocontract">0</b> carry none.</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="bar pad">
+    <div class="sechead">
+      <span class="secnum">01</span>
+      <h2>The row we will not fill</h2>
+      <span class="secline"></span>
+    </div>
+    <div class="emptyrow">
+      <span style="font-size: 1rem;">Benchmark against comparables</span>
+      <span class="tag">unmeasured</span>
+    </div>
+    <p style="font-size: 1rem; max-width: 44rem; margin: 1.2rem 0 0;">Principle 11 forbids publishing a number that no run produced. The measurement layer is milestone M7, and when a campaign runs, its numbers land here — good or bad. What would fill this row is a measured comparison against the projects the <a href="/compare/">comparison page</a> names. Until that campaign runs, this row is the most honest thing on the site, and it stays.</p>
+  </div>
+</section>
+
+<section class="tint">
+  <div class="bar pad">
+    <div class="sechead">
+      <span class="secnum">02</span>
+      <h2>What is built, and what is not</h2>
+      <span class="secline"></span>
+    </div>
+    <!-- The two emitter figures come from the `Emitter` enum and the arms of
+         `is_built` in engine/crates/generate/src/profile.rs, read by the
+         refresh script. The table below names each target, and the built ones
+         are the arms of that function. -->
+    <p style="max-width: 46rem;">The export layer declares <span data-figure="emitters.total">7</span> emitter targets. <span data-figure="emitters.built">2</span> of the <span data-figure="emitters.total">7</span> are built, and the other <span data-figure="emitters.waiting">5</span> parse and report the consumer each one waits on rather than emitting a plausible artifact nobody asked for.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th scope="col">Target</th><th scope="col">State</th><th scope="col">What it is</th></tr></thead>
+        <tbody>
+          <tr><th scope="row"><code>json</code></th><td class="num built">built</td><td>The native property graph, with no loss.</td></tr>
+          <tr><th scope="row"><code>jsonschema</code></th><td class="num built">built</td><td>A JSON Schema that constrains front matter.</td></tr>
+          <tr><th scope="row"><code>shacl</code></th><td class="num">waiting</td><td>Parses, and reports the consumer it waits on.</td></tr>
+          <tr><th scope="row"><code>rdf</code></th><td class="num">waiting</td><td>Parses, and reports the consumer it waits on.</td></tr>
+          <tr><th scope="row"><code>skos</code></th><td class="num">waiting</td><td>Parses, and reports the consumer it waits on.</td></tr>
+          <tr><th scope="row"><code>okf</code></th><td class="num">waiting</td><td>Parses, and reports the consumer it waits on.</td></tr>
+          <tr><th scope="row"><code>linkml</code></th><td class="num">waiting</td><td>Parses, and reports the consumer it waits on.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note" style="margin-top: 1.2rem;">The conformance ladder measures what a repository wired up rather than what its documents say. This repository reaches <span data-figure="conformance.level">L0</span> against <span data-figure="taxonomy.package">headwater/standard</span> <span data-figure="taxonomy.version">3.3.0</span>, and the levels above it name the gap and the remedy rather than a grade.</p>
+  </div>
+</section>
+
+<section>
+  <div class="bar pad">
+    <div class="sechead">
+      <span class="secnum">03</span>
+      <h2>Status, honestly</h2>
+      <span class="secline"></span>
+    </div>
+    <div class="rail" aria-hidden="true">
+      <span class="dot"></span><span class="span"></span>
+      <span class="dot"></span><span class="span"></span>
+      <span class="dot"></span><span class="span"></span>
+      <span class="dot"></span><span class="span"></span>
+      <span class="dot"></span><span class="span open"></span>
+      <span class="dot open"></span><span class="span open"></span>
+      <span class="dot open"></span>
+    </div>
+    <div class="raillabels">
+      <span>M1 core</span><span>M2 graph</span><span>M3 checks</span><span>M4 projections</span><span>M5 authoring</span><span>M6 distribution — open</span><span>M7 measurement — open</span>
+    </div>
+    <p style="font-size: 1rem; max-width: 46rem;">The engine runs, and two layers of it are unfinished. This repository types its own corpus, checks it on every commit, and scaffolds, explains, routes, generates and exports it. M6, distribution, and M7, the measurement layer, are both open, and every efficacy claim in this repository is still marked unmeasured. A lettered milestone for the canonical taxonomy library runs beside the numbered ones, and it is open too.</p>
+    <p style="font-size: 1rem; max-width: 46rem;">There is no tag and no release, so there is nothing to install today. The condition that changes that is a tag, and not a date. <a href="/changelog/">The changelog says the same thing, and it is empty for the same reason.</a></p>
+  </div>
+</section>
+
+<section class="tint">
+  <div class="bar pad">
+    <div class="sechead">
+      <span class="secnum">04</span>
+      <h2>How to distrust this page</h2>
+      <span class="secline"></span>
+    </div>
+    <p style="max-width: 46rem;">This is a self-assessment, and a self-assessment is the weakest form of evidence there is. We publish it under that name rather than as a proof, and this section says what would make it checkable.</p>
+    <p style="max-width: 46rem;">Every figure above traces to one command over this repository. Each one is written into this page by <code>site/scripts/refresh-figures.sh</code>, which reads <code>headwater check --json</code>, the obligation register, a generated verb index and the emitter enumeration of the engine source. Run with <code>--check</code>, that script writes nothing and fails when any figure on this page disagrees with a fresh run.</p>
+    <p style="max-width: 46rem; margin: 0;">What is still missing is the part we cannot supply on our own. The repository is not public, so you cannot run that script yourself yet, and nothing here asks you to take a number on trust in the meantime. That is why the benchmark row above is empty and labeled rather than filled with something reassuring.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="bar foot">
+    <p>There is no link to the source or to the specification here, because the repository is not public. The project has decided that this repository becomes public, and the date belongs to the owner.</p>
+    <div class="footlinks">
+      <a href="/">Home</a>
+      <a href="/how-it-works/">How it works</a>
+      <a href="/compare/">Compare</a>
+      <a href="/tutorial/">Tutorial</a>
+      <a href="/terms/">Terms</a>
+      <a href="/changelog/">Changelog</a>
+      <a href="/ns/">Namespace</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

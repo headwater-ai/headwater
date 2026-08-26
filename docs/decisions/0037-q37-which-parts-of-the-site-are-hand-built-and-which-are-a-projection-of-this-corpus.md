@@ -20,6 +20,9 @@ relations:
     - site/how-it-works/index.html
     - site/changelog/index.html
     - site/terms/index.html
+    - site/compare/index.html
+    - site/proof/index.html
+    - site/tutorial/index.html
   traces_to:
     - site/DESIGN-BRIEF.md
 ---
