@@ -103,6 +103,7 @@ mod probe_result;
 pub mod profile;
 mod shelf_index;
 mod shelf_sections;
+mod site_nav;
 mod verb_index;
 
 pub use profile::{Admission, Clause, Emitter, Filter, Grain, Profile};
@@ -600,6 +601,7 @@ pub fn plan(
                 probe_result::emit(surface, census, declaration, runs, identity, &mut plan);
             }
             Kind::VerbIndex => verb_index::emit(surface, declaration, verbs, &mut plan),
+            Kind::SiteNav => site_nav::emit(surface, census, declaration, &mut plan),
             other => plan.unwritten.push(Unwritten {
                 at: declaration.output.clone(),
                 kind: other,
@@ -755,7 +757,7 @@ fn unbuilt(kind: Kind) -> &'static str {
             "a relation view needs the traceability grain that the obligation and control \
              register holds, and no document states which relations a view covers"
         }
-        Kind::AgentRules | Kind::SiteNav => {
+        Kind::AgentRules => {
             "spec 5 and Q16 name the artifact and no document states its form, so an emitter here \
              would be this engine inventing a schema for somebody else's consumer"
         }
@@ -772,6 +774,7 @@ fn unbuilt(kind: Kind) -> &'static str {
         | Kind::GraphExport
         | Kind::ProbeResult
         | Kind::VerbIndex
+        | Kind::SiteNav
         | Kind::CoverageReport
         | Kind::CorpusDescriptor => "this engine emits it",
     }

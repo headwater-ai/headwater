@@ -51,6 +51,11 @@ headwater-resolve = { path = "../resolve" }
 # The dogfood test states this repository's own identity, and it reads the lock
 # for it rather than re-resolving, because the lock is what the binary reads.
 headwater-lock = { path = "../lock" }
+# A YAML parser this engine did not write, to check `site_nav`'s output
+# against something other than this engine's own `headwater-yaml` crate.
+# `saphyr-parser` is already resolved (`headwater-yaml` depends on it), and
+# `0.0.11` is the version that matches what is already in the lock.
+saphyr = "0.0.11"
 
 [lints]
 workspace = true

@@ -10,7 +10,7 @@ relations:
 
 # decisions
 
-35 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+36 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -151,3 +151,7 @@ relations:
 ## Q35 — Whether one requirement kind holds an imported requirement and an authored one
 
 [HW-DR-0035](../decisions/0035-q35-whether-one-requirement-kind-holds-an-imported-requirement-and-an-authored-one.md) — The `requirement` and `acceptance_criterion` kinds serve the authored population alone. A transcribed requirement is a marked file that answers no contract, so a separate kind with an empty contract carries the imported case. (asserted, and no human has accepted it)
+
+## Q36 — Which of MkDocs, Docusaurus, or Astro this corpus emits navigation for, and why
+
+[HW-DR-0036](../decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md) — MkDocs is the pick. Its `nav:` is data and not code, and Astro has no native nav format to emit at all. (asserted, and no human has accepted it)

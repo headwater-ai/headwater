@@ -957,3 +957,14 @@ add_to:
     - kind: graph_export
       profile: site
       output: .headwater/export.json
+
+    # The site navigation. HW-DR-0036 picks MkDocs and states why: its `nav:`
+    # is data and not code, its default `docs_dir` already matches this
+    # corpus's root, and neither Docusaurus nor Astro has a plain-data format
+    # to emit into. Q16 and spec 2's own worked example both already name
+    # `.headwater/nav.yml` as the illustrative output, so this path is not new
+    # to this corpus. An empty `for` covers every shelf, the same reading a
+    # `shelf_index` with no `for` gives it, and an empty shelf is left out of
+    # the written list rather than reported `Unwritten` for the whole file.
+    - kind: site_nav
+      output: .headwater/nav.yml

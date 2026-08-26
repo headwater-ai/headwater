@@ -800,6 +800,8 @@ projections:
   - kind: graph_export
     profile: site
     output: ".headwater/export.json"
+  - kind: site_nav
+    output: ".headwater/nav.yml"
 obligations:
   OB-COV-1:
     statement: "Every file under the corpus root is classified, or reported as unclassifiable"
