@@ -797,6 +797,9 @@ projections:
     for:
       - interfaces
     output: docs/interfaces/README.md
+  - kind: graph_export
+    profile: site
+    output: ".headwater/export.json"
 obligations:
   OB-COV-1:
     statement: "Every file under the corpus root is classified, or reported as unclassifiable"
