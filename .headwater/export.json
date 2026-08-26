@@ -9,14 +9,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 279,
-      "carried": 279,
+      "in the graph": 299,
+      "carried": 299,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 509,
-      "carried": 509,
+      "in the graph": 506,
+      "carried": 506,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -979,34 +979,6 @@
           "relations": {
             "traces_to": [
               "HW-SPEC-authoring-and-lifecycle",
-              "HW-SPEC-engine-architecture"
-            ]
-          }
-        }
-      },
-      {
-        "path": "docs/decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md",
-        "kind": "decision",
-        "id": "HW-DR-0036",
-        "warrant": "asserted",
-        "facets": {
-          "id": "HW-DR-0036",
-          "status": "draft",
-          "status_since": "2026-08-26",
-          "summary": "MkDocs is the pick. Its `nav:` is data and not code, and Astro has no native nav format to emit at all.",
-          "last_verified": "2026-08-26",
-          "title": "Q36 — Which of MkDocs, Docusaurus, or Astro this corpus emits navigation for, and why",
-          "provenance": {
-            "warrant": "asserted",
-            "agency": "mixed",
-            "drafted_by": "claude-sonnet-5",
-            "activity": "measure+draft",
-            "evidence_basis": "evidenced"
-          },
-          "relations": {
-            "traces_to": [
-              "HW-SPEC-vision-and-scope",
-              "HW-SPEC-taxonomy-model",
               "HW-SPEC-engine-architecture"
             ]
           }
@@ -5611,6 +5583,489 @@
         }
       },
       {
+        "path": "docs/obligations/0131-the-cli-crate-wires-every-verb-and-carries-no-tests-so-two-wiring-defects-passed-a-green-suite.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0131",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0131",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "last_verified": "2026-08-26",
+          "title": "The CLI crate wires every verb and carries no tests, so two wiring defects passed a green suite",
+          "summary": "Two wiring defects in the CLI crate's verb dispatch were found by hand, and reverting either fix still leaves the test suite green.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0132-survey-the-wiring-decisions-of-main-rs-verb-by-verb-and-cover-the-quiet-ones.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0132",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0132",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "last_verified": "2026-08-26",
+          "title": "Survey the wiring decisions of main.rs, verb by verb, and cover the quiet ones",
+          "summary": "Two more wiring decisions in main.rs went uncovered by hand alone, and the other twenty-seven verbs have never been surveyed for the same failure.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0133-two-test-helpers-key-a-scratch-directory-on-the-pid-alone-and-the-race-springs-on-the-next-case-added.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0133",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0133",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "last_verified": "2026-08-26",
+          "title": "Two test helpers key a scratch directory on the pid alone, and the race springs on the next case added",
+          "summary": "Two scratch-directory test helpers key on the process id alone, safe only while their files hold one test each.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0134-the-comment-prose-defines-by-contrast-979-times-in-179-000-words-and-no-mechanism-here-performs-an-editorial-pass.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0134",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0134",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "summary": "The comment prose passes every rule this engine has, so the readability problem is a judgment call no check here reaches.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "last_verified": "2026-08-26",
+          "title": "The comment prose defines by contrast 979 times in 179,000 words, and no mechanism here performs an editorial pass",
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0135-repo-cleanup-names-one-cause-for-a-gone-upstream-and-this-repository-produced-a-second.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0135",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0135",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "title": "repo-cleanup names one cause for a gone upstream, and this repository produced a second",
+          "summary": "Four merged branches survived repo-cleanup's first run with a gone upstream that ancestry misread, caused by a rewritten history the skill never names.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "last_verified": "2026-08-26",
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0136-seven-rustdoc-relative-links-in-comments-point-at-pages-the-doc-tree-does-not-have.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0136",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0136",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "title": "Seven rustdoc-relative links in comments point at pages the doc tree does not have",
+          "summary": "Seven links in engine comments are written for rustdoc output that no job ever builds, so nothing has ever resolved them.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "last_verified": "2026-08-26",
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0137-a-british-spelling-reaches-a-serialized-grain-string-so-the-rename-is-a-corpus-change-and-a-derived-bytes-change-at-once.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0137",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0137",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "last_verified": "2026-08-26",
+          "title": "A British spelling reaches a serialized grain string, so the rename is a corpus change and a derived-bytes change at once",
+          "summary": "A British spelling in the serialized grain string entangles a prose rename with cached verdicts, a read-set artifact, and recorded fixtures.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0138-the-rest-of-the-editorial-pass-with-cli-src-main-rs-at-the-head-of-the-distribution.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0138",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0138",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "summary": "The editorial pass measured 180,255 words of comment prose and rewrote two files, leaving cli/src/main.rs, the largest, untouched.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "last_verified": "2026-08-26",
+          "title": "The rest of the editorial pass, with cli/src/main.rs at the head of the distribution",
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0139-an-identifier-scheme-glues-three-parts-into-one-string-so-nothing-can-decide-that-two-schemes-are-disjoint.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0139",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0139",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "last_verified": "2026-08-26",
+          "title": "An identifier scheme glues three parts into one string, so nothing can decide that two schemes are disjoint",
+          "summary": "A pattern string glues the prefix, the namespace, and the local part, so disjointness is undecided and a published address is invented from its path.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0140-a-check-can-meet-the-failing-fixture-bar-with-a-fixture-that-cannot-distinguish-the-rule-from-its-neighbour.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0140",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0140",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "last_verified": "2026-08-26",
+          "title": "A check can meet the failing-fixture bar with a fixture that cannot distinguish the rule from its neighbour",
+          "summary": "A fixture set can meet the failing-fixture bar in full and never exercise the choice between a rule and its neighbor.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0141-an-identifier-scheme-names-no-prefix-so-an-rdf-projection-derives-a-document-iri-from-a-file-path.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0141",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0141",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "summary": "The gap `HW-OBL-0046` left open, a document IRI built from a file path rather than a name, is gated on a consumer for `rdf` or `skos` that has not appeared.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "last_verified": "2026-08-26",
+          "title": "An identifier scheme names no prefix, so an RDF projection derives a document IRI from a file path",
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0142-the-obligation-register-states-its-own-size-by-hand-and-it-went-stale-three-times-in-two-days.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0142",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0142",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "last_verified": "2026-08-26",
+          "title": "The obligation register states its own size by hand, and it went stale three times in two days",
+          "summary": "Spec 13 states its own item and record counts by hand, and the figure drifted three times in two days before anyone noticed.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0143-a-specification-sentence-closes-a-set-with-a-count-the-source-exceeds-and-115-of-127-candidates-are-unchecked.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0143",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0143",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "last_verified": "2026-08-26",
+          "title": "A specification sentence closes a set with a count the source exceeds, and 115 of 127 candidates are unchecked",
+          "summary": "Three sentences that closed a set with a wrong count were found by accident, and 115 more candidates were never checked.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0144-the-cache-identity-test-reads-the-live-working-tree-so-an-edit-during-the-run-reports-the-correctness-root-as-violated.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0144",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0144",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "last_verified": "2026-08-26",
+          "title": "The cache-identity test reads the live working tree, so an edit during the run reports the correctness root as violated",
+          "summary": "The test proving cache and no-cache agree on a verdict reads the live working tree, and a concurrent edit reports the correctness root as violated.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0145-the-ci-job-named-advisory-carries-every-blocking-shell-suite-in-the-repository.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0145",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0145",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "last_verified": "2026-08-26",
+          "title": "The CI job named \\\"(advisory)\\\" carries every blocking shell suite in the repository",
+          "summary": "The CI job named advisory blocks on eleven of its own steps, not the two its name describes.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0146-the-stop-hook-reads-its-re-entry-guard-with-an-interpreter-it-does-not-require-so-a-machine-with-no-python3-re-blocks-the-same-turn.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0146",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0146",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "last_verified": "2026-08-26",
+          "title": "The Stop hook reads its re-entry guard with an interpreter it does not require, so a machine with no python3 re-blocks the same turn",
+          "summary": "The Stop hook reads its re-entry guard through python3 with no fallback, so a machine without python3 re-blocks the same turn.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0147-the-skills-fixture-suite-passes-on-an-empty-input-set-and-always-fails-in-a-clone-that-has-not-built-the-engine.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0147",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0147",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "summary": "The skills fixture suite passes on zero verbs counted, and fails in every clone that has not yet built the engine.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "last_verified": "2026-08-26",
+          "title": "The skills fixture suite passes on an empty input set, and always fails in a clone that has not built the engine",
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0148-the-help-assertion-never-asks-a-subcommand-and-no-rust-version-declares-the-floor-clap-now-sits-on.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0148",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0148",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "last_verified": "2026-08-26",
+          "title": "The help assertion never asks a subcommand, and no rust-version declares the floor clap now sits on",
+          "summary": "The help test pins only the root command, and no machine-readable rust-version stops clap's own margin from reaching zero.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0149-the-write-time-hook-still-picks-pointer-lines-out-of-prose-by-their-em-dash.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0149",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0149",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "last_verified": "2026-08-26",
+          "title": "The write-time hook still picks pointer lines out of prose by their em dash",
+          "summary": "The write-time hook still finds pointer lines by grepping for an em dash, so a document with no summary drops out in silence.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0150-a-current-decision-declares-no-required-edge-to-the-document-it-settled-so-22-of-23-reach-no-specification-at-all.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0150",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0150",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "last_verified": "2026-08-26",
+          "title": "A `current` decision declares no required edge to the document it settled, so 22 of 23 reach no specification at all",
+          "summary": "22 of 23 current decisions declare no edge to the specification they settled, and one declares no relation at all.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0151-the-glossary-s-package-entry-omits-conformance-and-still-lists-plugins-which-367-dropped.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0151",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0151",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "title": "The glossary's Package entry omits conformance and still lists plugins, which #367 dropped",
+          "summary": "The glossary's Package entry is missing `conformance` and still names `plugins`, a key spec 7 no longer carries.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "last_verified": "2026-08-26",
+          "waiting_on": "adopter"
+        }
+      },
+      {
         "path": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
         "kind": "probe",
         "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
@@ -7260,39 +7715,6 @@
       },
       {
         "source": "docs/decisions/0035-q35-whether-one-requirement-kind-holds-an-imported-requirement-and-an-authored-one.md",
-        "relation": "traces_to",
-        "written_as": "traces_to",
-        "target": {
-          "bound": "document",
-          "id": "HW-SPEC-engine-architecture",
-          "path": "docs/spec/06-engine-architecture.md",
-          "kind": "design_spec"
-        }
-      },
-      {
-        "source": "docs/decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md",
-        "relation": "traces_to",
-        "written_as": "traces_to",
-        "target": {
-          "bound": "document",
-          "id": "HW-SPEC-vision-and-scope",
-          "path": "docs/spec/00-vision-and-scope.md",
-          "kind": "design_spec"
-        }
-      },
-      {
-        "source": "docs/decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md",
-        "relation": "traces_to",
-        "written_as": "traces_to",
-        "target": {
-          "bound": "document",
-          "id": "HW-SPEC-taxonomy-model",
-          "path": "docs/spec/02-taxonomy-model.md",
-          "kind": "design_spec"
-        }
-      },
-      {
-        "source": "docs/decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
