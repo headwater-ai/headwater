@@ -430,17 +430,35 @@ fn this_repository_runs_to_the_recorded_report() {
         .collect();
     assert!(errors.is_empty(), "{errors:?}");
 
-    // A check that never fires on any input is indistinguishable from one that
-    // does not work, and the fixture tree proves that per rule against a
-    // constructed document. These two run against real prose, which is what
-    // Q5's instrument is: the count is not recorded, and that it is not zero
-    // is.
-    for rule in [voice::RULE, language::RULE] {
-        assert!(
-            run.findings.iter().any(|finding| finding.rule == rule),
-            "{rule} found nothing over this repository's own prose"
-        );
-    }
+    // A check that never fires on any input is indistinguishable from one
+    // that does not work, and the fixture tree proves that per rule against a
+    // constructed document. `language::RULE` also runs against real prose,
+    // which is what Q5's instrument is: the count is not recorded, and that
+    // it is not zero is.
+    assert!(
+        run.findings
+            .iter()
+            .any(|finding| finding.rule == language::RULE),
+        "{} found nothing over this repository's own prose",
+        language::RULE
+    );
+
+    // `voice::RULE` does not get the same corpus assertion. PR #444 and PR
+    // #446 swept this repository's corpus to zero
+    // `voice.forbidden_construction` instances, on purpose, and a test that
+    // required one back would require this corpus to stay imperfect for the
+    // test to mean anything. The fixture tree carries the liveness proof
+    // instead, over a document this test controls rather than one the
+    // corpus's own prose quality can clear out from under it.
+    let fixtures = fixture_run();
+    assert!(
+        fixtures
+            .findings
+            .iter()
+            .any(|finding| finding.rule == voice::RULE),
+        "{} found nothing over the fixture tree",
+        voice::RULE
+    );
 
     compare(
         &fixtures_dir().join("corpus.checks"),

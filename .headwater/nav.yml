@@ -42,6 +42,7 @@ nav:
       - "Q36 — Which of MkDocs, Docusaurus, or Astro this corpus emits navigation for, and why": "decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md"
       - "Q38 — Which link relation a rendered page carries to the served corpus descriptor": "decisions/0038-q38-which-link-relation-a-rendered-page-carries-to-the-served-corpus-descriptor.md"
       - "Q40 — Whether extends, bundle, requires and an overlay's taxonomy key are a mechanism or a label": "decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md"
+      - "Q41 — Whether Vale becomes a declared regime backend": "decisions/0041-q41-whether-vale-becomes-a-declared-regime-backend.md"
   - "acceptance_criteria":
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
   - "evaluations":
