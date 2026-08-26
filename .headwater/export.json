@@ -9,14 +9,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 306,
-      "carried": 306,
+      "in the graph": 309,
+      "carried": 309,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 516,
-      "carried": 516,
+      "in the graph": 519,
+      "carried": 519,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1037,7 +1037,10 @@
             ],
             "governs": [
               "site/index.html",
-              "site/ns/index.html"
+              "site/ns/index.html",
+              "site/how-it-works/index.html",
+              "site/changelog/index.html",
+              "site/terms/index.html"
             ],
             "traces_to": [
               "site/DESIGN-BRIEF.md"
@@ -7298,12 +7301,27 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "site/changelog/index.html",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "site/how-it-works/index.html",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "site/index.html",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
         "id": "site/ns/index.html",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "site/terms/index.html",
         "resolver": "source-tree"
       },
       {
@@ -7898,6 +7916,39 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "site/ns/index.html",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "site/how-it-works/index.html",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "site/changelog/index.html",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "site/terms/index.html",
           "resolver": "source-tree"
         }
       },

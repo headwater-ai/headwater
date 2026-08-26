@@ -56,13 +56,14 @@ root=$(git rev-parse --show-toplevel) || exit 0
 # built engine, and this clause needs no engine.
 #
 # The variable releases this clause and nothing below it, and on this tree that
-# matters for three of the four files. HW-DR-0037 declares `governs` over
-# `site/index.html` and `site/ns/index.html` and `traces_to`
-# `site/DESIGN-BRIEF.md`, so removing any of those three is refused a second
-# time by `relation.target.unresolved`, which names the record that has to move
-# first. `site/_headers` is the one file the variable releases on its own, and
-# it is the one that carries the HSTS, `nosniff` and CSP headers. So this clause
-# is the whole gate on exactly the file whose loss is a security regression.
+# matters for every file under `site/` but one. HW-DR-0037 declares `governs`
+# over the pages it names and `traces_to` `site/DESIGN-BRIEF.md`, and it obliges
+# a page added under `site/` to carry an edge of its own. So removing any page
+# it governs is refused a second time by `relation.target.unresolved`, which
+# names the record that has to move first. `site/_headers` is the one file the
+# variable releases on its own, and it is the one that carries the HSTS,
+# `nosniff` and CSP headers. So this clause is the whole gate on exactly the
+# file whose loss is a security regression.
 if [ -z "${HEADWATER_ALLOW_SITE_DELETE:-}" ]; then
     gone=$(git -C "$root" diff --cached --name-only --diff-filter=D -- site/)
     if [ -n "$gone" ]; then
