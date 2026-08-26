@@ -587,6 +587,35 @@ fn a_refused_command_line_names_the_grammar_rather_than_printing_it() {
     }
 }
 
+/// A refusal that is a fact about the corpus does not name the grammar.
+///
+/// `headwater init` over a fixture root refuses because `Root::over` already
+/// wrote `.headwater/taxonomy.yml` there — nothing about `headwater init`
+/// itself is wrong, it is the form `--help` shows. #331 moves this site from
+/// `fail` to `refuse`, which drops the grammar pointer this refusal never
+/// earned. This fails on `main`, where every such refusal still names it.
+#[test]
+fn a_refusal_about_the_corpus_does_not_name_the_grammar() {
+    let root = Root::over("change", "corpus-fact-no-grammar-pointer");
+    let ran = root.run(&["init"]);
+    assert_eq!(
+        ran.code,
+        Some(1),
+        "`headwater init` over an already-bound root fails:\n{}",
+        ran.err
+    );
+    assert!(
+        ran.err.contains(headwater_resolve::package::CONSUMER),
+        "the refusal names the file that is already there:\n{}",
+        ran.err
+    );
+    assert!(
+        !ran.err.contains("headwater --help"),
+        "a corpus fact reached through a correct command line names the grammar, and should not:\n{}",
+        ran.err
+    );
+}
+
 /// `--help` answers on standard output alone, and it is not a failure.
 ///
 /// Every refusal of this binary points at `headwater --help` and prints none of
