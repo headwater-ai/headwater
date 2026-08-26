@@ -229,7 +229,7 @@ This paragraph read eighteen for sixteen iterations, and the number is nineteen.
 
 ## What the engine found about itself
 
-Twenty-one items: HW-OBL-0131 through HW-OBL-0151. Each one names no decision, because nothing here derives from [9 — The decision register](09-decisions.md). Every one derives instead from running the engine, the suite or the gates over this repository during a build-order iteration, and finding a defect with no reader outside this repository to hand it to.
+Twenty-one items: HW-OBL-0131 through HW-OBL-0151. Each one names no decision, because nothing here derives from [9 — The decision register](09-decisions.md). Every one derives instead from running the engine, the suite or the gates over this repository during a build-order iteration. It finds a defect with no reader outside this repository to hand it to.
 
 This class did not exist before 2026-08-26. Before that date, such a finding was filed as a GitHub issue labeled `self-audit` and left open, on the theory that a defect nobody outside this repository can reach costs nothing to hold. The theory was half right. The label did keep such work out of an iteration's hands, but it never closed anything: of 24 issues so labeled, three ever closed, while the issue board as a whole ran net-positive on all but one of the eleven days that followed. [The value rule](../../.claude/commands/next-run.md#the-value-rule) now routes a self-audit finding here directly, and these 21 are the backlog that rule found already sitting on the tracker, migrated in the same change that rewrote it.
 

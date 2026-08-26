@@ -56,7 +56,7 @@ Three checks then run: OWL-RL closure over the combined graph, SHACL validation 
 
 The corpus records no `status`, no `status_since`, no `last_verified` and no `summary`, because this repository is not typed yet: issue #4 is open and the dogfooding has not run. That is what makes the comparison worth having. Every document is missing every required facet, and the three checks disagree completely about whether that matters.
 
-**The corpus includes this document.** The evaluations shelf is where this file lives, so the run that produced the table above counted it, and the figures moved when it was written. That is correct rather than awkward — a corpus that governs itself has no outside to stand on — but it means a reader who re-runs the probe after any commit to `docs/` gets different numbers. The findings below do not depend on the arithmetic.
+**The corpus includes this document.** The evaluations shelf is where this file lives, so the run that produced the table above counted it. The figures moved when it was written. That is correct rather than awkward — a corpus that governs itself has no outside to stand on — but it means a reader who re-runs the probe after any commit to `docs/` gets different numbers. The findings below do not depend on the arithmetic.
 
 ## Finding 1 — the open-world assumption inverts the census
 
@@ -198,7 +198,7 @@ Four items, and [the register](../spec/13-open-obligations.md) now carries all o
 
 ## What this did not settle
 
-**Whether a description-logic reasoner behaves differently on the forbidden-facet case.** `evaluation` forbids `doc_type`, which emits as `owl:maxCardinality 0`. Given a document that violates it, the OWL-RL rule set used here reports no inconsistency. A tableau reasoner over OWL DL should report one, and none was available offline to check. The finding is therefore about this profile and this implementation, not about OWL as such. Findings 1 through 4 do not depend on it: the open-world assumption and the meaning of `rdfs:range` are properties of the standard rather than of a reasoner.
+**Whether a description-logic reasoner behaves differently on the forbidden-facet case.** `evaluation` forbids `doc_type`, which emits as `owl:maxCardinality 0`. Given a document that violates it, the OWL-RL rule set used here reports no inconsistency. A tableau reasoner over OWL DL should report one, and none was available offline to check. The finding is therefore about this profile and this implementation, not about OWL as such. Findings 1 through 4 do not depend on it. The open-world assumption and the meaning of `rdfs:range` are properties of the standard rather than of a reasoner.
 
 **Whether the emitted ontology is useful to anybody.** No knowledge-organization consumer has looked at it, which is precisely the trigger that Q13 set for emitter 4. This exercise says what the emitter will owe. It says nothing about whether it should be written.
 
