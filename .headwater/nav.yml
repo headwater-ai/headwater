@@ -17,6 +17,7 @@ nav:
       - "Q13 — LinkML and SHACL as substrate": "decisions/0013-linkml-and-shacl-as-substrate.md"
       - "Q14 — Discovery surface": "decisions/0014-discovery-surface.md"
       - "Q15 — A synthesized content tier": "decisions/0015-a-synthesized-content-tier.md"
+      - "Q39 — How a figure reaches a hand-built page, now that a build interpolates one": "decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md"
       - "Q37 — Which parts of the site are hand-built and which are a projection of this corpus": "decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md"
       - "Q16 — Public presence": "decisions/0016-public-presence.md"
       - "Q17 — Governed access and the solution layer": "decisions/0017-governed-access-and-the-solution-layer.md"
