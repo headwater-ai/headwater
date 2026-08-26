@@ -30,7 +30,7 @@ The instrument is the coverage report's finding rate for Shape-origin rules.
 
 ## Discharge
 
-**The emitter exists now, the instrument reads zero, and the claim is no closer to a test.** `headwater export --format jsonschema` writes a schema out of the facet and kind declarations. Two check families reach it. A required facet becomes `required`, and a facet with a declared value set becomes `enum` under a guard that admits a mapping or a list.
+**The emitter exists now, the instrument reads zero, and the claim is no closer to a test.** `headwater export --format jsonschema --profile default` writes a schema out of the facet and kind declarations. This corpus now declares a second profile, `site`, so a bare `--format` with no `--profile` refuses rather than picking one. Two check families reach it. A required facet becomes `required`, and a facet with a declared value set becomes `enum` under a guard that admits a mapping or a list.
 
 Three constructions were refused rather than shipped. A root `oneOf` over one schema per kind reports an error where the native check reports none. An abstract kind and its descendant accept the same front matter, so a valid document matches two branches. So the schema selects a kind under `if` and `then` on a declared discriminator. For a shelf whose kind the directory carries, it states a binding instead. A prohibition on a facet reports an error that no check reports, so the emitter drops it and the loss set records the drop. A bare `enum` rejects a value that the check declines to read, so the guard above admits what the check admits. A differential test refused all three, and it is the reason the two rules may name this target at all.
 

@@ -932,3 +932,28 @@ add_to:
     - kind: verb_index
       for: [interfaces]
       output: docs/interfaces/README.md
+
+    # The whole graph, for the reader Q16 names and spec 5's server-reader
+    # carve-out anticipates: a consumer outside this repository, with no
+    # principal to filter for. Q17 rules that Headwater has no principals, so
+    # `site` names the one profile this corpus exports rather than a narrower
+    # cut, and it needs no `filter`.
+    #
+    # `format` is absent on purpose. `Declaration::emitter()` falls back to the
+    # native graph JSON when an entry names none, and this entry wants exactly
+    # that fallback rather than a naming of it.
+    #
+    # The output sits beside `.headwater/corpus.json`, the descriptor that
+    # spec 7 already lists a declared export profile in as an entry point.
+    # Committed like the four declarations above it: a generated artifact
+    # this corpus ships, not a build output.
+    #
+    # This is the second profile the taxonomy assembles, not the first: every
+    # entry above names no `profile` and so falls into `default`, the group
+    # `profile.rs` names for "an entry that names no profile is not
+    # profile-less, it is the one profile." `headwater export --format`, run
+    # with no `--profile`, refuses rather than guess between `default` and
+    # `site` now that both exist — `--profile site` names this one.
+    - kind: graph_export
+      profile: site
+      output: .headwater/export.json

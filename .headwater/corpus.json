@@ -13,7 +13,7 @@
       "taxonomy": {
         "package": "headwater/standard",
         "version": "3.3.0",
-        "lock": "sha256:61dc7f0bfd5e035bfaad4ce302a13e08c69fc0d164ab7be3d801d2b67db5a3e6"
+        "lock": "sha256:fd4830e7f84d482fc99b9f8c4b9eeda7111f713f9ac30a838d7f3f351d85d079"
       },
       "entry_points": [
         {
@@ -67,7 +67,14 @@
           "id": "HW-TUT-your-first-governed-corpus"
         }
       ],
-      "exports": []
+      "exports": [
+        {
+          "profile": "site",
+          "target": "json",
+          "output": ".headwater/export.json",
+          "filtered": false
+        }
+      ]
     }
   ]
 }

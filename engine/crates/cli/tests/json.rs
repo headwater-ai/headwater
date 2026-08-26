@@ -142,7 +142,20 @@ fn both_spellings() -> Vec<(&'static str, Vec<String>)> {
     vec![
         ("check", vec!["check".to_string(), "--no-cache".to_string()]),
         ("capture", vec!["capture".to_string()]),
-        ("export", vec!["export".to_string()]),
+        // This corpus declares two profiles now: `default` (every projection
+        // that names none, which is the other five) and `site` (the one
+        // `graph_export` entry, #414 piece A). `--format` writes one artifact
+        // to a pipe, so it refuses to guess between them, and `--profile`
+        // disambiguates the same way a caller with a real second audience
+        // would have to.
+        (
+            "export",
+            vec![
+                "export".to_string(),
+                "--profile".to_string(),
+                "site".to_string(),
+            ],
+        ),
         (
             "sweep report",
             vec!["sweep".to_string(), "report".to_string(), returned],
@@ -157,7 +170,10 @@ fn documents() -> Vec<(&'static str, Ran)> {
     vec![
         ("check --json", ran(&["check", "--json"])),
         ("capture --json", ran(&["capture", "--json"])),
-        ("export --json", ran(&["export", "--json"])),
+        (
+            "export --json",
+            ran(&["export", "--json", "--profile", "site"]),
+        ),
         (
             "sweep report --json",
             ran(&[

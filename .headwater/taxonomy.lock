@@ -22,7 +22,7 @@
 
 lock:
   format: 3
-  digest: sha256:61dc7f0bfd5e035bfaad4ce302a13e08c69fc0d164ab7be3d801d2b67db5a3e6
+  digest: sha256:fd4830e7f84d482fc99b9f8c4b9eeda7111f713f9ac30a838d7f3f351d85d079
   rules: 1
   package: headwater/standard
   version: 3.3.0
@@ -34,7 +34,7 @@ lock:
     - path: packages/headwater-standard/bundles/decision-record/bundle.yml
       digest: sha256:dfac204c8b8bddba13a81a5345633ace234d69b9eceef310ed3e0606c9a3b852
     - path: .headwater/overlay.yml
-      digest: sha256:d44a1718b8387804c48cb4faa104e3bc5f7bcf9b76ad4e853703d0f5b73fe498
+      digest: sha256:5c6b12230254a45a5e32cba33910a84468f9fe1bc026cf3710b333b37bed6bca
 
 # The adoption payload: the debt this corpus declared when the taxonomy first
 # reached it. Every other line of this file is generated and this block is not.
@@ -858,6 +858,9 @@ resolved:
       for:
         - interfaces
       output: docs/interfaces/README.md
+    - kind: graph_export
+      profile: site
+      output: ".headwater/export.json"
   obligations:
     OB-COV-1:
       statement: "Every file under the corpus root is classified, or reported as unclassifiable"

@@ -132,6 +132,15 @@ jobs:
         # what lets it sit above the step that fixes the date for the three runs
         # after it.
         run: ./engine/target/release/headwater generate --check
+      - name: Every declared export profile is what this corpus produces
+        # `export_plan()` is a separate code path from `plan()`: it re-filters
+        # the declared projections by `--profile` rather than writing every
+        # one of them, so the step above never exercises it. A declaration
+        # with no filter, like the `graph_export` entry this corpus carries,
+        # takes the same path a narrower profile would, and this step is what
+        # holds that path to a committed, current file rather than trusting
+        # the step above to cover it by coincidence.
+        run: ./engine/target/release/headwater export --check
       - name: This repository is at the rung it claims
         # `headwater conformance` measures the adoption rather than the corpus,
         # and with no flag it exits 0 whatever it finds. `--level L0` is the one
