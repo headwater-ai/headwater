@@ -10,7 +10,7 @@ relations:
 
 # decisions
 
-37 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+38 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -159,3 +159,7 @@ relations:
 ## Q36 — Which of MkDocs, Docusaurus, or Astro this corpus emits navigation for, and why
 
 [HW-DR-0036](../decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md) — MkDocs is the pick. Its `nav:` is data and not code, and Astro has no native nav format to emit at all. (asserted, and no human has accepted it)
+
+## Q38 — Which link relation a rendered page carries to the served corpus descriptor
+
+[HW-DR-0038](../decisions/0038-q38-which-link-relation-a-rendered-page-carries-to-the-served-corpus-descriptor.md) — A rendered page points at the served descriptor with `rel="describedby"`, because the IANA registry carries that token and the Headwater extension address answers 404. (asserted, and no human has accepted it)

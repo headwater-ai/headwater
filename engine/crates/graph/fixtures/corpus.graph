@@ -1,6 +1,6 @@
-252 nodes, 513 declared edge halves
-    418 to a document
-     95 to an anchor
+253 nodes, 516 declared edge halves
+    420 to a document
+     96 to an anchor
 0 prose links that did not resolve
 
 anchors
@@ -51,6 +51,7 @@ anchors
       3 code_path `engine/crates/scaffold/src/reading.rs` via source-tree
       1 code_path `engine/crates/sweep/src/intake.rs` via source-tree
       2 code_path `engine/crates/sweep/src/lib.rs` via source-tree
+      1 code_path `mkdocs-overrides/main.html` via source-tree
       1 code_path `packages/headwater-standard/taxonomy.yml` via source-tree
       1 code_path `site/DESIGN-BRIEF.md` via source-tree
       1 code_path `site/index.html` via source-tree

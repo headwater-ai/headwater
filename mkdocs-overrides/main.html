@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{#
+  Spec 7 requires that a rendered page carry a link relation to the served
+  copy of the corpus descriptor. This file is the whole of that, and it is
+  the only reason a custom_dir exists.
+#}
+
+{% block extrahead %}
+  <link rel="describedby" type="application/json" href="{{ 'corpus.json'|url }}">
+{% endblock %}
