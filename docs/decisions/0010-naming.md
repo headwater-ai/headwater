@@ -18,7 +18,7 @@ provenance:
 
 ## Context
 
-The name was a working name through the design phase, and the namespace that every emitted artifact carries depends on it. No evaluation was run for this decision, and none was needed: what settled it was the availability of a domain and the separation of two assets that the entry had treated as one.
+The name was a working name through the design phase, and the namespace that every emitted artifact carries depends on it. No evaluation was run for this decision, and none was needed. What settled it was the availability of a domain, and the separation of two assets that the entry had treated as one.
 
 ## Decision
 

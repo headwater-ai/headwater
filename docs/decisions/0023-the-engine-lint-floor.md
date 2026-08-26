@@ -21,7 +21,7 @@ title: "Q23 — The engine lint floor"
 
 ## Context
 
-Two published sets of Rust guidance were offered for installation as agent-facing skills: [actionbook/rust-skills](https://github.com/actionbook/rust-skills), which is thirty-one skills over three layers with hooks and background agents, and [the Microsoft pragmatic Rust guidelines](https://microsoft.github.io/rust-guidelines/agents/all.txt), which is about fifteen thousand words of identified rules with a rationale under each one. Both name an agent as the reader, and the second states that the rules make an API easier for a model to use.
+Two published sets of Rust guidance were offered for installation as agent-facing skills. [actionbook/rust-skills](https://github.com/actionbook/rust-skills) is thirty-one skills over three layers with hooks and background agents. [The Microsoft pragmatic Rust guidelines](https://microsoft.github.io/rust-guidelines/agents/all.txt) is about fifteen thousand words of identified rules with a rationale under each one. Both name an agent as the reader, and the second states that the rules make an API easier for a model to use.
 
 **This repository already answers where a rule lives, and the answer is not a skill.** [Spec 5](../spec/05-ai-integration.md#how-a-skill-reaches-an-agent-and-what-nothing-does) states that a skill carries no rule of its own. Every mechanical statement in one is a call to a verb that ships. It also states that nothing makes a skill load, so the reach of a description is a measurement that no probe has taken. A guideline set installed as a skill would therefore be a rule with two defects at once. Nothing enforces it, and nothing says whether the agent read it.
 
@@ -35,15 +35,15 @@ Two published sets of Rust guidance were offered for installation as agent-facin
 
 **A lint is declared once in `[workspace.lints]`, and every crate inherits it with `[lints] workspace = true`.** Twenty-two entries are declared for twenty-two crates. The alternative is the same rule copied into each manifest. That is the second-copy failure that [stop rule 4](../spec/05-ai-integration.md#the-stop-rules) names for prose and that a manifest does not escape.
 
-**The set is chosen by measurement, and never by adoption.** Each entry was at zero hits on the run that added it, or its hits were corrected in the same change. The reason is mechanical rather than stylistic: the continuous integration job reads `-D warnings`, so a lint named at any level in this file fails the build, and a level of `warn` here is a level of `deny` there.
+**The set is chosen by measurement, and never by adoption.** Each entry was at zero hits on the run that added it, or its hits were corrected in the same change. The reason is mechanical rather than stylistic. The continuous integration job reads `-D warnings`, so a lint named at any level in this file fails the build. A level of `warn` here is a level of `deny` there.
 
 **A lint that reports correct code is left out rather than allowed at the site.** An `#[allow]` beside a correct line records that the rule is wrong in a place where nobody compares it against the rule. A named absence in the manifest, with the reason next to it, is read by whoever considers the same lint next.
 
-**No skill of this repository carries Rust guidance.** The judgment that no lint reads stays in `engine/README.md` and in the `headwater-engine` skill, which carry the invocation, the toolchain floor and the mistakes that cost a session. Neither restates a rule that the manifest holds.
+**No skill of this repository carries Rust guidance.** The judgment that no lint reads stays in `engine/README.md` and in the `headwater-engine` skill. Both carry the invocation, the toolchain floor and the mistakes that cost a session. Neither restates a rule that the manifest holds.
 
 ## Consequences
 
-**What the measurement found, on 2026-08-15.** A probe that enabled `clippy::pedantic`, the panic family and `missing_docs` reported 6449 warnings over 49 lint names, of which `missing_docs` was 2486, `clippy::must_use_candidate` 1064 and `clippy::expect_used` 972. A second probe of twenty-nine candidates reported 400. The twenty-two that shipped report zero.
+**What the measurement found, on 2026-08-15.** A probe that enabled `clippy::pedantic`, the panic family and `missing_docs` reported 6449 warnings over 49 lint names. Of those, `missing_docs` was 2486, `clippy::must_use_candidate` 1064 and `clippy::expect_used` 972. A second probe of twenty-nine candidates reported 400. The twenty-two that shipped report zero.
 
 **The engine has no `unsafe` block, and `forbid` is what records it.** Zero occurrences were counted under `engine/crates/*/src`. `forbid` rather than `deny` because the property worth keeping is that no module can re-admit the construct with a local attribute.
 
@@ -53,4 +53,4 @@ Two published sets of Rust guidance were offered for installation as agent-facin
 
 **A lint set at zero does no work today, which is the point.** Every entry is a regression that the build refuses rather than a defect the change repaired. The value is readable only when somebody writes the twenty-third crate.
 
-**What no lint reads is unchanged and unwritten.** Panic semantics at a boundary, `#[non_exhaustive]` on an error type and the documentation of a fallible function are guidance that both candidate sets carry and that no rule here holds. `missing_docs` at 2486 and `clippy::missing_errors_doc` at 166 measure the distance, and no task claims it.
+**What no lint reads is unchanged and unwritten.** Panic semantics at a boundary, `#[non_exhaustive]` on an error type and the documentation of a fallible function are guidance. Both candidate sets carry it, and no rule here holds it. `missing_docs` at 2486 and `clippy::missing_errors_doc` at 166 measure the distance, and no task claims it.

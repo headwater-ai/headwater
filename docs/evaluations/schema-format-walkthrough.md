@@ -39,7 +39,7 @@ Before the walkthrough could start, the question had to be split. "Schema format
 
 [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate) already answered the first: Headwater owns the language, and standard formats are emitted from it. Q2 is really the second and the third.
 
-The separation matters because the leaning as written — "YAML plus JSON Schema for the authored surface" — reads as an answer to the first question when it is not one. [Spec 2](../spec/02-taxonomy-model.md) already contains a Headwater sublanguage that no YAML feature and no JSON Schema keyword can express:
+The separation matters because the leaning as written — "YAML plus JSON Schema for the authored surface" — reads as an answer to the first question. It is not one. [Spec 2](../spec/02-taxonomy-model.md) already contains a Headwater sublanguage that no YAML feature and no JSON Schema keyword can express:
 
 - `values: $vocabularies.lifecycle_state` — a reference into another declaration.
 - `add: {relations.forbids: $package.optional.forbids}` — a reference into a package's unenabled definitions.
@@ -70,7 +70,7 @@ Q2 listed seven. Green and Petre's framework has fourteen, and the seven were a 
 
 **Juxtaposability.** Can a reader see two things at once? Base beside overlay, and old beside new, are the two comparisons this system asks for constantly.
 
-**Model-writability.** A new dimension, and the only one invented here. It has two halves. Can a language model write the notation correctly with no examples in front of it, which is a question about how much of the notation is in its training data? And can a program edit the notation structurally, and preserve what it did not touch? Both are requirements rather than preferences. [Spec 5](../spec/05-ai-integration.md) makes agents readers of the corpus. [Q12](../spec/09-open-questions.md#q12--migration-path-for-an-existing-corpus) makes `headwater infer` a program that *writes a taxonomy*. A notation that only humans can author has already failed a stated requirement.
+**Model-writability.** A new dimension, and the only one invented here. It has two halves. Can a language model write the notation correctly with no examples in front of it? That is a question about how much of the notation is in its training data. And can a program edit the notation structurally, and preserve what it did not touch? Both are requirements rather than preferences. [Spec 5](../spec/05-ai-integration.md) makes agents readers of the corpus. [Q12](../spec/09-open-questions.md#q12--migration-path-for-an-existing-corpus) makes `headwater infer` a program that *writes a taxonomy*. A notation that only humans can author has already failed a stated requirement.
 
 Provisionality — can an author sketch something not yet valid — is folded into progressive evaluation below, because for this notation the two questions have one answer.
 
@@ -118,14 +118,14 @@ kinds:
 
 With `relations.supersedes.from: [governed_document]`, sites 3, 4, and 5 disappear. Adding a kind becomes two or three sites, and all of them are about the kind.
 
-Three constraints keep this cheap. An abstract kind stays rigid, so the rigidity rule is untouched — inheritance between rigid kinds is ordinary, and the rule forbids an anti-rigid class subsuming a rigid one. An abstract kind may never be a shelf's declared kind or a discriminator value, which is one new meta-schema rule. And kind resolution is unchanged, because it resolves to concrete kinds only.
+Three constraints keep this cheap. An abstract kind stays rigid, so the rigidity rule is untouched. Inheritance between rigid kinds is ordinary, and the rule forbids an anti-rigid class subsuming a rigid one. An abstract kind may never be a shelf's declared kind or a discriminator value, which is one new meta-schema rule. And kind resolution is unchanged, because it resolves to concrete kinds only.
 
 ## What the scenario found about the notations
 
 | | Result |
 |---|---|
 | **YAML** | JSON Schema checks the shape of each of the six sites and the agreement of none. Four of the six are referential and need the engine. An editor with a schema gives red marks while typing for shape errors, and nothing for meaning errors until `taxonomy validate` runs. |
-| **CUE** | Referential integrity is expressible in the notation. `may` can be constrained to a disjunction built by comprehension over the declared relations, so a misspelled relation name fails at the point of the typo. This is a real gain over JSON Schema and it is CUE's second-best showing. |
+| **CUE** | Referential integrity is expressible in the notation. `may` can be constrained to a disjunction built by comprehension over the declared relations. A misspelled relation name then fails at the point of the typo. This is a real gain over JSON Schema and it is CUE's second-best showing. |
 | **DSL** | Can make the redundancy syntactically impossible by giving the permission exactly one home. So can deleting it from the model. |
 
 That last line is the theme of the whole walkthrough. **The worst viscosity in three of five scenarios comes from the model, not from the notation. No syntax fixes it, and every syntax inherits it.**
@@ -152,7 +152,7 @@ Meanwhile every downstream overlay that says `override: {shelves.decisions.path:
 
 A sixth dimension closes this: **`addressability` — does every path that an overlay can address still exist and mean the same thing?** It is the only dimension whose subject is the schema rather than the corpus, which is why it was missed. The other five are all corpus-measured, and the publisher's blind spot is exactly the artifact that is not a corpus.
 
-The honest limit is the same limit the other five have. A publisher cannot enumerate every path a consumer might address, so the dimension is measured against reference overlays, in the way that the others are measured against reference corpora. That converts a silent break into a claim the consumer can verify locally, which is what spec 2 already says a consumer's own run is for.
+The honest limit is the same limit the other five have. A publisher cannot enumerate every path a consumer might address. So the dimension is measured against reference overlays, in the way that the others are measured against reference corpora. That converts a silent break into a claim the consumer can verify locally. That is what spec 2 already says a consumer's own run is for.
 
 **A second, smaller finding: renaming the key and moving the path are different changes with different consequences, and the overlay syntax makes them look alike.** `override: {shelves.decisions.path: docs/adr/**}` moves a directory, which moves every document. `override` of the key itself is a schema-surface change with no corpus effect. A reviewer sees two similar lines. `taxonomy diff` should report them under different dimensions, which the new dimension makes possible.
 
@@ -185,13 +185,13 @@ Split `audience` into `audience_role` (engineer, operator, integrator, auditor) 
 
 **Facet requirements are enumerated per kind, so the cost of any facet change is linear in the number of kinds.** This is the same amplifier that scenario 1 found in relation endpoints, and the same missing primitive fixes both. Two independent scenarios converging on one absent abstraction is the strongest single result this walkthrough produced. Spec 2 anticipated the shape of it: "the schema lacks a primitive — and the fix is a new primitive, not a special case".
 
-**The split is a major version by `instance_validity`, and the judgment half of its migration payload is the whole of it.** Mapping one old value onto two new ones is mechanical only when the old vocabulary was a product of the two. `senior_engineer` splits mechanically. `auditor` does not. Spec 2 already divides the payload into a mechanical half and a judgment half, so the machinery is correct. What the scenario adds is a requirement on the payload format: it must be able to say *one old value maps to a set, and the author chooses*. That is a task with a closed choice attached, and it is far more useful than remediation prose.
+**The split is a major version by `instance_validity`, and the judgment half of its migration payload is the whole of it.** Mapping one old value onto two new ones is mechanical only when the old vocabulary was a product of the two. `senior_engineer` splits mechanically. `auditor` does not. Spec 2 already divides the payload into a mechanical half and a judgment half, so the machinery is correct. What the scenario adds is a requirement on the payload format. It must be able to say *one old value maps to a set, and the author chooses*. That is a task with a closed choice attached, and it is far more useful than remediation prose.
 
 ## What the scenario found about the notations
 
 All three notations require the same edits, because the repetition is in the model.
 
-CUE wins one real thing here, and it is instructive. A definition holding the shared facet set makes the split one edit, and unification propagates it. But that is CUE *simulating the primitive that the model lacks*. If the primitive is added, the advantage disappears. **A notation feature that compensates for a missing model primitive is the worst available reason to choose a notation, because it hides the modeling debt behind syntax.**
+CUE wins one real thing here, and it is instructive. A definition holding the shared facet set makes the split one edit, and unification propagates it. But that is CUE *simulating the primitive that the model lacks*. If the primitive is added, the advantage disappears. **A notation feature that compensates for a missing model primitive is the worst available reason to choose a notation. It hides the modeling debt behind syntax.**
 
 And the corpus edit — site 6 — is identical under all three notations, and it is larger than the schema edit by two orders of magnitude. Any notation argument about this scenario is an argument about the smaller half of the work.
 
@@ -201,19 +201,19 @@ And the corpus edit — site 6 — is identical under all three notations, and i
 
 Two cases, and the design already made them deliberately different.
 
-**(a) Enable a relation the package defines.** One line: `add: {relations.forbids: $package.optional.forbids}`. This is the cheapest operation in the system, and spec 2 designed it that way so that a minimal default stays nearly free for an adopter who needs more.
+**(a) Enable a relation the package defines.** One line: `add: {relations.forbids: $package.optional.forbids}`. This is the cheapest operation in the system. Spec 2 designed it that way so that a minimal default stays nearly free for an adopter who needs more.
 
-**(b) Declare a genuinely new relation.** `mitigates`, governance family, from `control` to `risk`. That requires family, endpoints, `created_by`, cardinality, a nuclearity decision, the `may:` sites from scenario 1, and optionally an expectation with a window, an origin, and a rationale.
+**(b) Declare a genuinely new relation.** `mitigates`, governance family, from `control` to `risk`. That requires family, endpoints, `created_by`, cardinality, and a nuclearity decision, plus the `may:` sites from scenario 1. It optionally takes an expectation with a window, an origin, and a rationale.
 
 ## What the scenario found about the design
 
 **The governance and evidence families have no default nuclearity, and the reading-precedence derivation has no clause for them.**
 
-Spec 2 derives reading precedence in three cases. On nucleus–satellite, the nucleus governs. On succession, the successor governs. Other multinuclear relations carry no reading order. A governance relation between two documents falls in none of these. It has no declared nuclearity, because the family table leaves that cell blank, and the prose explains why: a governance edge often ends on an anchor, and an anchor carries no nuclearity.
+Spec 2 derives reading precedence in three cases. On nucleus–satellite, the nucleus governs. On succession, the successor governs. Other multinuclear relations carry no reading order. A governance relation between two documents falls in none of these. It has no declared nuclearity, because the family table leaves that cell blank. The prose explains why: a governance edge often ends on an anchor, and an anchor carries no nuclearity.
 
-But `constrains` runs from one document to another, and the family's stated meaning is that the source constrains the target. If the default is "no reading order", the derivation contradicts what the family means. Reading precedence is used in three places — the order of routing results, the document a conflict is reported against, and reading order in generated indexes — and a governance edge needs an answer in all three.
+But `constrains` runs from one document to another, and the family's stated meaning is that the source constrains the target. If the default is "no reading order", the derivation contradicts what the family means. Reading precedence is used in three places: the order of routing results, the document a conflict is reported against, and reading order in generated indexes. A governance edge needs an answer in all three.
 
-The cut `dominance` field carried exactly this. The core-concepts review removed it as "redundant where nuclearity or succession already determined it, and unused where they did not". It was redundant for succession. It was not unused for governance, and the pre-cut artifact shows it: the [LinkML worked example](linkml-worked-example.md) carries `headwater:dominance: source` on `governs`, where nothing else supplies the order.
+The cut `dominance` field carried exactly this. The core-concepts review removed it as "redundant where nuclearity or succession already determined it, and unused where they did not". It was redundant for succession. It was not unused for governance, and the pre-cut artifact shows it. The [LinkML worked example](linkml-worked-example.md) carries `headwater:dominance: source` on `governs`, where nothing else supplies the order.
 
 The fix is a third derivation clause rather than the restored field: **on a governance relation between two documents, the source governs the reading.** That is what the family means, so nothing needs to declare it.
 
@@ -221,7 +221,7 @@ The fix is a third derivation clause rather than the restored field: **on a gove
 
 ## What the scenario found about the notations
 
-Case (a) is the decisive observation for the whole question, and it is easy to miss because it is one line. `$package.optional.forbids` is not YAML. It is a Headwater reference into a package's unenabled definitions, resolved by a Headwater pass, and a published JSON Schema will type it as a string that starts with a dollar sign.
+Case (a) is the decisive observation for the whole question, and it is easy to miss because it is one line. `$package.optional.forbids` is not YAML. It is a Headwater reference into a package's unenabled definitions, resolved by a Headwater pass. A published JSON Schema will type it as a string that starts with a dollar sign.
 
 | | Result |
 |---|---|
@@ -261,7 +261,7 @@ This scenario decided the question.
 
 **CUE cannot express overlays, and the reason is structural rather than a gap to be filled.** CUE's unification is a greatest lower bound over a lattice: monotone narrowing, commutative, idempotent. Commutativity and idempotence are exactly the confluence property that spec 2 demands, which makes CUE look like the ideal fit. It is ideal for `add`. It cannot express `override` and it cannot express `remove`. Unifying `path: "docs/decisions/**"` with `path: "docs/adr/**"` yields bottom, not a rename.
 
-The standard workaround is a disjunction with a default, `path: *"docs/decisions/**" | "docs/adr/**"`, which requires the base to pre-enumerate every value a consumer might choose. That is premature commitment in the framework's exact sense, and it lands on the party least able to bear it: the publisher, who would have to guess every adopter's directory layout in advance. CUE's headline feature is unusable for two of the three overlay operations, and the workaround fails a named dimension.
+The standard workaround is a disjunction with a default, `path: *"docs/decisions/**" | "docs/adr/**"`, which requires the base to pre-enumerate every value a consumer might choose. That is premature commitment in the framework's exact sense. It lands on the party least able to bear it: the publisher, who would have to guess every adopter's directory layout in advance. CUE's headline feature is unusable for two of the three overlay operations, and the workaround fails a named dimension.
 
 **Dhall can express override, and that is what disqualifies it.** Dhall's record-merge operators give override directly, and an overlay is naturally a total function from taxonomy to taxonomy. Totality means it terminates, so it is safe to run.
 
@@ -293,7 +293,7 @@ This is the walkthrough's most useful structural result. It does not merely pref
 | Juxtaposability | base and overlay diff in every tool a reader already has | the same | the same, minus the tools |
 | Model-writability | **best** — models write YAML fluently, `infer` emits it, editors round-trip it | poor — thin training data, and generated CUE loses its comments | **worst** — no training data exists at all |
 
-Q2 predicted that viscosity and hidden dependencies would decide it. They came out near-equal across all three, for the reason that runs through every scenario: the expensive part is the model. The dimensions that actually decided it were premature commitment, which rules out CUE on scenario 5; abstraction gradient and progressive evaluation, which rule out the DSL on its first day; and model-writability, which the framework does not contain.
+Q2 predicted that viscosity and hidden dependencies would decide it. They came out near-equal across all three, for the reason that runs through every scenario: the expensive part is the model. The dimensions that actually decided it were three. Premature commitment ruled out CUE on scenario 5. Abstraction gradient and progressive evaluation ruled out the DSL on its first day. Model-writability is the dimension that the framework does not contain.
 
 That is worth recording as a result about the method. The framework earned its place by contradicting the prediction that chose it.
 

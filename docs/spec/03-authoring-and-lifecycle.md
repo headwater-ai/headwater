@@ -31,7 +31,7 @@ Every document opens with YAML front matter that contains the facets that its ki
 Four facets do structural work in the default taxonomy:
 
 - **state** (`status:`) — where the document sits in its lifecycle.
-- **state-entry date** (`status_since:`) — the date when the document entered that state. The tool that does the transition stamps the date, and the same diff enforces the stamp. A change that moves `status` but not `status_since` is a finding, and so is a stamp in the future or before its predecessor. Windowed participation expectations are measured from this origin, under a declared maintenance contract ([spec 2](02-taxonomy-model.md#participation-expectations)). The date also makes dwell time observable. A document that stays in `draft` for a year is a fact that the corpus can now state.
+- **state-entry date** (`status_since:`) — the date when the document entered that state. The tool that does the transition stamps the date, and the same diff enforces the stamp. A change that moves `status` but not `status_since` is a finding, and so is a stamp later than the current date or before its predecessor. Windowed participation expectations are measured from this origin, under a declared maintenance contract ([spec 2](02-taxonomy-model.md#participation-expectations)). The date also makes dwell time observable. A document that stays in `draft` for a year is a fact that the corpus can now state.
 - **freshness** (`last_verified:`) — the date when a human last confirmed that the document agrees with reality. This is deliberately *not* the last-edited date. Git already knows the last-edited date, and that date says nothing about truth.
 - **summary** — one sentence, for machine consumption. It is what the query layer, the generated indexes, and agent-facing pointers show. The summary is not optional decoration. It is the public interface of the document.
 
@@ -93,7 +93,7 @@ Staleness is **detective, never blocking**. A block on staleness teaches authors
 
 Some kinds describe the world as it is. Some narrate change. A mix of the two is the most common failure in a documentation corpus. It is mechanically detectable at useful precision.
 
-- **Declarative regime** (specifications, standards, architecture): present tense, present state. No future intent ("will be", "planned"), no change narration, no phased-rollout language, no comparatives against a prior state. If a reader cannot tell whether a sentence describes today or last quarter, the document failed.
+- **Declarative regime** (specifications, standards, architecture): present tense, present state. No future-tense claims about later behavior, no change narration, no phased-rollout language, no comparatives against a prior state. If a reader cannot tell whether a sentence describes today or last quarter, the document failed.
 - **Narrative regime** (proposals, evidence, incident records): time-bound by nature, and exempt.
 
 Enforcement is lexical and thus imperfect. It uses a curated pattern set for each forbidden category, with per-file and per-block escape hatches that must state a reason. The escape hatch is itself a signal. A shelf that collects exemptions is a shelf whose kind assignment is wrong, and the engine reports that concentration.
@@ -168,7 +168,7 @@ Where none exists, the earlier design offered two outcomes: evidenced, or a regi
 
 `reconstructed` is not a soft `evidenced`. It never silently promotes. To move a document to `evidenced`, you must add a resolving pointer, and the transition is recorded. A corpus where most rationale is reconstructed tells you something real about how decisions are made there. To hide that behind a binary would waste the signal.
 
-The semantic judgment — *is this evidence actually about this decision?* — stays with the author and the agent stop rules ([spec 5](05-ai-integration.md)). The mechanical parts are these: the facet is present and valid, pointers resolve, `reconstructed` contains its basis, and the gap register accounts for every `unevidenced` document.
+The semantic judgment — *is this evidence actually about this decision?* — stays with the author and the agent stop rules ([spec 5](05-ai-integration.md)). The mechanical parts are these. The facet is present and valid, pointers resolve, `reconstructed` contains its basis, and the gap register accounts for every `unevidenced` document.
 
 **Two rulings about which pointers count** ([Q15](09-decisions.md#q15--a-synthesized-content-tier), [Q19](09-decisions.md#q19--inbound-integration-an-external-system-of-record)). A pointer to a document with the `asserted` [warrant](01-conceptual-model.md#warrant) does not support `evidenced`, because such a document is neither external nor auditable. A fabricated *why* with a file name is the failure that this table exists to prevent. A pointer that an importer created does support `evidenced`. A work item in a system of record is an external auditable artifact, and the pointer resolves offline against a committed snapshot.
 
@@ -241,7 +241,7 @@ The engine records the **assisted fraction** for each document created. Of the r
 The fraction is used in two ways:
 
 - **As a design budget.** A hand-entered fraction that rises means that the taxonomy demands more than the tooling supports. The remedy is to derive more, or to require less. To add a lint that nags authors is the wrong move, and the metric makes that visible. An assisted fraction that *declines* is an assurance finding in its own right, not a trend line to glance at. It shows that the adoption model fails, measurably.
-- **As the test of the agent-authoring claim.** [Spec 5](05-ai-integration.md) argues that an agent that drafts from evidence already present in the commit, the ticket, and the conversation shifts capture cost off the author. That is the first genuinely new answer to that objection in thirty years. Either the assisted fraction rises when agent authoring is enabled, or the claim is wrong. This is how we find out.
+- **As the test of the agent-authoring claim.** [Spec 5](05-ai-integration.md) argues that an agent may draft from evidence already present in the commit, the ticket, and the conversation. Doing so shifts capture cost off the author. That is the first genuinely new answer to that objection in thirty years. Either the assisted fraction rises when agent authoring is enabled, or the claim is wrong. This is how we find out.
 
 The metric is reported in the adaptive layer of the [assurance model](04-assurance-model.md), alongside efficacy results.
 

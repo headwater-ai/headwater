@@ -111,7 +111,7 @@ dgs:DecisionShape
 
 ## Tier 2 — the graph invariants LinkML could not reach
 
-This is the interesting part. **Every one of these requires SPARQL.** SHACL Core's property paths — including `sh:inversePath` — let you *traverse*, but Core has no way to refer back to the focus node from the far end of a traversal, which is precisely what these constraints need.
+This is the interesting part. **Every one of these requires SPARQL.** SHACL Core's property paths — including `sh:inversePath` — let you *traverse*. But Core has no way to refer back to the focus node from the far end of a traversal. That is precisely what these constraints need.
 
 ### Reciprocity
 
@@ -223,15 +223,15 @@ SHACL validates **RDF**. Headwater's instances are Markdown files with YAML fron
 
 For a typical decision record that is roughly ten lines of front matter against two hundred of body. **SHACL covers the ten.**
 
-That is not as damning as it sounds — the ten lines are where the *graph* lives, and graph invariants are the checks that are hardest to hand-write and most valuable to have. It is the small half by volume and a valuable half by weight. But it is decidedly not "document validation", and calling it that would mislead.
+That is not as damning as it sounds — the ten lines are where the *graph* lives. Graph invariants are the checks that are hardest to hand-write and most valuable to have. It is the small half by volume and a valuable half by weight. But it is decidedly not "document validation", and calling it that would mislead.
 
-You *could* lift more in: project headings as triples and `sh:qualifiedValueShape` can check a section contract. Each lift makes the projection larger, lossier, and more of a parallel re-encoding of the document that has to be kept in step. Projecting the body as a literal and running `sh:pattern` over it is technically possible and a bad idea — that is regex over prose with extra steps.
+You *could* lift more in: project headings as triples and `sh:qualifiedValueShape` can check a section contract. Each lift makes the projection larger, lossier, and more of a parallel re-encoding of the document that has to be kept in step. Projecting the body as a literal and running `sh:pattern` over it is technically possible and a bad idea. That is regex over prose with extra steps.
 
 ### Problem one: everything downstream trusts the projection and SHACL does not check it
 
-The Markdown-to-RDF projector becomes the most trusted component in the pipeline, and nothing in SHACL validates it. A projector that drops a document, mistypes it, or misparses front matter produces a graph that does not represent the corpus — and SHACL will happily report that graph as conformant.
+The Markdown-to-RDF projector becomes the most trusted component in the pipeline, and nothing in SHACL validates it. A projector that drops a document, mistypes it, or misparses front matter produces a graph that does not represent the corpus. And SHACL will happily report that graph as conformant.
 
-This is a new trust boundary that did not exist when checks read the documents directly, and it needs its own fidelity tests. It also bears on [Q6](../spec/09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest): if RDF is a derived view, the derivation is a component; if it is stored, it is a second copy that can drift from the Markdown.
+This is a new trust boundary that did not exist when checks read the documents directly, and it needs its own fidelity tests. It also bears on [Q6](../spec/09-open-questions.md#q6--where-the-corpus-graph-lives-at-rest). If RDF is a derived view, the derivation is a component. If it is stored, it is a second copy that can drift from the Markdown.
 
 ### Problem two: silent passes
 
@@ -241,9 +241,9 @@ Combine that with `sh:targetClass` requiring explicit `rdf:type` triples in the 
 
 > A document whose front matter fails to parse, or whose kind cannot be resolved, yields no type triple → is selected by no target → produces no violations → **the corpus conforms.**
 
-For an assurance system that is the worst available failure mode, because absence of data is indistinguishable from absence of problems, and it fails *quiet* and *green*. The document that is most broken is the one most likely to escape.
+For an assurance system that is the worst available failure mode, because absence of data is indistinguishable from absence of problems. It fails *quiet* and *green*. The document that is most broken is the one most likely to escape.
 
-The fix is not in SHACL. Headwater must establish, before validation runs, that every file in the corpus was classified and routed to at least one check — and treat a document that matched nothing as a finding in its own right. That guarantee generalizes past SHACL to any check layer, so it belongs in the assurance model rather than here.
+The fix is not in SHACL. Headwater must establish, before validation runs, that every file in the corpus was classified and routed to at least one check. It must also treat a document that matched nothing as a finding in its own right. That guarantee generalizes past SHACL to any check layer, so it belongs in the assurance model rather than here.
 
 > **Applied:** every-document-accounted-for as an explicit obligation in [spec 4](../spec/04-assurance-model.md#no-silent-passes-every-document-is-accounted-for).
 
@@ -251,7 +251,7 @@ The fix is not in SHACL. Headwater must establish, before validation runs, that 
 
 [Spec 6](../spec/06-engine-architecture.md) budgets under 200 ms for a change-scoped hook. SHACL targets are graph-wide, and the graph constraints need neighbours: checking only the touched document is not sound.
 
-Worse, *which* node reports a violation depends on how the constraint was written. The reciprocity shape above is authored on the superseding decision, so editing **A** to add `supersedes B` surfaces the violation on A. Author it the other way — as a shape on the target requiring an inbound link — and the same edit surfaces it on B, which was not touched and would not be in a naive changed-files set.
+Worse, *which* node reports a violation depends on how the constraint was written. The reciprocity shape above is authored on the superseding decision, so editing **A** to add `supersedes B` surfaces the violation on A. Author it the other way — as a shape on the target requiring an inbound link. The same edit then surfaces it on B, which was not touched and would not be in a naive changed-files set.
 
 So change-scoped validation needs the affected *subgraph*, and its extent is a function of the constraint set rather than of the diff. That is tractable, and it is a real design constraint that only becomes visible at instance level.
 
@@ -280,7 +280,7 @@ The pattern is consistent with the LinkML finding. SHACL covers the **graph** la
 
 - **Line numbers are lost.** A SHACL `ValidationResult` carries `focusNode`, `resultPath`, `value`, `sourceShape`, `resultSeverity` and `resultMessage`. RDF has no notion of a byte offset in a Markdown file, so the `line` field that [spec 4](../spec/04-assurance-model.md#findings) requires cannot survive the round trip. Findings would need to be re-anchored to source positions by the Headwater side.
 - **No remediation, no fixability.** Spec 4 requires every finding to carry a remediation and a `fixable` flag. SHACL has no slot for either. They can be hung off the shape as custom properties and looked up via `sourceShape`. But that is a convention we would define, not something a stock SHACL consumer would understand.
-- **Posture is not severity.** `sh:Violation` / `sh:Warning` / `sh:Info` map onto Headwater's severities, but Headwater's *posture* — advisory versus blocking, and the promotion criteria attached to it — is a property of the control, not of the shape. It lives in the runner either way.
+- **Posture is not severity.** `sh:Violation` / `sh:Warning` / `sh:Info` map onto Headwater's severities. But Headwater's *posture* — advisory versus blocking, and the promotion criteria attached to it — is a property of the control, not of the shape. It lives in the runner either way.
 
 **And one objection dissolves.** Q13 noted that a SPARQL engine pulls against the single-binary, offline, sub-second constraints of spec 6. Embeddable Rust SPARQL engines exist, so an in-memory store over a corpus of this size is not obviously a problem. It needs measuring against the change-scoped budget rather than assuming, but it is not the blocker it looked like.
 
@@ -294,7 +294,7 @@ The argument that decides it is the same one, and it is stronger here. Every int
 
 Two things stay Headwater-native regardless, and they should be stated as such rather than discovered later:
 
-- the checks SHACL cannot express — schema operations, statistical measures, instrumentation;
+- the checks SHACL cannot express — schema operations, statistical measures, instrumentation.
 - the finding shape, because line anchoring, remediation and fixability are what make a finding actionable, and none of them survive the RDF round trip.
 
-So the emitted SHACL is deliberately a **subset**, and should say so in its own metadata. An external validator that reports a clean run against a partial shape set, while believing it checked everything, is worse than one that knows what it skipped.
+So the emitted SHACL is deliberately a **subset**, and should say so in its own metadata. An external validator may report a clean run against a partial shape set while believing it checked everything. That validator is worse than one that knows what it skipped.

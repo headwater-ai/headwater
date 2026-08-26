@@ -34,7 +34,7 @@ Q1's table awards "fast" to Rust and "fast enough" to Go. Neither entry does any
 | Change-scoped check (hook) | < 200 ms | comfortable | comfortable |
 | Process start | inside the above | ~1 ms | ~1 ms |
 
-A thousand Markdown documents is a small corpus. Hugo builds sites an order of magnitude larger on a Go Markdown parser, and it does so in the same time class. Garbage-collection pauses at this heap size are below a millisecond, and the run is short enough that the collector may never do generational work at all.
+A thousand Markdown documents is a small corpus. Hugo builds sites an order of magnitude larger on a Go Markdown parser, and it does so in the same time class. Garbage-collection pauses at this heap size are below a millisecond. And the run is short enough that the collector may never do generational work at all.
 
 So the performance argument is real, and it is completely spent on the exclusion of Python and Node. To carry it forward as a reason to prefer Rust over Go is to double-count it. The decision has to rest on something else.
 
@@ -85,7 +85,7 @@ This argument matters more than it would in most systems. Spec 12 lists scope en
 
 Spec 12 declares `Scope` as five alternatives, one of which carries a depth. `Severity`, `Finding` provenance, the taxonomy's abstract syntax, and the derivation record that `explain` prints are all the same shape. So is the classification outcome in the census, where every file resolves to one of a closed set of results.
 
-Rust has enums and exhaustive `match`. Adding a scope variant produces a compile error at every site that must handle it, and the list of those sites is the compiler's output rather than a search. That property is worth most at exactly the moments this design expects: spec 12 already asks whether `Neighbourhood(depth)` should be cut. It also asks whether `Shelf` should collapse into `Corpus`. Both are edits to a closed set.
+Rust has enums and exhaustive `match`. Adding a scope variant produces a compile error at every site that must handle it. And the list of those sites is the compiler's output rather than a search. That property is worth most at exactly the moments this design expects: spec 12 already asks whether `Neighbourhood(depth)` should be cut. It also asks whether `Shelf` should collapse into `Corpus`. Both are edits to a closed set.
 
 Go models a closed set as an interface plus a type switch, with no exhaustiveness check. A new variant compiles everywhere and fails at run time in whichever branch nobody updated. That is what Q1's table meant by "weaker ergonomics for schema and graph work". The cost is persistent rather than one-time, because taxonomy-as-data makes the engine mostly a set of interpreters over closed sets.
 
@@ -93,7 +93,7 @@ Go models a closed set as an interface plus a type switch, with no exhaustivenes
 
 Three arguments look decisive and are not. Each one is recorded here so that nobody re-runs it.
 
-**The RDF stack is a tiebreaker at most.** Rust has Oxigraph for SPARQL and rudof for SHACL and ShEx, both embeddable, and rudof comes out of a research group with published work behind it. Go's equivalent is thinner and younger. But [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate) already settled that the engine never runs on SHACL's validation machinery. It also settled that SHACL emission waits for an external consumer who asks for it. The only near-term use is the differential-testing oracle. A cross-check that runs in continuous integration may call an external validator as a subprocess, because nothing about it is on the check path. So this is a convenience and not a constraint.
+**The RDF stack is a tiebreaker at most.** Rust has Oxigraph for SPARQL and rudof for SHACL and ShEx, both embeddable. And rudof comes out of a research group with published work behind it. Go's equivalent is thinner and younger. But [Q13](../spec/09-open-questions.md#q13--linkml-and-shacl-as-substrate) already settled that the engine never runs on SHACL's validation machinery. It also settled that SHACL emission waits for an external consumer who asks for it. The only near-term use is the differential-testing oracle. A cross-check that runs in continuous integration may call an external validator as a subprocess, because nothing about it is on the check path. So this is a convenience and not a constraint.
 
 **WebAssembly plugin hosting is a wash.** Spec 12 leaves plugins open between in-process and subprocess. WebAssembly answers both horns, because a component runs in-process and receives no filesystem, no network, and no clock unless the host grants them. That is spec 12's plugin contract restated as a capability model. Rust hosts it with wasmtime and Go hosts it with wazero, which is pure Go and needs no cgo. Neither language wins the host side. Rust wins only the other direction, where the engine itself compiles to WebAssembly, and that is argument 1 rather than a separate point.
 
@@ -105,7 +105,7 @@ Three arguments look decisive and are not. Each one is recorded here so that nob
 
 That cost is smaller than it looks, for one reason. Spec 12 requires spans: "the parser retains spans for front-matter keys, headings, and links". No convenient `Deserialize` implementation gives that. Headwater builds the front-matter layer over a streaming event parser in either language. So the ecosystem gap lands on a thin layer that is custom work regardless. It is a real cost and it is the first thing the spike must retire.
 
-**Iteration speed and the contributor pool are real, and the architecture shrinks both.** Spec 6 and spec 12 agree that most of the check count is generated from the taxonomy and that adopters extend the system through plugins. So the surface where anyone writes engine code is small, and the surface where an adopter writes code is a WebAssembly component in whichever language they prefer. Design principle 1 says that an adopter who needs a change to the engine indicates a design fault. If that principle holds, the contributor-pool argument mostly dissolves. If it fails, Headwater has a worse problem than its language.
+**Iteration speed and the contributor pool are real, and the architecture shrinks both.** Spec 6 and spec 12 agree that most of the check count is generated from the taxonomy and that adopters extend the system through plugins. So the surface where anyone writes engine code is small. And the surface where an adopter writes code is a WebAssembly component in whichever language they prefer. Design principle 1 says that an adopter who needs a change to the engine indicates a design fault. If that principle holds, the contributor-pool argument mostly dissolves. If it fails, Headwater has a worse problem than its language.
 
 **Compile times are real.** A workspace split along the pipeline stages of spec 6 keeps the inner loop small. This is an ordinary cost with an ordinary mitigation.
 
@@ -136,7 +136,7 @@ Replace it with a risk-retirement spike in Rust alone. Each item below can falsi
 
 Item two is the one to run first. It is the argument that carries the most weight and the only one where Rust could fail to deliver what this document claims for it.
 
-Two things the results add to this document. The YAML cost is real and takes a shape this document did not predict: the parser's own documentation is wrong about column indexing and about how a blank value arrives, and only an empirical check finds either. And argument 2 turned out to be stronger than stated, because scope is better carried as a *type* than as a value a check returns. That correction belongs to [spec 12](../spec/12-check-layer.md) and is not a language argument, although only the type system makes it available.
+Two things the results add to this document. The YAML cost is real and takes a shape this document did not predict. The parser's own documentation is wrong about column indexing and about how a blank value arrives. Only an empirical check finds either. And argument 2 turned out to be stronger than stated, because scope is better carried as a *type* than as a value a check returns. That correction belongs to [spec 12](../spec/12-check-layer.md) and is not a language argument, although only the type system makes it available.
 
 ## What stays reversible
 
