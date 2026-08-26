@@ -19,6 +19,7 @@
 //! Read the diff before committing it. A blessed fixture is the change.
 
 use headwater_census::census::{self, Census};
+use headwater_census::resolve::{shelf_for, ShelfMatch};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::Shape;
@@ -31,6 +32,7 @@ use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
 use headwater_query::Surface;
 use headwater_yaml::Mapping;
+use saphyr::{LoadableYamlNode, YamlOwned};
 use std::path::{Path, PathBuf};
 
 fn fixtures_dir() -> PathBuf {
@@ -576,7 +578,7 @@ fn every_output_carries_its_own_marker() {
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
-/// is what a prose edit must not change. Six files are written. The descriptor
+/// is what a prose edit must not change. Seven files are written. The descriptor
 /// sits at the path Q14 fixes, and the index of the specification shelf sits at
 /// the path this repository's overlay declares. That second one is the list the
 /// root README used to carry by hand. The third is the index of the decisions
@@ -585,9 +587,10 @@ fn every_output_carries_its_own_marker() {
 /// fourth is the redirect map that the open-questions tombstone carries, and the
 /// fifth is the verb index #257 asked for. The sixth is the graph export #414
 /// names: the whole graph, for the reader Q16 draws with no principal to filter
-/// for. The package still declares an index for one shelf this tree holds no
-/// document on, so that one produces a reason, and the register produces a
-/// second.
+/// for. The seventh is the site navigation HW-DR-0036 and #418 name: MkDocs's
+/// `nav:` over the reading order `by_precedence` derives. The package still
+/// declares an index for one shelf this tree holds no document on, so that one
+/// produces a reason, and the register produces a second.
 ///
 /// **The order is the plan's order, and it is asserted.** A declared projection
 /// is planned before the engine-defined descriptor, so a taxonomy that declares
@@ -598,7 +601,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_six_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_seven_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -637,11 +640,12 @@ fn this_repository_generates_its_six_artifacts_and_accounts_for_the_rest() {
             "docs/spec/09-open-questions.md",
             "docs/interfaces/README.md",
             ".headwater/export.json",
+            ".headwater/nav.yml",
             descriptor::PATH
         ],
         "this repository writes the decisions index, the specification index, the \
-         redirect map, the verb index, the graph export and the descriptor, in that \
-         order"
+         redirect map, the verb index, the graph export, the site navigation and \
+         the descriptor, in that order"
     );
     // One declared shelf that holds no document, one declared projection whose
     // source this corpus does not hold, and the register. Nothing is passed
@@ -1417,4 +1421,162 @@ projections:
         "check does not pass again after regeneration: {}",
         restored.render()
     );
+}
+
+/// A `site_nav` declared the way `.headwater/overlay.yml` declares one — no
+/// `for`, no `filter` — held to regeneration through `plan()`, `write()` and
+/// `check()`. The direct analog of `a_declared_graph_export_is_held_to_
+/// regeneration` above, over the same four branches.
+///
+/// It also parses the emitted bytes with `saphyr`, a YAML parser this engine
+/// did not write, rather than trusting the bytes by eye, and checks the
+/// `nav` sequence's order against [`Surface::by_precedence`] directly — the
+/// same derivation `site_nav.rs` itself calls, read back through a second
+/// implementation.
+#[test]
+fn a_declared_site_nav_is_held_to_regeneration() {
+    let (built, _root) = fixture_tree();
+    let surface = built.surface();
+    let source = "\
+projections:
+  - kind: site_nav
+    output: nav.yml
+";
+    let root = headwater_yaml::load(source)
+        .expect("it loads")
+        .value
+        .as_map()
+        .expect("a mapping")
+        .clone();
+    let projections = Projections::read(&root).expect("the projections read");
+    let plan = plan(
+        &surface,
+        &built.census,
+        &projections,
+        &fixture_identity(),
+        &Runs::default(),
+        headwater_verbs::VERBS,
+    );
+    let output = plan
+        .outputs
+        .iter()
+        .find(|output| output.path == "nav.yml")
+        .expect("the declaration produced an output");
+    assert_eq!(output.kind, Kind::SiteNav);
+
+    // (a) before the file exists, the plan's own check would write it.
+    let tree = empty_tree("site-nav-missing");
+    let missing = check(&tree, &plan);
+    assert!(
+        missing.has_errors(),
+        "an ungenerated site_nav has to fail the gate before it is ever written"
+    );
+
+    let first = write(&tree, &plan);
+    assert!(
+        !first.has_errors(),
+        "the first write failed: {}",
+        first.render()
+    );
+    let bytes_after_write = std::fs::read_to_string(tree.join("nav.yml")).expect("it was written");
+    let clean = check(&tree, &plan);
+    assert!(
+        !clean.has_errors(),
+        "a fresh write does not satisfy its own check: {}",
+        clean.render()
+    );
+
+    // (b) a hand edit strips the marker, and the gate has to catch it.
+    std::fs::write(tree.join("nav.yml"), "nav: []\n").expect("the hand edit");
+    let tampered = check(&tree, &plan);
+    assert!(
+        tampered.has_errors(),
+        "a hand-edited site_nav with no marker has to fail the gate"
+    );
+
+    // (c) a deletion is the same failure the missing-file case above is.
+    std::fs::remove_file(tree.join("nav.yml")).expect("the deletion");
+    let deleted = check(&tree, &plan);
+    assert!(
+        deleted.has_errors(),
+        "a deleted site_nav has to fail the gate"
+    );
+
+    // (d) regeneration restores byte-identical output and a clean check.
+    let second = write(&tree, &plan);
+    assert!(
+        !second.has_errors(),
+        "regeneration failed: {}",
+        second.render()
+    );
+    let bytes_after_regen =
+        std::fs::read_to_string(tree.join("nav.yml")).expect("it is there again");
+    assert_eq!(
+        bytes_after_write, bytes_after_regen,
+        "regeneration did not restore byte-identical output"
+    );
+    let restored = check(&tree, &plan);
+    assert!(
+        !restored.has_errors(),
+        "check does not pass again after regeneration: {}",
+        restored.render()
+    );
+
+    // Stronger than eyeballing: an independent parser, and the order checked
+    // against `by_precedence` rather than assumed.
+    let docs =
+        YamlOwned::load_from_str(&bytes_after_write).expect("the emitted file is valid YAML");
+    let doc = docs.first().expect("one YAML document");
+    let nav = doc
+        .as_mapping_get("nav")
+        .expect("a top-level `nav` key")
+        .as_sequence()
+        .expect("`nav` is a sequence");
+
+    // `decisions` and `guides` both hold a document; `archive` holds none and
+    // is left out, so `nav` covers exactly two of the fixture tree's three
+    // shelves.
+    assert_eq!(nav.len(), 2, "an empty shelf should not appear in `nav`");
+
+    for group in nav {
+        let mapping = group
+            .as_mapping()
+            .expect("each nav entry is a one-key mapping");
+        let (shelf_key, entries) = mapping.iter().next().expect("exactly one key");
+        let shelf_name = shelf_key.as_str().expect("the shelf name is a string");
+
+        let on_shelf: Vec<_> = surface
+            .documents()
+            .into_iter()
+            .filter(|document| {
+                matches!(
+                    shelf_for(document.path, surface.taxonomy()),
+                    ShelfMatch::Matched { shelf, .. } if shelf.name == shelf_name
+                )
+            })
+            .collect();
+        let mut expected: Vec<_> = on_shelf
+            .iter()
+            .map(|document| surface.pointer(document))
+            .collect();
+        surface.by_precedence(&mut expected);
+
+        let entries = entries
+            .as_sequence()
+            .expect("the shelf's entries are a sequence");
+        assert_eq!(
+            entries.len(),
+            expected.len(),
+            "{shelf_name} has the wrong number of entries"
+        );
+        for (entry, pointer) in entries.iter().zip(&expected) {
+            let entry_map = entry.as_mapping().expect("each entry is a one-key mapping");
+            let (_, path_value) = entry_map.iter().next().expect("exactly one key");
+            let path = path_value.as_str().expect("the path is a string");
+            assert_eq!(
+                path, pointer.path,
+                "{shelf_name}'s order does not match `by_precedence`"
+            );
+        }
+    }
 }
