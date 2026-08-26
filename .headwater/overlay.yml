@@ -947,6 +947,13 @@ add_to:
     # spec 7 already lists a declared export profile in as an entry point.
     # Committed like the four declarations above it: a generated artifact
     # this corpus ships, not a build output.
+    #
+    # This is the second profile the taxonomy assembles, not the first: every
+    # entry above names no `profile` and so falls into `default`, the group
+    # `profile.rs` names for "an entry that names no profile is not
+    # profile-less, it is the one profile." `headwater export --format`, run
+    # with no `--profile`, refuses rather than guess between `default` and
+    # `site` now that both exist — `--profile site` names this one.
     - kind: graph_export
       profile: site
       output: .headwater/export.json
