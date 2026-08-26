@@ -100,6 +100,45 @@ def clock_reads_the_engine_s_day_and_not_the_local_one():
     return got == expect_utc, detail
 
 
+def read_today_under_a_hostile_zone():
+    """Call the real production expression once, with the process's zone
+    forced to one deliberately ahead of UTC for the read.
+
+    `clock_reads_the_engine_s_day_and_not_the_local_one`, above, holds
+    `today_reading` itself to a fixed instant, and never touches the
+    statement that calls it. That leaves one gap open: a future edit that
+    reverts the call site back to a local-clock read
+    (`datetime.date.today().isoformat()`, as it read before #302) rather
+    than editing `today_reading`, would pass that fixture unchanged, since
+    the fixture never runs the call site at all. On a UTC CI runner such a
+    revert is invisible on top of that, because the runner's own zone never
+    diverges from UTC by itself — which is exactly why #302 went unnoticed
+    by CI in the first place. Forcing a hostile zone around this read, here,
+    makes that revert diverge from UTC regardless of the machine's real
+    zone, CI included.
+
+    Returns `(today, expect_utc)` for the caller to assert on. Built from
+    the real clock rather than a fixed instant, on purpose: it means to run
+    the literal call site as production runs it, not a stand-in for it. The
+    trade-off is a race, on the order of microseconds, if the read crosses a
+    UTC day boundary between the two calls below — not eliminated, but far
+    too small to be a source of a flaky run in practice.
+    """
+    previous = os.environ.get('TZ')
+    os.environ['TZ'] = 'Pacific/Kiritimati'
+    time.tzset()
+    try:
+        today = today_reading()
+    finally:
+        if previous is None:
+            os.environ.pop('TZ', None)
+        else:
+            os.environ['TZ'] = previous
+        time.tzset()
+    expect_utc = datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+    return today, expect_utc
+
+
 def read_blocks(root):
     """Every fenced code block of the tutorial body, and whether it is marked trimmed.
 
@@ -194,7 +233,11 @@ def main():
 
     # #302: today's date must come from today_reading(), never
     # datetime.date.today() directly — see that function's docstring for why.
-    today = today_reading()
+    today, expect_utc = read_today_under_a_hostile_zone()
+    assert_true("the call site reads the engine's UTC day under a hostile local zone",
+                today == expect_utc,
+                f'the call site read {today!r} with the zone forced to Pacific/Kiritimati; '
+                f'the UTC date at the same moment is {expect_utc!r}')
     scratch = tempfile.mkdtemp(prefix='headwater-tutorial-')
     env = dict(os.environ)
     env['PATH'] = os.path.dirname(binary) + os.pathsep + env['PATH']
