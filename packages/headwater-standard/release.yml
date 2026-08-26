@@ -26,7 +26,7 @@ release:
   package: headwater/standard
   version: 3.3.0
   requires_engine: ">=0.1 <2"
-  digest: sha256:2cdbf136ef7da4210f2e425a9e4089bad92d1a5e338ea0fb0f66b8959afafc7f
+  digest: sha256:453b49a0b64a18226e67229b8abbf8b5d24ae2381c53b923d543a7d4292be304
   members:
     - path: bundles/README.md
       digest: sha256:c229aebd91789a39e9af7f870c76d33d5ca9ce35cf1bc9ef16e785e5a73ef9d7
@@ -57,9 +57,9 @@ release:
     - path: bundles/decision-record/bundle.yml
       digest: sha256:dfac204c8b8bddba13a81a5345633ace234d69b9eceef310ed3e0606c9a3b852
     - path: bundles/decision-record/doctrine.md
-      digest: sha256:5ce002c5d26b39c4f9ff9c82604dd03d88d623c7dbe6e5f5c074525ffc882de7
+      digest: sha256:8063bcad91870703cc95e9100ad12ca308c5e070c24f0c2e8d9ff27f6e5147f1
     - path: bundles/decision-record/fixtures/README.md
-      digest: sha256:a387459eb2cfe6a05339ef6d6130627ed1590bdca7181c1a55ed03e325fdd8db
+      digest: sha256:9d5ca629ac8854cbff40e595f357c19d938f06b9844e73f21576bd894363f02a
     - path: bundles/decision-record/fixtures/corpus/docs/decisions/0001-deliver-at-least-once.md
       digest: sha256:74433b0847cccdf6c516fe9ec8f4b339c48f06a5cc3e9146b516c6ea591ec5eb
     - path: bundles/decision-record/fixtures/corpus/docs/decisions/0002-store-attempts-in-postgres.md
@@ -125,13 +125,13 @@ release:
     - path: bundles/design-spec/templates/review_record.md
       digest: sha256:de77eb9ce4af1b265a5af071fd3f7c3780e02dc53fecd7ff3d856c1e5ef4ffc0
     - path: bundles/diataxis/bundle.yml
-      digest: sha256:8f182cacd140386586cd5dcb8ebd701b0478d47f2a133a58c3f432f212ccb596
+      digest: sha256:82a508f063aa9d7992d59e343020e621e5e6f412c62751588bc4f6f8da175dad
     - path: bundles/diataxis/doctrine.md
-      digest: sha256:2d17dbfdaf07d35be8d60debe2a46875d1d8a8a00fec3b062fab4c1d4ce3dcf7
+      digest: sha256:75e667c7ab6edbc0e508172ddf94bfdbcc9d75a614da1a39401b4e1e880be7f3
     - path: bundles/diataxis/fixtures/README.md
-      digest: sha256:3343d9be4d7c3985820de5c912ae8a1b6503e6aa52489f34a1335215e06f9b25
+      digest: sha256:0660eada7b2ebde0d1cb43ab9adf54cd4444b947dce2b87d8be81dd4931420a4
     - path: bundles/diataxis/fixtures/corpus/docs/decisions/0001-sign-every-payload.md
-      digest: sha256:d75bd18d87d9816315260603dd42041cd418fd3f2cb4070806535717c827e775
+      digest: sha256:9e7ab51b8782b7bb9713d9809aff53350ec1ab88b0064ce1f5b85a861bdd4e26
     - path: bundles/diataxis/fixtures/corpus/docs/specifications/beacon-overview.md
       digest: sha256:61e40a4ca1f33e5a6949e283a926257e5289f3096c7c4ec6338b6c73dc201d69
     - path: bundles/diataxis/fixtures/corpus/docs/specifications/getting-started-with-beacon.md

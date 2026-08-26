@@ -41,7 +41,7 @@ add:
   # gives the address to whichever entry claims it first, so a general word in
   # a partial entry is an address taken from everybody. `diataxis_mode` names
   # the method rather than the property, and a facet names what a document is.
-  # `reader_mode` is the term [spec 10](../../spec/10-theoretical-foundations.md)
+  # `reader_mode` is the term [HW-EVAL-theoretical-foundations](../../evaluations/theoretical-foundations.md)
   # already uses for this idea in this repository's own vocabulary.
   #
   # `values` is closed at four, which is the method's own claim rather than this
