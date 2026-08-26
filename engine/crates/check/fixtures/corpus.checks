@@ -31,6 +31,8 @@ adoption
     255 instances of lifecycle.transition.not_permitted
     255 instances of lifecycle.state.not_admitted
       1 instances of lifecycle.deletion.not_permitted
+suppressions
+  0 findings hidden by 0 directives
 rules, and for each the scope that binds it
   facet.required.missing
     document scope, one document and its front matter

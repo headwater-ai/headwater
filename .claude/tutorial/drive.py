@@ -35,12 +35,108 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 DOC = 'docs/tutorials/your-first-governed-corpus.md'
 STATED_DATE = '2026-08-17'
 
 failures = []
 checks = 0
+
+
+def today_reading(clock=time.time):
+    """The date this run substitutes, on the same clock the engine stamps.
+
+    `headwater_check::Context::from_system_clock`
+    (`engine/crates/check/src/context.rs:93`) reads
+    `SystemTime::now().duration_since(UNIX_EPOCH).as_secs() / 86_400` — the
+    whole day count since the Unix epoch, in UTC, with no zone applied at
+    all. `datetime.date.today()` reads the process's *local* calendar
+    instead, which names a different day than the engine's for part of every
+    day in any zone ahead of UTC — `Australia/Brisbane`, this machine's own
+    zone, included. So this function mirrors the engine's arithmetic on the
+    epoch second count rather than reading a local clock of any kind, and the
+    two can no longer disagree.
+
+    `clock` defaults to the real one and takes an injected one only so that
+    `clock_reads_the_engine_s_day_and_not_the_local_one`, below, can hold
+    this exact function to a fixed instant rather than wait for the real
+    clock to reach an hour where a regression would show.
+    """
+    days = int(clock()) // 86_400
+    return (datetime.date(1970, 1, 1) + datetime.timedelta(days=days)).isoformat()
+
+
+def clock_reads_the_engine_s_day_and_not_the_local_one():
+    """The regression case for #302, held by behavior rather than by having
+    been fixed once: reverting `today_reading` to read `datetime.date.today()`
+    makes this fail, deterministically, on whatever day it happens to run.
+
+    `2026-01-01T12:00:00Z` is a fixed instant that falls on 2026-01-01 in UTC
+    and on 2026-01-02 under `Pacific/Kiritimati` (UTC+14, the zone furthest
+    ahead of UTC there is, and fixed year-round — no DST to add a second
+    variable). The two readings provably differ under it, on any day this
+    check itself runs.
+    """
+    instant = datetime.datetime(2026, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc).timestamp()
+    expect_utc = '2026-01-01'
+    previous = os.environ.get('TZ')
+    os.environ['TZ'] = 'Pacific/Kiritimati'
+    time.tzset()
+    try:
+        local_reading = datetime.date.fromtimestamp(instant).isoformat()
+        got = today_reading(clock=lambda: instant)
+    finally:
+        if previous is None:
+            os.environ.pop('TZ', None)
+        else:
+            os.environ['TZ'] = previous
+        time.tzset()
+    assert local_reading != expect_utc, (
+        'the fixed instant no longer diverges under Pacific/Kiritimati, so this '
+        'proves nothing; pick another instant')
+    detail = (f'today_reading said {got!r}; the engine (UTC) says {expect_utc!r}; '
+              f'a local read under Pacific/Kiritimati said {local_reading!r}')
+    return got == expect_utc, detail
+
+
+def read_today_under_a_hostile_zone():
+    """Call the real production expression once, with the process's zone
+    forced to one deliberately ahead of UTC for the read.
+
+    `clock_reads_the_engine_s_day_and_not_the_local_one`, above, holds
+    `today_reading` itself to a fixed instant, and never touches the
+    statement that calls it. That leaves one gap open: a future edit that
+    reverts the call site back to a local-clock read
+    (`datetime.date.today().isoformat()`, as it read before #302) rather
+    than editing `today_reading`, would pass that fixture unchanged, since
+    the fixture never runs the call site at all. On a UTC CI runner such a
+    revert is invisible on top of that, because the runner's own zone never
+    diverges from UTC by itself — which is exactly why #302 went unnoticed
+    by CI in the first place. Forcing a hostile zone around this read, here,
+    makes that revert diverge from UTC regardless of the machine's real
+    zone, CI included.
+
+    Returns `(today, expect_utc)` for the caller to assert on. Built from
+    the real clock rather than a fixed instant, on purpose: it means to run
+    the literal call site as production runs it, not a stand-in for it. The
+    trade-off is a race, on the order of microseconds, if the read crosses a
+    UTC day boundary between the two calls below — not eliminated, but far
+    too small to be a source of a flaky run in practice.
+    """
+    previous = os.environ.get('TZ')
+    os.environ['TZ'] = 'Pacific/Kiritimati'
+    time.tzset()
+    try:
+        today = today_reading()
+    finally:
+        if previous is None:
+            os.environ.pop('TZ', None)
+        else:
+            os.environ['TZ'] = previous
+        time.tzset()
+    expect_utc = datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+    return today, expect_utc
 
 
 def read_blocks(root):
@@ -132,7 +228,16 @@ def main():
     if len(blocks) != 45:
         raise SystemExit(f'tutorial: expected 45 code blocks and found {len(blocks)}')
 
-    today = datetime.date.today().isoformat()
+    ok, detail = clock_reads_the_engine_s_day_and_not_the_local_one()
+    assert_true("the substitution clock reads the engine's UTC day, not the local one", ok, detail)
+
+    # #302: today's date must come from today_reading(), never
+    # datetime.date.today() directly — see that function's docstring for why.
+    today, expect_utc = read_today_under_a_hostile_zone()
+    assert_true("the call site reads the engine's UTC day under a hostile local zone",
+                today == expect_utc,
+                f'the call site read {today!r} with the zone forced to Pacific/Kiritimati; '
+                f'the UTC date at the same moment is {expect_utc!r}')
     scratch = tempfile.mkdtemp(prefix='headwater-tutorial-')
     env = dict(os.environ)
     env['PATH'] = os.path.dirname(binary) + os.pathsep + env['PATH']
