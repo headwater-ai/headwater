@@ -118,7 +118,7 @@ fn main() -> ExitCode {
         Some(path) => path,
         None => match std::env::current_dir() {
             Ok(path) => path,
-            Err(error) => return fail(&format!("no working directory: {error}")),
+            Err(error) => return refuse(&format!("no working directory: {error}")),
         },
     };
 
@@ -726,11 +726,11 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
 
     if let Some(parent) = path.parent() {
         if let Err(error) = std::fs::create_dir_all(parent) {
-            return fail(&format!("cannot create {}: {error}", parent.display()));
+            return refuse(&format!("cannot create {}: {error}", parent.display()));
         }
     }
     if let Err(error) = std::fs::write(&path, &text) {
-        return fail(&format!("cannot write {}: {error}", path.display()));
+        return refuse(&format!("cannot write {}: {error}", path.display()));
     }
     println!("wrote {}", headwater_lock::LOCK);
     for source in &repository.resolution.sources {
@@ -836,7 +836,7 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>, json: bool) 
 
     let set = match headwater_conformance::at(root, &loaded.consumer) {
         Ok(set) => set,
-        Err(error) => return fail(&error.to_string()),
+        Err(error) => return refuse(&error.to_string()),
     };
     let waivers = match headwater_conformance::waivers(root) {
         Ok(waivers) => waivers,
@@ -856,7 +856,7 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>, json: bool) 
     // it. Nothing reaches here with a candidate, and the arm says so rather
     // than assuming it.
     let Some(lock) = &loaded.bound.lock else {
-        return fail(
+        return refuse(
             "`headwater conformance` reads `.headwater/taxonomy.lock`, and this run holds a \
              taxonomy that came out of a published artifact instead",
         );
@@ -3115,7 +3115,7 @@ fn probe_grade(root: &Path, path: &Path) -> ExitCode {
             Err(unreadable) => return refuse(&unreadable.to_string()),
         },
         Err(error) => {
-            return fail(&format!(
+            return refuse(&format!(
                 "`{}` did not read: {error}. A grade names the selection it was taken over, and \
                  the selection comes from the plan",
                 headwater_probe::budget::PATH
@@ -3224,7 +3224,7 @@ fn probe_stale(root: &Path) -> ExitCode {
             Err(unreadable) => return refuse(&unreadable.to_string()),
         },
         Err(error) => {
-            return fail(&format!(
+            return refuse(&format!(
                 "`{}` did not read: {error}. A read set covers the probes of a selection, and the \
                  selection comes from the plan",
                 headwater_probe::budget::PATH
@@ -3564,7 +3564,7 @@ fn export(
     let profile = match selected.as_slice() {
         [one] => *one,
         [] => {
-            return fail(
+            return refuse(
                 "this taxonomy declares no projection, so it declares no export profile. \
                  Spec 6 makes a profile an entry under `projections`",
             )
@@ -4156,7 +4156,7 @@ fn infer(
         Err(code) => return code,
     };
     let Some(ctx) = now.map(Context::at).or_else(Context::from_system_clock) else {
-        return fail("the host clock is before 1970, and this engine will not guess a date");
+        return refuse("the host clock is before 1970, and this engine will not guess a date");
     };
     let until = until.unwrap_or_else(|| ctx.now().plus_days(DEFAULT_WINDOW));
     if until < ctx.now() {
@@ -4546,7 +4546,7 @@ fn infer(
     };
     let path = root.join(headwater_lock::LOCK);
     if let Err(error) = std::fs::write(&path, &text) {
-        return fail(&format!("cannot write {}: {error}", path.display()));
+        return refuse(&format!("cannot write {}: {error}", path.display()));
     }
     println!("\nwrote the payload into {}", headwater_lock::LOCK);
     println!("  {pairs} pairs, owner {owner}, until {until}");
@@ -4686,7 +4686,7 @@ fn merged(
 fn init(root: &Path, corpus_root: Option<String>, package: Option<String>) -> ExitCode {
     let declaration = root.join(headwater_resolve::package::CONSUMER);
     if declaration.exists() {
-        return fail(&format!(
+        return refuse(&format!(
             "{} is already there, so this repository is already bound. \
              `headwater infer` is the verb that reads an existing binding",
             headwater_resolve::package::CONSUMER
@@ -4698,7 +4698,7 @@ fn init(root: &Path, corpus_root: Option<String>, package: Option<String>) -> Ex
     // documentation is, and the adopter overrides it with one word.
     let proposed = corpus_root.or_else(|| busiest_directory(root));
     let Some(corpus_root) = proposed else {
-        return fail(
+        return refuse(
             "no directory under this repository holds a Markdown file, so nothing here \
              proposes a corpus root. Pass --corpus <dir> to name one",
         );
@@ -4805,15 +4805,15 @@ add: {{}}
 
     if let Some(parent) = declaration.parent() {
         if let Err(error) = std::fs::create_dir_all(parent) {
-            return fail(&format!("cannot create {}: {error}", parent.display()));
+            return refuse(&format!("cannot create {}: {error}", parent.display()));
         }
     }
     if let Err(error) = std::fs::write(&declaration, &declaration_text) {
-        return fail(&format!("cannot write {}: {error}", declaration.display()));
+        return refuse(&format!("cannot write {}: {error}", declaration.display()));
     }
     let overlay = root.join(".headwater/overlay.yml");
     if let Err(error) = std::fs::write(&overlay, &overlay_text) {
-        return fail(&format!("cannot write {}: {error}", overlay.display()));
+        return refuse(&format!("cannot write {}: {error}", overlay.display()));
     }
 
     println!("wrote {}", headwater_resolve::package::CONSUMER);
@@ -4962,15 +4962,27 @@ fn refused(what: &str, errors: &[headwater_census::shelves::DeclarationError]) -
 /// them changed deliberately" and "none of them did" was meant, and this is the
 /// answer: **all of them**, and not one message text changed.
 ///
-/// The parser migration then took the 33 that were the argument loop's, and one
-/// caller now carries every refusal a parse can make: `main` hands over the
-/// line `clap` wrote. 64 call sites remain, of which 45 are facts about a
-/// corpus or about the filesystem rather than about a command line. That
-/// population is the one [`refuse`] describes, a pointer to the grammar is
-/// beside the point for it, and
-/// [#331](https://github.com/headwater-ai/headwater/issues/331) carries the
-/// reclassification. It is judgment nobody has asked for, so it is stated here
-/// rather than done quietly.
+/// The parser migration ([#321](https://github.com/headwater-ai/headwater/issues/321))
+/// then took the sites the argument loop and dispatch owned: one caller now
+/// hands over the line `clap` wrote for all of them. What was left is 68
+/// sites, not 45: four more joined after #321 landed, as this binary grew a
+/// `Help` verb, a `Completions` verb and two more flags.
+///
+/// [#331](https://github.com/headwater-ai/headwater/issues/331) read every
+/// one of the 68 and moved fifteen to [`refuse`]: a fixed location this
+/// engine reads or writes regardless of the command line, a fact the corpus
+/// itself declares wrong, and a fact about the host. What stays here is
+/// answerable by one question — would retyping the command line differently
+/// change the answer? — and that includes a caller-supplied value this run
+/// went on to check against something the corpus declares (a level, a
+/// profile, an import, a directory) and found wanting, because the value that
+/// was wrong is still the one the caller typed.
+///
+/// Eight sites #331 read and left here on purpose:
+/// [#455](https://github.com/headwater-ai/headwater/issues/455) carries them,
+/// because for each one the fact comes from comparing what the caller typed
+/// against what a file on disk says, and a second read did not settle which
+/// side is at fault.
 ///
 /// # Why the prefix is written per line
 ///
@@ -4985,12 +4997,19 @@ fn fail(message: &str) -> ExitCode {
     ExitCode::FAILURE
 }
 
-/// A refusal that is a fact about the corpus rather than a mistyped command.
+/// A refusal that is a fact about the corpus, the filesystem, or the host —
+/// true regardless of what command line reached it, and not repaired by
+/// retyping one.
 ///
 /// [`fail`] names where the grammar is, because a caller who wrote the wrong
-/// flag is looking for it. A caller whose taxonomy declares no shelf for a kind
-/// is not, and a line pointing at the grammar under that sentence points away
-/// from what the sentence says.
+/// flag is looking for it. A caller who hit one of these is not: a fixed
+/// location this engine reads or writes on every run
+/// (`.headwater/taxonomy.lock`, `.headwater/overlay.yml`, the consumer
+/// declaration, a probe budget declaration) refusing to exist, to parse, or
+/// to accept a write; a fact the package or the corpus itself declares wrong
+/// or incomplete, independent of any flag; or a fact about the host that no
+/// flag repairs, such as a clock reading before 1970. A line pointing at the
+/// grammar under one of these points away from what the sentence says.
 fn refuse(message: &str) -> ExitCode {
     eprintln!("headwater: {message}");
     ExitCode::FAILURE
