@@ -198,6 +198,13 @@ const NO_COLOR: Global = Global {
 
 /// `-h, --help` is `clap`'s own argument, so this entry supplies the first
 /// screen's line for it and states what `clap` puts on a verb page.
+///
+/// The description is the only one of the five this repository did not write.
+/// `Command::mut_arg` panics before the build adds the argument, and
+/// `Command::mut_args` documents that it does not reach the built-in help
+/// argument at all.
+/// [HW-OBL-0158](../../../../docs/obligations/0158-clap-owns-the-help-flag-so-h-help-reads-print-help-on-all-32-verb-pages.md)
+/// holds the gap and names the route that would close it.
 const HELP: Global = Global {
     id: "help",
     name: "-h, --help",

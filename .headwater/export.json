@@ -9,8 +9,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 328,
-      "carried": 328,
+      "in the graph": 329,
+      "carried": 329,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -6380,6 +6380,20 @@
           "summary": "The capture report warns that its aggregate crosses two denominators, on a run whose own next line lists seventeen of them.",
           "last_verified": "2026-08-28",
           "title": "The capture report says two denominators over a store that named seventeen taxonomies",
+          "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0158-clap-owns-the-help-flag-so-h-help-reads-print-help-on-all-32-verb-pages.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0158",
+        "facets": {
+          "id": "HW-OBL-0158",
+          "status": "draft",
+          "status_since": "2026-08-28",
+          "summary": "The fifth entry of the GLOBALS table carries clap's own two words rather than a description this repository wrote, because clap adds its help argument after the point where a caller can name it.",
+          "last_verified": "2026-08-28",
+          "title": "clap owns the help flag, so -h, --help reads Print help on all 32 verb pages",
           "waiting_on": "build"
         }
       },
