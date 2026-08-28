@@ -1213,8 +1213,11 @@ fn the_change_help_names_the_header_a_manifest_must_open_with() {
     );
 
     let headed = root.path("headed.txt");
-    std::fs::write(&headed, format!("{}\n{body}", headwater_check::change::FORMAT))
-        .expect("the manifest writes");
+    std::fs::write(
+        &headed,
+        format!("{}\n{body}", headwater_check::change::FORMAT),
+    )
+    .expect("the manifest writes");
     let read = root.run(&[
         "check",
         "--no-cache",
@@ -1326,7 +1329,14 @@ fn only_the_sarif_artifact_declares_its_own_loss_set() {
     let root = Root::over("change", "loss-set-per-target");
     let mut carries = Vec::new();
     for target in ["text", "json", "sarif", "markdown"] {
-        let ran = root.run(&["check", "--no-cache", "--now", "2026-08-01", "--format", target]);
+        let ran = root.run(&[
+            "check",
+            "--no-cache",
+            "--now",
+            "2026-08-01",
+            "--format",
+            target,
+        ]);
         assert_eq!(
             ran.code,
             Some(0),

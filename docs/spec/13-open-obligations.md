@@ -25,7 +25,7 @@ relations:
 
 Every decision in [9 — The decision register](09-decisions.md) is closed, and each one left work behind. This file gathers that work in one place. Nothing here blocks a decision. Most items wait on an engine that nobody has built, on a corpus that nobody has adopted, or on a measurement that nobody has run. An item whose measurement has since run stays here, with the number, until the claim it was filed against is settled.
 
-**This file is an index, and it stopped being the place an obligation lives.** Each of the 147 items below is a document on [the obligations shelf](../obligations/), of the `obligation_record` kind. It carries an identifier, a state, two dates, and an edge to the decision or the specification that produced it. The fifth class below has no such producer, and states why. It states its context, what the corpus owes, and what would discharge it, under the three headings that the kind requires. The shelf holds 153 records. Of the 147 below, 119 stand at `current` and 28 stand at `draft`. The six that are not below stand at `discharged`, which is the terminal state a record takes when the corpus paid what it records. A record that a ruling discharges stays on the shelf and leaves the list, and [the last section](#a-human-maintains-this-list-by-hand) states what that costs.
+**This file is an index, and it stopped being the place an obligation lives.** Each of the 149 items below is a document on [the obligations shelf](../obligations/), of the `obligation_record` kind. It carries an identifier, a state, two dates, and an edge to the decision or the specification that produced it. The fifth class below has no such producer, and states why. It states its context, what the corpus owes, and what would discharge it, under the three headings that the kind requires. The shelf holds 155 records. Of the 149 below, 119 stand at `current` and 30 stand at `draft`. The six that are not below stand at `discharged`, which is the terminal state a record takes when the corpus paid what it records. A record that a ruling discharges stays on the shelf and leaves the list, and [the last section](#a-human-maintains-this-list-by-hand) states what that costs.
 
 An obligation was a paragraph in a list. Nothing could carry its state, its dates or its edges, and a reader who cited one cited a position in a file. Now a citation names a document with an identifier, and a check reads the document that a citation reaches.
 
@@ -229,7 +229,7 @@ This paragraph read eighteen for sixteen iterations, and the number is nineteen.
 
 ## What the engine found about itself
 
-Twenty-three items: HW-OBL-0131 through HW-OBL-0151, HW-OBL-0154 and HW-OBL-0155. Each one names no decision, because nothing here derives from [9 — The decision register](09-decisions.md). Every one derives instead from running the engine, the suite or the gates over this repository during a build-order iteration. It finds a defect with no reader outside this repository to hand it to.
+Twenty-five items: HW-OBL-0131 through HW-OBL-0151, and HW-OBL-0154 through HW-OBL-0157. Each one names no decision, because nothing here derives from [9 — The decision register](09-decisions.md). Every one derives instead from running the engine, the suite or the gates over this repository during a build-order iteration. It finds a defect with no reader outside this repository to hand it to.
 
 This class did not exist before 2026-08-26. Before that date, such a finding was filed as a GitHub issue labeled `self-audit` and left open. The theory was that a defect nobody outside this repository can reach costs nothing to hold. The theory was half right. The label did keep such work out of an iteration's hands, but it never closed anything. Of 24 issues so labeled, three ever closed. The issue board as a whole ran net-positive on all but one of the eleven days that followed. [The value rule](../../.claude/commands/next-run.md#the-value-rule) now routes a self-audit finding here directly. These 21 are the backlog that rule found already sitting on the tracker, migrated in the same change that rewrote it.
 
@@ -256,6 +256,8 @@ This class did not exist before 2026-08-26. Before that date, such a finding was
 - [HW-OBL-0151](../obligations/0151-the-glossary-s-package-entry-omits-conformance-and-still-lists-plugins-which-367-dropped.md) — The glossary's Package entry omits conformance and still lists plugins, which #367 dropped
 - [HW-OBL-0154](../obligations/0154-the-adoption-decay-section-is-fixture-recorded-only-in-its-empty-shape.md) — The adoption decay section is fixture-recorded only in its empty shape
 - [HW-OBL-0155](../obligations/0155-probe-s-fourteen-refusals-have-no-coverage-test-and-three-of-them-are-named-by-no-test-at-all.md) — probe's fourteen refusals have no coverage test, and three of them are named by no test at all
+- [HW-OBL-0156](../obligations/0156-a-help-string-and-the-interface-contract-that-restates-it-can-both-be-false-with-the-whole-suite-green.md) — A help string and the interface contract that restates it can both be false with the whole suite green
+- [HW-OBL-0157](../obligations/0157-the-capture-report-says-two-denominators-over-a-store-that-named-seventeen-taxonomies.md) — The capture report says two denominators over a store that named seventeen taxonomies
 
 ## What the first typing of this corpus found
 
