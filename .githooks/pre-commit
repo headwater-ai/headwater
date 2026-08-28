@@ -105,10 +105,27 @@ fi
 status=$?
 [ "$status" -eq 0 ] && exit 0
 
-# The error findings alone: a location line that ends in `error`, and the rule
-# line under it. Every other finding is advisory and belongs in the report a
-# reader asks for rather than in a hook that just refused a commit.
-printf '%s\n' "$report" | awk '/ error$/ {print; show = 1; next} show {print; show = 0}'
+# The error findings alone, whole. Every other finding is advisory and belongs
+# in the report a reader asks for rather than in a hook that just refused a
+# commit.
+#
+# A finding is a location line that ends in `error` and every line indented
+# further than it — the rule line, the `fix:` line, and the continuations of
+# both. #340 lays the report out at 80 columns, so a message is two or three
+# lines now where it used to be one, and the rule this replaced printed exactly
+# one line after the header. That rule truncated a refused commit's explanation
+# mid-sentence, which is the one moment the explanation is read.
+#
+# The indent decides where the finding stops, so nothing here needs to know how
+# many lines a message took. The continuation clause is tested before the header
+# clause, so a folded line whose last word happens to be `error` is read as the
+# continuation it is rather than as a second finding.
+printf '%s\n' "$report" | awk '
+    { at = match($0, /[^ ]/); indent = at - 1 }
+    show && at > 0 && indent > base { print; next }
+    / error$/ { print; show = 1; base = indent; next }
+    { show = 0 }
+'
 cat <<'EOF'
 
 `headwater check --strict` reports an error over this corpus. Your options:

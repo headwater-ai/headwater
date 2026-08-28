@@ -92,6 +92,14 @@ produce() {
     (cd "$scratch" && sh .githooks/change-manifest "$1" "$hold/out" >/dev/null 2>"$hold/why")
 }
 
+# The text match is over the words and not over the line breaks.
+#
+# `headwater check` lays its report out at 80 columns, so a finding message this
+# engine composed as one sentence reaches a reader over two or three lines, and
+# an expectation written here as one string would span a fold point. Both sides
+# have every whitespace run squeezed to one space before they are compared, so a
+# case states what the gate says and never where the fill broke it. The failure
+# message prints the output as it arrived.
 judge() {
     name=$1 want_status=$2 got_status=$3 want_text=$4 got_text=$5
     if [ "$got_status" -ne "$want_status" ]; then
@@ -99,11 +107,13 @@ judge() {
         failed=$((failed + 1))
         return
     fi
+    flat_want=$(printf '%s' "$want_text" | tr -s '[:space:]' ' ')
+    flat_got=$(printf '%s' "$got_text" | tr -s '[:space:]' ' ')
     case $want_text in
         "") ;;
         *)
-            case $got_text in
-                *"$want_text"*) ;;
+            case $flat_got in
+                *"$flat_want"*) ;;
                 *)
                     printf 'FAIL %s\n  expected output to hold: %s\n  got:\n%s\n' "$name" "$want_text" "$got_text"
                     failed=$((failed + 1))
