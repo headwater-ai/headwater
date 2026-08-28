@@ -843,3 +843,51 @@ fn an_unreadable_line_is_named_and_counted_nowhere() {
         "which is what the fraction divides by:\n{text}"
     );
 }
+
+/// An empty task list has two causes, and the section never states the one it
+/// did not read.
+///
+/// This is the render half of the CLI arm
+/// `a_refused_task_is_counted_and_the_report_names_the_refusal_as_the_cause`,
+/// at the grain where the two states are one field apart. A report that stated
+/// "the lock declares no adoption payload" over a lock that declares one and
+/// could not read it is the wrong diagnosis for the adopter who has to go and
+/// fix the lock.
+#[test]
+fn an_empty_task_list_names_the_cause_it_read() {
+    let built = fixture_tree();
+    let refused = built
+        .audit_over(AT, |lock, date| Series {
+            reading: Reading {
+                lock: lock.to_string(),
+                date,
+                refused: 1,
+                tasks: vec![],
+            },
+            recorded: vec![],
+            unreadable: vec![],
+        })
+        .render();
+    let undeclared = built.audit(AT).render();
+
+    assert!(
+        refused.contains("the cause is a refusal rather than an"),
+        "a refused payload names the refusal:\n{refused}"
+    );
+    assert!(
+        !refused.contains("because the lock declares no adoption payload"),
+        "and never the absence it did not read:\n{refused}"
+    );
+    assert!(
+        refused.contains("it could not read 1 task"),
+        "with the count beside it:\n{refused}"
+    );
+    assert!(
+        undeclared.contains("because the lock declares no adoption payload"),
+        "and the other cause still states itself:\n{undeclared}"
+    );
+    assert!(
+        !undeclared.contains("it could not read"),
+        "with no refusal line, because nothing was refused:\n{undeclared}"
+    );
+}

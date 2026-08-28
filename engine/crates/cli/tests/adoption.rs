@@ -1426,3 +1426,75 @@ fn a_corpus_with_no_declared_payload_records_a_reading_of_none() {
         ran.out
     );
 }
+
+/// A task this engine cannot read is counted, and the report names the refusal
+/// as the cause rather than an absent payload.
+///
+/// **Two defects at once, and the second is why this arm exists end to end.**
+/// The report used to say "this run reads no task, because the lock declares no
+/// adoption payload" directly above a line saying that a task was refused. Both
+/// states arrive with an empty task list, and the first sentence is the wrong
+/// diagnosis for an adopter whose lock holds a task the engine could not parse.
+/// `headwater check` gets it right on the same tree.
+///
+/// And nothing held the `refused` member itself. Forcing `Reading::of` to
+/// report `refused: 0` and deleting the render branch outright left the whole
+/// suite green, because every series a case built stated zero and the one unit
+/// case round-tripped a hand-built value through the writer. Spec 7's words for
+/// this member are that "a series that dropped it would report a payload
+/// shrinking when it went dark", which is exactly what that pair of mutations
+/// produced. This case runs a real refusal through `Reading::of` and out to
+/// both artifacts, so neither mutation survives it.
+#[test]
+fn a_refused_task_is_counted_and_the_report_names_the_refusal_as_the_cause() {
+    let root = Root::new("decay-refused");
+    root.corpus();
+    root.author_until("AD-9", "soon");
+
+    // The premise: this is a refusal and not a lock that will not parse.
+    let checked = root.run(&["check", "--now", AT]);
+    assert_eq!(
+        checked.code,
+        Some(0),
+        "the lock still reads, and one task in it does not\n{}{}",
+        checked.out,
+        checked.err
+    );
+    assert!(
+        checked.out.contains("AD-9 holds nothing"),
+        "the check layer refuses the task rather than the block:\n{}",
+        checked.out
+    );
+
+    let ran = root.run(&["taxonomy", "audit", "--now", AT, "--record"]);
+    assert_eq!(ran.code, Some(0), "{}{}", ran.out, ran.err);
+
+    let lines = root.store();
+    assert_eq!(lines.len(), 1, "one invocation is one reading: {lines:?}");
+    let line = &lines[0];
+    assert!(
+        line.contains("\"refused\":1"),
+        "the reading counts the task nobody is measuring:\n{line}"
+    );
+    assert!(
+        line.contains("\"tasks\":[]"),
+        "and it holds no task entry, because the task did not read:\n{line}"
+    );
+
+    assert!(
+        ran.out.contains("the cause is a refusal rather than an"),
+        "the section names the cause it actually read:\n{}",
+        ran.out
+    );
+    assert!(
+        !ran.out
+            .contains("because the lock declares no adoption payload"),
+        "and never the cause it did not: this lock declares one\n{}",
+        ran.out
+    );
+    assert!(
+        ran.out.contains("it could not read 1 task"),
+        "with the count beside it:\n{}",
+        ran.out
+    );
+}

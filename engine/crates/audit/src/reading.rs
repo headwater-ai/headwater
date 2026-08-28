@@ -628,6 +628,29 @@ mod tests {
         assert_eq!(zeroed(&[both]), (1, 2));
     }
 
+    /// `until` is the last day a task holds, so a reading taken on the expiry
+    /// itself is in time.
+    ///
+    /// The case above reads well before the expiry and well after it, and a
+    /// comparison written `>` rather than `>=` passes both. The boundary day is
+    /// the one value that separates them, and it is not a free choice here:
+    /// [`headwater_check::adoption::apply`] expires a task on `until < now`, so
+    /// a task read on its `until` is still open, and a fraction that called
+    /// that day late would disagree with the run that produced the reading.
+    /// `an_expired_task_holds_nothing_and_the_findings_come_back` in the check
+    /// crate is the mirror of this case.
+    #[test]
+    fn a_reading_taken_on_the_expiry_itself_is_in_time() {
+        let mut on_the_day = a_reading();
+        on_the_day.date = Date::parse("2027-06-30").expect("a date");
+        assert_eq!(on_the_day.tasks[0].until, on_the_day.date);
+        assert_eq!(zeroed(&[on_the_day.clone()]), (1, 1));
+
+        let mut the_day_after = on_the_day;
+        the_day_after.date = Date::parse("2027-07-01").expect("a date");
+        assert_eq!(zeroed(&[the_day_after]), (0, 1));
+    }
+
     #[test]
     fn the_span_is_the_earliest_and_the_latest_date_whatever_order_they_arrived_in() {
         assert_eq!(span(&[]), None);

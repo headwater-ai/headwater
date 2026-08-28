@@ -495,11 +495,19 @@ impl Audit {
         }
 
         let reading = &series.reading;
-        match reading.tasks.is_empty() {
-            true => out.push_str(
+        // An empty task list has two causes, and the report may not state the
+        // one it did not read. A lock that declares no payload and a lock whose
+        // every task this engine refused both arrive here with no task, and the
+        // second is the state an adopter has to be told the truth about. The
+        // refused count is what tells them apart, and the line below states it.
+        match (reading.tasks.is_empty(), reading.refused) {
+            (true, 0) => out.push_str(
                 "  this run reads no task, because the lock declares no adoption payload\n",
             ),
-            false => {
+            (true, _) => out.push_str(
+                "  this run reads no task it can measure, and the cause is a refusal rather than an\n  absent payload\n",
+            ),
+            (false, _) => {
                 let _ = writeln!(
                     out,
                     "  this run reads {}, {} open, {} closed, holding {}",
@@ -513,7 +521,7 @@ impl Audit {
         if reading.refused > 0 {
             let _ = writeln!(
                 out,
-                "  and it could not read {}. A refused task is a task nobody is measuring, and a\n  series that dropped one would report a payload shrinking when it went dark",
+                "  it could not read {}. A refused task is a task nobody is measuring, and a series\n  that dropped one would report a payload shrinking when it went dark",
                 many(reading.refused, "task", "tasks")
             );
         }
