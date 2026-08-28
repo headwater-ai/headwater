@@ -282,7 +282,12 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
         // what an expression is. The engine names the gap rather than invent a
         // form, which is the posture the resolver takes over a `$package`
         // reference for the same reason.
-        Verb::Query { .. } => fail(
+        //
+        // `refuse` rather than `fail` (#455): no spelling of "run a query"
+        // gets past this, and `query` is a declared member of `VERBS`, so the
+        // grammar `fail` would point at lists it and repeats the sentence
+        // above.
+        Verb::Query { .. } => refuse(
             "`query <expression>` is listed in spec 6 and no document states what an expression \
              is, so this engine implements none. See `docs/spec/13-open-obligations.md`. \
              `headwater route` and `headwater explain` are the reads that exist",
@@ -1090,6 +1095,10 @@ fn vendor(root: &Path, fetched: &Path, expect: Option<&str>) -> ExitCode {
         .ok()
         .and_then(|consumer| consumer.digest);
     let Some(pinned) = expect.map(str::to_string).or(declared) else {
+        // Stays at `fail` (#455): `--expect` reaches past this on the command
+        // line, which is the whole test, and a caller who does not know the
+        // flag exists is the caller the grammar pointer is for. The consumer
+        // declaration being incomplete pulls the other way and loses to that.
         return fail(
             "nothing pins this artifact. A digest the engine took from the artifact in front of \
              it is a pin against itself, so this refuses rather than records what it received. \
@@ -1319,10 +1328,14 @@ fn migrate(
     for carried in &payloads {
         match carried.covers(&from, &to) {
             Err(why) => {
-                return fail(&format!(
+                // `refuse` (#455): the package already matched, so this is the
+                // artifact the caller meant, and a payload inside it is
+                // malformed. No spelling of this command line makes those
+                // bytes readable.
+                return refuse(&format!(
                     "{} states a version range this engine cannot read: {why}",
                     carried.at
-                ))
+                ));
             }
             Ok(false) => {}
             Ok(true) => selected.push(carried),
@@ -1331,15 +1344,21 @@ fn migrate(
     let payload = match selected.len() {
         1 => selected[0],
         0 => {
-            return fail(&format!(
+            // `refuse` (#455): the publisher shipped an artifact this
+            // transition is not covered by, which the message says by naming
+            // spec 2. A different `--to` is a different migration rather than
+            // a repair of this one.
+            return refuse(&format!(
                 "the artifact ships no migration payload for {from} to {to}. Spec 2 makes a major \
                  version ship one, and this verb applies a payload rather than deriving one. \
                  `headwater taxonomy diff {}` reports what moved",
                 fetched.display()
-            ))
+            ));
         }
         count => {
-            return fail(&format!(
+            // `refuse` (#455): the publisher shipped an ambiguous artifact.
+            // Same reason as the arm above it, and no flag picks a route.
+            return refuse(&format!(
                 "{count} payloads of the artifact cover {from} to {to}, and a migration is not a \
                  choice of route: {}",
                 selected
@@ -1347,7 +1366,7 @@ fn migrate(
                     .map(|payload| payload.at.as_str())
                     .collect::<Vec<_>>()
                     .join(", ")
-            ))
+            ));
         }
     };
 
@@ -1424,11 +1443,19 @@ fn migrate(
                             // `sites` would not have named the entry. The
                             // refusal is here anyway, because the alternative to
                             // an answer is a rewrite of somebody's overlay into
-                            // a path nobody wrote.
+                            // a path nobody wrote. That argument may make this
+                            // branch unreachable, and no case drives it for
+                            // that reason.
+                            //
+                            // `refuse` and not `defect` (#455): somebody
+                            // authored the overlay entry this reads, and
+                            // `defect` is for a value this run's own code
+                            // built. Nothing on the command line reaches
+                            // `.headwater/overlay.yml`.
                             let Some(moved) =
                                 headwater_resolve::migration::readdressed(address, &step.from, to)
                             else {
-                                return fail(&format!(
+                                return refuse(&format!(
                                     "{at} in {path} is not addressed under `{}`, so this run \
                                      cannot say what it becomes",
                                     step.from
@@ -3379,9 +3406,14 @@ fn probe_stale(root: &Path) -> ExitCode {
 /// graph, so a finding is what a later run cannot make. Either an import is
 /// refused here or nothing downstream is going to notice.
 fn import(root: &Path, name: Option<&str>, expect: Option<&str>, writing: bool) -> ExitCode {
+    // `refuse` (#455, the ninth site): `declared` reads
+    // `.headwater/taxonomy.yml`, which is a fixed location this engine reads on
+    // every run, and every error it returns is a fact about that file. No
+    // spelling of `headwater import` gets past one. The sibling call in `load`
+    // already reports without the pointer, so this was the odd one out.
     let declarations = match headwater_import::declared(root) {
         Ok(declarations) => declarations,
-        Err(why) => return fail(&why),
+        Err(why) => return refuse(&why),
     };
     let names: Vec<String> = declarations
         .iter()
@@ -4323,8 +4355,15 @@ fn infer(
         let mut cells: Vec<&str> = held.iter().map(|finding| finding.path.as_str()).collect();
         cells.sort_unstable();
         cells.dedup();
+        // Both values quoted, for the reason `quoted` records: this was an
+        // unquoted flow mapping, and a `}` in a filename closed it early while
+        // a comma in one truncated the value and exited 0.
         for path in cells {
-            payload.push_str(&format!("      - {{path: {path}, rule: {rule}}}\n"));
+            payload.push_str(&format!(
+                "      - {{path: {}, rule: {}}}\n",
+                quoted(path),
+                quoted(rule)
+            ));
         }
     }
 
@@ -4538,13 +4577,19 @@ fn infer(
         return ExitCode::SUCCESS;
     }
 
+    // Both arms re-read a string this same function assembled above. If either
+    // fires, this engine emitted YAML it cannot read back, so neither the
+    // caller nor anything on disk is at fault and `defect` is the helper
+    // (#455).
     let fresh = match headwater_yaml::load(&payload) {
         Ok(node) => match node.value.as_map() {
             Some(map) => map.clone(),
-            None => return fail("the payload this run built is not a mapping, which is a defect"),
+            None => {
+                return defect("the payload this run built is not a mapping, which is a defect")
+            }
         },
         Err(errors) => {
-            return fail(&format!(
+            return defect(&format!(
                 "the payload this run built does not load: {}",
                 headwater_yaml::error::render(&errors)
             ))
@@ -4918,18 +4963,41 @@ add: {{}}
 /// look dangerous today. A payload that does not load is a payload the next
 /// command refuses, and the failure would be reported against the lock rather
 /// than against the text that produced it.
+///
+/// # The three routes a review found, and what each one cost
+///
+/// That paragraph was a claim and not a fact until a review of
+/// [#455](https://github.com/headwater-ai/headwater/issues/455) tested it. This
+/// escaped `"` and `\` alone, and the `pairs` entries reached the payload as an
+/// unquoted flow mapping that never came here at all. Three routes followed,
+/// and each one was reached by running the binary rather than by reading it:
+///
+/// - A newline in `--owner` wrote a raw line break inside a double-quoted
+///   scalar. The payload stopped loading, and the run told the caller that
+///   neither their corpus nor their command line caused it.
+/// - A `}` in a document's filename closed the flow mapping early, with the
+///   same false sentence under it.
+/// - A comma in a filename was worse than either, because nothing failed.
+///   `docs/spec/a,b.md` was read as the value `docs/spec/a`, the run exited 0,
+///   and the lock declared debt against a document that does not exist.
+///
+/// So the escaping is by category rather than by the two characters that were
+/// noticed first: a control character is what a raw line break is a member of,
+/// and [`char::is_control`] is the whole C0 and C1 range. `U+2028` and `U+2029`
+/// are outside it and YAML reads both as line breaks, so they are named.
+///
+/// The escaping itself is [`headwater_resolve::render::quoted`] rather than a
+/// second copy here. This one was the second copy, and being a second copy is
+/// how it fell three characters behind the writer that puts the same strings
+/// into the lock. Repairing it exposed a fourth route in that writer, which is
+/// recorded there.
+///
+/// The invariant this holds is what makes `defect`'s two call sites in
+/// [`infer`] unreachable, and
+/// `tests/wiring.rs::a_payload_this_verb_writes_loads_whatever_a_path_or_an_owner_holds`
+/// drives every route.
 fn quoted(text: &str) -> String {
-    let mut out = String::with_capacity(text.len() + 2);
-    out.push('"');
-    for character in text.chars() {
-        match character {
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            other => out.push(other),
-        }
-    }
-    out.push('"');
-    out
+    headwater_resolve::render::quoted(text)
 }
 
 fn busiest_directory(root: &Path) -> Option<String> {
@@ -5035,11 +5103,24 @@ fn refused(what: &str, errors: &[headwater_census::shelves::DeclarationError]) -
 /// profile, an import, a directory) and found wanting, because the value that
 /// was wrong is still the one the caller typed.
 ///
-/// Eight sites #331 read and left here on purpose:
-/// [#455](https://github.com/headwater-ai/headwater/issues/455) carries them,
-/// because for each one the fact comes from comparing what the caller typed
-/// against what a file on disk says, and a second read did not settle which
-/// side is at fault.
+/// # The eight sites #331 left, and the line that settles them
+///
+/// [#455](https://github.com/headwater-ai/headwater/issues/455) settled the
+/// eight sites #331 left here, and the line it drew is the one this function
+/// now states. A caller naming a location — a `--root`, a fetched artifact, a
+/// directory — does not make the refusal a command-line fact: [`refuse`]'s own
+/// case in `tests/wiring.rs` is reached through an explicit `--root`. What
+/// decides it is whether a spelling of this request gets past the refusal.
+///
+/// An artifact that is whole and simply is not this repository's package stays
+/// here (the two package-mismatch sites, in `migrate` and in `diff`), because
+/// a different artifact is a different command
+/// line and the grammar names the argument that was wrong. An artifact whose
+/// own payload is unreadable, absent for the transition, or ambiguous does not,
+/// because no spelling of this command line reads it. A refusal a flag repairs
+/// stays here even where a file edit is the other remedy: `taxonomy vendor`
+/// with no pin names `--expect` beside the declaration, and `--expect` is
+/// grammar.
 ///
 /// # Why the prefix is written per line
 ///
@@ -5054,20 +5135,77 @@ fn fail(message: &str) -> ExitCode {
     ExitCode::FAILURE
 }
 
-/// A refusal that is a fact about the corpus, the filesystem, or the host —
-/// true regardless of what command line reached it, and not repaired by
-/// retyping one.
+/// A refusal no command line reaches past: a fact about the corpus, the
+/// filesystem, the host, a fetched artifact's own content, or a wait this
+/// engine declares — true regardless of what command line reached it.
 ///
 /// [`fail`] names where the grammar is, because a caller who wrote the wrong
 /// flag is looking for it. A caller who hit one of these is not: a fixed
 /// location this engine reads or writes on every run
 /// (`.headwater/taxonomy.lock`, `.headwater/overlay.yml`, the consumer
-/// declaration, a probe budget declaration) refusing to exist, to parse, or
-/// to accept a write; a fact the package or the corpus itself declares wrong
-/// or incomplete, independent of any flag; or a fact about the host that no
-/// flag repairs, such as a clock reading before 1970. A line pointing at the
-/// grammar under one of these points away from what the sentence says.
+/// declaration, a probe budget declaration) refusing to exist, to parse, or to
+/// accept a write; a fact the package, the corpus, or a fetched artifact itself
+/// declares wrong or incomplete, independent of any flag; a fact about the host
+/// that no flag repairs, such as a clock reading before 1970; or a verb this
+/// binary parses and this engine has never implemented, where no other spelling
+/// of the request exists. A line pointing at the grammar under one of these
+/// points away from what the sentence says.
+///
+/// The boundary with [`defect`] is who wrote the value. Everything here was
+/// authored by somebody — a corpus, an overlay, a published artifact — and a
+/// value this run's own code built belongs there instead.
 fn refuse(message: &str) -> ExitCode {
     eprintln!("headwater: {message}");
+    ExitCode::FAILURE
+}
+
+/// A refusal that is a defect in this engine: a value this run's own code built
+/// failed a check this run's own code makes.
+///
+/// Neither [`fail`] nor [`refuse`] fits. The command line was correct and no
+/// grammar helps, so the pointer [`fail`] adds is wrong. The corpus, the
+/// filesystem and the host are all sound, so a caller sent here by [`refuse`]
+/// would search their own documents for a fault that is ours.
+///
+/// The line under the message says whose fault it is, and names the engine
+/// version, which is what a report of it needs. It names no address to send
+/// that report to: this repository has no published home yet, and a line
+/// naming one would be a line that stops being true.
+///
+/// # What the line asserts, and what had to become true before it could
+///
+/// "Neither your corpus nor your command line caused it" is a strong claim, and
+/// it was **false when it was first written**. A review of #455 reached both
+/// call sites from outside: a newline in `--owner`, and a `}` in a document's
+/// filename. In each case the run printed that sentence to a caller whose
+/// command line or whose corpus was exactly the cause.
+///
+/// What makes it true is [`quoted`] rather than this function. Every scalar the
+/// payload carries now goes through it, control characters included, and the
+/// `pairs` entries are quoted rather than written into a bare flow mapping. Its
+/// doc comment records the three routes and the third one, which failed
+/// silently rather than loudly.
+///
+/// So the two call sites are unreachable, and they are unreachable for a reason
+/// a reader can check rather than by luck. That is the point rather than an
+/// excuse: nothing drives them, so nothing executes them, and the invariant
+/// they hold is the last thing saying the payload this run wrote is the payload
+/// it meant to write. Read this claim as conditional on that one, and re-test
+/// it rather than trusting it if `quoted` ever stops being the one route out.
+///
+/// Two cases hold this pair, and neither drives the sites, because after the
+/// repair nothing can.
+/// `tests/wiring.rs::every_refusal_about_a_value_this_run_built_goes_out_through_defect`
+/// holds which helper carries each message, and
+/// `tests/wiring.rs::the_defect_helper_names_the_engine_version_and_no_address`
+/// holds what this body prints. The second exists because the review rewrote
+/// this body to print an address and drop the version constant, and the whole
+/// suite stayed green.
+fn defect(message: &str) -> ExitCode {
+    eprintln!("headwater: {message}");
+    eprintln!(
+        "headwater: this is a defect in engine {}, and neither your corpus nor your command line caused it",
+        headwater_resolve::release::ENGINE
+    );
     ExitCode::FAILURE
 }
