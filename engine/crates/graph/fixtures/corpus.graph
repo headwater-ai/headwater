@@ -1,6 +1,6 @@
-267 nodes, 542 declared edge halves
+268 nodes, 543 declared edge halves
     429 to a document
-    113 to an anchor
+    114 to an anchor
 0 prose links that did not resolve
 
 anchors
@@ -38,6 +38,7 @@ anchors
       1 code_path `engine/crates/conformance/src/json.rs` via source-tree
       1 code_path `engine/crates/conformance/src/lib.rs` via source-tree
       1 code_path `engine/crates/conformance/src/render.rs` via source-tree
+      1 code_path `engine/crates/doc/src/sentences.rs` via source-tree
       1 code_path `engine/crates/generate/src/export.rs` via source-tree
       1 code_path `engine/crates/generate/src/lib.rs` via source-tree
       1 code_path `engine/crates/graph/src/anchors.rs` via source-tree

@@ -261,6 +261,7 @@ This class did not exist before 2026-08-26. Before that date, such a finding was
 - [HW-OBL-0156](../obligations/0156-a-help-string-and-the-interface-contract-that-restates-it-can-both-be-false-with-the-whole-suite-green.md) — A help string and the interface contract that restates it can both be false with the whole suite green
 - [HW-OBL-0157](../obligations/0157-the-capture-report-says-two-denominators-over-a-store-that-named-seventeen-taxonomies.md) — The capture report says two denominators over a store that named seventeen taxonomies
 - [HW-OBL-0158](../obligations/0158-clap-owns-the-help-flag-so-h-help-reads-print-help-on-all-32-verb-pages.md) — clap owns the help flag, so -h, --help reads Print help on all 32 verb pages
+- [HW-OBL-0159](../obligations/0159-a-sentence-that-opens-with-a-hash-and-an-issue-number-is-folded-into-the-sentence-before-it.md) — A sentence that opens with a hash and an issue number is folded into the sentence before it
 
 ## What the first typing of this corpus found
 
