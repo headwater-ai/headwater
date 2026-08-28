@@ -79,6 +79,7 @@
 
 pub mod declared;
 pub mod fix;
+pub mod json;
 pub mod migrate;
 pub mod overlay;
 pub mod reading;
