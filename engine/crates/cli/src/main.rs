@@ -296,7 +296,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             )),
             Some(TaxonomyWord::Validate) => validate(root),
             Some(TaxonomyWord::Resolve { check }) => resolve(root, check),
-            Some(TaxonomyWord::Audit { now }) => audit(root, now),
+            Some(TaxonomyWord::Audit { now, record }) => audit(root, now, record),
             Some(TaxonomyWord::Publish { package, from, out }) => {
                 publish(root, package.as_deref(), from.as_deref(), out.as_deref())
             }
@@ -774,7 +774,15 @@ fn carried(payload: &headwater_yaml::Mapping) -> String {
 /// staleness reading and a dwell reading are both taken against a date, so two
 /// runs over one tree agree only when the date is the same value. `--now` is
 /// where a caller fixes it, and the report states the date it used.
-fn audit(root: &Path, now: Option<Date>) -> ExitCode {
+///
+/// **`--record` is the one thing here that writes, and it is opt-in for a
+/// committed reason.** The `--now` help text a caller reads promises that "two
+/// audits of one tree at one date write the same bytes", and a verb that
+/// appended on every run would falsify that on its second run. The store also
+/// refuses a duplicate `(lock, date)`, so the promise holds under the flag too.
+/// The report is rendered from the store as it stands after the append, which
+/// is what makes the section a function of the file rather than of the flag.
+fn audit(root: &Path, now: Option<Date>, record: bool) -> ExitCode {
     let loaded = match load(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
@@ -782,6 +790,46 @@ fn audit(root: &Path, now: Option<Date>) -> ExitCode {
     let Some(context) = now.map(Context::at).or_else(Context::from_system_clock) else {
         eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
         return ExitCode::FAILURE;
+    };
+
+    // The adoption reading is the one reading of this verb whose input is a run
+    // of the check layer rather than the census and the graph beside it. The
+    // ledger is what a check run says about the payload, and re-deriving it here
+    // would be the second account of one tree that `take` exists to refuse.
+    let reading = headwater_audit::reading::Reading::of(
+        &run_of(&loaded, &context).adoption,
+        &loaded.bound.digest,
+        context.now(),
+    );
+    if record {
+        match headwater_audit::reading::append(root, &reading) {
+            Err(error) => {
+                return refuse(&format!(
+                    "the adoption reading did not append to {}: {error}",
+                    headwater_audit::reading::STORE
+                ))
+            }
+            Ok(headwater_audit::reading::Appended::Held) => eprintln!(
+                "headwater: {} already holds a reading at {} under {}, and nothing was appended",
+                headwater_audit::reading::STORE,
+                context.now(),
+                loaded.bound.digest
+            ),
+            Ok(headwater_audit::reading::Appended::Written) => eprintln!(
+                "headwater: appended one adoption reading to {}",
+                headwater_audit::reading::STORE
+            ),
+        }
+    }
+    // After the append, so the section reports the file a reader will open.
+    let (recorded, unreadable) = match headwater_audit::reading::load(root) {
+        Ok(held) => held,
+        Err(error) => {
+            return refuse(&format!(
+                "{} did not read: {error}",
+                headwater_audit::reading::STORE
+            ))
+        }
     };
 
     let audit = headwater_audit::take(
@@ -799,6 +847,11 @@ fn audit(root: &Path, now: Option<Date>) -> ExitCode {
         // The resolved taxonomy, for the one member of a shelf that no typed
         // reader carries. See `headwater_scaffold::declared`.
         &loaded.bound.taxonomy,
+        headwater_audit::Series {
+            reading,
+            recorded,
+            unreadable,
+        },
     );
     print!("{}", audit.render());
     ExitCode::SUCCESS
@@ -1889,6 +1942,10 @@ fn payload(
 /// digest, so a candidate would take no hit and would write entries under a
 /// taxonomy that nobody committed. A later `headwater check` would then read a
 /// cache whose contents no lock accounts for.
+///
+/// `taxonomy audit` reuses it for a second reason that reaches the same answer:
+/// that verb gates nothing and exits 0 whatever it reads, so a report of it
+/// should not leave cache entries behind as a side effect of being run.
 fn run_of(loaded: &Loaded, ctx: &Context) -> headwater_check::Run {
     let mut cache = Cache::disabled();
     headwater_check::run(

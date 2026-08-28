@@ -9,14 +9,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 316,
-      "carried": 316,
+      "in the graph": 318,
+      "carried": 318,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 531,
-      "carried": 531,
+      "in the graph": 532,
+      "carried": 532,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2077,7 +2077,7 @@
           "status": "draft",
           "status_since": "2026-08-25",
           "summary": "How to validate, resolve, audit, publish, vendor, compare and migrate taxonomy packages.",
-          "last_verified": "2026-08-25",
+          "last_verified": "2026-08-28",
           "title": "headwater taxonomy",
           "relations": {
             "governs": [
@@ -2085,6 +2085,7 @@
               "engine/crates/cli/src/main.rs",
               "engine/crates/resolve/src/lib.rs",
               "engine/crates/audit/src/lib.rs",
+              "engine/crates/audit/src/reading.rs",
               "engine/crates/compat/src/lib.rs"
             ]
           }
@@ -2298,7 +2299,7 @@
           "status": "current",
           "status_since": "2026-08-11",
           "waiting_on": "measurement",
-          "last_verified": "2026-08-13",
+          "last_verified": "2026-08-28",
           "summary": "Q12 claims that an adoption payload shrinks, and this repository holds one task that is a day old.",
           "provenance": {
             "warrant": "accepted",
@@ -6252,6 +6253,20 @@
         }
       },
       {
+        "path": "docs/obligations/0154-the-adoption-decay-section-is-fixture-recorded-only-in-its-empty-shape.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0154",
+        "facets": {
+          "id": "HW-OBL-0154",
+          "status": "draft",
+          "status_since": "2026-08-28",
+          "summary": "Every section of the recorded audit report renders populated except the adoption one, whose fixture tree declares no payload.",
+          "last_verified": "2026-08-28",
+          "title": "The adoption decay section is fixture-recorded only in its empty shape",
+          "waiting_on": "build"
+        }
+      },
+      {
         "path": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
         "kind": "probe",
         "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
@@ -7257,6 +7272,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/audit/src/lib.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/audit/src/reading.rs",
         "resolver": "source-tree"
       },
       {
@@ -9800,6 +9820,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/audit/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-taxonomy.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/audit/src/reading.rs",
           "resolver": "source-tree"
         }
       },

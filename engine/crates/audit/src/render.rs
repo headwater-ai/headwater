@@ -65,6 +65,7 @@ impl Audit {
         self.layouts_section(&mut out);
         self.dwell_section(&mut out);
         self.warrants_section(&mut out);
+        self.adoption_section(&mut out);
         self.waiting_section(&mut out);
         out
     }
@@ -452,6 +453,154 @@ impl Audit {
             "  The `asserted` population is {}, which is the denominator a promotion rate divides\n  by. The numerator is a count per change, which `headwater check --change` reports under\n  `warrant.promoted`: this verb reads one working tree, so it holds one half of that rate\n  and can never reach the other. Nothing declares how many promotions in one change is too\n  many, so no figure here carries a verdict.",
             warrants.asserted()
         );
+    }
+
+    /// The adoption payload of this run, against every reading the store holds.
+    ///
+    /// It sits after the warrants and before the waits because it is a reading
+    /// this verb **takes**, and the waits are what it does not take. What this
+    /// verb cannot do is state a trend from one reading, and the section says
+    /// that in its own words rather than becoming a fourth `Supply` arm.
+    fn adoption_section(&self, out: &mut String) {
+        let series = &self.adoption;
+        let recorded = &series.recorded;
+        out.push_str("\nadoption payload decay\n");
+        out.push_str(
+            "  The store is `.headwater/adoption.jsonl`, which is outside the corpus root. No\n  \
+             census row covers it, no language regime binds it, and no rule reads it. No crate\n  \
+             of this engine walks git history, so a series exists only where a run was handed\n  \
+             one reading at a time.\n",
+        );
+
+        match crate::reading::span(recorded) {
+            None => out.push_str(
+                "  no reading recorded, so there is no series. `taxonomy audit --record` takes the first one\n",
+            ),
+            Some((first, last)) => {
+                let digests = crate::reading::locks(recorded).len();
+                let _ = writeln!(
+                    out,
+                    "  {}, {first} to {last}, under {}",
+                    many(recorded.len(), "reading", "readings"),
+                    many(digests, "taxonomy", "taxonomies")
+                );
+            }
+        }
+        for line in &series.unreadable {
+            let _ = writeln!(
+                out,
+                "  line {} of the store is not a reading and is counted nowhere: {}",
+                line.line, line.why
+            );
+        }
+
+        let reading = &series.reading;
+        // An empty task list has two causes, and the report may not state the
+        // one it did not read. A lock that declares no payload and a lock whose
+        // every task this engine refused both arrive here with no task, and the
+        // second is the state an adopter has to be told the truth about. The
+        // refused count is what tells them apart, and the line below states it.
+        match (reading.tasks.is_empty(), reading.refused) {
+            (true, 0) => out.push_str(
+                "  this run reads no task, because the lock declares no adoption payload\n",
+            ),
+            (true, _) => out.push_str(
+                "  this run reads no task it can measure, and the cause is a refusal rather than an\n  absent payload\n",
+            ),
+            (false, _) => {
+                let _ = writeln!(
+                    out,
+                    "  this run reads {}, {} open, {} closed, holding {}",
+                    many(reading.tasks.len(), "task", "tasks"),
+                    many(reading.open(), "pair", "pairs"),
+                    reading.closed(),
+                    many(reading.held(), "finding", "findings")
+                );
+            }
+        }
+        if reading.refused > 0 {
+            let _ = writeln!(
+                out,
+                "  it could not read {}. A refused task is a task nobody is measuring, and a series\n  that dropped one would report a payload shrinking when it went dark",
+                many(reading.refused, "task", "tasks")
+            );
+        }
+
+        for task in &reading.tasks {
+            let _ = writeln!(
+                out,
+                "    {}  open {}, closed {}, holding {}, until {}, {}",
+                task.id,
+                task.open,
+                task.closed,
+                many(task.held, "finding", "findings"),
+                task.until,
+                crate::reading::state_name(task.state)
+            );
+            let seen = crate::reading::appearances(recorded, &task.id);
+            match seen.first().zip(seen.last()) {
+                None => out.push_str(
+                    "      no recorded reading holds it, so this run is the first sight of it\n",
+                ),
+                Some((first, last)) if seen.len() == 1 => {
+                    let _ = writeln!(
+                        out,
+                        "      open {} on the one recorded reading that holds it, and {} closed",
+                        first.open, last.closed
+                    );
+                }
+                Some((first, last)) => {
+                    let _ = writeln!(
+                        out,
+                        "      open {} on the first of {} readings that hold it, and {} on the last",
+                        first.open,
+                        seen.len(),
+                        last.open
+                    );
+                }
+            }
+        }
+
+        let (reached, over) = crate::reading::zeroed(recorded);
+        match over {
+            0 => out.push_str(
+                "  no task has been recorded, so the fraction that reaches zero before its expiry has no\n  denominator yet\n",
+            ),
+            _ => {
+                let _ = writeln!(
+                    out,
+                    "  payloads at zero before their expiry: {reached} of {} the series has seen.\n  \
+                     The denominator is every task identifier the store holds, and never the tasks\n  \
+                     the lock declares today: a task that closed and was deleted is a payload that\n  \
+                     reached zero",
+                    many(over, "task", "tasks")
+                );
+            }
+        }
+
+        let digests = crate::reading::locks(recorded);
+        if digests.len() > 1 {
+            let _ = writeln!(
+                out,
+                "  {} produced these readings, so the figures above are across {} denominators and\n  \
+                 are not a trend. A rule the taxonomy stopped running closes a pair with no change\n  \
+                 in what anybody wrote, so two readings under two digests are two measurements",
+                many(digests.len(), "taxonomy", "taxonomies"),
+                digests.len()
+            );
+            for digest in &digests {
+                let _ = writeln!(out, "    {digest}");
+            }
+        }
+        match recorded.len() {
+            0 => out.push_str(
+                "  A payload with no reading behind it has no history, and the elapsed time between\n  two readings is the one quantity no engine can supply.\n",
+            ),
+            1 => out.push_str(
+                "  A series of one reading states a value and never a trend.\n",
+            ),
+            _ => {}
+        }
     }
 
     /// What this verb does not measure, as this run found each prerequisite.

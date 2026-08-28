@@ -9,3 +9,15 @@
 # reading depends on no other reading, and `headwater capture` reports a line it
 # cannot read rather than trusting the file.
 .headwater/capture-cost.jsonl merge=union
+
+# The adoption store is the same shape and it holds under the same argument: one
+# reading per run of `headwater taxonomy audit --record`, no line ever
+# rewritten, and a reading that depends on no other reading. `taxonomy audit`
+# reports a line it cannot read rather than trusting the file.
+#
+# It carries one case the store above cannot produce: two branches that each
+# recorded a reading of one tree at one date under one lock write the same line,
+# and `union` keeps both copies. Nothing rewrites a store, so the duplicate
+# stands until a person deletes it. What the writer's `(lock, date)` refusal
+# holds is the other direction: no later run adds a third copy.
+.headwater/adoption.jsonl merge=union

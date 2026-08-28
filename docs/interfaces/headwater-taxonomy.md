@@ -3,7 +3,7 @@ id: HW-IFACE-headwater-taxonomy
 status: draft
 status_since: 2026-08-25
 summary: "How to validate, resolve, audit, publish, vendor, compare and migrate taxonomy packages."
-last_verified: 2026-08-25
+last_verified: 2026-08-28
 title: "headwater taxonomy"
 relations:
   governs:
@@ -11,6 +11,7 @@ relations:
     - engine/crates/cli/src/main.rs
     - engine/crates/resolve/src/lib.rs
     - engine/crates/audit/src/lib.rs
+    - engine/crates/audit/src/reading.rs
     - engine/crates/compat/src/lib.rs
 ---
 
@@ -24,7 +25,7 @@ The grouped command validates taxonomy sources, resolves the lock, measures sche
 
 ## Description
 
-`validate` checks taxonomy sources without writing. `resolve` writes the validated `.headwater/taxonomy.lock`, or checks that the committed lock is current with `--check`. `audit` reports schema measurements and remains non-gating.
+`validate` checks taxonomy sources without writing. `resolve` writes the validated `.headwater/taxonomy.lock`, or checks that the committed lock is current with `--check`. `audit` reports schema measurements and remains non-gating. `audit --record` also appends this run's adoption reading to `.headwater/adoption.jsonl`, which is the one write this word performs.
 
 `publish` writes a release artifact and release record. `vendor` reads a fetched artifact into the package area after digest validation. `diff` compares a fetched artifact with the current taxonomy. `migrate` reports migration steps and writes them only with `--apply`.
 
@@ -38,7 +39,7 @@ The consumer declaration and package sources must be readable for source operati
 |---|---|
 | `validate` | Validates taxonomy sources without writing. |
 | `resolve [--check]` | Writes or checks `.headwater/taxonomy.lock`. |
-| `audit [--now <date>]` | Measures the taxonomy against the corpus. |
+| `audit [--now <date>] [--record]` | Measures the taxonomy against the corpus. `--record` appends one adoption reading to `.headwater/adoption.jsonl`, and refuses a reading the store already holds at this lock and this date. |
 | `publish [--package <name>] [--from <dir>] [--out <dir>]` | Writes a package artifact and release record. |
 | `vendor <dir> [--expect <digest>]` | Installs a fetched artifact after digest validation. |
 | `diff <dir> [--to <version>] [--now <date>]` | Compares a fetched artifact with the current taxonomy. |
@@ -48,7 +49,7 @@ The consumer declaration and package sources must be readable for source operati
 
 ## Exit status
 
-`validate`, `resolve`, `publish`, `vendor`, `diff` and `migrate` return **0** when their operation succeeds and **1** on refusal or write failure. `resolve --check` returns **1** for a stale lock. `audit` returns **0** after it reports its measurements.
+`validate`, `resolve`, `publish`, `vendor`, `diff` and `migrate` return **0** when their operation succeeds and **1** on refusal or write failure. `resolve --check` returns **1** for a stale lock. `audit` returns **0** after it reports its measurements, and **1** where `--record` cannot write or read the store.
 
 ## Environment
 
@@ -60,6 +61,7 @@ The command reads the system date when a subcommand has `--now` and no date is s
 |---|---|
 | `.headwater/taxonomy.yml`, package sources and overlay | Read by validation and resolution. |
 | `.headwater/taxonomy.lock` | Written by `resolve` without `--check`. |
+| `.headwater/adoption.jsonl` | Read by `audit`, and appended to by `audit --record`. |
 | Package and artifact directories | Read by `vendor`, `diff` and `migrate`, and written by `publish` or `migrate --apply`. |
 
 ## See also

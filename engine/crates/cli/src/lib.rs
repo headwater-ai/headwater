@@ -762,6 +762,14 @@ pub enum TaxonomyWord {
                     the same bytes"
         )]
         now: Option<Date>,
+        #[arg(
+            long,
+            help = "append this run's adoption reading to `.headwater/adoption.jsonl`. Without it \
+                    the verb writes nothing. A reading the store already holds at this lock and \
+                    this date is not appended twice, so two recorded audits of one tree at one \
+                    date still write the same bytes"
+        )]
+        record: bool,
     },
     Publish {
         #[arg(
