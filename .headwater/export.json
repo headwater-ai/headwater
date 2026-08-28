@@ -9,8 +9,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 318,
-      "carried": 318,
+      "in the graph": 319,
+      "carried": 319,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -6263,6 +6263,20 @@
           "summary": "Every section of the recorded audit report renders populated except the adoption one, whose fixture tree declares no payload.",
           "last_verified": "2026-08-28",
           "title": "The adoption decay section is fixture-recorded only in its empty shape",
+          "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0155-probe-s-fourteen-refusals-have-no-coverage-test-and-three-of-them-are-named-by-no-test-at-all.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0155",
+        "facets": {
+          "id": "HW-OBL-0155",
+          "status": "draft",
+          "status_since": "2026-08-28",
+          "summary": "Three of the `probe` crate's fourteen refusals are named by no test, and no case holds the set to its own coverage.",
+          "last_verified": "2026-08-28",
+          "title": "probe's fourteen refusals have no coverage test, and three of them are named by no test at all",
           "waiting_on": "build"
         }
       },
