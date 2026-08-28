@@ -171,6 +171,54 @@ impl Root {
         self.write(&text.replacen("\nresolved:\n", &format!("{payload}\nresolved:\n"), 1));
     }
 
+    /// The same block whose one pair names a `(path, rule)` the case chooses.
+    ///
+    /// Every helper above writes `PAYLOAD`'s own pair, which names
+    /// `docs/spec/02-taxonomy-model.md` — a path the scratch corpus does not
+    /// hold. Such a pair matches no finding, so it reads as *closed* and every
+    /// case above runs at `0 open`. A case that needs an open pair therefore
+    /// builds the corpus first and names the document the scaffolder actually
+    /// wrote, which is why this helper takes the pair rather than baking one in.
+    fn author_pair(&self, id: &str, until: &str, path: &str, rule: &str) {
+        let text = self.text();
+        assert!(
+            !text.contains("\nadoption:\n"),
+            "the fixture starts with no authored block"
+        );
+        let payload = PAYLOAD
+            .replace("AD-9", id)
+            .replace("2027-06-30", until)
+            .replace("docs/spec/02-taxonomy-model.md", path)
+            .replace("language.retired_term.used", rule);
+        self.write(&text.replacen("\nresolved:\n", &format!("{payload}\nresolved:\n"), 1));
+    }
+
+    /// The one document the corpus holds, as the check layer names it.
+    ///
+    /// A path rather than a file name, because a pair of the `adoption` block is
+    /// matched against the path a finding carries.
+    fn document(&self) -> String {
+        let at = std::fs::read_dir(self.at.join("docs/spec"))
+            .expect("the spec shelf is there")
+            .map(|entry| entry.expect("the entry reads").path())
+            .next()
+            .expect("the corpus was built first");
+        let name = at.file_name().expect("the document has a name");
+        format!("docs/spec/{}", name.to_string_lossy())
+    }
+
+    /// Every line of the adoption store, or an empty vector where none exists.
+    fn store(&self) -> Vec<String> {
+        match std::fs::read_to_string(self.at.join(".headwater/adoption.jsonl")) {
+            Err(_) => vec![],
+            Ok(text) => text
+                .lines()
+                .filter(|line| !line.trim().is_empty())
+                .map(str::to_string)
+                .collect(),
+        }
+    }
+
     /// A corpus of one document that raises exactly one finding.
     ///
     /// The document is scaffolded rather than written out here, so a taxonomy
@@ -1084,5 +1132,287 @@ fn check_strict_exits_zero_when_a_declared_task_is_renewed() {
         "the rule does not fire on an open task (the rule still names itself \
          in the catalog of what ran, which is not a finding):\n{}",
         checked.out
+    );
+}
+
+/// The date every case below injects, so a recorded reading is a function of
+/// the tree rather than of the day the suite ran.
+const AT: &str = "2026-08-28";
+
+/// The rule the one scratch document raises, and the one it does not.
+///
+/// `corpus()` appends a sentence past the twenty-five-word limit, so the
+/// controlled-language rule is the whole of what this corpus fails. The retired
+/// term rule reads the same document and finds nothing, which is what makes the
+/// two arms below differ in exactly one declared pair.
+const RAISED: &str = "language.controlled.not_met";
+const UNRAISED: &str = "language.retired_term.used";
+
+/// Arm 1 of the decisive pair: an open, undischarged payload reads as open.
+///
+/// The corpus is built **before** the block is authored, because the pair has
+/// to name the document the scaffolder actually wrote. `PAYLOAD` names
+/// `docs/spec/02-taxonomy-model.md`, which this corpus does not hold, so every
+/// other case in this file runs at `0 open` and none of them could have caught
+/// a reading that reported zero whatever the corpus did.
+#[test]
+fn a_recorded_reading_states_an_open_payload_as_open() {
+    let root = Root::new("decay-open");
+    root.corpus();
+    let document = root.document();
+    root.author_pair("AD-9", "2027-06-30", &document, RAISED);
+
+    let ran = root.run(&["taxonomy", "audit", "--now", AT, "--record"]);
+    assert_eq!(
+        ran.code,
+        Some(0),
+        "the audit gates nothing, so it exits 0 whatever it read\n{}{}",
+        ran.out,
+        ran.err
+    );
+
+    let lines = root.store();
+    assert_eq!(lines.len(), 1, "one invocation is one reading: {lines:?}");
+    let line = &lines[0];
+    assert!(
+        line.contains("\"id\":\"AD-9\""),
+        "the reading names the task:\n{line}"
+    );
+    assert!(
+        line.contains("\"open\":1"),
+        "the declared pair still raises its finding:\n{line}"
+    );
+    assert!(
+        line.contains("\"closed\":0"),
+        "and nothing about it is discharged:\n{line}"
+    );
+    assert!(
+        line.contains("\"held\":1"),
+        "the task is holding the finding out of the report:\n{line}"
+    );
+    assert!(
+        line.contains("\"until\":\"2027-06-30\""),
+        "with the expiry a later reader needs to say whether it reached zero in time:\n{line}"
+    );
+    assert!(
+        ran.out.contains("1 pair open"),
+        "and the section states the same number:\n{}",
+        ran.out
+    );
+}
+
+/// Arm 2 of the decisive pair: a discharged payload reads as zero.
+///
+/// One declared pair away from the arm above, and every other input is the
+/// same. A store that could not tell these two apart would record a number that
+/// no corpus moves, which is the whole of what
+/// [HW-OBL-0008](../../../../docs/obligations/0008-an-adoption-payload-has-a-first-reading-and-no-elapsed-time.md)
+/// asks the series to measure.
+#[test]
+fn a_recorded_reading_states_a_discharged_payload_as_zero() {
+    let root = Root::new("decay-zero");
+    root.corpus();
+    let document = root.document();
+    root.author_pair("AD-9", "2027-06-30", &document, UNRAISED);
+
+    let ran = root.run(&["taxonomy", "audit", "--now", AT, "--record"]);
+    assert_eq!(
+        ran.code,
+        Some(0),
+        "the audit gates nothing\n{}{}",
+        ran.out,
+        ran.err
+    );
+
+    let lines = root.store();
+    assert_eq!(lines.len(), 1, "one invocation is one reading: {lines:?}");
+    let line = &lines[0];
+    assert!(
+        line.contains("\"open\":0"),
+        "the declared pair raises nothing, so the payload stands at zero:\n{line}"
+    );
+    assert!(
+        line.contains("\"closed\":1"),
+        "and the pair that stopped failing is what shrank it:\n{line}"
+    );
+    assert!(
+        line.contains("\"held\":0"),
+        "a task at zero holds nothing out of the report:\n{line}"
+    );
+    assert!(
+        ran.out.contains("0 pairs open"),
+        "and the section states the same number:\n{}",
+        ran.out
+    );
+    assert!(
+        ran.out.contains("until 2027-06-30"),
+        "with the expiry beside it, which is what `before the expiry` is read against:\n{}",
+        ran.out
+    );
+}
+
+/// Two lock digests are two measurements, and the report never averages them.
+///
+/// The source edit is a comment, so the resolved taxonomy is byte identical and
+/// only the recorded digest moves — the same move
+/// `a_source_that_moved_still_names_itself_and_keeps_the_old_message` makes. A
+/// denominator made of declarations moves when the taxonomy moves, so a series
+/// that summed across the two would report a schema change as a payload that
+/// grew or shrank. `headwater capture` refuses the same average for the same
+/// reason.
+#[test]
+fn two_lock_digests_are_two_measurements_and_the_report_says_so() {
+    let root = Root::new("decay-two-locks");
+    root.corpus();
+    let document = root.document();
+    root.author_pair("AD-9", "2027-06-30", &document, RAISED);
+
+    let first = root.run(&["taxonomy", "audit", "--now", AT, "--record"]);
+    assert_eq!(
+        first.code,
+        Some(0),
+        "the first reading is taken\n{}{}",
+        first.out,
+        first.err
+    );
+
+    let source = root.at.join("packages/headwater-standard/taxonomy.yml");
+    let mut text = std::fs::read_to_string(&source).expect("the source reads");
+    text.push_str("\n# A comment this case appended, which moves the bytes and not the result.\n");
+    std::fs::write(&source, text).expect("the source writes");
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(
+        resolved.code,
+        Some(0),
+        "the moved source resolves, and the authored block is carried through\n{}{}",
+        resolved.out,
+        resolved.err
+    );
+    assert!(
+        root.text().contains("AD-9"),
+        "the payload survived the resolve, or the second reading is over a different corpus"
+    );
+
+    let second = root.run(&["taxonomy", "audit", "--now", AT, "--record"]);
+    assert_eq!(
+        second.code,
+        Some(0),
+        "the second reading is taken\n{}{}",
+        second.out,
+        second.err
+    );
+
+    let lines = root.store();
+    assert_eq!(
+        lines.len(),
+        2,
+        "one date and two digests are two readings: {lines:?}"
+    );
+    let digest = |line: &str| {
+        line.split("\"lock\":\"")
+            .nth(1)
+            .and_then(|rest| rest.split('"').next())
+            .expect("a reading names its lock")
+            .to_string()
+    };
+    assert_ne!(
+        digest(&lines[0]),
+        digest(&lines[1]),
+        "the two readings were taken under two taxonomies: {lines:?}"
+    );
+    assert!(
+        second.out.contains("2 taxonomies"),
+        "the section counts the denominators:\n{}",
+        second.out
+    );
+    assert!(
+        second.out.contains("not a trend"),
+        "and refuses to trend across them:\n{}",
+        second.out
+    );
+}
+
+/// Two recorded audits of one tree at one date still write the same bytes.
+///
+/// That sentence is in the committed `--now` help text, so a verb that appended
+/// on every run would falsify a promise a caller already reads. The refusal is
+/// keyed on `(lock, date)`, which is also what makes the store idempotent under
+/// a `merge=union` resolution that kept two copies of one reading.
+#[test]
+fn a_second_recorded_audit_of_one_tree_at_one_date_adds_nothing() {
+    let root = Root::new("decay-idempotent");
+    root.corpus();
+    let document = root.document();
+    root.author_pair("AD-9", "2027-06-30", &document, RAISED);
+
+    let first = root.run(&["taxonomy", "audit", "--now", AT, "--record"]);
+    assert_eq!(first.code, Some(0), "{}{}", first.out, first.err);
+    let after_one = root.store();
+
+    let second = root.run(&["taxonomy", "audit", "--now", AT, "--record"]);
+    assert_eq!(second.code, Some(0), "{}{}", second.out, second.err);
+    assert_eq!(
+        root.store(),
+        after_one,
+        "the store holds one reading of one tree at one date"
+    );
+    assert!(
+        second.err.contains("already holds"),
+        "and the run says on standard error that it added nothing:\n{}",
+        second.err
+    );
+}
+
+/// Without the flag the verb writes nothing at all.
+///
+/// The audit gates nothing and exits 0, so a run of it inside a gate must leave
+/// the tree as it found it. That is the reason the write is opt-in rather than
+/// a precaution about a store.
+#[test]
+fn an_audit_without_the_flag_writes_no_reading() {
+    let root = Root::new("decay-no-flag");
+    root.corpus();
+    let document = root.document();
+    root.author_pair("AD-9", "2027-06-30", &document, RAISED);
+
+    let ran = root.run(&["taxonomy", "audit", "--now", AT]);
+    assert_eq!(ran.code, Some(0), "{}{}", ran.out, ran.err);
+    assert_eq!(root.store(), Vec::<String>::new(), "nothing was written");
+    assert!(
+        ran.out.contains("no reading recorded"),
+        "and the section says the series is empty rather than saying nothing:\n{}",
+        ran.out
+    );
+    assert!(
+        ran.out.contains("this run reads"),
+        "while still stating what this run read:\n{}",
+        ran.out
+    );
+}
+
+/// A corpus that declares no payload takes a reading all the same.
+///
+/// `tasks: []` is a real state and it is not the absent store under another
+/// name. A series that skipped it would make "nobody has recorded anything" and
+/// "the payload is gone" one file.
+#[test]
+fn a_corpus_with_no_declared_payload_records_a_reading_of_none() {
+    let root = Root::new("decay-no-payload");
+    root.corpus();
+
+    let ran = root.run(&["taxonomy", "audit", "--now", AT, "--record"]);
+    assert_eq!(ran.code, Some(0), "{}{}", ran.out, ran.err);
+
+    let lines = root.store();
+    assert_eq!(lines.len(), 1, "a run over no payload is still a reading");
+    assert!(
+        lines[0].contains("\"tasks\":[]"),
+        "and it states that the corpus declared none:\n{}",
+        lines[0]
+    );
+    assert!(
+        ran.out.contains("declares no adoption payload"),
+        "the section says so in words:\n{}",
+        ran.out
     );
 }
