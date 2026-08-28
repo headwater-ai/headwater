@@ -870,8 +870,8 @@
           "id": "HW-DR-0031",
           "status": "draft",
           "status_since": "2026-08-23",
-          "summary": "This repository becomes public, and the date is unset. A settled posture with a pending date is not an open question, and the record is what stops each run from raising it as one.",
-          "last_verified": "2026-08-23",
+          "summary": "This repository becomes public on 2026-09-08. The owner sets the date, and the record stops each run from raising the schedule as an open question.",
+          "last_verified": "2026-08-27",
           "title": "Q31 — Whether this repository becomes public, and when",
           "provenance": {
             "warrant": "asserted",
@@ -5749,10 +5749,10 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0130",
-          "status": "draft",
-          "status_since": "2026-08-25",
-          "summary": "Q31 rules that this repository becomes public and leaves the date unset. The date belongs to the owner alone, and no measurement, no build and no adopter produces one.",
-          "last_verified": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-08-27",
+          "summary": "Q31 originally left the publication date unset. The owner set 2026-09-08, and this record remains current until the repository is public.",
+          "last_verified": "2026-08-27",
           "title": "The publication date of this repository is unset and the owner alone sets it",
           "waiting_on": "ruling",
           "provenance": {
