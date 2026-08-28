@@ -1,35 +1,35 @@
-335 seen, 255 classified, 255 checked, 4717 check instances
+336 seen, 256 classified, 256 checked, 4731 check instances
       4 generated, held to regeneration by `headwater generate --check`
      21 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: the document at the target end, `HW-REG-open-questions`, declares no value for the state facet, so there is no state to read there
-    243 skipped: this document writes no fragment into itself
-    511 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+    244 skipped: this document writes no fragment into itself
+    513 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 adoption
   0 pairs open, 1 closed, holding 0 findings, in 1 task
   AD-1 0 open, 1 closed, holding 0 findings, owner the specification authors, until 2027-06-30
     The one entry of `.ste-lint-baseline.json` that this corpus still owes. The baseline held two when the linter retired. The other named a semicolon inside a block quotation, which the engine does not report at all, because the parser hands a quoted block to no lexical rule
-256 documents in the read set, and 2 barriers that no gate carries across a merge
-    255 instances of facet.required.missing
-    255 instances of facet.value.not_permitted
-    255 instances of identifier.pattern.not_met
-    255 instances of shelf.placement_is_primary
-    530 instances of relation.target.unresolved
+257 documents in the read set, and 2 barriers that no gate carries across a merge
+    256 instances of facet.required.missing
+    256 instances of facet.value.not_permitted
+    256 instances of identifier.pattern.not_met
+    256 instances of shelf.placement_is_primary
+    531 instances of relation.target.unresolved
      88 instances of relation.reciprocity.missing
-    338 instances of relation.endpoint.not_permitted
+    339 instances of relation.endpoint.not_permitted
       2 instances of lifecycle.dependency.on_terminal
      19 instances of relation.participation.overdue
-    255 instances of relation.declaration.unusable
-    255 instances of identifier.unusable
+    256 instances of relation.declaration.unusable
+    256 instances of identifier.unusable
       1 instances of identifier.claimed_twice
-    233 instances of voice.forbidden_construction
+    234 instances of voice.forbidden_construction
     246 instances of language.controlled.not_met
     246 instances of language.retired_term.used
     246 instances of language.source_form.not_met
-    217 instances of section.required.missing
-    255 instances of link.fragment.unresolved
-    255 instances of warrant.promoted
-    255 instances of lifecycle.transition.not_permitted
-    255 instances of lifecycle.state.not_admitted
+    218 instances of section.required.missing
+    256 instances of link.fragment.unresolved
+    256 instances of warrant.promoted
+    256 instances of lifecycle.transition.not_permitted
+    256 instances of lifecycle.state.not_admitted
       1 instances of lifecycle.deletion.not_permitted
 suppressions
   0 findings hidden by 0 directives

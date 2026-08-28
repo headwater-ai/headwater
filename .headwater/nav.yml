@@ -237,6 +237,7 @@ nav:
       - "The glossary's Package entry omits conformance and still lists plugins, which #367 dropped": "obligations/0151-the-glossary-s-package-entry-omits-conformance-and-still-lists-plugins-which-367-dropped.md"
   - "probes":
       - "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"
+      - "HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer": "probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md"
       - "HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it": "probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md"
       - "HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document": "probes/the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document.md"
   - "requirements":

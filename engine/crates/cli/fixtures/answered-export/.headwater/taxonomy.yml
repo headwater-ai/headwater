@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: Apache-2.0
+
+taxonomy:
+  package: acme/answered-export
+  version: 1.0.0
+
+corpus:
+  root: docs
