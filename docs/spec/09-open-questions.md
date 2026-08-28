@@ -10,7 +10,7 @@ relations:
 
 # decisions
 
-41 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+42 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -175,3 +175,7 @@ relations:
 ## Q41 — Whether Vale becomes a declared regime backend
 
 [HW-DR-0041](../decisions/0041-q41-whether-vale-becomes-a-declared-regime-backend.md) — Vale does not become a declared regime backend, and its findings are not translated into this engine's Finding shape. It stays where spec 00 already puts it, composable alongside, because four structural mismatches answer Q24's reopening condition a second time. (asserted, and no human has accepted it)
+
+## Q42 — What "one screen" means for the first help screen
+
+[HW-DR-0042](../decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md) — "One screen" is retired as a claim about a terminal and replaced by a claim about content: the first screen carries one line per entry, and the ceiling that follows from it is 60 lines. (asserted, and no human has accepted it)

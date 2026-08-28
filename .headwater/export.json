@@ -9,14 +9,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 326,
-      "carried": 326,
+      "in the graph": 328,
+      "carried": 328,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 535,
-      "carried": 535,
+      "in the graph": 538,
+      "carried": 538,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1166,6 +1166,36 @@
             "traces_to": [
               "HW-DR-0005",
               "HW-DR-0024"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md",
+        "kind": "decision",
+        "id": "HW-DR-0042",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0042",
+          "status": "draft",
+          "status_since": "2026-08-28",
+          "summary": "\"One screen\" is retired as a claim about a terminal and replaced by a claim about content: the first screen carries one line per entry, and the ceiling that follows from it is 60 lines.",
+          "last_verified": "2026-08-28",
+          "title": "Q42 — What \"one screen\" means for the first help screen",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0033"
+            ],
+            "governs": [
+              "engine/crates/cli/src/lib.rs",
+              "engine/crates/cli/tests/help.rs"
             ]
           }
         }
@@ -7428,6 +7458,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "engine/crates/cli/tests/help.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "engine/crates/cli/tests/wiring.rs",
         "resolver": "source-tree"
       },
@@ -8387,6 +8422,39 @@
           "id": "HW-DR-0024",
           "path": "docs/decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md",
           "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0033",
+          "path": "docs/decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/tests/help.rs",
+          "resolver": "source-tree"
         }
       },
       {
