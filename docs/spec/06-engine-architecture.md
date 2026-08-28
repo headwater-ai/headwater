@@ -278,6 +278,7 @@ headwater probe       plan [--tier regression|campaign] [--arm present|absent]
                            [--category <name>] [--seed <n>]
                     | record <path>
                     | grade <path>
+                    | stale
 headwater help        [<verb> [<word>]]
 headwater completions bash|zsh|fish|powershell
 ```
