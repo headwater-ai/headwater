@@ -10,7 +10,7 @@
 //! nothing. An adopter who forks the package to change the rule set moves the
 //! name and the digest on these lines.
 //!
-//! # Every line of prose is filled, and the width is one constant
+//! # Every line of prose is filled, and the fill is not in this file
 //!
 //! [`WIDTH`] is the only width this file names, and no call site names a second
 //! one: [`block`] derives the continuation indent from the label it is given.
@@ -19,17 +19,15 @@
 //! no upper bound at all, so a line of this report is as long as whatever it
 //! carries unless something fills it.
 //!
-//! **This is the only fill in the tree, and it belongs to this report.** The
-//! other report that prints a `fix:` line is
-//! [`headwater_check::finding`](../../check/src/finding.rs), at indent 2, from
-//! text this engine authored as one short sentence per rule. That one is not
-//! filled here: its recorded block is 793 lines with 161 already over this
-//! width, and re-recording it inside a change about conformance would hide this
-//! one. **When a later change fills the check report, `WIDTH` and [`block`] move
-//! down into `headwater-check` and this crate calls them there** — this crate
-//! already depends on that one and the reverse direction is a cycle the compiler
-//! refuses, so the move is available and a second copy is not needed. Move them
-//! rather than writing another.
+//! **Both are `headwater_check::fill` now, and this file names them rather than
+//! implementing them.** This module carried the only fill in the tree and the
+//! instruction that came with it: when a later change filled the check report,
+//! `WIDTH` and `block` were to move down into `headwater-check` and this crate
+//! was to call them there. [#340](https://github.com/headwater-ai/headwater/issues/340)
+//! is that change, and this is the record that the move happened. The check
+//! report is laid out by `headwater_check::fill::filled`, from the same width
+//! and the same rule about a word too long to break, and
+//! `crates/conformance/fixtures/wrapped.report` did not move.
 //!
 //! `engine/crates/audit/src/render.rs` reaches the same end by hand-wrapping 29
 //! string literals, and `engine/crates/census/src/census.rs` two. A pre-wrapped
@@ -43,74 +41,33 @@ use std::fmt::Write;
 
 /// The widest line this report prints, in characters.
 ///
-/// It is a constant rather than the width of whatever terminal ran the verb. A
-/// recorded block compared against the running terminal's width compares
-/// nothing, and the engine names no `libc`, no `terminal_size` and no
-/// `unicode-width` in its lock.
-pub const WIDTH: usize = 80;
+/// One constant, owned by [`headwater_check::fill`] and named here. It is a
+/// constant rather than the width of whatever terminal ran the verb, for the
+/// reason that module states.
+pub use headwater_check::fill::WIDTH;
 
 /// One block of the report: `indent` spaces, then `label`, then `text` filled to
 /// [`WIDTH`].
 ///
-/// A continuation line is indented to `indent + label.chars().count()`, so the
-/// label hangs the text under itself and **no caller names a width or a second
-/// indent**. Where a line opens with an identifying token — `fix: `, a level
-/// name, a rule name — that token is the label, and the text under it lines up.
+/// The implementation is [`headwater_check::fill::block`] and the whole of what
+/// this adds is the width. A continuation line is indented to
+/// `indent + label.chars().count()`, so the label hangs the text under itself
+/// and **no caller here names a width or a second indent**. Where a line opens
+/// with an identifying token — `fix: `, a level name, a rule name — that token
+/// is the label, and the text under it lines up.
 ///
-/// Four things it does, each of which a reader of the output can see:
-///
-/// 1. `text` is split on `'\n'` first and each piece is filled on its own.
-///    **A title is the caller that reaches this.** `Rule.title` and
-///    `Level.title` are written by `lib.rs:259` and `:294` as
-///    `text_of(entry, "title").to_string()` with no collapse, and a YAML literal
-///    block scalar — `title: |-` — is ordinary YAML for a package author. The
-///    other three fields that arrive here cannot carry a newline: `statement`,
-///    `remediation` and the waiver `note` each go through `collapse` at
-///    `lib.rs:260`, `:261` and `:470`, which is `split_whitespace().join(" ")`.
-///    Held by
-///    `tests/render.rs::a_title_the_package_wrote_over_two_lines_is_filled_line_by_line`,
-///    which drives it from YAML rather than by handing this function a string.
-/// 2. The fill is greedy on whitespace runs, and a whitespace run becomes one
-///    space. That normalization is invisible in the YAML-folded strings a rule
-///    set ships.
-/// 3. **The count is in `char`s.** `str::len()` is bytes, and a level line
-///    carries an em dash of three bytes, so a byte count would break a line two
-///    characters early. A codepoint count is the approximation this engine
-///    makes: it claims no display width and no grapheme boundary, which is the
-///    right claim for a report of ASCII identifiers and English prose.
-/// 4. A word longer than the column it lands in goes on its own line, whole, and
-///    overflows. Nothing here breaks inside a word, hyphenates or truncates: a
-///    digest, a path or a URL that arrived intact leaves intact.
+/// **A title is the caller that reaches the newline handling.** `Rule.title` and
+/// `Level.title` are written by `lib.rs:259` and `:294` as
+/// `text_of(entry, "title").to_string()` with no collapse, and a YAML literal
+/// block scalar — `title: |-` — is ordinary YAML for a package author. The other
+/// three fields that arrive here cannot carry a newline: `statement`,
+/// `remediation` and the waiver `note` each go through `collapse` at
+/// `lib.rs:260`, `:261` and `:470`, which is `split_whitespace().join(" ")`.
+/// Held by
+/// `tests/render.rs::a_title_the_package_wrote_over_two_lines_is_filled_line_by_line`,
+/// which drives it from YAML rather than by handing this function a string.
 fn block(out: &mut String, indent: usize, label: &str, text: &str) {
-    let cont = " ".repeat(indent + label.chars().count());
-    let mut opening = format!("{}{label}", " ".repeat(indent));
-    for paragraph in text.split('\n') {
-        let mut line = opening.clone();
-        let mut filled = false;
-        for word in paragraph.split_whitespace() {
-            match filled {
-                false => {
-                    line.push_str(word);
-                    filled = true;
-                }
-                true => match line.chars().count() + 1 + word.chars().count() <= WIDTH {
-                    true => {
-                        line.push(' ');
-                        line.push_str(word);
-                    }
-                    false => {
-                        out.push_str(&line);
-                        out.push('\n');
-                        line = cont.clone();
-                        line.push_str(word);
-                    }
-                },
-            }
-        }
-        out.push_str(&line);
-        out.push('\n');
-        opening = cont.clone();
-    }
+    headwater_check::fill::block(out, indent, label, text, WIDTH);
 }
 
 impl Report {
