@@ -41,6 +41,17 @@
 //! the next flag arriving undescribed the way `--facet`, `--tier`, `--arm`,
 //! `--category` and `--seed` did.
 //!
+//! **A global flag is described once and printed twice.** [`GLOBALS`] carries a
+//! one-line summary beside each description, and [`first_screen`] prints the
+//! summaries rather than letting `clap` print the descriptions. The description
+//! is the one `clap` propagates onto every verb page, so the long form is
+//! reachable everywhere it was, and the screen a reader meets first is a list
+//! rather than five paragraphs.
+//! [HW-DR-0042](../../../../docs/decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md)
+//! rules that, and it rules out `Arg::long_help` as the way to do it: `clap`
+//! renders `long_help` for `--help` and `help` for `-h`, so the two spellings
+//! would stop printing the same text.
+//!
 //! **A `///` comment on a derived item becomes help text.** The commentary on
 //! the types below is `//` for that reason, and the module documentation you
 //! are reading is `//!`, which `clap` does not read either. A house-style doc
@@ -90,6 +101,123 @@ const JSON_ALONE: &str = "write this run as one JSON document on standard output
     report a person reads. The document names its own shape in a `version` member, so a consumer \
     pins that rather than the version of this engine. It moves no exit status";
 
+/// What `--root` says, on the first screen and on every verb page.
+///
+/// One sentence, so the summary and the description are the same string. The
+/// four flags below it are the ones whose description is a paragraph.
+const ROOT_TEXT: &str = "the repository to read. Defaults to the working directory";
+
+/// What `-V, --version` says on a verb page.
+const VERSION_TEXT: &str = "the version of this engine. It is the number a package's \
+    `requires_engine` range is read against, and it is the number to quote in a bug report. One \
+    line on standard output, and no repository is needed to ask";
+
+/// What `--wide` says on a verb page.
+const WIDE_TEXT: &str = "lay the help, and the report of `headwater check`, out at the width \
+    `COLUMNS` states, held to the range 80 to 120. A reading that is absent or is not a number \
+    gives 80, which is what a run with no flag gives. Without it nothing reads `COLUMNS`, so a run \
+    piped into a file and a run under a terminal write the same bytes. A shell keeps `COLUMNS` to \
+    itself, so the form that carries it is `COLUMNS=100 headwater --wide --help`. A run that lays \
+    nothing out, a machine format included, refuses it rather than accepting a flag that does \
+    nothing";
+
+/// What `--no-color` says on a verb page.
+const NO_COLOR_TEXT: &str = "write no color, which is what every run of this binary already does. \
+    Nothing here emits an escape sequence on any stream, in any format, under any terminal or for \
+    any value of `NO_COLOR`, so this flag confirms the state rather than changing it. It is \
+    declared so that a caller who writes it out of habit is answered rather than refused";
+
+/// One global flag, as the first screen prints it and as a verb page prints it.
+///
+/// The summary and the description are declared together, at the flag, which is
+/// what #321 clause 5 asks of a short form: a summary written a second time
+/// somewhere else is the second copy of a description that
+/// [#257](https://github.com/headwater-ai/headwater/issues/257) was filed
+/// about. The table is here rather than in `headwater-verbs`, where
+/// [`headwater_verbs::Verb`] declares the same pair for a verb, because
+/// `HW-DR-0033` rules that a flag belongs to the verb that reads it and that its
+/// description is written at the declaration of that flag. A global flag is
+/// declared in this file, so its summary is too.
+///
+/// [HW-DR-0042](../../../../docs/decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md)
+/// holds `summary` to one line of the first screen, and
+/// `engine/crates/cli/tests/help.rs` is what holds it.
+#[derive(Debug)]
+pub struct Global {
+    /// The identifier `clap` knows the argument by.
+    ///
+    /// The entry is bound to the flag by this rather than by a name that
+    /// resembles it, so a flag that arrives with no entry is reported against
+    /// the identifier a reader of the parser will recognize.
+    pub id: &'static str,
+    /// The flag as the first screen names it: every spelling, and any value.
+    pub name: &'static str,
+    /// One line of the first screen, for a reader who is choosing a verb.
+    pub summary: &'static str,
+    /// The whole of it, which is what `clap` carries onto every verb page.
+    pub description: &'static str,
+}
+
+impl Global {
+    /// Whether this entry is the entry of the argument `clap` calls `id`.
+    #[must_use]
+    pub fn covers(&self, id: &str) -> bool {
+        self.id == id
+    }
+}
+
+const ROOT: Global = Global {
+    id: "root",
+    name: "--root <path>",
+    summary: ROOT_TEXT,
+    description: ROOT_TEXT,
+};
+
+const VERSION: Global = Global {
+    id: "version",
+    name: "-V, --version",
+    summary: "the version of this engine, on one line, from anywhere",
+    description: VERSION_TEXT,
+};
+
+const WIDE: Global = Global {
+    id: "wide",
+    name: "--wide",
+    summary: "lay the help and the check report out at `COLUMNS`, 80 to 120",
+    description: WIDE_TEXT,
+};
+
+const NO_COLOR: Global = Global {
+    // `clap`'s derive takes the identifier from the field and not from the
+    // spelling, so this is `no_color` where the flag is `--no-color`.
+    id: "no_color",
+    name: "--no-color",
+    summary: "accepted and inert: no run of this binary emits color",
+    description: NO_COLOR_TEXT,
+};
+
+/// `-h, --help` is `clap`'s own argument, so this entry supplies the first
+/// screen's line for it and states what `clap` puts on a verb page.
+///
+/// The description is the only one of the five this repository did not write.
+/// `Command::mut_arg` panics before the build adds the argument, and
+/// `Command::mut_args` documents that it does not reach the built-in help
+/// argument at all.
+/// [HW-OBL-0158](../../../../docs/obligations/0158-clap-owns-the-help-flag-so-h-help-reads-print-help-on-all-32-verb-pages.md)
+/// holds the gap and names the route that would close it.
+const HELP: Global = Global {
+    id: "help",
+    name: "-h, --help",
+    summary: "this screen, or the long form of one verb",
+    description: "Print help",
+};
+
+/// The order the first screen prints the global flags in.
+///
+/// Named constants rather than positions, so that a reordering here cannot
+/// silently give one flag another flag's summary.
+pub const GLOBALS: &[&Global] = &[&ROOT, &VERSION, &WIDE, &NO_COLOR, &HELP];
+
 use clap::{Command, CommandFactory, FromArgMatches, Parser, Subcommand};
 use headwater_check::Date;
 use std::path::PathBuf;
@@ -112,7 +240,7 @@ pub struct Cli {
         long,
         global = true,
         value_name = "path",
-        help = "the repository to read. Defaults to the working directory"
+        help = ROOT_TEXT
     )]
     pub root: Option<PathBuf>,
 
@@ -126,9 +254,7 @@ pub struct Cli {
         short = 'V',
         long,
         global = true,
-        help = "the version of this engine. It is the number a package's `requires_engine` range \
-                is read against, and it is the number to quote in a bug report. One line on \
-                standard output, and no repository is needed to ask"
+        help = VERSION_TEXT
     )]
     pub version: bool,
 
@@ -141,13 +267,7 @@ pub struct Cli {
     #[arg(
         long,
         global = true,
-        help = "lay the help, and the report of `headwater check`, out at the width `COLUMNS` \
-                states, held to the range 80 to 120. A reading that is absent or is not a number \
-                gives 80, which is what a run with no flag gives. Without it nothing reads \
-                `COLUMNS`, so a run piped into a file and a run under a terminal write the same \
-                bytes. A shell keeps `COLUMNS` to itself, so the form that carries it is \
-                `COLUMNS=100 headwater --wide --help`. A run that lays nothing out, a machine \
-                format included, refuses it rather than accepting a flag that does nothing"
+        help = WIDE_TEXT
     )]
     pub wide: bool,
 
@@ -165,11 +285,7 @@ pub struct Cli {
     #[arg(
         long = "no-color",
         global = true,
-        help = "write no color, which is what every run of this binary already does. Nothing here \
-                emits an escape sequence on any stream, in any format, under any terminal or for \
-                any value of `NO_COLOR`, so this flag confirms the state rather than changing it. \
-                It is declared so that a caller who writes it out of habit is answered rather \
-                than refused"
+        help = NO_COLOR_TEXT
     )]
     pub no_color: bool,
 
@@ -1062,6 +1178,9 @@ const COLUMN: usize = 15;
 /// is deliberately absent: `clap` renders one flat list and the screen this
 /// builds is grouped, and the groups come off
 /// [`headwater_verbs::groups`] in the order the table first names each one.
+/// `{options}` is absent for the same kind of reason: `clap` renders the whole
+/// description of every global flag, and this screen prints the one-line summary
+/// [`GLOBALS`] declares beside each of them.
 ///
 /// The examples are the one part of this screen that no earlier version of the
 /// binary carried. #321 measured the old help and found no example anywhere in
@@ -1107,7 +1226,33 @@ fn first_screen(width: usize) -> String {
             out.push_str(&paint::row(verb.name, verb.summary, COLUMN, width));
         }
     }
-    out.push_str("\nGlobal flags:\n{options}\n\n");
+    // The global flags are rendered here for the reason the verbs above are.
+    //
+    // `{options}` renders the whole description of every one of them, which is
+    // twenty-five lines of paragraph on the one screen an adopter meets first
+    // and none of it helps a reader choose a verb. `HW-DR-0042` holds this
+    // screen to one line per entry, so the summary of each flag is printed here
+    // and the description stays where `clap` already puts it, on all 32 verb
+    // pages.
+    //
+    // The column is derived rather than written down. `paint::row` indents by
+    // two and leaves what is left of the column to the name, so a column
+    // narrower than the longest name overruns `width` on the first line of that
+    // row. `COLUMN` above is `2 + 11 + 2`, which is the longest verb name and
+    // the gutter this screen keeps between the two fields; the longest flag name
+    // is `--root <path>` at thirteen, so this is the same arithmetic on a longer
+    // name rather than a second discipline.
+    let longest = GLOBALS
+        .iter()
+        .map(|one| one.name.chars().count())
+        .max()
+        .unwrap_or(0);
+    let at = 2 + longest + 2;
+    out.push_str("\nGlobal flags:\n");
+    for one in GLOBALS {
+        out.push_str(&paint::row(one.name, one.summary, at, width));
+    }
+    out.push('\n');
     out.push_str(&paint::fold_indented(
         &format!(
             "Run `{0} help <verb>` for the long description of one verb, or `{0} <verb> --help`.",
