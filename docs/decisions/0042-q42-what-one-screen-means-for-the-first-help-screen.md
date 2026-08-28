@@ -27,7 +27,7 @@ relations:
 
 **Clause 4 of #321 asks that the screen fit one screen, and no layout at 80 columns ever could.** One line per verb costs 24 lines for eighteen verbs. Six group headings and five blank separators cost eleven more. So 35 lines are spent before one flag or one example is printed. A terminal of 24 lines was never reachable, and #342 measures two layout mutations that confirm it.
 
-**The lever is what the screen says rather than how it is set.** The fold that [#321](https://github.com/headwater-ai/headwater/issues/321) clause 12 landed added twelve lines, and the two flags that clause 12 declares added fifteen. The fold bought a widest line of 80 columns where the widest was 229. The fifteen are reference material, and they sit in the position a table of contents should hold.
+**The lever is what the screen says rather than how it is set.** #342 accounts for the growth of the screen. The fold that [#321](https://github.com/headwater-ai/headwater/issues/321) clause 12 landed added twelve lines, and the two flags that clause 12 declares added fifteen. The fold bought a widest line of 80 columns where the widest was 229. The fifteen are reference material, and they sit in the position a table of contents should hold.
 
 **#342 puts two answers and asks for a ruling before any code.** One answer shortens what the first screen says about a global flag. The other rules that "one screen" is not the bar and writes down what is.
 
@@ -57,4 +57,4 @@ relations:
 
 **This record refines one sentence of HW-DR-0033 and contradicts none of it.** That record describes the first screen as "worked examples, the verbs under group headings with one line each, the global flags, and a closing pointer". The phrase "the global flags" is the part that was unpriced, and this record prices it at one line each.
 
-**Nothing here rules on the width of a verb page.** The page of `headwater check` is 94 lines. A reader reaches a verb page after choosing a verb, and not while choosing one. #342 states that boundary and this record keeps it.
+**Nothing here rules on the length of a verb page.** The page of `headwater check` is 94 lines. A reader reaches a verb page after choosing a verb, and not while choosing one. #342 states that boundary and this record keeps it.
