@@ -747,8 +747,35 @@ pub fn render(
     subject: &Subject<'_>,
     format: Format,
 ) -> String {
+    render_at(
+        run,
+        census,
+        graph,
+        subject,
+        format,
+        headwater_check::fill::WIDTH,
+    )
+}
+
+/// The same dispatch, with a width for the one format that is laid out.
+///
+/// [`Format::Text`] is the report a person reads and the only one a width means
+/// anything to. The other three ignore it, exactly as they already ignore
+/// `census` and `graph`: a machine format is parsed rather than read, and a line
+/// break inside one would be a defect rather than a courtesy. `headwater check
+/// --wide` is the one caller in the tree that states a number here, which is why
+/// this is a second entry point rather than a sixth parameter on every call
+/// site.
+pub fn render_at(
+    run: &Run,
+    census: &Taken,
+    graph: &Graph,
+    subject: &Subject<'_>,
+    format: Format,
+    width: usize,
+) -> String {
     match format {
-        Format::Text => text::render(run, census, graph, subject),
+        Format::Text => text::render_at(run, census, graph, subject, width),
         Format::Json => json::render(run, subject),
         Format::Sarif => sarif::render(run, subject),
         Format::Markdown => markdown::render(run, subject),

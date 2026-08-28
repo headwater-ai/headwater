@@ -342,6 +342,30 @@ fn render(ran: &Ran, format: Format) -> String {
     headwater_adapter::render(&ran.run, &ran.census, &ran.graph, &subject(&lock), format)
 }
 
+fn render_at(ran: &Ran, format: Format, width: usize) -> String {
+    let lock = lock_digest();
+    headwater_adapter::render_at(
+        &ran.run,
+        &ran.census,
+        &ran.graph,
+        &subject(&lock),
+        format,
+        width,
+    )
+}
+
+/// One text with every whitespace run reduced to one space.
+///
+/// The text report is laid out at a width by `headwater_check::fill`, so a
+/// sentence this engine composed as one line reaches a reader over two or three
+/// of them. A case asking whether the report *states* something is asking about
+/// the words and not about where they were broken, and this is the form that
+/// question is asked in. A case that asked about the line as well would be
+/// re-recording the layout, which is what `fixture.text` is for.
+fn flowed(text: &str) -> String {
+    text.split_whitespace().collect::<Vec<&str>>().join(" ")
+}
+
 fn compare(recorded: &Path, actual: &str) {
     if std::env::var_os("HEADWATER_BLESS").is_some() {
         std::fs::write(recorded, actual).expect("cannot write the expectation");
@@ -1092,9 +1116,12 @@ fn every_format_states_how_many_instances_reached_no_verdict() {
     let markdown = render(&ran, Format::Markdown);
     assert!(text_report.contains("267 check instances"));
     assert!(markdown.contains("It created 267 check instances, and 67 of them reached no verdict."));
+    // The report is laid out at a width, so a long reason arrives over more
+    // than one line. The class is a run of words either way.
+    let flat = flowed(&text_report);
     for (reason, instances) in ran.run.coverage.skips() {
         assert!(
-            text_report.contains(&format!("{instances} skipped: {reason}")),
+            flat.contains(&flowed(&format!("{instances} skipped: {reason}"))),
             "the text report states no `{reason}` class"
         );
         assert!(
@@ -1540,6 +1567,94 @@ fn the_fixture_tree_renders_the_recorded_json() {
 #[test]
 fn the_fixture_tree_renders_the_recorded_markdown() {
     compare(&tests_dir().join("fixture.md"), &rendered(Format::Markdown));
+}
+
+/// The report a person reads, recorded, which it had never been before.
+///
+/// The three formats above were recorded from the first day and the text was
+/// not, because it was composed rather than laid out and nothing about it was
+/// stable enough to diff. [#340](https://github.com/headwater-ai/headwater/issues/340)
+/// laid it out, so this is the reviewable record of what the fill produces and
+/// the file a later change to the fill has to re-bless.
+#[test]
+fn the_fixture_tree_renders_the_recorded_text() {
+    compare(&tests_dir().join("fixture.text"), &rendered(Format::Text));
+}
+
+/// The default width is the width, and a wider one is a different report.
+#[test]
+fn the_width_a_caller_states_is_the_width_the_report_is_laid_out_at() {
+    let ran = fixture_run();
+    let ordinary = render(&ran, Format::Text);
+    assert_eq!(
+        render_at(&ran, Format::Text, headwater_check::fill::WIDTH),
+        ordinary,
+        "`render` is `render_at` at the standard width"
+    );
+    let wide = render_at(&ran, Format::Text, headwater_check::fill::WIDEST);
+    assert_ne!(wide, ordinary, "the widest band widened nothing");
+    // The same words either way. Only the breaks moved.
+    assert_eq!(flowed(&wide), flowed(&ordinary));
+    for (width, report) in [
+        (headwater_check::fill::WIDTH, &ordinary),
+        (headwater_check::fill::WIDEST, &wide),
+    ] {
+        // Everything but the read-set block, which is the artifact a gate
+        // parses and is exempt for the reason `text.rs` states.
+        let (laid_out, _) = report
+            .split_once("\nread set\n")
+            .expect("the report carries a read-set block");
+        for line in laid_out.lines() {
+            if line.chars().count() > width {
+                assert!(
+                    headwater_check::fill::unfoldable(line, width),
+                    "at {width} columns a line the fill could have narrowed is {}: {line}",
+                    line.chars().count()
+                );
+            }
+        }
+    }
+}
+
+/// The three machine formats ignore the width, at both ends of the band.
+#[test]
+fn a_width_reaches_the_report_a_person_reads_and_no_other_format() {
+    let ran = fixture_run();
+    for format in [Format::Json, Format::Sarif, Format::Markdown] {
+        assert_eq!(
+            render_at(&ran, format, headwater_check::fill::WIDEST),
+            render(&ran, format),
+            "`--format {}` is not laid out at a width",
+            format.name()
+        );
+    }
+}
+
+/// The read-set block of the report is the artifact `--read-set` writes.
+///
+/// It is written verbatim to a file by `headwater check --read-set` and read
+/// back by `headwater_check::Recorded::parse` in `headwater gate`, so it is a
+/// grammar rather than prose and the fill does not touch it. This is the case
+/// that goes red the day somebody folds it, at both ends of the band.
+#[test]
+fn the_read_set_block_is_not_laid_out_at_any_width() {
+    let ran = fixture_run();
+    let written = ran.run.read_set.render();
+    assert!(!written.is_empty(), "the fixture run has a read set");
+    for width in [headwater_check::fill::WIDTH, headwater_check::fill::WIDEST] {
+        let report = render_at(&ran, Format::Text, width);
+        let (_, block) = report
+            .split_once("\nread set\n")
+            .expect("the report carries a read-set block");
+        let indented: String = written
+            .lines()
+            .map(|line| match line.is_empty() {
+                true => String::from("\n"),
+                false => format!("  {line}\n"),
+            })
+            .collect();
+        assert_eq!(block, indented, "at {width} columns the block moved");
+    }
 }
 
 // The same three formats over the same tree, scoped to a change. A reviewer

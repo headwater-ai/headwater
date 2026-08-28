@@ -244,6 +244,23 @@ impl Ran {
             .filter(|line| line.contains("section.required.missing (OB-SECT-1)"))
             .collect()
     }
+
+    /// The report with every whitespace run reduced to one space.
+    ///
+    /// [#340](https://github.com/headwater-ai/headwater/issues/340) lays this
+    /// report out at 80 columns, so a finding message this engine composed as
+    /// one sentence reaches a reader over two or three lines. A case asking
+    /// whether the report *says* something is asking about the words and not
+    /// about where they were broken. `crates/adapter/tests/fixture.text` is
+    /// where the layout itself is recorded.
+    fn flowed(&self) -> String {
+        flowed(&self.out)
+    }
+}
+
+/// One text with every whitespace run reduced to one space.
+fn flowed(text: &str) -> String {
+    text.split_whitespace().collect::<Vec<&str>>().join(" ")
 }
 
 fn copy(from: &Path, to: &Path) {
@@ -437,12 +454,12 @@ fn a_contract_missing_one_heading_is_reported_by_its_name_and_its_file() {
         checked.out
     );
     assert!(
-        checked.out.contains(&format!(
+        checked.flowed().contains(&flowed(&format!(
             "  {incomplete} error\n    \
              section.required.missing (OB-SECT-1): `interface_contract` requires the section \
              `{OMITTED}`, and no heading of this document says so\n    \
              fix: add a `{OMITTED}` heading to {incomplete}, with the content the kind is for"
-        )),
+        ))),
         "the finding names the rule, the kind, the heading and the file:\n{}",
         checked.out
     );
@@ -607,10 +624,10 @@ fn a_governs_edge_binds_on_existence_and_reports_a_path_that_is_not_there() {
         checked.out
     );
     assert!(
-        unresolved[0].contains(
+        checked.flowed().contains(&flowed(
             "`HW-IFACE-headwater-route` declares `governs: \
                                 engine/crates/route/src/nowhere.rs`"
-        ),
+        )),
         "the finding names the edge that resolved to nothing:\n{}",
         unresolved[0]
     );

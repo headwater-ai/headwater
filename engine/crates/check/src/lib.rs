@@ -141,6 +141,7 @@ pub mod duplicate;
 pub mod endpoint;
 pub mod facet_required;
 pub mod facet_value;
+pub mod fill;
 pub mod finding;
 pub mod fragment;
 pub mod gate;

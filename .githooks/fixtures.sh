@@ -92,6 +92,14 @@ produce() {
     (cd "$scratch" && sh .githooks/change-manifest "$1" "$hold/out" >/dev/null 2>"$hold/why")
 }
 
+# The text match is over the words and not over the line breaks.
+#
+# `headwater check` lays its report out at 80 columns, so a finding message this
+# engine composed as one sentence reaches a reader over two or three lines, and
+# an expectation written here as one string would span a fold point. Both sides
+# have every whitespace run squeezed to one space before they are compared, so a
+# case states what the gate says and never where the fill broke it. The failure
+# message prints the output as it arrived.
 judge() {
     name=$1 want_status=$2 got_status=$3 want_text=$4 got_text=$5
     if [ "$got_status" -ne "$want_status" ]; then
@@ -99,11 +107,13 @@ judge() {
         failed=$((failed + 1))
         return
     fi
+    flat_want=$(printf '%s' "$want_text" | tr -s '[:space:]' ' ')
+    flat_got=$(printf '%s' "$got_text" | tr -s '[:space:]' ' ')
     case $want_text in
         "") ;;
         *)
-            case $got_text in
-                *"$want_text"*) ;;
+            case $flat_got in
+                *"$flat_want"*) ;;
                 *)
                     printf 'FAIL %s\n  expected output to hold: %s\n  got:\n%s\n' "$name" "$want_text" "$got_text"
                     failed=$((failed + 1))
@@ -284,6 +294,55 @@ git -C "$scratch" rm -q site/index.html
 out=$(cd "$scratch" && HEADWATER_ALLOW_SITE_DELETE=1 sh .githooks/pre-commit 2>&1); status=$?
 judge 'the variable releases this clause and not the rule that reads a governed path' 1 "$status" \
     'relation.target.unresolved' "$out"
+
+# A finding whose location line lands on the width boundary, printed whole.
+#
+# #340 lays the report out at 80 columns, and the fill leaves a line alone when
+# its opening word leaves no room for the word after it. A finding's location
+# line is `<path>:<line>:<column> <severity>`, so where the path is long enough
+# that the opening word *reaches* 80 without passing it, a fill that asked only
+# whether the first word passed the width would put the severity on a line of
+# its own. The hook then reads that bare `error` as the header of a new finding
+# and drops the rule line and the `fix:` line under the real one, and a refused
+# commit says a commit was refused and nothing about why.
+#
+# The case is stated as a measurement rather than as a path. `boundary` is a
+# document of this corpus whose location line sits in that band today, and the
+# first judge below fails loudly if it stops sitting there — a case that quietly
+# left the band would go on passing while measuring nothing, which is exactly how
+# this defect survived a full suite once.
+boundary="docs/decisions/0041-q41-whether-vale-becomes-a-declared-regime-backend.md"
+
+reset
+# A British spelling is an error-severity finding whose remediation is mechanical.
+printf '\nThe behaviour of this sentence is deliberately wrong.\n' >> "$scratch/$boundary"
+
+# The opening word of the location line, at its indent of two. In the band when
+# it reaches the width without passing it: a five-character severity then cannot
+# join it, and 74 is the width less that severity and its space.
+opening=$(cd "$scratch" && ./engine/target/release/headwater check --root . 2>/dev/null \
+    | grep -F "$boundary" | grep -v '^  input ' | head -1 \
+    | awk '{print 2 + length($1)}')
+[ -n "$opening" ] || opening=0
+band=no
+[ "$opening" -gt 74 ] && [ "$opening" -le 80 ] && band=yes
+judge 'the boundary case still sits on the width boundary it was chosen for' 0 0 \
+    'yes' "$band (the opening word of $boundary is $opening columns, and the band is 75 to 80)"
+
+out=$(gate); status=$?
+judge 'a finding whose location line lands on the width boundary is refused' 1 "$status" \
+    'language.controlled.not_met' "$out"
+judge 'and the hook prints the location and the severity on one line' 1 "$status" \
+    "$boundary:48:1 error" "$out"
+judge 'and the whole message under it, not the first line of it' 1 "$status" \
+    'and this sentence writes `behaviour`' "$out"
+judge 'and the fix line, which is the last line of the finding' 1 "$status" \
+    'fix (mechanical): write `behavior`' "$out"
+# The severity never reaches a line of its own. `judge` matches on flattened
+# whitespace, so this asks the raw output directly.
+alone=no
+printf '%s\n' "$out" | grep -qE '^[[:space:]]+error[[:space:]]*$' && alone=yes
+judge 'and no line of the refusal is a bare severity word' 0 0 'no' "$alone"
 
 reset
 printf '\n%s passed, %s failed\n' "$passed" "$failed"

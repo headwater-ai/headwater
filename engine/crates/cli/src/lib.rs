@@ -141,14 +141,13 @@ pub struct Cli {
     #[arg(
         long,
         global = true,
-        help = "lay the help out at the width `COLUMNS` states, held to the range 80 to 120. A \
-                reading that is absent or is not a number gives 80, which is what a run with no \
-                flag gives. Without it the help is 80 columns wide, nothing reads `COLUMNS`, and \
-                a run piped \
-                into a file and a run under a terminal write the same bytes. A shell keeps \
-                `COLUMNS` to itself, so the form that carries it is `COLUMNS=100 headwater --wide \
-                --help`. It lays out the help and nothing else, so a run that prints no help \
-                refuses it rather than accepting a flag that would do nothing"
+        help = "lay the help, and the report of `headwater check`, out at the width `COLUMNS` \
+                states, held to the range 80 to 120. A reading that is absent or is not a number \
+                gives 80, which is what a run with no flag gives. Without it nothing reads \
+                `COLUMNS`, so a run piped into a file and a run under a terminal write the same \
+                bytes. A shell keeps `COLUMNS` to itself, so the form that carries it is \
+                `COLUMNS=100 headwater --wide --help`. A run that lays nothing out, a machine \
+                format included, refuses it rather than accepting a flag that does nothing"
     )]
     pub wide: bool,
 
@@ -943,24 +942,48 @@ pub fn parsed() -> Result<Cli, clap::Error> {
     Cli::from_arg_matches(&matches)
 }
 
-/// `--wide` on a run that prints no help, which is a run it would do nothing in.
+/// `--wide` on a run that lays nothing out, which is a run it would do nothing
+/// in.
 ///
-/// # The rule is wider than clause 12 asks, and deliberately
+/// # The rule was wider than clause 12 asked, and it has narrowed
 ///
 /// Clause 12 of [#321](https://github.com/headwater-ai/headwater/issues/321)
 /// asks that `--wide` be refused alongside `--format json|sarif|markdown`. The
-/// rule here is that it is refused on **every** run that prints no help, and
-/// the machine formats are one case of it. The reason is that the flag lays out
-/// the help and lays out nothing else: the report of `headwater check` is
-/// composed by `headwater_adapter` and is not laid out at any width, so
-/// `headwater check --wide --format text` would be as inert as
-/// `--format json` and would say so to nobody.
+/// rule here was wider than that: it refused **every** run that printed no help,
+/// because the flag laid out the help and laid out nothing else, and
+/// `headwater check --wide --format text` would have been as inert as
+/// `--format json` and would have said so to nobody. The doc comment recorded
+/// that the refusal would narrow to the machine formats when a report gained a
+/// layout.
 ///
-/// This repository has two open issues about flags accepted and silently
-/// ignored — [#337](https://github.com/headwater-ai/headwater/issues/337) and
+/// [#340](https://github.com/headwater-ai/headwater/issues/340) gave it one, and
+/// this is the narrowing. The text report of `headwater check` is laid out by
+/// `headwater_check::fill` at the width `paint::width` states, so `--wide` is
+/// answered there rather than refused. Every other run that lays nothing out is
+/// still refused, and the machine formats are still named by name: this
+/// repository has two open issues about flags accepted and silently ignored —
+/// [#337](https://github.com/headwater-ai/headwater/issues/337) and
 /// [#338](https://github.com/headwater-ai/headwater/issues/338) — and a third
-/// would have been this one. When a report gains a layout the refusal narrows
-/// to the machine formats, which is the clause as written.
+/// would have been this one.
+///
+/// # Why the predicate names a verb and not a format
+///
+/// "The format is `text`" is not the test. `headwater capture --format text`
+/// exists and lays nothing out, and so does every other verb that prints text
+/// nobody folded. What is laid out is the report of one verb, so the check names
+/// that verb and the absence of a machine format on it.
+///
+/// # Why it reads two flags for one format
+///
+/// A machine format reaches this verb under two names. `--format json` is a
+/// value, `--json` is a boolean, and
+/// [HW-DR-0033](../../../../docs/decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md)
+/// rules that the two are one target under two spellings. A predicate that read
+/// `format` alone would answer `check --wide --json` and let the width flag do
+/// nothing, which is the exact defect the paragraph above says a third issue
+/// would have been about. **Whenever a refusal narrows, every spelling of the
+/// thing it narrows on has to be enumerated**, and `tests/width.rs` carries a
+/// row for each.
 ///
 /// # Why reaching this function is already the test
 ///
@@ -984,18 +1007,31 @@ fn a_width_for_a_run_that_lays_nothing_out(matches: &clap::ArgMatches) -> Option
     if matches.subcommand_name() == Some("help") {
         return None;
     }
-    // `text` is a report a person reads and it is still not laid out at a
-    // width, so it falls to the general reason rather than to the machine-format
-    // one. The narrower message is for the case clause 12 names.
     let format = leaf.try_get_one::<String>("format").ok().flatten();
+    // `--json` is the second spelling of `--format json`, and it is a boolean of
+    // its own rather than a value of `format`. A predicate that read `format`
+    // alone would let `check --wide --json` through with the flag doing nothing,
+    // which is the defect this whole refusal exists to prevent. HW-DR-0033 rules
+    // that the two names reach one target, so every reader of one reads both.
+    let json = leaf.try_get_one::<bool>("json").ok().flatten() == Some(&true);
+    // The one report this binary lays out at a width. `check` with no format
+    // named, in either spelling, writes text.
+    let laid_out = matches.subcommand_name() == Some("check")
+        && !json
+        && matches!(format.map(String::as_str), None | Some("text"));
+    if laid_out {
+        return None;
+    }
     let says = match format.filter(|value| value.as_str() != "text") {
         Some(format) => format!("`--format {format}` writes an artifact that nothing lays out"),
-        None => "this run prints no help".to_string(),
+        None if json => "`--json` writes an artifact that nothing lays out".to_string(),
+        None => "this run lays nothing out".to_string(),
     };
     Some(format!(
-        "`--wide` says how wide the help is laid out, and {says}. A run carrying it would carry \
-         one flag that does nothing, so it is refused rather than run. The runs it widens are \
-         `{0} --wide --help`, `{0} <verb> --wide --help` and `{0} --wide help <verb>`",
+        "`--wide` says how wide the help and the report of `{0} check` are laid out, and {says}. A \
+         run carrying it would carry one flag that does nothing, so it is refused rather than run. \
+         The runs it widens are `{0} --wide --help`, `{0} <verb> --wide --help`, `{0} --wide help \
+         <verb>` and `{0} check --wide`",
         headwater_verbs::BINARY
     ))
 }

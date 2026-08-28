@@ -4137,7 +4137,12 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
         lock: &bound.digest,
         now: &ctx.now().render(),
     };
-    let artifact = headwater_adapter::render(&run, taken, graph, &subject, format);
+    // The width the report is laid out at. `paint::width` is 80 unless the
+    // command line carries `--wide`, and it is the one reader of `COLUMNS` in
+    // this binary, so a run with no flag writes the same bytes into a pipe, a
+    // file and a terminal. The three machine formats ignore the number.
+    let width = headwater_cli::paint::width();
+    let artifact = headwater_adapter::render_at(&run, taken, graph, &subject, format, width);
     print!("{artifact}");
     // The census over what was written, in the shape spec 6 fixes for the
     // graph emitters. A finding that reached no output and that no loss
@@ -4158,9 +4163,16 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
 
     // The register. It is already in the report above, because spec 4 makes it
     // mandatory and inspectable rather than a flag. What the flag adds is a
-    // file, and the bytes are the same bytes for the reason the read set's are:
-    // a projection a consumer regenerates and one a reader reads are one
+    // file, and the content is the same content for the reason the read set's
+    // is: a projection a consumer regenerates and one a reader reads are one
     // artifact or they are two truths.
+    //
+    // Not the same bytes, since #340. The report lays its register block out at
+    // the width of the run and this file is written as the register composed it,
+    // because a file is read by whoever opens it and a report is read at a
+    // width. Nothing parses this file — `Register::read` reads the resolved
+    // taxonomy and never a rendered one — so the layout costs no consumer
+    // anything, which is the difference from the read set above.
     if let Some(path) = register_out {
         if let Err(error) = std::fs::write(&path, run.register.render()) {
             eprintln!("headwater: cannot write {}: {error}", path.display());
