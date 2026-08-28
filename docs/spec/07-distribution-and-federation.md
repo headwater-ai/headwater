@@ -295,6 +295,34 @@ The adopter thus gets a green build on the first run. Every document that does n
 
 **Adoption never runs on a flag.** No invocation of the engine decides which findings count, and [spec 6](06-engine-architecture.md#cli) declares no flag that scopes a run. A mode that gated on newly touched documents would make two runs over one tree disagree. What scopes the work instead is the cache, which derives what moved from content hashes and reaches the same verdict either way.
 
+### What the adoption store records, and what it refuses to
+
+The store is `.headwater/adoption.jsonl`. A run of `headwater taxonomy audit --record` appends one line to it, and no line is ever rewritten. A run without the flag writes nothing at all. That verb gates nothing and exits 0, so a run of it inside a gate leaves the tree as it found it.
+
+**Why a store, and not a second reading of an older tree.** An adoption reading is recoverable. The lock and the corpus are both committed, and `headwater check --now <date>` is deterministic over them. So the argument for the capture-cost store does not carry here, because that store exists for a value that no later reader can recover. The argument that carries is [spec 12](12-check-layer.md#temporal-inputs-the-clock-and-the-prior-version)'s: a change reaches this engine as a named set of inputs, and never as a second tree. No crate of this engine walks git history, so the tree of a past day is an input that no run holds. The only way this engine holds a series is one reading per invocation, from a caller who decided to take one.
+
+**What a reading holds.** One line per invocation, and never one per task. It states the taxonomy digest and the date of the injected clock. Beside them go the count of tasks that the engine could not read, and one entry per task. A task entry states the identifier, the expiry, the state, the open pairs, the closed pairs and the findings held. The expiry sits in the entry so that a later reader answers "did this payload reach zero in time" from the store alone.
+
+A run over a corpus that declares no payload is still a reading, and its task list is empty. A store that skipped that state would make "nobody recorded anything" and "the payload is gone" one file.
+
+**A task past its expiry reads as its whole pair set open.** The check layer holds nothing for such a task, so it reports every pair that the task named and closes none of them. The reading states that, beside the state the check layer decided. A payload that lapsed with pairs open is a different end from a payload that reached zero. That is the distinction the words "before the expiry" name.
+
+**What a reading refuses to hold, and the reason for each.**
+
+| not recorded | why |
+|---|---|
+| the pairs, and the document each one names | The pairs are in the committed lock and the findings are in the check report. A copy here is a second copy that a lock edit falsifies, and the count is the thing that decays |
+| the owner | The lock names the owner and the check report prints it beside every task, so a reader joins on the task identifier. A per-owner series is a performance measure, which [spec 3](03-authoring-and-lifecycle.md#what-the-capture-cost-store-records-and-what-it-refuses-to) rules out for the store beside this one |
+| a key of the block that nothing reads | Such a key holds nothing and refuses nothing, so it moves no count here. The check report is where one is named |
+| wall-clock time, and any duration | Neither is reproducible, and both would change the file on a run that measured the same thing |
+| the engine version, and the host | Neither is a fact about the payload |
+
+**Where it lands, and who reads it.** Under `.headwater/`, which is outside the corpus root. No census row covers it, no language regime binds it, and no rule reads it. That is the boundary the capture-cost store sits on, and it is there for the same reason. `taxonomy audit` is the only reader. The file is committed plain text, so every reader of the repository recomputes each figure from the lines.
+
+**Two digests are two measurements, and the report never trends across them.** The payload is a set of `(document, rule)` pairs. A rule that the taxonomy stopped running closes a pair with no change in what anybody wrote. So the report names every digest that the readings span, and it states that the figures beside them are not a trend. A series that averaged over a schema change would report a migration as an authoring trend.
+
+**What the report states, and what it cannot.** It states the payload of this run. It states the fraction of tasks that stood at zero on or before their expiry, and the first and the last date the store holds. The denominator of that fraction is every task identifier in the store, and never the tasks the lock declares today. A task that closed and left the lock is a payload that reached zero. Over one reading the report states a value and no trend. The elapsed time between two readings is what the series adds, and no engine supplies it ([HW-OBL-0008](../obligations/0008-an-adoption-payload-has-a-first-reading-and-no-elapsed-time.md)).
+
 ## Conformance
 
 Vendoring content is not adoption. A consumer can hold a perfect copy of the taxonomy and wire none of it. Conformance is a separate, evaluated question:
