@@ -51,9 +51,9 @@ Global `--root` selects the repository. `--help`, `--version`, `--wide` and `--n
 
 ## Exit status
 
-**0** when a subcommand completes, including when a probe refuses a run or a transcript contains findings. Probe results never gate.
+**0** when a subcommand completes, including when a probe refuses a run or a transcript contains findings. An arm, tier or category that a declaration or the corpus does not carry refuses the run at this status. Probe results never gate.
 
-**1** when the command line is invalid, a named tier, arm or category is unknown, or a required file cannot be read. It is also 1 when the budget declaration is malformed or the corpus cannot load. The message names the refusal.
+**1** when the command line is invalid, or a required file cannot be read. A tier, arm or category name outside this engine's closed set makes the command line invalid. It is also 1 when the budget declaration is malformed or the corpus cannot load. The message names the refusal.
 
 ## Environment
 
