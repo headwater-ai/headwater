@@ -142,7 +142,7 @@ relations:
 
 ## Q31 — Whether this repository becomes public, and when
 
-[HW-DR-0031](../decisions/0031-q31-whether-this-repository-becomes-public-and-when.md) — This repository becomes public, and the date is unset. A settled posture with a pending date is not an open question, and the record is what stops each run from raising it as one. (asserted, and no human has accepted it)
+[HW-DR-0031](../decisions/0031-q31-whether-this-repository-becomes-public-and-when.md) — This repository becomes public on 2026-09-08. The owner sets the date, and the record stops each run from raising the schedule as an open question. (asserted, and no human has accepted it)
 
 ## Q32 — Which test the self-audit label states
 
