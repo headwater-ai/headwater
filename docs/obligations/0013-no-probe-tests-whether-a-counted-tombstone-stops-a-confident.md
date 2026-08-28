@@ -4,7 +4,7 @@ title: "No probe tests whether a counted tombstone stops a confident report of a
 status: current
 status_since: 2026-08-10
 waiting_on: build
-last_verified: 2026-08-13
+last_verified: 2026-08-28
 summary: "Q17 claims that a counted tombstone stops an agent reporting absence with confidence, and no probe has run."
 provenance:
   warrant: accepted
@@ -30,4 +30,6 @@ A probe over a withheld answer is the instrument.
 
 ## Discharge
 
-No probe harness exists, and this corpus withholds nothing, so no run has been possible.
+**The instrument now exists, and this corpus still withholds nothing.** [HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer](../probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md) states the task and the closed answer set, and `headwater probe plan` selects it. A fixture at `engine/crates/cli/fixtures/answered-export/` proves the mechanism. A `filtered` profile withholds one document behind a counted tombstone, a `control` profile carries it, and only the control artifact states the recovery word.
+
+What is missing is the same thing [HW-OBL-0010](0010-the-corpus-descriptor-exists-and-no-probe-has-run-against.md) names: a recorder. This corpus still declares one export profile, so a session served this corpus never meets a tombstone, and no transcript exists to grade. So the wait moved from an instrument nobody had declared to a run nobody has taken.

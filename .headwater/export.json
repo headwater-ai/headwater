@@ -9,14 +9,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 315,
-      "carried": 315,
+      "in the graph": 316,
+      "carried": 316,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 530,
-      "carried": 530,
+      "in the graph": 531,
+      "carried": 531,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -2438,7 +2438,7 @@
           "status": "current",
           "status_since": "2026-08-10",
           "waiting_on": "build",
-          "last_verified": "2026-08-13",
+          "last_verified": "2026-08-28",
           "summary": "Q17 claims that a counted tombstone stops an agent reporting absence with confidence, and no probe has run.",
           "provenance": {
             "warrant": "accepted",
@@ -6278,6 +6278,34 @@
             ],
             "traces_to": [
               "HW-OBL-0010"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md",
+        "kind": "probe",
+        "id": "HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer",
+          "status": "draft",
+          "status_since": "2026-08-27",
+          "summary": "A session classifies a recovery word as present, withheld, or absent from a served corpus with a counted tombstone.",
+          "last_verified": "2026-08-27",
+          "probe_category": "sufficiency",
+          "expectation": "answered",
+          "oracle": "none",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "codex",
+            "activity": "draft",
+            "evidence_basis": "unevidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-OBL-0013"
             ]
           }
         }
@@ -11741,6 +11769,17 @@
           "bound": "document",
           "id": "HW-OBL-0010",
           "path": "docs/obligations/0010-the-corpus-descriptor-exists-and-no-probe-has-run-against.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0013",
+          "path": "docs/obligations/0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident.md",
           "kind": "obligation_record"
         }
       },
