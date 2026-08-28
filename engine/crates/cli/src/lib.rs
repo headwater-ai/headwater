@@ -76,7 +76,7 @@ pub mod paint;
 /// One sentence with six readers — the two `--json` descriptions below and the
 /// four `--format` ones — for the reason [`JSON_BESIDE_FORMAT`] gives: six
 /// literals agree until somebody edits one of them.
-/// [HW-DR-0043](https://github.com/headwater-ai/headwater/issues/346) rules
+/// [HW-DR-0043](../../../../docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules
 /// that `--json` names the shape of an artifact and moves neither the stream a
 /// refusal is written on nor the grammar it is written in. So a consumer reads
 /// nothing on standard output when a run refuses, and reads the account on the

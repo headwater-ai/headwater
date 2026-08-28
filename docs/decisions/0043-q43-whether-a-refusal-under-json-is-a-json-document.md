@@ -46,7 +46,7 @@ relations:
 
 **Eight interface contracts state the rule under `## Exit status`.** The overlay declares a closed set of eight headings for an `interface_contract`, and `section.required.missing` reads that set. So the sentence goes inside a heading that exists, and no contract gains a ninth heading of its own.
 
-**`check` takes a two-case form, because "standard output is empty on a non-zero exit" is false for it.** Five of the eleven reasons `check` exits 1 are decided after the report is written. `check --json --read-set /no/such/dir/run.readset` exits 1 and puts a whole 58,534-byte JSON report on standard output. So the property is that a refusal writes nothing, and not that a non-zero exit writes nothing. `docs/interfaces/headwater-check.md` draws that line for the text report, and the same line holds for `json`, `sarif` and `markdown`.
+**`check` takes a two-case form, because "standard output is empty on a non-zero exit" is false for it.** Five of the eleven reasons `check` exits 1 are decided after the report is written. `check --json --read-set /no/such/dir/run.readset` exits 1 and puts a whole JSON report on standard output. So the property is that a refusal writes nothing, and not that a non-zero exit writes nothing. `docs/interfaces/headwater-check.md` draws that line for the text report, and the same line holds for `json`, `sarif` and `markdown`.
 
 **`sweep` takes the unconditional form.** All four of its reasons for exit 1 are refusals, and each one is decided before anything is written.
 
