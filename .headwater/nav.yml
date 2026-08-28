@@ -44,6 +44,7 @@ nav:
       - "Q40 — Whether extends, bundle, requires and an overlay's taxonomy key are a mechanism or a label": "decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md"
       - "Q41 — Whether Vale becomes a declared regime backend": "decisions/0041-q41-whether-vale-becomes-a-declared-regime-backend.md"
       - "Q42 — What \"one screen\" means for the first help screen": "decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md"
+      - "Q43 — Whether a refusal under `--json` is a JSON document": "decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md"
   - "acceptance_criteria":
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
   - "evaluations":
@@ -243,6 +244,7 @@ nav:
       - "A help string and the interface contract that restates it can both be false with the whole suite green": "obligations/0156-a-help-string-and-the-interface-contract-that-restates-it-can-both-be-false-with-the-whole-suite-green.md"
       - "The capture report says two denominators over a store that named seventeen taxonomies": "obligations/0157-the-capture-report-says-two-denominators-over-a-store-that-named-seventeen-taxonomies.md"
       - "clap owns the help flag, so -h, --help reads Print help on all 32 verb pages": "obligations/0158-clap-owns-the-help-flag-so-h-help-reads-print-help-on-all-32-verb-pages.md"
+      - "A sentence that opens with a hash and an issue number is folded into the sentence before it": "obligations/0159-a-sentence-that-opens-with-a-hash-and-an-issue-number-is-folded-into-the-sentence-before-it.md"
   - "probes":
       - "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"
       - "HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer": "probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md"

@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 329,
-      "carried": 329,
+      "in the graph": 333,
+      "carried": 333,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 538,
-      "carried": 538,
+      "in the graph": 543,
+      "carried": 543,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1197,6 +1197,37 @@
             "governs": [
               "engine/crates/cli/src/lib.rs",
               "engine/crates/cli/tests/help.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md",
+        "kind": "decision",
+        "id": "HW-DR-0043",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0043",
+          "status": "draft",
+          "status_since": "2026-08-28",
+          "summary": "A refusal is an English sentence on standard error and never a JSON document, because `--json` names the shape of an artifact and moves no stream and no grammar.",
+          "last_verified": "2026-08-28",
+          "title": "Q43 — Whether a refusal under `--json` is a JSON document",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0033"
+            ],
+            "governs": [
+              "engine/crates/cli/src/main.rs",
+              "engine/crates/cli/src/lib.rs",
+              "engine/crates/cli/tests/json.rs"
             ]
           }
         }
@@ -6399,6 +6430,33 @@
         }
       },
       {
+        "path": "docs/obligations/0159-a-sentence-that-opens-with-a-hash-and-an-issue-number-is-folded-into-the-sentence-before-it.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0159",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0159",
+          "status": "draft",
+          "status_since": "2026-08-28",
+          "summary": "`opens_a_sentence` admits a digit and not a hash, so a sentence that cites an issue as `#346` is counted with the sentence before it and reported at their combined length.",
+          "last_verified": "2026-08-28",
+          "title": "A sentence that opens with a hash and an issue number is folded into the sentence before it",
+          "waiting_on": "build",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "governs": [
+              "engine/crates/doc/src/sentences.rs"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
         "kind": "probe",
         "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
@@ -7478,6 +7536,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "engine/crates/cli/tests/json.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "engine/crates/cli/tests/wiring.rs",
         "resolver": "source-tree"
       },
@@ -7499,6 +7562,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/conformance/src/render.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/doc/src/sentences.rs",
         "resolver": "source-tree"
       },
       {
@@ -8469,6 +8537,50 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/cli/tests/help.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0033",
+          "path": "docs/decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/main.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/tests/json.rs",
           "resolver": "source-tree"
         }
       },
@@ -11979,6 +12091,17 @@
           "id": "HW-DR-0031",
           "path": "docs/decisions/0031-q31-whether-this-repository-becomes-public-and-when.md",
           "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/obligations/0159-a-sentence-that-opens-with-a-hash-and-an-issue-number-is-folded-into-the-sentence-before-it.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/doc/src/sentences.rs",
+          "resolver": "source-tree"
         }
       },
       {

@@ -93,6 +93,8 @@ There is no precondition about a model, about a network, or about a plan having 
 
 **The lock is the reason a reader is most likely to be surprised by.** The other two are errors a caller made in the command line. This one is a fact about the repository, and it reaches a caller who typed a command with nothing wrong in it.
 
+**Standard output is empty on all four, because all four are refusals.** Each one is decided before anything is written, so the account is one English sentence on standard error. That holds for `--json` and for `--format json` alike, which is what [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules. This verb has no reason for exit 1 that is decided after a report, which is the case `headwater check` carries and this one does not.
+
 **Where each status is asserted.** `engine/crates/cli/tests/sweep.rs` starts the binary and holds all four rows above, including the third non-zero reason and the `--strict` that changes nothing. `engine/crates/sweep/tests/fixtures.rs` covers the intake as a library, which is where a refusal is decided, and it starts no process. So the refusal and the status it does not move are asserted in two places, one either side of the process boundary.
 
 ## Environment

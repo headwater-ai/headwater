@@ -137,6 +137,13 @@ fn sweep_return() -> PathBuf {
 /// The other three write no such line: `capture` and `sweep report` put nothing
 /// on standard error, and `export` puts a loss-set account there that is a fact
 /// about the corpus.
+///
+/// **Every command line here succeeds, and that is the scope of the property.**
+/// The equality below is about the artifact a run writes. It is not about a
+/// refusal: HW-DR-0043 rules that a message a person reads names the spelling
+/// they typed, so `export --json --check` and `export --format json --check`
+/// deliberately write *different* standard error.
+/// [`a_refusal_names_the_spelling_the_caller_typed`] holds that half.
 fn both_spellings() -> Vec<(&'static str, Vec<String>)> {
     let returned = sweep_return().to_str().expect("a path").to_string();
     vec![
@@ -273,6 +280,203 @@ fn a_command_line_that_names_one_target_twice_is_refused() {
             refused.out.is_empty(),
             "and it writes no half-artifact: {}",
             refused.text()
+        );
+    }
+}
+
+/// Every command line that refuses under a JSON target, in both spellings.
+///
+/// Ten refusals and the four the second spelling reaches. Each one is decided
+/// before anything is written: a target this corpus does not carry, a flag
+/// with no value, a rung the ladder does not name, a pair of flags the parser
+/// holds in conflict, or a choice the engine will not make for a caller.
+///
+/// `check` is deliberately absent past the parse conflict, because five of its
+/// eleven exit-1 reasons are decided *after* the report is on standard output.
+/// [`a_run_that_completed_and_then_failed_still_wrote_its_document`] holds that
+/// half, and the pair of them is the boundary rather than either alone.
+fn refusals() -> Vec<(&'static str, Vec<&'static str>)> {
+    vec![
+        (
+            "explain --json, no such document",
+            vec!["explain", "--json", "docs/spec/no-such-part.md"],
+        ),
+        ("explain --json, no target", vec!["explain", "--json"]),
+        (
+            "gate --json, no such read set",
+            vec!["gate", "--json", "--read-set", "no-such.readset"],
+        ),
+        ("gate --json, no read set", vec!["gate", "--json"]),
+        (
+            "conformance --json, no such rung",
+            vec!["conformance", "--json", "--level", "L99"],
+        ),
+        ("route --json, no task", vec!["route", "--json"]),
+        (
+            "sweep report --json, no such file",
+            vec!["sweep", "report", "no-such.yml", "--json"],
+        ),
+        (
+            "sweep report --format json, no such file",
+            vec!["sweep", "report", "no-such.yml", "--format", "json"],
+        ),
+        ("export --json --check", vec!["export", "--json", "--check"]),
+        (
+            "export --format json --check",
+            vec!["export", "--format", "json", "--check"],
+        ),
+        // This corpus declares `default` and `site`, so a target named with no
+        // profile is the two-or-more-profiles refusal and needs no scratch
+        // corpus. `both_spellings()` passes `--profile site` for that reason.
+        ("export --json, two profiles", vec!["export", "--json"]),
+        (
+            "export --format json, two profiles",
+            vec!["export", "--format", "json"],
+        ),
+        (
+            "check --json --format json",
+            vec!["check", "--json", "--format", "json"],
+        ),
+        (
+            "capture --json --format json",
+            vec!["capture", "--json", "--format", "json"],
+        ),
+    ]
+}
+
+/// A refusal is an English sentence on standard error and never a document.
+///
+/// [HW-DR-0043](../../../../docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md)
+/// rules that `--json` names the shape of an artifact and moves neither the
+/// stream a refusal is written on nor the grammar it is written in. A consumer
+/// that reads standard output on exit 1 therefore reads nothing, and the
+/// account is on the other stream for it to print or to log.
+///
+/// The way this goes wrong is a half-artifact: an emitter that opened a
+/// document, wrote an opening brace and a member or two, and then met the
+/// condition it refuses on. That leaves bytes on standard output that no parser
+/// completes, and it is what the emptiness assertion below is for.
+#[test]
+fn a_refusal_writes_no_document_and_accounts_for_itself_on_the_other_stream() {
+    for (name, arguments) in refusals() {
+        let refused = ran(&arguments);
+        assert_eq!(
+            refused.code,
+            Some(1),
+            "`{name}` is refused with exit 1: {refused:?}"
+        );
+        assert!(
+            refused.out.is_empty(),
+            "`{name}` writes nothing to standard output, and it wrote: {}",
+            refused.text()
+        );
+        assert!(
+            !refused.err.is_empty(),
+            "`{name}` says why on standard error: {refused:?}"
+        );
+    }
+}
+
+/// The other side of the boundary, so the case above is not read as a rule.
+///
+/// "Standard output is empty when the status is 1" is **false** for `check`.
+/// `docs/interfaces/headwater-check.md` states it under *Exit status*: the
+/// report is written before the last five of the eleven reasons are decided, so
+/// a run that exits 1 for one of those five still put a whole report there.
+/// Without this case, a future change that suppressed the report on any
+/// non-zero exit would pass the case above and break the contract.
+///
+/// An unwritable read-set path is one of those five. The run evaluates the
+/// corpus, writes the document, fails to record the read set, and says so on
+/// standard error.
+#[test]
+fn a_run_that_completed_and_then_failed_still_wrote_its_document() {
+    let unwritable = scratch().join("no-such-directory").join("run.readset");
+    let unwritable = unwritable.to_str().expect("a path");
+    for (name, arguments) in [
+        (
+            "check --json",
+            vec!["check", "--json", "--read-set", unwritable],
+        ),
+        (
+            "check --format json",
+            vec!["check", "--format", "json", "--read-set", unwritable],
+        ),
+    ] {
+        let failed = ran(&arguments);
+        assert_eq!(
+            failed.code,
+            Some(1),
+            "`{name}` with an unwritable read set exits 1: {failed:?}"
+        );
+        assert!(
+            !failed.err.is_empty(),
+            "`{name}` says which path it could not write: {failed:?}"
+        );
+        let artifact = failed.text();
+        let parsed = headwater_yaml::load(&artifact)
+            .unwrap_or_else(|_| panic!("`{name}` put a whole JSON report on standard output"));
+        assert!(
+            member(&parsed.value, "version").is_some(),
+            "`{name}` wrote the whole document and not a prefix of one: {artifact}"
+        );
+    }
+}
+
+/// A refusal names the spelling the caller typed, and never the other one.
+///
+/// `chosen()` folds `--json` onto `--format json` so that the two write the
+/// same artifact byte for byte, which is what
+/// [`the_two_spellings_of_one_target_write_the_same_bytes`] holds. A message a
+/// person reads is not an artifact, and quoting a flag that is not on the
+/// command line in front of them is a wrong instruction rather than a
+/// cosmetic one. `export` is the whole surface: it is the only verb whose
+/// refusals are reached with a target already named.
+///
+/// Both directions in one case, because the way this goes wrong is that one
+/// spelling is fixed and the other is left saying the first one's name.
+#[test]
+fn a_refusal_names_the_spelling_the_caller_typed() {
+    for (name, arguments, typed, untyped) in [
+        (
+            "export --json --check",
+            vec!["export", "--json", "--check"],
+            "--json",
+            "--format",
+        ),
+        (
+            "export --format json --check",
+            vec!["export", "--format", "json", "--check"],
+            "--format",
+            "--json",
+        ),
+        (
+            "export --json, two profiles",
+            vec!["export", "--json"],
+            "--json",
+            "--format",
+        ),
+        (
+            "export --format json, two profiles",
+            vec!["export", "--format", "json"],
+            "--format",
+            "--json",
+        ),
+    ] {
+        let refused = ran(&arguments);
+        assert_eq!(
+            refused.code,
+            Some(1),
+            "`{name}` is refused with exit 1: {refused:?}"
+        );
+        let says = String::from_utf8_lossy(&refused.err);
+        assert!(
+            says.contains(typed),
+            "`{name}` names `{typed}`, the spelling it was given: {says}"
+        );
+        assert!(
+            !says.contains(untyped),
+            "`{name}` does not name `{untyped}`, which nobody typed: {says}"
         );
     }
 }

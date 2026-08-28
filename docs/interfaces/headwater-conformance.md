@@ -58,6 +58,10 @@ The projections must read from the resolved taxonomy. The host must provide a da
 
 **1** means that the command line, taxonomy, package, conformance file, waiver set or date was refused, or that the requested level did not pass. An ordinary report is printed before a failed requested gate is reported on standard error.
 
+**A level that did not pass still wrote its whole document, and a refusal wrote none.** Take `conformance --json --level L1` over a corpus that does not reach L1. It exits 1 with the whole document on standard output, because the gate is a member of that document. A refusal writes nothing there, and its account is one English sentence on standard error. So the property is that a refusal writes no document, and not that a non-zero exit writes none, which is what [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules.
+
+**A rung the package does not declare is a refusal, and the two formats print it in a different order.** The text report is written before the gate is asked, so an undeclared rung is refused under the gaps it is about. The document cannot take that order, so `--json` writes nothing at all on that run.
+
 ## Environment
 
 No environment variable reaches this verb. The package, taxonomy, repository and date come from the tree and command line.
