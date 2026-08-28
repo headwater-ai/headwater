@@ -1,6 +1,7 @@
 {
   "headwater:generated": "graph_export. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
-  "export_version": "1.0",
+  "version": "1.1",
+  "export_version": "1.1",
   "profile": {
     "name": "site",
     "target": "json",
