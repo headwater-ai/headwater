@@ -9,8 +9,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 317,
-      "carried": 317,
+      "in the graph": 318,
+      "carried": 318,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -6250,6 +6250,20 @@
           },
           "last_verified": "2026-08-26",
           "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0154-the-adoption-decay-section-is-fixture-recorded-only-in-its-empty-shape.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0154",
+        "facets": {
+          "id": "HW-OBL-0154",
+          "status": "draft",
+          "status_since": "2026-08-28",
+          "summary": "Every section of the recorded audit report renders populated except the adoption one, whose fixture tree declares no payload.",
+          "last_verified": "2026-08-28",
+          "title": "The adoption decay section is fixture-recorded only in its empty shape",
+          "waiting_on": "build"
         }
       },
       {
