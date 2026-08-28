@@ -48,6 +48,8 @@ The repository must load through its committed taxonomy lock and corpus. The hos
 
 **1** means that the repository, date, options or adoption block could not be read or written.
 
+**1** also means that the payload this run built did not load, which is a defect in this engine and not in your corpus.
+
 ## Environment
 
 The command reads the system date when `--now` is absent. It reads no other environment variable.

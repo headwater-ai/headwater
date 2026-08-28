@@ -775,8 +775,7 @@ fn a_verb_this_engine_never_implemented_does_not_name_the_grammar() {
         "a refusal writes nothing to standard output, so a caller reading by pipe reads a report or nothing"
     );
     assert!(
-        ran.err
-            .contains("no document states what an expression is"),
+        ran.err.contains("no document states what an expression is"),
         "the refusal states the wait rather than a fault:\n{}",
         ran.err
     );
