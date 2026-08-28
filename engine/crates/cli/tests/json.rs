@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! `--json`: the two spellings of one target, and the four reads that had none.
+//! `--json`: the two spellings of one target, and every document it writes.
 //!
 //! # The clause
 //!
@@ -408,34 +408,31 @@ fn no_escape_byte_reaches_a_document_this_binary_writes() {
     }
 }
 
-/// Every document this change adds names its own shape, and not the engine's.
+/// Every document this binary writes names its own shape, and not the engine's.
 ///
 /// A consumer outside this repository holds no clone, so a document that named
 /// nothing could only be pinned by the version of the tool that wrote it — and
-/// two engines that write one shape should not make a reader re-read it. It is
-/// what the help text of `--json` promises on these four verbs.
+/// two engines that write one shape should not make a reader re-read it.
 ///
-/// **The four emitters that were already here are not held to it, because two
-/// of them do not meet it.** Measured over this repository: `check` writes
-/// `"version": "1.2"` and `sweep report` writes `"version": "1.0"`; `export`
-/// names its shape under a different key, `export_version`; and `capture` names
-/// no shape at all. That is three spellings of one idea across eight documents,
-/// and it is [#343](https://github.com/headwater-ai/headwater/issues/343)
-/// rather than this change: #321's clause asks that `--json` be accepted where
-/// `--format json` already is, and a document whose members move is not a
-/// document this clause may quietly rewrite.
+/// **This runs over all ten entries of `documents()`, which is what
+/// [#343](https://github.com/headwater-ai/headwater/issues/343) closed.** The
+/// case shipped with #321 naming four of those ten. It left out the four
+/// emitters that predate that change — `check`, `sweep report`, `export` and
+/// `capture` — because two of them did not meet it: `export` named its shape
+/// under a different key, `export_version`, and `capture` named no shape at
+/// all. It also left out the second entry of `route` and of `conformance`,
+/// which met it all along. Both defects are closed: `export` and `capture` now
+/// write `version` like the other eight entries do.
+///
+/// `export` writes `export_version` beside `version`, out of the one constant,
+/// because dropping the earlier key is a member removed and a major bump under
+/// the rule that constant's own doc comment states.
+///
+/// Ten entries, eight command lines: `route` and `conformance` each write two
+/// documents here.
 #[test]
-fn every_document_this_change_adds_names_its_own_shape() {
-    let added = [
-        "route --json, offered",
-        "explain --json",
-        "gate --json",
-        "conformance --json",
-    ];
+fn every_document_this_binary_writes_names_its_own_shape() {
     for (name, run) in documents() {
-        if !added.contains(&name) {
-            continue;
-        }
         let value = headwater_yaml::load(&run.text())
             .unwrap_or_else(|errors| panic!("`{name}` does not parse: {errors:?}"))
             .value;
