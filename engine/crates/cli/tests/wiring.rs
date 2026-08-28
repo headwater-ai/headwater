@@ -879,3 +879,188 @@ fn every_refusal_about_a_value_this_run_built_goes_out_through_defect() {
         );
     }
 }
+
+/// What `defect` prints, which nothing held until a review found it.
+///
+/// The case above asserts which helper opens a call and says nothing about what
+/// that helper writes. A review rewrote `defect`'s body to print a
+/// `github.com` address and to drop the engine constant, and the whole suite
+/// stayed green. Both properties are stated in the doc comment and in the
+/// interface contract, so both are assertions this repository makes to a
+/// caller, and neither was held.
+///
+/// This reads the source rather than driving the binary, and the reason is the
+/// point of the helper rather than a gap in this case. Both call sites are
+/// unreachable: every scalar the payload carries goes through `quoted`, so no
+/// corpus and no command line produces a payload that fails to load. A case
+/// that drove the site would need a route that no longer exists.
+///
+/// The URL assertion is not decoration. This repository has no published home
+/// (Q31 is open), so an address in caller-facing output would be an address
+/// that answers nothing.
+#[test]
+fn the_defect_helper_names_the_engine_version_and_no_address() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/main.rs");
+    let text = std::fs::read_to_string(&path).expect("main.rs reads");
+    let (_, after) = text
+        .split_once("fn defect(message: &str) -> ExitCode {")
+        .expect("`fn defect` is no longer the shape of the helper in main.rs");
+    let (body, _) = after
+        .split_once("\n}")
+        .expect("no closing brace found for `fn defect` in main.rs");
+    assert!(
+        body.contains("headwater_resolve::release::ENGINE"),
+        "a report of a defect needs the version it was found in, and this names no version:\n{body}"
+    );
+    for address in ["http://", "https://", "github.com"] {
+        assert!(
+            !body.contains(address),
+            "`defect` writes `{address}` to a caller. This repository has no published home, so \
+             the address would answer nothing:\n{body}"
+        );
+    }
+    assert!(
+        body.contains("ExitCode::FAILURE"),
+        "this binary has one failing status and `defect` returns it:\n{body}"
+    );
+}
+
+/// A refusal the consumer declaration caused does not name the grammar.
+///
+/// `headwater import` reads `.headwater/taxonomy.yml` through
+/// `headwater_import::declared`, which is the file `refuse`'s own doc comment
+/// names as its population. An `imports` entry that names no `at` is a fact
+/// about that file alone, and no spelling of `headwater import` gets past it.
+///
+/// This is the ninth site. #455 named eight and this was not among them, but
+/// #331's first Done-when bullet is a predicate over every call site of `fail`,
+/// so a site left here is that bullet unmet. Found by a review of #460 rather
+/// than by the reading that produced the eight.
+///
+/// This case was watched failing before the site moved, where the run wrote the
+/// message and then ``headwater: run `headwater --help` for the grammar``.
+#[test]
+fn a_refusal_the_consumer_declaration_caused_does_not_name_the_grammar() {
+    let root = Root::over("change", "import-declaration-no-grammar-pointer");
+    let at = root.path(".headwater/taxonomy.yml");
+    let mut text = std::fs::read_to_string(&at).expect("the declaration reads");
+    text.push_str("\nimports:\n  upstream:\n    channel: stable\n");
+    std::fs::write(&at, text).expect("the declaration writes");
+
+    let ran = root.run(&["import"]);
+    assert_eq!(
+        ran.code,
+        Some(1),
+        "an import declaration this engine cannot read is refused:\n{}",
+        ran.err
+    );
+    assert!(
+        ran.err.contains("`imports.upstream` names no `at`"),
+        "the refusal names the entry that is incomplete:\n{}",
+        ran.err
+    );
+    assert!(
+        !ran.err.contains("headwater --help"),
+        "the consumer declaration is a fixed location this engine reads on every run, and no \
+         command line reaches past what it says:\n{}",
+        ran.err
+    );
+}
+
+/// Every scalar `headwater infer` writes survives a load, whatever it holds.
+///
+/// The two `defect` sites in `infer` were reachable when they were written, and
+/// a review reached both. A newline in `--owner` wrote a raw line break inside
+/// a double-quoted scalar, and a `}` in a document's filename broke the
+/// unquoted flow mapping the pairs were emitted as. In both cases the run
+/// printed that neither the corpus nor the command line caused it, which was
+/// false.
+///
+/// A third route was worse than either: a comma in a filename did not fail at
+/// all. The flow mapping read `docs/spec/a,b.md` as the value `docs/spec/a`,
+/// the run exited 0, and the lock declared debt against a document that does
+/// not exist.
+///
+/// So this drives the three routes rather than the helper. `--write` is what
+/// makes the case decisive: without it the payload is printed and never loaded,
+/// and the load is the step that used to fail.
+#[test]
+fn a_payload_this_verb_writes_loads_whatever_a_path_or_an_owner_holds() {
+    let root = Root::over("change", "infer-quotes-every-scalar");
+    // The one case here that reaches the resolver, because `--write` resolves
+    // before it writes and the lock it produces is this case's evidence.
+    // `Root::over` copies the two declarations every other case needs, and a
+    // resolution needs the sources behind them as well.
+    copy(&repository().join("packages"), &root.path("packages"));
+    std::fs::copy(
+        repository().join(".headwater/overlay.yml"),
+        root.path(".headwater/overlay.yml"),
+    )
+    .expect("the overlay copies");
+    for (label, name) in [
+        ("a closing brace", "91-brace}here.md"),
+        ("a comma", "91-comma,here.md"),
+        ("a quotation mark", "91-quote\"here.md"),
+    ] {
+        let from = root.path("docs/decisions/0001-the-warrant-a-person-set.md");
+        let to = root.path(&format!("docs/decisions/{name}"));
+        std::fs::copy(&from, &to).unwrap_or_else(|why| panic!("the {label} case copies: {why}"));
+    }
+
+    let ran = root.run(&[
+        "infer",
+        "--write",
+        "--owner",
+        "alice\nbob\r\tcarol",
+        "--now",
+        "2026-08-01",
+    ]);
+    assert!(
+        !ran.err.contains("does not load"),
+        "the payload loads back, so no scalar this run wrote broke it:\n{}",
+        ran.err
+    );
+    assert!(
+        !ran.err.contains("this is a defect in engine"),
+        "no input reaches the defect helper, which is what makes that helper's population empty:\n{}",
+        ran.err
+    );
+    assert_eq!(
+        ran.code,
+        Some(0),
+        "the run completes:\n{}{}",
+        ran.out,
+        ran.err
+    );
+
+    let lock = std::fs::read_to_string(root.path(".headwater/taxonomy.lock"))
+        .expect("the lock reads back");
+    assert!(
+        lock.contains("91-comma,here.md"),
+        "a comma in a path used to truncate the value silently, and the lock declared debt \
+         against a document that does not exist:\n{lock}"
+    );
+    assert!(
+        lock.contains("91-brace}here.md"),
+        "a closing brace in a path used to break the payload:\n{lock}"
+    );
+
+    // The fourth route, and the one repairing the other three exposed. The lock
+    // writer escaped `\n` and `\t` and let a `\r` through raw, so `--write`
+    // exited 0 and wrote a file the next command could not read. Nothing short
+    // of reading it back says whether that is fixed.
+    let read = root.run(&["check", "--no-cache", "--now", "2026-08-01"]);
+    assert!(
+        !read.err.contains("the lock cannot be read"),
+        "the lock this run wrote loads again. A carriage return in an owner used to write a lock \
+         no later command could read, with this run still exiting 0:\n{}",
+        read.err
+    );
+    assert_eq!(
+        read.code,
+        Some(0),
+        "and the corpus still checks over it:\n{}{}",
+        read.out,
+        read.err
+    );
+}

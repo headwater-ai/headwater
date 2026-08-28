@@ -3406,9 +3406,14 @@ fn probe_stale(root: &Path) -> ExitCode {
 /// graph, so a finding is what a later run cannot make. Either an import is
 /// refused here or nothing downstream is going to notice.
 fn import(root: &Path, name: Option<&str>, expect: Option<&str>, writing: bool) -> ExitCode {
+    // `refuse` (#455, the ninth site): `declared` reads
+    // `.headwater/taxonomy.yml`, which is a fixed location this engine reads on
+    // every run, and every error it returns is a fact about that file. No
+    // spelling of `headwater import` gets past one. The sibling call in `load`
+    // already reports without the pointer, so this was the odd one out.
     let declarations = match headwater_import::declared(root) {
         Ok(declarations) => declarations,
-        Err(why) => return fail(&why),
+        Err(why) => return refuse(&why),
     };
     let names: Vec<String> = declarations
         .iter()
@@ -4350,8 +4355,15 @@ fn infer(
         let mut cells: Vec<&str> = held.iter().map(|finding| finding.path.as_str()).collect();
         cells.sort_unstable();
         cells.dedup();
+        // Both values quoted, for the reason `quoted` records: this was an
+        // unquoted flow mapping, and a `}` in a filename closed it early while
+        // a comma in one truncated the value and exited 0.
         for path in cells {
-            payload.push_str(&format!("      - {{path: {path}, rule: {rule}}}\n"));
+            payload.push_str(&format!(
+                "      - {{path: {}, rule: {}}}\n",
+                quoted(path),
+                quoted(rule)
+            ));
         }
     }
 
@@ -4951,18 +4963,41 @@ add: {{}}
 /// look dangerous today. A payload that does not load is a payload the next
 /// command refuses, and the failure would be reported against the lock rather
 /// than against the text that produced it.
+///
+/// # The three routes a review found, and what each one cost
+///
+/// That paragraph was a claim and not a fact until a review of
+/// [#455](https://github.com/headwater-ai/headwater/issues/455) tested it. This
+/// escaped `"` and `\` alone, and the `pairs` entries reached the payload as an
+/// unquoted flow mapping that never came here at all. Three routes followed,
+/// and each one was reached by running the binary rather than by reading it:
+///
+/// - A newline in `--owner` wrote a raw line break inside a double-quoted
+///   scalar. The payload stopped loading, and the run told the caller that
+///   neither their corpus nor their command line caused it.
+/// - A `}` in a document's filename closed the flow mapping early, with the
+///   same false sentence under it.
+/// - A comma in a filename was worse than either, because nothing failed.
+///   `docs/spec/a,b.md` was read as the value `docs/spec/a`, the run exited 0,
+///   and the lock declared debt against a document that does not exist.
+///
+/// So the escaping is by category rather than by the two characters that were
+/// noticed first: a control character is what a raw line break is a member of,
+/// and [`char::is_control`] is the whole C0 and C1 range. `U+2028` and `U+2029`
+/// are outside it and YAML reads both as line breaks, so they are named.
+///
+/// The escaping itself is [`headwater_resolve::render::quoted`] rather than a
+/// second copy here. This one was the second copy, and being a second copy is
+/// how it fell three characters behind the writer that puts the same strings
+/// into the lock. Repairing it exposed a fourth route in that writer, which is
+/// recorded there.
+///
+/// The invariant this holds is what makes `defect`'s two call sites in
+/// [`infer`] unreachable, and
+/// `tests/wiring.rs::a_payload_this_verb_writes_loads_whatever_a_path_or_an_owner_holds`
+/// drives every route.
 fn quoted(text: &str) -> String {
-    let mut out = String::with_capacity(text.len() + 2);
-    out.push('"');
-    for character in text.chars() {
-        match character {
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            other => out.push(other),
-        }
-    }
-    out.push('"');
-    out
+    headwater_resolve::render::quoted(text)
 }
 
 fn busiest_directory(root: &Path) -> Option<String> {
@@ -5137,12 +5172,35 @@ fn refuse(message: &str) -> ExitCode {
 /// that report to: this repository has no published home yet, and a line
 /// naming one would be a line that stops being true.
 ///
-/// Two call sites, both in `infer`, and no command line reaches either. That is
-/// the point rather than an excuse: nothing drives them, so nothing executes
-/// them, and the invariant they hold is the last thing saying the payload this
-/// run wrote is the payload it meant to write.
+/// # What the line asserts, and what had to become true before it could
+///
+/// "Neither your corpus nor your command line caused it" is a strong claim, and
+/// it was **false when it was first written**. A review of #455 reached both
+/// call sites from outside: a newline in `--owner`, and a `}` in a document's
+/// filename. In each case the run printed that sentence to a caller whose
+/// command line or whose corpus was exactly the cause.
+///
+/// What makes it true is [`quoted`] rather than this function. Every scalar the
+/// payload carries now goes through it, control characters included, and the
+/// `pairs` entries are quoted rather than written into a bare flow mapping. Its
+/// doc comment records the three routes and the third one, which failed
+/// silently rather than loudly.
+///
+/// So the two call sites are unreachable, and they are unreachable for a reason
+/// a reader can check rather than by luck. That is the point rather than an
+/// excuse: nothing drives them, so nothing executes them, and the invariant
+/// they hold is the last thing saying the payload this run wrote is the payload
+/// it meant to write. Read this claim as conditional on that one, and re-test
+/// it rather than trusting it if `quoted` ever stops being the one route out.
+///
+/// Two cases hold this pair, and neither drives the sites, because after the
+/// repair nothing can.
 /// `tests/wiring.rs::every_refusal_about_a_value_this_run_built_goes_out_through_defect`
-/// is what holds them there, by reading this file.
+/// holds which helper carries each message, and
+/// `tests/wiring.rs::the_defect_helper_names_the_engine_version_and_no_address`
+/// holds what this body prints. The second exists because the review rewrote
+/// this body to print an address and drop the version constant, and the whole
+/// suite stayed green.
 fn defect(message: &str) -> ExitCode {
     eprintln!("headwater: {message}");
     eprintln!(

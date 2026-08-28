@@ -108,14 +108,43 @@ fn scalar_text(text: &str) -> String {
     if is_plain(text) {
         return text.to_string();
     }
-    let mut out = String::from("\"");
+    quoted(text)
+}
+
+/// Any text as a double-quoted YAML scalar that loads back to the same string.
+///
+/// The one implementation, because a second one is how the two disagree. This
+/// writer and `headwater infer`'s payload emitter both need it, and the payload
+/// emitter had its own copy that escaped `"` and `\` alone.
+///
+/// # Escaped by category, after four routes were found by running the binary
+///
+/// A review of [#455](https://github.com/headwater-ai/headwater/issues/455)
+/// reached three of them through `headwater infer`: a newline in `--owner`, a
+/// `}` in a document's filename, and a comma in one, the last of which
+/// truncated the value and exited 0. Repairing the payload emitter exposed a
+/// fourth here, and it was the worst of the four: a carriage return in an owner
+/// wrote a lock that **no later command could read**, with `infer --write`
+/// still exiting 0, because this function escaped `\n` and `\t` and let a `\r`
+/// through raw.
+///
+/// So the set is a category rather than the characters somebody noticed.
+/// [`char::is_control`] is the whole C0 and C1 range, which is every character
+/// that is always two hexadecimal digits, and `U+2028` and `U+2029` are the two
+/// line breaks YAML reads outside it.
+pub fn quoted(text: &str) -> String {
+    let mut out = String::with_capacity(text.len() + 2);
+    out.push('"');
     for found in text.chars() {
         match found {
             '"' => out.push_str("\\\""),
             '\\' => out.push_str("\\\\"),
             '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
             '\t' => out.push_str("\\t"),
-            _ => out.push(found),
+            '\u{2028}' | '\u{2029}' => out.push_str(&format!("\\u{:04x}", found as u32)),
+            other if other.is_control() => out.push_str(&format!("\\x{:02x}", other as u32)),
+            other => out.push(other),
         }
     }
     out.push('"');
