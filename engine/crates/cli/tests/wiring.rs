@@ -1357,3 +1357,70 @@ fn only_the_sarif_artifact_declares_its_own_loss_set() {
         "only the SARIF artifact carries its own loss set"
     );
 }
+
+/// `capture` pools readings across taxonomies, and its description says so.
+///
+/// # The defect this holds
+///
+/// The restored description ended "it never averages readings taken under two
+/// taxonomies". It does. `main.rs` reads the distinct locks in the store, and
+/// where there is more than one it prints the pooled fraction anyway and warns
+/// that the number is not a trend. The description named the remedy that was
+/// considered and rejected, so a reader learned the verb refuses a comparison
+/// it in fact makes.
+///
+/// The store below carries two readings under two different locks, which is
+/// the smallest input that separates the two arms.
+#[test]
+fn capture_pools_across_taxonomies_and_names_every_one() {
+    let help = outside_a_corpus("capture-help", &["capture", "--help"]);
+    assert_eq!(help.code, Some(0), "{}{}", help.out, help.err);
+    // The decision. This line fails against the string as #335 restored it.
+    assert!(
+        !flattened(&help.out).contains("never averages readings taken under two taxonomies"),
+        "the description does not claim a refusal this verb never makes:\n{}",
+        help.out
+    );
+
+    let root = Root::over("change", "capture-pools-across-locks");
+    let store = root.path(".headwater/capture-cost.jsonl");
+    std::fs::write(
+        &store,
+        "{\"lock\":\"sha256:aaaa\",\"date\":\"2026-08-01\",\"kind\":\"decision\",\
+         \"document\":\"docs/decisions/0001-the-warrant-a-person-set.md\",\"id\":\"DR-ONE\",\
+         \"fields\":[4,5],\"sections\":[3,3],\"identifier\":[1,1],\"edge_halves\":[0,0]}\n\
+         {\"lock\":\"sha256:bbbb\",\"date\":\"2026-08-02\",\"kind\":\"decision\",\
+         \"document\":\"docs/decisions/0001-the-warrant-a-person-set.md\",\"id\":\"DR-TWO\",\
+         \"fields\":[2,5],\"sections\":[3,3],\"identifier\":[1,1],\"edge_halves\":[0,0]}\n",
+    )
+    .expect("the store writes");
+
+    let ran = root.run(&["capture"]);
+    assert_eq!(
+        ran.code,
+        Some(0),
+        "`capture` reads the store back:\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert!(
+        ran.says("2 readings"),
+        "it read both readings:\n{}",
+        ran.out
+    );
+    // The behavior the corrected sentence describes: one fraction over both,
+    // 4 + 2 supplied of 5 + 5 fields plus the sections and the identifiers.
+    assert!(
+        ran.says("14 of 18"),
+        "it pools the two readings into one fraction:\n{}",
+        ran.out
+    );
+    assert!(
+        ran.says("2 taxonomies produced these readings"),
+        "and it names the count of taxonomies it pooled across:\n{}",
+        ran.out
+    );
+    for lock in ["sha256:aaaa", "sha256:bbbb"] {
+        assert!(ran.says(lock), "and it names {lock}:\n{}", ran.out);
+    }
+}

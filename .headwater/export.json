@@ -9,14 +9,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 322,
-      "carried": 322,
+      "in the graph": 324,
+      "carried": 324,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 532,
-      "carried": 532,
+      "in the graph": 535,
+      "carried": 535,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -6661,9 +6661,16 @@
           "id": "HW-REV-the-sixty-four-restored-help-strings-checked-against-the-binary",
           "status": "draft",
           "status_since": "2026-08-28",
-          "summary": "Each of the 64 help strings that PR #335 carried whole out of the retired parser, run against the shipped binary: 59 true, 3 false, 2 not runnable.",
+          "summary": "Each of the 64 help strings that PR #335 carried whole out of the retired parser, run against the shipped binary: 60 true, 3 false, 1 not runnable.",
           "last_verified": "2026-08-28",
-          "doc_type": "review_record"
+          "doc_type": "review_record",
+          "relations": {
+            "traces_to": [
+              "engine/crates/cli/src/lib.rs",
+              "engine/crates/verbs/src/lib.rs",
+              "engine/crates/cli/tests/wiring.rs"
+            ]
+          }
         }
       },
       {
@@ -7376,6 +7383,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "engine/crates/cli/tests/wiring.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "engine/crates/compat/src/lib.rs",
         "resolver": "source-tree"
       },
@@ -7477,6 +7489,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/sweep/src/lib.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/verbs/src/lib.rs",
         "resolver": "source-tree"
       },
       {
@@ -12318,6 +12335,39 @@
           "id": "HW-SPEC-glossary",
           "path": "docs/spec/glossary.md",
           "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/verbs/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/tests/wiring.rs",
+          "resolver": "source-tree"
         }
       },
       {

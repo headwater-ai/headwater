@@ -1,6 +1,6 @@
-262 nodes, 532 declared edge halves
+262 nodes, 535 declared edge halves
     427 to a document
-    105 to an anchor
+    108 to an anchor
 0 prose links that did not resolve
 
 anchors
@@ -29,8 +29,9 @@ anchors
       1 code_path `engine/crates/check/src/lib.rs` via source-tree
       1 code_path `engine/crates/check/src/lifecycle_state.rs` via source-tree
       1 code_path `engine/crates/cli/Cargo.toml` via source-tree
-     16 code_path `engine/crates/cli/src/lib.rs` via source-tree
+     17 code_path `engine/crates/cli/src/lib.rs` via source-tree
      19 code_path `engine/crates/cli/src/main.rs` via source-tree
+      1 code_path `engine/crates/cli/tests/wiring.rs` via source-tree
       1 code_path `engine/crates/compat/src/lib.rs` via source-tree
       1 code_path `engine/crates/conformance/src/json.rs` via source-tree
       1 code_path `engine/crates/conformance/src/lib.rs` via source-tree
@@ -52,6 +53,7 @@ anchors
       3 code_path `engine/crates/scaffold/src/reading.rs` via source-tree
       1 code_path `engine/crates/sweep/src/intake.rs` via source-tree
       2 code_path `engine/crates/sweep/src/lib.rs` via source-tree
+      1 code_path `engine/crates/verbs/src/lib.rs` via source-tree
       1 code_path `mkdocs-overrides/main.html` via source-tree
       1 code_path `packages/headwater-standard/taxonomy.yml` via source-tree
       2 code_path `site/DESIGN-BRIEF.md` via source-tree
