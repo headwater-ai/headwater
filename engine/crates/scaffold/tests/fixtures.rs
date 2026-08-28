@@ -140,6 +140,8 @@ struct Case {
     kind: &'static str,
     title: &'static str,
     relates: Vec<(String, String)>,
+    /// What the caller stated with `--facet`, in the order they named it.
+    given: Vec<(String, String)>,
 }
 
 fn case(kind: &'static str, title: &'static str) -> Case {
@@ -147,6 +149,7 @@ fn case(kind: &'static str, title: &'static str) -> Case {
         kind,
         title,
         relates: Vec::new(),
+        given: Vec::new(),
     }
 }
 
@@ -155,6 +158,36 @@ impl Case {
         self.relates
             .push((relation.to_string(), target.to_string()));
         self
+    }
+
+    /// A `--facet <name>=<value>` the caller states on the command line.
+    fn stating(mut self, facet: &str, value: &str) -> Self {
+        self.given.push((facet.to_string(), value.to_string()));
+        self
+    }
+}
+
+/// The command line a case stands for, which is the header of its transcript
+/// block. It is built from the case rather than written beside it, so a case
+/// that states a facet cannot be recorded under a header that omits it.
+fn invocation(case: &Case) -> String {
+    let mut line = format!("=== new {} --title \"{}\"", case.kind, case.title);
+    for (relation, target) in &case.relates {
+        line.push_str(&format!(" --relates {relation}={target}"));
+    }
+    for (facet, value) in &case.given {
+        line.push_str(&format!(" --facet {facet}={value}"));
+    }
+    line
+}
+
+fn request<'a>(case: &'a Case) -> Request<'a> {
+    Request {
+        kind: case.kind,
+        title: case.title,
+        now: pinned(),
+        relates: &case.relates,
+        given: &case.given,
     }
 }
 
@@ -204,6 +237,18 @@ fn cases() -> Vec<Case> {
         case("design_spec", "A target end the relation forbids").relating("refines", "DR-FIX-0007"),
         case("decision_record", "A target that resolves to nothing")
             .relating("supersedes", "DR-FIX-9999"),
+        // What `--facet` does. Every branch the flag can reach, including the
+        // one where it succeeds, because the flag shipped with no case at all
+        // and that is why the discriminator branch could discard a value in
+        // silence.
+        case("addressed", "A closed set the caller states").stating("audience", "internal"),
+        case("addressed", "A closed set value outside it").stating("audience", "wibble"),
+        case("design_spec", "A facet the kind does not require").stating("chapter", "3"),
+        case("design_spec", "A facet the state role decides").stating("status", "draft"),
+        case("design_spec", "A discriminator the caller disagrees with")
+            .stating("doc_type", "note"),
+        case("design_spec", "A discriminator the caller agrees with")
+            .stating("doc_type", "design_spec"),
     ]
 }
 
@@ -219,18 +264,9 @@ fn every_case_over_the_fixture_corpus_matches_the_recorded_transcript() {
 
     let mut transcript = String::new();
     for case in cases() {
-        transcript.push_str(&format!("=== new {} --title \"{}\"", case.kind, case.title));
-        for (relation, target) in &case.relates {
-            transcript.push_str(&format!(" --relates {relation}={target}"));
-        }
+        transcript.push_str(&invocation(&case));
         transcript.push_str("\n\n");
-        let request = Request {
-            kind: case.kind,
-            title: case.title,
-            now: pinned(),
-            relates: &case.relates,
-            given: &[],
-        };
+        let request = request(&case);
         match propose(&sources, &request) {
             Err(refusal) => {
                 transcript.push_str(&format!("refused, {}\n", variant(&refusal)));
@@ -244,41 +280,61 @@ fn every_case_over_the_fixture_corpus_matches_the_recorded_transcript() {
     compare(&fixtures_dir().join("scaffold.transcript"), &transcript);
 }
 
-/// The name of the branch, so that a test asserts against a name.
+/// Every branch of `Refusal`, named once.
 ///
-/// A refusal that arrived as an anonymous arm would be a defect this suite
-/// could not see, which is why the set is closed and why this function is
-/// exhaustive rather than a `_ =>`.
-fn variant(refusal: &Refusal) -> &'static str {
-    match refusal {
-        Refusal::KindUnknown { .. } => "KindUnknown",
-        Refusal::KindAbstract { .. } => "KindAbstract",
-        Refusal::KindUnshelved { .. } => "KindUnshelved",
-        Refusal::KindOnManyShelves { .. } => "KindOnManyShelves",
-        Refusal::ShelfPathNotLiteral { .. } => "ShelfPathNotLiteral",
-        Refusal::LayoutUnresolved { .. } => "LayoutUnresolved",
-        Refusal::TitleEmpty => "TitleEmpty",
-        Refusal::FacetUndeterminable { .. } => "FacetUndeterminable",
-        Refusal::FacetNotAsked { .. } => "FacetNotAsked",
-        Refusal::FacetDetermined { .. } => "FacetDetermined",
-        Refusal::FacetNotPermitted { .. } => "FacetNotPermitted",
-        Refusal::SchemeUnreadable { .. } => "SchemeUnreadable",
-        Refusal::MintRefused { .. } => "MintRefused",
-        Refusal::Unnameable { .. } => "Unnameable",
-        Refusal::IdentifierTaken { .. } => "IdentifierTaken",
-        Refusal::PathTaken { .. } => "PathTaken",
-        Refusal::PlacementDoesNotResolve { .. } => "PlacementDoesNotResolve",
-        Refusal::RelationUnknown { .. } => "RelationUnknown",
-        Refusal::RelationNotScaffolded { .. } => "RelationNotScaffolded",
-        Refusal::EndpointNotPermitted { .. } => "EndpointNotPermitted",
-        Refusal::TargetUnresolved { .. } => "TargetUnresolved",
-        Refusal::ReciprocalUnwritable { .. } => "ReciprocalUnwritable",
-        Refusal::TargetUnopened { .. } => "TargetUnopened",
-        Refusal::DocumentUncreated { .. } => "DocumentUncreated",
-        Refusal::WriteHalted { .. } => "WriteHalted",
-        Refusal::NotOneDocument { .. } => "NotOneDocument",
-    }
+/// The macro writes two things from this one list: [`variant`], which gives a
+/// refusal its name so that a test asserts against a name rather than a shape,
+/// and `BRANCHES`, which is what [`every_refusal_branch_has_a_case`] holds the
+/// suite to. They were two hand-kept lists until the `--facet` refusals showed
+/// what that costs: three branches were in the match and absent from the
+/// constant, so a test whose name claims total coverage quietly excluded them,
+/// and the whole flag shipped with no fixture. One list cannot drift from
+/// itself.
+///
+/// The match is exhaustive rather than a `_ =>`, so a branch added to the enum
+/// does not compile until it is named here, and it is then in `BRANCHES` and
+/// fails the coverage test until a case reaches it.
+macro_rules! branches {
+    ($($name:ident),+ $(,)?) => {
+        fn variant(refusal: &Refusal) -> &'static str {
+            match refusal {
+                $(Refusal::$name { .. } => stringify!($name),)+
+            }
+        }
+
+        const BRANCHES: &[&str] = &[$(stringify!($name)),+];
+    };
 }
+
+branches![
+    KindUnknown,
+    KindAbstract,
+    KindUnshelved,
+    KindOnManyShelves,
+    ShelfPathNotLiteral,
+    LayoutUnresolved,
+    TitleEmpty,
+    FacetUndeterminable,
+    FacetNotAsked,
+    FacetDetermined,
+    FacetIsDiscriminator,
+    FacetNotPermitted,
+    SchemeUnreadable,
+    MintRefused,
+    Unnameable,
+    IdentifierTaken,
+    PathTaken,
+    PlacementDoesNotResolve,
+    RelationUnknown,
+    RelationNotScaffolded,
+    EndpointNotPermitted,
+    TargetUnresolved,
+    ReciprocalUnwritable,
+    TargetUnopened,
+    DocumentUncreated,
+    WriteHalted,
+    NotOneDocument,
+];
 
 fn render_plan(plan: &Plan) -> String {
     let mut out = String::new();
@@ -392,37 +448,13 @@ fn what_the_minter_writes_the_rule_admits() {
 /// Every branch of `Refusal` is reached by a case of the transcript.
 ///
 /// The rule this enforces is the one spec 12 states about a check: a refusal
-/// with no fixture does not ship. Five branches no `propose` case reaches are
-/// named below with the file that holds each one, so that the gap is stated
-/// rather than left for a reader to notice.
+/// with no fixture does not ship. `BRANCHES` is the list the `branches!` macro
+/// above writes out of the same names `variant` matches on, so no branch can be
+/// left out of it. Five branches no `propose` case reaches are named below with
+/// the file that holds each one, so that the gap is stated rather than left for
+/// a reader to notice.
 #[test]
 fn every_refusal_branch_has_a_case() {
-    const BRANCHES: [&str; 23] = [
-        "KindUnknown",
-        "KindAbstract",
-        "KindUnshelved",
-        "KindOnManyShelves",
-        "ShelfPathNotLiteral",
-        "LayoutUnresolved",
-        "TitleEmpty",
-        "FacetUndeterminable",
-        "SchemeUnreadable",
-        "MintRefused",
-        "Unnameable",
-        "IdentifierTaken",
-        "PathTaken",
-        "PlacementDoesNotResolve",
-        "RelationUnknown",
-        "RelationNotScaffolded",
-        "EndpointNotPermitted",
-        "TargetUnresolved",
-        "ReciprocalUnwritable",
-        "TargetUnopened",
-        "DocumentUncreated",
-        "WriteHalted",
-        "NotOneDocument",
-    ];
-
     let loaded = Loaded::over(
         &fixtures_dir(),
         "corpus",
@@ -431,13 +463,7 @@ fn every_refusal_branch_has_a_case() {
     let sources = loaded.sources();
     let mut reached: Vec<&'static str> = Vec::new();
     for case in cases() {
-        let request = Request {
-            kind: case.kind,
-            title: case.title,
-            now: pinned(),
-            relates: &case.relates,
-            given: &[],
-        };
+        let request = request(&case);
         if let Err(refusal) = propose(&sources, &request) {
             reached.push(variant(&refusal));
         }

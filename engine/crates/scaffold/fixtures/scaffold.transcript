@@ -389,3 +389,48 @@ refused, EndpointNotPermitted
 refused, TargetUnresolved
   `supersedes` names `DR-FIX-9999`, and no document of this corpus carries that identifier
 
+=== new addressed --title "A closed set the caller states" --facet audience=internal
+
+wrote corpus/addressees/a-closed-set-the-caller-states.md
+identifier SPEC-FIX-a-closed-set-the-caller-states under `spec_id`, allocation minted-once, reconciled from nothing
+  status = draft [scaffolded: `regimes.lifecycle.standard` opens at `draft`]
+  status_since = 2026-08-14 [scaffolded: the facet is in the `state_entered` role, and the run's clock is the date]
+  summary = TODO one sentence: what a reader learns here, which is what routing reads [hand entry: no declaration determines it, and this run states the question instead]
+  audience = internal [hand entry: no declaration determines it, and the caller stated it on the command line]
+assisted 3 of 5 — fields 2/4, sections 0/0, identifier 1/1, halves 0/0
+--- the document ---
+---
+id: SPEC-FIX-a-closed-set-the-caller-states
+status: draft
+status_since: 2026-08-14
+summary: "TODO one sentence: what a reader learns here, which is what routing reads"
+audience: internal
+---
+
+# A closed set the caller states
+
+=== new addressed --title "A closed set value outside it" --facet audience=wibble
+
+refused, FacetNotPermitted
+  `--facet audience=wibble` is outside the value set the taxonomy declares, which the checks would refuse. The values are: internal, public
+
+=== new design_spec --title "A facet the kind does not require" --facet chapter=3
+
+refused, FacetNotAsked
+  `--facet chapter=…` names a facet that `design_spec` does not require, so nothing would have written it. `design_spec` requires: status, status_since, summary, doc_type, sequence
+
+=== new design_spec --title "A facet the state role decides" --facet status=draft
+
+refused, FacetDetermined
+  `--facet status=…` names a facet of `design_spec` that a declaration decides, and it carries the `state` role, which decides its value. A value stated here would be a state nobody chose, written through the verb that exists to stop that
+
+=== new design_spec --title "A discriminator the caller disagrees with" --facet doc_type=note
+
+refused, FacetIsDiscriminator
+  `--facet doc_type=note` names the discriminator of the shelf `spec_series`, and the kind argument decides it: a `design_spec` carries `doc_type: design_spec` and nothing else. A value stated here is a second answer to what this document is, against the identifier, the layout and the sections this run derived from `design_spec`
+
+=== new design_spec --title "A discriminator the caller agrees with" --facet doc_type=design_spec
+
+refused, FacetIsDiscriminator
+  `--facet doc_type=design_spec` names the discriminator of the shelf `spec_series`, and the kind argument decides it: a `design_spec` carries `doc_type: design_spec` and nothing else. A value stated here is a second answer to what this document is, against the identifier, the layout and the sections this run derived from `design_spec`
+
