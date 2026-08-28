@@ -40,7 +40,7 @@ All subcommands require a readable `.headwater/probe.yml`, a readable taxonomy l
 | Subcommand | Options | What it does |
 |---|---|---|
 | `plan` | `--tier <regression\|campaign>` | Select the tier. The default is `regression`. |
-| `plan` | `--arm <present\|absent>` | Narrow the declared arms. An undeclared arm does not change the tier selection. |
+| `plan` | `--arm <present\|absent>` | Narrow the declared arms. An arm the tier does not declare refuses the run and names the arms it does declare. |
 | `plan` | `--category <name>` | Narrow the selection to one declared category. |
 | `plan` | `--seed <n>` | Record the caller's rotation seed. It does not select a subset. The default is `0`. |
 | `record` | `<path>` | Read and report the transcript at the path. |

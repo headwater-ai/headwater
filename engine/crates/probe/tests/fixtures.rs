@@ -726,6 +726,69 @@ fn a_campaign_narrowed_to_one_arm_is_refused() {
     assert_eq!(plan.refusal, Some(Refusal::CampaignNarrowed));
 }
 
+/// An arm the tier does not declare refuses, rather than silently planning the
+/// arm the tier does declare.
+///
+/// The `regression` envelope carries `present` alone. Narrowing it to `absent`
+/// selects nothing, and the plan used to put the tier's own list back and
+/// print `arms: [present]` under a command line that asked for `absent`.
+#[test]
+fn an_arm_the_tier_does_not_declare_refuses_rather_than_planning_the_other_one() {
+    let plan = plan_at(
+        Tier::Regression,
+        &Narrowing {
+            arm: Some(Arm::Absent),
+            ..Narrowing::default()
+        },
+    );
+    assert_eq!(
+        plan.refusal,
+        Some(Refusal::ArmNotDeclared {
+            tier: Tier::Regression,
+            arm: Arm::Absent,
+            declared: vec![Arm::Present],
+        }),
+    );
+    assert!(plan.arms.is_empty(), "a refused narrowing plans no arm");
+}
+
+/// The measurement [#337](https://github.com/headwater-ai/headwater/issues/337)
+/// made, held as a case.
+///
+/// Three captures of `headwater probe plan` — unnarrowed, `--arm present` and
+/// `--arm absent` — compared byte for byte and all three identical. The case
+/// above would pass on the enum alone. This one fails for the reason the issue
+/// is about: the caller could not tell what they had asked for from what came
+/// back.
+#[test]
+fn a_narrowed_plan_is_not_the_plan_the_caller_would_have_got_by_asking_for_nothing() {
+    let asked_for_nothing = regression().render();
+    let asked_for_absent = plan_at(
+        Tier::Regression,
+        &Narrowing {
+            arm: Some(Arm::Absent),
+            ..Narrowing::default()
+        },
+    )
+    .render();
+    assert_ne!(
+        asked_for_nothing, asked_for_absent,
+        "an undeclared arm handed back the plan of a run nobody asked for"
+    );
+
+    // And the arm the tier does declare still plans, so the case above is the
+    // narrowing and not the flag.
+    let asked_for_present = plan_at(
+        Tier::Regression,
+        &Narrowing {
+            arm: Some(Arm::Present),
+            ..Narrowing::default()
+        },
+    );
+    assert_eq!(asked_for_present.refusal, None);
+    assert_eq!(asked_for_present.arms, vec![Arm::Present]);
+}
+
 #[test]
 fn a_category_that_no_probe_declares_refuses_rather_than_planning_nothing() {
     let plan = plan_at(

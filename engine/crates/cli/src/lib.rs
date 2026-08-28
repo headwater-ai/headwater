@@ -407,11 +407,10 @@ pub enum Verb {
             value_name = "facet=value",
             value_parser = a_pair,
             help = "a value for a facet this kind requires, as `<facet>=<value>`. Repeatable. A \
-                    facet the kind does not require is refused, a facet in an engine role is \
-                    refused because the role decides the value, and a value outside a closed set \
-                    is refused with the set printed. The discriminator of a heterogeneous shelf \
-                    is the exception: the shelf decides it, and a value stated for it is \
-                    overwritten rather than refused"
+                    facet the kind does not require is refused, and so is a value outside a \
+                    closed set, with the set printed. A facet that a declaration decides is \
+                    refused too: an engine role decides its facet's value, and the kind decides \
+                    the discriminator of a heterogeneous shelf"
         )]
         facet: Vec<(String, String)>,
         #[arg(
@@ -685,8 +684,8 @@ pub enum ProbeWord {
             value_name = "present|absent",
             help = "narrow the selection to one arm the tier declares. Every arm the tier \
                     declares by default, which is one for `regression` and two for `campaign`. \
-                    An arm the tier does not declare narrows nothing: the plan runs the tier's \
-                    own arms and prints them under `arms:`"
+                    An arm the tier does not declare refuses the run rather than planning \
+                    another one, and the refusal names the arms the tier declares"
         )]
         arm: Option<String>,
         #[arg(
