@@ -71,6 +71,32 @@
 
 pub mod paint;
 
+/// What every output-target help says about a run that refuses.
+///
+/// One sentence with six readers — the two `--json` descriptions below and the
+/// four `--format` ones — for the reason [`JSON_BESIDE_FORMAT`] gives: six
+/// literals agree until somebody edits one of them.
+/// [HW-DR-0043](https://github.com/headwater-ai/headwater/issues/346) rules
+/// that `--json` names the shape of an artifact and moves neither the stream a
+/// refusal is written on nor the grammar it is written in. So a consumer reads
+/// nothing on standard output when a run refuses, and reads the account on the
+/// other stream.
+///
+/// **It says "refuses" and not "exits non-zero", because those are different
+/// sets.** Five of the eleven reasons `check` exits 1 are decided after the
+/// report is already on standard output, which
+/// `docs/interfaces/headwater-check.md` states under *Exit status*. A refusal
+/// is decided before anything is written.
+///
+/// A macro and not a `const`, because the six readers reach it through
+/// [`concat!`], which takes a literal and never a name.
+macro_rules! a_refusal_is_not_an_artifact {
+    () => {
+        "A run that refuses writes nothing here: the account is one English sentence on standard \
+         error and the status is 1"
+    };
+}
+
 /// What `--json` says on a verb that also declares `--format`.
 ///
 /// One constant with four readers rather than four literals that agree until
@@ -86,9 +112,12 @@ pub mod paint;
 /// states a value and the engine substitutes its own — which is the defect
 /// [#337](https://github.com/headwater-ai/headwater/issues/337) and
 /// [#338](https://github.com/headwater-ai/headwater/issues/338) are open about.
-const JSON_BESIDE_FORMAT: &str = "write this run as one JSON document on standard output. It is \
-    the artifact `--format json` writes, byte for byte. A run that states both is refused rather \
-    than resolved, because two names for one target is a question answered twice";
+const JSON_BESIDE_FORMAT: &str = concat!(
+    "write this run as one JSON document on standard output. It is the artifact `--format json` \
+     writes, byte for byte. A run that states both is refused rather than resolved, because two \
+     names for one target is a question answered twice. ",
+    a_refusal_is_not_an_artifact!()
+);
 
 /// What `--json` says on a verb that declares no `--format`.
 ///
@@ -97,9 +126,12 @@ const JSON_BESIDE_FORMAT: &str = "write this run as one JSON document on standar
 /// stays where it is on the four verbs that have it, because #321 asks that
 /// `--json` be accepted where `--format json` already is and never that it
 /// replace anything.
-const JSON_ALONE: &str = "write this run as one JSON document on standard output, instead of the \
-    report a person reads. The document names its own shape in a `version` member, so a consumer \
-    pins that rather than the version of this engine. It moves no exit status";
+const JSON_ALONE: &str = concat!(
+    "write this run as one JSON document on standard output, instead of the report a person \
+     reads. The document names its own shape in a `version` member, so a consumer pins that \
+     rather than the version of this engine. It moves no exit status. ",
+    a_refusal_is_not_an_artifact!()
+);
 
 /// What `--root` says, on the first screen and on every verb page.
 ///
@@ -376,13 +408,16 @@ pub enum Verb {
         #[arg(
             long,
             value_name = "text|json|sarif|markdown",
-            help = "which vocabulary to write the run in. `text` is the report a person reads and \
-                    the default. `sarif` is what a forge ingests as a check run, `markdown` is a \
-                    job summary or a review comment, and `json` is the finding shape spec 4 \
-                    declares, for an adapter nobody here wrote. `sarif` writes its own loss set \
-                    into the artifact. `markdown` declares one in the source and not in the \
-                    artifact, because nothing it writes is machine-readable. `text` and `json` \
-                    declare that they drop nothing"
+            help = concat!(
+                "which vocabulary to write the run in. `text` is the report a person reads and \
+                 the default. `sarif` is what a forge ingests as a check run, `markdown` is a \
+                 job summary or a review comment, and `json` is the finding shape spec 4 \
+                 declares, for an adapter nobody here wrote. `sarif` writes its own loss set \
+                 into the artifact. `markdown` declares one in the source and not in the \
+                 artifact, because nothing it writes is machine-readable. `text` and `json` \
+                 declare that they drop nothing. ",
+                a_refusal_is_not_an_artifact!()
+            )
         )]
         format: Option<String>,
         #[arg(long, conflicts_with = "format", help = JSON_BESIDE_FORMAT)]
@@ -470,8 +505,11 @@ pub enum Verb {
         #[arg(
             long,
             value_name = "text|json",
-            help = "`text` is the report a person reads and the default, and `json` is the same \
-                    numbers for a program. Neither carries a reading the store does not hold"
+            help = concat!(
+                "`text` is the report a person reads and the default, and `json` is the same \
+                 numbers for a program. Neither carries a reading the store does not hold. ",
+                a_refusal_is_not_an_artifact!()
+            )
         )]
         format: Option<String>,
         #[arg(long, conflicts_with = "format", help = JSON_BESIDE_FORMAT)]
@@ -615,10 +653,13 @@ pub enum Verb {
         #[arg(
             long,
             value_name = "json|jsonschema",
-            help = "the emitter target. `json` is the native property graph with no loss and \
-                    `jsonschema` constrains front matter. The other five targets of spec 6 parse \
-                    and report the consumer each one waits on. With this flag the artifact goes to \
-                    standard output and no declared output path is touched"
+            help = concat!(
+                "the emitter target. `json` is the native property graph with no loss and \
+                 `jsonschema` constrains front matter. The other five targets of spec 6 parse \
+                 and report the consumer each one waits on. With this flag the artifact goes to \
+                 standard output and no declared output path is touched. ",
+                a_refusal_is_not_an_artifact!()
+            )
         )]
         format: Option<String>,
         #[arg(
@@ -776,8 +817,11 @@ pub enum SweepWord {
         #[arg(
             long,
             value_name = "text|json",
-            help = "`text` is the report a person reads and the default, and `json` is the finding \
-                    shape spec 4 declares with the provenance and the evidence a sweep adds"
+            help = concat!(
+                "`text` is the report a person reads and the default, and `json` is the finding \
+                 shape spec 4 declares with the provenance and the evidence a sweep adds. ",
+                a_refusal_is_not_an_artifact!()
+            )
         )]
         format: Option<String>,
         #[arg(long, conflicts_with = "format", help = JSON_BESIDE_FORMAT)]

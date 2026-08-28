@@ -267,7 +267,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             at,
             check,
             json,
-        } => export(root, profile, chosen(json, format), at, check),
+        } => export(root, profile, chosen(json, format), typed(json), at, check),
         Verb::Init { corpus, package } => init(root, corpus, package),
         Verb::Infer {
             owner,
@@ -359,9 +359,18 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
 /// [#321](https://github.com/headwater-ai/headwater/issues/321) asks that
 /// "`--json` is accepted wherever `--format json` already is". So the two names
 /// reach one value here, and every verb below receives the `--format` it always
-/// received. Nothing downstream of this function can tell which name a caller
-/// typed, which is the property that makes the two artifacts byte-identical
-/// rather than merely similar.
+/// received. **No artifact downstream of this function can tell which name a
+/// caller typed**, which is the property that makes the two artifacts
+/// byte-identical rather than merely similar, and
+/// `engine/crates/cli/tests/json.rs` holds it under
+/// `the_two_spellings_of_one_target_write_the_same_bytes`.
+///
+/// **A refusal is not an artifact, and it does name the spelling.** A sentence
+/// that quotes `--format` at somebody who wrote `--json` sends them to a flag
+/// that is not on their command line, which is a wrong instruction rather than
+/// an untidy one. [`typed`] carries the name a caller wrote past this
+/// substitution rather than through it, so the fold above is untouched. See
+/// `docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md`.
 ///
 /// **`json` is true only where `--format` was absent**, because the parser
 /// declares the two in conflict. So the arm below is a substitution and never a
@@ -375,6 +384,38 @@ fn chosen(json: bool, format: Option<String>) -> Option<String> {
     match json {
         true => Some("json".to_string()),
         false => format,
+    }
+}
+
+/// The spelling of the JSON target a caller wrote, for a message they read.
+///
+/// # Why this sits beside [`chosen`] and never inside it
+///
+/// [`chosen`] folds the two names onto one value so that the artifact is the
+/// same bytes under either name. That fold is the whole point of it and it
+/// stays. A refusal is not an artifact, and the two properties are separate:
+/// one is about bytes on standard output, the other is about a sentence on
+/// standard error.
+///
+/// The two travel as different types — `Option<String>` for the target and
+/// `&'static str` for the name — so a site that reached for one and got the
+/// other would not compile. That is what keeps a later edit from conflating
+/// them again.
+///
+/// `wide_refusal` in `engine/crates/cli/src/lib.rs` already makes this
+/// discrimination for `--wide`, and it reads the raw `ArgMatches` because its
+/// refusal fires before dispatch. Here [`dispatch`] already holds `json` and
+/// `format` apart at every arm, so nothing needs a second read of the matches.
+///
+/// **`export` is the whole surface.** It is the only verb whose refusals are
+/// reached with a target already named, and both of them are in it. The four
+/// other `--format` literals in this file fire either on a target that is
+/// neither `text` nor `json`, which `--json` cannot produce, or in the branch
+/// that runs when no target was named at all.
+const fn typed(json: bool) -> &'static str {
+    match json {
+        true => "--json",
+        false => "--format",
     }
 }
 
@@ -3492,6 +3533,7 @@ fn export(
     root: &Path,
     profile: Option<String>,
     format: Option<String>,
+    typed: &str,
     generated_at: Option<String>,
     check_only: bool,
 ) -> ExitCode {
@@ -3542,11 +3584,11 @@ fn export(
         ));
     };
     if check_only {
-        return fail(
-            "--check compares a committed artifact against what a run produces, and --format \
+        return fail(&format!(
+            "--check compares a committed artifact against what a run produces, and {typed} \
              writes to standard output where nothing is committed. Run `headwater export \
-             --check` over the declared outputs instead",
-        );
+             --check` over the declared outputs instead"
+        ));
     }
 
     // One artifact on a pipe is one profile. With several declared and none
@@ -3569,7 +3611,7 @@ fn export(
         }
         several => {
             return fail(&format!(
-                "--format writes one artifact to standard output and this taxonomy declares {} \
+                "{typed} writes one artifact to standard output and this taxonomy declares {} \
                  profiles. Name one with --profile: {}",
                 several.len(),
                 several
