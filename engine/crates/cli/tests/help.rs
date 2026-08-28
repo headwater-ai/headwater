@@ -31,7 +31,7 @@
 //! moving a summary *into the parser* breaks it, because the table would then
 //! carry a string the rendered help does not.
 
-use headwater_cli::command;
+use headwater_cli::{command, GLOBALS};
 use std::process::Command as Process;
 
 /// One invocation from a directory that is not a corpus, with the streams apart.
@@ -235,52 +235,101 @@ fn the_long_description_of_every_command_line_is_what_the_table_carries() {
     }
 }
 
-/// The first screen fits a screen, which is the bar clause 4 sets.
+/// Every global flag gets one line on the first screen, and the table covers
+/// every one of them.
 ///
-/// The number is a ceiling rather than a pin. A pin is a fixture that goes red
-/// on every verb added and teaches a reader to re-bless it; a ceiling goes red
-/// only when the screen stops being a screen. The help this replaced was **357
-/// lines**, which is what the ceiling is for.
-///
-/// # The ceiling moved from 60 to 80, and twelve of the twenty-seven added
-/// lines are the fold
-///
-/// Clause 12 folds every string to 80 columns, and a screen has two dimensions:
-/// the text that was 47 lines with a widest line of 229 columns is 74 lines
-/// with a widest of 80. **Twelve of the twenty-seven lines that arrived are the
-/// fold, and fifteen are content this branch added.** The fold turned five
-/// one-line examples into ten lines, the three flags that were already global
-/// from three lines into nine, and the closing pointer from one line into two.
-/// The other fifteen are the two flags clause 12 declares: `--wide` prints nine
-/// lines and `--no-color` prints six. So the global flags went from three
-/// entries in four lines to five entries in twenty-five.
-///
-/// The eighteen verb entries did not move at all. Every one of them is a single
-/// line, at widths of 44 to 77, which is what clause 4 asks for.
-///
-/// **So the lever that is left is the length of those five descriptions, and it
-/// is not a layout lever.** Shortening one is an edit to what the help says.
-/// [#342](https://github.com/headwater-ai/headwater/issues/342) carries it, and
-/// [#339](https://github.com/headwater-ai/headwater/issues/339) does not: every
-/// clause of #339 is about whether a string is **true** of this binary, and
-/// none is about how long one is.
-///
-/// **No layout at 80 columns fits a 24-line screen, and none ever could.**
-/// Clause 4 asks for one line per verb, and eighteen verbs under six group
-/// headings with a blank line between the groups is 29 lines before a flag is
-/// printed. Two mutations measured over this branch: every global-flag
-/// description cut to one line gives **60** lines, and that with
-/// `next_line_help(false)` as well gives **55** lines at a widest of 79. The
-/// screen was already 47 lines before any of this work. A ceiling that stayed
-/// at 60 would have been met by leaving the lines long, which is the state
-/// clause 12 was filed against.
+/// `HW-DR-0042` holds the first screen to one line per entry. The ceiling in
+/// [`the_first_screen_holds_the_height_the_ruling_names`] is the consequence of
+/// that bar; this is the bar itself, and it is the half that catches a flag
+/// added later. A global flag with no entry in `headwater_cli::GLOBALS` fails
+/// the first assertion, and an entry whose summary does not fit the column folds
+/// onto a second line and fails the second.
 #[test]
-fn the_first_screen_is_one_screen() {
+fn every_global_flag_is_one_line_on_the_first_screen() {
+    let mut root = command();
+    root.build();
+
+    // The table covers every argument the root command carries. The root's own
+    // arguments are the four globals and `clap`'s help flag; every argument of
+    // a verb is declared on that verb's subcommand and is not reached here.
+    for argument in root.get_arguments() {
+        let id = argument.get_id().as_str();
+        assert!(
+            GLOBALS.iter().any(|one| one.covers(id)),
+            "`{id}` is printed on the first screen and `GLOBALS` does not name it, so the screen \
+             would carry it with no summary or with its whole description"
+        );
+    }
+
+    // Each one occupies exactly one line of the rendered screen.
+    let screen = help_of(&[]);
+    let block: Vec<&str> = screen
+        .lines()
+        .skip_while(|line| *line != "Global flags:")
+        .skip(1)
+        .take_while(|line| !line.trim().is_empty())
+        .collect();
+    assert_eq!(
+        block.len(),
+        GLOBALS.len(),
+        "the first screen gives {} lines to {} global flags, and HW-DR-0042 holds it to one line \
+         each:\n{}",
+        block.len(),
+        GLOBALS.len(),
+        block.join("\n")
+    );
+    for one in GLOBALS {
+        assert!(
+            block.iter().any(|line| line.contains(one.summary)),
+            "the first screen carries `{}`'s summary on one line of its own",
+            one.name
+        );
+    }
+}
+
+/// Every global flag's whole description is on every verb page, which is where
+/// the first screen stopped printing it.
+///
+/// The summary is short because the description is somewhere else, so this is
+/// the case that says where. It reads `check` because clause 4 of
+/// [#342](https://github.com/headwater-ai/headwater/issues/342) names that page,
+/// and it asserts the description the table declares rather than a string of its
+/// own, so a description edited at the flag moves the page and this case follows.
+#[test]
+fn the_whole_of_every_global_flag_is_on_a_verb_page() {
+    let page = flat(&help_of(&["check"]));
+    for one in GLOBALS {
+        assert!(
+            page.contains(&flat(one.description)),
+            "`headwater check --help` carries the whole of `{}`, which the first screen no longer \
+             prints",
+            one.name
+        );
+    }
+}
+
+/// The first screen holds the height `HW-DR-0042` names.
+///
+/// The ruling is
+/// `docs/decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md`
+/// and this case is the consequence of it, not the argument for it. It retires
+/// "one screen" as a claim about a terminal, states the bar as one line per
+/// entry, and names 60 as the ceiling that follows. Read it there rather than
+/// here: an argument restated at the case is an argument that goes stale where
+/// nobody is looking.
+///
+/// [`every_global_flag_is_one_line_on_the_first_screen`] is the bar itself, and
+/// it is the half that catches a flag added later. This is the height, and the
+/// number is a ceiling rather than a pin: a pin goes red on every verb added and
+/// teaches a reader to re-bless it, and a ceiling goes red only when the screen
+/// stops being a list.
+#[test]
+fn the_first_screen_holds_the_height_the_ruling_names() {
     let screen = help_of(&[]);
     let lines = screen.lines().count();
     assert!(
-        lines <= 80,
-        "`headwater --help` is {lines} lines, and the first screen is meant to fit one:\n{screen}"
+        lines <= 60,
+        "`headwater --help` is {lines} lines, and HW-DR-0042 holds the first screen to 60:\n{screen}"
     );
     assert!(
         lines > 20,
