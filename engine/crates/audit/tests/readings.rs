@@ -18,10 +18,12 @@
 //!
 //! Read the diff before committing it. A blessed fixture is the change.
 
-use headwater_audit::{Audit, Subject, Supply, Waiting, CREATORS, WARRANTS};
+use headwater_audit::reading::{Reading, TaskReading};
+use headwater_audit::{Audit, Series, Subject, Supply, Waiting, CREATORS, WARRANTS};
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
+use headwater_check::adoption::State;
 use headwater_check::context::Date;
 use headwater_check::Shape;
 use headwater_graph::anchors::Resolvers;
@@ -103,12 +105,24 @@ impl Built {
     }
 
     fn audit(&self, now: &str) -> Audit {
+        self.audit_over(now, Series::none)
+    }
+
+    /// The same audit, with the adoption series the case chooses.
+    ///
+    /// The series is a parameter of `take` rather than something it reads, so a
+    /// case states one the way it states a corpus. `Series::none` is the state
+    /// of a corpus whose store nobody has opened, which is what the recorded
+    /// report holds.
+    fn audit_over(&self, now: &str, series: impl Fn(&str, Date) -> Series) -> Audit {
+        let lock = "sha256:the-fixture";
+        let date = Date::parse(now).expect("a date");
         headwater_audit::take(
             Subject {
                 package: "audit/fixture".to_string(),
                 version: "1.0.0".to_string(),
-                lock: "sha256:the-fixture".to_string(),
-                now: Date::parse(now).expect("a date"),
+                lock: lock.to_string(),
+                now: date,
             },
             &self.census,
             &self.graph,
@@ -116,6 +130,7 @@ impl Built {
             &self.shape,
             &self.relations,
             &self.resolved,
+            series(lock, date),
         )
     }
 }
@@ -657,5 +672,174 @@ fn every_warrant_of_the_closed_set_has_a_row_and_a_value_outside_it_is_reported(
     assert!(
         report.contains("No\n  check of this engine reads a warrant"),
         "{report}"
+    );
+}
+
+/// One reading of a task, for a case that states a series rather than a corpus.
+fn a_task(id: &str, until: &str, open: usize, closed: usize, held: usize) -> TaskReading {
+    TaskReading {
+        id: id.to_string(),
+        until: Date::parse(until).expect("a date"),
+        state: State::Open,
+        open,
+        closed,
+        held,
+    }
+}
+
+fn a_reading(lock: &str, date: &str, tasks: Vec<TaskReading>) -> Reading {
+    Reading {
+        lock: lock.to_string(),
+        date: Date::parse(date).expect("a date"),
+        refused: 0,
+        tasks,
+    }
+}
+
+/// A store nobody has opened states that there is no series, and it is not the
+/// same state as a corpus that declares no payload.
+///
+/// Two absences, and a report that printed one line for both would make
+/// "nobody has recorded anything" and "the payload is gone" one sentence.
+#[test]
+fn an_empty_store_and_an_empty_payload_are_two_different_sentences() {
+    let built = fixture_tree();
+    let text = built.audit(AT).render();
+    assert!(
+        text.contains("no reading recorded"),
+        "the store is empty and the section says so:\n{text}"
+    );
+    assert!(
+        text.contains("declares no adoption payload"),
+        "and the corpus declares none, which is the other absence:\n{text}"
+    );
+    assert!(
+        text.contains("the fraction that reaches zero before its expiry has no"),
+        "so the fraction has no population to divide by:\n{text}"
+    );
+}
+
+/// The decisive property at crate grain: an open payload and a discharged one
+/// render as two different sections.
+///
+/// The pair count is the thing that decays, so a section that read the same
+/// over both would be an instrument that measures nothing. This is the same
+/// separation `engine/crates/cli/tests/adoption.rs` makes end to end, at the
+/// grain where the two states are one field apart.
+#[test]
+fn an_open_payload_and_a_discharged_one_render_differently() {
+    let built = fixture_tree();
+    let open = built
+        .audit_over(AT, |lock, date| Series {
+            reading: a_reading(
+                lock,
+                &date.render(),
+                vec![a_task("AD-1", "2027-06-30", 4, 0, 6)],
+            ),
+            recorded: vec![],
+            unreadable: vec![],
+        })
+        .render();
+    let zero = built
+        .audit_over(AT, |lock, date| Series {
+            reading: a_reading(
+                lock,
+                &date.render(),
+                vec![a_task("AD-1", "2027-06-30", 0, 4, 0)],
+            ),
+            recorded: vec![],
+            unreadable: vec![],
+        })
+        .render();
+    assert_ne!(open, zero, "two payloads, two readings");
+    assert!(
+        open.contains("4 pairs open") && open.contains("open 4, closed 0"),
+        "the open payload states its pairs:\n{open}"
+    );
+    assert!(
+        zero.contains("0 pairs open") && zero.contains("open 0, closed 4"),
+        "and the discharged one states that it shrank:\n{zero}"
+    );
+}
+
+/// Two lock digests are two denominators, and the report refuses to trend
+/// across them.
+///
+/// `headwater capture` refuses the same average for the same reason: a
+/// denominator made of declarations moves when the taxonomy moves. Here the
+/// denominator is a pair set, and a rule the taxonomy stopped running closes a
+/// pair with no change in what anybody wrote.
+#[test]
+fn two_digests_are_named_and_never_trended_across() {
+    let built = fixture_tree();
+    let text = built
+        .audit_over(AT, |lock, date| Series {
+            reading: a_reading(
+                lock,
+                &date.render(),
+                vec![a_task("AD-1", "2027-06-30", 1, 3, 1)],
+            ),
+            recorded: vec![
+                a_reading(
+                    "sha256:one",
+                    "2026-01-01",
+                    vec![a_task("AD-1", "2027-06-30", 4, 0, 6)],
+                ),
+                a_reading(
+                    "sha256:two",
+                    "2026-06-01",
+                    vec![a_task("AD-1", "2027-06-30", 1, 3, 1)],
+                ),
+            ],
+            unreadable: vec![],
+        })
+        .render();
+    assert!(
+        text.contains("2 taxonomies produced these readings"),
+        "the section counts the denominators:\n{text}"
+    );
+    assert!(
+        text.contains("are not a trend"),
+        "and refuses to trend across them:\n{text}"
+    );
+    assert!(
+        text.contains("sha256:one") && text.contains("sha256:two"),
+        "naming each one:\n{text}"
+    );
+    assert!(
+        text.contains("open 4 on the first of 2 readings that hold it, and 1 on the last"),
+        "and the per-task line states both ends rather than an average:\n{text}"
+    );
+}
+
+/// A line the store cannot read is named by its line number and never counted.
+#[test]
+fn an_unreadable_line_is_named_and_counted_nowhere() {
+    let built = fixture_tree();
+    let text = built
+        .audit_over(AT, |lock, date| Series {
+            reading: a_reading(lock, &date.render(), vec![]),
+            recorded: vec![a_reading(
+                "sha256:one",
+                "2026-01-01",
+                vec![a_task("AD-1", "2027-06-30", 0, 4, 0)],
+            )],
+            unreadable: vec![headwater_audit::reading::Unreadable {
+                line: 2,
+                why: "it names no `tasks`".to_string(),
+            }],
+        })
+        .render();
+    assert!(
+        text.contains("line 2 of the store is not a reading and is counted nowhere"),
+        "the line is named:\n{text}"
+    );
+    assert!(
+        text.contains("1 reading, 2026-01-01 to 2026-01-01"),
+        "and the readable one is the whole population:\n{text}"
+    );
+    assert!(
+        text.contains("payloads at zero before their expiry: 1 of 1 task"),
+        "which is what the fraction divides by:\n{text}"
     );
 }

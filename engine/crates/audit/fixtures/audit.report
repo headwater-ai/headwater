@@ -122,6 +122,18 @@ warrants, over the closed set spec 3 declares
   and can never reach the other. Nothing declares how many promotions in one change is too
   many, so no figure here carries a verdict.
 
+adoption payload decay
+  The store is `.headwater/adoption.jsonl`, which is outside the corpus root. No
+  census row covers it, no language regime binds it, and no rule reads it. No crate
+  of this engine walks git history, so a series exists only where a run was handed
+  one reading at a time.
+  no reading recorded, so there is no series. `taxonomy audit --record` takes the first one
+  this run reads no task, because the lock declares no adoption payload
+  no task has been recorded, so the fraction that reaches zero before its expiry has no
+  denominator yet
+  A payload with no reading behind it has no history, and the elapsed time between
+  two readings is the one quantity no engine can supply.
+
 what this verb does not measure, and what each one waits on
   Every prerequisite below was evaluated against this corpus on this run, so a
   wait that a corpus has ended says so with no edit to this engine.

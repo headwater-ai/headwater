@@ -67,7 +67,49 @@ use headwater_graph::Graph;
 use headwater_yaml::Mapping;
 use std::collections::{BTreeMap, BTreeSet};
 
+pub mod reading;
 pub mod render;
+
+/// The adoption payload as this run read it, and as the store already held it.
+///
+/// It is a parameter of [`take`] rather than something that function reads,
+/// because [`take`] opens no file and the store is a file. The caller runs the
+/// check layer, derives [`reading::Reading::of`] from the ledger it produced,
+/// appends it where `--record` asked for that, and loads the store afterwards.
+/// So `recorded` is the file as it stands when the report is rendered, and the
+/// section is a function of that file rather than of a flag.
+#[derive(Clone, Debug)]
+pub struct Series {
+    /// What this run read, whether or not it was written down.
+    pub reading: reading::Reading,
+    /// Every reading the store holds.
+    pub recorded: Vec<reading::Reading>,
+    /// Lines of the store that no reading could be read from. Named and never
+    /// counted, which is what [`headwater_scaffold::reading::Unreadable`]
+    /// already does for the store beside it.
+    pub unreadable: Vec<reading::Unreadable>,
+}
+
+impl Series {
+    /// A series over a corpus whose store nobody has opened.
+    ///
+    /// The reading is still a real one: it states the lock and the date, and it
+    /// declares no task. A caller that wanted "no payload" and a caller that
+    /// wanted "no store" get the same value here, and the report tells the two
+    /// apart from the members rather than from the constructor.
+    pub fn none(lock: &str, date: headwater_check::Date) -> Series {
+        Series {
+            reading: reading::Reading {
+                lock: lock.to_string(),
+                date,
+                refused: 0,
+                tasks: vec![],
+            },
+            recorded: vec![],
+            unreadable: vec![],
+        }
+    }
+}
 
 /// Spec 2's closed set of edge creators, in the order that document lists them.
 ///
@@ -458,6 +500,9 @@ pub struct Audit {
     pub layouts: Vec<LayoutReading>,
     pub dwell: Vec<DwellReading>,
     pub warrants: Warrants,
+    /// The adoption payload of this run, and the series the store holds. The
+    /// one reading here that no phase of this run computed: see [`Series`].
+    pub adoption: Series,
     /// The readings this verb names and does not take, as this run found their
     /// prerequisites. Never a constant: see [`Waiting`].
     pub waiting: Vec<Waiting>,
@@ -491,6 +536,11 @@ impl Audit {
 /// here opens a file, for the reason the graph build states — two passes over
 /// one corpus can disagree, and a report that disagreed with the run beside it
 /// would be a second account of the same tree.
+///
+/// `adoption` is a parameter for exactly that reason. It is the one reading here
+/// whose inputs are a store on disk and a run of the check layer, and both are
+/// the caller's to produce.
+#[allow(clippy::too_many_arguments)]
 pub fn take(
     subject: Subject,
     census: &Census,
@@ -499,6 +549,7 @@ pub fn take(
     shape: &Shape,
     relations: &Declarations,
     resolved: &Mapping,
+    adoption: Series,
 ) -> Audit {
     let classified: Vec<&Row> = census
         .rows
@@ -540,6 +591,7 @@ pub fn take(
         dwell: dwell(&classified, shape, now),
         freshness,
         warrants,
+        adoption,
         waiting,
     }
 }

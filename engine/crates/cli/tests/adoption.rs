@@ -1253,13 +1253,19 @@ fn a_recorded_reading_states_a_discharged_payload_as_zero() {
 
 /// Two lock digests are two measurements, and the report never averages them.
 ///
-/// The source edit is a comment, so the resolved taxonomy is byte identical and
-/// only the recorded digest moves — the same move
-/// `a_source_that_moved_still_names_itself_and_keeps_the_old_message` makes. A
-/// denominator made of declarations moves when the taxonomy moves, so a series
-/// that summed across the two would report a schema change as a payload that
-/// grew or shrank. `headwater capture` refuses the same average for the same
-/// reason.
+/// A denominator made of declarations moves when the taxonomy moves, so a
+/// series that summed across the two would report a schema change as a payload
+/// that grew or shrank. `headwater capture` refuses the same average for the
+/// same reason.
+///
+/// **The edit is a guidance sentence and deliberately not a comment.** The
+/// digest a reading carries is the taxonomy digest, which is over the canonical
+/// text and not over the source file, so the comment edit that
+/// `a_source_that_moved_still_names_itself_and_keeps_the_old_message` makes
+/// leaves it byte identical — that case exists to prove exactly that. A second
+/// digest therefore needs a declaration to move, and guidance is the one this
+/// corpus reads nothing from: no rule evaluates it, so the two readings differ
+/// in their taxonomy and in nothing else.
 #[test]
 fn two_lock_digests_are_two_measurements_and_the_report_says_so() {
     let root = Root::new("decay-two-locks");
@@ -1277,9 +1283,13 @@ fn two_lock_digests_are_two_measurements_and_the_report_says_so() {
     );
 
     let source = root.at.join("packages/headwater-standard/taxonomy.yml");
-    let mut text = std::fs::read_to_string(&source).expect("the source reads");
-    text.push_str("\n# A comment this case appended, which moves the bytes and not the result.\n");
-    std::fs::write(&source, text).expect("the source writes");
+    let text = std::fs::read_to_string(&source).expect("the source reads");
+    let moved = text.replace(
+        "draft: the document is being written or argued over, and nothing may rely on it",
+        "draft: the document is being written, and nothing may rely on it",
+    );
+    assert_ne!(text, moved, "the guidance this case edits is still there");
+    std::fs::write(&source, moved).expect("the source writes");
     let resolved = root.run(&["taxonomy", "resolve"]);
     assert_eq!(
         resolved.code,
