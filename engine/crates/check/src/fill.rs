@@ -213,6 +213,17 @@ fn one_indented(line: &str, width: usize) -> String {
     if rest.trim().is_empty() {
         return String::new();
     }
+    // A line whose first word is already past the room is left exactly as it
+    // arrived. Nothing the fill can do narrows it, and wrapping what follows
+    // would detach a word from a line that overflowed before that word was
+    // reached. The report is full of lines shaped `<path> <one word>` — a
+    // finding's location and its severity, a read-set input and its digest —
+    // and splitting the second word off one of those hands a reader half an
+    // identity and hands `.githooks/pre-commit` a finding it cannot select.
+    let first = rest.split_whitespace().next().unwrap_or(rest);
+    if indent + first.chars().count() > width {
+        return line.to_string();
+    }
     let opening = " ".repeat(indent);
     let cont = " ".repeat(indent + HANG);
 
@@ -248,6 +259,10 @@ fn one_indented(line: &str, width: usize) -> String {
 /// A line is unfoldable when one of its words, standing at the line's own
 /// indent, is already past `width`. Every other wide line is a defect in
 /// whatever laid the text out, and [`filled`] leaves none of them behind.
+/// Where the **first** word is the one past the room, [`filled`] leaves the
+/// whole line alone rather than wrapping what follows it, so a caller reading
+/// this partition should also ask whether the rest of such a line would have
+/// fitted without its long word.
 /// `engine/crates/cli/tests/width.rs` is the caller: it partitions the report
 /// this way so that the avoidable count is asserted to be zero and the
 /// unavoidable one names itself.
@@ -366,11 +381,26 @@ mod tests {
     #[test]
     fn a_line_whose_one_word_is_past_the_room_is_left_whole() {
         let path = "docs/obligations/0146-the-stop-hook-reads-its-re-entry-guard.md";
-        let line = format!("  {path} warn");
+        let line = format!("  fix: add a heading to {path}");
         let out = filled(&line, 40);
         assert!(out.contains(path), "the path arrived intact: {out}");
         assert!(unfoldable(&line, 40), "the line names its own reason");
         assert!(!unfoldable("  a short line", 40));
+    }
+
+    /// A line whose *first* word is past the room is left exactly as it came.
+    ///
+    /// `<path> <severity>` is the shape of every finding's location line, and
+    /// `<path> <digest>` is the shape of every read-set input. Wrapping the
+    /// second word of one of those detaches an identity from the thing it
+    /// identifies, and narrows nothing: the line was already over the width
+    /// when the first word landed.
+    #[test]
+    fn a_line_that_opens_past_the_room_is_not_wrapped_after_it() {
+        let path = "docs/obligations/0146-the-stop-hook-reads-its-re-entry-guard.md";
+        let line = format!("  {path}:12:3 error");
+        assert_eq!(filled(&line, 40), line);
+        assert_eq!(filled(&format!("  {path}"), 40), format!("  {path}"));
     }
 
     /// The fill is idempotent: laying out a laid-out report changes nothing.
