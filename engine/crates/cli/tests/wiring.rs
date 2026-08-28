@@ -325,6 +325,16 @@ fn the_generator_is_handed_the_refusal_beside_the_selection() {
 /// reason [`Root::over`] records: cargo runs the cases of one target as threads
 /// of one process, so a key that is the pid alone is a directory a second case
 /// removes while the first is reading it.
+/// Help text with every run of whitespace collapsed to one space.
+///
+/// Clap lays a help string out at the terminal width, so a sentence a reader
+/// sees as one sentence is several lines in the bytes. A case that asserts
+/// about the words of a help string reads this form, and a case that asserts
+/// about a short phrase clap never breaks may read the bytes.
+fn flattened(help: &str) -> String {
+    help.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
 fn outside_a_corpus(label: &str, arguments: &[&str]) -> Ran {
     let at = std::env::temp_dir().join(format!(
         "headwater-cli-wiring-{}-{label}",
@@ -1130,4 +1140,287 @@ fn a_discriminator_stated_on_the_command_line_refuses_and_writes_nothing() {
         text.contains("doc_type: design_spec"),
         "and the discriminator it writes is the kind:\n{text}"
     );
+}
+
+/// The `--change` help names the header a manifest must open with, and a
+/// manifest written from that help reads.
+///
+/// # The defect this holds
+///
+/// The help carried into #335 from the pre-clap parser described a manifest as
+/// nothing but its `added` and `prior` lines. It said "Each line names one
+/// document the change carries", and it never mentioned the
+/// `headwater change 1` first line that
+/// [`headwater_check::change::FORMAT`] requires. A caller who wrote the file
+/// the help described was refused, and the sentence sat wrong across a parser
+/// rewrite with every gate green, because no rule of this engine reads a
+/// sentence about this engine.
+///
+/// # Why both halves are here
+///
+/// The string half alone would pass against a help that named the header and a
+/// reader that stopped requiring it. The behavior half alone is
+/// `a_change_the_flag_named_reaches_the_verdict_and_not_only_the_parser`
+/// above, which writes the header and so never sees the refusal. The pair is
+/// the claim: *the manifest the help describes is the manifest the verb
+/// accepts*, and it is the shape #339 asks for over the 64 restored strings.
+#[test]
+fn the_change_help_names_the_header_a_manifest_must_open_with() {
+    let help = outside_a_corpus("change-help", &["check", "--help"]);
+    assert_eq!(
+        help.code,
+        Some(0),
+        "`check --help` is a question rather than a mistake:\n{}{}",
+        help.out,
+        help.err
+    );
+    // The decision. This line fails against the string as #335 restored it.
+    assert!(
+        flattened(&help.out).contains("headwater change 1"),
+        "the `--change` help names the header a manifest opens with:\n{}",
+        help.out
+    );
+
+    // And the behavior the sentence now describes, both ways round.
+    let root = Root::over("change", "change-help-header");
+    let prior = fixtures().join("change-prior/0001-the-warrant-a-person-set.md");
+    let body = format!(
+        "prior\tdocs/decisions/0001-the-warrant-a-person-set.md\t{}\n",
+        prior.display()
+    );
+
+    let headless = root.path("headless.txt");
+    std::fs::write(&headless, &body).expect("the manifest writes");
+    let refused = root.run(&[
+        "check",
+        "--no-cache",
+        "--now",
+        "2026-08-01",
+        "--change",
+        &headless.display().to_string(),
+    ]);
+    assert_eq!(
+        refused.code,
+        Some(1),
+        "a manifest with no header is refused rather than read:\n{}{}",
+        refused.out,
+        refused.err
+    );
+    assert!(
+        refused.err.contains("headwater change 1"),
+        "and the refusal names the line that is missing:\n{}",
+        refused.err
+    );
+
+    let headed = root.path("headed.txt");
+    std::fs::write(
+        &headed,
+        format!("{}\n{body}", headwater_check::change::FORMAT),
+    )
+    .expect("the manifest writes");
+    let read = root.run(&[
+        "check",
+        "--no-cache",
+        "--now",
+        "2026-08-01",
+        "--change",
+        &headed.display().to_string(),
+    ]);
+    assert_eq!(
+        read.code,
+        Some(0),
+        "the same manifest under that header reads:\n{}{}",
+        read.out,
+        read.err
+    );
+    assert!(
+        read.says("scoped to a change"),
+        "and the run is scoped to it:\n{}",
+        read.out
+    );
+}
+
+/// `route` never claims silence, because it is never silent.
+///
+/// # The defect this holds
+///
+/// The restored description said "It is silent when nothing matches." The verb
+/// prints at least four lines and exits 0 on a task that matches no purpose,
+/// and it does so deliberately:
+/// `headwater_query::route` makes silence a *property of the pointer set*
+/// rather than of the output, so that a caller can tell "no purpose answers
+/// this" from "the corpus declares none". A caller reading the old help
+/// learned the opposite and would have waited for output that a working run
+/// already wrote.
+///
+/// The two halves are the same pair as the case above: the string must not
+/// promise silence, and the verb must not be silent.
+#[test]
+fn route_promises_no_silence_and_is_never_silent() {
+    let help = outside_a_corpus("route-help", &["route", "--help"]);
+    assert_eq!(
+        help.code,
+        Some(0),
+        "`route --help` is a question rather than a mistake:\n{}{}",
+        help.out,
+        help.err
+    );
+    // The decision. This line fails against the string as #335 restored it.
+    assert!(
+        !flattened(&help.out).contains("silent when nothing matches"),
+        "the description does not promise a silence this verb never keeps:\n{}",
+        help.out
+    );
+
+    let root = Root::over("change", "route-is-never-silent");
+    let ran = root.run(&["route", "a task no purpose of this corpus answers"]);
+    assert_eq!(
+        ran.code,
+        Some(0),
+        "a route that matches nothing is a result rather than a mistake:\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert_eq!(
+        ran.err, "",
+        "and it writes nothing to standard error:\n{}",
+        ran.err
+    );
+    assert!(
+        ran.out.lines().count() >= 3,
+        "a route that matches nothing still writes its report:\n{}",
+        ran.out
+    );
+    assert!(
+        ran.out.contains("no purpose") || ran.out.contains("declares no purpose"),
+        "and it says which of the two reasons applies:\n{}",
+        ran.out
+    );
+}
+
+/// `check --format` states which target declares its loss inside the artifact,
+/// and only SARIF does.
+///
+/// # The defect this holds
+///
+/// The restored help ended "Each names what it could not carry", which is
+/// false of three of the four targets. `text` and `json` declare an empty loss
+/// set, so there is nothing for them to name. `markdown` declares four losses
+/// in `headwater_adapter::markdown::LOSS` and deliberately writes none of them
+/// into the artifact, because a job summary is prose and "an artifact that
+/// declared its own loss would be declaring it to a person who cannot act on
+/// it". So a consumer who read the help and looked in the Markdown for the
+/// loss set found none, and the sentence was a claim about the source read as
+/// a claim about the output.
+#[test]
+fn only_the_sarif_artifact_declares_its_own_loss_set() {
+    let help = outside_a_corpus("format-help", &["check", "--help"]);
+    assert_eq!(help.code, Some(0), "{}{}", help.out, help.err);
+    // The decision. This line fails against the string as #335 restored it.
+    // The comparison is over the flattened help, because clap wraps a help
+    // string across lines and a sentence read for its words is not there to
+    // find in the laid-out form.
+    assert!(
+        !flattened(&help.out).contains("Each names what it could not carry"),
+        "the help does not claim a loss set every target writes:\n{}",
+        help.out
+    );
+
+    let root = Root::over("change", "loss-set-per-target");
+    let mut carries = Vec::new();
+    for target in ["text", "json", "sarif", "markdown"] {
+        let ran = root.run(&[
+            "check",
+            "--no-cache",
+            "--now",
+            "2026-08-01",
+            "--format",
+            target,
+        ]);
+        assert_eq!(
+            ran.code,
+            Some(0),
+            "`--format {target}` writes an artifact:\n{}{}",
+            ran.out,
+            ran.err
+        );
+        carries.push((target, ran.out.contains("loss_set")));
+    }
+    assert_eq!(
+        carries,
+        vec![
+            ("text", false),
+            ("json", false),
+            ("sarif", true),
+            ("markdown", false)
+        ],
+        "only the SARIF artifact carries its own loss set"
+    );
+}
+
+/// `capture` pools readings across taxonomies, and its description says so.
+///
+/// # The defect this holds
+///
+/// The restored description ended "it never averages readings taken under two
+/// taxonomies". It does. `main.rs` reads the distinct locks in the store, and
+/// where there is more than one it prints the pooled fraction anyway and warns
+/// that the number is not a trend. The description named the remedy that was
+/// considered and rejected, so a reader learned the verb refuses a comparison
+/// it in fact makes.
+///
+/// The store below carries two readings under two different locks, which is
+/// the smallest input that separates the two arms.
+#[test]
+fn capture_pools_across_taxonomies_and_names_every_one() {
+    let help = outside_a_corpus("capture-help", &["capture", "--help"]);
+    assert_eq!(help.code, Some(0), "{}{}", help.out, help.err);
+    // The decision. This line fails against the string as #335 restored it.
+    assert!(
+        !flattened(&help.out).contains("never averages readings taken under two taxonomies"),
+        "the description does not claim a refusal this verb never makes:\n{}",
+        help.out
+    );
+
+    let root = Root::over("change", "capture-pools-across-locks");
+    let store = root.path(".headwater/capture-cost.jsonl");
+    std::fs::write(
+        &store,
+        "{\"lock\":\"sha256:aaaa\",\"date\":\"2026-08-01\",\"kind\":\"decision\",\
+         \"document\":\"docs/decisions/0001-the-warrant-a-person-set.md\",\"id\":\"DR-ONE\",\
+         \"fields\":[4,5],\"sections\":[3,3],\"identifier\":[1,1],\"edge_halves\":[0,0]}\n\
+         {\"lock\":\"sha256:bbbb\",\"date\":\"2026-08-02\",\"kind\":\"decision\",\
+         \"document\":\"docs/decisions/0001-the-warrant-a-person-set.md\",\"id\":\"DR-TWO\",\
+         \"fields\":[2,5],\"sections\":[3,3],\"identifier\":[1,1],\"edge_halves\":[0,0]}\n",
+    )
+    .expect("the store writes");
+
+    let ran = root.run(&["capture"]);
+    assert_eq!(
+        ran.code,
+        Some(0),
+        "`capture` reads the store back:\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert!(
+        ran.says("2 readings"),
+        "it read both readings:\n{}",
+        ran.out
+    );
+    // The behavior the corrected sentence describes: one fraction over both,
+    // 4 + 2 supplied of 5 + 5 fields plus the sections and the identifiers.
+    assert!(
+        ran.says("14 of 18"),
+        "it pools the two readings into one fraction:\n{}",
+        ran.out
+    );
+    assert!(
+        ran.says("2 taxonomies produced these readings"),
+        "and it names the count of taxonomies it pooled across:\n{}",
+        ran.out
+    );
+    for lock in ["sha256:aaaa", "sha256:bbbb"] {
+        assert!(ran.says(lock), "and it names {lock}:\n{}", ran.out);
+    }
 }

@@ -222,7 +222,9 @@ pub enum Verb {
         #[arg(
             long,
             value_name = "manifest",
-            help = "the manifest of the change this run is scoped to. Each line names one document \
+            help = "the manifest of the change this run is scoped to. The first line is \
+                    `headwater change 1`, and a file that opens with anything else is refused \
+                    rather than read. Each line after it names one document \
                     the change carries, as `added<tab><path>` or `prior<tab><path><tab><file>`, \
                     and the second form names a file holding the bytes that stood before the \
                     change. A document the manifest does not name did not change. It is what a \
@@ -262,7 +264,10 @@ pub enum Verb {
             help = "which vocabulary to write the run in. `text` is the report a person reads and \
                     the default. `sarif` is what a forge ingests as a check run, `markdown` is a \
                     job summary or a review comment, and `json` is the finding shape spec 4 \
-                    declares, for an adapter nobody here wrote. Each names what it could not carry"
+                    declares, for an adapter nobody here wrote. `sarif` writes its own loss set \
+                    into the artifact. `markdown` declares one in the source and not in the \
+                    artifact, because nothing it writes is machine-readable. `text` and `json` \
+                    declare that they drop nothing"
         )]
         format: Option<String>,
         #[arg(long, conflicts_with = "format", help = JSON_BESIDE_FORMAT)]

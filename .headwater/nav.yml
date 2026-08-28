@@ -237,6 +237,8 @@ nav:
       - "The glossary's Package entry omits conformance and still lists plugins, which #367 dropped": "obligations/0151-the-glossary-s-package-entry-omits-conformance-and-still-lists-plugins-which-367-dropped.md"
       - "The adoption decay section is fixture-recorded only in its empty shape": "obligations/0154-the-adoption-decay-section-is-fixture-recorded-only-in-its-empty-shape.md"
       - "probe's fourteen refusals have no coverage test, and three of them are named by no test at all": "obligations/0155-probe-s-fourteen-refusals-have-no-coverage-test-and-three-of-them-are-named-by-no-test-at-all.md"
+      - "A help string and the interface contract that restates it can both be false with the whole suite green": "obligations/0156-a-help-string-and-the-interface-contract-that-restates-it-can-both-be-false-with-the-whole-suite-green.md"
+      - "The capture report says two denominators over a store that named seventeen taxonomies": "obligations/0157-the-capture-report-says-two-denominators-over-a-store-that-named-seventeen-taxonomies.md"
   - "probes":
       - "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"
       - "HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer": "probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md"
@@ -251,6 +253,7 @@ nav:
       - "HW-REV-core-concepts-findings-1": "reviews/core-concepts-review-findings.md"
       - "HW-REV-core-concepts-prompt": "reviews/core-concepts-review-prompt.md"
       - "HW-REV-ste-editorial-pass": "reviews/ste-editorial-pass-findings.md"
+      - "HW-REV-the-sixty-four-restored-help-strings-checked-against-the-binary": "reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md"
   - "spec_series":
       - "HW-SPEC-vision-and-scope": "spec/00-vision-and-scope.md"
       - "HW-SPEC-conceptual-model": "spec/01-conceptual-model.md"

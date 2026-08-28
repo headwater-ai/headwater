@@ -9,14 +9,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 319,
-      "carried": 319,
+      "in the graph": 324,
+      "carried": 324,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 532,
-      "carried": 532,
+      "in the graph": 535,
+      "carried": 535,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -6281,6 +6281,34 @@
         }
       },
       {
+        "path": "docs/obligations/0156-a-help-string-and-the-interface-contract-that-restates-it-can-both-be-false-with-the-whole-suite-green.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0156",
+        "facets": {
+          "id": "HW-OBL-0156",
+          "status": "draft",
+          "status_since": "2026-08-28",
+          "summary": "Two suites read the shape of the help and the headings of the contract, and neither reads a word of either.",
+          "last_verified": "2026-08-28",
+          "title": "A help string and the interface contract that restates it can both be false with the whole suite green",
+          "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0157-the-capture-report-says-two-denominators-over-a-store-that-named-seventeen-taxonomies.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0157",
+        "facets": {
+          "id": "HW-OBL-0157",
+          "status": "draft",
+          "status_since": "2026-08-28",
+          "summary": "The capture report warns that its aggregate crosses two denominators, on a run whose own next line lists seventeen of them.",
+          "last_verified": "2026-08-28",
+          "title": "The capture report says two denominators over a store that named seventeen taxonomies",
+          "waiting_on": "build"
+        }
+      },
+      {
         "path": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
         "kind": "probe",
         "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
@@ -6621,6 +6649,26 @@
               "HW-EVAL-theoretical-foundations",
               "HW-EVAL-adjacent-work",
               "HW-SPEC-glossary"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md",
+        "kind": "review_record",
+        "id": "HW-REV-the-sixty-four-restored-help-strings-checked-against-the-binary",
+        "facets": {
+          "id": "HW-REV-the-sixty-four-restored-help-strings-checked-against-the-binary",
+          "status": "draft",
+          "status_since": "2026-08-28",
+          "summary": "Each of the 64 help strings that PR #335 carried whole out of the retired parser, run against the shipped binary: 60 true, 3 false, 1 not runnable.",
+          "last_verified": "2026-08-28",
+          "doc_type": "review_record",
+          "relations": {
+            "traces_to": [
+              "engine/crates/cli/src/lib.rs",
+              "engine/crates/verbs/src/lib.rs",
+              "engine/crates/cli/tests/wiring.rs"
             ]
           }
         }
@@ -7335,6 +7383,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "engine/crates/cli/tests/wiring.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "engine/crates/compat/src/lib.rs",
         "resolver": "source-tree"
       },
@@ -7436,6 +7489,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/sweep/src/lib.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/verbs/src/lib.rs",
         "resolver": "source-tree"
       },
       {
@@ -12277,6 +12335,39 @@
           "id": "HW-SPEC-glossary",
           "path": "docs/spec/glossary.md",
           "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/verbs/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/tests/wiring.rs",
+          "resolver": "source-tree"
         }
       },
       {
