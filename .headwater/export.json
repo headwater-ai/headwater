@@ -9,8 +9,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 324,
-      "carried": 324,
+      "in the graph": 326,
+      "carried": 326,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -6249,6 +6249,51 @@
             "evidence_basis": "evidenced"
           },
           "last_verified": "2026-08-26",
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0152-ledger-render-in-adoption-rs-has-the-same-zero-count-defect-suppression-rs-had-before-pr-450-still-latent.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0152",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0152",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "title": "Ledger::render() in adoption.rs has the same zero-count defect suppression.rs had before PR #450, still latent",
+          "summary": "adoption.rs::Ledger::render() drops its own header and count line whenever a corpus declares no adoption debt, the same shape PR #450 fixed in suppression.rs, and nothing reads the dropped text yet.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "last_verified": "2026-08-26",
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0153-the-rewritten-sentence-splitter-has-no-dedicated-conformance-fixtures.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0153",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0153",
+          "status": "draft",
+          "status_since": "2026-08-27",
+          "summary": "The sentence splitter has inline tests, but it has no data-driven corpus that preserves the failures behind Q5's rewrite.",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "codex",
+            "activity": "draft",
+            "evidence_basis": "evidenced"
+          },
+          "last_verified": "2026-08-27",
+          "title": "The rewritten sentence splitter has no dedicated conformance fixtures",
           "waiting_on": "adopter"
         }
       },
