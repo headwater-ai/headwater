@@ -233,6 +233,127 @@ fn the_cli_grammar_of_spec_6_names_every_verb_this_binary_ships() {
     );
 }
 
+/// The lines of spec 6's CLI grammar block that belong to one verb: from its
+/// `headwater <verb>` line up to, but not including, the next line that opens
+/// with `headwater `.
+///
+/// The case above holds the top-level word of every line. This is the second
+/// level, over the one verb it is asked for, and it is a slice of the same
+/// block rather than a second read of the file.
+fn spec_six_grammar_block_for(verb: &str) -> String {
+    let path =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../docs/spec/06-engine-architecture.md");
+    let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let (_, after_heading) = text
+        .split_once("### CLI")
+        .unwrap_or_else(|| panic!("{}: no '### CLI' heading", path.display()));
+    let (_, after_open) = after_heading
+        .split_once("```")
+        .unwrap_or_else(|| panic!("{}: no fenced block after '### CLI'", path.display()));
+    let (block, _) = after_open.split_once("```").unwrap_or_else(|| {
+        panic!(
+            "{}: unterminated fenced block after '### CLI'",
+            path.display()
+        )
+    });
+
+    let prefix = format!("headwater {verb}");
+    let mut lines = String::new();
+    let mut in_block = false;
+    for line in block.lines() {
+        if line.starts_with("headwater ") {
+            if in_block {
+                break;
+            }
+            in_block = line.starts_with(&prefix);
+        }
+        if in_block {
+            lines.push_str(line);
+            lines.push('\n');
+        }
+    }
+    lines
+}
+
+/// The second words a multi-word grammar line names, read the way the block
+/// itself is punctuated: a `|` outside a bracketed value list opens a new
+/// word, and a `|` inside one (`[--tier regression|campaign]`) is a value
+/// alternation and never a word boundary. Bracket depth is what tells the two
+/// apart, because the block nests neither.
+fn spec_six_grammar_sub_words(verb: &str) -> BTreeSet<String> {
+    let block = spec_six_grammar_block_for(verb);
+    let mut depth = 0i32;
+    let mut segments: Vec<String> = vec![String::new()];
+    for ch in block.chars() {
+        match ch {
+            '[' => {
+                depth += 1;
+                segments.last_mut().unwrap().push(ch);
+            }
+            ']' => {
+                depth -= 1;
+                segments.last_mut().unwrap().push(ch);
+            }
+            '|' if depth == 0 => segments.push(String::new()),
+            _ => segments.last_mut().unwrap().push(ch),
+        }
+    }
+
+    let prefix = format!("headwater {verb}");
+    segments
+        .iter()
+        .enumerate()
+        .filter_map(|(index, segment)| {
+            let rest = if index == 0 {
+                segment.strip_prefix(prefix.as_str()).unwrap_or(segment)
+            } else {
+                segment.as_str()
+            };
+            rest.split_whitespace().next().map(str::to_string)
+        })
+        .collect()
+}
+
+/// The second words of every multi-word grammar line, held against the
+/// second words `VERBS` carries for the same verb.
+///
+/// The case above holds spec 6's grammar block to the top-level verb names
+/// `VERBS` carries. It reads only the first word of each line, so a second
+/// word missing from a multi-word line — `probe`'s three-of-four before this
+/// case existed — passes it. This is the direct successor of that gap, over
+/// every multi-word line the block carries rather than `probe` alone, so a
+/// future line in the same shape is caught the same way. It is the
+/// spec-6-versus-`VERBS` counterpart of
+/// `the_second_words_of_each_verb_are_the_second_words_the_parser_answers_to`,
+/// which holds the same second words against the parser instead.
+///
+/// # This case was watched failing under each of `probe`, `sweep` and
+/// `taxonomy` in turn
+///
+/// Removing one `Word` line at a time from each verb's entry in `VERBS`
+/// reddened this assertion once per removal, naming the verb whose grammar
+/// line now claimed a word the table did not carry.
+#[test]
+fn the_second_words_of_spec_6s_grammar_lines_are_the_second_words_verbs_carries() {
+    for verb in headwater_verbs::VERBS {
+        if verb.words.is_empty() {
+            continue;
+        }
+        let grammar = spec_six_grammar_sub_words(verb.name);
+        let declared: BTreeSet<String> = verb
+            .words
+            .iter()
+            .map(|word| word.name.to_string())
+            .collect();
+        assert_eq!(
+            declared, grammar,
+            "`{}`'s spec 6 grammar line names different second words from the ones \
+             `headwater_verbs::VERBS` carries for it",
+            verb.name
+        );
+    }
+}
+
 /// The verb index is what `.claude/skills/fixtures.sh` reads to decide which
 /// verbs ship, so the column it reads is held here as well as by
 /// `headwater generate --check`.
