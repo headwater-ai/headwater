@@ -973,6 +973,18 @@ pub fn parsed() -> Result<Cli, clap::Error> {
 /// nobody folded. What is laid out is the report of one verb, so the check names
 /// that verb and the absence of a machine format on it.
 ///
+/// # Why it reads two flags for one format
+///
+/// A machine format reaches this verb under two names. `--format json` is a
+/// value, `--json` is a boolean, and
+/// [HW-DR-0033](../../../../docs/decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md)
+/// rules that the two are one target under two spellings. A predicate that read
+/// `format` alone would answer `check --wide --json` and let the width flag do
+/// nothing, which is the exact defect the paragraph above says a third issue
+/// would have been about. **Whenever a refusal narrows, every spelling of the
+/// thing it narrows on has to be enumerated**, and `tests/width.rs` carries a
+/// row for each.
+///
 /// # Why reaching this function is already the test
 ///
 /// `clap` answers `--help` inside `try_get_matches` and returns before this
@@ -996,15 +1008,23 @@ fn a_width_for_a_run_that_lays_nothing_out(matches: &clap::ArgMatches) -> Option
         return None;
     }
     let format = leaf.try_get_one::<String>("format").ok().flatten();
-    // The one report this binary lays out at a width. `check` with no `--format`
-    // writes text, so an absent value is the text report here.
+    // `--json` is the second spelling of `--format json`, and it is a boolean of
+    // its own rather than a value of `format`. A predicate that read `format`
+    // alone would let `check --wide --json` through with the flag doing nothing,
+    // which is the defect this whole refusal exists to prevent. HW-DR-0033 rules
+    // that the two names reach one target, so every reader of one reads both.
+    let json = leaf.try_get_one::<bool>("json").ok().flatten() == Some(&true);
+    // The one report this binary lays out at a width. `check` with no format
+    // named, in either spelling, writes text.
     let laid_out = matches.subcommand_name() == Some("check")
+        && !json
         && matches!(format.map(String::as_str), None | Some("text"));
     if laid_out {
         return None;
     }
     let says = match format.filter(|value| value.as_str() != "text") {
         Some(format) => format!("`--format {format}` writes an artifact that nothing lays out"),
+        None if json => "`--json` writes an artifact that nothing lays out".to_string(),
         None => "this run lays nothing out".to_string(),
     };
     Some(format!(

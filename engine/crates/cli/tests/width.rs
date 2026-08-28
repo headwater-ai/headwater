@@ -238,22 +238,59 @@ fn the_widest_a_caller_may_ask_for_lays_the_whole_surface_out_inside_it() {
 /// the exit table of `docs/interfaces/headwater-check.md` false, and the message
 /// names the flag and the reason. Where a machine format was asked for, which is
 /// the case clause 12 names, that format is the reason the message gives.
+///
+/// **Every row states the fragment it expects**, rather than deriving it from a
+/// format name. A machine format reaches this binary under two spellings —
+/// `--format json` and `--json` — and a table that derived the message from the
+/// `--format` value could not carry a row for the second one. That gap is how
+/// `check --wide --json` was answered rather than refused for the length of one
+/// review.
 #[test]
 fn a_width_asked_for_a_run_that_lays_nothing_out_is_refused() {
-    for (line, names) in [
-        (vec!["check", "--wide", "--format", "json"], Some("json")),
-        (vec!["check", "--wide", "--format", "sarif"], Some("sarif")),
+    for (line, says) in [
+        (
+            vec!["check", "--wide", "--format", "json"],
+            "`--format json` writes an artifact",
+        ),
+        (
+            vec!["check", "--wide", "--format", "sarif"],
+            "`--format sarif` writes an artifact",
+        ),
         (
             vec!["check", "--wide", "--format", "markdown"],
-            Some("markdown"),
+            "`--format markdown` writes an artifact",
         ),
-        (vec!["capture", "--wide", "--format", "json"], Some("json")),
-        (vec!["export", "--wide", "--format", "json"], Some("json")),
+        (
+            vec!["capture", "--wide", "--format", "json"],
+            "`--format json` writes an artifact",
+        ),
+        (
+            vec!["export", "--wide", "--format", "json"],
+            "`--format json` writes an artifact",
+        ),
         // `capture --format text` lays nothing out either, so the boundary is
         // not "the format is text" — it is the one report that is laid out,
         // which is `check`'s. Everything else still refuses.
-        (vec!["capture", "--wide", "--format", "text"], None),
-        (vec!["taxonomy", "audit", "--wide"], None),
+        (
+            vec!["capture", "--wide", "--format", "text"],
+            "lays nothing out",
+        ),
+        (vec!["taxonomy", "audit", "--wide"], "lays nothing out"),
+        // **The second spelling of one machine format.** `--json` is a boolean
+        // and `--format json` is a value, and HW-DR-0033 rules that they reach
+        // one target. A predicate that read only `--format` answered
+        // `check --wide --json` with the flag doing nothing, which is the defect
+        // this whole refusal exists to prevent.
+        (
+            vec!["check", "--wide", "--json"],
+            "`--json` writes an artifact",
+        ),
+        // Reading `--json` is not a `check`-only rule: every verb that declares
+        // the flag names it as the reason, the way `--format json` is named.
+        (
+            vec!["capture", "--wide", "--json"],
+            "`--json` writes an artifact",
+        ),
     ] {
         let typed = line.join(" ");
         let ran = ran(&line, None);
@@ -267,18 +304,44 @@ fn a_width_asked_for_a_run_that_lays_nothing_out_is_refused() {
             said.contains("how wide the help"),
             "the refusal says what the flag does: {said}"
         );
-        match names {
-            Some(format) => assert!(
-                said.contains(&format!("--format {format}")),
-                "the refusal names the format: {said}"
-            ),
-            None => assert!(
-                said.contains("lays nothing out"),
-                "the refusal says why this run is not one: {said}"
-            ),
-        }
+        assert!(
+            said.contains(says),
+            "`headwater {typed}` should say `{says}`, and said: {said}"
+        );
         assert!(ran.out.is_empty(), "a refusal writes no artifact");
     }
+}
+
+/// **The two spellings of one machine format reach the same answer.**
+///
+/// `--json` is documented as "the same artifact `--format json` writes, byte for
+/// byte", and HW-DR-0033 rules that two names for one target is a question
+/// answered twice. So `--wide` must treat them the same way, and this asserts it
+/// by identity rather than by reading two messages.
+#[test]
+fn both_spellings_of_a_machine_format_answer_a_width_the_same_way() {
+    let root = repository();
+    let root = root.to_str().expect("the path is text").to_string();
+    let one = ran(&["check", "--wide", "--json", "--root", &root], None);
+    let two = ran(
+        &["check", "--wide", "--format", "json", "--root", &root],
+        None,
+    );
+    assert_eq!(one.code, Some(1), "`--json` beside `--wide` is refused");
+    assert_eq!(one.code, two.code, "the two spellings exit the same way");
+    assert!(
+        one.out.is_empty() && two.out.is_empty(),
+        "neither wrote one"
+    );
+    // Without `--wide`, both still write the same artifact, so the refusal above
+    // is about the width flag and not about the format.
+    let plain_one = ran(&["check", "--json", "--root", &root], None);
+    let plain_two = ran(&["check", "--format", "json", "--root", &root], None);
+    assert_eq!(plain_one.code, Some(0));
+    assert_eq!(
+        plain_one.out, plain_two.out,
+        "the two spellings write the same artifact"
+    );
 }
 
 /// **The other half of the boundary.** The report that is laid out answers it.
@@ -552,6 +615,78 @@ fn no_line_of_the_check_report_is_wider_than_eighty_columns() {
         assert!(
             line.chars().count() - longest <= WIDTH,
             "an unfoldable line that is also too long without its long word: {line}"
+        );
+    }
+}
+
+/// **A shape invariant, which a width assertion cannot express.**
+///
+/// A finding's location line is `<path>:<line>:<column> <severity>`. The fill
+/// must never wrap the severity onto a line of its own: that hands a reader half
+/// an identity, and it hands `.githooks/pre-commit` a line whose whole content
+/// is `error`, which its selector reads as the header of a new finding — so the
+/// rule line and the `fix:` line under the real header are dropped and a refused
+/// commit explains nothing.
+///
+/// **`no_line_of_the_check_report_is_wider_than_eighty_columns` is structurally
+/// blind to this**, and that is why this case exists beside it. The broken
+/// output is two lines of 80 and 9 columns; counting columns cannot see it. A
+/// layout change needs at least one assertion about the shapes a fold can emit,
+/// not only about their widths.
+///
+/// The band that produced it was narrow — a location line whose opening word
+/// reaches the width without passing it — and it held 38 of this corpus's 334
+/// documents. This runs at three widths, so the band moves under it.
+///
+/// **This case reads the corpus as it stands, so on its own it is not enough.**
+/// The three findings this repository reports today all sit on short paths, and
+/// a case that only ever sees those would have passed while the defect stood.
+/// The two cases that provoke the boundary rather than waiting for it are
+/// `headwater_check::fill::tests::a_two_word_line_is_never_split_one_word_to_a_line`,
+/// which walks the opening width one column at a time, and the
+/// `a finding whose location line lands on the width boundary` case of
+/// `.githooks/fixtures.sh`, which drives the real commit hook over a document
+/// whose path was chosen to land in the band.
+#[test]
+fn no_finding_states_its_severity_on_a_line_of_its_own() {
+    for columns in [None, Some("100"), Some("120")] {
+        let extra: &[&str] = match columns {
+            None => &[],
+            Some(_) => &["--wide"],
+        };
+        let ran = report(extra, columns);
+        assert_eq!(ran.code, Some(0), "the report ran");
+        let out = String::from_utf8(ran.out).expect("the report is text");
+        let asked = columns.unwrap_or("80");
+        for (at, line) in out.lines().enumerate() {
+            assert!(
+                !matches!(line.trim(), "error" | "warn" | "info"),
+                "at COLUMNS={asked}, line {} of the report is a bare severity word, so a \
+                 finding's location and its severity are on two lines:\n{}",
+                at + 1,
+                out.lines()
+                    .skip(at.saturating_sub(2))
+                    .take(5)
+                    .collect::<Vec<&str>>()
+                    .join("\n")
+            );
+        }
+        // At least one location line, so a corpus that reported nothing does not
+        // pass this case by having no findings in it.
+        let located = out
+            .lines()
+            .filter(|line| {
+                let trimmed = line.trim_end();
+                trimmed.split_whitespace().count() == 2
+                    && (trimmed.ends_with(" error")
+                        || trimmed.ends_with(" warn")
+                        || trimmed.ends_with(" info"))
+            })
+            .count();
+        assert!(
+            located > 0,
+            "at COLUMNS={asked} no finding location line was found, so this case is \
+             measuring nothing"
         );
     }
 }

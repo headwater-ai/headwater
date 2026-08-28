@@ -213,15 +213,10 @@ fn one_indented(line: &str, width: usize) -> String {
     if rest.trim().is_empty() {
         return String::new();
     }
-    // A line whose first word is already past the room is left exactly as it
-    // arrived. Nothing the fill can do narrows it, and wrapping what follows
-    // would detach a word from a line that overflowed before that word was
-    // reached. The report is full of lines shaped `<path> <one word>` — a
-    // finding's location and its severity, a read-set input and its digest —
-    // and splitting the second word off one of those hands a reader half an
-    // identity and hands `.githooks/pre-commit` a finding it cannot select.
-    let first = rest.split_whitespace().next().unwrap_or(rest);
-    if indent + first.chars().count() > width {
+    // A line whose opening word leaves no room for the word after it is left
+    // exactly as it arrived. See [`opens_past_the_room`] for why the test is
+    // about the first two words rather than about the first one alone.
+    if opens_past_the_room(line, width) {
         return line.to_string();
     }
     let opening = " ".repeat(indent);
@@ -254,27 +249,72 @@ fn one_indented(line: &str, width: usize) -> String {
     out
 }
 
-/// The lines of `text` that are wider than `width` and could not be narrower.
+/// Whether the opening word of `line` leaves no room for the word after it.
 ///
-/// A line is unfoldable when one of its words, standing at the line's own
-/// indent, is already past `width`. Every other wide line is a defect in
-/// whatever laid the text out, and [`filled`] leaves none of them behind.
-/// Where the **first** word is the one past the room, [`filled`] leaves the
-/// whole line alone rather than wrapping what follows it, so a caller reading
-/// this partition should also ask whether the rest of such a line would have
-/// fitted without its long word.
-/// `engine/crates/cli/tests/width.rs` is the caller: it partitions the report
-/// this way so that the avoidable count is asserted to be zero and the
-/// unavoidable one names itself.
-pub fn unfoldable(line: &str, width: usize) -> bool {
+/// This is the one predicate that decides whether [`filled`] narrows a line or
+/// hands it back untouched, and [`unfoldable`] is its public name. It reads two
+/// words rather than one, and the second word is the whole point.
+///
+/// # Why one word is the wrong question
+///
+/// A greedy fill puts the first word on the opening line and wraps the next one
+/// where it does not fit. When the first word alone reaches the width, the
+/// opening line carries that word and nothing else, and **every** following word
+/// wraps. For a two-word line that means the second word lands alone on a
+/// continuation, which is the harm this guard exists to prevent rather than a
+/// narrowing worth having.
+///
+/// The report is full of two-word lines, and each one is an identity beside the
+/// token that classifies it: `<path>:<line>:<column> <severity>` is a finding's
+/// location, `input <path> <sha256>` is a read-set entry. Splitting the second
+/// word off one of those hands a reader half an identity. It also hands
+/// `.githooks/pre-commit` a line whose whole content is `error`, which that
+/// selector reads as the header of a new finding — so the rule line and the
+/// `fix:` line under the real header are dropped and a refused commit explains
+/// nothing.
+///
+/// A guard written as "the first word alone is past the width" is aimed one
+/// boundary short of that harm: it misses every line whose first word *reaches*
+/// the width without passing it. On this corpus that band held 38 of 334
+/// documents. `crates/cli/tests/width.rs::no_finding_states_its_severity_on_a_line_of_its_own`
+/// and the `a location line at the width boundary` case of `.githooks/fixtures.sh`
+/// are what hold this now, and neither is a width assertion: the broken output
+/// is two short lines, so counting columns cannot see it.
+fn opens_past_the_room(line: &str, width: usize) -> bool {
     let indent = line.len() - line.trim_start_matches(' ').len();
-    line.split_whitespace()
-        .any(|word| indent + word.chars().count() > width)
+    let mut words = line.split_whitespace();
+    let Some(first) = words.next() else {
+        return false;
+    };
+    let opening = indent + first.chars().count();
+    match words.next() {
+        // One word, so there is nothing to detach. It is left alone only when
+        // no fill could narrow it.
+        None => opening > width,
+        Some(second) => opening + 1 + second.chars().count() > width,
+    }
+}
+
+/// Whether [`filled`] leaves this line exactly as it arrived.
+///
+/// A line wider than `width` is either one this function names, or a defect in
+/// whatever laid the text out. [`filled`] leaves none of the second kind behind,
+/// so a caller can partition a report into the wide lines that are unavoidable
+/// and the wide lines that are somebody's fault.
+///
+/// **Every line [`filled`] emits satisfies this or fits.** A line it built
+/// greedily carries a second word only when that word fitted, so an over-width
+/// output line holds exactly one word that no fill could narrow. A line it
+/// handed back untouched is one this predicate already named. That equivalence
+/// is what lets `engine/crates/cli/tests/width.rs` assert the avoidable count is
+/// zero without re-implementing the fill.
+pub fn unfoldable(line: &str, width: usize) -> bool {
+    opens_past_the_room(line, width)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{block, filled, fold, fold_at, unfoldable, WIDTH};
+    use super::{block, filled, fold, fold_at, unfoldable, WIDEST, WIDTH};
 
     #[test]
     fn a_folded_line_is_never_wider_than_the_width() {
@@ -378,13 +418,24 @@ mod tests {
     }
 
     /// A word past the room is written past it, whole, and says so.
+    ///
+    /// The line itself opens with `fix:`, which leaves room for the word after
+    /// it, so the fill does narrow this line. What it cannot narrow is the
+    /// continuation the path lands on, and that is the line [`unfoldable`]
+    /// names — the predicate is about a line the fill emitted, not about the
+    /// line it was handed.
     #[test]
     fn a_line_whose_one_word_is_past_the_room_is_left_whole() {
         let path = "docs/obligations/0146-the-stop-hook-reads-its-re-entry-guard.md";
         let line = format!("  fix: add a heading to {path}");
         let out = filled(&line, 40);
         assert!(out.contains(path), "the path arrived intact: {out}");
-        assert!(unfoldable(&line, 40), "the line names its own reason");
+        let carrier = out
+            .lines()
+            .find(|one| one.contains(path))
+            .expect("a line carries the path");
+        assert_eq!(carrier.trim(), path, "the path is alone on its line");
+        assert!(unfoldable(carrier, 40), "that line names its own reason");
         assert!(!unfoldable("  a short line", 40));
     }
 
@@ -401,6 +452,91 @@ mod tests {
         let line = format!("  {path}:12:3 error");
         assert_eq!(filled(&line, 40), line);
         assert_eq!(filled(&format!("  {path}"), 40), format!("  {path}"));
+    }
+
+    /// **The boundary, walked one column at a time.**
+    ///
+    /// A guard written as "the first word alone is past the width" is aimed one
+    /// column short: a first word that *reaches* the width leaves the opening
+    /// line full, so the second word wraps alone. This walks the opening width
+    /// from well inside the room to well past it and asserts that a two-word
+    /// line is either laid out with both words on the first line, or handed back
+    /// whole — and never split one-and-one.
+    #[test]
+    fn a_two_word_line_is_never_split_one_word_to_a_line() {
+        let width = 40;
+        for opening in 20..=48 {
+            // Two spaces of indent, a first word of `opening - 2`, then `warn`.
+            let first = "p".repeat(opening - 2);
+            let line = format!("  {first} warn");
+            let out = filled(&line, width);
+            let lines: Vec<&str> = out.lines().collect();
+            assert!(
+                lines.len() == 1,
+                "at an opening of {opening} the line was split into {} lines:\n{out}",
+                lines.len()
+            );
+            assert!(
+                lines[0].ends_with(" warn"),
+                "at an opening of {opening} the severity left its line: {out:?}"
+            );
+            // And the predicate the width tests read agrees with what happened.
+            assert_eq!(
+                unfoldable(&line, width),
+                line.chars().count() > width && out == line,
+                "at an opening of {opening} the predicate and the fill disagree"
+            );
+        }
+    }
+
+    /// The exact shape that broke `.githooks/pre-commit`, at 80 columns.
+    ///
+    /// `docs/decisions/0041-q41-whether-vale-becomes-a-declared-regime-backend.md`
+    /// with a `:32:1` suffix is 79 columns at indent 2. Its severity used to
+    /// wrap onto a line of its own, and the commit hook then read that bare
+    /// `error` as the header of a new finding and dropped the real message.
+    #[test]
+    fn a_finding_location_at_the_width_keeps_its_severity() {
+        let path = "docs/decisions/0041-q41-whether-vale-becomes-a-declared-regime-backend.md";
+        // The opening word reaches the width exactly, which is the boundary the
+        // old guard sat one column short of.
+        let opening = 2 + path.chars().count() + ":32:1".chars().count();
+        assert_eq!(opening, WIDTH, "this case is at the boundary it claims");
+        let line = format!("  {path}:32:1 error");
+        let out = filled(&line, WIDTH);
+        assert_eq!(out, line, "the severity left its location line:\n{out}");
+        assert_eq!(out.lines().count(), 1);
+    }
+
+    /// Every wide line the fill emits is one the predicate names.
+    ///
+    /// This is the equivalence `crates/cli/tests/width.rs` relies on to assert
+    /// that the avoidable count is zero without re-implementing the fill.
+    #[test]
+    fn every_wide_line_the_fill_emits_names_itself() {
+        let report = "  a short line\n  \
+             docs/decisions/0041-q41-whether-vale-becomes-a-declared-regime-backend.md:32:1 error\n  \
+             fix (mechanical): write `behavior` into \
+             docs/obligations/0146-the-stop-hook-reads-its-re-entry-guard-with-an-interpreter.md\n  \
+             a much longer line of ordinary prose that will certainly need to be laid out at eighty columns\n";
+        for width in [40, WIDTH, WIDEST] {
+            let out = filled(report, width);
+            for line in out.lines() {
+                if line.chars().count() > width {
+                    assert!(
+                        unfoldable(line, width),
+                        "at {width} the fill emitted a wide line it could have narrowed: {line:?}"
+                    );
+                }
+            }
+            // And no emitted line is a bare severity word.
+            for line in out.lines() {
+                assert!(
+                    !matches!(line.trim(), "error" | "warn" | "info"),
+                    "at {width} a severity reached a line of its own:\n{out}"
+                );
+            }
+        }
     }
 
     /// The fill is idempotent: laying out a laid-out report changes nothing.

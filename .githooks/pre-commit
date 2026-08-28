@@ -120,10 +120,17 @@ status=$?
 # many lines a message took. The continuation clause is tested before the header
 # clause, so a folded line whose last word happens to be `error` is read as the
 # continuation it is rather than as a second finding.
+#
+# `NF > 1` is the second guard, and it is about a shape rather than a width. A
+# header is `<path>:<line>:<column> error`, which is two fields. A line whose
+# whole content is the word `error` is one field and is never a header, whatever
+# the indent says. The fill will not emit one — `headwater_check::fill` leaves a
+# location line whole rather than wrapping its severity away — and this line is
+# what keeps a future change to the fill from silently emptying this hook.
 printf '%s\n' "$report" | awk '
     { at = match($0, /[^ ]/); indent = at - 1 }
     show && at > 0 && indent > base { print; next }
-    / error$/ { print; show = 1; base = indent; next }
+    / error$/ && NF > 1 { print; show = 1; base = indent; next }
     { show = 0 }
 '
 cat <<'EOF'
