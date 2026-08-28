@@ -44,7 +44,7 @@ Three facts about the blocks below.
 Build the engine once, and put it on your path.
 
 ```
-git clone git@github.com:headwater-ai/headwater.git ~/headwater
+git clone https://github.com/headwater-ai/headwater.git ~/headwater
 cd ~/headwater
 cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml
 export HEADWATER_SRC="$HOME/headwater"
