@@ -55,6 +55,8 @@ The task must contain at least one word of two characters or more after parsing.
 
 **1** means that the task was missing, an option was invalid, or the repository could not load. A silent route writes its normal report and still exits 0.
 
+**All three reasons for exit 1 are refusals, so standard output is empty on every one of them.** Each is decided before anything is written, and the account is one English sentence on standard error. That holds under `--json` as under the report a person reads, which is what [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules.
+
 ## Environment
 
 No environment variable reaches this verb. The task, budget and repository come from the command line, and the graph and corpus come from the tree.

@@ -52,6 +52,8 @@ Unreadable store lines are reported with their line numbers. An unreadable store
 
 **1** means that the format, command line, store file or repository was refused. The verb does not use the report as a gate.
 
+**Every reason for exit 1 is a refusal, so standard output is empty on all of them.** Each is decided before anything is written, and the account is one English sentence on standard error. That holds for `--json` and for `--format json` alike, which is what [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules.
+
 ## Environment
 
 No environment variable reaches this verb. The format and repository come from the command line, and the store and corpus come from the tree.

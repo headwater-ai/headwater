@@ -90,7 +90,9 @@ The verb takes no operand. A word after `check` is refused, and the message name
 | `--fix` was passed and a file refused its patch | after the report is written |
 | `--strict` was passed and at least one finding is an error | the last reading of the verb |
 
-Two of those are worth separating. **A refused patch is not a finding**, so no absence of `--strict` softens it. The verb was asked to write and did not, and a caller who read a 0 would believe a corpus was fixed. And **the report is written before the last five rows are decided**. A run that exits 1 for one of those five still put a complete report on standard output.
+Two of those are worth separating. **A refused patch is not a finding**, so no absence of `--strict` softens it. The verb was asked to write and did not, and a caller who read a 0 would believe a corpus was fixed. And **the report is written before the last five rows are decided**. A run that exits 1 for one of those five still put a complete report on standard output. That holds in `text`, `json`, `sarif` and `markdown` alike.
+
+**The other six rows are refusals, and a refusal writes nothing to standard output.** The account of a refusal is one English sentence on standard error, under `--json` and `--format json` alike. So the property is that a refusal writes no document, and not that a non-zero exit writes none. [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules it, and `a_refusal_writes_no_document_and_accounts_for_itself_on_the_other_stream` in `engine/crates/cli/tests/json.rs` holds both halves.
 
 ## Environment
 
