@@ -1064,3 +1064,70 @@ fn a_payload_this_verb_writes_loads_whatever_a_path_or_an_owner_holds() {
         read.err
     );
 }
+
+/// A discriminator stated on the command line reaches the terminal as a
+/// refusal, and no document is written.
+///
+/// The library grain records this in the scaffolder's transcript. What only the
+/// binary can say is the other three halves of it: the exit status a caller
+/// scripts against, the one line on standard error, and the absence of a file.
+/// Before [#338](https://github.com/headwater-ai/headwater/issues/338) this
+/// command exited 0, printed nothing about the value it was handed, and left a
+/// `design_spec` on the shelf.
+///
+/// The unnarrowed run beside it is the control. Without it a case could pass
+/// because the fixture root refuses `headwater new` for some reason of its own,
+/// and the flag would never be what the exit status measured.
+#[test]
+fn a_discriminator_stated_on_the_command_line_refuses_and_writes_nothing() {
+    let root = Root::over("change", "facet-names-the-discriminator");
+
+    let refused = root.run(&[
+        "new",
+        "design_spec",
+        "--title",
+        "A part the caller renamed",
+        "--facet",
+        "doc_type=review_record",
+    ]);
+    assert_eq!(
+        refused.code,
+        Some(1),
+        "a value for the discriminator refuses:\n{}{}",
+        refused.out,
+        refused.err
+    );
+    assert!(
+        refused.err.contains("review_record") && refused.err.contains("design_spec"),
+        "the refusal names the value stated and the kind that decides it:\n{}",
+        refused.err
+    );
+    assert!(
+        !refused.out.contains("wrote"),
+        "nothing is reported as written:\n{}",
+        refused.out
+    );
+    let shelf = root.path("docs/spec");
+    assert!(
+        !shelf.exists(),
+        "and nothing is on the shelf: {}",
+        shelf.display()
+    );
+
+    // The control. The same command with no `--facet` writes the document, so
+    // the exit status above is the flag and not the root.
+    let wrote = root.run(&["new", "design_spec", "--title", "A part the caller renamed"]);
+    assert_eq!(
+        wrote.code,
+        Some(0),
+        "the same run with no stated facet writes:\n{}{}",
+        wrote.out,
+        wrote.err
+    );
+    let written = root.path("docs/spec/01-a-part-the-caller-renamed.md");
+    let text = std::fs::read_to_string(&written).expect("the document reads");
+    assert!(
+        text.contains("doc_type: design_spec"),
+        "and the discriminator it writes is the kind:\n{text}"
+    );
+}

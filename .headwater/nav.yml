@@ -236,6 +236,7 @@ nav:
       - "A `current` decision declares no required edge to the document it settled, so 22 of 23 reach no specification at all": "obligations/0150-a-current-decision-declares-no-required-edge-to-the-document-it-settled-so-22-of-23-reach-no-specification-at-all.md"
       - "The glossary's Package entry omits conformance and still lists plugins, which #367 dropped": "obligations/0151-the-glossary-s-package-entry-omits-conformance-and-still-lists-plugins-which-367-dropped.md"
       - "The adoption decay section is fixture-recorded only in its empty shape": "obligations/0154-the-adoption-decay-section-is-fixture-recorded-only-in-its-empty-shape.md"
+      - "probe's fourteen refusals have no coverage test, and three of them are named by no test at all": "obligations/0155-probe-s-fourteen-refusals-have-no-coverage-test-and-three-of-them-are-named-by-no-test-at-all.md"
   - "probes":
       - "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"
       - "HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer": "probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md"

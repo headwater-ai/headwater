@@ -30,7 +30,7 @@ It never overwrites a document. It writes the document and appends one capture-c
 
 The repository must have a readable consumer declaration, resolved taxonomy lock, corpus and configuration. The requested kind must exist in the resolved taxonomy.
 
-The title is required. A supplied relation must be declared as scaffold-created, connect permitted kinds and resolve at its target. A supplied facet must be required by the kind and use a permitted value.
+The title is required. A supplied relation must be declared as scaffold-created, connect permitted kinds and resolve at its target. A supplied facet must be required by the kind, must not be one that a declaration decides, and must use a permitted value.
 
 ## Options
 
