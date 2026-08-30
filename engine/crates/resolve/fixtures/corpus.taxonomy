@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 3.4.0
+version: 3.5.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -345,26 +345,12 @@ kinds:
     purpose: behavior
     voice: declarative
   evaluation:
-    facets:
-      forbid:
-        - doc_type
     identifier:
       scheme: evaluation_id
     is_a: governed_document
     language: ste_house
     lifecycle: standard
     purpose: evidence
-    relations:
-      expect:
-        - id: evidence-cited
-          relation: cited_by
-          to_kind: decision_register
-          when:
-            status: current
-          within: 30d
-          since: state_entered
-          severity: warn
-          rationale: "an evaluation that no register cites closed nothing"
     voice: narrative
   interface_contract:
     facets:

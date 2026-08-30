@@ -16,9 +16,9 @@
 
 taxonomy:
   package: headwater/standard
-  version: 3.4.0
-  digest: sha256:42851f96a729e97117b25f2b45f3687c2c0fe38852ca50e6f07d4a6816be0617
-  bundles: [design-spec, decision-record]
+  version: 3.5.0
+  digest: sha256:1343bb43a9be293f635f2b44814a8ee1321af9e9ca204337e5576788a4ab588a
+  bundles: [design-spec, evidence-and-obligation, decision-record]
   overlay: .headwater/overlay.yml
 
 # No waiver stands here for `pin.current` any more. Until #336 this repository

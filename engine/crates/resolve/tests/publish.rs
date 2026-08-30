@@ -2601,7 +2601,7 @@ fn the_order_the_shipped_bundles_are_read_in_decides_nothing() {
     names.sort();
     assert_eq!(
         names.len(),
-        5,
+        6,
         "the bundle set this case runs over: {names:?}"
     );
 
