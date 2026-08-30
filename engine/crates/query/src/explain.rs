@@ -158,40 +158,35 @@ impl Explanation {
             None => out.push_str("  no kind, so nothing is required of it\n"),
         }
         for step in &self.derivation {
-            let _ = writeln!(out, "    {step}");
+            out.push_str(&headwater_check::filled(step, 4));
         }
         if let Some((name, intent)) = &self.purpose {
             let _ = match intent {
-                Some(intent) => writeln!(out, "  purpose {name}, to {intent}"),
-                None => writeln!(out, "  purpose {name}"),
+                Some(intent) => out.push_str(&headwater_check::filled(&format!("purpose {name}, to {intent}"), 2)),
+                None => out.push_str(&headwater_check::filled(&format!("purpose {name}"), 2)),
             };
         }
         if let Some(summary) = &self.summary {
-            let _ = writeln!(out, "  summary {summary}");
+            out.push_str(&headwater_check::filled(&format!("summary {summary}"), 2));
         }
         if let Some(warrant) = &self.warrant {
-            let _ = writeln!(out, "  warrant {warrant}");
+            out.push_str(&headwater_check::filled(&format!("warrant {warrant}"), 2));
         }
         if !self.facets.is_empty() {
-            let _ = writeln!(out, "  requires the facets {}", self.facets.join(", "));
+            out.push_str(&headwater_check::filled(&format!("requires the facets {}", self.facets.join(", ")), 2));
         }
         if !self.sections.is_empty() {
-            let _ = writeln!(out, "  requires the sections {}", self.sections.join(", "));
+            out.push_str(&headwater_check::filled(&format!("requires the sections {}", self.sections.join(", ")), 2));
         }
         for permitted in &self.permitted {
-            let _ = write!(
-                out,
-                "  may declare {} to {}",
-                permitted.relation,
-                permitted.to.join(", ")
-            );
-            let _ = match &permitted.inverse {
-                Some(inverse) => writeln!(out, ", and the other end writes {inverse}"),
-                None => writeln!(out),
+            let line = match &permitted.inverse {
+                Some(inverse) => format!("may declare {} to {}, and the other end writes {inverse}", permitted.relation, permitted.to.join(", ")),
+                None => format!("may declare {} to {}", permitted.relation, permitted.to.join(", ")),
             };
+            out.push_str(&headwater_check::filled(&line, 2));
         }
         for neighbour in &self.related {
-            let _ = writeln!(out, "  {}", neighbour.render());
+            out.push_str(&headwater_check::filled(&neighbour.render(), 2));
         }
         out
     }

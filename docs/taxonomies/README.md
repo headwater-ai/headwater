@@ -36,6 +36,18 @@ This criterion was first drafted around `rationale` alone. That inherited the om
 
 The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md#bundles-and-why-one-line-per-relation-does-not-generalize) measured why this is not free. A new relation is one line. A new kind drags a shelf, a purpose, an identifier scheme, and its edges behind it.
 
+### A flattened combination is not a second entry shape
+
+The library does not admit a dependency-less copy of several entries as an alternative to those entries. Such a copy fails the existing entry model before the cost of duplicated doctrine, schema, templates, and fixtures decides anything.
+
+First, the copied entry and its source entries write the same addresses, so they fail criterion 6. Calling them alternatives does not make the operations disjoint. The package format declares no mutual-exclusion group, and the publisher proves that every bundle subset resolves. A second complete package would avoid that collision, but it would not be an entry in this library, whose entries are bundles over one base.
+
+Second, a bundle dependency does not give the adopter a graph to assemble. Enabling the bundle is one operation, and the publisher checks its declared closure at release. The [starter kit](../spec/07-distribution-and-federation.md#the-starter-kit-is-a-selection) already gives an adopter an opinionated selection without copying its entries.
+
+Flattening also does not repair a connection that the overlay language cannot express. It copies both endpoints into a new declaration set to gain that connection. [HW-OBL-0040](../obligations/0040-composition-between-two-library-entries-has-no-add-only-form.md) remains open because the original entries still cannot declare the edge together.
+
+A combination with its own name and citable prior art may seek admission as a tradition in its own right. It must still meet all seven criteria, including a disjoint address set. Being a flattened copy of admitted entries supplies neither condition. This is the refusal raised by [#391](https://github.com/headwater-ai/headwater/issues/391).
+
 ### One rule of the base is not a criterion here
 
 No relation in the base is `created_by: author`, because the claim under test is that unassisted human capture decays. A tradition that an entry models may genuinely carry an author-declared edge, so the rule does not transfer. The meta-schema already requires a `created_by` on every relation from a closed set. What an entry owes beyond that is one sentence of doctrine for each author-created edge, stating why nothing mechanical can propose it. `taxonomy audit` reports edge counts and staleness by creator, so the bet stays measurable rather than hidden.

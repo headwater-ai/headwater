@@ -503,17 +503,22 @@ impl Ledger {
                     );
                 }
             }
-            let _ = writeln!(out, "    {}", task.statement);
+            out.push_str(&crate::filled(&task.statement, 4));
         }
         for refused in &self.refused {
-            let _ = writeln!(out, "  {} holds nothing: {}", refused.task, refused.why);
+            out.push_str(&crate::filled(
+                &format!("{} holds nothing: {}", refused.task, refused.why),
+                2,
+            ));
         }
         for unread in &self.unread {
-            let _ = writeln!(
-                out,
-                "  the block declares `{}`, which nothing here reads: {}",
-                unread.key, unread.why
-            );
+            out.push_str(&crate::filled(
+                &format!(
+                    "the block declares `{}`, which nothing here reads: {}",
+                    unread.key, unread.why
+                ),
+                2,
+            ));
         }
         out
     }

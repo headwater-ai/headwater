@@ -9,8 +9,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 315,
-      "carried": 315,
+      "in the graph": 316,
+      "carried": 316,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -870,8 +870,8 @@
           "id": "HW-DR-0031",
           "status": "draft",
           "status_since": "2026-08-23",
-          "summary": "This repository becomes public, and the date is unset. A settled posture with a pending date is not an open question, and the record is what stops each run from raising it as one.",
-          "last_verified": "2026-08-23",
+          "summary": "This repository becomes public on 2026-09-08. The owner sets the date, and the record stops each run from raising the schedule as an open question.",
+          "last_verified": "2026-08-27",
           "title": "Q31 — Whether this repository becomes public, and when",
           "provenance": {
             "warrant": "asserted",
@@ -5748,10 +5748,10 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0130",
-          "status": "draft",
-          "status_since": "2026-08-25",
-          "summary": "Q31 rules that this repository becomes public and leaves the date unset. The date belongs to the owner alone, and no measurement, no build and no adopter produces one.",
-          "last_verified": "2026-08-25",
+          "status": "current",
+          "status_since": "2026-08-27",
+          "summary": "Q31 originally left the publication date unset. The owner set 2026-09-08, and this record remains current until the repository is public.",
+          "last_verified": "2026-08-27",
           "title": "The publication date of this repository is unset and the owner alone sets it",
           "waiting_on": "ruling",
           "provenance": {
@@ -6239,6 +6239,29 @@
           "status_since": "2026-08-26",
           "title": "The glossary's Package entry omits conformance and still lists plugins, which #367 dropped",
           "summary": "The glossary's Package entry is missing `conformance` and still names `plugins`, a key spec 7 no longer carries.",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "agent",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "last_verified": "2026-08-26",
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0152-ledger-render-in-adoption-rs-has-the-same-zero-count-defect-suppression-rs-had-before-pr-450-still-latent.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0152",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-OBL-0152",
+          "status": "draft",
+          "status_since": "2026-08-26",
+          "title": "Ledger::render() in adoption.rs has the same zero-count defect suppression.rs had before PR #450, still latent",
+          "summary": "adoption.rs::Ledger::render() drops its own header and count line whenever a corpus declares no adoption debt, the same shape PR #450 fixed in suppression.rs, and nothing reads the dropped text yet.",
           "provenance": {
             "warrant": "accepted",
             "agency": "agent",
