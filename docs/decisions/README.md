@@ -2,7 +2,7 @@
 
 # decisions
 
-44 documents on this shelf, in the reading order this corpus derives.
+45 documents on this shelf, in the reading order this corpus derives.
 
 - [HW-DR-0001](0001-implementation-language.md) — The language is Rust, with a WebAssembly build of the same crate for editor and browser embedding.
 - [HW-DR-0002](0002-schema-format.md) — YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema.
@@ -48,3 +48,4 @@
 - [HW-DR-0042](0042-q42-what-one-screen-means-for-the-first-help-screen.md) — "One screen" is retired as a claim about a terminal and replaced by a claim about content: the first screen carries one line per entry, and the ceiling that follows from it is 60 lines. (asserted, and no human has accepted it)
 - [HW-DR-0043](0043-q43-whether-a-refusal-under-json-is-a-json-document.md) — A refusal is an English sentence on standard error and never a JSON document, because `--json` names the shape of an artifact and moves no stream and no grammar. (asserted, and no human has accepted it)
 - [HW-DR-0044](0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md) — Bundles decompose into capabilities after adopter evidence, and assemblies name the practices that compose those capabilities. (asserted, and no human has accepted it)
+- [HW-DR-0045](0045-coloring-the-cli-and-where-the-banner-goes.md) — Color is sensed per stream and off by default in a pipe, and turned off everywhere by `--no-color` or `NO_COLOR`. A new masthead banner prints on the root help screen alone, off by `--no-banner` or `HEADWATER_NO_BANNER`. (asserted, and no human has accepted it)

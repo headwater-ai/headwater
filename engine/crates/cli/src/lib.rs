@@ -154,10 +154,26 @@ const WIDE_TEXT: &str = "lay the help, and the report of `headwater check`, out 
     nothing";
 
 /// What `--no-color` says on a verb page.
-const NO_COLOR_TEXT: &str = "write no color, which is what every run of this binary already does. \
-    Nothing here emits an escape sequence on any stream, in any format, under any terminal or for \
-    any value of `NO_COLOR`, so this flag confirms the state rather than changing it. It is \
+///
+/// [HW-DR-0045](../../../../docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md)
+/// rewrites this rather than patches it: the sentence it stated before this
+/// ruling is the opposite of the behavior below.
+const NO_COLOR_TEXT: &str = "force plain text on both streams: bold and dim weight and glyphs, no \
+    escape sequence. Without it, this binary senses whether each stream is a terminal and renders \
+    color there, plain text otherwise. `NO_COLOR`, set to any value, has the same effect. It is \
     declared so that a caller who writes it out of habit is answered rather than refused";
+
+/// What `--no-banner` says on a verb page.
+///
+/// [HW-DR-0045](../../../../docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md)
+/// scopes the masthead to the root screen alone, so this flag is accepted and
+/// honestly described as inert everywhere else, the posture `--no-color`
+/// already set for a flag that changes nothing on the verb page carrying it.
+const NO_BANNER_TEXT: &str = "suppress the masthead: the line naming this binary and its version, \
+    and the rule beneath it, that the root help screen alone prints above `Usage:`. \
+    `HEADWATER_NO_BANNER`, set to any value, has the same effect. It is accepted, and inert, on \
+    every verb's own page, the same posture `--no-color` already takes for a flag that changes \
+    nothing there";
 
 /// One global flag, as the first screen prints it and as a verb page prints it.
 ///
@@ -224,8 +240,15 @@ const NO_COLOR: Global = Global {
     // spelling, so this is `no_color` where the flag is `--no-color`.
     id: "no_color",
     name: "--no-color",
-    summary: "accepted and inert: no run of this binary emits color",
+    summary: "force plain text, no matter what either stream senses",
     description: NO_COLOR_TEXT,
+};
+
+const NO_BANNER: Global = Global {
+    id: "no_banner",
+    name: "--no-banner",
+    summary: "suppress the masthead this binary prints on the root screen",
+    description: NO_BANNER_TEXT,
 };
 
 /// `-h, --help` is `clap`'s own argument, so this entry supplies the first
@@ -248,7 +271,7 @@ const HELP: Global = Global {
 ///
 /// Named constants rather than positions, so that a reordering here cannot
 /// silently give one flag another flag's summary.
-pub const GLOBALS: &[&Global] = &[&ROOT, &VERSION, &WIDE, &NO_COLOR, &HELP];
+pub const GLOBALS: &[&Global] = &[&ROOT, &VERSION, &WIDE, &NO_COLOR, &NO_BANNER, &HELP];
 
 use clap::{Command, CommandFactory, FromArgMatches, Parser, Subcommand};
 use headwater_check::Date;
@@ -320,6 +343,19 @@ pub struct Cli {
         help = NO_COLOR_TEXT
     )]
     pub no_color: bool,
+
+    // `--no-banner`, accepted (and inert) on every verb page, the same
+    // posture `--no-color` above already takes for a flag that changes
+    // nothing on the page carrying it. `paint::banner_suppressed` reads the
+    // raw command line for it rather than this field, for the reason
+    // `paint::width` reads the raw arguments for `--wide`: the answer is
+    // needed to build the tree that produces this field.
+    #[arg(
+        long = "no-banner",
+        global = true,
+        help = NO_BANNER_TEXT
+    )]
+    pub no_banner: bool,
 
     #[command(subcommand)]
     pub verb: Option<Verb>,
@@ -1239,7 +1275,21 @@ const COLUMN: usize = 15;
 /// its 25,415 bytes, so these are written rather than recovered, and each one
 /// is a command line that runs.
 fn first_screen(width: usize) -> String {
-    let mut out = String::from("{about}\n\n{usage-heading} {usage}\n\nExamples:\n");
+    // `{about}` is dropped rather than kept beside the masthead: the two say
+    // the same tagline, and `HW-DR-0045`'s masthead is printed separately, by
+    // plain I/O, before this template is ever reached — never embedded in it.
+    //
+    // A literal ANSI escape sequence placed in a `clap` help template does
+    // not survive `print_help()` under `ColorChoice::Never`: `clap_builder`
+    // strips it regardless of the real stream's terminal state, proven with a
+    // minimal reproduction against this workspace's exact `clap` version
+    // before this comment was written. `ColorChoice::Always` keeps the bytes,
+    // but also turns on `clap`'s own default styling of `Usage:` and every
+    // other element it recognizes, which is color this decision never rules
+    // on. So the masthead is not this template's problem: `wants_root_help`
+    // in `main.rs` decides when to print it, with `paint::banner`, entirely
+    // outside `clap`'s own writer.
+    let mut out = String::from("{usage-heading} {usage}\n\nExamples:\n");
     for (line, says) in [
         (
             "headwater check --strict",

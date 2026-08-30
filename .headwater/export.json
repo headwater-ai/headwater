@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 334,
-      "carried": 334,
+      "in the graph": 337,
+      "carried": 337,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 547,
-      "carried": 547,
+      "in the graph": 557,
+      "carried": 557,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1262,6 +1262,41 @@
         }
       },
       {
+        "path": "docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md",
+        "kind": "decision",
+        "id": "HW-DR-0045",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0045",
+          "status": "draft",
+          "status_since": "2026-08-30",
+          "summary": "Color is sensed per stream and off by default in a pipe, and turned off everywhere by `--no-color` or `NO_COLOR`. A new masthead banner prints on the root help screen alone, off by `--no-banner` or `HEADWATER_NO_BANNER`.",
+          "last_verified": "2026-08-30",
+          "title": "Coloring the CLI, and where the banner goes",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0033",
+              "HW-DR-0042",
+              "HW-DR-0043"
+            ],
+            "governs": [
+              "engine/crates/cli/src/lib.rs",
+              "engine/crates/cli/src/paint.rs",
+              "engine/crates/cli/src/main.rs",
+              "engine/crates/cli/tests/help.rs",
+              "engine/crates/cli/tests/width.rs"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/evaluations/adjacent-work.md",
         "kind": "evaluation",
         "id": "HW-EVAL-adjacent-work",
@@ -1964,12 +1999,16 @@
           "status": "draft",
           "status_since": "2026-08-25",
           "summary": "How to print the command tree or one verb's help, and the caller errors that return status 1.",
-          "last_verified": "2026-08-25",
+          "last_verified": "2026-08-30",
           "title": "headwater help",
           "relations": {
             "governs": [
               "engine/crates/cli/src/lib.rs",
-              "engine/crates/cli/src/main.rs"
+              "engine/crates/cli/src/main.rs",
+              "engine/crates/cli/src/paint.rs"
+            ],
+            "traces_to": [
+              "HW-DR-0045"
             ]
           }
         }
@@ -7560,12 +7599,22 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "engine/crates/cli/src/paint.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "engine/crates/cli/tests/help.rs",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/cli/tests/json.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/cli/tests/width.rs",
         "resolver": "source-tree"
       },
       {
@@ -8655,6 +8704,94 @@
           "id": "HW-OBL-0040",
           "path": "docs/obligations/0040-composition-between-two-library-entries-has-no-add-only-form.md",
           "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0033",
+          "path": "docs/decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0042",
+          "path": "docs/decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0043",
+          "path": "docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/paint.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/main.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/tests/help.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/tests/width.rs",
+          "resolver": "source-tree"
         }
       },
       {
@@ -9898,6 +10035,28 @@
           "anchor_kind": "code_path",
           "id": "engine/crates/cli/src/main.rs",
           "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-help.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/paint.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-help.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0045",
+          "path": "docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md",
+          "kind": "decision"
         }
       },
       {

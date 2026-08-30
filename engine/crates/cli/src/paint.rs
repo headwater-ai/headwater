@@ -38,6 +38,22 @@
 //! be right about the text and wrong about the line. [`reserved`] measures what
 //! is coming and [`fold_at`] keeps the last word of the text and that suffix on
 //! one line together.
+//!
+//! # Color reads the terminal on purpose, and the masthead is why it must
+//!
+//! [`HW-DR-0045`](../../../../docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md)
+//! departs from the rule two sections up, deliberately: an escape sequence
+//! leaked into a pipe or a log file actively harms whoever reads it, where a
+//! column-wrap choice never did, and every fixture this corpus pins already
+//! runs headless. So [`color_of`] is a pure function in exactly the shape
+//! [`width_of`] already is — unit-testable with a table and no real terminal —
+//! and its one live caller, [`stdout_color`] or [`stderr_color`], reads a
+//! stream's own terminal state, which nothing above this line ever does.
+//!
+//! `--no-color`, `--no-banner` and their environment variables are read the
+//! way `--wide` already is: scanned raw, before `clap` builds the tree,
+//! because [`banner`] runs inside `first_screen`, which is built before
+//! parsing runs.
 
 use clap::{Arg, ArgAction, Command};
 
@@ -223,9 +239,197 @@ pub fn row(name: &str, text: &str, at: usize, width: usize) -> String {
     format!("  {name}{}{body}\n", " ".repeat(pad))
 }
 
+/// Whether a stream renders the palette
+/// [`HW-DR-0045`](../../../../docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md)
+/// names, or its fallback.
+///
+/// `Plain` is bold and dim weight plus a glyph where one applies, and no
+/// escape sequence at all — exactly as safe under a strict reading of
+/// `NO_COLOR` as writing nothing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ColorMode {
+    Ansi,
+    Plain,
+}
+
+/// The mode `--no-color`, `NO_COLOR` and a stream's own terminal state come
+/// to, decided once so every caller reads the same answer the same way.
+///
+/// `--no-color` or a set `NO_COLOR` forces [`ColorMode::Plain`] regardless of
+/// `is_terminal`, matching how `--no-color` is already accepted, and until
+/// `HW-DR-0045`, ignored. There is no third state: a caller who wants color
+/// forced into a pipe has no lever here.
+#[must_use]
+pub fn color_of(no_color_flag: bool, no_color_env: bool, is_terminal: bool) -> ColorMode {
+    if no_color_flag || no_color_env {
+        return ColorMode::Plain;
+    }
+    match is_terminal {
+        true => ColorMode::Ansi,
+        false => ColorMode::Plain,
+    }
+}
+
+/// Whether `--no-color` is on the raw command line, scanned the way
+/// [`width`] scans for `--wide`.
+fn no_color_flag() -> bool {
+    std::env::args_os().any(|one| one == "--no-color")
+}
+
+/// `NO_COLOR`'s convention: any value at all, including an empty one, turns
+/// color off. `tests/width.rs` asserts this over `NO_COLOR=1`, `NO_COLOR=` and
+/// `NO_COLOR=0` alike.
+fn no_color_env() -> bool {
+    std::env::var_os("NO_COLOR").is_some()
+}
+
+/// The mode standard output renders in, for this run of the binary.
+#[must_use]
+pub fn stdout_color() -> ColorMode {
+    color_of(
+        no_color_flag(),
+        no_color_env(),
+        std::io::IsTerminal::is_terminal(&std::io::stdout()),
+    )
+}
+
+/// The mode standard error renders in, for this run of the binary.
+#[must_use]
+pub fn stderr_color() -> ColorMode {
+    color_of(
+        no_color_flag(),
+        no_color_env(),
+        std::io::IsTerminal::is_terminal(&std::io::stderr()),
+    )
+}
+
+/// One semantic role `HW-DR-0045`'s palette names.
+///
+/// Two variants today: `fail` in `main.rs` is this module's one caller of
+/// [`Role::Error`], and [`banner`] is its one caller of [`Role::Verb`]. A
+/// caller that colors a finding, a rule identifier or a flag name adds the
+/// role it needs here rather than reaching for an escape code of its own.
+#[derive(Debug, Clone, Copy)]
+pub enum Role {
+    Error,
+    Verb,
+}
+
+/// `text`, painted for `role` under `mode`.
+///
+/// `Ansi` writes the standard SGR codes the decision names, which are
+/// remapped by whatever theme the caller's terminal already runs — the
+/// reason the decision refuses a truecolor hex. `Plain` writes `text` back
+/// unchanged.
+#[must_use]
+pub fn paint(role: Role, text: &str, mode: ColorMode) -> String {
+    let (open, close) = match (role, mode) {
+        (Role::Error, ColorMode::Ansi) => ("\x1b[1;31m", "\x1b[0m"),
+        (Role::Verb, ColorMode::Ansi) => ("\x1b[1;32m", "\x1b[0m"),
+        (_, ColorMode::Plain) => ("", ""),
+    };
+    format!("{open}{text}{close}")
+}
+
+/// Dim weight, the one part of the `Plain` fallback that is not color.
+#[must_use]
+pub fn dim(text: &str, mode: ColorMode) -> String {
+    match mode {
+        ColorMode::Ansi => format!("\x1b[2m{text}\x1b[0m"),
+        ColorMode::Plain => text.to_string(),
+    }
+}
+
+/// Whether `--no-banner` or `HEADWATER_NO_BANNER` suppress the masthead,
+/// scanned the way [`no_color_flag`] and `NO_COLOR` are.
+#[must_use]
+pub fn banner_suppressed() -> bool {
+    std::env::args_os().any(|one| one == "--no-banner")
+        || std::env::var_os("HEADWATER_NO_BANNER").is_some()
+}
+
+/// Whether the raw command line asks for the root help screen: `-h` or
+/// `--help` present, and no token that names a verb.
+///
+/// Read the way [`no_color_flag`] is, before `clap` decides anything, because
+/// the masthead is printed by plain I/O ahead of `clap`'s own help writer
+/// rather than inside the template it renders — see `first_screen`'s doc
+/// comment for why a template cannot carry it. A `--root <path>` whose value
+/// happens to equal a verb's name is the one case this reads wrong, and it
+/// costs a missing masthead rather than a wrong screen: `clap` still resolves
+/// the command line the same way regardless of what this function returns.
+#[must_use]
+pub fn wants_root_help() -> bool {
+    let mut has_help = false;
+    let mut has_verb = false;
+    for one in std::env::args_os().skip(1) {
+        if one == "-h" || one == "--help" {
+            has_help = true;
+        }
+        if one
+            .to_str()
+            .is_some_and(|text| headwater_verbs::VERBS.iter().any(|verb| verb.name == text))
+        {
+            has_verb = true;
+        }
+    }
+    has_help && !has_verb
+}
+
+/// The masthead `HW-DR-0045` rules on, or today's plain name line where
+/// [`banner_suppressed`] holds.
+///
+/// `version` is `headwater_resolve::release::ENGINE`, the same value
+/// `--version` prints, so a caller never reads two numbers for one binary.
+/// The blank line closing the string is the one `first_screen` used to open
+/// with, folded in here so the root screen keeps the same shape either way.
+#[must_use]
+pub fn banner(version: &str, mode: ColorMode) -> String {
+    let tagline = "a documentation corpus, governed and checked like code";
+    if banner_suppressed() {
+        return format!("headwater — {tagline}\n\n");
+    }
+    let name = paint(Role::Verb, &format!("headwater {version}"), mode);
+    let rule = dim(&"─".repeat(WIDTH), mode);
+    format!("{name} — {}\n{rule}\n\n", dim(tagline, mode))
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{fold, fold_at, fold_indented, row, width_of, INDENT, WIDEST, WIDTH};
+    use super::{
+        banner, color_of, fold, fold_at, fold_indented, row, width_of, ColorMode, INDENT, WIDEST,
+        WIDTH,
+    };
+
+    #[test]
+    fn color_is_plain_off_a_terminal_and_ansi_on_one_unless_overridden() {
+        assert_eq!(color_of(false, false, false), ColorMode::Plain);
+        assert_eq!(color_of(false, false, true), ColorMode::Ansi);
+        assert_eq!(
+            color_of(true, false, true),
+            ColorMode::Plain,
+            "--no-color wins"
+        );
+        assert_eq!(
+            color_of(false, true, true),
+            ColorMode::Plain,
+            "NO_COLOR wins"
+        );
+        assert_eq!(color_of(true, true, false), ColorMode::Plain);
+    }
+
+    #[test]
+    fn the_masthead_names_the_version_once_above_a_rule_of_the_help_width() {
+        let text = banner("9.9.9", ColorMode::Plain);
+        let mut lines = text.lines();
+        assert_eq!(
+            lines.next(),
+            Some("headwater 9.9.9 — a documentation corpus, governed and checked like code")
+        );
+        let rule = lines.next().expect("a rule line follows");
+        assert_eq!(rule.chars().count(), WIDTH);
+        assert!(rule.chars().all(|c| c == '─'));
+    }
 
     #[test]
     fn nothing_reads_columns_until_a_caller_asks_for_it() {

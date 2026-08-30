@@ -510,6 +510,168 @@ fn contains_escape(bytes: &[u8]) -> bool {
     bytes.windows(2).any(|pair| pair == [0x1b, b'['])
 }
 
+// # The masthead and the new `--no-color`, which HW-DR-0045 rules on
+//
+// Every case above runs headless, through a pipe rather than a terminal, so
+// HW-DR-0045's per-stream sensing is expected to render no color here at all
+// and every case above is expected to keep passing unchanged — that is itself
+// evidence for the claim the decision makes about its own fixtures. What is
+// new to assert here is content rather than color: the masthead itself, its
+// scope, and the two flags that turn it off. A phrase asserted against folded
+// help text is checked with whitespace collapsed first, because a fold can
+// land inside a phrase without changing what it says.
+
+/// Whitespace collapsed to single spaces, so a fold point inside an asserted
+/// phrase cannot turn a true claim into a failing one.
+fn flat(text: &str) -> String {
+    text.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// **HW-DR-0045.** The root screen alone carries the masthead, above `Usage:`.
+///
+/// A verb's own page, `--version` and the bare-invocation refusal each already
+/// promise something a masthead would break, and the decision keeps every one
+/// of those promises rather than growing a line onto it.
+#[test]
+fn the_root_screen_alone_carries_the_masthead() {
+    let version = String::from_utf8(ran(&["--version"], None).out).expect("the version is text");
+    let version = version.trim();
+
+    let root = String::from_utf8(ran(&["--help"], None).out).expect("the help is text");
+    let lines: Vec<&str> = root.lines().collect();
+    assert_eq!(
+        lines[0],
+        format!("headwater {version} — a documentation corpus, governed and checked like code"),
+        "the first line names the binary and the version, not {:?}",
+        lines[0]
+    );
+    assert!(
+        !lines[1].is_empty() && lines[1].chars().all(|c| c == '─'),
+        "the second line is a rule of box-drawing dashes, not {:?}",
+        lines[1]
+    );
+    let usage_at = lines
+        .iter()
+        .position(|line| line.starts_with("Usage:"))
+        .expect("the root screen has a usage line");
+    assert!(usage_at > 1, "the rule sits above Usage:");
+
+    let help = String::from_utf8(ran(&["help"], None).out).expect("the help is text");
+    assert_eq!(
+        root, help,
+        "`headwater help` and `headwater --help` still agree"
+    );
+
+    let verb = String::from_utf8(ran(&["check", "--help"], None).out).expect("the help is text");
+    assert!(
+        !verb
+            .lines()
+            .any(|line| !line.is_empty() && line.chars().all(|c| c == '─')),
+        "a verb's own page carries no rule, and so no masthead"
+    );
+
+    let version_run = ran(&["--version"], None);
+    let version_out = String::from_utf8(version_run.out).expect("the version is text");
+    assert_eq!(
+        version_out.lines().count(),
+        1,
+        "--version still writes exactly one line"
+    );
+
+    let bare = ran(&[], None);
+    assert_eq!(bare.code, Some(1), "bare invocation still refuses");
+    let bare_err = String::from_utf8(bare.err).expect("the refusal is text");
+    assert!(
+        bare_err.contains("no verb"),
+        "the refusal keeps its wording, not {bare_err:?}"
+    );
+    assert!(
+        !bare_err
+            .lines()
+            .any(|line| !line.is_empty() && line.chars().all(|c| c == '─')),
+        "the refusal carries no masthead"
+    );
+}
+
+/// **HW-DR-0045.** `--no-banner` and `HEADWATER_NO_BANNER` suppress the
+/// masthead back to today's plain name line, and both are accepted (and
+/// inert) on a verb's own page, the posture `--no-color` already set.
+#[test]
+fn no_banner_and_its_environment_variable_suppress_the_masthead_and_both_are_accepted_everywhere() {
+    struct Case(
+        &'static str,
+        &'static [(&'static str, &'static str)],
+        &'static [&'static str],
+    );
+    let cases = [
+        Case("--no-banner", &[], &["--no-banner", "--help"]),
+        Case(
+            "HEADWATER_NO_BANNER=1",
+            &[("HEADWATER_NO_BANNER", "1")],
+            &["--help"],
+        ),
+    ];
+    for Case(label, environment, arguments) in cases {
+        let at = std::env::temp_dir().join(format!("headwater-banner-{}", std::process::id()));
+        std::fs::create_dir_all(&at).expect("the directory is there");
+        let mut process = Process::new(env!("CARGO_BIN_EXE_headwater"));
+        process
+            .args(arguments)
+            .current_dir(&at)
+            .env_remove("COLUMNS");
+        for (name, value) in environment {
+            process.env(name, value);
+        }
+        let output = process.output().expect("the binary runs");
+        assert_eq!(output.status.code(), Some(0), "{label} exits 0");
+        let out = String::from_utf8(output.stdout).expect("the help is text");
+        assert!(
+            !out.lines()
+                .any(|line| !line.is_empty() && line.chars().all(|c| c == '─')),
+            "{label} suppresses the masthead's rule"
+        );
+        assert_eq!(
+            out.lines().next(),
+            Some("headwater — a documentation corpus, governed and checked like code"),
+            "{label} reverts the first line to today's plain name line"
+        );
+    }
+
+    let deep = ran(&["check", "--no-banner", "--help"], None);
+    assert_eq!(deep.code, Some(0), "--no-banner is accepted on a verb page");
+    assert!(
+        deep.err.is_empty(),
+        "and it is silent there, same as --no-color"
+    );
+}
+
+/// **HW-DR-0045.** `--no-color`'s own text states the new behavior on both
+/// screens it appears on, not the old claim that this binary has no color to
+/// turn off, and `--no-banner` has an entry of its own beside it.
+#[test]
+fn no_color_s_own_text_states_the_new_behavior_and_no_banner_has_an_entry() {
+    let root = flat(&String::from_utf8(ran(&["--help"], None).out).expect("the help is text"));
+    assert!(
+        !root.contains("no run of this binary emits color"),
+        "the root screen's --no-color summary no longer claims this binary has no color"
+    );
+    assert!(
+        root.contains("suppress the masthead"),
+        "--no-banner has a summary line on the root screen, not just in:\n{root}"
+    );
+
+    let verb =
+        flat(&String::from_utf8(ran(&["check", "--help"], None).out).expect("the help is text"));
+    assert!(
+        verb.contains("senses whether each stream is a terminal"),
+        "--no-color's full description states the new default, not:\n{verb}"
+    );
+    assert!(
+        !verb.contains("already does"),
+        "--no-color's full description no longer claims this binary already writes no color"
+    );
+}
+
 // # The report of `headwater check`, which #340 laid out
 //
 // The help surface above is walked out of the command tree. The report cannot

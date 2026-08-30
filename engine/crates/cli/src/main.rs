@@ -85,6 +85,22 @@ fn main() -> ExitCode {
     // turn `--help` into a failure, and printing to the wrong stream would
     // break the zero-bytes-on-standard-error guarantee that
     // `tests/wiring.rs` holds for both `--help` and `--version`.
+    // The masthead is printed here, ahead of `clap`'s own help writer, rather
+    // than inside the template `first_screen` builds: `paint::wants_root_help`
+    // and `paint::banner`'s doc comments say why a template cannot carry it.
+    // `-h`/`--help` at the root is answered inside `parsed()` below, before
+    // this function ever sees a `Cli`, so the masthead has to print before
+    // that call rather than after it.
+    if headwater_cli::paint::wants_root_help() {
+        print!(
+            "{}",
+            headwater_cli::paint::banner(
+                headwater_resolve::release::ENGINE,
+                headwater_cli::paint::stdout_color()
+            )
+        );
+    }
+
     let cli = match headwater_cli::parsed() {
         Ok(cli) => cli,
         Err(error) => match error.use_stderr() {
@@ -485,6 +501,18 @@ fn print_help_for(words: &[String]) -> ExitCode {
         cursor = next;
     }
 
+    // `headwater help` with no operand prints the same root screen `--help`
+    // does, masthead included — `wants_root_help` does not see this path,
+    // because there is no `-h`/`--help` token on a bare `help`.
+    if words.is_empty() {
+        print!(
+            "{}",
+            headwater_cli::paint::banner(
+                headwater_resolve::release::ENGINE,
+                headwater_cli::paint::stdout_color()
+            )
+        );
+    }
     let target = descend(&mut command, words).expect("the walk above found every word");
     let _ = target.print_help();
     ExitCode::SUCCESS
@@ -5113,8 +5141,12 @@ fn refused(what: &str, errors: &[headwater_census::shelves::DeclarationError]) -
 /// this binary writes to standard error opens with its own name. A message with
 /// no newline in it prints exactly the two lines it printed before this loop.
 fn fail(message: &str) -> ExitCode {
+    let mode = headwater_cli::paint::stderr_color();
     for line in message.lines() {
-        eprintln!("headwater: {line}");
+        eprintln!(
+            "headwater: {}",
+            headwater_cli::paint::paint(headwater_cli::paint::Role::Error, line, mode)
+        );
     }
     eprintln!("headwater: run `headwater --help` for the grammar");
     ExitCode::FAILURE
