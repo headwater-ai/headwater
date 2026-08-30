@@ -643,7 +643,7 @@ impl Route {
             return out;
         }
         for pointer in &self.pointers {
-            let _ = writeln!(out, "  {}", pointer.render());
+            out.push_str(&headwater_check::fill::filled(&format!("  {}\n", pointer.render()), headwater_check::fill::WIDTH));
         }
         // Printed only where the budget removed something, so a route that cut
         // nothing renders exactly as it did before. The line carries no em dash,
