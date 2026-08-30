@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Assembly recipes are source declarations, not generated artifacts.
 
-use headwater_resolve::{assembly, package};
+use headwater_resolve::{assembly, flatten, package};
 use std::path::PathBuf;
 
 struct Scratch(PathBuf);
@@ -40,6 +40,8 @@ contents:
   taxonomy: taxonomy.yml
   bundles: bundles
   assemblies: assemblies
+  doctrine: doctrine
+  templates: templates
 ";
 
 const TAXONOMY: &str = "\
@@ -102,6 +104,100 @@ fn publisher(scratch: &Scratch) {
         ASSEMBLY,
     );
     scratch.write("packages/acme-fixture/assemblies/starter/overlay.yml", GLUE);
+    scratch.write(
+        "packages/acme-fixture/doctrine/guide.md",
+        "# Fixture doctrine\n",
+    );
+    scratch.write(
+        "packages/acme-fixture/templates/decision.md",
+        "# Decision\n",
+    );
+}
+
+#[test]
+fn a_flattened_assembly_has_its_own_identity_and_the_same_declarations() {
+    let scratch = Scratch::new("flatten");
+    publisher(&scratch);
+    let directory = scratch.package();
+    let manifest = package::manifest_at(&directory).expect("the manifest reads");
+    let recipe =
+        assembly::read(&scratch.0, &directory, &manifest, "starter").expect("the recipe reads");
+
+    let flattened =
+        flatten::materialize(&scratch.0, &directory, &manifest, &recipe).expect("it materializes");
+    let resolution = assembly::resolve(&scratch.0, &directory, &manifest, &recipe)
+        .expect("the recipe resolves again");
+
+    assert!(flatten::equivalent(&resolution, &flattened, &recipe));
+    assert!(flattened
+        .taxonomy
+        .starts_with("taxonomy: acme/starter\nversion: 2.0.0\n"));
+    let contents = flattened
+        .manifest
+        .get("contents")
+        .and_then(|value| value.value.as_map())
+        .expect("the generated manifest has contents");
+    assert!(contents.get("bundles").is_none());
+    assert!(contents.get("assemblies").is_none());
+    assert_eq!(
+        contents
+            .get("doctrine")
+            .and_then(|value| value.value.as_scalar())
+            .map(|value| value.text.as_str()),
+        Some("doctrine/starter")
+    );
+    assert_eq!(
+        flattened
+            .assets
+            .iter()
+            .map(|asset| asset.path.as_str())
+            .collect::<Vec<_>>(),
+        ["doctrine/starter/guide.md", "templates/starter/decision.md"]
+    );
+    let distribution = flattened
+        .manifest
+        .get("distribution")
+        .and_then(|value| value.value.as_map())
+        .expect("the generated manifest states provenance");
+    assert_eq!(
+        distribution
+            .get("form")
+            .and_then(|value| value.value.as_scalar())
+            .map(|value| value.text.as_str()),
+        Some("flattened")
+    );
+    let derived = distribution
+        .get("derived_from")
+        .and_then(|value| value.value.as_map())
+        .expect("the provenance names its inputs");
+    for key in [
+        "taxonomy_digest",
+        "selection_digest",
+        "recipe_digest",
+        "overlay_digest",
+        "bundles",
+    ] {
+        assert!(derived.get(key).is_some(), "the provenance has `{key}`");
+    }
+}
+
+#[test]
+fn equivalence_refuses_a_flattened_taxonomy_with_a_changed_declaration() {
+    let scratch = Scratch::new("equivalence");
+    publisher(&scratch);
+    let directory = scratch.package();
+    let manifest = package::manifest_at(&directory).expect("the manifest reads");
+    let recipe =
+        assembly::read(&scratch.0, &directory, &manifest, "starter").expect("the recipe reads");
+    let resolution =
+        assembly::resolve(&scratch.0, &directory, &manifest, &recipe).expect("the recipe resolves");
+    let mut flattened =
+        flatten::materialize(&scratch.0, &directory, &manifest, &recipe).expect("it materializes");
+    flattened.taxonomy = flattened
+        .taxonomy
+        .replace("state what the system does", "changed");
+
+    assert!(!flatten::equivalent(&resolution, &flattened, &recipe));
 }
 
 #[test]
