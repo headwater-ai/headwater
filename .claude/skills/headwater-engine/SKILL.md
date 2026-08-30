@@ -7,7 +7,7 @@ description: Build the engine of this repository and run its verbs. Use before t
 
 The engine is a cargo workspace under `engine/`, and the corpus it reads is the repository above it. Two directories, so every command below states which one it means.
 
-[engine/README.md](../../../engine/README.md) is the reference for the design of each crate and for what its tests hold. This file is the shorter thing: what to type, and the four mistakes that cost a session more than they should.
+[engine/README.md](../../../engine/README.md) is the reference for the design of each crate and for what its tests hold. This file is the shorter thing: what to type, and the five mistakes that cost a session more than they should.
 
 ## The invocation
 
@@ -49,6 +49,14 @@ A recorded fixture is re-recorded with `HEADWATER_BLESS=1` and never edited by h
 **A green run read as a green corpus.** `headwater check` exits 0 with findings on standard output, because the posture is advisory. `--strict` is the gate, and it is what `.githooks/pre-commit` runs. Read the findings.
 
 **A `--release` build as a verification step.** `.github/workflows/ci.yml` already runs `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, the whole test suite, `taxonomy resolve --check`, `generate --check` and `headwater check` on every pull request. A debug `cargo check` and `cargo test` prove the same fix, in seconds rather than the minutes `lto = true` and `codegen-units = 1` cost a release link, and a session that also builds `--release` and runs the binary by hand to double-check a passing test suite is spending real time and real machine load on evidence it already had. Push and read CI rather than reproducing it locally. Reach for `--release`, or `--profile dev-release` for a faster link at a smaller optimization cost, only when the session needs the binary itself: to hand it to somebody, to run it once by hand against a real corpus, or to measure a performance claim, which debug and release answer differently by roughly an order of magnitude.
+
+`engine/.cargo/config.toml` names four aliases for the invocations on this page that cargo has no shorthand for, so a session reaches for the cheap one by name instead of retyping the flags that make it cheap: `test-crate <crate>` (`test -p <crate>`), `test-timings` (`test --workspace --timings`, an HTML report under `target/cargo-timings/`), `release-cli` and `dev-release-cli` (the two builds in the paragraph above). Each is a rename of a flag combination already explained here, not a new behavior, so nothing depends on a session using them. There is no alias for plain `check`/`test`: cargo already ships `c` and `t` for those, and this workspace has no `default-members`, so `cargo c`/`cargo t` from `engine/` already cover the whole workspace.
+
+## Optional: a faster linker and compile cache
+
+`tools/dev-fast-build-setup.sh` wires `mold` (linker) and `sccache` (compile cache) into `~/.cargo/config.toml` — the user's own, not `engine/.cargo/config.toml`, and never checked into a repo, because CI and a fresh clone have neither binary and must not start depending on them. It is idempotent, installs nothing itself (it names the two binaries and stops if either is missing, rather than writing a config that would break every cargo invocation on a rustc-wrapper it can't find), and `--remove` undoes exactly the block it wrote. On a host that also runs a self-hosted CI runner as the same OS user, that runner reads the same file, so check there before suspecting the repo if a runner build starts behaving differently.
+
+The one gotcha worth knowing before setting this up: sccache cannot cache an incremental build, and `cargo check`/`cargo test` use incremental compilation by default, so sccache gives it roughly zero benefit there — cargo's own incremental cache already covers that case. sccache earns its place on the builds that already run without incremental: `--release`, `--profile dev-release`, and a clean or cross-branch rebuild. mold helps every link regardless of incremental.
 
 ## What this skill does not decide
 
