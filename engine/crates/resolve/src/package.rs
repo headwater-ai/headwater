@@ -1161,6 +1161,8 @@ impl Kind {
 ///   dependency cannot run the other way.
 /// - `bundles` is a directory: [`stage`] reads it with [`read_tree`], which is
 ///   `read_dir`, and the resolver then reads `<bundles>/<name>/bundle.yml`.
+/// - `assemblies` is a directory: [`crate::assembly::read`] opens a named
+///   recipe under it.
 /// - `migrations` is a directory: [`crate::migration::at`] reads it with
 ///   `read_dir` and globs `*.yml` out of it.
 /// - `doctrine` is a directory: [`doctrine_at`] resolves it against the fetched
@@ -1176,7 +1178,7 @@ impl Kind {
 fn required_kind(key: &str) -> Option<Kind> {
     match key {
         "taxonomy" | "conformance" => Some(Kind::File),
-        BUNDLES | DOCTRINE | crate::migration::CONTENTS_KEY => Some(Kind::Directory),
+        BUNDLES | ASSEMBLIES | DOCTRINE | crate::migration::CONTENTS_KEY => Some(Kind::Directory),
         _ => None,
     }
 }
@@ -1185,8 +1187,8 @@ fn required_kind(key: &str) -> Option<Kind> {
 ///
 /// [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#publishing):
 /// *"Every `contents` path a publisher writes is read. `taxonomy`, `bundles`,
-/// `conformance` and `migrations` each reach a verb. A key that no verb reads is
-/// a claim that a publisher makes and a consumer never sees."* This is that
+/// `assemblies`, `conformance` and `migrations` each reach a verb. A key that
+/// no verb reads is a claim that a publisher makes and a consumer never sees."* This is that
 /// sentence, and it reads the keys the manifest declares rather than a list
 /// written here, so a key added to a manifest is covered on the day it arrives.
 ///
@@ -1563,6 +1565,14 @@ fn migrations(
 
 /// Where a published package keeps the bundles it ships.
 pub const BUNDLES: &str = "bundles";
+
+/// Where a source package keeps named assembly recipes.
+///
+/// An assembly is source material for a flattened package, rather than content
+/// a consumer resolves at runtime. [`crate::assembly::read`] is its reader.
+/// Unlike [`BUNDLES`], this directory is always inside the source package: no
+/// publish path rewrites it into the artifact.
+pub const ASSEMBLIES: &str = "assemblies";
 
 /// Where a published package keeps the prose that explains its method.
 ///
