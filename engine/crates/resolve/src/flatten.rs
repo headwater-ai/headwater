@@ -154,13 +154,19 @@ fn contents(source: &Mapping, recipe: &Assembly, at: &Path) -> Result<Mapping, V
                 "the source package manifest has no mapping at `contents`",
             )
         })?;
-    let mut entries: Vec<Entry> = source_contents
-        .entries()
-        .iter()
-        .filter(|entry| entry.key.value != BUNDLES && entry.key.value != ASSEMBLIES)
-        .filter(|entry| entry.key.value != package::DOCTRINE && entry.key.value != "templates")
-        .cloned()
-        .collect();
+    let mut entries = vec![entry("taxonomy", scalar("taxonomy.yml"))];
+    entries.extend(
+        source_contents
+            .entries()
+            .iter()
+            .filter(|entry| {
+                entry.key.value != "taxonomy"
+                    && entry.key.value != BUNDLES
+                    && entry.key.value != ASSEMBLIES
+            })
+            .filter(|entry| entry.key.value != package::DOCTRINE && entry.key.value != "templates")
+            .cloned(),
+    );
     for key in [package::DOCTRINE, "templates"] {
         if source_contents.get(key).is_some() {
             entries.push(entry(key, scalar(&format!("{key}/{}", recipe.name))));

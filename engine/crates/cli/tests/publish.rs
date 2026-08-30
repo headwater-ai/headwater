@@ -158,6 +158,69 @@ fn publish_real_source_into(out: &Path) -> (Option<i32>, String) {
     )
 }
 
+/// A source package with one named assembly, small enough to make the publish
+/// boundary visible without depending on a future public starter assembly.
+fn assembly_source(root: &Root, invalid: bool) -> PathBuf {
+    let source = root.path().join("source/acme-fixture");
+    write(
+        &source.join("package.yml"),
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: bundles\n  assemblies: assemblies\n  doctrine: doctrine\n  templates: templates\n",
+    );
+    write(
+        &source.join("taxonomy.yml"),
+        "taxonomy: acme/fixture\nversion: 1.0.0\npurposes:\n  behavior: {intent: state what the system does}\nkinds:\n  governed_document: {abstract: true}\n  specification: {is_a: governed_document, purpose: behavior}\ncore:\n  requires:\n    - purpose: behavior\n",
+    );
+    write(
+        &source.join("bundles/alpha/bundle.yml"),
+        "bundle: alpha\nextends: acme/fixture@1.0.0\nrequires: []\nadd:\n  kinds.alpha: {is_a: governed_document, purpose: behavior}\n",
+    );
+    write(
+        &source.join("bundles/beta/bundle.yml"),
+        "bundle: beta\nextends: acme/fixture@1.0.0\nrequires: []\nadd:\n  kinds.beta: {is_a: governed_document, purpose: behavior}\n",
+    );
+    let selected = if invalid {
+        "[alpha, missing]"
+    } else {
+        "[alpha, beta]"
+    };
+    write(
+        &source.join("assemblies/starter/assembly.yml"),
+        &format!(
+            "assembly: starter\npackage: acme/starter\nversion: 2.0.0\nfrom:\n  package: acme/fixture@1.0.0\n  bundles: {selected}\noverlay: overlay.yml\n"
+        ),
+    );
+    write(
+        &source.join("assemblies/starter/overlay.yml"),
+        "add:\n  relations.connects:\n    family: derivation\n    from: [alpha]\n    to: [beta]\n    inverse: connected_by\n    reciprocal: required\n    created_by: scaffold\n",
+    );
+    write(&source.join("doctrine/guide.md"), "# Fixture doctrine\n");
+    write(&source.join("templates/decision.md"), "# Decision\n");
+    source
+}
+
+fn write(path: &Path, text: &str) {
+    std::fs::create_dir_all(path.parent().expect("the file has a parent"))
+        .expect("the parent is made");
+    std::fs::write(path, text).expect("the fixture file is written");
+}
+
+fn publish_assembly_from(root: &Path, source: &Path, out: &Path) -> (Option<i32>, String, String) {
+    let output = Command::new(env!("CARGO_BIN_EXE_headwater"))
+        .args(["taxonomy", "publish", "--assembly", "starter", "--from"])
+        .arg(source)
+        .arg("--out")
+        .arg(out)
+        .arg("--root")
+        .arg(root)
+        .output()
+        .expect("the binary runs");
+    (
+        output.status.code(),
+        String::from_utf8_lossy(&output.stdout).into_owned(),
+        String::from_utf8_lossy(&output.stderr).into_owned(),
+    )
+}
+
 impl Drop for Root {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.0);
@@ -176,6 +239,47 @@ fn copy(from: &Path, to: &Path) {
             }
         }
     }
+}
+
+#[test]
+fn a_named_assembly_publishes_one_flattened_package() {
+    let root = Root::scratch("assembly-publishes");
+    let source = assembly_source(&root, false);
+    let out = root.path().join("release");
+
+    let (code, stdout, stderr) = publish_assembly_from(root.path(), &source, &out);
+    assert_eq!(code, Some(0), "{stderr}");
+    assert!(stdout.contains("published acme/starter 2.0.0"), "{stdout}");
+    assert!(
+        out.join("release.yml").is_file(),
+        "no release record was written"
+    );
+    let manifest = std::fs::read_to_string(out.join("package.yml")).expect("the manifest reads");
+    assert!(manifest.contains("package: acme/starter"), "{manifest}");
+    assert!(manifest.contains("taxonomy: taxonomy.yml"), "{manifest}");
+    assert!(manifest.contains("form: flattened"), "{manifest}");
+    assert!(
+        !out.join("bundles").exists(),
+        "a flattened package carries bundles"
+    );
+    assert!(out.join("doctrine/starter/guide.md").is_file());
+    assert!(out.join("templates/starter/decision.md").is_file());
+}
+
+#[test]
+fn an_invalid_assembly_refuses_before_it_creates_output() {
+    let root = Root::scratch("assembly-refuses");
+    let source = assembly_source(&root, true);
+    let out = root.path().join("release");
+
+    let (code, _stdout, stderr) = publish_assembly_from(root.path(), &source, &out);
+    assert_eq!(code, Some(1), "{stderr}");
+    assert!(stderr.contains("`missing`"), "{stderr}");
+    assert!(stderr.contains("nothing was published"), "{stderr}");
+    assert!(
+        !out.exists(),
+        "the refused run left partial output at {out:?}"
+    );
 }
 
 /// `nothing was published` and the disk agree, and the second run is the proof.

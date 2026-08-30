@@ -887,6 +887,74 @@ pub fn publish_from(
     publish_at(root, directory, &manifest, out)
 }
 
+/// Write the flattened artifact a named assembly derives from a package found
+/// under `packages/`.
+pub fn publish_assembly(
+    root: &Path,
+    name: &str,
+    assembly: &str,
+    out: &Path,
+) -> Result<Release, Vec<ResolveError>> {
+    let (directory, manifest) = find(root, name)?;
+    publish_assembly_at(root, &directory, &manifest, assembly, out)
+}
+
+/// Write the flattened artifact a named assembly derives from a source
+/// directory the caller already holds.
+pub fn publish_assembly_from(
+    root: &Path,
+    directory: &Path,
+    assembly: &str,
+    out: &Path,
+) -> Result<Release, Vec<ResolveError>> {
+    let manifest = manifest_at(directory)?;
+    publish_assembly_at(root, directory, &manifest, assembly, out)
+}
+
+/// The publish sequence for an assembly after its source directory and manifest
+/// are known.
+///
+/// This keeps the same read, write, and undo boundary as [`publish_at`]. The
+/// generated material replaces the source tree only after every recipe input is
+/// in memory, and [`found::Found`] unwinds the same output states when either a
+/// file write or release-record write fails.
+fn publish_assembly_at(
+    root: &Path,
+    directory: &Path,
+    manifest: &Mapping,
+    assembly: &str,
+    out: &Path,
+) -> Result<Release, Vec<ResolveError>> {
+    let declared = manifest_name(root, directory);
+    let contents = contents_of(manifest);
+    reachable(root, &declared, directory, &contents)?;
+    let source = taxonomy_source(root, directory, &contents)?;
+    agrees(&declared, manifest, &source)?;
+
+    let recipe = crate::assembly::read(root, directory, manifest, assembly)?;
+    let flattened = crate::flatten::materialize(root, directory, manifest, &recipe)?;
+    let staged = stage_flattened(directory, &flattened)?;
+    let found = found::observe(out).map_err(|why| refusal(&display(root, out), &why))?;
+
+    let written = put(out, &staged)
+        .map_err(|why| refusal(&display(root, out), &why))
+        .and_then(|()| {
+            let record = release::compute(out, &flattened.manifest)
+                .map_err(|error| release::as_error(&display(root, out), &error))?;
+            std::fs::write(out.join(release::RECORD), release::render(&record))
+                .map_err(|error| refusal(release::RECORD, &format!("cannot write it: {error}")))?;
+            Ok(record)
+        });
+
+    match written {
+        Ok(record) => Ok(record),
+        Err(errors) => {
+            found.unwind(out);
+            Err(errors)
+        }
+    }
+}
+
 /// The publish sequence shared by [`publish`] and [`publish_from`], once each
 /// has settled on a directory and the manifest inside it by whichever route
 /// it uses.
@@ -1122,6 +1190,41 @@ struct Staged {
     /// What the source file carried. `std::fs::copy` took these across before
     /// staging did, and a publish is not the place to start normalizing them.
     mode: std::fs::Permissions,
+}
+
+/// The generated flattened package, expressed in the same staged-file shape
+/// ordinary publication passes to [`put`].
+fn stage_flattened(
+    directory: &Path,
+    flattened: &crate::flatten::Flattened,
+) -> Result<Vec<Staged>, Vec<ResolveError>> {
+    let mode = std::fs::metadata(directory.join(MANIFEST))
+        .map_err(|error| {
+            refusal(
+                &directory.join(MANIFEST).display().to_string(),
+                &format!("cannot read it for its file mode: {error}"),
+            )
+        })?
+        .permissions();
+    let mut staged = vec![
+        Staged {
+            path: MANIFEST.to_string(),
+            bytes: crate::render::render(&flattened.manifest).into_bytes(),
+            mode: mode.clone(),
+        },
+        Staged {
+            path: "taxonomy.yml".to_string(),
+            bytes: flattened.taxonomy.as_bytes().to_vec(),
+            mode: mode.clone(),
+        },
+    ];
+    staged.extend(flattened.assets.iter().map(|asset| Staged {
+        path: asset.path.clone(),
+        bytes: asset.bytes.clone(),
+        mode: mode.clone(),
+    }));
+    staged.sort_by(|left, right| left.path.cmp(&right.path));
+    Ok(staged)
 }
 
 /// Which kind of thing a `contents` key's reader opens.
