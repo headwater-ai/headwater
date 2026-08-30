@@ -212,6 +212,22 @@ from:
 overlay: overlay.yml
 ```
 
+```text
+headwater/standard@3.4.0
+|-- base taxonomy
+|-- bundle: design-spec --------\
+|-- bundle: decision-record -----+--> assembly: starter
+`-- bundle: standards-spec ------/    |-- optional overlay: overlay.yml
+                                      |
+                                      |-- composer: pins standard and selects bundles
+                                      |
+                                      `-- publisher: resolves recipe
+                                          -> headwater/starter (flattened)
+                                          -> batteries-included consumer
+```
+
+An arrow into the assembly identifies a recipe input, not a package dependency. The composer chooses inputs directly. The publisher resolves the assembly, and the flattened package contains that result.
+
 **A composer consumes the recipe inputs.** The consumer pins the source package and lists the bundles it wants. The consumer may take the assembly overlay or write a local overlay instead. This form preserves control over the selected parts and their upgrades.
 
 **A batteries-included consumer takes a flattened package.** The publisher resolves the recipe and emits a complete taxonomy source under the assembly package identity. The package declares no bundle directory, and its consumer selects no bundles. The publisher copies the selected doctrine and templates into namespaced paths in the artifact.
