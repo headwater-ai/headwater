@@ -2,7 +2,7 @@
 
 This directory holds the canonical taxonomy library: a curated set of taxonomies, each one modeling a named documentation tradition. Every adopter would otherwise rediscover and re-encode their own tradition from nothing. The library is the alternative to that, published on the terms that [spec 7](../spec/07-distribution-and-federation.md) already fixed.
 
-This file settles four things: what an entry is, what admits one, what each entry ships, and where a draft lives before an engine exists. It also collects the rulings that a draft works under, so that authoring an entry reopens none of them.
+This file settles five things: what an entry is, what admits one, what each entry ships, what admits an assembly, and where each draft lives. It also collects the rulings that a draft works under, so that authoring an entry reopens none of them.
 
 ## An entry is a bundle
 
@@ -36,17 +36,37 @@ This criterion was first drafted around `rationale` alone. That inherited the om
 
 The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md#bundles-and-why-one-line-per-relation-does-not-generalize) measured why this is not free. A new relation is one line. A new kind drags a shelf, a purpose, an identifier scheme, and its edges behind it.
 
-### A flattened combination is not a second entry shape
+### Two consumption forms share one authored entry shape
 
-The library does not admit a dependency-less copy of several entries as an alternative to those entries. Such a copy fails the existing entry model before the cost of duplicated doctrine, schema, templates, and fixtures decides anything.
+The library serves two consumers without maintaining two copies of a taxonomy. A composer selects bundles and writes any local connection between them. A batteries-included consumer takes a flattened package that a publisher derives from a named assembly. [Spec 7](../spec/07-distribution-and-federation.md#an-assembly-has-two-consumption-forms) defines both forms.
 
-First, the copied entry and its source entries write the same addresses, so they fail criterion 6. Calling them alternatives does not make the operations disjoint. The package format declares no mutual-exclusion group, and the publisher proves that every bundle subset resolves. A second complete package would avoid that collision, but it would not be an entry in this library, whose entries are bundles over one base.
+An assembly is not a second library entry. The admitted bundles remain the authored sources for their schema, doctrine, templates, and fixtures. The assembly adds one recipe, an optional assembly overlay, assembly doctrine, and an interaction fixture. Its flattened package is generated release output.
 
-Second, a bundle dependency does not give the adopter a graph to assemble. Enabling the bundle is one operation, and the publisher checks its declared closure at release. The [starter kit](../spec/07-distribution-and-federation.md#the-starter-kit-is-a-selection) already gives an adopter an opinionated selection without copying its entries.
+The package boundary keeps the two forms apart. A composer takes `headwater/standard` and its bundles. A batteries-included consumer takes a package such as `headwater/starter` and selects no bundles. The flattened package can repeat addresses from the source bundles because the two packages never enter one resolution.
 
-Flattening also does not repair a connection that the overlay language cannot express. It copies both endpoints into a new declaration set to gain that connection. [HW-OBL-0040](../obligations/0040-composition-between-two-library-entries-has-no-add-only-form.md) remains open because the original entries still cannot declare the edge together.
+Assembly glue does not repair arbitrary bundle composition. [HW-OBL-0040](../obligations/0040-composition-between-two-library-entries-has-no-add-only-form.md) remains open because the source bundles still cannot declare the same connection together. The assembly owns only the connection for its named combination.
 
-A combination with its own name and citable prior art may seek admission as a tradition in its own right. It must still meet all seven criteria, including a disjoint address set. Being a flattened copy of admitted entries supplies neither condition. This is the refusal raised by [#391](https://github.com/headwater-ai/headwater/issues/391).
+#### Assembly admission
+
+An assembly is a distribution choice rather than a documentation tradition. Criterion 1 therefore does not apply to it. Eight criteria keep the assembly set finite and keep the flattened artifact derived.
+
+**1. It names an outside adopter or a documented adopter population.** The evidence states why explicit bundle selection does not meet that adopter's need.
+
+**2. It selects only admitted bundles.** The recipe pins one source package version and lists its complete bundle selection. It relies on no implicit reading of `requires`, which [Q40](../spec/09-decisions.md#q40--whether-extends-bundle-requires-and-an-overlays-taxonomy-key-are-a-mechanism-or-a-label) rules a label today.
+
+**3. Its overlay contains assembly glue only.** Each operation connects declarations from two or more selected bundles. It restates no declaration that the base or a selected bundle owns.
+
+**4. It carries a worked interaction corpus.** The corpus exercises the connections between the selected traditions. The selected bundles retain their own fixture corpora.
+
+**5. Its doctrine explains the combination.** It links to each selected entry's doctrine and states only the choices that belong to the assembly.
+
+**6. Its flattened package is generated.** No person maintains a second taxonomy source, a second bundle doctrine, or a second bundle template.
+
+**7. Publication proves equivalence.** A fresh recipe resolution and the flattened source have the same canonical declarations after package identity and derivation metadata are excluded.
+
+**8. A reader can identify the form from the manifest.** `distribution.form` is `flattened`, and `distribution.derived_from` names the recipe inputs. The assembly doctrine states that its publisher coordinates upgrades.
+
+These criteria replace the refusal recorded for [#391](https://github.com/headwater-ai/headwater/issues/391). The refusal treated a flattened package as an independently authored entry. The assembly model admits the consumer experience and refuses the duplicated source.
 
 ### One rule of the base is not a criterion here
 
@@ -81,6 +101,14 @@ add:
 **`templates/` holds one template per concrete kind that the entry adds.** [Spec 3](../spec/03-authoring-and-lifecycle.md) owns what a template contains. An entry with a kind that has no template asks an author to derive a document shape from a schema.
 
 **`fixtures/` holds the worked corpus of criterion 4**, and a `fixtures/README.md` that states what each document exercises and which findings it should raise. No runner reads these files yet. A fixture manifest in a format that nothing executes is a guess about a runner. The statement stays prose until an engine gives it a shape.
+
+## What an assembly ships
+
+An assembly draft lives at `taxonomy-source/headwater-standard/assemblies/<name>/`. It holds `assembly.yml`, an optional `overlay.yml`, `doctrine.md`, and `fixtures/`. The source package manifest names the directory under `contents.assemblies`.
+
+`assembly.yml` names the flattened package, its version, the source package version, the complete bundle selection, and the optional overlay. `doctrine.md` explains the combination and the coordinated upgrade. `fixtures/` measures behavior that crosses the selected entries.
+
+The flattened taxonomy, copied entry doctrine, copied templates, package manifest, and release record are publisher output. They do not live in the assembly draft. A publish reads the draft and the selected entries, proves equivalence, and writes the complete package into its output directory.
 
 ## Where drafts live, and why here
 
