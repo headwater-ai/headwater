@@ -333,7 +333,7 @@ out=$(gate); status=$?
 judge 'a finding whose location line lands on the width boundary is refused' 1 "$status" \
     'language.controlled.not_met' "$out"
 judge 'and the hook prints the location and the severity on one line' 1 "$status" \
-    "$boundary:48:1 error" "$out"
+    "$boundary:48:1 ✗ error" "$out"
 judge 'and the whole message under it, not the first line of it' 1 "$status" \
     'and this sentence writes `behaviour`' "$out"
 judge 'and the fix line, which is the last line of the finding' 1 "$status" \
