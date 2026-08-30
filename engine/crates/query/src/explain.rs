@@ -164,7 +164,7 @@ impl Explanation {
             ));
         }
         if let Some((name, intent)) = &self.purpose {
-            let _ = match intent {
+            match intent {
                 Some(intent) => out.push_str(&headwater_check::fill::filled(
                     &format!("  purpose {name}, to {intent}\n"),
                     headwater_check::fill::WIDTH,
