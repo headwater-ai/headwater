@@ -173,6 +173,7 @@ pub use adoption::Ledger;
 pub use cache::Cache;
 pub use context::{Context, Date};
 pub use coverage::Coverage;
+pub use fill::{filled, WIDTH};
 pub use finding::{Finding, Severity};
 pub use gate::{Recorded, Verdict};
 pub use instance::{Input, Instance, Outcome};

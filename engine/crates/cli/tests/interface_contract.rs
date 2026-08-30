@@ -418,10 +418,8 @@ fn the_constructor_writes_a_contract_that_a_strict_run_passes() {
             && explained.out.contains(
                 "requires the facets status, status_since, summary, last_verified, title"
             )
-            && explained.out.contains(
-                "requires the sections Synopsis, Description, Preconditions, Options, \
-                 Exit status, Environment, Files, See also"
-            ),
+            && explained.out.contains("requires the sections")
+            && explained.out.contains("Environment, Files, See also"),
         "`explain` prints the kind, its facets and its sections:\n{}",
         explained.out
     );

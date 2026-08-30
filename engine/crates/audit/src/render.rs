@@ -9,6 +9,7 @@
 //! written out in words rather than printed as a zero.
 
 use crate::Audit;
+use headwater_check::filled;
 use std::fmt::Write;
 
 /// A count with its noun, in the number the count calls for.
@@ -23,36 +24,6 @@ fn many(count: usize, singular: &str, plural: &str) -> String {
     }
 }
 
-/// The width every hand-folded line in this report keeps to.
-const WIDTH: usize = 88;
-
-/// One run of derived prose, folded to the report width under an indent.
-///
-/// Every other line of this report is a literal that an author folded by hand.
-/// The supply lines of the waiting section are not: each states what one run
-/// found, and its length is a function of the corpus rather than of the source.
-/// So the fold is computed, and this is the only computed one.
-fn folded(text: &str, indent: &str) -> String {
-    let mut out = String::new();
-    let mut column = 0;
-    for word in text.split_whitespace() {
-        if column == 0 {
-            out.push_str(indent);
-            column = indent.len();
-        } else if column + 1 + word.len() > WIDTH {
-            out.push('\n');
-            out.push_str(indent);
-            column = indent.len();
-        } else {
-            out.push(' ');
-            column += 1;
-        }
-        out.push_str(word);
-        column += word.len();
-    }
-    out.push('\n');
-    out
-}
 
 impl Audit {
     pub fn render(&self) -> String {
@@ -341,13 +312,13 @@ impl Audit {
                 reading.layout,
                 many(reading.identified, "document", "documents")
             );
-            out.push_str(&folded(
+            out.push_str(&filled(
                 &format!(
-                    "{} — {}",
+                    "      {} — {}\n",
                     reading.adherence.located(),
                     reading.adherence.says()
                 ),
-                "      ",
+                headwater_check::fill::WIDTH,
             ));
         }
         let measured: usize = self.layouts.iter().map(|reading| reading.measured).sum();
@@ -630,9 +601,9 @@ impl Audit {
             }
             for need in &waiting.needs {
                 let _ = writeln!(out, "    {}", need.needs);
-                out.push_str(&folded(
-                    &format!("{} — {}", need.supply.located(), need.supply.says()),
-                    "      ",
+                out.push_str(&filled(
+                    &format!("      {} — {}\n", need.supply.located(), need.supply.says()),
+                    headwater_check::fill::WIDTH,
                 ));
             }
         }
