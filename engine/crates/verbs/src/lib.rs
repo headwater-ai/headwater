@@ -170,7 +170,7 @@ pub const VERBS: &[Verb] = &[
         name: "route",
         group: "Reading a corpus",
         summary: "resolve a task description to the documents that govern it",
-        description: "Resolve a task description to the documents that govern it, as pointers. It is silent when nothing matches.",
+        description: "Resolve a task description to the documents that govern it, as pointers. Where nothing matches it offers no pointer and says which of the two reasons applies, so a caller can tell \"no purpose answers this\" from \"the corpus declares none\". It always prints a report and always exits 0.",
         words: &[],
     },
     Verb {
@@ -195,7 +195,7 @@ pub const VERBS: &[Verb] = &[
         name: "capture",
         group: "Reading a corpus",
         summary: "read the capture-cost store back",
-        description: "Read the capture-cost store back: the assisted fraction over every reading it holds, the same by kind, and how far the authoring verb reaches into the corpus. It names no person and no agent, and it never averages readings taken under two taxonomies.",
+        description: "Read the capture-cost store back: the assisted fraction over every reading it holds, the same by kind, and how far the authoring verb reaches into the corpus. It names no person and no agent. Where more than one taxonomy produced the readings it still reports one fraction over all of them, names every taxonomy that contributed, and says the number is not a trend.",
         words: &[],
     },
     Verb {

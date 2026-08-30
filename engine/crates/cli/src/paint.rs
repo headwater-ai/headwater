@@ -41,11 +41,13 @@
 
 use clap::{Arg, ArgAction, Command};
 
-/// The width every run lays the help out at, whatever it is attached to.
-pub const WIDTH: usize = 80;
-
-/// The widest a caller may ask for with `--wide`.
-pub const WIDEST: usize = 120;
+/// The width and the fill, which live in `headwater_check::fill` and are named
+/// here so that a caller of this module keeps writing `paint::WIDTH`.
+///
+/// They moved down when the check report gained a layout: the report and the
+/// help are laid out by one implementation, and `headwater-check` is the crate
+/// every report composer can reach. Nothing is re-implemented here.
+pub use headwater_check::fill::{fold, fold_at, WIDEST, WIDTH};
 
 /// The column an argument's help starts at, at every node of the tree.
 ///
@@ -197,63 +199,6 @@ fn reserved(arg: &Arg) -> usize {
     }
 }
 
-/// The text, folded to `width` columns, breaking only where there is a space.
-pub fn fold(text: &str, width: usize) -> String {
-    fold_at(text, width, 0)
-}
-
-/// The text folded to `width`, leaving room on the last line for what follows.
-///
-/// `tail` is the width of a run of text that something else will append after
-/// this one, on the same line and after a space. It is kept with the last word
-/// rather than added as a word of its own, so the last line either carries both
-/// or carries neither.
-///
-/// A newline in the source is a break the author asked for and survives. A word
-/// longer than `width` is written past it rather than cut: a fold that broke
-/// inside a word would break an identifier, a path or a flag name, and every
-/// one of those is a thing a caller retypes.
-pub fn fold_at(text: &str, width: usize, tail: usize) -> String {
-    let lines: Vec<&str> = text.split('\n').collect();
-    let last = lines.len().saturating_sub(1);
-    lines
-        .iter()
-        .enumerate()
-        .map(|(at, line)| one_line(line, width, if at == last { tail } else { 0 }))
-        .collect::<Vec<String>>()
-        .join("\n")
-}
-
-fn one_line(text: &str, width: usize, tail: usize) -> String {
-    let words: Vec<&str> = text.split_whitespace().collect();
-    if words.is_empty() {
-        return String::new();
-    }
-    let mut widths: Vec<usize> = words.iter().map(|word| word.chars().count()).collect();
-    if tail > 0 {
-        let end = widths.len() - 1;
-        widths[end] += 1 + tail;
-    }
-
-    let mut out = String::new();
-    let mut used = 0;
-    for (word, measure) in words.iter().zip(widths) {
-        if used == 0 {
-            out.push_str(word);
-            used = measure;
-        } else if used + 1 + measure <= width {
-            out.push(' ');
-            out.push_str(word);
-            used += 1 + measure;
-        } else {
-            out.push('\n');
-            out.push_str(word);
-            used = measure;
-        }
-    }
-    out
-}
-
 /// A block of text folded to `width` and indented, with its closing newline.
 ///
 /// The whole block is indented, first line included, which is what separates it
@@ -307,50 +252,21 @@ mod tests {
         assert_eq!(width_of(true, Some("-1")), WIDTH);
     }
 
+    /// The fill this module re-exports is the one in `headwater-check`.
+    ///
+    /// Its own cases live beside it, in `crates/check/src/fill.rs`. This one
+    /// holds the re-export: a second implementation appearing here would pass
+    /// every case there and lay the help out differently.
     #[test]
-    fn a_folded_line_is_never_wider_than_the_width() {
-        let text = "the manifest of the change this run is scoped to, and every line of it \
-                    names one document the change carries";
-        for width in [20, 40, 70, 80] {
-            for line in fold(text, width).lines() {
-                assert!(
-                    line.chars().count() <= width,
-                    "{width}: {line:?} is {} columns",
-                    line.chars().count()
-                );
-            }
-        }
-        assert_eq!(fold(text, 200), text);
-    }
-
-    /// A word wider than the fold is written past it rather than cut in half.
-    #[test]
-    fn a_word_longer_than_the_width_is_never_broken() {
+    fn the_fold_this_module_names_is_the_one_the_check_layer_owns() {
         let text = "see docs/spec/06-engine-architecture.md#the-command-line for it";
-        let folded = fold(text, 20);
-        assert!(folded.contains("docs/spec/06-engine-architecture.md#the-command-line"));
-        assert_eq!(folded.split('\n').next(), Some("see"));
-    }
-
-    #[test]
-    fn a_break_the_author_wrote_survives_the_fold() {
-        assert_eq!(fold("one two\nthree four", 40), "one two\nthree four");
-    }
-
-    /// The last word and the suffix `clap` appends are on one line or on none.
-    #[test]
-    fn the_suffix_that_follows_the_text_is_left_room_for() {
-        let width = 30;
-        let tail = "[default: 0]".chars().count();
-        let text = "the rotation seed, which is a member of the run identity";
-        let folded = fold_at(text, width, tail);
-        let last = folded.lines().last().expect("the fold wrote a line");
-        assert!(
-            last.chars().count() + 1 + tail <= width,
-            "{last:?} plus the suffix is past {width}"
+        assert_eq!(fold(text, 20), headwater_check::fill::fold(text, 20));
+        assert_eq!(
+            fold_at(text, 20, 6),
+            headwater_check::fill::fold_at(text, 20, 6)
         );
-        // The same text with no suffix fills the line the suffix vacated.
-        assert_ne!(fold(text, width), folded);
+        assert_eq!(WIDTH, headwater_check::fill::WIDTH);
+        assert_eq!(WIDEST, headwater_check::fill::WIDEST);
     }
 
     #[test]

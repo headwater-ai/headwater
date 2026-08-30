@@ -1,0 +1,495 @@
+taxonomy
+  headwater/fixture 1.0.0
+  f56bcd0fbdb55db9caf432a8df7904bc47d417d9333f5561baceece2d6f94037
+
+clock
+  2026-08-12
+
+census
+  25 files under the corpus root
+       23 typed
+        1 generated
+        1 untyped
+        2 typed decision_record
+       13 typed design_spec
+        7 typed evaluation
+        1 typed note
+
+  check/spec/04-untyped.md
+    untyped: the shelf is heterogeneous and the document declares no `doc_type`
+  check/spec/12-generated.md
+    generated: `shelf_index`, and `headwater generate --check` holds it rather
+      than this census
+
+graph
+  21 nodes, 10 declared edge halves
+        8 to a document
+        2 unbound
+  0 prose links that did not resolve
+
+  check/spec/13-dangling.md:9:7
+    edge: `assesses` -> SPEC-FIX-no-such-document resolves to nothing at all
+  check/spec/13-dangling.md:10:7
+    edge: `assesses` -> SPEC-FIX-untyped names check/spec/04-untyped.md, which
+      is untyped: the census gave it no kind, and an endpoint is a kind
+  check/spec/14-relations-not-a-mapping.md:8:3
+    relations: `relations` is a sequence, and it names relation types
+  check/spec/15-unusable-entries.md:8:3
+    relations: `invented_relation` is neither a declared relation nor a declared
+      inverse
+  check/spec/15-unusable-entries.md:11:7
+    relations: `assesses` names EVAL-FIX-alpha twice, and the second declares no
+      second edge
+  check/spec/15-unusable-entries.md:12:7
+    relations: an entry of `assesses` is a sequence, and an entry is a target or
+      a mapping with `to`
+  check/spec/15-unusable-entries.md:13:7
+    relations: an entry of `assesses` declares no `to`, so it names no target
+  check/spec/16-no-identifier.md:1:1
+    identifier: a typed `design_spec` that declares no identifier, so no edge
+      can name it
+  check/spec/16-no-identifier.md:1:1
+    relations: this document declares edges and no identifier, so none of them
+      has a source
+  check/spec/17-identifier-not-a-word.md:2:1
+    identifier: the identifier is not a scalar, and an identifier is a word
+
+checks
+  25 seen, 23 classified, 22 checked, 267 check instances
+        1 generated, held to regeneration by `headwater generate --check`
+        1 skipped: no `id` facet, which is the key this engine reads an
+          identifier from and which no declaration states
+        1 skipped: the `id` facet is a sequence, and an identifier is a word
+       16 skipped: the shelf is heterogeneous, so the discriminator is the gap
+         metadata fills, and kind resolution already read it
+        2 skipped: `guarded` forbids hedging, and this engine has no pattern set
+          for it
+        2 skipped: `ste_strict` declares ASD-STE100, profile strict, and this
+          engine has no rules for it
+       21 skipped: this document writes no fragment into itself
+       24 skipped: change-scoped-only: the prior version is available only in
+         change-scoped evaluation, and this run carries no change
+  adoption
+    1 pairs open, 0 closed, holding 1 finding, in 1 task
+    AD-1 1 open, 0 closed, holding 1 finding, owner the fixture tree, until
+      2027-01-01
+      one pair, so that a run carries a migration-pending finding24 documents in
+        the read set, and 2 barriers that no gate carries across a merge
+       22 instances of facet.required.missing
+       22 instances of facet.value.not_permitted
+       22 instances of identifier.pattern.not_met
+       23 instances of shelf.placement_is_primary
+       10 instances of relation.target.unresolved
+        4 instances of relation.reciprocity.missing
+        7 instances of relation.endpoint.not_permitted
+        7 instances of relation.participation.overdue
+       22 instances of relation.declaration.unusable
+       22 instances of identifier.unusable
+        1 instances of identifier.claimed_twice
+       15 instances of voice.forbidden_construction
+       15 instances of language.controlled.not_met
+       13 instances of language.retired_term.used
+       13 instances of language.source_form.not_met
+        2 instances of section.required.missing
+       23 instances of link.fragment.unresolved
+       23 instances of warrant.promoted
+        1 instances of lifecycle.deletion.not_permitted
+  suppressions
+    2 findings hidden by 2 directives
+        1 false_positive
+        1 accepted_deviation
+        1 of language.controlled.not_met
+        1 of voice.forbidden_construction
+        2 on the shelf spec_series
+        1 expired, and the findings they named are reported
+        1 matched no finding
+    check/spec/10-suppressed.md:31 suppresses nothing: no rule of this engine is
+      named `language.controled.not_met`
+  rules, and for each the scope that binds it
+    facet.required.missing
+      document scope, one document and its front matter
+    facet.value.not_permitted
+      document scope, one document and its front matter
+    identifier.pattern.not_met
+      document scope, one document and its front matter
+    shelf.placement_is_primary
+      document scope, one document and its front matter
+    relation.target.unresolved
+      edge scope, one relation instance and both endpoints
+    relation.target.suspect
+      edge scope, one relation instance and both endpoints
+    relation.reciprocity.missing
+      edge scope, one relation instance and both endpoints
+    relation.endpoint.not_permitted
+      edge scope, one relation instance and both endpoints
+    lifecycle.dependency.on_terminal
+      edge scope, one relation instance and both endpoints
+    relation.participation.overdue
+      neighbourhood scope, one document and the documents one relation away from
+        it, and the injected clock
+    relation.declaration.unusable
+      document scope, one document and its front matter, and what phase A could
+        not make of it
+    identifier.unusable
+      document scope, one document and its front matter, and what phase A could
+        not make of it
+    identifier.claimed_twice
+      corpus scope, every row of the census, and what phase A could not make of
+        each document's identity, and it is a barrier
+    voice.forbidden_construction
+      document scope, one document, its front matter and its body
+    language.controlled.not_met
+      document scope, one document, its front matter and its body
+    language.retired_term.used
+      document scope, one document, its front matter and its body
+    language.source_form.not_met
+      document scope, one document, its front matter and its body
+    section.required.missing
+      document scope, one document, its front matter and its body
+    link.fragment.unresolved
+      document scope, one document, its front matter and its body
+    warrant.promoted
+      document scope, one document and its front matter, and the version of it
+        that stood before the change
+    lifecycle.transition.not_permitted
+      document scope, one document and its front matter, and the version of it
+        that stood before the change
+    lifecycle.state.not_admitted
+      document scope, one document and its front matter
+    lifecycle.deletion.not_permitted
+      corpus scope, every row of the census, and the version of each path the
+        change named that no row of this corpus holds, and it is a barrier
+    coverage.document_unchecked
+      corpus scope, every row of the census, and it is a barrier
+    obligation.disposition.not_one
+      taxonomy scope, the resolved taxonomy, and no document
+    control.mechanism.unimplemented
+      taxonomy scope, the resolved taxonomy, and no document
+    adoption.task.expired
+      taxonomy scope, the resolved taxonomy, and no document
+  register
+    27 obligations: 22 verified, 2 gap, 1 unverifiable, 2 with no disposition
+       10 high, 9 verified
+        9 medium, 7 verified
+        8 low, 6 verified
+    OB-FIX-1 verified, 1 finding is migration-pending under it
+    OB-FIX-7 verified, 1 finding escaped under it
+    OB-FIX-8 verified, 1 finding escaped under it
+    OB-FIX-14 gap, owner the fixture tree, target a reader feedback loop, which
+      spec 4 lists as usually absent
+    OB-FIX-15 unverifiable, The question is semantic, so spec 4 sends it to the
+      accuracy audit and no check reaches it
+    OB-FIX-16 with no disposition
+    OB-FIX-17 verified, and it states a gap as well, which is two dispositions
+    OB-FIX-18 with no disposition, and CT-FIX-15 claims to discharge it under a
+      mechanism this engine does not implement
+    OB-FIX-20 gap, owner the fixture tree, and no target, and CT-FIX-17 claims
+      to discharge it under a mechanism this engine does not implement, which is
+      two dispositions
+    24 controls
+       23 posture advisory
+        1 posture blocking
+       23 acts detective
+        1 acts preventive
+       20 name a rule this engine carries
+        1 name a phase this engine runs
+        2 name a mechanism this engine does not implement
+        1 name a mechanism outside this engine
+       22 with no promotion record, so nothing states what would promote them
+        1 with criteria
+        1 producing facts rather than findings
+    escaped findings, in the precedence spec 4 fixes: no waiver reaches a check
+      finding, 1 migration-pending, 2 suppressed
+    relation.endpoint.not_permitted reaches OB-FIX-5, OB-FIX-17, and a finding
+      names one obligation, so it names none
+    lifecycle.dependency.on_terminal reaches no obligation, so it names none
+    identifier.claimed_twice reaches no obligation, so it names none
+    warrant.promoted reaches no obligation, so it names none
+    lifecycle.transition.not_permitted reaches no obligation, so it names none
+    lifecycle.state.not_admitted reaches no obligation, so it names none
+    lifecycle.deletion.not_permitted reaches no obligation, so it names none
+    coverage.document_unchecked reaches no obligation, so it names none
+    adoption.task.expired reaches no obligation, so it names none
+  42 findings
+       24 error
+       18 warn
+
+  check/evaluations/epsilon.md:4:1 warn
+    relation.participation.overdue (OB-FIX-6): `evidence-cited`: 219 days since
+      `status_since`, and this `evaluation` reaches no `cites_evidence` to a
+      `design_spec` inside the 30 days the taxonomy allows
+    fix: declare `cites_evidence` to a `design_spec` under `relations:` in
+      check/evaluations/epsilon.md, or record why it is not owed: an evaluation
+      that no specification cites closed nothing
+  check/evaluations/eta.md:8:7 error
+    relation.endpoint.not_permitted: `assesses` declares `from: [design_spec]`,
+      and `EVAL-FIX-eta` at that end has the kind `evaluation`
+    fix: declare this relation between kinds `assesses` permits, or widen its
+      `from` in the taxonomy; the document at that end is
+      check/evaluations/eta.md
+  check/evaluations/gamma.md:3:1 error
+    shelf.placement_is_primary (OB-FIX-2): `evaluations` is homogeneous and
+      carries the kind `evaluation`, and this document restates it as `doc_type:
+      evaluation`
+    fix: remove `doc_type` from the front matter of check/evaluations/gamma.md
+  check/evaluations/gamma.md:9:7 error
+    relation.reciprocity.missing (OB-FIX-1): `EVAL-FIX-gamma` declares
+      `cited_by: SPEC-FIX-both-halves`, and `cites_evidence` requires both ends,
+      so check/spec/00-both-halves.md owes `cites_evidence`
+    fix (mechanical): add `cites_evidence: EVAL-FIX-gamma` under `relations:` in
+      check/spec/00-both-halves.md
+  check/spec/01-one-half.md:9:7 error
+    relation.reciprocity.missing (OB-FIX-1): `SPEC-FIX-one-half` declares
+      `cites_evidence: EVAL-FIX-beta`, and `cites_evidence` requires both ends,
+      so check/evaluations/beta.md owes `cited_by`
+    fix (mechanical): add `cited_by: SPEC-FIX-one-half` under `relations:` in
+      check/evaluations/beta.md
+  check/spec/01-one-half.md:18:151 warn
+    language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words
+      a sentence, and this one has 34
+    fix: split the sentence, or move a clause into its own sentence
+  check/spec/03-no-instance.md warn
+    coverage.document_unchecked: this document is classified and all 3 of its
+      check instances were skipped
+    fix: check that the shelf pattern claims the right files, and that the kind
+      declares something a check reads
+  check/spec/05-no-summary.md error
+    facet.required.missing (OB-FIX-3): `design_spec` requires the facet
+      `summary`, and it is not declared
+    fix: add `summary:` to the front matter of check/spec/05-no-summary.md, with
+      the value this document has
+  check/spec/05-no-summary.md:12:1 warn
+    language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words
+      a sentence, and this one has 31
+    fix: split the sentence, or move a clause into its own sentence
+  check/spec/06-retired.md:4:9 error
+    facet.value.not_permitted (OB-FIX-4): `status` admits draft, current,
+      superseded, and this document declares `retired`
+    fix: change `status` in check/spec/06-retired.md to one of: draft, current,
+      superseded
+  check/spec/06-retired.md:11:131 warn
+    language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words
+      a sentence, and this one has 34
+    fix: split the sentence, or move a clause into its own sentence
+  check/spec/07-prose-defects.md:15:1 warn
+    voice.forbidden_construction (OB-FIX-7): `declarative` forbids
+      future_intent, and this sentence writes `will be`
+    fix: state what the system does now, or move the sentence to a document
+      whose kind narrates
+  check/spec/07-prose-defects.md:17:1 warn
+    voice.forbidden_construction (OB-FIX-7): `declarative` forbids
+      change_narration, and this sentence writes `we renamed`
+    fix: state the position that holds, and leave the change to the decision
+      that made it
+  check/spec/07-prose-defects.md:19:1 warn
+    voice.forbidden_construction (OB-FIX-7): `declarative` forbids
+      phased_rollout, and this sentence writes `for now`
+    fix: state what holds, and record the sequence in the plan that owns it
+  check/spec/07-prose-defects.md:23:1 warn
+    language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words
+      a sentence, and this one has 43
+    fix: split the sentence, or move a clause into its own sentence
+  check/spec/07-prose-defects.md:25:1 error
+    language.controlled.not_met (OB-FIX-8): `ste_house` admits no contraction,
+      and this sentence writes `doesn't`
+    fix (mechanical): write `does not`
+  check/spec/07-prose-defects.md:27:1 error
+    language.controlled.not_met (OB-FIX-8): `ste_house` declares the tag
+      `en-US`, and this sentence writes `behaviour`
+    fix (mechanical): write `behavior`
+  check/spec/07-prose-defects.md:29:1 warn
+    language.controlled.not_met (OB-FIX-8): `ste_house` admits no semicolon in
+      running prose, and this sentence writes one
+    fix: split the sentence in two, and let each half state one thing
+  check/spec/07-prose-defects.md:39:1 error
+    language.controlled.not_met (OB-FIX-8): `ste_house` admits no contraction,
+      and this sentence writes `doesn't`
+    fix (mechanical): write `does not`
+  check/spec/07-prose-defects.md:43:1 error
+    language.retired_term.used (OB-FIX-22): `ste_house` retires `reference
+      system`, and this sentence writes it: the corpus renamed it
+    fix (mechanical): write `taxonomy`
+  check/spec/07-prose-defects.md:45:1 warn
+    language.retired_term.used (OB-FIX-22): `ste_house` retires `robust`, and
+      this sentence writes it: it stands in for the failure the thing survives
+    fix: rewrite the sentence without `robust`
+  check/spec/07-prose-defects.md:56:1 error
+    language.source_form.not_met (OB-FIX-21): `ste_house` writes one paragraph
+      on one line, and this line continues the paragraph above
+    fix: join this line to the line above, or end the paragraph there
+  check/spec/07-prose-defects.md:57:1 error
+    language.source_form.not_met (OB-FIX-21): `ste_house` writes one paragraph
+      on one line, and this line continues the paragraph above
+    fix: join this line to the line above, or end the paragraph there
+  check/spec/07-prose-defects.md:61:32 error
+    link.fragment.unresolved (OB-FIX-10): `#no-such-section` names no heading of
+      this document
+    fix: point it at a heading of check/spec/07-prose-defects.md, or write the
+      heading it names
+  check/spec/09-contract-missing.md error
+    section.required.missing (OB-FIX-9): `decision_record` requires the section
+      `Decision`, and no heading of this document says so
+    fix: add a `Decision` heading to check/spec/09-contract-missing.md, with the
+      content the kind is for
+  check/spec/10-suppressed.md:27:1 warn
+    language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words
+      a sentence, and this one has 31
+    fix: split the sentence, or move a clause into its own sentence
+  check/spec/11-identifier-mismatch.md:2:1 error
+    identifier.pattern.not_met (OB-FIX-23): `SPEC-XX-mismatch` does not match
+      `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `XX-mismatch` is where
+      the namespace `FIX` was expected
+    fix: write the identifier of check/spec/11-identifier-mismatch.md in the
+      form `SPEC-FIX-<slug>`
+  check/spec/13-dangling.md:9:7 error
+    relation.target.unresolved (OB-FIX-24): `SPEC-FIX-dangling` declares
+      `assesses: SPEC-FIX-no-such-document`, and that target resolves to nothing
+      at all
+    fix: write the identifier of a document that exists under `assesses`, or
+      mint `SPEC-FIX-no-such-document` on the document this entry means
+  check/spec/13-dangling.md:10:7 error
+    relation.target.unresolved (OB-FIX-24): `SPEC-FIX-dangling` declares
+      `assesses: SPEC-FIX-untyped`, and that target names
+      check/spec/04-untyped.md, which is untyped: the census gave it no kind,
+      and an endpoint is a kind
+    fix: give check/spec/04-untyped.md a kind, because both ends of a declared
+      relation are kinds and only a typed document is a node
+  check/spec/14-relations-not-a-mapping.md:8:3 error
+    relation.declaration.unusable (OB-FIX-25): `relations` is a sequence, and it
+      names relation types
+    fix: write `relations:` as a mapping whose keys are relation names, because
+      Q4 puts every relation instance under one key and the relation is that key
+  check/spec/15-unusable-entries.md:8:3 error
+    relation.declaration.unusable (OB-FIX-25): `invented_relation` is neither a
+      declared relation nor a declared inverse
+    fix: write a relation this taxonomy declares, or the inverse of one, in
+      place of `invented_relation`, or declare `invented_relation` in the
+      taxonomy
+  check/spec/15-unusable-entries.md:11:7 error
+    relation.declaration.unusable (OB-FIX-25): `assesses` names EVAL-FIX-alpha
+      twice, and the second declares no second edge
+    fix: delete one of the two entries of `assesses` that name EVAL-FIX-alpha.
+      Q4 identifies an edge by its source, its relation and its normalized
+      target, so the second declares no second edge, and the instance attributes
+      on it are lost with it
+  check/spec/15-unusable-entries.md:12:7 error
+    relation.declaration.unusable (OB-FIX-25): an entry of `assesses` is a
+      sequence, and an entry is a target or a mapping with `to`
+    fix: write each entry of `assesses` as a target reference, or as a mapping
+      with `to:` and the instance attributes beside it
+  check/spec/15-unusable-entries.md:13:7 error
+    relation.declaration.unusable (OB-FIX-25): an entry of `assesses` declares
+      no `to`, so it names no target
+    fix: give this entry of `assesses` a `to:`, or delete it, because an entry
+      that names no target declares no edge and the attributes on it reach
+      nothing
+  check/spec/16-no-identifier.md:1:1 error
+    identifier.unusable (OB-FIX-26): a typed `design_spec` that declares no
+      identifier, so no edge can name it, and every entry of its `relations:`
+      block is lost with it, because an edge is identified by its source
+    fix: write one identifier of this document under the `id` key, because a
+      relation names a document by its identifier and a document with none can
+      stand at neither end of one
+  check/spec/17-identifier-not-a-word.md:2:1 error
+    identifier.unusable (OB-FIX-26): the identifier is not a scalar, and an
+      identifier is a word
+    fix: write one identifier of this document under the `id` key, because a
+      relation names a document by its identifier and a document with none can
+      stand at neither end of one
+  engine/crates/check/fixtures/check.taxonomy.yml warn
+    control.mechanism.unimplemented (OB-FIX-12): control CT-FIX-15 names the
+      mechanism check:no.such.rule, which this engine does not implement, so
+      nothing discharges OB-FIX-18
+    fix: name a rule this engine carries, or a phase of it, or a mechanism
+      outside it under a prefix this engine does not read
+  engine/crates/check/fixtures/check.taxonomy.yml warn
+    control.mechanism.unimplemented (OB-FIX-12): control CT-FIX-17 names the
+      mechanism phase:no.such.phase, which this engine does not implement, so
+      nothing discharges OB-FIX-20
+    fix: name a rule this engine carries, or a phase of it, or a mechanism
+      outside it under a prefix this engine does not read
+  engine/crates/check/fixtures/check.taxonomy.yml warn
+    obligation.disposition.not_one (OB-FIX-11): obligation OB-FIX-16 carries no
+      disposition: no control discharges it, and it states neither a gap nor an
+      acceptance
+    fix: give the obligation a control that discharges it, or state
+      `disposition: {gap: {owner: …}}` or `disposition: {unverifiable:
+      {reasoning: …}}` on it, and exactly one of the three
+  engine/crates/check/fixtures/check.taxonomy.yml warn
+    obligation.disposition.not_one (OB-FIX-11): obligation OB-FIX-17 carries two
+      dispositions: CT-FIX-14 discharges it, and it also states one for itself
+    fix: give the obligation a control that discharges it, or state
+      `disposition: {gap: {owner: …}}` or `disposition: {unverifiable:
+      {reasoning: …}}` on it, and exactly one of the three
+  engine/crates/check/fixtures/check.taxonomy.yml warn
+    obligation.disposition.not_one (OB-FIX-11): obligation OB-FIX-18 carries no
+      disposition: CT-FIX-15 names a mechanism this engine does not implement,
+      so nothing discharges it, and it states neither a gap nor an acceptance
+    fix: name a mechanism this engine implements on CT-FIX-15, or state
+      `disposition: {gap: {owner: …}}` or `disposition: {unverifiable:
+      {reasoning: …}}` on it, and exactly one of the three
+  engine/crates/check/fixtures/check.taxonomy.yml warn
+    obligation.disposition.not_one (OB-FIX-11): obligation OB-FIX-20 carries two
+      dispositions: CT-FIX-17 claims to discharge it, and it also states one for
+      itself
+    fix: name a mechanism this engine implements on CT-FIX-17, or state
+      `disposition: {gap: {owner: …}}` or `disposition: {unverifiable:
+      {reasoning: …}}` on it, and exactly one of the three
+
+read set
+  lock f56bcd0fbdb55db9caf432a8df7904bc47d417d9333f5561baceece2d6f94037
+  clock 2026-08-12
+  barrier identifier.claimed_twice
+  barrier lifecycle.deletion.not_permitted
+  windowed relation.participation.overdue
+  version facet.required.missing 1
+  version facet.value.not_permitted 1
+  version identifier.pattern.not_met 1
+  version shelf.placement_is_primary 1
+  version relation.target.unresolved 1
+  version relation.target.suspect 1
+  version relation.reciprocity.missing 1
+  version relation.endpoint.not_permitted 1
+  version lifecycle.dependency.on_terminal 1
+  version relation.participation.overdue 1
+  version relation.declaration.unusable 1
+  version identifier.unusable 1
+  version identifier.claimed_twice 1
+  version voice.forbidden_construction 1
+  version language.controlled.not_met 1
+  version language.retired_term.used 1
+  version language.source_form.not_met 1
+  version section.required.missing 1
+  version link.fragment.unresolved 2
+  version warrant.promoted 1
+  version lifecycle.transition.not_permitted 2
+  version lifecycle.state.not_admitted 1
+  version lifecycle.deletion.not_permitted 1
+  version coverage.document_unchecked 1
+  version obligation.disposition.not_one 1
+  version control.mechanism.unimplemented 1
+  version adoption.task.expired 1
+  input check/evaluations/alpha.md sha256:e651a58ed6489f388954343391d6321a708a2b7492bb4dc1386699a8bf65cc7b
+  input check/evaluations/beta.md sha256:37e03d2c518cced7604d74dd38c1949cbc72186db9b4a4bd5bb8f3fe9503d31d
+  input check/evaluations/delta.md sha256:2f0828576f6ae90573d0a3e6acb2ba64eacf43fd4221e4b821efd5ea335c948f
+  input check/evaluations/epsilon.md sha256:630bb5d4cad70de102c942ff505a8597f750ee2358fceb6fa5b73ff8a31a4337
+  input check/evaluations/eta.md sha256:d1882e10c05b15d1c6aafcc982b2ecbf429ec169a0fcd7ad11f79dbf5b20228a
+  input check/evaluations/gamma.md sha256:bb74fe7df19ea383b01be2f8686fb87dbea18757b4134e601e3e718aeee9e09b
+  input check/evaluations/zeta.md sha256:78ec68e48f9e8e1f8826c1280bdb523820556b14e2ac375f21cf8c1915240964
+  input check/spec/00-both-halves.md sha256:d48e647e2eae1f8f70ff05df8faf4fe1b28aacce6d9730ba584d1143e6b5e76f
+  input check/spec/01-one-half.md sha256:20a913097b2d04bc39e5ff8271b47a21dfaa135f78b5fdda234e38c3a30c7017
+  input check/spec/02-cited-only.md sha256:9f4f5fff759b2f04d2956dabbb3cdc0e86bdc8f306159a58ad4f7f80cbad9c82
+  input check/spec/03-no-instance.md sha256:bb254e9a27d62cf8ff126895c545a797d9eeadee7e756bd34a7536ce21cba7ad
+  input check/spec/04-untyped.md sha256:ef34b3e4254620599be769fb2e28826e330b9a6b8972ed7ef32d2d3baaeddf2b
+  input check/spec/05-no-summary.md sha256:e93ab39ba0f3d03cf7593bc046d7c0a5aa0fbf102df0e02e2dbf34c263aa346d
+  input check/spec/06-retired.md sha256:d40b65fea5627e9da5693ba6ff1239180b1a3b6a9ab83ed5b414f286d7ded636
+  input check/spec/07-prose-defects.md sha256:382ee8daa0b93c158b4452aec7a7545d6461ada2c15f7cab273c63facefccc1f
+  input check/spec/08-contract-met.md sha256:1f137d2e39a164a976bcfb76d662b7469171f99bd3ce643c4d3fb2fd247ba34f
+  input check/spec/09-contract-missing.md sha256:6bc8ae424b8a20472a5d244ed71613195ad527e11e4739ec7cf5fa88f4315d4a
+  input check/spec/10-suppressed.md sha256:2258c21842ba066fc11cadfee7b462909dda6bd93cf7693e9c93fa786382ebba
+  input check/spec/11-identifier-mismatch.md sha256:c916abc0cb05ccfcb8c239e8482d6afe7c2ae975efceba2888ec2895d09bc6bd
+  input check/spec/13-dangling.md sha256:4b5fdd89f22e4d82ee47b8b77652168b082ec821800ad890cf12569980412336
+  input check/spec/14-relations-not-a-mapping.md sha256:6227db15ae52d35b0f49e63b059aa9d15b37bada401d19339ac3a92e403f72b3
+  input check/spec/15-unusable-entries.md sha256:b0cec4bd6cad730288e9c126bf7daabd890f52975e80840ec1266fef86eacb87
+  input check/spec/16-no-identifier.md sha256:2f42a485abe65d5e2c22de86c8bfecb7bbfc1e06e64ef2f6c64c914fc7792b85
+  input check/spec/17-identifier-not-a-word.md sha256:9d82bc120f67b7b5a999433bbae8502e18587777cf94bcc8254491ebe9c73981

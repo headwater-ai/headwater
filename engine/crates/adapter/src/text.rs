@@ -25,14 +25,57 @@
 //! omitted them could not be reproduced from itself. The read set comes last
 //! because it is the artifact a later `headwater gate` reads, and it is the
 //! longest block by a wide margin.
+//!
+//! # The layout, and the one block that is exempt from it
+//!
+//! Three of the four blocks below arrive as the finished text of a renderer in
+//! another crate, and two of those crates sit under `headwater-check` and cannot
+//! reach the fill at all. So the layout is a pass over the composed text here,
+//! by [`headwater_check::fill::filled`], rather than a width threaded through
+//! `Census::render`, `Graph::render` and `Run::render`. That is also what keeps
+//! `crates/census/fixtures/corpus.census`, `crates/graph/fixtures/corpus.graph`
+//! and `crates/check/fixtures/corpus.checks` where they are: the composers still
+//! write what they wrote, and this function lays it out.
+//!
+//! **The read set is not laid out, and that is the sharpest edge in this file.**
+//! It is the same bytes `check --read-set` writes to a file, and
+//! `headwater_check::Recorded::parse` reads that file back in `headwater gate`.
+//! It is a grammar rather than prose — `lock`, `clock`, `barrier`, `windowed`,
+//! `version` and `input <path> <sha256>` — so a fold inside it would break the
+//! gate outright, and a reader comparing the block to the file would find two
+//! artifacts where the sentence above promises one. It is also where 127 of the
+//! report's unbreakable lines are: a document path is one word, and no
+//! space-respecting fill narrows it.
+//!
+//! Nothing else is exempt. A word longer than the room it lands in is written
+//! past the width, whole, so a path, a rule name and a digest arrive intact
+//! wherever they are — which is what `crate::census` needs, because it audits
+//! every format by `artifact.contains(path)`.
 
 use crate::Subject;
 use headwater_census::census::{Census, Detail as CensusDetail};
-use headwater_check::Run;
+use headwater_check::{fill, Run};
 use headwater_graph::{Detail as GraphDetail, Graph};
 
-/// One run of the check layer, as a terminal reads it.
+/// One run of the check layer, as a terminal reads it, at the standard width.
 pub fn render(run: &Run, census: &Census, graph: &Graph, subject: &Subject<'_>) -> String {
+    render_at(run, census, graph, subject, fill::WIDTH)
+}
+
+/// The same report, laid out at a width the caller states.
+///
+/// `headwater check --wide` is the one caller that states a width, out of
+/// `headwater_cli::paint::width`, which holds a `COLUMNS` reading to
+/// `[80, 120]`. Every other caller goes through [`render`] and gets 80, so a run
+/// piped into a file and a run under a terminal write the same bytes unless
+/// somebody asked for something else on the command line.
+pub fn render_at(
+    run: &Run,
+    census: &Census,
+    graph: &Graph,
+    subject: &Subject<'_>,
+    width: usize,
+) -> String {
     let mut out = String::new();
     out.push_str("taxonomy\n");
     out.push_str(&format!("  {} {}\n", subject.package, subject.version));
@@ -43,13 +86,23 @@ pub fn render(run: &Run, census: &Census, graph: &Graph, subject: &Subject<'_>) 
     out.push_str("\nclock\n");
     out.push_str(&format!("  {}\n", subject.now));
     out.push_str("\ncensus\n");
-    out.push_str(&indent(&census.render(CensusDetail::Exceptions)));
+    out.push_str(&fill::filled(
+        &indent(&census.render(CensusDetail::Exceptions)),
+        width,
+    ));
     out.push_str("\ngraph\n");
-    out.push_str(&indent(&graph.render(GraphDetail::Exceptions)));
+    out.push_str(&fill::filled(
+        &indent(&graph.render(GraphDetail::Exceptions)),
+        width,
+    ));
     out.push_str("\nchecks\n");
-    out.push_str(&indent(&run.render(headwater_check::Detail::Findings)));
+    out.push_str(&fill::filled(
+        &indent(&run.render(headwater_check::Detail::Findings)),
+        width,
+    ));
     // The same bytes `check --read-set` writes to a file, so a gate reading the
-    // file and a reader of this report are looking at one artifact.
+    // file and a reader of this report are looking at one artifact. Not laid
+    // out, for that reason — see the module comment.
     out.push_str("\nread set\n");
     out.push_str(&indent(&run.read_set.render()));
     out

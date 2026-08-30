@@ -185,6 +185,16 @@ pub enum Refusal {
     /// A campaign narrowed to one arm. It would estimate nothing while
     /// carrying the name a published claim cites.
     CampaignNarrowed,
+    /// The caller narrowed to an arm the tier's envelope does not declare.
+    ///
+    /// The narrowing selects nothing. Restoring the tier's own arms beside it
+    /// planned a run of the arm the caller did not ask for and printed it
+    /// under `arms:`, which is a plan for a question nobody put.
+    ArmNotDeclared {
+        tier: Tier,
+        arm: Arm,
+        declared: Vec<Arm>,
+    },
     /// A probe carries no identifier, so nothing can name its result.
     Unnameable { path: String },
     /// A probe's category or expectation is missing or outside its closed set.
@@ -241,17 +251,19 @@ impl Refusal {
     /// that part would report a rate over a denominator no document declares,
     /// so every one of those refusals stops a grade.
     ///
-    /// Three do not, and the three are the ones decided after every probe has
-    /// been read. They are about what a run would **cost** rather than about
-    /// what the probes say, and the selection beside them is whole. A grade of
-    /// a recorded run spends nothing, so a ceiling the run would have exceeded
-    /// and a tier that declares no envelope change no verdict.
+    /// Four do not, and the four are the ones decided after every probe has
+    /// been read. They are about the shape and the **cost** of a run rather
+    /// than about what the probes say, and the selection beside them is whole.
+    /// A grade of a recorded run spends nothing, so a ceiling the run would
+    /// have exceeded, a tier that declares no envelope, and an arm the tier
+    /// does not carry all change no verdict.
     ///
     /// This is an exhaustive match and not a `matches!`, so that a refusal
     /// added later has to answer the question rather than inherit an answer.
     pub fn stops_a_grade(&self) -> bool {
         match self {
             Refusal::TierUndeclared(_) | Refusal::CampaignNarrowed => false,
+            Refusal::ArmNotDeclared { .. } => false,
             Refusal::OverBudget { .. } => false,
             Refusal::NoProbes
             | Refusal::SelectionEmpty { .. }
@@ -295,6 +307,27 @@ impl std::fmt::Display for Refusal {
                 "a campaign narrowed to one arm estimates no difference, and the pair is what a \
                  published efficacy claim rests on"
             ),
+            Refusal::ArmNotDeclared {
+                tier,
+                arm,
+                declared,
+            } => {
+                let names: Vec<String> = declared
+                    .iter()
+                    .map(|arm| format!("`{}`", arm.name()))
+                    .collect();
+                let carries = match names.is_empty() {
+                    true => "no arm at all".to_string(),
+                    false => names.join(" and "),
+                };
+                write!(
+                    f,
+                    "the `{}` tier declares {carries}, and `--arm {}` narrows it to nothing. A \
+                     plan for the arms the tier does carry would answer a question nobody asked",
+                    tier.name(),
+                    arm.name()
+                )
+            }
             Refusal::Unnameable { path } => write!(
                 f,
                 "the probe at {path} carries no identifier, so no result could name the probe it \
@@ -698,6 +731,22 @@ impl Plan {
             return plan;
         }
         if plan.arms.is_empty() {
+            // A narrowing that selected nothing is refused rather than undone.
+            // Restoring the tier's own arms here is what printed `arms:
+            // [present]` to a caller who asked for `absent`, byte for byte the
+            // plan they would have got by asking for nothing.
+            if let Some(arm) = narrowing.arm {
+                plan.refusal = Some(Refusal::ArmNotDeclared {
+                    tier,
+                    arm,
+                    declared: envelope.arms.clone(),
+                });
+                return plan;
+            }
+            // The caller narrowed nothing, so the emptiness is the envelope's
+            // own. `arms` hands its list back unchanged on this path, which
+            // makes the restore a no-op today and the guard that keeps it one
+            // if that ever stops being true.
             plan.arms = envelope.arms.clone();
         }
 

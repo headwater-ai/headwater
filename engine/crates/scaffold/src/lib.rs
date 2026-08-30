@@ -79,6 +79,7 @@
 
 pub mod declared;
 pub mod fix;
+pub mod json;
 pub mod migrate;
 pub mod overlay;
 pub mod reading;
@@ -123,7 +124,9 @@ pub struct Request<'a> {
     /// [`Origin::HandEntry`]: a person typed it, the engine determined nothing,
     /// and the assisted fraction says so. A value here that names a facet the
     /// kind does not require, or one that a declaration already determines, is
-    /// refused rather than dropped.
+    /// refused rather than dropped. The discriminator of a heterogeneous shelf
+    /// is one a declaration determines: the kind argument states it, and this
+    /// flag is not a second route to it.
     pub given: &'a [(String, String)],
 }
 
@@ -369,6 +372,25 @@ pub enum Refusal {
         kind: String,
         why: String,
     },
+    /// The caller stated a value for the discriminator of a heterogeneous
+    /// shelf, which the kind argument already decides.
+    ///
+    /// The discriminator's value is the kind name, so a second value is a
+    /// second answer to what the document is. It is refused whether it agrees
+    /// with the kind or not, for the reason a role's facet is: a declaration
+    /// decides it, and a value the engine derived would be recorded as
+    /// [`Origin::HandEntry`] because the caller guessed it right.
+    ///
+    /// No rule downstream reports the alternative. The placement guard checks
+    /// the shelf rather than the kind, so a discriminator the shelf does not
+    /// admit leaves an untyped row in the census, over which no rule
+    /// instantiates at all and a strict run exits 0.
+    FacetIsDiscriminator {
+        facet: String,
+        shelf: String,
+        kind: String,
+        found: String,
+    },
     /// The caller stated a value outside the facet's closed set. The checks
     /// would refuse it, so this run refuses it before it is written.
     FacetNotPermitted {
@@ -556,6 +578,18 @@ impl std::fmt::Display for Refusal {
                 "`--facet {facet}=…` names a facet of `{kind}` that a declaration decides, and \
                  {why}. A value stated here would be a state nobody chose, written through the \
                  verb that exists to stop that"
+            ),
+            Refusal::FacetIsDiscriminator {
+                facet,
+                shelf,
+                kind,
+                found,
+            } => write!(
+                f,
+                "`--facet {facet}={found}` names the discriminator of the shelf `{shelf}`, and \
+                 the kind argument decides it: a `{kind}` carries `{facet}: {kind}` and nothing \
+                 else. A value stated here is a second answer to what this document is, against \
+                 the identifier, the layout and the sections this run derived from `{kind}`"
             ),
             Refusal::FacetNotPermitted {
                 facet,
@@ -936,6 +970,19 @@ fn front_matter(
         // The discriminator first. A heterogeneous shelf reads the kind out of
         // this facet, so its value is the kind and nothing else.
         if discriminator == Some(name.as_str()) {
+            // A declaration decides this one, exactly as a role decides the
+            // facet below it, so a stated value is refused rather than
+            // dropped. Presence is what refuses, not disagreement: an
+            // agreeing value would be a value the engine derived, recorded
+            // as hand entry because the caller guessed it.
+            if let Some((_, value)) = given.iter().find(|(facet, _)| facet == &name) {
+                return Err(Refusal::FacetIsDiscriminator {
+                    facet: name,
+                    shelf: shelf.name.clone(),
+                    kind: kind.to_string(),
+                    found: value.clone(),
+                });
+            }
             fields.push(Field {
                 key: name.clone(),
                 value: kind.to_string(),

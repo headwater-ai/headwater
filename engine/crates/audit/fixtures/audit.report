@@ -83,15 +83,15 @@ file names, against the layout each shelf declares
   emitter's, as its content is.
   decisions — `{slug}.md`, 3 documents
       supplied — `{slug}.md` renders the name of 2 of the 3 documents on
-      `decisions`
+        `decisions`
   library — `{doc_type}-{slug}.md`, 2 documents
       nothing declares it — not one of the 2 documents on `library` can be
-      measured: `manual` requires no facet in the `name` role, so `{slug}` has
-      no declared source; `note` requires no facet in the `name` role, so
-      `{slug}` has no declared source
+        measured: `manual` requires no facet in the `name` role, so `{slug}` has
+        no declared source; `note` requires no facet in the `name` role, so
+        `{slug}` has no declared source
   archive — `{slug}.md`, 0 documents
       nothing authored one — no document stands on `archive`, so `{slug}.md`
-      names nothing yet
+        names nothing yet
   A layout renders the name of 2 of the 3 measurable documents, over
   5 standing on a shelf that declares one. Nothing states how far a shelf may
   drift, so the figure carries no verdict.
@@ -124,17 +124,29 @@ warrants, over the closed set spec 3 declares
   and can never reach the other. Nothing declares how many promotions in one change is too
   many, so no figure here carries a verdict.
 
+adoption payload decay
+  The store is `.headwater/adoption.jsonl`, which is outside the corpus root. No
+  census row covers it, no language regime binds it, and no rule reads it. No crate
+  of this engine walks git history, so a series exists only where a run was handed
+  one reading at a time.
+  no reading recorded, so there is no series. `taxonomy audit --record` takes the first one
+  this run reads no task, because the lock declares no adoption payload
+  no task has been recorded, so the fraction that reaches zero before its expiry has no
+  denominator yet
+  A payload with no reading behind it has no history, and the elapsed time between
+  two readings is the one quantity no engine can supply.
+
 what this verb does not measure, and what each one waits on
   Every prerequisite below was evaluated against this corpus on this run, so a
   wait that a corpus has ended says so with no edit to this engine.
   transition continuity — waits
     a record of the state a document left
       nothing declares it — no facet of this taxonomy takes the `state_left`
-      role, and spec 2's closed role registry holds no such role, so one entry
-      into a state cannot be told from a second
+        role, and spec 2's closed role registry holds no such role, so one entry
+        into a state cannot be told from a second
   scent quality — waits
     a cue authored on an edge instance
       nothing authored one — no half of the 6 this corpus declares carries a
-      `cue` attribute, which HW-OBL-0023 records
+        `cue` attribute, which HW-OBL-0023 records
   2 of 2 still wait. Each one states what ends it: a declaration, or an
   authoring pass over a corpus.

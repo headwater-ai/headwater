@@ -48,6 +48,10 @@ The repository must load its taxonomy, corpus and projection declarations. A str
 
 **1** means that loading, profile selection, emission or writing failed, or that `--check` found drift.
 
+**A refusal writes nothing to standard output, and a run that reported and then failed still wrote its report.** Drift found by `export --check` is the second case, where the regeneration report prints and the run then exits 1. A refusal of the command line, of a profile name or of an emitter target prints nothing there at all. The account of a refusal is one English sentence on standard error, under `--json` and `--format json` alike, which is what [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules.
+
+**A refusal of this verb names the spelling of the target that the caller typed.** `--json` and `--format json` reach one value, so the two write one artifact byte for byte. A message a person reads is not an artifact. A message that named the other flag would send a reader to a flag nobody typed.
+
 ## Environment
 
 The command reads no environment variable.

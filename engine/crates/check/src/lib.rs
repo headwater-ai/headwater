@@ -202,7 +202,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 26] = [
+pub const RULES: [&str; 27] = [
     facet_required::RULE,
     facet_value::RULE,
     identifier::RULE,
@@ -229,6 +229,7 @@ pub const RULES: [&str; 26] = [
     coverage::RULE,
     register::DISPOSITION,
     register::MECHANISM,
+    adoption::RULE,
 ];
 
 /// The declarations one run reads, from a taxonomy that is already resolved.
@@ -501,6 +502,12 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             register::VERSION,
             register::EXPORTABLE_AS,
         ),
+        (
+            adoption::RULE,
+            adoption::SCOPE,
+            adoption::VERSION,
+            adoption::EXPORTABLE_AS,
+        ),
     ]
 }
 
@@ -684,15 +691,31 @@ pub fn run(
 
     let mut register = register::Projection::of(declared.register);
 
+    // Read here, ahead of the findings list it feeds, rather than beside
+    // `adoption::apply` below. `adoption::expired` needs it to contribute
+    // findings of its own into the same list the register's two do, and that
+    // list is stamped with an obligation and sorted before `apply` ever sees
+    // it, so a finding `expired` invents there would never be stamped.
+    let declared_payload = match declared.adoption {
+        Some(block) => adoption::read(block, &RULES),
+        None => adoption::Declared::default(),
+    };
+
     let mut findings: Vec<Finding> = instances
         .iter()
         .flat_map(|instance| instance.findings().iter().cloned())
         .collect();
     findings.extend(coverage.findings());
-    // The register's two findings are about the taxonomy rather than about the
-    // corpus, and they enter here for the reason coverage's do: neither rule
-    // creates an instance, so neither accounts anything against the census.
+    // The register's two findings and adoption's one are about the taxonomy
+    // rather than about the corpus, and they enter here for the reason
+    // coverage's does: none of the three rules creates an instance, so none
+    // accounts anything against the census.
     findings.extend(register.findings(declared.source));
+    findings.extend(adoption::expired(
+        &declared_payload,
+        declared.source,
+        ctx.now(),
+    ));
 
     // The obligation is stamped here rather than written into each rule,
     // because the binding is data. A rule states its id, a control names that
@@ -726,10 +749,9 @@ pub fn run(
     // waiver, then migration-pending, then suppression. A finding a task holds
     // never reaches a directive, so the two inventories partition by the order
     // of these two calls rather than by a rule checked afterwards.
-    let declared_payload = match declared.adoption {
-        Some(block) => adoption::read(block, &RULES),
-        None => adoption::Declared::default(),
-    };
+    // `declared_payload` was read above, ahead of the findings list, so that
+    // `adoption::expired` could contribute to it. It moves in by value here,
+    // unchanged in shape.
     let (findings, adoption) =
         adoption::apply(finding::sorted(findings), declared_payload, ctx.now());
 

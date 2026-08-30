@@ -4,11 +4,11 @@ route "why is throttling applied at the edge"
   purpose rationale 6
   purpose behavior 2
   query/decisions/edge-throttling.md — why throttling is applied at the edge and
-  not per service
+    not per service
   query/decisions/per-service-limits.md — why a per service throttling design
-  was rejected
+    was rejected
   query/specs/asserted-notes.md — what the ingest service does about throttling,
-  as nobody has checked it [asserted: nobody accepted this document]
+    as nobody has checked it [asserted: nobody accepted this document]
 
 route "what does the ingest service do"
   terms what does the ingest service do
@@ -17,9 +17,9 @@ route "what does the ingest service do"
   purpose procedure 3
   purpose rationale 3
   query/specs/ingest.md — what the ingest service does with a request, and the
-  limits it holds
+    limits it holds
   query/specs/asserted-notes.md — what the ingest service does about throttling,
-  as nobody has checked it [asserted: nobody accepted this document]
+    as nobody has checked it [asserted: nobody accepted this document]
 
 route "how do I rotate the keys"
   terms how do rotate the keys
@@ -27,7 +27,7 @@ route "how do I rotate the keys"
   purpose procedure 6
   purpose behavior 4
   query/runbooks/rotate-keys.md — how to rotate the ingest API keys after one
-  leaks
+    leaks
 
 route "add rate limiting to src/ingest/rate_limit.rs"
   terms add rate limiting to src ingest limit rs
@@ -35,9 +35,9 @@ route "add rate limiting to src/ingest/rate_limit.rs"
   names the anchor src/ingest/rate_limit.rs
   purpose procedure 1
   query/decisions/edge-throttling.md — why throttling is applied at the edge and
-  not per service
+    not per service
   query/runbooks/rotate-keys.md — how to rotate the ingest API keys after one
-  leaks
+    leaks
 
 route "deploy the cluster to another region"
   terms deploy the cluster to another region
@@ -45,7 +45,7 @@ route "deploy the cluster to another region"
   purpose behavior 1
   purpose procedure 1
   query/runbooks/rotate-keys.md — how to rotate the ingest API keys after one
-  leaks
+    leaks
 
 route "what may I rely on when the tide comes in"
   terms what may rely on when the tide comes in
@@ -53,13 +53,13 @@ route "what may I rely on when the tide comes in"
   purpose behavior 10
   purpose procedure 3
   query/specs/api-design.md — the API surface conventions, versioning and error
-  shapes a service may rely on
+    shapes a service may rely on
   query/specs/api-errors.md — the error shapes the ingest service returns, in
-  detail
+    detail
   query/specs/asserted-notes.md — what the ingest service does about throttling,
-  as nobody has checked it [asserted: nobody accepted this document]
+    as nobody has checked it [asserted: nobody accepted this document]
   query/specs/ingest.md — what the ingest service does with a request, and the
-  limits it holds
+    limits it holds
 
 explain
   query/specs/api-design.md
@@ -69,17 +69,17 @@ explain
       `specs` is homogeneous, so placement carries the kind `specification`
     purpose behavior, to state what the system does, as it is now
     summary the API surface conventions, versioning and error shapes a service may
-    rely on
+      rely on
     warrant accepted
     requires the facets status, status_since, summary
     requires the sections Behavior
     may declare supersedes to governed_document, and the other end writes
-    superseded_by
+      superseded_by
     may declare refines to specification, and the other end writes refined_by
     may declare governs to code_path
     from query/specs/api-errors.md refined_by — the error shapes the ingest
-    service returns, in detail (the target's own summary) [this document governs
-    the reading]
+      service returns, in detail (the target's own summary) [this document governs
+      the reading]
   query/decisions/edge-throttling.md
     DR-FIX-0031
     kind decision
@@ -90,15 +90,15 @@ explain
     warrant accepted
     requires the facets status, status_since, summary
     may declare supersedes to governed_document, and the other end writes
-    superseded_by
+      superseded_by
     may declare governs to code_path
     may declare is_alternative_to to decision
     to DR-FIX-0007 supersedes — why a per service throttling design was rejected
-    (the target's own summary) [this document governs the reading]
+      (the target's own summary) [this document governs the reading]
     to src/ingest/rate_limit.rs governs [this document governs the reading]
     from query/decisions/per-service-limits.md superseded_by — why a per service
-    throttling design was rejected (the target's own summary) [this document
-    governs the reading]
+      throttling design was rejected (the target's own summary) [this document
+      governs the reading]
   query/specs/asserted-notes.md
     SPEC-FIX-asserted
     kind specification
@@ -106,12 +106,12 @@ explain
       `specs` is homogeneous, so placement carries the kind `specification`
     purpose behavior, to state what the system does, as it is now
     summary what the ingest service does about throttling, as nobody has checked
-    it
+      it
     warrant asserted
     requires the facets status, status_since, summary
     requires the sections Behavior
     may declare supersedes to governed_document, and the other end writes
-    superseded_by
+      superseded_by
     may declare refines to specification, and the other end writes refined_by
     may declare governs to code_path
 

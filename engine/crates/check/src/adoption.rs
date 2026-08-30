@@ -95,8 +95,28 @@
 //! a green run and a false belief, which is the state this naming ends.
 
 use crate::context::Date;
-use crate::finding::Finding;
+use crate::finding::{Finding, Severity};
+use crate::scope::Scope;
 use headwater_yaml::{Mapping, Value};
+
+/// Spec 7: "A migration state past its expiry is a finding against the
+/// owner." [`expired`] is the rule.
+pub const RULE: &str = "adoption.task.expired";
+
+/// The grain of [`RULE`]. See [`crate::register`]'s own two rules for the
+/// precedent: this finding is a fact about the lock rather than about a
+/// document in the corpus, so it creates no instance and accounts nothing
+/// against the census.
+pub const SCOPE: Scope = Scope::taxonomy();
+
+/// Which edition of [`expired`] reached a verdict. Stated here for the reason
+/// [`crate::coverage::VERSION`] is: no trait carries it.
+pub const VERSION: u32 = 1;
+
+/// The emitter targets [`RULE`] exports to, stated here for the reason
+/// [`SCOPE`] is. Empty: this rule is about the lock rather than about a
+/// document, and a front-matter schema has no instance to hold it against.
+pub const EXPORTABLE_AS: crate::scope::ExportTargets = &[];
 
 /// One `(document, rule)` pair a task accounts for.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -305,6 +325,17 @@ fn task(map: Option<&Mapping>, rules: &[&'static str]) -> Result<Task, String> {
         if !rules.contains(&rule) {
             return Err(format!("no rule of this engine is named `{rule}`"));
         }
+        // A task cannot hold another task's own expiry finding, or its own.
+        // Nothing else stops an open task from naming this rule against the
+        // lock and absorbing the very finding that would report a different,
+        // actually-lapsed task, indefinitely, through the ordinary
+        // hold/release machinery this module gives every other pair.
+        if rule == self::RULE {
+            return Err(format!(
+                "a pair cannot name `{rule}`: a task cannot hold another task's own expiry, or \
+                 its own"
+            ));
+        }
         pairs.push(Pair {
             path: path.to_string(),
             rule: rule.to_string(),
@@ -402,6 +433,45 @@ pub fn apply(findings: Vec<Finding>, declared: Declared, now: Date) -> (Vec<Find
             pending,
         },
     )
+}
+
+/// Findings against the owner of a task past its expiry.
+///
+/// Spec 7: "A migration state past its expiry is a finding against the
+/// owner." One finding per lapsed task, about the lock rather than about a
+/// document — the same grain [`crate::register`]'s two findings about the
+/// taxonomy use, and for the same reason: neither creates an instance, and
+/// neither accounts against the census.
+///
+/// This is satisfied by construction rather than by a separate guard: it
+/// iterates [`Declared::tasks`], so an absent `adoption:` block (read as
+/// [`Declared::default`], with no tasks) and a block whose every task is
+/// still open both yield an empty vec. Nothing is pushed unless a real task
+/// in the lock has a real `until` before `now`.
+pub fn expired(declared: &Declared, source: &str, now: Date) -> Vec<Finding> {
+    declared
+        .tasks
+        .iter()
+        .filter(|task| task.until < now)
+        .map(|task| Finding {
+            rule: RULE,
+            severity: Severity::Error,
+            obligation: None,
+            path: source.to_string(),
+            line: 0,
+            column: 0,
+            message: format!(
+                "{} lapsed on {}, and spec 7 makes that a finding against the owner, {}: {}",
+                task.id, task.until, task.owner, task.statement
+            ),
+            remediation: format!(
+                "move `until` on {} to a new date, which is the paper trail spec 7 asks a \
+                 renewal to carry, or close every pair it names and delete the task",
+                task.id
+            ),
+            patch: None,
+        })
+        .collect()
 }
 
 impl Ledger {
@@ -503,21 +573,21 @@ impl Ledger {
                     );
                 }
             }
-            out.push_str(&crate::filled(&task.statement, 4));
+            out.push_str(&crate::fill::filled(&format!("    {}", task.statement), crate::fill::WIDTH));
         }
         for refused in &self.refused {
-            out.push_str(&crate::filled(
-                &format!("{} holds nothing: {}", refused.task, refused.why),
-                2,
+            out.push_str(&crate::fill::filled(
+                &format!("  {} holds nothing: {}", refused.task, refused.why),
+                crate::fill::WIDTH,
             ));
         }
         for unread in &self.unread {
-            out.push_str(&crate::filled(
+            out.push_str(&crate::fill::filled(
                 &format!(
-                    "the block declares `{}`, which nothing here reads: {}",
+                    "  the block declares `{}`, which nothing here reads: {}",
                     unread.key, unread.why
                 ),
-                2,
+                crate::fill::WIDTH,
             ));
         }
         out
@@ -534,7 +604,6 @@ fn verb(count: usize, singular: &'static str, plural: &'static str) -> &'static 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::finding::Severity;
 
     fn payload(source: &str) -> Mapping {
         headwater_yaml::load(source)
@@ -559,7 +628,11 @@ mod tests {
         }
     }
 
-    const RULES: [&str; 2] = ["facet.required.missing", "voice.forbidden_construction"];
+    const RULES: [&str; 3] = [
+        "facet.required.missing",
+        "voice.forbidden_construction",
+        RULE,
+    ];
 
     fn one_task(pairs: &str) -> Mapping {
         payload(&format!(
@@ -898,5 +971,58 @@ tasks:
         // The second task reports its pair as closed, which is true of this
         // run: nothing it named was reported under it.
         assert_eq!(ledger.tasks[1].closed.len(), 1);
+    }
+
+    /// Spec 7: "A migration state past its expiry is a finding against the
+    /// owner." One finding, naming the task and the owner.
+    #[test]
+    fn an_expired_task_raises_a_finding_naming_it_and_its_owner() {
+        let block = one_task("      - {path: docs/a.md, rule: facet.required.missing}");
+        let declared = read(&block, &RULES);
+        let findings = expired(&declared, "SOURCE", day("2027-01-02"));
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].rule, RULE);
+        assert_eq!(findings[0].severity, Severity::Error);
+        assert_eq!(findings[0].path, "SOURCE");
+        assert!(findings[0].message.contains("AD-1"), "{:?}", findings[0]);
+        assert!(
+            findings[0].message.contains("the docs guild"),
+            "{:?}",
+            findings[0]
+        );
+    }
+
+    /// `until` is the last day a task holds, matching [`apply`]'s own
+    /// boundary.
+    #[test]
+    fn a_task_not_yet_expired_raises_no_finding() {
+        let block = one_task("      - {path: docs/a.md, rule: facet.required.missing}");
+        let declared = read(&block, &RULES);
+        assert!(expired(&declared, "SOURCE", day("2027-01-01")).is_empty());
+        assert!(expired(&declared, "SOURCE", day("2026-12-31")).is_empty());
+    }
+
+    /// The guard behind Done-when clause 4: no task at all raises no finding.
+    #[test]
+    fn no_task_at_all_raises_no_finding() {
+        let declared = Declared::default();
+        assert!(expired(&declared, "SOURCE", day("2099-01-01")).is_empty());
+    }
+
+    /// The loophole this rule closes in the same change: nothing else stops
+    /// an open task from naming a pair against this very rule and absorbing a
+    /// different, actually-lapsed task's expiry finding, because every pair
+    /// this rule's own findings could match shares one path, the source.
+    #[test]
+    fn a_pair_naming_this_rule_is_refused() {
+        let block = one_task("      - {path: SOURCE, rule: adoption.task.expired}");
+        let declared = read(&block, &RULES);
+        assert!(declared.tasks.is_empty());
+        assert_eq!(declared.refused.len(), 1);
+        assert!(
+            declared.refused[0].why.contains("adoption.task.expired"),
+            "{:?}",
+            declared.refused
+        );
     }
 }

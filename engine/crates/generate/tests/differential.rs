@@ -622,8 +622,9 @@ fn the_emitted_schema_uses_only_keywords_this_file_reads() {
     /// The envelope, which every emitter writes and no validator reads. They
     /// sit beside the schema at the root, and a stock validator passes over
     /// them as unknown keywords.
-    const ENVELOPE: [&str; 6] = [
+    const ENVELOPE: [&str; 7] = [
         "headwater:generated",
+        "version",
         "export_version",
         "profile",
         "loss_set",
@@ -681,6 +682,7 @@ fn keywords(schema: &Value, seen: &mut BTreeSet<String>, depth: usize) {
             && matches!(
                 key,
                 "headwater:generated"
+                    | "version"
                     | "export_version"
                     | "profile"
                     | "loss_set"

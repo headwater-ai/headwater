@@ -60,7 +60,23 @@ use headwater_yaml::value::Value;
 /// same reason: a version with no client behavior attached is a string. A major
 /// above what a reader understands is a hard failure, a minor mismatch is a
 /// warning, and a member added later moves the minor.
-pub const VERSION: &str = "1.0";
+///
+/// # Two keys, one constant, and why the earlier one stays
+///
+/// [`envelope`] writes this value twice, as `version` and as `export_version`.
+/// `version` is the spelling the other nine documents this engine writes use,
+/// and it is the one a consumer should read. `export_version` is the earlier
+/// spelling and it is kept because removing it is a member removed, which the
+/// paragraph above makes a major bump — a hard failure declared at every reader
+/// of the artifact, to buy the removal of a key that duplicates a value. That
+/// is out of proportion, so
+/// [#343](https://github.com/headwater-ai/headwater/issues/343) added the
+/// member and moved the minor, `1.0` to `1.1`, and a reader pinned at `1.0`
+/// gets a warning and continues. Dropping `export_version` stays available as
+/// its own change, at the moment a major bump is worth making.
+///
+/// Both keys are written from this constant, so they cannot disagree.
+pub const VERSION: &str = "1.1";
 
 /// What a loss is about.
 ///
@@ -957,6 +973,7 @@ fn envelope(
             headwater_mark::MARKER.to_string(),
             Json::string(headwater_mark::marker_text(Kind::GraphExport.name())),
         ),
+        ("version".to_string(), Json::string(VERSION)),
         ("export_version".to_string(), Json::string(VERSION)),
         ("profile".to_string(), Json::Object(declaration)),
         (

@@ -158,35 +158,35 @@ impl Explanation {
             None => out.push_str("  no kind, so nothing is required of it\n"),
         }
         for step in &self.derivation {
-            out.push_str(&headwater_check::filled(step, 4));
+            out.push_str(&headwater_check::fill::filled(&format!("    {step}\n"), headwater_check::fill::WIDTH));
         }
         if let Some((name, intent)) = &self.purpose {
             let _ = match intent {
-                Some(intent) => out.push_str(&headwater_check::filled(&format!("purpose {name}, to {intent}"), 2)),
-                None => out.push_str(&headwater_check::filled(&format!("purpose {name}"), 2)),
+                Some(intent) => out.push_str(&headwater_check::fill::filled(&format!("  purpose {name}, to {intent}\n"), headwater_check::fill::WIDTH)),
+                None => out.push_str(&headwater_check::fill::filled(&format!("  purpose {name}\n"), headwater_check::fill::WIDTH)),
             };
         }
         if let Some(summary) = &self.summary {
-            out.push_str(&headwater_check::filled(&format!("summary {summary}"), 2));
+            out.push_str(&headwater_check::fill::filled(&format!("  summary {summary}\n"), headwater_check::fill::WIDTH));
         }
         if let Some(warrant) = &self.warrant {
-            out.push_str(&headwater_check::filled(&format!("warrant {warrant}"), 2));
+            out.push_str(&headwater_check::fill::filled(&format!("  warrant {warrant}\n"), headwater_check::fill::WIDTH));
         }
         if !self.facets.is_empty() {
-            out.push_str(&headwater_check::filled(&format!("requires the facets {}", self.facets.join(", ")), 2));
+            out.push_str(&headwater_check::fill::filled(&format!("  requires the facets {}\n", self.facets.join(", ")), headwater_check::fill::WIDTH));
         }
         if !self.sections.is_empty() {
-            out.push_str(&headwater_check::filled(&format!("requires the sections {}", self.sections.join(", ")), 2));
+            out.push_str(&headwater_check::fill::filled(&format!("  requires the sections {}\n", self.sections.join(", ")), headwater_check::fill::WIDTH));
         }
         for permitted in &self.permitted {
             let line = match &permitted.inverse {
-                Some(inverse) => format!("may declare {} to {}, and the other end writes {inverse}", permitted.relation, permitted.to.join(", ")),
-                None => format!("may declare {} to {}", permitted.relation, permitted.to.join(", ")),
+                Some(inverse) => format!("  may declare {} to {}, and the other end writes {inverse}\n", permitted.relation, permitted.to.join(", ")),
+                None => format!("  may declare {} to {}\n", permitted.relation, permitted.to.join(", ")),
             };
-            out.push_str(&headwater_check::filled(&line, 2));
+            out.push_str(&headwater_check::fill::filled(&line, headwater_check::fill::WIDTH));
         }
         for neighbour in &self.related {
-            out.push_str(&headwater_check::filled(&neighbour.render(), 2));
+            out.push_str(&headwater_check::fill::filled(&format!("  {}\n", neighbour.render()), headwater_check::fill::WIDTH));
         }
         out
     }

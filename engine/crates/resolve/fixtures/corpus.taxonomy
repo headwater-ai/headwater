@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 3.3.0
+version: 3.4.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -971,6 +971,12 @@ obligations:
     class: cohesion
     prevents: process.traceability
     severity: high
+  OB-MIG-1:
+    statement: "A migration task past its expiry raises a finding that names it and its owner"
+    rationale: "The expiry is the anti-parking device, on the same terms as a waiver's, and a lapse that raises nothing lets a corpus years past its deadline read exactly like one that declared no debt at all"
+    class: cohesion
+    prevents: process.traceability
+    severity: high
   OB-DR-1:
     class: cohesion
     disposition:
@@ -1259,3 +1265,15 @@ controls:
     trigger: pull_request
     posture: advisory
     acts: detective
+  CT-MIG-1:
+    mechanism: "check:adoption.task.expired"
+    discharges:
+      - OB-MIG-1
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: "one release of the taxonomy over an adopting corpus"
+        threshold: "no false positive, because the rule reports a date comparison between a task's own declared `until` and the injected clock, deriving nothing else"
+        sample: "every finding of one run over the adopting corpus, adjudicated once"

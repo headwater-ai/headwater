@@ -118,7 +118,7 @@ fn main() -> ExitCode {
         Some(path) => path,
         None => match std::env::current_dir() {
             Ok(path) => path,
-            Err(error) => return fail(&format!("no working directory: {error}")),
+            Err(error) => return refuse(&format!("no working directory: {error}")),
         },
     };
 
@@ -267,7 +267,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             at,
             check,
             json,
-        } => export(root, profile, chosen(json, format), at, check),
+        } => export(root, profile, chosen(json, format), typed(json), at, check),
         Verb::Init { corpus, package } => init(root, corpus, package),
         Verb::Infer {
             owner,
@@ -282,7 +282,12 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
         // what an expression is. The engine names the gap rather than invent a
         // form, which is the posture the resolver takes over a `$package`
         // reference for the same reason.
-        Verb::Query { .. } => fail(
+        //
+        // `refuse` rather than `fail` (#455): no spelling of "run a query"
+        // gets past this, and `query` is a declared member of `VERBS`, so the
+        // grammar `fail` would point at lists it and repeats the sentence
+        // above.
+        Verb::Query { .. } => refuse(
             "`query <expression>` is listed in spec 6 and no document states what an expression \
              is, so this engine implements none. See `docs/spec/13-open-obligations.md`. \
              `headwater route` and `headwater explain` are the reads that exist",
@@ -296,7 +301,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             )),
             Some(TaxonomyWord::Validate) => validate(root),
             Some(TaxonomyWord::Resolve { check }) => resolve(root, check),
-            Some(TaxonomyWord::Audit { now }) => audit(root, now),
+            Some(TaxonomyWord::Audit { now, record }) => audit(root, now, record),
             Some(TaxonomyWord::Publish { package, from, out }) => {
                 publish(root, package.as_deref(), from.as_deref(), out.as_deref())
             }
@@ -354,9 +359,18 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
 /// [#321](https://github.com/headwater-ai/headwater/issues/321) asks that
 /// "`--json` is accepted wherever `--format json` already is". So the two names
 /// reach one value here, and every verb below receives the `--format` it always
-/// received. Nothing downstream of this function can tell which name a caller
-/// typed, which is the property that makes the two artifacts byte-identical
-/// rather than merely similar.
+/// received. **No artifact downstream of this function can tell which name a
+/// caller typed**, which is the property that makes the two artifacts
+/// byte-identical rather than merely similar, and
+/// `engine/crates/cli/tests/json.rs` holds it under
+/// `the_two_spellings_of_one_target_write_the_same_bytes`.
+///
+/// **A refusal is not an artifact, and it does name the spelling.** A sentence
+/// that quotes `--format` at somebody who wrote `--json` sends them to a flag
+/// that is not on their command line, which is a wrong instruction rather than
+/// an untidy one. [`typed`] carries the name a caller wrote past this
+/// substitution rather than through it, so the fold above is untouched. See
+/// `docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md`.
 ///
 /// **`json` is true only where `--format` was absent**, because the parser
 /// declares the two in conflict. So the arm below is a substitution and never a
@@ -370,6 +384,38 @@ fn chosen(json: bool, format: Option<String>) -> Option<String> {
     match json {
         true => Some("json".to_string()),
         false => format,
+    }
+}
+
+/// The spelling of the JSON target a caller wrote, for a message they read.
+///
+/// # Why this sits beside [`chosen`] and never inside it
+///
+/// [`chosen`] folds the two names onto one value so that the artifact is the
+/// same bytes under either name. That fold is the whole point of it and it
+/// stays. A refusal is not an artifact, and the two properties are separate:
+/// one is about bytes on standard output, the other is about a sentence on
+/// standard error.
+///
+/// The two travel as different types — `Option<String>` for the target and
+/// `&'static str` for the name — so a site that reached for one and got the
+/// other would not compile. That is what keeps a later edit from conflating
+/// them again.
+///
+/// `wide_refusal` in `engine/crates/cli/src/lib.rs` already makes this
+/// discrimination for `--wide`, and it reads the raw `ArgMatches` because its
+/// refusal fires before dispatch. Here [`dispatch`] already holds `json` and
+/// `format` apart at every arm, so nothing needs a second read of the matches.
+///
+/// **`export` is the whole surface.** It is the only verb whose refusals are
+/// reached with a target already named, and both of them are in it. The four
+/// other `--format` literals in this file fire either on a target that is
+/// neither `text` nor `json`, which `--json` cannot produce, or in the branch
+/// that runs when no target was named at all.
+const fn typed(json: bool) -> &'static str {
+    match json {
+        true => "--json",
+        false => "--format",
     }
 }
 
@@ -726,11 +772,11 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
 
     if let Some(parent) = path.parent() {
         if let Err(error) = std::fs::create_dir_all(parent) {
-            return fail(&format!("cannot create {}: {error}", parent.display()));
+            return refuse(&format!("cannot create {}: {error}", parent.display()));
         }
     }
     if let Err(error) = std::fs::write(&path, &text) {
-        return fail(&format!("cannot write {}: {error}", path.display()));
+        return refuse(&format!("cannot write {}: {error}", path.display()));
     }
     println!("wrote {}", headwater_lock::LOCK);
     for source in &repository.resolution.sources {
@@ -774,7 +820,15 @@ fn carried(payload: &headwater_yaml::Mapping) -> String {
 /// staleness reading and a dwell reading are both taken against a date, so two
 /// runs over one tree agree only when the date is the same value. `--now` is
 /// where a caller fixes it, and the report states the date it used.
-fn audit(root: &Path, now: Option<Date>) -> ExitCode {
+///
+/// **`--record` is the one thing here that writes, and it is opt-in for a
+/// committed reason.** The `--now` help text a caller reads promises that "two
+/// audits of one tree at one date write the same bytes", and a verb that
+/// appended on every run would falsify that on its second run. The store also
+/// refuses a duplicate `(lock, date)`, so the promise holds under the flag too.
+/// The report is rendered from the store as it stands after the append, which
+/// is what makes the section a function of the file rather than of the flag.
+fn audit(root: &Path, now: Option<Date>, record: bool) -> ExitCode {
     let loaded = match load(root) {
         Ok(loaded) => loaded,
         Err(code) => return code,
@@ -782,6 +836,46 @@ fn audit(root: &Path, now: Option<Date>) -> ExitCode {
     let Some(context) = now.map(Context::at).or_else(Context::from_system_clock) else {
         eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
         return ExitCode::FAILURE;
+    };
+
+    // The adoption reading is the one reading of this verb whose input is a run
+    // of the check layer rather than the census and the graph beside it. The
+    // ledger is what a check run says about the payload, and re-deriving it here
+    // would be the second account of one tree that `take` exists to refuse.
+    let reading = headwater_audit::reading::Reading::of(
+        &run_of(&loaded, &context).adoption,
+        &loaded.bound.digest,
+        context.now(),
+    );
+    if record {
+        match headwater_audit::reading::append(root, &reading) {
+            Err(error) => {
+                return refuse(&format!(
+                    "the adoption reading did not append to {}: {error}",
+                    headwater_audit::reading::STORE
+                ))
+            }
+            Ok(headwater_audit::reading::Appended::Held) => eprintln!(
+                "headwater: {} already holds a reading at {} under {}, and nothing was appended",
+                headwater_audit::reading::STORE,
+                context.now(),
+                loaded.bound.digest
+            ),
+            Ok(headwater_audit::reading::Appended::Written) => eprintln!(
+                "headwater: appended one adoption reading to {}",
+                headwater_audit::reading::STORE
+            ),
+        }
+    }
+    // After the append, so the section reports the file a reader will open.
+    let (recorded, unreadable) = match headwater_audit::reading::load(root) {
+        Ok(held) => held,
+        Err(error) => {
+            return refuse(&format!(
+                "{} did not read: {error}",
+                headwater_audit::reading::STORE
+            ))
+        }
     };
 
     let audit = headwater_audit::take(
@@ -799,6 +893,11 @@ fn audit(root: &Path, now: Option<Date>) -> ExitCode {
         // The resolved taxonomy, for the one member of a shelf that no typed
         // reader carries. See `headwater_scaffold::declared`.
         &loaded.bound.taxonomy,
+        headwater_audit::Series {
+            reading,
+            recorded,
+            unreadable,
+        },
     );
     print!("{}", audit.render());
     ExitCode::SUCCESS
@@ -836,7 +935,7 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>, json: bool) 
 
     let set = match headwater_conformance::at(root, &loaded.consumer) {
         Ok(set) => set,
-        Err(error) => return fail(&error.to_string()),
+        Err(error) => return refuse(&error.to_string()),
     };
     let waivers = match headwater_conformance::waivers(root) {
         Ok(waivers) => waivers,
@@ -856,7 +955,7 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>, json: bool) 
     // it. Nothing reaches here with a candidate, and the arm says so rather
     // than assuming it.
     let Some(lock) = &loaded.bound.lock else {
-        return fail(
+        return refuse(
             "`headwater conformance` reads `.headwater/taxonomy.lock`, and this run holds a \
              taxonomy that came out of a published artifact instead",
         );
@@ -1037,6 +1136,10 @@ fn vendor(root: &Path, fetched: &Path, expect: Option<&str>) -> ExitCode {
         .ok()
         .and_then(|consumer| consumer.digest);
     let Some(pinned) = expect.map(str::to_string).or(declared) else {
+        // Stays at `fail` (#455): `--expect` reaches past this on the command
+        // line, which is the whole test, and a caller who does not know the
+        // flag exists is the caller the grammar pointer is for. The consumer
+        // declaration being incomplete pulls the other way and loses to that.
         return fail(
             "nothing pins this artifact. A digest the engine took from the artifact in front of \
              it is a pin against itself, so this refuses rather than records what it received. \
@@ -1266,10 +1369,14 @@ fn migrate(
     for carried in &payloads {
         match carried.covers(&from, &to) {
             Err(why) => {
-                return fail(&format!(
+                // `refuse` (#455): the package already matched, so this is the
+                // artifact the caller meant, and a payload inside it is
+                // malformed. No spelling of this command line makes those
+                // bytes readable.
+                return refuse(&format!(
                     "{} states a version range this engine cannot read: {why}",
                     carried.at
-                ))
+                ));
             }
             Ok(false) => {}
             Ok(true) => selected.push(carried),
@@ -1278,15 +1385,21 @@ fn migrate(
     let payload = match selected.len() {
         1 => selected[0],
         0 => {
-            return fail(&format!(
+            // `refuse` (#455): the publisher shipped an artifact this
+            // transition is not covered by, which the message says by naming
+            // spec 2. A different `--to` is a different migration rather than
+            // a repair of this one.
+            return refuse(&format!(
                 "the artifact ships no migration payload for {from} to {to}. Spec 2 makes a major \
                  version ship one, and this verb applies a payload rather than deriving one. \
                  `headwater taxonomy diff {}` reports what moved",
                 fetched.display()
-            ))
+            ));
         }
         count => {
-            return fail(&format!(
+            // `refuse` (#455): the publisher shipped an ambiguous artifact.
+            // Same reason as the arm above it, and no flag picks a route.
+            return refuse(&format!(
                 "{count} payloads of the artifact cover {from} to {to}, and a migration is not a \
                  choice of route: {}",
                 selected
@@ -1294,7 +1407,7 @@ fn migrate(
                     .map(|payload| payload.at.as_str())
                     .collect::<Vec<_>>()
                     .join(", ")
-            ))
+            ));
         }
     };
 
@@ -1371,11 +1484,19 @@ fn migrate(
                             // `sites` would not have named the entry. The
                             // refusal is here anyway, because the alternative to
                             // an answer is a rewrite of somebody's overlay into
-                            // a path nobody wrote.
+                            // a path nobody wrote. That argument may make this
+                            // branch unreachable, and no case drives it for
+                            // that reason.
+                            //
+                            // `refuse` and not `defect` (#455): somebody
+                            // authored the overlay entry this reads, and
+                            // `defect` is for a value this run's own code
+                            // built. Nothing on the command line reaches
+                            // `.headwater/overlay.yml`.
                             let Some(moved) =
                                 headwater_resolve::migration::readdressed(address, &step.from, to)
                             else {
-                                return fail(&format!(
+                                return refuse(&format!(
                                     "{at} in {path} is not addressed under `{}`, so this run \
                                      cannot say what it becomes",
                                     step.from
@@ -1889,6 +2010,10 @@ fn payload(
 /// digest, so a candidate would take no hit and would write entries under a
 /// taxonomy that nobody committed. A later `headwater check` would then read a
 /// cache whose contents no lock accounts for.
+///
+/// `taxonomy audit` reuses it for a second reason that reaches the same answer:
+/// that verb gates nothing and exits 0 whatever it reads, so a report of it
+/// should not leave cache entries behind as a side effect of being run.
 fn run_of(loaded: &Loaded, ctx: &Context) -> headwater_check::Run {
     let mut cache = Cache::disabled();
     headwater_check::run(
@@ -2638,100 +2763,9 @@ fn capture(root: &Path, format: Option<String>) -> ExitCode {
     let last = readings.iter().map(|reading| reading.date).max();
 
     if wants_json {
-        use headwater_yaml::json::Json;
-        let pair = |value: (usize, usize)| {
-            Json::Array(vec![
-                Json::Raw(value.0.to_string()),
-                Json::Raw(value.1.to_string()),
-            ])
-        };
-        let count = |value: usize| Json::Raw(value.to_string());
-        let day = |value: Option<Date>| match value {
-            Some(date) => Json::string(date.render()),
-            None => Json::Array(vec![]),
-        };
         println!(
             "{}",
-            Json::object([
-                ("store", Json::string(headwater_scaffold::reading::STORE)),
-                ("readings", count(readings.len())),
-                (
-                    "unreadable_lines",
-                    Json::Array(
-                        unreadable
-                            .iter()
-                            .map(|line| Json::Raw(line.line.to_string()))
-                            .collect()
-                    )
-                ),
-                (
-                    "locks",
-                    Json::Array(locks.iter().map(Json::string).collect())
-                ),
-                ("first_reading", day(first)),
-                ("last_reading", day(last)),
-                ("fields", pair(total.fields)),
-                ("sections", pair(total.sections)),
-                ("identifier", pair(total.identifier)),
-                ("edge_halves", pair(total.edge_halves)),
-                ("supplied", count(total.supplied())),
-                ("denominator", count(total.total())),
-                (
-                    "by_kind",
-                    Json::Array(
-                        headwater_scaffold::reading::by_kind(&readings)
-                            .into_iter()
-                            .map(|(kind, taken, assisted)| {
-                                Json::object([
-                                    ("kind", Json::string(kind)),
-                                    ("readings", count(taken)),
-                                    ("supplied", count(assisted.supplied())),
-                                    ("denominator", count(assisted.total())),
-                                ])
-                            })
-                            .collect()
-                    )
-                ),
-                (
-                    "by_surface",
-                    Json::Array(
-                        headwater_scaffold::reading::by_surface(&readings)
-                            .into_iter()
-                            .map(|(surface, taken, assisted)| {
-                                Json::object([
-                                    (
-                                        "surface",
-                                        match surface {
-                                            Some(surface) => Json::string(surface.name()),
-                                            // Absent rather than a name, on the
-                                            // rule the store itself follows: a
-                                            // reading that states no surface is
-                                            // not one of the two arms.
-                                            None => Json::Array(vec![]),
-                                        },
-                                    ),
-                                    ("readings", count(taken)),
-                                    ("supplied", count(assisted.supplied())),
-                                    ("denominator", count(assisted.total())),
-                                ])
-                            })
-                            .collect()
-                    )
-                ),
-                ("reached", count(reach.reached.len())),
-                ("classified", count(classified.paths.len())),
-                (
-                    "resolving_to_nothing",
-                    Json::Array(
-                        reach
-                            .lost
-                            .iter()
-                            .map(|at| Json::string(&readings[*at].document))
-                            .collect()
-                    )
-                ),
-            ])
-            .render_pretty()
+            headwater_scaffold::json::render(&readings, &unreadable, &classified, &reach)
         );
         return ExitCode::SUCCESS;
     }
@@ -3115,7 +3149,7 @@ fn probe_grade(root: &Path, path: &Path) -> ExitCode {
             Err(unreadable) => return refuse(&unreadable.to_string()),
         },
         Err(error) => {
-            return fail(&format!(
+            return refuse(&format!(
                 "`{}` did not read: {error}. A grade names the selection it was taken over, and \
                  the selection comes from the plan",
                 headwater_probe::budget::PATH
@@ -3224,7 +3258,7 @@ fn probe_stale(root: &Path) -> ExitCode {
             Err(unreadable) => return refuse(&unreadable.to_string()),
         },
         Err(error) => {
-            return fail(&format!(
+            return refuse(&format!(
                 "`{}` did not read: {error}. A read set covers the probes of a selection, and the \
                  selection comes from the plan",
                 headwater_probe::budget::PATH
@@ -3322,9 +3356,14 @@ fn probe_stale(root: &Path) -> ExitCode {
 /// graph, so a finding is what a later run cannot make. Either an import is
 /// refused here or nothing downstream is going to notice.
 fn import(root: &Path, name: Option<&str>, expect: Option<&str>, writing: bool) -> ExitCode {
+    // `refuse` (#455, the ninth site): `declared` reads
+    // `.headwater/taxonomy.yml`, which is a fixed location this engine reads on
+    // every run, and every error it returns is a fact about that file. No
+    // spelling of `headwater import` gets past one. The sibling call in `load`
+    // already reports without the pointer, so this was the odd one out.
     let declarations = match headwater_import::declared(root) {
         Ok(declarations) => declarations,
-        Err(why) => return fail(&why),
+        Err(why) => return refuse(&why),
     };
     let names: Vec<String> = declarations
         .iter()
@@ -3494,6 +3533,7 @@ fn export(
     root: &Path,
     profile: Option<String>,
     format: Option<String>,
+    typed: &str,
     generated_at: Option<String>,
     check_only: bool,
 ) -> ExitCode {
@@ -3544,11 +3584,11 @@ fn export(
         ));
     };
     if check_only {
-        return fail(
-            "--check compares a committed artifact against what a run produces, and --format \
+        return fail(&format!(
+            "--check compares a committed artifact against what a run produces, and {typed} \
              writes to standard output where nothing is committed. Run `headwater export \
-             --check` over the declared outputs instead",
-        );
+             --check` over the declared outputs instead"
+        ));
     }
 
     // One artifact on a pipe is one profile. With several declared and none
@@ -3564,14 +3604,14 @@ fn export(
     let profile = match selected.as_slice() {
         [one] => *one,
         [] => {
-            return fail(
+            return refuse(
                 "this taxonomy declares no projection, so it declares no export profile. \
                  Spec 6 makes a profile an entry under `projections`",
             )
         }
         several => {
             return fail(&format!(
-                "--format writes one artifact to standard output and this taxonomy declares {} \
+                "{typed} writes one artifact to standard output and this taxonomy declares {} \
                  profiles. Name one with --profile: {}",
                 several.len(),
                 several
@@ -4048,7 +4088,12 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
         lock: &bound.digest,
         now: &ctx.now().render(),
     };
-    let artifact = headwater_adapter::render(&run, taken, graph, &subject, format);
+    // The width the report is laid out at. `paint::width` is 80 unless the
+    // command line carries `--wide`, and it is the one reader of `COLUMNS` in
+    // this binary, so a run with no flag writes the same bytes into a pipe, a
+    // file and a terminal. The three machine formats ignore the number.
+    let width = headwater_cli::paint::width();
+    let artifact = headwater_adapter::render_at(&run, taken, graph, &subject, format, width);
     print!("{artifact}");
     // The census over what was written, in the shape spec 6 fixes for the
     // graph emitters. A finding that reached no output and that no loss
@@ -4069,9 +4114,16 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
 
     // The register. It is already in the report above, because spec 4 makes it
     // mandatory and inspectable rather than a flag. What the flag adds is a
-    // file, and the bytes are the same bytes for the reason the read set's are:
-    // a projection a consumer regenerates and one a reader reads are one
+    // file, and the content is the same content for the reason the read set's
+    // is: a projection a consumer regenerates and one a reader reads are one
     // artifact or they are two truths.
+    //
+    // Not the same bytes, since #340. The report lays its register block out at
+    // the width of the run and this file is written as the register composed it,
+    // because a file is read by whoever opens it and a report is read at a
+    // width. Nothing parses this file — `Register::read` reads the resolved
+    // taxonomy and never a rendered one — so the layout costs no consumer
+    // anything, which is the difference from the read set above.
     if let Some(path) = register_out {
         if let Err(error) = std::fs::write(&path, run.register.render()) {
             eprintln!("headwater: cannot write {}: {error}", path.display());
@@ -4156,7 +4208,7 @@ fn infer(
         Err(code) => return code,
     };
     let Some(ctx) = now.map(Context::at).or_else(Context::from_system_clock) else {
-        return fail("the host clock is before 1970, and this engine will not guess a date");
+        return refuse("the host clock is before 1970, and this engine will not guess a date");
     };
     let until = until.unwrap_or_else(|| ctx.now().plus_days(DEFAULT_WINDOW));
     if until < ctx.now() {
@@ -4266,8 +4318,15 @@ fn infer(
         let mut cells: Vec<&str> = held.iter().map(|finding| finding.path.as_str()).collect();
         cells.sort_unstable();
         cells.dedup();
+        // Both values quoted, for the reason `quoted` records: this was an
+        // unquoted flow mapping, and a `}` in a filename closed it early while
+        // a comma in one truncated the value and exited 0.
         for path in cells {
-            payload.push_str(&format!("      - {{path: {path}, rule: {rule}}}\n"));
+            payload.push_str(&format!(
+                "      - {{path: {}, rule: {}}}\n",
+                quoted(path),
+                quoted(rule)
+            ));
         }
     }
 
@@ -4481,13 +4540,19 @@ fn infer(
         return ExitCode::SUCCESS;
     }
 
+    // Both arms re-read a string this same function assembled above. If either
+    // fires, this engine emitted YAML it cannot read back, so neither the
+    // caller nor anything on disk is at fault and `defect` is the helper
+    // (#455).
     let fresh = match headwater_yaml::load(&payload) {
         Ok(node) => match node.value.as_map() {
             Some(map) => map.clone(),
-            None => return fail("the payload this run built is not a mapping, which is a defect"),
+            None => {
+                return defect("the payload this run built is not a mapping, which is a defect")
+            }
         },
         Err(errors) => {
-            return fail(&format!(
+            return defect(&format!(
                 "the payload this run built does not load: {}",
                 headwater_yaml::error::render(&errors)
             ))
@@ -4546,7 +4611,7 @@ fn infer(
     };
     let path = root.join(headwater_lock::LOCK);
     if let Err(error) = std::fs::write(&path, &text) {
-        return fail(&format!("cannot write {}: {error}", path.display()));
+        return refuse(&format!("cannot write {}: {error}", path.display()));
     }
     println!("\nwrote the payload into {}", headwater_lock::LOCK);
     println!("  {pairs} pairs, owner {owner}, until {until}");
@@ -4686,7 +4751,7 @@ fn merged(
 fn init(root: &Path, corpus_root: Option<String>, package: Option<String>) -> ExitCode {
     let declaration = root.join(headwater_resolve::package::CONSUMER);
     if declaration.exists() {
-        return fail(&format!(
+        return refuse(&format!(
             "{} is already there, so this repository is already bound. \
              `headwater infer` is the verb that reads an existing binding",
             headwater_resolve::package::CONSUMER
@@ -4698,7 +4763,7 @@ fn init(root: &Path, corpus_root: Option<String>, package: Option<String>) -> Ex
     // documentation is, and the adopter overrides it with one word.
     let proposed = corpus_root.or_else(|| busiest_directory(root));
     let Some(corpus_root) = proposed else {
-        return fail(
+        return refuse(
             "no directory under this repository holds a Markdown file, so nothing here \
              proposes a corpus root. Pass --corpus <dir> to name one",
         );
@@ -4805,15 +4870,15 @@ add: {{}}
 
     if let Some(parent) = declaration.parent() {
         if let Err(error) = std::fs::create_dir_all(parent) {
-            return fail(&format!("cannot create {}: {error}", parent.display()));
+            return refuse(&format!("cannot create {}: {error}", parent.display()));
         }
     }
     if let Err(error) = std::fs::write(&declaration, &declaration_text) {
-        return fail(&format!("cannot write {}: {error}", declaration.display()));
+        return refuse(&format!("cannot write {}: {error}", declaration.display()));
     }
     let overlay = root.join(".headwater/overlay.yml");
     if let Err(error) = std::fs::write(&overlay, &overlay_text) {
-        return fail(&format!("cannot write {}: {error}", overlay.display()));
+        return refuse(&format!("cannot write {}: {error}", overlay.display()));
     }
 
     println!("wrote {}", headwater_resolve::package::CONSUMER);
@@ -4861,18 +4926,41 @@ add: {{}}
 /// look dangerous today. A payload that does not load is a payload the next
 /// command refuses, and the failure would be reported against the lock rather
 /// than against the text that produced it.
+///
+/// # The three routes a review found, and what each one cost
+///
+/// That paragraph was a claim and not a fact until a review of
+/// [#455](https://github.com/headwater-ai/headwater/issues/455) tested it. This
+/// escaped `"` and `\` alone, and the `pairs` entries reached the payload as an
+/// unquoted flow mapping that never came here at all. Three routes followed,
+/// and each one was reached by running the binary rather than by reading it:
+///
+/// - A newline in `--owner` wrote a raw line break inside a double-quoted
+///   scalar. The payload stopped loading, and the run told the caller that
+///   neither their corpus nor their command line caused it.
+/// - A `}` in a document's filename closed the flow mapping early, with the
+///   same false sentence under it.
+/// - A comma in a filename was worse than either, because nothing failed.
+///   `docs/spec/a,b.md` was read as the value `docs/spec/a`, the run exited 0,
+///   and the lock declared debt against a document that does not exist.
+///
+/// So the escaping is by category rather than by the two characters that were
+/// noticed first: a control character is what a raw line break is a member of,
+/// and [`char::is_control`] is the whole C0 and C1 range. `U+2028` and `U+2029`
+/// are outside it and YAML reads both as line breaks, so they are named.
+///
+/// The escaping itself is [`headwater_resolve::render::quoted`] rather than a
+/// second copy here. This one was the second copy, and being a second copy is
+/// how it fell three characters behind the writer that puts the same strings
+/// into the lock. Repairing it exposed a fourth route in that writer, which is
+/// recorded there.
+///
+/// The invariant this holds is what makes `defect`'s two call sites in
+/// [`infer`] unreachable, and
+/// `tests/wiring.rs::a_payload_this_verb_writes_loads_whatever_a_path_or_an_owner_holds`
+/// drives every route.
 fn quoted(text: &str) -> String {
-    let mut out = String::with_capacity(text.len() + 2);
-    out.push('"');
-    for character in text.chars() {
-        match character {
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            other => out.push(other),
-        }
-    }
-    out.push('"');
-    out
+    headwater_resolve::render::quoted(text)
 }
 
 fn busiest_directory(root: &Path) -> Option<String> {
@@ -4962,15 +5050,40 @@ fn refused(what: &str, errors: &[headwater_census::shelves::DeclarationError]) -
 /// them changed deliberately" and "none of them did" was meant, and this is the
 /// answer: **all of them**, and not one message text changed.
 ///
-/// The parser migration then took the 33 that were the argument loop's, and one
-/// caller now carries every refusal a parse can make: `main` hands over the
-/// line `clap` wrote. 64 call sites remain, of which 45 are facts about a
-/// corpus or about the filesystem rather than about a command line. That
-/// population is the one [`refuse`] describes, a pointer to the grammar is
-/// beside the point for it, and
-/// [#331](https://github.com/headwater-ai/headwater/issues/331) carries the
-/// reclassification. It is judgment nobody has asked for, so it is stated here
-/// rather than done quietly.
+/// The parser migration ([#321](https://github.com/headwater-ai/headwater/issues/321))
+/// then took the sites the argument loop and dispatch owned: one caller now
+/// hands over the line `clap` wrote for all of them. What was left is 68
+/// sites, not 45: four more joined after #321 landed, as this binary grew a
+/// `Help` verb, a `Completions` verb and two more flags.
+///
+/// [#331](https://github.com/headwater-ai/headwater/issues/331) read every
+/// one of the 68 and moved fifteen to [`refuse`]: a fixed location this
+/// engine reads or writes regardless of the command line, a fact the corpus
+/// itself declares wrong, and a fact about the host. What stays here is
+/// answerable by one question — would retyping the command line differently
+/// change the answer? — and that includes a caller-supplied value this run
+/// went on to check against something the corpus declares (a level, a
+/// profile, an import, a directory) and found wanting, because the value that
+/// was wrong is still the one the caller typed.
+///
+/// # The eight sites #331 left, and the line that settles them
+///
+/// [#455](https://github.com/headwater-ai/headwater/issues/455) settled the
+/// eight sites #331 left here, and the line it drew is the one this function
+/// now states. A caller naming a location — a `--root`, a fetched artifact, a
+/// directory — does not make the refusal a command-line fact: [`refuse`]'s own
+/// case in `tests/wiring.rs` is reached through an explicit `--root`. What
+/// decides it is whether a spelling of this request gets past the refusal.
+///
+/// An artifact that is whole and simply is not this repository's package stays
+/// here (the two package-mismatch sites, in `migrate` and in `diff`), because
+/// a different artifact is a different command
+/// line and the grammar names the argument that was wrong. An artifact whose
+/// own payload is unreadable, absent for the transition, or ambiguous does not,
+/// because no spelling of this command line reads it. A refusal a flag repairs
+/// stays here even where a file edit is the other remedy: `taxonomy vendor`
+/// with no pin names `--expect` beside the declaration, and `--expect` is
+/// grammar.
 ///
 /// # Why the prefix is written per line
 ///
@@ -4985,13 +5098,77 @@ fn fail(message: &str) -> ExitCode {
     ExitCode::FAILURE
 }
 
-/// A refusal that is a fact about the corpus rather than a mistyped command.
+/// A refusal no command line reaches past: a fact about the corpus, the
+/// filesystem, the host, a fetched artifact's own content, or a wait this
+/// engine declares — true regardless of what command line reached it.
 ///
 /// [`fail`] names where the grammar is, because a caller who wrote the wrong
-/// flag is looking for it. A caller whose taxonomy declares no shelf for a kind
-/// is not, and a line pointing at the grammar under that sentence points away
-/// from what the sentence says.
+/// flag is looking for it. A caller who hit one of these is not: a fixed
+/// location this engine reads or writes on every run
+/// (`.headwater/taxonomy.lock`, `.headwater/overlay.yml`, the consumer
+/// declaration, a probe budget declaration) refusing to exist, to parse, or to
+/// accept a write; a fact the package, the corpus, or a fetched artifact itself
+/// declares wrong or incomplete, independent of any flag; a fact about the host
+/// that no flag repairs, such as a clock reading before 1970; or a verb this
+/// binary parses and this engine has never implemented, where no other spelling
+/// of the request exists. A line pointing at the grammar under one of these
+/// points away from what the sentence says.
+///
+/// The boundary with [`defect`] is who wrote the value. Everything here was
+/// authored by somebody — a corpus, an overlay, a published artifact — and a
+/// value this run's own code built belongs there instead.
 fn refuse(message: &str) -> ExitCode {
     eprintln!("headwater: {message}");
+    ExitCode::FAILURE
+}
+
+/// A refusal that is a defect in this engine: a value this run's own code built
+/// failed a check this run's own code makes.
+///
+/// Neither [`fail`] nor [`refuse`] fits. The command line was correct and no
+/// grammar helps, so the pointer [`fail`] adds is wrong. The corpus, the
+/// filesystem and the host are all sound, so a caller sent here by [`refuse`]
+/// would search their own documents for a fault that is ours.
+///
+/// The line under the message says whose fault it is, and names the engine
+/// version, which is what a report of it needs. It names no address to send
+/// that report to: this repository has no published home yet, and a line
+/// naming one would be a line that stops being true.
+///
+/// # What the line asserts, and what had to become true before it could
+///
+/// "Neither your corpus nor your command line caused it" is a strong claim, and
+/// it was **false when it was first written**. A review of #455 reached both
+/// call sites from outside: a newline in `--owner`, and a `}` in a document's
+/// filename. In each case the run printed that sentence to a caller whose
+/// command line or whose corpus was exactly the cause.
+///
+/// What makes it true is [`quoted`] rather than this function. Every scalar the
+/// payload carries now goes through it, control characters included, and the
+/// `pairs` entries are quoted rather than written into a bare flow mapping. Its
+/// doc comment records the three routes and the third one, which failed
+/// silently rather than loudly.
+///
+/// So the two call sites are unreachable, and they are unreachable for a reason
+/// a reader can check rather than by luck. That is the point rather than an
+/// excuse: nothing drives them, so nothing executes them, and the invariant
+/// they hold is the last thing saying the payload this run wrote is the payload
+/// it meant to write. Read this claim as conditional on that one, and re-test
+/// it rather than trusting it if `quoted` ever stops being the one route out.
+///
+/// Two cases hold this pair, and neither drives the sites, because after the
+/// repair nothing can.
+/// `tests/wiring.rs::every_refusal_about_a_value_this_run_built_goes_out_through_defect`
+/// holds which helper carries each message, and
+/// `tests/wiring.rs::the_defect_helper_names_the_engine_version_and_no_address`
+/// holds what this body prints. The second exists because the review rewrote
+/// this body to print an address and drop the version constant, and the whole
+/// suite stayed green.
+fn defect(message: &str) -> ExitCode {
+    eprintln!("headwater: {message}");
+    eprintln!(
+        "headwater: this is a defect in engine {}, and neither your corpus nor your command line caused it",
+        headwater_resolve::release::ENGINE
+    );
     ExitCode::FAILURE
 }

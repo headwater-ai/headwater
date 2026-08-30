@@ -1,6 +1,7 @@
 {
   "headwater:generated": "graph_export. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.",
-  "export_version": "1.0",
+  "version": "1.1",
+  "export_version": "1.1",
   "profile": {
     "name": "site",
     "target": "json",
@@ -9,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 316,
-      "carried": 316,
+      "in the graph": 333,
+      "carried": 333,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 530,
-      "carried": 530,
+      "in the graph": 543,
+      "carried": 543,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1171,6 +1172,67 @@
         }
       },
       {
+        "path": "docs/decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md",
+        "kind": "decision",
+        "id": "HW-DR-0042",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0042",
+          "status": "draft",
+          "status_since": "2026-08-28",
+          "summary": "\"One screen\" is retired as a claim about a terminal and replaced by a claim about content: the first screen carries one line per entry, and the ceiling that follows from it is 60 lines.",
+          "last_verified": "2026-08-28",
+          "title": "Q42 — What \"one screen\" means for the first help screen",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0033"
+            ],
+            "governs": [
+              "engine/crates/cli/src/lib.rs",
+              "engine/crates/cli/tests/help.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md",
+        "kind": "decision",
+        "id": "HW-DR-0043",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0043",
+          "status": "draft",
+          "status_since": "2026-08-28",
+          "summary": "A refusal is an English sentence on standard error and never a JSON document, because `--json` names the shape of an artifact and moves no stream and no grammar.",
+          "last_verified": "2026-08-28",
+          "title": "Q43 — Whether a refusal under `--json` is a JSON document",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0033"
+            ],
+            "governs": [
+              "engine/crates/cli/src/main.rs",
+              "engine/crates/cli/src/lib.rs",
+              "engine/crates/cli/tests/json.rs"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/evaluations/adjacent-work.md",
         "kind": "evaluation",
         "id": "HW-EVAL-adjacent-work",
@@ -2077,7 +2139,7 @@
           "status": "draft",
           "status_since": "2026-08-25",
           "summary": "How to validate, resolve, audit, publish, vendor, compare and migrate taxonomy packages.",
-          "last_verified": "2026-08-25",
+          "last_verified": "2026-08-28",
           "title": "headwater taxonomy",
           "relations": {
             "governs": [
@@ -2085,6 +2147,7 @@
               "engine/crates/cli/src/main.rs",
               "engine/crates/resolve/src/lib.rs",
               "engine/crates/audit/src/lib.rs",
+              "engine/crates/audit/src/reading.rs",
               "engine/crates/compat/src/lib.rs"
             ]
           }
@@ -2298,7 +2361,7 @@
           "status": "current",
           "status_since": "2026-08-11",
           "waiting_on": "measurement",
-          "last_verified": "2026-08-13",
+          "last_verified": "2026-08-28",
           "summary": "Q12 claims that an adoption payload shrinks, and this repository holds one task that is a day old.",
           "provenance": {
             "warrant": "accepted",
@@ -2438,7 +2501,7 @@
           "status": "current",
           "status_since": "2026-08-10",
           "waiting_on": "build",
-          "last_verified": "2026-08-13",
+          "last_verified": "2026-08-28",
           "summary": "Q17 claims that a counted tombstone stops an agent reporting absence with confidence, and no probe has run.",
           "provenance": {
             "warrant": "accepted",
@@ -6275,6 +6338,125 @@
         }
       },
       {
+        "path": "docs/obligations/0153-the-rewritten-sentence-splitter-has-no-dedicated-conformance-fixtures.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0153",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0153",
+          "status": "draft",
+          "status_since": "2026-08-27",
+          "summary": "The sentence splitter has inline tests, but it has no data-driven corpus that preserves the failures behind Q5's rewrite.",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "codex",
+            "activity": "draft",
+            "evidence_basis": "evidenced"
+          },
+          "last_verified": "2026-08-27",
+          "title": "The rewritten sentence splitter has no dedicated conformance fixtures",
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0154-the-adoption-decay-section-is-fixture-recorded-only-in-its-empty-shape.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0154",
+        "facets": {
+          "id": "HW-OBL-0154",
+          "status": "draft",
+          "status_since": "2026-08-28",
+          "summary": "Every section of the recorded audit report renders populated except the adoption one, whose fixture tree declares no payload.",
+          "last_verified": "2026-08-28",
+          "title": "The adoption decay section is fixture-recorded only in its empty shape",
+          "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0155-probe-s-fourteen-refusals-have-no-coverage-test-and-three-of-them-are-named-by-no-test-at-all.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0155",
+        "facets": {
+          "id": "HW-OBL-0155",
+          "status": "draft",
+          "status_since": "2026-08-28",
+          "summary": "Three of the `probe` crate's fourteen refusals are named by no test, and no case holds the set to its own coverage.",
+          "last_verified": "2026-08-28",
+          "title": "probe's fourteen refusals have no coverage test, and three of them are named by no test at all",
+          "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0156-a-help-string-and-the-interface-contract-that-restates-it-can-both-be-false-with-the-whole-suite-green.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0156",
+        "facets": {
+          "id": "HW-OBL-0156",
+          "status": "draft",
+          "status_since": "2026-08-28",
+          "summary": "Two suites read the shape of the help and the headings of the contract, and neither reads a word of either.",
+          "last_verified": "2026-08-28",
+          "title": "A help string and the interface contract that restates it can both be false with the whole suite green",
+          "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0157-the-capture-report-says-two-denominators-over-a-store-that-named-seventeen-taxonomies.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0157",
+        "facets": {
+          "id": "HW-OBL-0157",
+          "status": "draft",
+          "status_since": "2026-08-28",
+          "summary": "The capture report warns that its aggregate crosses two denominators, on a run whose own next line lists seventeen of them.",
+          "last_verified": "2026-08-28",
+          "title": "The capture report says two denominators over a store that named seventeen taxonomies",
+          "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0158-clap-owns-the-help-flag-so-h-help-reads-print-help-on-all-32-verb-pages.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0158",
+        "facets": {
+          "id": "HW-OBL-0158",
+          "status": "draft",
+          "status_since": "2026-08-28",
+          "summary": "The fifth entry of the GLOBALS table carries clap's own two words rather than a description this repository wrote, because clap adds its help argument after the point where a caller can name it.",
+          "last_verified": "2026-08-28",
+          "title": "clap owns the help flag, so -h, --help reads Print help on all 32 verb pages",
+          "waiting_on": "build"
+        }
+      },
+      {
+        "path": "docs/obligations/0159-a-sentence-that-opens-with-a-hash-and-an-issue-number-is-folded-into-the-sentence-before-it.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0159",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0159",
+          "status": "draft",
+          "status_since": "2026-08-28",
+          "summary": "`opens_a_sentence` admits a digit and not a hash, so a sentence that cites an issue as `#346` is counted with the sentence before it and reported at their combined length.",
+          "last_verified": "2026-08-28",
+          "title": "A sentence that opens with a hash and an issue number is folded into the sentence before it",
+          "waiting_on": "build",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "governs": [
+              "engine/crates/doc/src/sentences.rs"
+            ]
+          }
+        }
+      },
+      {
         "path": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
         "kind": "probe",
         "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
@@ -6301,6 +6483,34 @@
             ],
             "traces_to": [
               "HW-OBL-0010"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md",
+        "kind": "probe",
+        "id": "HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-PROBE-a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer",
+          "status": "draft",
+          "status_since": "2026-08-27",
+          "summary": "A session classifies a recovery word as present, withheld, or absent from a served corpus with a counted tombstone.",
+          "last_verified": "2026-08-27",
+          "probe_category": "sufficiency",
+          "expectation": "answered",
+          "oracle": "none",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "codex",
+            "activity": "draft",
+            "evidence_basis": "unevidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-OBL-0013"
             ]
           }
         }
@@ -6587,6 +6797,26 @@
               "HW-EVAL-theoretical-foundations",
               "HW-EVAL-adjacent-work",
               "HW-SPEC-glossary"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md",
+        "kind": "review_record",
+        "id": "HW-REV-the-sixty-four-restored-help-strings-checked-against-the-binary",
+        "facets": {
+          "id": "HW-REV-the-sixty-four-restored-help-strings-checked-against-the-binary",
+          "status": "draft",
+          "status_since": "2026-08-28",
+          "summary": "Each of the 64 help strings that PR #335 carried whole out of the retired parser, run against the shipped binary: 60 true, 3 false, 1 not runnable.",
+          "last_verified": "2026-08-28",
+          "doc_type": "review_record",
+          "relations": {
+            "traces_to": [
+              "engine/crates/cli/src/lib.rs",
+              "engine/crates/verbs/src/lib.rs",
+              "engine/crates/cli/tests/wiring.rs"
             ]
           }
         }
@@ -7256,6 +7486,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "engine/crates/audit/src/reading.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "engine/crates/check/src/dependency.rs",
         "resolver": "source-tree"
       },
@@ -7296,6 +7531,21 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "engine/crates/cli/tests/help.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/cli/tests/json.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/cli/tests/wiring.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "engine/crates/compat/src/lib.rs",
         "resolver": "source-tree"
       },
@@ -7312,6 +7562,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/conformance/src/render.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/doc/src/sentences.rs",
         "resolver": "source-tree"
       },
       {
@@ -7397,6 +7652,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/sweep/src/lib.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/verbs/src/lib.rs",
         "resolver": "source-tree"
       },
       {
@@ -8245,6 +8505,83 @@
           "id": "HW-DR-0024",
           "path": "docs/decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md",
           "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0033",
+          "path": "docs/decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/tests/help.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0033",
+          "path": "docs/decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/main.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/tests/json.rs",
+          "resolver": "source-tree"
         }
       },
       {
@@ -9795,6 +10132,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/audit/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-taxonomy.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/audit/src/reading.rs",
           "resolver": "source-tree"
         }
       },
@@ -11746,6 +12094,17 @@
         }
       },
       {
+        "source": "docs/obligations/0159-a-sentence-that-opens-with-a-hash-and-an-issue-number-is-folded-into-the-sentence-before-it.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/doc/src/sentences.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
         "source": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
         "relation": "examines",
         "written_as": "examines",
@@ -11764,6 +12123,17 @@
           "bound": "document",
           "id": "HW-OBL-0010",
           "path": "docs/obligations/0010-the-corpus-descriptor-exists-and-no-probe-has-run-against.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0013",
+          "path": "docs/obligations/0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident.md",
           "kind": "obligation_record"
         }
       },
@@ -12216,6 +12586,39 @@
           "id": "HW-SPEC-glossary",
           "path": "docs/spec/glossary.md",
           "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/verbs/src/lib.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/tests/wiring.rs",
+          "resolver": "source-tree"
         }
       },
       {

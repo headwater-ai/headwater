@@ -1,38 +1,37 @@
-337 seen, 257 classified, 257 checked, 4747 check instances
+347 seen, 267 classified, 267 checked, 4905 check instances
       4 generated, held to regeneration by `headwater generate --check`
-     21 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
+     22 skipped: the shelf is heterogeneous, so the discriminator is the gap metadata fills, and kind resolution already read it
       2 skipped: the document at the target end, `HW-REG-open-questions`, declares no value for the state facet, so there is no state to read there
-    245 skipped: this document writes no fragment into itself
-    515 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+    255 skipped: this document writes no fragment into itself
+    535 skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 adoption
   0 pairs open, 1 closed, holding 0 findings, in 1 task
   AD-1 0 open, 1 closed, holding 0 findings, owner the specification authors, until 2027-06-30
     The one entry of `.ste-lint-baseline.json` that this corpus still owes. The
-    baseline held two when the linter retired. The other named a semicolon
-    inside a block quotation, which the engine does not report at all, because
-    the parser hands a quoted block to no lexical rule
-258 documents in the read set, and 2 barriers that no gate carries across a merge
-    257 instances of facet.required.missing
-    257 instances of facet.value.not_permitted
-    257 instances of identifier.pattern.not_met
-    257 instances of shelf.placement_is_primary
-    530 instances of relation.target.unresolved
+      baseline held two when the linter retired. The other named a semicolon
+      inside a block quotation, which the engine does not report at all, because
+      the parser hands a quoted block to no lexical rule268 documents in the read set, and 2 barriers that no gate carries across a merge
+    267 instances of facet.required.missing
+    267 instances of facet.value.not_permitted
+    267 instances of identifier.pattern.not_met
+    267 instances of shelf.placement_is_primary
+    543 instances of relation.target.unresolved
      88 instances of relation.reciprocity.missing
-    338 instances of relation.endpoint.not_permitted
+    341 instances of relation.endpoint.not_permitted
       2 instances of lifecycle.dependency.on_terminal
      19 instances of relation.participation.overdue
-    257 instances of relation.declaration.unusable
-    257 instances of identifier.unusable
+    267 instances of relation.declaration.unusable
+    267 instances of identifier.unusable
       1 instances of identifier.claimed_twice
-    235 instances of voice.forbidden_construction
-    248 instances of language.controlled.not_met
-    248 instances of language.retired_term.used
-    248 instances of language.source_form.not_met
-    219 instances of section.required.missing
-    257 instances of link.fragment.unresolved
-    257 instances of warrant.promoted
-    257 instances of lifecycle.transition.not_permitted
-    257 instances of lifecycle.state.not_admitted
+    244 instances of voice.forbidden_construction
+    256 instances of language.controlled.not_met
+    256 instances of language.retired_term.used
+    256 instances of language.source_form.not_met
+    228 instances of section.required.missing
+    267 instances of link.fragment.unresolved
+    267 instances of warrant.promoted
+    267 instances of lifecycle.transition.not_permitted
+    267 instances of lifecycle.state.not_admitted
       1 instances of lifecycle.deletion.not_permitted
 suppressions
   0 findings hidden by 0 directives
@@ -89,22 +88,24 @@ rules, and for each the scope that binds it
     taxonomy scope, the resolved taxonomy, and no document
   control.mechanism.unimplemented
     taxonomy scope, the resolved taxonomy, and no document
+  adoption.task.expired
+    taxonomy scope, the resolved taxonomy, and no document
 register
-  31 obligations: 28 verified, 2 gap, 1 unverifiable, 0 with no disposition
-     12 high, 11 verified
+  32 obligations: 29 verified, 2 gap, 1 unverifiable, 0 with no disposition
+     13 high, 12 verified
      14 medium, 12 verified
       5 low, 5 verified
   OB-DR-1 gap, owner the decision-record entry, target a change-scoped rule that reads the prior version, which spec 12 already supplies as `needs_prior`
   OB-DR-2 gap, owner the decision-record entry, target a rule over state dwell time, which `taxonomy audit` already measures and no check reads
   OB-DR-3 unverifiable, To count the decisions in a document is to reason about what the prose asserts, which spec 1 forswears. The shelf is homogeneous and the section contract requires one `Decision` heading, and a second decision under that heading is invisible to both
-  28 controls
-     25 posture advisory
+  29 controls
+     26 posture advisory
       3 posture blocking
-     28 acts detective
-     26 name a rule this engine carries
+     29 acts detective
+     27 name a rule this engine carries
       2 name a phase this engine runs
      12 with no promotion record, so nothing states what would promote them
-      7 with criteria
+      8 with criteria
       3 at a final posture
       4 permanently advisory
       2 producing facts rather than findings

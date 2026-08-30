@@ -41,6 +41,17 @@
 //! the next flag arriving undescribed the way `--facet`, `--tier`, `--arm`,
 //! `--category` and `--seed` did.
 //!
+//! **A global flag is described once and printed twice.** [`GLOBALS`] carries a
+//! one-line summary beside each description, and [`first_screen`] prints the
+//! summaries rather than letting `clap` print the descriptions. The description
+//! is the one `clap` propagates onto every verb page, so the long form is
+//! reachable everywhere it was, and the screen a reader meets first is a list
+//! rather than five paragraphs.
+//! [HW-DR-0042](../../../../docs/decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md)
+//! rules that, and it rules out `Arg::long_help` as the way to do it: `clap`
+//! renders `long_help` for `--help` and `help` for `-h`, so the two spellings
+//! would stop printing the same text.
+//!
 //! **A `///` comment on a derived item becomes help text.** The commentary on
 //! the types below is `//` for that reason, and the module documentation you
 //! are reading is `//!`, which `clap` does not read either. A house-style doc
@@ -60,6 +71,32 @@
 
 pub mod paint;
 
+/// What every output-target help says about a run that refuses.
+///
+/// One sentence with six readers — the two `--json` descriptions below and the
+/// four `--format` ones — for the reason [`JSON_BESIDE_FORMAT`] gives: six
+/// literals agree until somebody edits one of them.
+/// [HW-DR-0043](../../../../docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) rules
+/// that `--json` names the shape of an artifact and moves neither the stream a
+/// refusal is written on nor the grammar it is written in. So a consumer reads
+/// nothing on standard output when a run refuses, and reads the account on the
+/// other stream.
+///
+/// **It says "refuses" and not "exits non-zero", because those are different
+/// sets.** Five of the eleven reasons `check` exits 1 are decided after the
+/// report is already on standard output, which
+/// `docs/interfaces/headwater-check.md` states under *Exit status*. A refusal
+/// is decided before anything is written.
+///
+/// A macro and not a `const`, because the six readers reach it through
+/// [`concat!`], which takes a literal and never a name.
+macro_rules! a_refusal_is_not_an_artifact {
+    () => {
+        "A run that refuses writes nothing here: the account is one English sentence on standard \
+         error and the status is 1"
+    };
+}
+
 /// What `--json` says on a verb that also declares `--format`.
 ///
 /// One constant with four readers rather than four literals that agree until
@@ -75,9 +112,12 @@ pub mod paint;
 /// states a value and the engine substitutes its own — which is the defect
 /// [#337](https://github.com/headwater-ai/headwater/issues/337) and
 /// [#338](https://github.com/headwater-ai/headwater/issues/338) are open about.
-const JSON_BESIDE_FORMAT: &str = "write this run as one JSON document on standard output. It is \
-    the artifact `--format json` writes, byte for byte. A run that states both is refused rather \
-    than resolved, because two names for one target is a question answered twice";
+const JSON_BESIDE_FORMAT: &str = concat!(
+    "write this run as one JSON document on standard output. It is the artifact `--format json` \
+     writes, byte for byte. A run that states both is refused rather than resolved, because two \
+     names for one target is a question answered twice. ",
+    a_refusal_is_not_an_artifact!()
+);
 
 /// What `--json` says on a verb that declares no `--format`.
 ///
@@ -86,9 +126,129 @@ const JSON_BESIDE_FORMAT: &str = "write this run as one JSON document on standar
 /// stays where it is on the four verbs that have it, because #321 asks that
 /// `--json` be accepted where `--format json` already is and never that it
 /// replace anything.
-const JSON_ALONE: &str = "write this run as one JSON document on standard output, instead of the \
-    report a person reads. The document names its own shape in a `version` member, so a consumer \
-    pins that rather than the version of this engine. It moves no exit status";
+const JSON_ALONE: &str = concat!(
+    "write this run as one JSON document on standard output, instead of the report a person \
+     reads. The document names its own shape in a `version` member, so a consumer pins that \
+     rather than the version of this engine. It moves no exit status. ",
+    a_refusal_is_not_an_artifact!()
+);
+
+/// What `--root` says, on the first screen and on every verb page.
+///
+/// One sentence, so the summary and the description are the same string. The
+/// four flags below it are the ones whose description is a paragraph.
+const ROOT_TEXT: &str = "the repository to read. Defaults to the working directory";
+
+/// What `-V, --version` says on a verb page.
+const VERSION_TEXT: &str = "the version of this engine. It is the number a package's \
+    `requires_engine` range is read against, and it is the number to quote in a bug report. One \
+    line on standard output, and no repository is needed to ask";
+
+/// What `--wide` says on a verb page.
+const WIDE_TEXT: &str = "lay the help, and the report of `headwater check`, out at the width \
+    `COLUMNS` states, held to the range 80 to 120. A reading that is absent or is not a number \
+    gives 80, which is what a run with no flag gives. Without it nothing reads `COLUMNS`, so a run \
+    piped into a file and a run under a terminal write the same bytes. A shell keeps `COLUMNS` to \
+    itself, so the form that carries it is `COLUMNS=100 headwater --wide --help`. A run that lays \
+    nothing out, a machine format included, refuses it rather than accepting a flag that does \
+    nothing";
+
+/// What `--no-color` says on a verb page.
+const NO_COLOR_TEXT: &str = "write no color, which is what every run of this binary already does. \
+    Nothing here emits an escape sequence on any stream, in any format, under any terminal or for \
+    any value of `NO_COLOR`, so this flag confirms the state rather than changing it. It is \
+    declared so that a caller who writes it out of habit is answered rather than refused";
+
+/// One global flag, as the first screen prints it and as a verb page prints it.
+///
+/// The summary and the description are declared together, at the flag, which is
+/// what #321 clause 5 asks of a short form: a summary written a second time
+/// somewhere else is the second copy of a description that
+/// [#257](https://github.com/headwater-ai/headwater/issues/257) was filed
+/// about. The table is here rather than in `headwater-verbs`, where
+/// [`headwater_verbs::Verb`] declares the same pair for a verb, because
+/// `HW-DR-0033` rules that a flag belongs to the verb that reads it and that its
+/// description is written at the declaration of that flag. A global flag is
+/// declared in this file, so its summary is too.
+///
+/// [HW-DR-0042](../../../../docs/decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md)
+/// holds `summary` to one line of the first screen, and
+/// `engine/crates/cli/tests/help.rs` is what holds it.
+#[derive(Debug)]
+pub struct Global {
+    /// The identifier `clap` knows the argument by.
+    ///
+    /// The entry is bound to the flag by this rather than by a name that
+    /// resembles it, so a flag that arrives with no entry is reported against
+    /// the identifier a reader of the parser will recognize.
+    pub id: &'static str,
+    /// The flag as the first screen names it: every spelling, and any value.
+    pub name: &'static str,
+    /// One line of the first screen, for a reader who is choosing a verb.
+    pub summary: &'static str,
+    /// The whole of it, which is what `clap` carries onto every verb page.
+    pub description: &'static str,
+}
+
+impl Global {
+    /// Whether this entry is the entry of the argument `clap` calls `id`.
+    #[must_use]
+    pub fn covers(&self, id: &str) -> bool {
+        self.id == id
+    }
+}
+
+const ROOT: Global = Global {
+    id: "root",
+    name: "--root <path>",
+    summary: ROOT_TEXT,
+    description: ROOT_TEXT,
+};
+
+const VERSION: Global = Global {
+    id: "version",
+    name: "-V, --version",
+    summary: "the version of this engine, on one line, from anywhere",
+    description: VERSION_TEXT,
+};
+
+const WIDE: Global = Global {
+    id: "wide",
+    name: "--wide",
+    summary: "lay the help and the check report out at `COLUMNS`, 80 to 120",
+    description: WIDE_TEXT,
+};
+
+const NO_COLOR: Global = Global {
+    // `clap`'s derive takes the identifier from the field and not from the
+    // spelling, so this is `no_color` where the flag is `--no-color`.
+    id: "no_color",
+    name: "--no-color",
+    summary: "accepted and inert: no run of this binary emits color",
+    description: NO_COLOR_TEXT,
+};
+
+/// `-h, --help` is `clap`'s own argument, so this entry supplies the first
+/// screen's line for it and states what `clap` puts on a verb page.
+///
+/// The description is the only one of the five this repository did not write.
+/// `Command::mut_arg` panics before the build adds the argument, and
+/// `Command::mut_args` documents that it does not reach the built-in help
+/// argument at all.
+/// [HW-OBL-0158](../../../../docs/obligations/0158-clap-owns-the-help-flag-so-h-help-reads-print-help-on-all-32-verb-pages.md)
+/// holds the gap and names the route that would close it.
+const HELP: Global = Global {
+    id: "help",
+    name: "-h, --help",
+    summary: "this screen, or the long form of one verb",
+    description: "Print help",
+};
+
+/// The order the first screen prints the global flags in.
+///
+/// Named constants rather than positions, so that a reordering here cannot
+/// silently give one flag another flag's summary.
+pub const GLOBALS: &[&Global] = &[&ROOT, &VERSION, &WIDE, &NO_COLOR, &HELP];
 
 use clap::{Command, CommandFactory, FromArgMatches, Parser, Subcommand};
 use headwater_check::Date;
@@ -112,7 +272,7 @@ pub struct Cli {
         long,
         global = true,
         value_name = "path",
-        help = "the repository to read. Defaults to the working directory"
+        help = ROOT_TEXT
     )]
     pub root: Option<PathBuf>,
 
@@ -126,9 +286,7 @@ pub struct Cli {
         short = 'V',
         long,
         global = true,
-        help = "the version of this engine. It is the number a package's `requires_engine` range \
-                is read against, and it is the number to quote in a bug report. One line on \
-                standard output, and no repository is needed to ask"
+        help = VERSION_TEXT
     )]
     pub version: bool,
 
@@ -141,14 +299,7 @@ pub struct Cli {
     #[arg(
         long,
         global = true,
-        help = "lay the help out at the width `COLUMNS` states, held to the range 80 to 120. A \
-                reading that is absent or is not a number gives 80, which is what a run with no \
-                flag gives. Without it the help is 80 columns wide, nothing reads `COLUMNS`, and \
-                a run piped \
-                into a file and a run under a terminal write the same bytes. A shell keeps \
-                `COLUMNS` to itself, so the form that carries it is `COLUMNS=100 headwater --wide \
-                --help`. It lays out the help and nothing else, so a run that prints no help \
-                refuses it rather than accepting a flag that would do nothing"
+        help = WIDE_TEXT
     )]
     pub wide: bool,
 
@@ -166,11 +317,7 @@ pub struct Cli {
     #[arg(
         long = "no-color",
         global = true,
-        help = "write no color, which is what every run of this binary already does. Nothing here \
-                emits an escape sequence on any stream, in any format, under any terminal or for \
-                any value of `NO_COLOR`, so this flag confirms the state rather than changing it. \
-                It is declared so that a caller who writes it out of habit is answered rather \
-                than refused"
+        help = NO_COLOR_TEXT
     )]
     pub no_color: bool,
 
@@ -222,7 +369,9 @@ pub enum Verb {
         #[arg(
             long,
             value_name = "manifest",
-            help = "the manifest of the change this run is scoped to. Each line names one document \
+            help = "the manifest of the change this run is scoped to. The first line is \
+                    `headwater change 1`, and a file that opens with anything else is refused \
+                    rather than read. Each line after it names one document \
                     the change carries, as `added<tab><path>` or `prior<tab><path><tab><file>`, \
                     and the second form names a file holding the bytes that stood before the \
                     change. A document the manifest does not name did not change. It is what a \
@@ -259,10 +408,16 @@ pub enum Verb {
         #[arg(
             long,
             value_name = "text|json|sarif|markdown",
-            help = "which vocabulary to write the run in. `text` is the report a person reads and \
-                    the default. `sarif` is what a forge ingests as a check run, `markdown` is a \
-                    job summary or a review comment, and `json` is the finding shape spec 4 \
-                    declares, for an adapter nobody here wrote. Each names what it could not carry"
+            help = concat!(
+                "which vocabulary to write the run in. `text` is the report a person reads and \
+                 the default. `sarif` is what a forge ingests as a check run, `markdown` is a \
+                 job summary or a review comment, and `json` is the finding shape spec 4 \
+                 declares, for an adapter nobody here wrote. `sarif` writes its own loss set \
+                 into the artifact. `markdown` declares one in the source and not in the \
+                 artifact, because nothing it writes is machine-readable. `text` and `json` \
+                 declare that they drop nothing. ",
+                a_refusal_is_not_an_artifact!()
+            )
         )]
         format: Option<String>,
         #[arg(long, conflicts_with = "format", help = JSON_BESIDE_FORMAT)]
@@ -350,8 +505,11 @@ pub enum Verb {
         #[arg(
             long,
             value_name = "text|json",
-            help = "`text` is the report a person reads and the default, and `json` is the same \
-                    numbers for a program. Neither carries a reading the store does not hold"
+            help = concat!(
+                "`text` is the report a person reads and the default, and `json` is the same \
+                 numbers for a program. Neither carries a reading the store does not hold. ",
+                a_refusal_is_not_an_artifact!()
+            )
         )]
         format: Option<String>,
         #[arg(long, conflicts_with = "format", help = JSON_BESIDE_FORMAT)]
@@ -407,11 +565,10 @@ pub enum Verb {
             value_name = "facet=value",
             value_parser = a_pair,
             help = "a value for a facet this kind requires, as `<facet>=<value>`. Repeatable. A \
-                    facet the kind does not require is refused, a facet in an engine role is \
-                    refused because the role decides the value, and a value outside a closed set \
-                    is refused with the set printed. The discriminator of a heterogeneous shelf \
-                    is the exception: the shelf decides it, and a value stated for it is \
-                    overwritten rather than refused"
+                    facet the kind does not require is refused, and so is a value outside a \
+                    closed set, with the set printed. A facet that a declaration decides is \
+                    refused too: an engine role decides its facet's value, and the kind decides \
+                    the discriminator of a heterogeneous shelf"
         )]
         facet: Vec<(String, String)>,
         #[arg(
@@ -496,10 +653,13 @@ pub enum Verb {
         #[arg(
             long,
             value_name = "json|jsonschema",
-            help = "the emitter target. `json` is the native property graph with no loss and \
-                    `jsonschema` constrains front matter. The other five targets of spec 6 parse \
-                    and report the consumer each one waits on. With this flag the artifact goes to \
-                    standard output and no declared output path is touched"
+            help = concat!(
+                "the emitter target. `json` is the native property graph with no loss and \
+                 `jsonschema` constrains front matter. The other five targets of spec 6 parse \
+                 and report the consumer each one waits on. With this flag the artifact goes to \
+                 standard output and no declared output path is touched. ",
+                a_refusal_is_not_an_artifact!()
+            )
         )]
         format: Option<String>,
         #[arg(
@@ -657,8 +817,11 @@ pub enum SweepWord {
         #[arg(
             long,
             value_name = "text|json",
-            help = "`text` is the report a person reads and the default, and `json` is the finding \
-                    shape spec 4 declares with the provenance and the evidence a sweep adds"
+            help = concat!(
+                "`text` is the report a person reads and the default, and `json` is the finding \
+                 shape spec 4 declares with the provenance and the evidence a sweep adds. ",
+                a_refusal_is_not_an_artifact!()
+            )
         )]
         format: Option<String>,
         #[arg(long, conflicts_with = "format", help = JSON_BESIDE_FORMAT)]
@@ -685,8 +848,8 @@ pub enum ProbeWord {
             value_name = "present|absent",
             help = "narrow the selection to one arm the tier declares. Every arm the tier \
                     declares by default, which is one for `regression` and two for `campaign`. \
-                    An arm the tier does not declare narrows nothing: the plan runs the tier's \
-                    own arms and prints them under `arms:`"
+                    An arm the tier does not declare refuses the run rather than planning \
+                    another one, and the refusal names the arms the tier declares"
         )]
         arm: Option<String>,
         #[arg(
@@ -762,6 +925,14 @@ pub enum TaxonomyWord {
                     the same bytes"
         )]
         now: Option<Date>,
+        #[arg(
+            long,
+            help = "append this run's adoption reading to `.headwater/adoption.jsonl`. Without it \
+                    the verb writes nothing. A reading the store already holds at this lock and \
+                    this date is not appended twice, so two recorded audits of one tree at one \
+                    date still write the same bytes"
+        )]
+        record: bool,
     },
     Publish {
         #[arg(
@@ -931,24 +1102,48 @@ pub fn parsed() -> Result<Cli, clap::Error> {
     Cli::from_arg_matches(&matches)
 }
 
-/// `--wide` on a run that prints no help, which is a run it would do nothing in.
+/// `--wide` on a run that lays nothing out, which is a run it would do nothing
+/// in.
 ///
-/// # The rule is wider than clause 12 asks, and deliberately
+/// # The rule was wider than clause 12 asked, and it has narrowed
 ///
 /// Clause 12 of [#321](https://github.com/headwater-ai/headwater/issues/321)
 /// asks that `--wide` be refused alongside `--format json|sarif|markdown`. The
-/// rule here is that it is refused on **every** run that prints no help, and
-/// the machine formats are one case of it. The reason is that the flag lays out
-/// the help and lays out nothing else: the report of `headwater check` is
-/// composed by `headwater_adapter` and is not laid out at any width, so
-/// `headwater check --wide --format text` would be as inert as
-/// `--format json` and would say so to nobody.
+/// rule here was wider than that: it refused **every** run that printed no help,
+/// because the flag laid out the help and laid out nothing else, and
+/// `headwater check --wide --format text` would have been as inert as
+/// `--format json` and would have said so to nobody. The doc comment recorded
+/// that the refusal would narrow to the machine formats when a report gained a
+/// layout.
 ///
-/// This repository has two open issues about flags accepted and silently
-/// ignored — [#337](https://github.com/headwater-ai/headwater/issues/337) and
+/// [#340](https://github.com/headwater-ai/headwater/issues/340) gave it one, and
+/// this is the narrowing. The text report of `headwater check` is laid out by
+/// `headwater_check::fill` at the width `paint::width` states, so `--wide` is
+/// answered there rather than refused. Every other run that lays nothing out is
+/// still refused, and the machine formats are still named by name: this
+/// repository has two open issues about flags accepted and silently ignored —
+/// [#337](https://github.com/headwater-ai/headwater/issues/337) and
 /// [#338](https://github.com/headwater-ai/headwater/issues/338) — and a third
-/// would have been this one. When a report gains a layout the refusal narrows
-/// to the machine formats, which is the clause as written.
+/// would have been this one.
+///
+/// # Why the predicate names a verb and not a format
+///
+/// "The format is `text`" is not the test. `headwater capture --format text`
+/// exists and lays nothing out, and so does every other verb that prints text
+/// nobody folded. What is laid out is the report of one verb, so the check names
+/// that verb and the absence of a machine format on it.
+///
+/// # Why it reads two flags for one format
+///
+/// A machine format reaches this verb under two names. `--format json` is a
+/// value, `--json` is a boolean, and
+/// [HW-DR-0033](../../../../docs/decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md)
+/// rules that the two are one target under two spellings. A predicate that read
+/// `format` alone would answer `check --wide --json` and let the width flag do
+/// nothing, which is the exact defect the paragraph above says a third issue
+/// would have been about. **Whenever a refusal narrows, every spelling of the
+/// thing it narrows on has to be enumerated**, and `tests/width.rs` carries a
+/// row for each.
 ///
 /// # Why reaching this function is already the test
 ///
@@ -972,18 +1167,31 @@ fn a_width_for_a_run_that_lays_nothing_out(matches: &clap::ArgMatches) -> Option
     if matches.subcommand_name() == Some("help") {
         return None;
     }
-    // `text` is a report a person reads and it is still not laid out at a
-    // width, so it falls to the general reason rather than to the machine-format
-    // one. The narrower message is for the case clause 12 names.
     let format = leaf.try_get_one::<String>("format").ok().flatten();
+    // `--json` is the second spelling of `--format json`, and it is a boolean of
+    // its own rather than a value of `format`. A predicate that read `format`
+    // alone would let `check --wide --json` through with the flag doing nothing,
+    // which is the defect this whole refusal exists to prevent. HW-DR-0033 rules
+    // that the two names reach one target, so every reader of one reads both.
+    let json = leaf.try_get_one::<bool>("json").ok().flatten() == Some(&true);
+    // The one report this binary lays out at a width. `check` with no format
+    // named, in either spelling, writes text.
+    let laid_out = matches.subcommand_name() == Some("check")
+        && !json
+        && matches!(format.map(String::as_str), None | Some("text"));
+    if laid_out {
+        return None;
+    }
     let says = match format.filter(|value| value.as_str() != "text") {
         Some(format) => format!("`--format {format}` writes an artifact that nothing lays out"),
-        None => "this run prints no help".to_string(),
+        None if json => "`--json` writes an artifact that nothing lays out".to_string(),
+        None => "this run lays nothing out".to_string(),
     };
     Some(format!(
-        "`--wide` says how wide the help is laid out, and {says}. A run carrying it would carry \
-         one flag that does nothing, so it is refused rather than run. The runs it widens are \
-         `{0} --wide --help`, `{0} <verb> --wide --help` and `{0} --wide help <verb>`",
+        "`--wide` says how wide the help and the report of `{0} check` are laid out, and {says}. A \
+         run carrying it would carry one flag that does nothing, so it is refused rather than run. \
+         The runs it widens are `{0} --wide --help`, `{0} <verb> --wide --help`, `{0} --wide help \
+         <verb>` and `{0} check --wide`",
         headwater_verbs::BINARY
     ))
 }
@@ -1014,6 +1222,9 @@ const COLUMN: usize = 15;
 /// is deliberately absent: `clap` renders one flat list and the screen this
 /// builds is grouped, and the groups come off
 /// [`headwater_verbs::groups`] in the order the table first names each one.
+/// `{options}` is absent for the same kind of reason: `clap` renders the whole
+/// description of every global flag, and this screen prints the one-line summary
+/// [`GLOBALS`] declares beside each of them.
 ///
 /// The examples are the one part of this screen that no earlier version of the
 /// binary carried. #321 measured the old help and found no example anywhere in
@@ -1059,7 +1270,33 @@ fn first_screen(width: usize) -> String {
             out.push_str(&paint::row(verb.name, verb.summary, COLUMN, width));
         }
     }
-    out.push_str("\nGlobal flags:\n{options}\n\n");
+    // The global flags are rendered here for the reason the verbs above are.
+    //
+    // `{options}` renders the whole description of every one of them, which is
+    // twenty-five lines of paragraph on the one screen an adopter meets first
+    // and none of it helps a reader choose a verb. `HW-DR-0042` holds this
+    // screen to one line per entry, so the summary of each flag is printed here
+    // and the description stays where `clap` already puts it, on all 32 verb
+    // pages.
+    //
+    // The column is derived rather than written down. `paint::row` indents by
+    // two and leaves what is left of the column to the name, so a column
+    // narrower than the longest name overruns `width` on the first line of that
+    // row. `COLUMN` above is `2 + 11 + 2`, which is the longest verb name and
+    // the gutter this screen keeps between the two fields; the longest flag name
+    // is `--root <path>` at thirteen, so this is the same arithmetic on a longer
+    // name rather than a second discipline.
+    let longest = GLOBALS
+        .iter()
+        .map(|one| one.name.chars().count())
+        .max()
+        .unwrap_or(0);
+    let at = 2 + longest + 2;
+    out.push_str("\nGlobal flags:\n");
+    for one in GLOBALS {
+        out.push_str(&paint::row(one.name, one.summary, at, width));
+    }
+    out.push('\n');
     out.push_str(&paint::fold_indented(
         &format!(
             "Run `{0} help <verb>` for the long description of one verb, or `{0} <verb> --help`.",

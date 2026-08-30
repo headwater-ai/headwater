@@ -238,23 +238,59 @@ fn the_widest_a_caller_may_ask_for_lays_the_whole_surface_out_inside_it() {
 /// the exit table of `docs/interfaces/headwater-check.md` false, and the message
 /// names the flag and the reason. Where a machine format was asked for, which is
 /// the case clause 12 names, that format is the reason the message gives.
+///
+/// **Every row states the fragment it expects**, rather than deriving it from a
+/// format name. A machine format reaches this binary under two spellings —
+/// `--format json` and `--json` — and a table that derived the message from the
+/// `--format` value could not carry a row for the second one. That gap is how
+/// `check --wide --json` was answered rather than refused for the length of one
+/// review.
 #[test]
 fn a_width_asked_for_a_run_that_lays_nothing_out_is_refused() {
-    for (line, names) in [
-        (vec!["check", "--wide", "--format", "json"], Some("json")),
-        (vec!["check", "--wide", "--format", "sarif"], Some("sarif")),
+    for (line, says) in [
+        (
+            vec!["check", "--wide", "--format", "json"],
+            "`--format json` writes an artifact",
+        ),
+        (
+            vec!["check", "--wide", "--format", "sarif"],
+            "`--format sarif` writes an artifact",
+        ),
         (
             vec!["check", "--wide", "--format", "markdown"],
-            Some("markdown"),
+            "`--format markdown` writes an artifact",
         ),
-        (vec!["capture", "--wide", "--format", "json"], Some("json")),
-        (vec!["export", "--wide", "--format", "json"], Some("json")),
-        // The text report is composed rather than laid out at a width, so
-        // `--wide` is as inert there as in a machine format and is refused the
-        // same way.
-        (vec!["check", "--wide", "--format", "text"], None),
-        (vec!["check", "--wide"], None),
-        (vec!["taxonomy", "audit", "--wide"], None),
+        (
+            vec!["capture", "--wide", "--format", "json"],
+            "`--format json` writes an artifact",
+        ),
+        (
+            vec!["export", "--wide", "--format", "json"],
+            "`--format json` writes an artifact",
+        ),
+        // `capture --format text` lays nothing out either, so the boundary is
+        // not "the format is text" — it is the one report that is laid out,
+        // which is `check`'s. Everything else still refuses.
+        (
+            vec!["capture", "--wide", "--format", "text"],
+            "lays nothing out",
+        ),
+        (vec!["taxonomy", "audit", "--wide"], "lays nothing out"),
+        // **The second spelling of one machine format.** `--json` is a boolean
+        // and `--format json` is a value, and HW-DR-0033 rules that they reach
+        // one target. A predicate that read only `--format` answered
+        // `check --wide --json` with the flag doing nothing, which is the defect
+        // this whole refusal exists to prevent.
+        (
+            vec!["check", "--wide", "--json"],
+            "`--json` writes an artifact",
+        ),
+        // Reading `--json` is not a `check`-only rule: every verb that declares
+        // the flag names it as the reason, the way `--format json` is named.
+        (
+            vec!["capture", "--wide", "--json"],
+            "`--json` writes an artifact",
+        ),
     ] {
         let typed = line.join(" ");
         let ran = ran(&line, None);
@@ -265,20 +301,74 @@ fn a_width_asked_for_a_run_that_lays_nothing_out_is_refused() {
             "the refusal names the flag: {said}"
         );
         assert!(
-            said.contains("how wide the help is laid out"),
+            said.contains("how wide the help"),
             "the refusal says what the flag does: {said}"
         );
-        match names {
-            Some(format) => assert!(
-                said.contains(&format!("--format {format}")),
-                "the refusal names the format: {said}"
-            ),
-            None => assert!(
-                said.contains("prints no help"),
-                "the refusal says why this run is not one: {said}"
-            ),
-        }
+        assert!(
+            said.contains(says),
+            "`headwater {typed}` should say `{says}`, and said: {said}"
+        );
         assert!(ran.out.is_empty(), "a refusal writes no artifact");
+    }
+}
+
+/// **The two spellings of one machine format reach the same answer.**
+///
+/// `--json` is documented as "the same artifact `--format json` writes, byte for
+/// byte", and HW-DR-0033 rules that two names for one target is a question
+/// answered twice. So `--wide` must treat them the same way, and this asserts it
+/// by identity rather than by reading two messages.
+#[test]
+fn both_spellings_of_a_machine_format_answer_a_width_the_same_way() {
+    let root = repository();
+    let root = root.to_str().expect("the path is text").to_string();
+    let one = ran(&["check", "--wide", "--json", "--root", &root], None);
+    let two = ran(
+        &["check", "--wide", "--format", "json", "--root", &root],
+        None,
+    );
+    assert_eq!(one.code, Some(1), "`--json` beside `--wide` is refused");
+    assert_eq!(one.code, two.code, "the two spellings exit the same way");
+    assert!(
+        one.out.is_empty() && two.out.is_empty(),
+        "neither wrote one"
+    );
+    // Without `--wide`, both still write the same artifact, so the refusal above
+    // is about the width flag and not about the format.
+    let plain_one = ran(&["check", "--json", "--root", &root], None);
+    let plain_two = ran(&["check", "--format", "json", "--root", &root], None);
+    assert_eq!(plain_one.code, Some(0));
+    assert_eq!(
+        plain_one.out, plain_two.out,
+        "the two spellings write the same artifact"
+    );
+}
+
+/// **The other half of the boundary.** The report that is laid out answers it.
+///
+/// This is the inversion of the two rows the case above used to carry. Before
+/// [#340](https://github.com/headwater-ai/headwater/issues/340) the text report
+/// was composed at no width and `check --wide` was refused; it is laid out now,
+/// so the flag does something and the run is answered. It cannot join
+/// `a_width_asked_for_a_run_that_prints_help_is_answered`, which runs with no
+/// corpus and would find nothing to lay out.
+#[test]
+fn a_width_asked_for_the_report_that_is_laid_out_is_answered() {
+    let root = repository();
+    let root = root.to_str().expect("the path is text").to_string();
+    for line in [
+        vec!["check", "--wide", "--root", &root],
+        vec!["check", "--wide", "--format", "text", "--root", &root],
+    ] {
+        let typed = line.join(" ");
+        let ran = ran(&line, Some("120"));
+        assert_eq!(ran.code, Some(0), "`headwater {typed}` is answered");
+        assert!(!ran.out.is_empty(), "`headwater {typed}` wrote a report");
+        let said = String::from_utf8_lossy(&ran.err).into_owned();
+        assert!(
+            !said.contains("--wide"),
+            "`headwater {typed}` says nothing about the flag: {said}"
+        );
     }
 }
 
@@ -418,4 +508,359 @@ fn no_escape_byte_reaches_a_file_this_binary_writes() {
 /// The two bytes that open every ANSI colour sequence.
 fn contains_escape(bytes: &[u8]) -> bool {
     bytes.windows(2).any(|pair| pair == [0x1b, b'['])
+}
+
+// # The report of `headwater check`, which #340 laid out
+//
+// The help surface above is walked out of the command tree. The report cannot
+// be: it is a function of a corpus, so every case below runs the verb over this
+// repository through `--root` and reads what it printed.
+//
+// **The read-set block is exempt and every case says so.** It is the artifact
+// `check --read-set` writes and `headwater gate` parses, so the fill does not
+// touch it, and a case that measured it would be asking the wrong question of
+// the wrong bytes. `the_read_set_block_is_the_artifact_the_flag_writes` is
+// where the exemption is held to its side of the bargain.
+
+/// The report over this repository, as bytes, with the streams apart.
+fn report(extra: &[&str], columns: Option<&str>) -> Ran {
+    let root = repository();
+    let root = root.to_str().expect("the path is text").to_string();
+    let mut line: Vec<&str> = vec!["check", "--root", &root];
+    line.extend_from_slice(extra);
+    ran(&line, columns)
+}
+
+/// A report split into the part that is laid out and the read set that is not.
+fn laid_out(report: &str) -> &str {
+    report
+        .split_once("\nread set\n")
+        .expect("the report carries a read-set block")
+        .0
+}
+
+/// **The bar, re-scoped.** No line of the report is wider than 80 columns
+/// except one whose own word already is.
+///
+/// The literal bar #340 asked for — no line over 80 at all — cannot be met and
+/// should not be. `headwater_check::fill` never breaks inside a word, because a
+/// path broken across a fold point is a path a caller cannot retype and a path
+/// `headwater_adapter::census` no longer finds when it audits the artifact by
+/// `contains`. So the wide lines are partitioned: **avoidable**, where the
+/// longest word plus the line's own indent would have fitted and the fill should
+/// have narrowed it, and **unfoldable**, where one word is already past the
+/// room. The avoidable count is asserted to be zero and the unfoldable one names
+/// itself.
+///
+/// The state this replaced was 320 of 684 lines over 80, with a widest of 472 —
+/// six screen widths, and a census exclusion reason rather than a finding.
+#[test]
+fn no_line_of_the_check_report_is_wider_than_eighty_columns() {
+    let ran = report(&[], None);
+    assert_eq!(ran.code, Some(0), "the report ran");
+    let out = String::from_utf8(ran.out).expect("the report is text");
+    let body = laid_out(&out);
+
+    let mut avoidable: Vec<String> = Vec::new();
+    let mut unfoldable: Vec<String> = Vec::new();
+    let mut lines = 0;
+    let mut widest = (0usize, String::new());
+    for (at, line) in body.lines().enumerate() {
+        lines += 1;
+        let width = line.chars().count();
+        if width <= WIDTH {
+            continue;
+        }
+        let entry = format!("line {}, {width} columns: {line}", at + 1);
+        match headwater_check::fill::unfoldable(line, WIDTH) {
+            true => unfoldable.push(line.to_string()),
+            false => {
+                if width > widest.0 {
+                    widest = (width, line.to_string());
+                }
+                avoidable.push(entry);
+            }
+        }
+    }
+    assert!(
+        avoidable.is_empty(),
+        "{} of {lines} laid-out lines are wider than {WIDTH} columns and the fill could have \
+         narrowed every one. The widest is {} columns:\n{}\n\nEvery one:\n{}",
+        avoidable.len(),
+        widest.0,
+        widest.1,
+        avoidable.join("\n")
+    );
+    // The residual is real and is named rather than hidden. Every member is a
+    // line one of whose words is a path this corpus chose to be that long.
+    assert!(
+        !unfoldable.is_empty(),
+        "no line of the report carries an unbreakable word, so the exemption \
+         above is no longer measuring anything and should be deleted"
+    );
+    println!(
+        "{} of {lines} laid-out lines are over {WIDTH} columns, every one because a single word \
+         of it already is",
+        unfoldable.len()
+    );
+    // The exemption is not a licence for a badly filled line that happens to
+    // carry one long word. Take the long word out and what is left fits, so the
+    // overflow is attributable to the word and to nothing the fill decided.
+    for line in unfoldable.iter().map(String::as_str) {
+        let longest = line
+            .split_whitespace()
+            .map(|word| word.chars().count())
+            .max()
+            .expect("the line has a word");
+        assert!(
+            line.chars().count() - longest <= WIDTH,
+            "an unfoldable line that is also too long without its long word: {line}"
+        );
+    }
+}
+
+/// **A shape invariant, which a width assertion cannot express.**
+///
+/// A finding's location line is `<path>:<line>:<column> <severity>`. The fill
+/// must never wrap the severity onto a line of its own: that hands a reader half
+/// an identity, and it hands `.githooks/pre-commit` a line whose whole content
+/// is `error`, which its selector reads as the header of a new finding — so the
+/// rule line and the `fix:` line under the real header are dropped and a refused
+/// commit explains nothing.
+///
+/// **`no_line_of_the_check_report_is_wider_than_eighty_columns` is structurally
+/// blind to this**, and that is why this case exists beside it. The broken
+/// output is two lines of 80 and 9 columns; counting columns cannot see it. A
+/// layout change needs at least one assertion about the shapes a fold can emit,
+/// not only about their widths.
+///
+/// The band that produced it was narrow — a location line whose opening word
+/// reaches the width without passing it — and it held 38 of this corpus's 334
+/// documents. This runs at three widths, so the band moves under it.
+///
+/// **This case reads the corpus as it stands, so on its own it is not enough.**
+/// The three findings this repository reports today all sit on short paths, and
+/// a case that only ever sees those would have passed while the defect stood.
+/// The two cases that provoke the boundary rather than waiting for it are
+/// `headwater_check::fill::tests::a_two_word_line_is_never_split_one_word_to_a_line`,
+/// which walks the opening width one column at a time, and the
+/// `a finding whose location line lands on the width boundary` case of
+/// `.githooks/fixtures.sh`, which drives the real commit hook over a document
+/// whose path was chosen to land in the band.
+#[test]
+fn no_finding_states_its_severity_on_a_line_of_its_own() {
+    for columns in [None, Some("100"), Some("120")] {
+        let extra: &[&str] = match columns {
+            None => &[],
+            Some(_) => &["--wide"],
+        };
+        let ran = report(extra, columns);
+        assert_eq!(ran.code, Some(0), "the report ran");
+        let out = String::from_utf8(ran.out).expect("the report is text");
+        let asked = columns.unwrap_or("80");
+        for (at, line) in out.lines().enumerate() {
+            assert!(
+                !matches!(line.trim(), "error" | "warn" | "info"),
+                "at COLUMNS={asked}, line {} of the report is a bare severity word, so a \
+                 finding's location and its severity are on two lines:\n{}",
+                at + 1,
+                out.lines()
+                    .skip(at.saturating_sub(2))
+                    .take(5)
+                    .collect::<Vec<&str>>()
+                    .join("\n")
+            );
+        }
+        // At least one location line, so a corpus that reported nothing does not
+        // pass this case by having no findings in it.
+        let located = out
+            .lines()
+            .filter(|line| {
+                let trimmed = line.trim_end();
+                trimmed.split_whitespace().count() == 2
+                    && (trimmed.ends_with(" error")
+                        || trimmed.ends_with(" warn")
+                        || trimmed.ends_with(" info"))
+            })
+            .count();
+        assert!(
+            located > 0,
+            "at COLUMNS={asked} no finding location line was found, so this case is \
+             measuring nothing"
+        );
+    }
+}
+
+/// **The exemption, held to its side of the bargain.**
+///
+/// The read-set block of the report is the file `--read-set` writes, indented
+/// two spaces and in order. That sentence is in `crates/adapter/src/text.rs` and
+/// `headwater gate` depends on it: `Recorded::parse` reads the file as a
+/// grammar, and a fold inside it would break the verb rather than the prose.
+/// This case goes red the day somebody folds that block.
+#[test]
+fn the_read_set_block_of_the_report_is_the_artifact_the_flag_writes() {
+    let at = std::env::temp_dir().join(format!("headwater-readset-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&at);
+    std::fs::create_dir_all(&at).expect("the directory is there");
+    let path = at.join("read-set");
+    let written = path.to_str().expect("the path is text").to_string();
+
+    let ran = report(&["--read-set", &written], None);
+    assert_eq!(ran.code, Some(0), "the report ran");
+    let out = String::from_utf8(ran.out).expect("the report is text");
+    let file = std::fs::read_to_string(&path).expect("the flag wrote the file");
+    assert!(!file.is_empty(), "the file has a read set in it");
+
+    let block = out
+        .split_once("\nread set\n")
+        .expect("the report carries a read-set block")
+        .1;
+    let indented: String = file
+        .lines()
+        .map(|line| match line.is_empty() {
+            true => String::from("\n"),
+            false => format!("  {line}\n"),
+        })
+        .collect();
+    assert_eq!(
+        block, indented,
+        "the read-set block of the report is not the file the flag wrote"
+    );
+}
+
+/// **The invariant, over the report rather than over the help.**
+///
+/// A run that states `COLUMNS` and one that does not write the same bytes,
+/// because nothing reads the variable without `--wide`. Bytes rather than text:
+/// the question is whether one byte differs, and a text comparison of a
+/// 700-line report answers it less directly.
+#[test]
+fn a_report_that_states_columns_and_one_that_does_not_write_the_same_bytes() {
+    let bare = report(&[], None);
+    assert_eq!(bare.code, Some(0));
+    for absurd in ["1", "40", "500", "100000", "not a number"] {
+        let stated = report(&[], Some(absurd));
+        assert_eq!(
+            bare.out, stated.out,
+            "the report under COLUMNS={absurd} is not the report with none"
+        );
+        assert_eq!(bare.code, stated.code);
+    }
+}
+
+/// **The width a caller does ask for, held to the band.**
+///
+/// Asserted by identity, the way the help case is: 40 is the layout every other
+/// run gets, 500 is the layout 120 gets, and 100 is neither. Then every laid-out
+/// line at each band is inside the width it asked for, or is a line one of whose
+/// words already was.
+#[test]
+fn the_width_a_caller_asks_for_lays_the_report_out_and_is_held_to_the_band() {
+    let text = |ran: Ran| String::from_utf8(ran.out).expect("the report is text");
+    let ordinary = text(report(&[], None));
+    let wide = |columns: &str| text(report(&["--wide"], Some(columns)));
+
+    let narrow = wide("40");
+    assert_eq!(narrow, ordinary, "a width under {WIDTH} is {WIDTH}");
+    assert_eq!(wide("80"), ordinary);
+
+    let widest_asked = wide("500");
+    assert_eq!(
+        widest_asked,
+        wide("120"),
+        "a width over {WIDEST} is {WIDEST}"
+    );
+    assert_ne!(widest_asked, ordinary, "{WIDEST} is not {WIDTH}");
+
+    let between = wide("100");
+    assert_ne!(between, ordinary);
+    assert_ne!(between, widest_asked);
+
+    for (asked, out) in [(WIDTH, &narrow), (100, &between), (WIDEST, &widest_asked)] {
+        for line in laid_out(out).lines() {
+            assert!(
+                line.chars().count() <= asked || headwater_check::fill::unfoldable(line, asked),
+                "at {asked} columns this line is {} and the fill could have narrowed it: {line}",
+                line.chars().count()
+            );
+        }
+    }
+}
+
+/// **The layout is not a function of what the report is attached to.**
+///
+/// The pipe leg is the captured standard output above. The file leg runs the
+/// binary with its output redirected by a shell and reads the file back, which
+/// consults no terminal at all. The terminal leg runs it under `script(1)`,
+/// which gives the process a pseudo-terminal, and is **skipped with a printed
+/// line where `script` is not installed** — the posture
+/// `.claude/hooks/fixtures-live.sh` takes toward an uninstalled harness. The
+/// workspace declares no `libc`, so an in-process `openpty` would cost a
+/// dependency `HW-DR-0033` prices, and `script` is the answer that costs none.
+#[test]
+fn a_report_written_to_a_pipe_a_file_and_a_terminal_is_the_same_bytes() {
+    let root = repository();
+    let root = root.to_str().expect("the path is text").to_string();
+    let binary = env!("CARGO_BIN_EXE_headwater");
+    let at = std::env::temp_dir().join(format!("headwater-streams-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&at);
+    std::fs::create_dir_all(&at).expect("the directory is there");
+
+    let piped = report(&[], None);
+    assert_eq!(piped.code, Some(0), "the piped run exits 0");
+
+    let file = at.join("report");
+    let shell = Process::new("sh")
+        .arg("-c")
+        .arg(format!(
+            "'{binary}' check --root '{root}' > '{}'",
+            file.display()
+        ))
+        .current_dir(&at)
+        .env_remove("COLUMNS")
+        .output()
+        .expect("the shell runs");
+    assert_eq!(shell.status.code(), Some(0), "the redirected run exits 0");
+    let written = std::fs::read(&file).expect("the shell wrote the file");
+    assert_eq!(
+        piped.out, written,
+        "a pipe and a file are not the same bytes"
+    );
+
+    let found = Process::new("sh")
+        .arg("-c")
+        .arg("command -v script")
+        .output()
+        .map(|out| out.status.success())
+        .unwrap_or(false);
+    if !found {
+        println!("skipped: `script` is not on PATH, so no terminal leg ran");
+        return;
+    }
+    let under = at.join("terminal");
+    let pty = Process::new("script")
+        .args([
+            "-qec",
+            &format!("'{binary}' check --root '{root}' > '{}'", under.display()),
+            "/dev/null",
+        ])
+        .current_dir(&at)
+        .env_remove("COLUMNS")
+        .output()
+        .expect("`script` runs");
+    assert!(pty.status.success(), "the run under a terminal exits 0");
+    // The redirection is inside the pseudo-terminal, so the file carries the
+    // report and not the session transcript. The carriage returns a line
+    // discipline inserts belong to the terminal rather than to this binary, so
+    // they are stripped before the comparison.
+    let seen: Vec<u8> = std::fs::read(&under)
+        .expect("the run under a terminal wrote the file")
+        .into_iter()
+        .filter(|byte| *byte != b'\r')
+        .collect();
+    assert_eq!(
+        piped.out, seen,
+        "a pipe and a terminal are not the same bytes"
+    );
 }

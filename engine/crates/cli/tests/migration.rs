@@ -1038,6 +1038,12 @@ fn an_artifact_with_no_payload_for_the_transition_is_refused() {
             .contains("the artifact ships no migration payload for 1.0.0 to 2.0.0"),
         "{ran:?}"
     );
+    assert!(
+        !ran.err.contains("headwater --help"),
+        "the artifact is this repository's package and it ships no payload for the transition. \
+         No command line reads a payload that is not there:\n{}",
+        ran.err
+    );
 }
 
 // ---------------------------------------------------------------------------

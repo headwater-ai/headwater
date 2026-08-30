@@ -1,0 +1,70 @@
+# SPDX-License-Identifier: Apache-2.0
+
+taxonomy: acme/answered-export
+version: 1.0.0
+
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+
+vocabularies:
+  lifecycle_state:
+    - {value: draft, role: initial}
+    - {value: current, role: live}
+    - {value: superseded, role: terminal-retained}
+
+facets:
+  status:
+    role: state
+    values: $vocabularies.lifecycle_state
+    required: true
+    volatility: mutable
+    guidance:
+      draft: it is being argued over, and nothing may rely on it
+      current: it states what holds now
+      superseded: a later decision replaced it
+  summary:
+    role: scent
+    required: true
+    volatility: mutable
+  title:
+    role: name
+    required: true
+    volatility: stable
+
+regimes:
+  lifecycle:
+    standard:
+      initial: draft
+      transitions: {draft: [current], current: [superseded]}
+      retain_terminal: true
+
+kinds:
+  governed_document:
+    abstract: true
+    facets: {require: [status, summary, title]}
+  answer:
+    is_a: governed_document
+    purpose: rationale
+    lifecycle: standard
+
+shelves:
+  answers:
+    path: docs/answers/**
+    homogeneous: true
+    kind: answer
+
+projections:
+  - kind: graph_export
+    profile: control
+    format: json
+    output: exports/control.json
+  - kind: graph_export
+    profile: filtered
+    format: json
+    output: exports/filtered.json
+    filter: {exclude: {status: [draft]}}
+    tombstone: counted
+
+core:
+  requires:
+    - facet_role: state

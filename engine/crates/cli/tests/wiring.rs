@@ -325,6 +325,16 @@ fn the_generator_is_handed_the_refusal_beside_the_selection() {
 /// reason [`Root::over`] records: cargo runs the cases of one target as threads
 /// of one process, so a key that is the pid alone is a directory a second case
 /// removes while the first is reading it.
+/// Help text with every run of whitespace collapsed to one space.
+///
+/// Clap lays a help string out at the terminal width, so a sentence a reader
+/// sees as one sentence is several lines in the bytes. A case that asserts
+/// about the words of a help string reads this form, and a case that asserts
+/// about a short phrase clap never breaks may read the bytes.
+fn flattened(help: &str) -> String {
+    help.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
 fn outside_a_corpus(label: &str, arguments: &[&str]) -> Ran {
     let at = std::env::temp_dir().join(format!(
         "headwater-cli-wiring-{}-{label}",
@@ -587,6 +597,35 @@ fn a_refused_command_line_names_the_grammar_rather_than_printing_it() {
     }
 }
 
+/// A refusal that is a fact about the corpus does not name the grammar.
+///
+/// `headwater init` over a fixture root refuses because `Root::over` already
+/// wrote `.headwater/taxonomy.yml` there — nothing about `headwater init`
+/// itself is wrong, it is the form `--help` shows. #331 moves this site from
+/// `fail` to `refuse`, which drops the grammar pointer this refusal never
+/// earned. This fails on `main`, where every such refusal still names it.
+#[test]
+fn a_refusal_about_the_corpus_does_not_name_the_grammar() {
+    let root = Root::over("change", "corpus-fact-no-grammar-pointer");
+    let ran = root.run(&["init"]);
+    assert_eq!(
+        ran.code,
+        Some(1),
+        "`headwater init` over an already-bound root fails:\n{}",
+        ran.err
+    );
+    assert!(
+        ran.err.contains(headwater_resolve::package::CONSUMER),
+        "the refusal names the file that is already there:\n{}",
+        ran.err
+    );
+    assert!(
+        !ran.err.contains("headwater --help"),
+        "a corpus fact reached through a correct command line names the grammar, and should not:\n{}",
+        ran.err
+    );
+}
+
 /// `--help` answers on standard output alone, and it is not a failure.
 ///
 /// Every refusal of this binary points at `headwater --help` and prints none of
@@ -712,4 +751,676 @@ fn a_flag_that_belongs_to_another_verb_is_refused_rather_than_ignored() {
         "`--level` reaches the verb that declares it, whatever that verb then reports:\n{}",
         read.err
     );
+}
+
+// ---------------------------------------------------------------------------
+// Which of the three refusal helpers each site calls. #455 settled the eight
+// sites #331 could not, and the test it settled them by is one question: is
+// there a spelling of this request that gets past this refusal? The three cases
+// below are the three answers.
+// ---------------------------------------------------------------------------
+
+/// A verb this binary parses and this engine has never implemented does not
+/// send the caller to the grammar.
+///
+/// `query` is a real member of `headwater_verbs::VERBS`, on purpose (#146: a
+/// wait a caller cannot discover is a wait nobody reads), so `headwater --help`
+/// lists it and repeats the sentence the refusal just made. There is no other
+/// spelling of the request, so #455 moves this site to `refuse`.
+///
+/// This case was watched failing against `a316a23`, where the run wrote two
+/// lines and the second was ``headwater: run `headwater --help` for the
+/// grammar``.
+#[test]
+fn a_verb_this_engine_never_implemented_does_not_name_the_grammar() {
+    let ran = outside_a_corpus("query-states-a-wait", &["query", "anything"]);
+    assert_eq!(
+        ran.code,
+        Some(1),
+        "`headwater query` is refused with the one failing status this binary has:\n{}",
+        ran.err
+    );
+    assert_eq!(
+        ran.out, "",
+        "a refusal writes nothing to standard output, so a caller reading by pipe reads a report or nothing"
+    );
+    assert!(
+        ran.err.contains("no document states what an expression is"),
+        "the refusal states the wait rather than a fault:\n{}",
+        ran.err
+    );
+    assert!(
+        !ran.err.contains("headwater --help"),
+        "the grammar lists `query` and says the same thing, so this points the caller at a repeat of the sentence above it:\n{}",
+        ran.err
+    );
+}
+
+/// The one site of the eight #455 keeps at `fail`, and the measurement that
+/// keeps it there.
+///
+/// `taxonomy vendor` with no pin names two remedies: write `taxonomy.digest`
+/// into the consumer declaration, or pass `--expect`. The second is a flag, and
+/// the second half below is the proof it is a complete route — the run with
+/// `--expect` reaches past this site, to the artifact that is not a published
+/// package. A caller who does not know `--expect` exists is the caller the
+/// grammar pointer is for.
+///
+/// This case is green throughout rather than red then green. It is the recorded
+/// evidence for a ruling that would otherwise be an assertion in a comment that
+/// nothing holds.
+#[test]
+fn a_refusal_a_flag_repairs_still_names_the_grammar() {
+    let root = Root::over("change", "vendor-pin-names-the-grammar");
+    let at = root.path(".headwater/taxonomy.yml");
+    let text = std::fs::read_to_string(&at).expect("the declaration reads");
+    let without: String = text
+        .lines()
+        .filter(|line| !line.trim_start().starts_with("digest:"))
+        .map(|line| format!("{line}\n"))
+        .collect();
+    std::fs::write(&at, without).expect("the declaration writes");
+    let fetched = root.path("fetched");
+    std::fs::create_dir_all(&fetched).expect("the directory is there");
+    let fetched = fetched.to_str().expect("the path is utf-8").to_string();
+
+    let ran = root.run(&["taxonomy", "vendor", &fetched]);
+    assert_eq!(
+        ran.code,
+        Some(1),
+        "an unpinned artifact is refused:\n{}",
+        ran.err
+    );
+    assert!(
+        ran.err.contains("nothing pins this artifact"),
+        "the refusal is the pin site and not something earlier:\n{}",
+        ran.err
+    );
+    assert!(
+        ran.err.contains("headwater --help"),
+        "a refusal a flag repairs names where that flag is written down:\n{}",
+        ran.err
+    );
+
+    let ran = root.run(&[
+        "taxonomy",
+        "vendor",
+        &fetched,
+        "--expect",
+        "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    ]);
+    assert!(
+        !ran.err.contains("nothing pins this artifact"),
+        "`--expect` is a complete route past the pin, which is why the site stays at `fail`:\n{}",
+        ran.err
+    );
+}
+
+/// The two refusals nothing can execute, held by reading the source.
+///
+/// Both fire only if this engine emitted YAML it cannot read back. No command
+/// line reaches either, so no case can drive them, and the population they
+/// belong to is the whole point of `defect`. What is held here is the mapping
+/// from the message to the helper that carries it, which is the same shape as
+/// [`the_version_flag_reads_the_named_constant_and_not_a_local_env_read`].
+///
+/// This case was watched failing against `a316a23`, where both needles resolved
+/// to `fail(`.
+#[test]
+fn every_refusal_about_a_value_this_run_built_goes_out_through_defect() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/main.rs");
+    let text = std::fs::read_to_string(&path).expect("main.rs reads");
+    for needle in [
+        "the payload this run built is not a mapping",
+        "the payload this run built does not load",
+    ] {
+        let (before, _) = text
+            .split_once(needle)
+            .unwrap_or_else(|| panic!("`{needle}` is no longer a message in main.rs"));
+        let (_, helper) = ["fail(", "refuse(", "defect("]
+            .iter()
+            .filter_map(|opener| before.rfind(opener).map(|at| (at, *opener)))
+            .max()
+            .expect("a refusal helper opens the call");
+        assert_eq!(
+            helper, "defect(",
+            "`{needle}` goes out through `{helper}`. A value this run's own code built is a \
+             defect of this engine rather than a fact about the caller or the corpus"
+        );
+    }
+}
+
+/// What `defect` prints, which nothing held until a review found it.
+///
+/// The case above asserts which helper opens a call and says nothing about what
+/// that helper writes. A review rewrote `defect`'s body to print a
+/// `github.com` address and to drop the engine constant, and the whole suite
+/// stayed green. Both properties are stated in the doc comment and in the
+/// interface contract, so both are assertions this repository makes to a
+/// caller, and neither was held.
+///
+/// This reads the source rather than driving the binary, and the reason is the
+/// point of the helper rather than a gap in this case. Both call sites are
+/// unreachable: every scalar the payload carries goes through `quoted`, so no
+/// corpus and no command line produces a payload that fails to load. A case
+/// that drove the site would need a route that no longer exists.
+///
+/// The URL assertion is not decoration. This repository has no published home
+/// (Q31 is open), so an address in caller-facing output would be an address
+/// that answers nothing.
+#[test]
+fn the_defect_helper_names_the_engine_version_and_no_address() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/main.rs");
+    let text = std::fs::read_to_string(&path).expect("main.rs reads");
+    let (_, after) = text
+        .split_once("fn defect(message: &str) -> ExitCode {")
+        .expect("`fn defect` is no longer the shape of the helper in main.rs");
+    let (body, _) = after
+        .split_once("\n}")
+        .expect("no closing brace found for `fn defect` in main.rs");
+    assert!(
+        body.contains("headwater_resolve::release::ENGINE"),
+        "a report of a defect needs the version it was found in, and this names no version:\n{body}"
+    );
+    for address in ["http://", "https://", "github.com"] {
+        assert!(
+            !body.contains(address),
+            "`defect` writes `{address}` to a caller. This repository has no published home, so \
+             the address would answer nothing:\n{body}"
+        );
+    }
+    assert!(
+        body.contains("ExitCode::FAILURE"),
+        "this binary has one failing status and `defect` returns it:\n{body}"
+    );
+}
+
+/// A refusal the consumer declaration caused does not name the grammar.
+///
+/// `headwater import` reads `.headwater/taxonomy.yml` through
+/// `headwater_import::declared`, which is the file `refuse`'s own doc comment
+/// names as its population. An `imports` entry that names no `at` is a fact
+/// about that file alone, and no spelling of `headwater import` gets past it.
+///
+/// This is the ninth site. #455 named eight and this was not among them, but
+/// #331's first Done-when bullet is a predicate over every call site of `fail`,
+/// so a site left here is that bullet unmet. Found by a review of #460 rather
+/// than by the reading that produced the eight.
+///
+/// This case was watched failing before the site moved, where the run wrote the
+/// message and then ``headwater: run `headwater --help` for the grammar``.
+#[test]
+fn a_refusal_the_consumer_declaration_caused_does_not_name_the_grammar() {
+    let root = Root::over("change", "import-declaration-no-grammar-pointer");
+    let at = root.path(".headwater/taxonomy.yml");
+    let mut text = std::fs::read_to_string(&at).expect("the declaration reads");
+    text.push_str("\nimports:\n  upstream:\n    channel: stable\n");
+    std::fs::write(&at, text).expect("the declaration writes");
+
+    let ran = root.run(&["import"]);
+    assert_eq!(
+        ran.code,
+        Some(1),
+        "an import declaration this engine cannot read is refused:\n{}",
+        ran.err
+    );
+    assert!(
+        ran.err.contains("`imports.upstream` names no `at`"),
+        "the refusal names the entry that is incomplete:\n{}",
+        ran.err
+    );
+    assert!(
+        !ran.err.contains("headwater --help"),
+        "the consumer declaration is a fixed location this engine reads on every run, and no \
+         command line reaches past what it says:\n{}",
+        ran.err
+    );
+}
+
+/// Every scalar `headwater infer` writes survives a load, whatever it holds.
+///
+/// The two `defect` sites in `infer` were reachable when they were written, and
+/// a review reached both. A newline in `--owner` wrote a raw line break inside
+/// a double-quoted scalar, and a `}` in a document's filename broke the
+/// unquoted flow mapping the pairs were emitted as. In both cases the run
+/// printed that neither the corpus nor the command line caused it, which was
+/// false.
+///
+/// A third route was worse than either: a comma in a filename did not fail at
+/// all. The flow mapping read `docs/spec/a,b.md` as the value `docs/spec/a`,
+/// the run exited 0, and the lock declared debt against a document that does
+/// not exist.
+///
+/// So this drives the three routes rather than the helper. `--write` is what
+/// makes the case decisive: without it the payload is printed and never loaded,
+/// and the load is the step that used to fail.
+#[test]
+fn a_payload_this_verb_writes_loads_whatever_a_path_or_an_owner_holds() {
+    let root = Root::over("change", "infer-quotes-every-scalar");
+    // The one case here that reaches the resolver, because `--write` resolves
+    // before it writes and the lock it produces is this case's evidence.
+    // `Root::over` copies the two declarations every other case needs, and a
+    // resolution needs the sources behind them as well.
+    copy(&repository().join("packages"), &root.path("packages"));
+    std::fs::copy(
+        repository().join(".headwater/overlay.yml"),
+        root.path(".headwater/overlay.yml"),
+    )
+    .expect("the overlay copies");
+    for (label, name) in [
+        ("a closing brace", "91-brace}here.md"),
+        ("a comma", "91-comma,here.md"),
+        ("a quotation mark", "91-quote\"here.md"),
+    ] {
+        let from = root.path("docs/decisions/0001-the-warrant-a-person-set.md");
+        let to = root.path(&format!("docs/decisions/{name}"));
+        std::fs::copy(&from, &to).unwrap_or_else(|why| panic!("the {label} case copies: {why}"));
+    }
+
+    let ran = root.run(&[
+        "infer",
+        "--write",
+        "--owner",
+        "alice\nbob\r\tcarol",
+        "--now",
+        "2026-08-01",
+    ]);
+    assert!(
+        !ran.err.contains("does not load"),
+        "the payload loads back, so no scalar this run wrote broke it:\n{}",
+        ran.err
+    );
+    assert!(
+        !ran.err.contains("this is a defect in engine"),
+        "no input reaches the defect helper, which is what makes that helper's population empty:\n{}",
+        ran.err
+    );
+    assert_eq!(
+        ran.code,
+        Some(0),
+        "the run completes:\n{}{}",
+        ran.out,
+        ran.err
+    );
+
+    let lock = std::fs::read_to_string(root.path(".headwater/taxonomy.lock"))
+        .expect("the lock reads back");
+    assert!(
+        lock.contains("91-comma,here.md"),
+        "a comma in a path used to truncate the value silently, and the lock declared debt \
+         against a document that does not exist:\n{lock}"
+    );
+    assert!(
+        lock.contains("91-brace}here.md"),
+        "a closing brace in a path used to break the payload:\n{lock}"
+    );
+
+    // The fourth route, and the one repairing the other three exposed. The lock
+    // writer escaped `\n` and `\t` and let a `\r` through raw, so `--write`
+    // exited 0 and wrote a file the next command could not read. Nothing short
+    // of reading it back says whether that is fixed.
+    let read = root.run(&["check", "--no-cache", "--now", "2026-08-01"]);
+    assert!(
+        !read.err.contains("the lock cannot be read"),
+        "the lock this run wrote loads again. A carriage return in an owner used to write a lock \
+         no later command could read, with this run still exiting 0:\n{}",
+        read.err
+    );
+    assert_eq!(
+        read.code,
+        Some(0),
+        "and the corpus still checks over it:\n{}{}",
+        read.out,
+        read.err
+    );
+}
+
+/// A discriminator stated on the command line reaches the terminal as a
+/// refusal, and no document is written.
+///
+/// The library grain records this in the scaffolder's transcript. What only the
+/// binary can say is the other three halves of it: the exit status a caller
+/// scripts against, the one line on standard error, and the absence of a file.
+/// Before [#338](https://github.com/headwater-ai/headwater/issues/338) this
+/// command exited 0, printed nothing about the value it was handed, and left a
+/// `design_spec` on the shelf.
+///
+/// The unnarrowed run beside it is the control. Without it a case could pass
+/// because the fixture root refuses `headwater new` for some reason of its own,
+/// and the flag would never be what the exit status measured.
+#[test]
+fn a_discriminator_stated_on_the_command_line_refuses_and_writes_nothing() {
+    let root = Root::over("change", "facet-names-the-discriminator");
+
+    let refused = root.run(&[
+        "new",
+        "design_spec",
+        "--title",
+        "A part the caller renamed",
+        "--facet",
+        "doc_type=review_record",
+    ]);
+    assert_eq!(
+        refused.code,
+        Some(1),
+        "a value for the discriminator refuses:\n{}{}",
+        refused.out,
+        refused.err
+    );
+    assert!(
+        refused.err.contains("review_record") && refused.err.contains("design_spec"),
+        "the refusal names the value stated and the kind that decides it:\n{}",
+        refused.err
+    );
+    assert!(
+        !refused.out.contains("wrote"),
+        "nothing is reported as written:\n{}",
+        refused.out
+    );
+    let shelf = root.path("docs/spec");
+    assert!(
+        !shelf.exists(),
+        "and nothing is on the shelf: {}",
+        shelf.display()
+    );
+
+    // The control. The same command with no `--facet` writes the document, so
+    // the exit status above is the flag and not the root.
+    let wrote = root.run(&["new", "design_spec", "--title", "A part the caller renamed"]);
+    assert_eq!(
+        wrote.code,
+        Some(0),
+        "the same run with no stated facet writes:\n{}{}",
+        wrote.out,
+        wrote.err
+    );
+    let written = root.path("docs/spec/01-a-part-the-caller-renamed.md");
+    let text = std::fs::read_to_string(&written).expect("the document reads");
+    assert!(
+        text.contains("doc_type: design_spec"),
+        "and the discriminator it writes is the kind:\n{text}"
+    );
+}
+
+/// The `--change` help names the header a manifest must open with, and a
+/// manifest written from that help reads.
+///
+/// # The defect this holds
+///
+/// The help carried into #335 from the pre-clap parser described a manifest as
+/// nothing but its `added` and `prior` lines. It said "Each line names one
+/// document the change carries", and it never mentioned the
+/// `headwater change 1` first line that
+/// [`headwater_check::change::FORMAT`] requires. A caller who wrote the file
+/// the help described was refused, and the sentence sat wrong across a parser
+/// rewrite with every gate green, because no rule of this engine reads a
+/// sentence about this engine.
+///
+/// # Why both halves are here
+///
+/// The string half alone would pass against a help that named the header and a
+/// reader that stopped requiring it. The behavior half alone is
+/// `a_change_the_flag_named_reaches_the_verdict_and_not_only_the_parser`
+/// above, which writes the header and so never sees the refusal. The pair is
+/// the claim: *the manifest the help describes is the manifest the verb
+/// accepts*, and it is the shape #339 asks for over the 64 restored strings.
+#[test]
+fn the_change_help_names_the_header_a_manifest_must_open_with() {
+    let help = outside_a_corpus("change-help", &["check", "--help"]);
+    assert_eq!(
+        help.code,
+        Some(0),
+        "`check --help` is a question rather than a mistake:\n{}{}",
+        help.out,
+        help.err
+    );
+    // The decision. This line fails against the string as #335 restored it.
+    assert!(
+        flattened(&help.out).contains("headwater change 1"),
+        "the `--change` help names the header a manifest opens with:\n{}",
+        help.out
+    );
+
+    // And the behavior the sentence now describes, both ways round.
+    let root = Root::over("change", "change-help-header");
+    let prior = fixtures().join("change-prior/0001-the-warrant-a-person-set.md");
+    let body = format!(
+        "prior\tdocs/decisions/0001-the-warrant-a-person-set.md\t{}\n",
+        prior.display()
+    );
+
+    let headless = root.path("headless.txt");
+    std::fs::write(&headless, &body).expect("the manifest writes");
+    let refused = root.run(&[
+        "check",
+        "--no-cache",
+        "--now",
+        "2026-08-01",
+        "--change",
+        &headless.display().to_string(),
+    ]);
+    assert_eq!(
+        refused.code,
+        Some(1),
+        "a manifest with no header is refused rather than read:\n{}{}",
+        refused.out,
+        refused.err
+    );
+    assert!(
+        refused.err.contains("headwater change 1"),
+        "and the refusal names the line that is missing:\n{}",
+        refused.err
+    );
+
+    let headed = root.path("headed.txt");
+    std::fs::write(
+        &headed,
+        format!("{}\n{body}", headwater_check::change::FORMAT),
+    )
+    .expect("the manifest writes");
+    let read = root.run(&[
+        "check",
+        "--no-cache",
+        "--now",
+        "2026-08-01",
+        "--change",
+        &headed.display().to_string(),
+    ]);
+    assert_eq!(
+        read.code,
+        Some(0),
+        "the same manifest under that header reads:\n{}{}",
+        read.out,
+        read.err
+    );
+    assert!(
+        read.says("scoped to a change"),
+        "and the run is scoped to it:\n{}",
+        read.out
+    );
+}
+
+/// `route` never claims silence, because it is never silent.
+///
+/// # The defect this holds
+///
+/// The restored description said "It is silent when nothing matches." The verb
+/// prints at least four lines and exits 0 on a task that matches no purpose,
+/// and it does so deliberately:
+/// `headwater_query::route` makes silence a *property of the pointer set*
+/// rather than of the output, so that a caller can tell "no purpose answers
+/// this" from "the corpus declares none". A caller reading the old help
+/// learned the opposite and would have waited for output that a working run
+/// already wrote.
+///
+/// The two halves are the same pair as the case above: the string must not
+/// promise silence, and the verb must not be silent.
+#[test]
+fn route_promises_no_silence_and_is_never_silent() {
+    let help = outside_a_corpus("route-help", &["route", "--help"]);
+    assert_eq!(
+        help.code,
+        Some(0),
+        "`route --help` is a question rather than a mistake:\n{}{}",
+        help.out,
+        help.err
+    );
+    // The decision. This line fails against the string as #335 restored it.
+    assert!(
+        !flattened(&help.out).contains("silent when nothing matches"),
+        "the description does not promise a silence this verb never keeps:\n{}",
+        help.out
+    );
+
+    let root = Root::over("change", "route-is-never-silent");
+    let ran = root.run(&["route", "a task no purpose of this corpus answers"]);
+    assert_eq!(
+        ran.code,
+        Some(0),
+        "a route that matches nothing is a result rather than a mistake:\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert_eq!(
+        ran.err, "",
+        "and it writes nothing to standard error:\n{}",
+        ran.err
+    );
+    assert!(
+        ran.out.lines().count() >= 3,
+        "a route that matches nothing still writes its report:\n{}",
+        ran.out
+    );
+    assert!(
+        ran.out.contains("no purpose") || ran.out.contains("declares no purpose"),
+        "and it says which of the two reasons applies:\n{}",
+        ran.out
+    );
+}
+
+/// `check --format` states which target declares its loss inside the artifact,
+/// and only SARIF does.
+///
+/// # The defect this holds
+///
+/// The restored help ended "Each names what it could not carry", which is
+/// false of three of the four targets. `text` and `json` declare an empty loss
+/// set, so there is nothing for them to name. `markdown` declares four losses
+/// in `headwater_adapter::markdown::LOSS` and deliberately writes none of them
+/// into the artifact, because a job summary is prose and "an artifact that
+/// declared its own loss would be declaring it to a person who cannot act on
+/// it". So a consumer who read the help and looked in the Markdown for the
+/// loss set found none, and the sentence was a claim about the source read as
+/// a claim about the output.
+#[test]
+fn only_the_sarif_artifact_declares_its_own_loss_set() {
+    let help = outside_a_corpus("format-help", &["check", "--help"]);
+    assert_eq!(help.code, Some(0), "{}{}", help.out, help.err);
+    // The decision. This line fails against the string as #335 restored it.
+    // The comparison is over the flattened help, because clap wraps a help
+    // string across lines and a sentence read for its words is not there to
+    // find in the laid-out form.
+    assert!(
+        !flattened(&help.out).contains("Each names what it could not carry"),
+        "the help does not claim a loss set every target writes:\n{}",
+        help.out
+    );
+
+    let root = Root::over("change", "loss-set-per-target");
+    let mut carries = Vec::new();
+    for target in ["text", "json", "sarif", "markdown"] {
+        let ran = root.run(&[
+            "check",
+            "--no-cache",
+            "--now",
+            "2026-08-01",
+            "--format",
+            target,
+        ]);
+        assert_eq!(
+            ran.code,
+            Some(0),
+            "`--format {target}` writes an artifact:\n{}{}",
+            ran.out,
+            ran.err
+        );
+        carries.push((target, ran.out.contains("loss_set")));
+    }
+    assert_eq!(
+        carries,
+        vec![
+            ("text", false),
+            ("json", false),
+            ("sarif", true),
+            ("markdown", false)
+        ],
+        "only the SARIF artifact carries its own loss set"
+    );
+}
+
+/// `capture` pools readings across taxonomies, and its description says so.
+///
+/// # The defect this holds
+///
+/// The restored description ended "it never averages readings taken under two
+/// taxonomies". It does. `main.rs` reads the distinct locks in the store, and
+/// where there is more than one it prints the pooled fraction anyway and warns
+/// that the number is not a trend. The description named the remedy that was
+/// considered and rejected, so a reader learned the verb refuses a comparison
+/// it in fact makes.
+///
+/// The store below carries two readings under two different locks, which is
+/// the smallest input that separates the two arms.
+#[test]
+fn capture_pools_across_taxonomies_and_names_every_one() {
+    let help = outside_a_corpus("capture-help", &["capture", "--help"]);
+    assert_eq!(help.code, Some(0), "{}{}", help.out, help.err);
+    // The decision. This line fails against the string as #335 restored it.
+    assert!(
+        !flattened(&help.out).contains("never averages readings taken under two taxonomies"),
+        "the description does not claim a refusal this verb never makes:\n{}",
+        help.out
+    );
+
+    let root = Root::over("change", "capture-pools-across-locks");
+    let store = root.path(".headwater/capture-cost.jsonl");
+    std::fs::write(
+        &store,
+        "{\"lock\":\"sha256:aaaa\",\"date\":\"2026-08-01\",\"kind\":\"decision\",\
+         \"document\":\"docs/decisions/0001-the-warrant-a-person-set.md\",\"id\":\"DR-ONE\",\
+         \"fields\":[4,5],\"sections\":[3,3],\"identifier\":[1,1],\"edge_halves\":[0,0]}\n\
+         {\"lock\":\"sha256:bbbb\",\"date\":\"2026-08-02\",\"kind\":\"decision\",\
+         \"document\":\"docs/decisions/0001-the-warrant-a-person-set.md\",\"id\":\"DR-TWO\",\
+         \"fields\":[2,5],\"sections\":[3,3],\"identifier\":[1,1],\"edge_halves\":[0,0]}\n",
+    )
+    .expect("the store writes");
+
+    let ran = root.run(&["capture"]);
+    assert_eq!(
+        ran.code,
+        Some(0),
+        "`capture` reads the store back:\n{}{}",
+        ran.out,
+        ran.err
+    );
+    assert!(
+        ran.says("2 readings"),
+        "it read both readings:\n{}",
+        ran.out
+    );
+    // The behavior the corrected sentence describes: one fraction over both,
+    // 4 + 2 supplied of 5 + 5 fields plus the sections and the identifiers.
+    assert!(
+        ran.says("14 of 18"),
+        "it pools the two readings into one fraction:\n{}",
+        ran.out
+    );
+    assert!(
+        ran.says("2 taxonomies produced these readings"),
+        "and it names the count of taxonomies it pooled across:\n{}",
+        ran.out
+    );
+    for lock in ["sha256:aaaa", "sha256:bbbb"] {
+        assert!(ran.says(lock), "and it names {lock}:\n{}", ran.out);
+    }
 }
