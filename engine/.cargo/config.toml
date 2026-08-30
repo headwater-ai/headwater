@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Cargo aliases for the invocations `headwater-engine`'s SKILL.md names.
+# Aliases change nothing about how a build runs — no linker, no profile, no
+# toolchain override — so they carry no dependency CI or a fresh clone lacks.
+# They exist only so a session (human or agent) reaches for the cheap
+# invocation by name instead of retyping the flags that make it cheap.
+#
+# No `qc`/`qt` here: this workspace sets no `default-members`, so from
+# engine/ (the invocation this skill always documents) plain `cargo check`
+# and `cargo test` already check/test the whole workspace — identical to
+# `--workspace`, and identical to cargo's own built-in `c`/`t` aliases. An
+# alias with the same effect as one cargo already ships is a name to
+# remember for no behavior gained; use `cargo c` / `cargo t` directly.
+
+[alias]
+# One crate's tests, e.g. `cargo test-crate headwater-check`.
+test-crate = "test -p"
+# Where the time actually goes, as an HTML report under target/cargo-timings/.
+test-timings = "test --workspace --timings"
+# The real shipped binary. Slow: lto = true, codegen-units = 1 (see
+# [profile.release] below). Only for handing the binary to somebody, running
+# it once by hand, or measuring a performance claim.
+release-cli = "build --release -p headwater-cli"
+# The same binary, close to release speed, without paying for the LTO link.
+# For a session that wants to run the real CLI a few times, never for CI.
+dev-release-cli = "build --profile dev-release -p headwater-cli"
