@@ -579,8 +579,7 @@ fn the_root_screen_alone_carries_the_masthead() {
     let bare_err = String::from_utf8(bare.err).expect("the refusal is text");
     assert!(
         bare_err.contains("no verb"),
-        "the refusal keeps its wording, not {:?}",
-        bare_err
+        "the refusal keeps its wording, not {bare_err:?}"
     );
     assert!(
         !bare_err.lines().any(|line| !line.is_empty() && line.chars().all(|c| c == '─')),
