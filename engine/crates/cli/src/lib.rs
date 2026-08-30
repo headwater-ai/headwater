@@ -155,7 +155,7 @@ const WIDE_TEXT: &str = "lay the help, and the report of `headwater check`, out 
 
 /// What `--no-color` says on a verb page.
 ///
-/// [HW-DR-0044](../../../../docs/decisions/0044-coloring-the-cli-and-where-the-banner-goes.md)
+/// [HW-DR-0045](../../../../docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md)
 /// rewrites this rather than patches it: the sentence it stated before this
 /// ruling is the opposite of the behavior below.
 const NO_COLOR_TEXT: &str = "force plain text on both streams: bold and dim weight and glyphs, no \
@@ -165,7 +165,7 @@ const NO_COLOR_TEXT: &str = "force plain text on both streams: bold and dim weig
 
 /// What `--no-banner` says on a verb page.
 ///
-/// [HW-DR-0044](../../../../docs/decisions/0044-coloring-the-cli-and-where-the-banner-goes.md)
+/// [HW-DR-0045](../../../../docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md)
 /// scopes the masthead to the root screen alone, so this flag is accepted and
 /// honestly described as inert everywhere else, the posture `--no-color`
 /// already set for a flag that changes nothing on the verb page carrying it.
@@ -1276,7 +1276,7 @@ const COLUMN: usize = 15;
 /// is a command line that runs.
 fn first_screen(width: usize) -> String {
     // `{about}` is dropped rather than kept beside the masthead: the two say
-    // the same tagline, and `HW-DR-0044`'s masthead is printed separately, by
+    // the same tagline, and `HW-DR-0045`'s masthead is printed separately, by
     // plain I/O, before this template is ever reached — never embedded in it.
     //
     // A literal ANSI escape sequence placed in a `clap` help template does

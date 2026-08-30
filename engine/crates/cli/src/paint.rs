@@ -41,7 +41,7 @@
 //!
 //! # Color reads the terminal on purpose, and the masthead is why it must
 //!
-//! [`HW-DR-0044`](../../../../docs/decisions/0044-coloring-the-cli-and-where-the-banner-goes.md)
+//! [`HW-DR-0045`](../../../../docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md)
 //! departs from the rule two sections up, deliberately: an escape sequence
 //! leaked into a pipe or a log file actively harms whoever reads it, where a
 //! column-wrap choice never did, and every fixture this corpus pins already
@@ -240,7 +240,7 @@ pub fn row(name: &str, text: &str, at: usize, width: usize) -> String {
 }
 
 /// Whether a stream renders the palette
-/// [`HW-DR-0044`](../../../../docs/decisions/0044-coloring-the-cli-and-where-the-banner-goes.md)
+/// [`HW-DR-0045`](../../../../docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md)
 /// names, or its fallback.
 ///
 /// `Plain` is bold and dim weight plus a glyph where one applies, and no
@@ -257,7 +257,7 @@ pub enum ColorMode {
 ///
 /// `--no-color` or a set `NO_COLOR` forces [`ColorMode::Plain`] regardless of
 /// `is_terminal`, matching how `--no-color` is already accepted, and until
-/// `HW-DR-0044`, ignored. There is no third state: a caller who wants color
+/// `HW-DR-0045`, ignored. There is no third state: a caller who wants color
 /// forced into a pipe has no lever here.
 #[must_use]
 pub fn color_of(no_color_flag: bool, no_color_env: bool, is_terminal: bool) -> ColorMode {
@@ -303,7 +303,7 @@ pub fn stderr_color() -> ColorMode {
     )
 }
 
-/// One semantic role `HW-DR-0044`'s palette names.
+/// One semantic role `HW-DR-0045`'s palette names.
 ///
 /// Two variants today: `fail` in `main.rs` is this module's one caller of
 /// [`Role::Error`], and [`banner`] is its one caller of [`Role::Verb`]. A
@@ -375,7 +375,7 @@ pub fn wants_root_help() -> bool {
     has_help && !has_verb
 }
 
-/// The masthead `HW-DR-0044` rules on, or today's plain name line where
+/// The masthead `HW-DR-0045` rules on, or today's plain name line where
 /// [`banner_suppressed`] holds.
 ///
 /// `version` is `headwater_resolve::release::ENGINE`, the same value

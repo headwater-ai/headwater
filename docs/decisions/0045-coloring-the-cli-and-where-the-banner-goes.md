@@ -1,5 +1,5 @@
 ---
-id: HW-DR-0044
+id: HW-DR-0045
 status: draft
 status_since: 2026-08-30
 summary: "Color is sensed per stream and off by default in a pipe, and turned off everywhere by `--no-color` or `NO_COLOR`. A new masthead banner prints on the root help screen alone, off by `--no-banner` or `HEADWATER_NO_BANNER`."

@@ -510,10 +510,10 @@ fn contains_escape(bytes: &[u8]) -> bool {
     bytes.windows(2).any(|pair| pair == [0x1b, b'['])
 }
 
-// # The masthead and the new `--no-color`, which HW-DR-0044 rules on
+// # The masthead and the new `--no-color`, which HW-DR-0045 rules on
 //
 // Every case above runs headless, through a pipe rather than a terminal, so
-// HW-DR-0044's per-stream sensing is expected to render no color here at all
+// HW-DR-0045's per-stream sensing is expected to render no color here at all
 // and every case above is expected to keep passing unchanged — that is itself
 // evidence for the claim the decision makes about its own fixtures. What is
 // new to assert here is content rather than color: the masthead itself, its
@@ -527,7 +527,7 @@ fn flat(text: &str) -> String {
     text.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-/// **HW-DR-0044.** The root screen alone carries the masthead, above `Usage:`.
+/// **HW-DR-0045.** The root screen alone carries the masthead, above `Usage:`.
 ///
 /// A verb's own page, `--version` and the bare-invocation refusal each already
 /// promise something a masthead would break, and the decision keeps every one
@@ -587,7 +587,7 @@ fn the_root_screen_alone_carries_the_masthead() {
     );
 }
 
-/// **HW-DR-0044.** `--no-banner` and `HEADWATER_NO_BANNER` suppress the
+/// **HW-DR-0045.** `--no-banner` and `HEADWATER_NO_BANNER` suppress the
 /// masthead back to today's plain name line, and both are accepted (and
 /// inert) on a verb's own page, the posture `--no-color` already set.
 #[test]
@@ -636,7 +636,7 @@ fn no_banner_and_its_environment_variable_suppress_the_masthead_and_both_are_acc
     assert!(deep.err.is_empty(), "and it is silent there, same as --no-color");
 }
 
-/// **HW-DR-0044.** `--no-color`'s own text states the new behavior on both
+/// **HW-DR-0045.** `--no-color`'s own text states the new behavior on both
 /// screens it appears on, not the old claim that this binary has no color to
 /// turn off, and `--no-banner` has an entry of its own beside it.
 #[test]

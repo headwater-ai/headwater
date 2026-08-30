@@ -11,7 +11,7 @@ relations:
     - engine/crates/cli/src/main.rs
     - engine/crates/cli/src/paint.rs
   traces_to:
-    - HW-DR-0044
+    - HW-DR-0045
 ---
 
 # headwater help
@@ -26,7 +26,7 @@ The command prints the root help screen when it has no operand. It prints the he
 
 `headwater help` reads the command tree that the parser uses. The root screen lists every verb and its summary. A selected node prints its synopsis, description, options and subcommands.
 
-The root screen also prints a masthead above `Usage:`: the binary name and version, a rule, then the existing tagline. A verb's own help page prints none of it. [HW-DR-0044](../decisions/0044-coloring-the-cli-and-where-the-banner-goes.md) rules that the root screen is the only place it appears.
+The root screen also prints a masthead above `Usage:`: the binary name and version, a rule, then the existing tagline. A verb's own help page prints none of it. [HW-DR-0045](../decisions/0045-coloring-the-cli-and-where-the-banner-goes.md) rules that the root screen is the only place it appears.
 
 The command does not load the corpus or the taxonomy lock. It answers from the command tree, so it also works from a directory that is not a repository.
 
