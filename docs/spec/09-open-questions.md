@@ -10,7 +10,7 @@ relations:
 
 # decisions
 
-43 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+44 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -183,3 +183,7 @@ relations:
 ## Q43 — Whether a refusal under `--json` is a JSON document
 
 [HW-DR-0043](../decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md) — A refusal is an English sentence on standard error and never a JSON document, because `--json` names the shape of an artifact and moves no stream and no grammar. (asserted, and no human has accepted it)
+
+## Q44 — Whether bundles decompose into capabilities and assemblies compose practices
+
+[HW-DR-0044](../decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md) — Bundles decompose into capabilities after adopter evidence, and assemblies name the practices that compose those capabilities. (asserted, and no human has accepted it)

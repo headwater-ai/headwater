@@ -2329,6 +2329,28 @@ fn a_contents_bundles_naming_a_file_is_refused() {
     assert!(!out_of(&scratch).exists(), "an artifact was written anyway");
 }
 
+/// `contents.assemblies` names recipe directories, so a file at that path is
+/// refused before a publish can record a manifest no assembly reader can use.
+#[test]
+fn a_contents_assemblies_naming_a_file_is_refused() {
+    let scratch = Scratch::new("assemblies-file");
+    let root = publisher(&scratch, None);
+    scratch.write(
+        "publisher/packages/acme-fixture/package.yml",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: \
+         ../../library\n  assemblies: taxonomy.yml\n",
+    );
+
+    let refused = package::publish(&root, "acme/fixture", &out_of(&scratch))
+        .expect_err("the assemblies file is refused");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("`contents.assemblies`") && message.contains("reads a directory"),
+        "the refusal does not state the assembly reader's directory: {message}"
+    );
+    assert!(!out_of(&scratch).exists(), "an artifact was written anyway");
+}
+
 /// `contents.conformance` naming a directory that is there is refused.
 ///
 /// The body of #279's first case. `headwater conformance` is the only reader of

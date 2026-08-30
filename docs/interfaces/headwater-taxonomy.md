@@ -40,7 +40,7 @@ The consumer declaration and package sources must be readable for source operati
 | `validate` | Validates taxonomy sources without writing. |
 | `resolve [--check]` | Writes or checks `.headwater/taxonomy.lock`. |
 | `audit [--now <date>] [--record]` | Measures the taxonomy against the corpus. `--record` appends one adoption reading to `.headwater/adoption.jsonl`, and refuses a reading the store already holds at this lock and this date. |
-| `publish [--package <name>] [--from <dir>] [--out <dir>]` | Writes a package artifact and release record. |
+| `publish [--package <name>] [--from <dir>] [--assembly <name>] [--out <dir>]` | Writes a package artifact and release record, or a flattened artifact from the named assembly. |
 | `vendor <dir> [--expect <digest>]` | Installs a fetched artifact after digest validation. |
 | `diff <dir> [--to <version>] [--now <date>]` | Compares a fetched artifact with the current taxonomy. |
 | `migrate <dir> [--to <version>] [--apply] [--now <date>]` | Reports or applies migration steps. |

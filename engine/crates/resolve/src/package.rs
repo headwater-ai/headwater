@@ -887,6 +887,74 @@ pub fn publish_from(
     publish_at(root, directory, &manifest, out)
 }
 
+/// Write the flattened artifact a named assembly derives from a package found
+/// under `packages/`.
+pub fn publish_assembly(
+    root: &Path,
+    name: &str,
+    assembly: &str,
+    out: &Path,
+) -> Result<Release, Vec<ResolveError>> {
+    let (directory, manifest) = find(root, name)?;
+    publish_assembly_at(root, &directory, &manifest, assembly, out)
+}
+
+/// Write the flattened artifact a named assembly derives from a source
+/// directory the caller already holds.
+pub fn publish_assembly_from(
+    root: &Path,
+    directory: &Path,
+    assembly: &str,
+    out: &Path,
+) -> Result<Release, Vec<ResolveError>> {
+    let manifest = manifest_at(directory)?;
+    publish_assembly_at(root, directory, &manifest, assembly, out)
+}
+
+/// The publish sequence for an assembly after its source directory and manifest
+/// are known.
+///
+/// This keeps the same read, write, and undo boundary as [`publish_at`]. The
+/// generated material replaces the source tree only after every recipe input is
+/// in memory, and [`found::Found`] unwinds the same output states when either a
+/// file write or release-record write fails.
+fn publish_assembly_at(
+    root: &Path,
+    directory: &Path,
+    manifest: &Mapping,
+    assembly: &str,
+    out: &Path,
+) -> Result<Release, Vec<ResolveError>> {
+    let declared = manifest_name(root, directory);
+    let contents = contents_of(manifest);
+    reachable(root, &declared, directory, &contents)?;
+    let source = taxonomy_source(root, directory, &contents)?;
+    agrees(&declared, manifest, &source)?;
+
+    let recipe = crate::assembly::read(root, directory, manifest, assembly)?;
+    let flattened = crate::flatten::materialize(root, directory, manifest, &recipe)?;
+    let staged = stage_flattened(directory, &flattened)?;
+    let found = found::observe(out).map_err(|why| refusal(&display(root, out), &why))?;
+
+    let written = put(out, &staged)
+        .map_err(|why| refusal(&display(root, out), &why))
+        .and_then(|()| {
+            let record = release::compute(out, &flattened.manifest)
+                .map_err(|error| release::as_error(&display(root, out), &error))?;
+            std::fs::write(out.join(release::RECORD), release::render(&record))
+                .map_err(|error| refusal(release::RECORD, &format!("cannot write it: {error}")))?;
+            Ok(record)
+        });
+
+    match written {
+        Ok(record) => Ok(record),
+        Err(errors) => {
+            found.unwind(out);
+            Err(errors)
+        }
+    }
+}
+
 /// The publish sequence shared by [`publish`] and [`publish_from`], once each
 /// has settled on a directory and the manifest inside it by whichever route
 /// it uses.
@@ -1124,6 +1192,41 @@ struct Staged {
     mode: std::fs::Permissions,
 }
 
+/// The generated flattened package, expressed in the same staged-file shape
+/// ordinary publication passes to [`put`].
+fn stage_flattened(
+    directory: &Path,
+    flattened: &crate::flatten::Flattened,
+) -> Result<Vec<Staged>, Vec<ResolveError>> {
+    let mode = std::fs::metadata(directory.join(MANIFEST))
+        .map_err(|error| {
+            refusal(
+                &directory.join(MANIFEST).display().to_string(),
+                &format!("cannot read it for its file mode: {error}"),
+            )
+        })?
+        .permissions();
+    let mut staged = vec![
+        Staged {
+            path: MANIFEST.to_string(),
+            bytes: crate::render::render(&flattened.manifest).into_bytes(),
+            mode: mode.clone(),
+        },
+        Staged {
+            path: "taxonomy.yml".to_string(),
+            bytes: flattened.taxonomy.as_bytes().to_vec(),
+            mode: mode.clone(),
+        },
+    ];
+    staged.extend(flattened.assets.iter().map(|asset| Staged {
+        path: asset.path.clone(),
+        bytes: asset.bytes.clone(),
+        mode: mode.clone(),
+    }));
+    staged.sort_by(|left, right| left.path.cmp(&right.path));
+    Ok(staged)
+}
+
 /// Which kind of thing a `contents` key's reader opens.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kind {
@@ -1161,6 +1264,8 @@ impl Kind {
 ///   dependency cannot run the other way.
 /// - `bundles` is a directory: [`stage`] reads it with [`read_tree`], which is
 ///   `read_dir`, and the resolver then reads `<bundles>/<name>/bundle.yml`.
+/// - `assemblies` is a directory: [`crate::assembly::read`] opens a named
+///   recipe under it.
 /// - `migrations` is a directory: [`crate::migration::at`] reads it with
 ///   `read_dir` and globs `*.yml` out of it.
 /// - `doctrine` is a directory: [`doctrine_at`] resolves it against the fetched
@@ -1176,7 +1281,7 @@ impl Kind {
 fn required_kind(key: &str) -> Option<Kind> {
     match key {
         "taxonomy" | "conformance" => Some(Kind::File),
-        BUNDLES | DOCTRINE | crate::migration::CONTENTS_KEY => Some(Kind::Directory),
+        BUNDLES | ASSEMBLIES | DOCTRINE | crate::migration::CONTENTS_KEY => Some(Kind::Directory),
         _ => None,
     }
 }
@@ -1185,8 +1290,8 @@ fn required_kind(key: &str) -> Option<Kind> {
 ///
 /// [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#publishing):
 /// *"Every `contents` path a publisher writes is read. `taxonomy`, `bundles`,
-/// `conformance` and `migrations` each reach a verb. A key that no verb reads is
-/// a claim that a publisher makes and a consumer never sees."* This is that
+/// `assemblies`, `conformance` and `migrations` each reach a verb. A key that
+/// no verb reads is a claim that a publisher makes and a consumer never sees."* This is that
 /// sentence, and it reads the keys the manifest declares rather than a list
 /// written here, so a key added to a manifest is covered on the day it arrives.
 ///
@@ -1563,6 +1668,14 @@ fn migrations(
 
 /// Where a published package keeps the bundles it ships.
 pub const BUNDLES: &str = "bundles";
+
+/// Where a source package keeps named assembly recipes.
+///
+/// An assembly is source material for a flattened package, rather than content
+/// a consumer resolves at runtime. [`crate::assembly::read`] is its reader.
+/// Unlike [`BUNDLES`], this directory is always inside the source package: no
+/// publish path rewrites it into the artifact.
+pub const ASSEMBLIES: &str = "assemblies";
 
 /// Where a published package keeps the prose that explains its method.
 ///

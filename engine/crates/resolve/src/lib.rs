@@ -69,9 +69,11 @@
 //! assert_eq!(repository.consumer.corpus_root, "docs");
 //! ```
 
+pub mod assembly;
 pub mod confluence;
 pub mod core;
 pub mod error;
+pub mod flatten;
 pub mod merge;
 pub mod migration;
 pub mod operation;

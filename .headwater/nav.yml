@@ -45,6 +45,7 @@ nav:
       - "Q41 — Whether Vale becomes a declared regime backend": "decisions/0041-q41-whether-vale-becomes-a-declared-regime-backend.md"
       - "Q42 — What \"one screen\" means for the first help screen": "decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md"
       - "Q43 — Whether a refusal under `--json` is a JSON document": "decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md"
+      - "Q44 — Whether bundles decompose into capabilities and assemblies compose practices": "decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md"
   - "acceptance_criteria":
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
   - "evaluations":

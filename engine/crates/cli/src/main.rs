@@ -318,8 +318,19 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
             Some(TaxonomyWord::Validate) => validate(root),
             Some(TaxonomyWord::Resolve { check }) => resolve(root, check),
             Some(TaxonomyWord::Audit { now, record }) => audit(root, now, record),
-            Some(TaxonomyWord::Publish { package, from, out }) => {
-                publish(root, package.as_deref(), from.as_deref(), out.as_deref())
+            Some(TaxonomyWord::Publish {
+                package,
+                from,
+                assembly,
+                out,
+            }) => {
+                publish(
+                    root,
+                    package.as_deref(),
+                    from.as_deref(),
+                    assembly.as_deref(),
+                    out.as_deref(),
+                )
             }
             Some(TaxonomyWord::Vendor { path, expect }) => match path {
                 None => fail(
@@ -1093,6 +1104,7 @@ fn publish(
     root: &Path,
     package: Option<&str>,
     from: Option<&Path>,
+    assembly: Option<&str>,
     out: Option<&Path>,
 ) -> ExitCode {
     let Some(out) = out else {
@@ -1107,7 +1119,12 @@ fn publish(
     }
 
     let published = match from {
-        Some(directory) => headwater_resolve::package::publish_from(root, directory, out),
+        Some(directory) => match assembly {
+            Some(name) => {
+                headwater_resolve::package::publish_assembly_from(root, directory, name, out)
+            }
+            None => headwater_resolve::package::publish_from(root, directory, out),
+        },
         None => {
             let name = match package {
                 Some(name) => name.to_string(),
@@ -1125,7 +1142,12 @@ fn publish(
                     }
                 },
             };
-            headwater_resolve::package::publish(root, &name, out)
+            match assembly {
+                Some(assembly) => {
+                    headwater_resolve::package::publish_assembly(root, &name, assembly, out)
+                }
+                None => headwater_resolve::package::publish(root, &name, out),
+            }
         }
     };
 
