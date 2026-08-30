@@ -1,6 +1,6 @@
-269 nodes, 547 declared edge halves
-    433 to a document
-    114 to an anchor
+270 nodes, 557 declared edge halves
+    437 to a document
+    120 to an anchor
 0 prose links that did not resolve
 
 anchors
@@ -29,10 +29,12 @@ anchors
       1 code_path `engine/crates/check/src/lib.rs` via source-tree
       1 code_path `engine/crates/check/src/lifecycle_state.rs` via source-tree
       1 code_path `engine/crates/cli/Cargo.toml` via source-tree
-     19 code_path `engine/crates/cli/src/lib.rs` via source-tree
-     20 code_path `engine/crates/cli/src/main.rs` via source-tree
-      1 code_path `engine/crates/cli/tests/help.rs` via source-tree
+     20 code_path `engine/crates/cli/src/lib.rs` via source-tree
+     21 code_path `engine/crates/cli/src/main.rs` via source-tree
+      2 code_path `engine/crates/cli/src/paint.rs` via source-tree
+      2 code_path `engine/crates/cli/tests/help.rs` via source-tree
       1 code_path `engine/crates/cli/tests/json.rs` via source-tree
+      1 code_path `engine/crates/cli/tests/width.rs` via source-tree
       1 code_path `engine/crates/cli/tests/wiring.rs` via source-tree
       1 code_path `engine/crates/compat/src/lib.rs` via source-tree
       1 code_path `engine/crates/conformance/src/json.rs` via source-tree
