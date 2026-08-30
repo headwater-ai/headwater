@@ -452,8 +452,11 @@ fn a_contract_missing_one_heading_is_reported_by_its_name_and_its_file() {
         checked.out
     );
     assert!(
+        // The severity carries a glyph beside the word under plain-text
+        // rendering — `✗`, see `headwater_check::paint` — because this
+        // process is piped rather than attached to a terminal.
         checked.flowed().contains(&flowed(&format!(
-            "  {incomplete} error\n    \
+            "  {incomplete} ✗ error\n    \
              section.required.missing (OB-SECT-1): `interface_contract` requires the section \
              `{OMITTED}`, and no heading of this document says so\n    \
              fix: add a `{OMITTED}` heading to {incomplete}, with the content the kind is for"
@@ -536,14 +539,17 @@ fn the_contract_reads_a_heading_and_never_its_order_or_its_content() {
         "the rule ran, and it reported the control and nothing else:\n{}",
         checked.out
     );
+    // The severity carries a glyph beside the word under plain-text
+    // rendering — `✗`, see `headwater_check::paint` — because this process
+    // is piped rather than attached to a terminal.
     assert!(
-        checked.out.contains(&format!("  {control} error")),
+        checked.out.contains(&format!("  {control} ✗ error")),
         "the one finding is about the document that is short a heading:\n{}",
         checked.out
     );
     assert!(
-        !checked.out.contains(&format!("  {out_of_order} error"))
-            && !checked.out.contains(&format!("  {hollow} error")),
+        !checked.out.contains(&format!("  {out_of_order} ✗ error"))
+            && !checked.out.contains(&format!("  {hollow} ✗ error")),
         "the order of the headings and the words under them reach no rule:\n{}",
         checked.out
     );

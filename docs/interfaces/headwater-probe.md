@@ -47,7 +47,7 @@ All subcommands require a readable `.headwater/probe.yml`, a readable taxonomy l
 | `grade` | `<path>` | Grade the transcript at the path against the current regression selection. |
 | `stale` | none | Report which committed transcript read sets changed. |
 
-Global `--root` selects the repository. `--help`, `--version`, `--wide` and `--no-color` are handled by the binary before or around the subcommand.
+Global `--root` selects the repository. `--help`, `--version`, `--wide`, `--no-color` and `--no-banner` are handled by the binary before or around the subcommand.
 
 ## Exit status
 

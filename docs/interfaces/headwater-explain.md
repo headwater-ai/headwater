@@ -30,6 +30,8 @@ An untyped document can still be explained. Its derivation states the step that 
 
 The text report follows the order above. JSON carries the same fields in a document with its own shape version. A related edge states its direction, target, cue, governing end and the far document pointer where one exists.
 
+**The text report renders the palette [HW-DR-0045](../decisions/0045-coloring-the-cli-and-where-the-banner-goes.md) rules on, when standard output is a terminal.** The path is cyan, and the repeated labels — `kind`, `purpose`, `summary`, `warrant`, `requires the facets`, `requires the sections`, `may declare` — are dim, the same way on every run. JSON never colors: `--json` selects a machine format regardless of the stream. `--no-color` forces the plain text this verb already wrote before this decision.
+
 ## Preconditions
 
 The repository must carry a readable `.headwater/taxonomy.lock`, consumer declaration and corpus. The target must resolve to a typed or untyped census row.
@@ -43,9 +45,10 @@ An identifier resolves through the graph index. A target that matches neither a 
 | `<path|identifier>` | Select the document to explain. |
 | `--json` | Write the explanation as machine-readable JSON. |
 | `--root <path>` | Select the repository to read. |
-| `--no-color` | Confirm the binary's color-free output. It changes no byte. |
+| `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. |
+| `--no-banner` | Suppress the masthead: the line naming this binary and its version, that the root help screen alone prints. It is accepted here and does nothing, since only the root screen prints one. |
 
-`--format` is not an option of this verb. `--wide` is refused because the verb prints no help layout. Global `--help` and `--version` are answered before the verb runs.
+`--format` is not an option of this verb. `--wide` is refused because the verb prints no help layout. Global `--help`, `--version` and `--no-banner` are answered before the verb runs.
 
 ## Exit status
 

@@ -355,9 +355,9 @@ Trimmed to the findings block:
 
 ```
   1 findings
-        1 error
+        1 ✗ error
 
-  docs/decisions/0002-deliver-at-least-once.md:9:7 error
+  docs/decisions/0002-deliver-at-least-once.md:9:7 ✗ error
     relation.reciprocity.missing (OB-REL-1): `ACME-DR-0002` declares
       `supersedes: ACME-DR-0001`, and `supersedes` requires both ends, so
       docs/decisions/0001-store-attempts-in-postgres.md owes `superseded_by`

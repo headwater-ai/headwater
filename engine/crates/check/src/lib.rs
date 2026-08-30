@@ -150,6 +150,7 @@ pub mod identity;
 pub mod instance;
 pub mod language;
 pub mod lifecycle_state;
+pub mod paint;
 pub mod participation;
 pub mod patch;
 pub mod placement;
@@ -940,7 +941,11 @@ impl Run {
     /// reader who checks nothing else still sees the denominator, and "no
     /// findings across 36 of 36" and "no findings across 30 of 36" are not the
     /// same result.
-    pub fn render(&self, detail: Detail) -> String {
+    ///
+    /// `mode` is the color decision the caller already made, threaded down to
+    /// every [`Finding::render`] the same way. See `crate::paint`'s module
+    /// comment for why this function reads no stream itself.
+    pub fn render(&self, detail: Detail, mode: crate::paint::ColorMode) -> String {
         use std::fmt::Write;
         let mut out = String::new();
         // The change first, because it is the input that decides which
@@ -953,7 +958,7 @@ impl Run {
         // Spec 7 puts the count of open pairs "beside coverage", and spec 4
         // says what it adds there: a payload that never shrinks is visible from
         // the second run rather than at its expiry.
-        out.push_str(&self.adoption.render());
+        out.push_str(&self.adoption.render(mode));
         // Spec 12 puts the read set here, "beside its coverage numbers". The
         // size is beside them and the union is an artifact of its own, because
         // a hash of every document is a thing a gate reads and a thing a
@@ -980,7 +985,15 @@ impl Run {
         // with the disposition and the control beside it. Two printings of one
         // binding is what spec 4 rules against in the declarations, and a
         // report is no different.
-        out.push_str("rules, and for each the scope that binds it\n");
+        let _ = writeln!(
+            out,
+            "{}",
+            crate::paint::paint(
+                crate::paint::Role::Heading,
+                "rules, and for each the scope that binds it",
+                mode
+            )
+        );
         for served in &self.served {
             let _ = writeln!(out, "  {}\n    {}", served.rule, served.scope.render());
         }
@@ -994,7 +1007,11 @@ impl Run {
             let _ = writeln!(out, "{} findings", self.findings.len());
             for (severity, count) in self.counts() {
                 if count > 0 {
-                    let _ = writeln!(out, "  {count:5} {severity}");
+                    let _ = writeln!(
+                        out,
+                        "  {count:5} {}",
+                        crate::paint::severity_word(severity, mode)
+                    );
                 }
             }
         }
@@ -1019,7 +1036,7 @@ impl Run {
         if !self.findings.is_empty() && detail != Detail::Totals {
             out.push('\n');
             for finding in &self.findings {
-                out.push_str(&finding.render());
+                out.push_str(&finding.render(mode));
             }
         }
         out

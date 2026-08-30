@@ -505,6 +505,46 @@ fn no_escape_byte_reaches_a_file_this_binary_writes() {
     }
 }
 
+/// **Every refusal this binary prints, not only the four conditions above.**
+///
+/// `fail`, `refuse`, `defect` and the ~40 refusal lines the verb handlers
+/// print inline all go through `err`, the one wrap `fail` already applied to
+/// its own message. This runs a refusal that is neither `fail` (a grammar
+/// mistake) nor a bare-invocation refusal, so it is evidence about `refuse`
+/// and about the inline sites rather than about the one path the four
+/// conditions above already cover. A directory with no `.headwater/` is the
+/// simplest one every verb reaches through `load`.
+#[test]
+fn no_escape_byte_reaches_a_refusal_that_is_not_fail_or_the_bare_invocation() {
+    let at = std::env::temp_dir().join(format!("headwater-refusal-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&at);
+    std::fs::create_dir_all(&at).expect("the directory is there");
+    let output = Process::new(env!("CARGO_BIN_EXE_headwater"))
+        .arg("check")
+        .current_dir(&at)
+        .env_remove("COLUMNS")
+        .output()
+        .expect("the binary runs");
+    assert_eq!(output.status.code(), Some(1), "no lock, so the run refuses");
+    assert!(
+        !output.stdout.is_empty() || !output.stderr.is_empty(),
+        "the refusal wrote something"
+    );
+    assert!(
+        !contains_escape(&output.stdout),
+        "the refusal writes an escape byte to standard output"
+    );
+    assert!(
+        !contains_escape(&output.stderr),
+        "the refusal writes an escape byte to standard error"
+    );
+    let text = String::from_utf8(output.stderr).expect("the refusal is text");
+    assert!(
+        text.contains("taxonomy.lock"),
+        "the refusal names the lock this run looked for:\n{text}"
+    );
+}
+
 /// The two bytes that open every ANSI colour sequence.
 fn contains_escape(bytes: &[u8]) -> bool {
     bytes.windows(2).any(|pair| pair == [0x1b, b'['])
@@ -822,7 +862,10 @@ fn no_finding_states_its_severity_on_a_line_of_its_own() {
         let asked = columns.unwrap_or("80");
         for (at, line) in out.lines().enumerate() {
             assert!(
-                !matches!(line.trim(), "error" | "warn" | "info"),
+                !matches!(
+                    line.trim(),
+                    "error" | "warn" | "info" | "✗ error" | "▲ warn" | "· info"
+                ),
                 "at COLUMNS={asked}, line {} of the report is a bare severity word, so a \
                  finding's location and its severity are on two lines:\n{}",
                 at + 1,
@@ -834,15 +877,18 @@ fn no_finding_states_its_severity_on_a_line_of_its_own() {
             );
         }
         // At least one location line, so a corpus that reported nothing does not
-        // pass this case by having no findings in it.
+        // pass this case by having no findings in it. Plain mode prints a
+        // severity glyph beside the word — `✗`, `▲` or `·`, see
+        // `headwater_check::paint` — so the line is a path, a glyph and a word
+        // rather than a path and a word alone.
         let located = out
             .lines()
             .filter(|line| {
                 let trimmed = line.trim_end();
-                trimmed.split_whitespace().count() == 2
-                    && (trimmed.ends_with(" error")
-                        || trimmed.ends_with(" warn")
-                        || trimmed.ends_with(" info"))
+                trimmed.split_whitespace().count() == 3
+                    && (trimmed.ends_with(" ✗ error")
+                        || trimmed.ends_with(" ▲ warn")
+                        || trimmed.ends_with(" · info"))
             })
             .count();
         assert!(

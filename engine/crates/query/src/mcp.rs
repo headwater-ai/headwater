@@ -762,7 +762,10 @@ fn call(server: &Server<'_>, message: &Mapping) -> Result<Answer, Failure> {
     let text = match tool.name {
         "route" => surface.route(&argument, Budget::default()).render(),
         "explain" => match surface.explain(&argument) {
-            Some(explanation) => explanation.render(),
+            // Plain, unconditionally: an MCP server's own stdout is never a
+            // terminal, so a real invocation piped the same way would sense
+            // the same mode.
+            Some(explanation) => explanation.render(headwater_check::paint::ColorMode::Plain),
             None => format!("{argument} is not a document of this corpus\n"),
         },
         "related" => match surface.find(&argument) {

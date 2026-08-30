@@ -530,7 +530,13 @@ impl Ledger {
     /// The first line is the count that spec 7 requires on every run. The task
     /// lines carry the owner and the expiry, because a number with no name
     /// beside it is a number nobody works.
-    pub fn render(&self) -> String {
+    ///
+    /// `mode` colors every `AD-…` identifier magenta, on the role
+    /// `crate::paint`'s palette names for "an obligation or adoption-task
+    /// identifier". See that module's comment for why this function reads no
+    /// stream itself.
+    pub fn render(&self, mode: crate::paint::ColorMode) -> String {
+        use crate::paint::{paint, Role};
         use std::fmt::Write;
         let mut out = String::new();
         if self.is_empty() {
@@ -553,7 +559,7 @@ impl Ledger {
                     let _ = writeln!(
                         out,
                         "  {} {} open, {} closed, holding {} {}, owner {}, until {}",
-                        task.id,
+                        paint(Role::Obligation, &task.id, mode),
                         task.pairs.len() - task.closed.len(),
                         task.closed.len(),
                         task.held,
@@ -566,7 +572,7 @@ impl Ledger {
                     let _ = writeln!(
                         out,
                         "  {} lapsed on {}, and the {} pairs it named are reported, owner {}",
-                        task.id,
+                        paint(Role::Obligation, &task.id, mode),
                         task.until,
                         task.pairs.len(),
                         task.owner
@@ -852,7 +858,13 @@ tasks:
         );
         assert!(kept.is_empty());
         assert_eq!(ledger.unread.len(), 2);
-        assert!(ledger.render().contains("`from`"), "{}", ledger.render());
+        assert!(
+            ledger
+                .render(crate::paint::ColorMode::Plain)
+                .contains("`from`"),
+            "{}",
+            ledger.render(crate::paint::ColorMode::Plain)
+        );
     }
 
     /// Inside a task the same key is a refusal, because the task may not be the
@@ -1027,5 +1039,27 @@ tasks:
             "{:?}",
             declared.refused
         );
+    }
+
+    /// `Plain` writes no escape sequence anywhere in the ledger. `Ansi`
+    /// colors every task identifier magenta — the role `crate::paint`'s
+    /// palette names for an adoption-task identifier — and rewrites no word.
+    #[test]
+    fn every_task_identifier_carries_color_only_under_ansi() {
+        let block = one_task("      - {path: docs/a.md, rule: facet.required.missing}");
+        let declared = read(&block, &RULES);
+        let (_, ledger) = apply(
+            vec![finding("docs/a.md", "facet.required.missing")],
+            declared,
+            day("2026-08-13"),
+        );
+
+        let plain = ledger.render(crate::paint::ColorMode::Plain);
+        assert!(!plain.contains('\x1b'), "{plain:?}");
+        assert!(plain.contains("AD-1"), "{plain:?}");
+
+        let ansi = ledger.render(crate::paint::ColorMode::Ansi);
+        assert!(ansi.contains('\x1b'), "{ansi:?}");
+        assert!(ansi.contains("AD-1"), "{ansi:?}");
     }
 }

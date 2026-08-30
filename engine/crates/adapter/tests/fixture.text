@@ -211,224 +211,224 @@ checks
     coverage.document_unchecked reaches no obligation, so it names none
     adoption.task.expired reaches no obligation, so it names none
   42 findings
-       24 error
-       18 warn
+       24 ✗ error
+       18 ▲ warn
 
-  check/evaluations/epsilon.md:4:1 warn
+  check/evaluations/epsilon.md:4:1 ▲ warn
     relation.participation.overdue (OB-FIX-6): `evidence-cited`: 219 days since
       `status_since`, and this `evaluation` reaches no `cites_evidence` to a
       `design_spec` inside the 30 days the taxonomy allows
     fix: declare `cites_evidence` to a `design_spec` under `relations:` in
       check/evaluations/epsilon.md, or record why it is not owed: an evaluation
       that no specification cites closed nothing
-  check/evaluations/eta.md:8:7 error
+  check/evaluations/eta.md:8:7 ✗ error
     relation.endpoint.not_permitted: `assesses` declares `from: [design_spec]`,
       and `EVAL-FIX-eta` at that end has the kind `evaluation`
     fix: declare this relation between kinds `assesses` permits, or widen its
       `from` in the taxonomy; the document at that end is
       check/evaluations/eta.md
-  check/evaluations/gamma.md:3:1 error
+  check/evaluations/gamma.md:3:1 ✗ error
     shelf.placement_is_primary (OB-FIX-2): `evaluations` is homogeneous and
       carries the kind `evaluation`, and this document restates it as `doc_type:
       evaluation`
     fix: remove `doc_type` from the front matter of check/evaluations/gamma.md
-  check/evaluations/gamma.md:9:7 error
+  check/evaluations/gamma.md:9:7 ✗ error
     relation.reciprocity.missing (OB-FIX-1): `EVAL-FIX-gamma` declares
       `cited_by: SPEC-FIX-both-halves`, and `cites_evidence` requires both ends,
       so check/spec/00-both-halves.md owes `cites_evidence`
     fix (mechanical): add `cites_evidence: EVAL-FIX-gamma` under `relations:` in
       check/spec/00-both-halves.md
-  check/spec/01-one-half.md:9:7 error
+  check/spec/01-one-half.md:9:7 ✗ error
     relation.reciprocity.missing (OB-FIX-1): `SPEC-FIX-one-half` declares
       `cites_evidence: EVAL-FIX-beta`, and `cites_evidence` requires both ends,
       so check/evaluations/beta.md owes `cited_by`
     fix (mechanical): add `cited_by: SPEC-FIX-one-half` under `relations:` in
       check/evaluations/beta.md
-  check/spec/01-one-half.md:18:151 warn
+  check/spec/01-one-half.md:18:151 ▲ warn
     language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words
       a sentence, and this one has 34
     fix: split the sentence, or move a clause into its own sentence
-  check/spec/03-no-instance.md warn
+  check/spec/03-no-instance.md ▲ warn
     coverage.document_unchecked: this document is classified and all 3 of its
       check instances were skipped
     fix: check that the shelf pattern claims the right files, and that the kind
       declares something a check reads
-  check/spec/05-no-summary.md error
+  check/spec/05-no-summary.md ✗ error
     facet.required.missing (OB-FIX-3): `design_spec` requires the facet
       `summary`, and it is not declared
     fix: add `summary:` to the front matter of check/spec/05-no-summary.md, with
       the value this document has
-  check/spec/05-no-summary.md:12:1 warn
+  check/spec/05-no-summary.md:12:1 ▲ warn
     language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words
       a sentence, and this one has 31
     fix: split the sentence, or move a clause into its own sentence
-  check/spec/06-retired.md:4:9 error
+  check/spec/06-retired.md:4:9 ✗ error
     facet.value.not_permitted (OB-FIX-4): `status` admits draft, current,
       superseded, and this document declares `retired`
     fix: change `status` in check/spec/06-retired.md to one of: draft, current,
       superseded
-  check/spec/06-retired.md:11:131 warn
+  check/spec/06-retired.md:11:131 ▲ warn
     language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words
       a sentence, and this one has 34
     fix: split the sentence, or move a clause into its own sentence
-  check/spec/07-prose-defects.md:15:1 warn
+  check/spec/07-prose-defects.md:15:1 ▲ warn
     voice.forbidden_construction (OB-FIX-7): `declarative` forbids
       future_intent, and this sentence writes `will be`
     fix: state what the system does now, or move the sentence to a document
       whose kind narrates
-  check/spec/07-prose-defects.md:17:1 warn
+  check/spec/07-prose-defects.md:17:1 ▲ warn
     voice.forbidden_construction (OB-FIX-7): `declarative` forbids
       change_narration, and this sentence writes `we renamed`
     fix: state the position that holds, and leave the change to the decision
       that made it
-  check/spec/07-prose-defects.md:19:1 warn
+  check/spec/07-prose-defects.md:19:1 ▲ warn
     voice.forbidden_construction (OB-FIX-7): `declarative` forbids
       phased_rollout, and this sentence writes `for now`
     fix: state what holds, and record the sequence in the plan that owns it
-  check/spec/07-prose-defects.md:23:1 warn
+  check/spec/07-prose-defects.md:23:1 ▲ warn
     language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words
       a sentence, and this one has 43
     fix: split the sentence, or move a clause into its own sentence
-  check/spec/07-prose-defects.md:25:1 error
+  check/spec/07-prose-defects.md:25:1 ✗ error
     language.controlled.not_met (OB-FIX-8): `ste_house` admits no contraction,
       and this sentence writes `doesn't`
     fix (mechanical): write `does not`
-  check/spec/07-prose-defects.md:27:1 error
+  check/spec/07-prose-defects.md:27:1 ✗ error
     language.controlled.not_met (OB-FIX-8): `ste_house` declares the tag
       `en-US`, and this sentence writes `behaviour`
     fix (mechanical): write `behavior`
-  check/spec/07-prose-defects.md:29:1 warn
+  check/spec/07-prose-defects.md:29:1 ▲ warn
     language.controlled.not_met (OB-FIX-8): `ste_house` admits no semicolon in
       running prose, and this sentence writes one
     fix: split the sentence in two, and let each half state one thing
-  check/spec/07-prose-defects.md:39:1 error
+  check/spec/07-prose-defects.md:39:1 ✗ error
     language.controlled.not_met (OB-FIX-8): `ste_house` admits no contraction,
       and this sentence writes `doesn't`
     fix (mechanical): write `does not`
-  check/spec/07-prose-defects.md:43:1 error
+  check/spec/07-prose-defects.md:43:1 ✗ error
     language.retired_term.used (OB-FIX-22): `ste_house` retires `reference
       system`, and this sentence writes it: the corpus renamed it
     fix (mechanical): write `taxonomy`
-  check/spec/07-prose-defects.md:45:1 warn
+  check/spec/07-prose-defects.md:45:1 ▲ warn
     language.retired_term.used (OB-FIX-22): `ste_house` retires `robust`, and
       this sentence writes it: it stands in for the failure the thing survives
     fix: rewrite the sentence without `robust`
-  check/spec/07-prose-defects.md:56:1 error
+  check/spec/07-prose-defects.md:56:1 ✗ error
     language.source_form.not_met (OB-FIX-21): `ste_house` writes one paragraph
       on one line, and this line continues the paragraph above
     fix: join this line to the line above, or end the paragraph there
-  check/spec/07-prose-defects.md:57:1 error
+  check/spec/07-prose-defects.md:57:1 ✗ error
     language.source_form.not_met (OB-FIX-21): `ste_house` writes one paragraph
       on one line, and this line continues the paragraph above
     fix: join this line to the line above, or end the paragraph there
-  check/spec/07-prose-defects.md:61:32 error
+  check/spec/07-prose-defects.md:61:32 ✗ error
     link.fragment.unresolved (OB-FIX-10): `#no-such-section` names no heading of
       this document
     fix: point it at a heading of check/spec/07-prose-defects.md, or write the
       heading it names
-  check/spec/09-contract-missing.md error
+  check/spec/09-contract-missing.md ✗ error
     section.required.missing (OB-FIX-9): `decision_record` requires the section
       `Decision`, and no heading of this document says so
     fix: add a `Decision` heading to check/spec/09-contract-missing.md, with the
       content the kind is for
-  check/spec/10-suppressed.md:27:1 warn
+  check/spec/10-suppressed.md:27:1 ▲ warn
     language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words
       a sentence, and this one has 31
     fix: split the sentence, or move a clause into its own sentence
-  check/spec/11-identifier-mismatch.md:2:1 error
+  check/spec/11-identifier-mismatch.md:2:1 ✗ error
     identifier.pattern.not_met (OB-FIX-23): `SPEC-XX-mismatch` does not match
       `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `XX-mismatch` is where
       the namespace `FIX` was expected
     fix: write the identifier of check/spec/11-identifier-mismatch.md in the
       form `SPEC-FIX-<slug>`
-  check/spec/13-dangling.md:9:7 error
+  check/spec/13-dangling.md:9:7 ✗ error
     relation.target.unresolved (OB-FIX-24): `SPEC-FIX-dangling` declares
       `assesses: SPEC-FIX-no-such-document`, and that target resolves to nothing
       at all
     fix: write the identifier of a document that exists under `assesses`, or
       mint `SPEC-FIX-no-such-document` on the document this entry means
-  check/spec/13-dangling.md:10:7 error
+  check/spec/13-dangling.md:10:7 ✗ error
     relation.target.unresolved (OB-FIX-24): `SPEC-FIX-dangling` declares
       `assesses: SPEC-FIX-untyped`, and that target names
       check/spec/04-untyped.md, which is untyped: the census gave it no kind,
       and an endpoint is a kind
     fix: give check/spec/04-untyped.md a kind, because both ends of a declared
       relation are kinds and only a typed document is a node
-  check/spec/14-relations-not-a-mapping.md:8:3 error
+  check/spec/14-relations-not-a-mapping.md:8:3 ✗ error
     relation.declaration.unusable (OB-FIX-25): `relations` is a sequence, and it
       names relation types
     fix: write `relations:` as a mapping whose keys are relation names, because
       Q4 puts every relation instance under one key and the relation is that key
-  check/spec/15-unusable-entries.md:8:3 error
+  check/spec/15-unusable-entries.md:8:3 ✗ error
     relation.declaration.unusable (OB-FIX-25): `invented_relation` is neither a
       declared relation nor a declared inverse
     fix: write a relation this taxonomy declares, or the inverse of one, in
       place of `invented_relation`, or declare `invented_relation` in the
       taxonomy
-  check/spec/15-unusable-entries.md:11:7 error
+  check/spec/15-unusable-entries.md:11:7 ✗ error
     relation.declaration.unusable (OB-FIX-25): `assesses` names EVAL-FIX-alpha
       twice, and the second declares no second edge
     fix: delete one of the two entries of `assesses` that name EVAL-FIX-alpha.
       Q4 identifies an edge by its source, its relation and its normalized
       target, so the second declares no second edge, and the instance attributes
       on it are lost with it
-  check/spec/15-unusable-entries.md:12:7 error
+  check/spec/15-unusable-entries.md:12:7 ✗ error
     relation.declaration.unusable (OB-FIX-25): an entry of `assesses` is a
       sequence, and an entry is a target or a mapping with `to`
     fix: write each entry of `assesses` as a target reference, or as a mapping
       with `to:` and the instance attributes beside it
-  check/spec/15-unusable-entries.md:13:7 error
+  check/spec/15-unusable-entries.md:13:7 ✗ error
     relation.declaration.unusable (OB-FIX-25): an entry of `assesses` declares
       no `to`, so it names no target
     fix: give this entry of `assesses` a `to:`, or delete it, because an entry
       that names no target declares no edge and the attributes on it reach
       nothing
-  check/spec/16-no-identifier.md:1:1 error
+  check/spec/16-no-identifier.md:1:1 ✗ error
     identifier.unusable (OB-FIX-26): a typed `design_spec` that declares no
       identifier, so no edge can name it, and every entry of its `relations:`
       block is lost with it, because an edge is identified by its source
     fix: write one identifier of this document under the `id` key, because a
       relation names a document by its identifier and a document with none can
       stand at neither end of one
-  check/spec/17-identifier-not-a-word.md:2:1 error
+  check/spec/17-identifier-not-a-word.md:2:1 ✗ error
     identifier.unusable (OB-FIX-26): the identifier is not a scalar, and an
       identifier is a word
     fix: write one identifier of this document under the `id` key, because a
       relation names a document by its identifier and a document with none can
       stand at neither end of one
-  engine/crates/check/fixtures/check.taxonomy.yml warn
+  engine/crates/check/fixtures/check.taxonomy.yml ▲ warn
     control.mechanism.unimplemented (OB-FIX-12): control CT-FIX-15 names the
       mechanism check:no.such.rule, which this engine does not implement, so
       nothing discharges OB-FIX-18
     fix: name a rule this engine carries, or a phase of it, or a mechanism
       outside it under a prefix this engine does not read
-  engine/crates/check/fixtures/check.taxonomy.yml warn
+  engine/crates/check/fixtures/check.taxonomy.yml ▲ warn
     control.mechanism.unimplemented (OB-FIX-12): control CT-FIX-17 names the
       mechanism phase:no.such.phase, which this engine does not implement, so
       nothing discharges OB-FIX-20
     fix: name a rule this engine carries, or a phase of it, or a mechanism
       outside it under a prefix this engine does not read
-  engine/crates/check/fixtures/check.taxonomy.yml warn
+  engine/crates/check/fixtures/check.taxonomy.yml ▲ warn
     obligation.disposition.not_one (OB-FIX-11): obligation OB-FIX-16 carries no
       disposition: no control discharges it, and it states neither a gap nor an
       acceptance
     fix: give the obligation a control that discharges it, or state
       `disposition: {gap: {owner: …}}` or `disposition: {unverifiable:
       {reasoning: …}}` on it, and exactly one of the three
-  engine/crates/check/fixtures/check.taxonomy.yml warn
+  engine/crates/check/fixtures/check.taxonomy.yml ▲ warn
     obligation.disposition.not_one (OB-FIX-11): obligation OB-FIX-17 carries two
       dispositions: CT-FIX-14 discharges it, and it also states one for itself
     fix: give the obligation a control that discharges it, or state
       `disposition: {gap: {owner: …}}` or `disposition: {unverifiable:
       {reasoning: …}}` on it, and exactly one of the three
-  engine/crates/check/fixtures/check.taxonomy.yml warn
+  engine/crates/check/fixtures/check.taxonomy.yml ▲ warn
     obligation.disposition.not_one (OB-FIX-11): obligation OB-FIX-18 carries no
       disposition: CT-FIX-15 names a mechanism this engine does not implement,
       so nothing discharges it, and it states neither a gap nor an acceptance
     fix: name a mechanism this engine implements on CT-FIX-15, or state
       `disposition: {gap: {owner: …}}` or `disposition: {unverifiable:
       {reasoning: …}}` on it, and exactly one of the three
-  engine/crates/check/fixtures/check.taxonomy.yml warn
+  engine/crates/check/fixtures/check.taxonomy.yml ▲ warn
     obligation.disposition.not_one (OB-FIX-11): obligation OB-FIX-20 carries two
       dispositions: CT-FIX-17 claims to discharge it, and it also states one for
       itself

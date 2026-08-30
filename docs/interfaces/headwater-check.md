@@ -25,13 +25,15 @@ relations:
                     [--change <manifest>]
                     [--read-set <path>] [--register <path>]
                     [--format text|json|sarif|markdown | --json]
-                    [--root <path>] [--no-color]
+                    [--root <path>] [--no-color] [--no-banner]
 
 The verb takes no operand. A word after `check` is refused, and the message names `check` as a verb the binary does not carry.
 
 ## Description
 
 `headwater check` runs every check that the taxonomy in `.headwater/taxonomy.lock` generates over the corpus that `.headwater/taxonomy.yml` declares. It reports the census, the graph, every finding, the coverage account and the obligation register. The report is one artifact in one of four vocabularies. `--format` picks the vocabulary, and `--json` is a second spelling of `--format json`.
+
+**The `text` format renders the palette [HW-DR-0045](../decisions/0045-coloring-the-cli-and-where-the-banner-goes.md) rules on, when standard output is a terminal.** A severity word, a path, an obligation identifier and a `fix:` label each carry their own color, and the six block headings do too. The other three formats never color, whatever stream they reach. A machine reads them, and an escape sequence in JSON or SARIF is a defect rather than a courtesy. `--no-color` forces the same plain text every format already wrote before this decision.
 
 **The run is advisory unless `--strict` is passed.** A finding of any severity leaves the exit status at 0, which [spec 6](../spec/06-engine-architecture.md#exit-codes) fixes as the default. A tool that blocks on first contact is a tool somebody removes, and a removed tool catches nothing.
 
@@ -65,7 +67,8 @@ The verb takes no operand. A word after `check` is refused, and the message name
 | `--format text\|json\|sarif\|markdown` | The vocabulary the report is written in. `text` is the default and the one a person reads. `sarif` is what a forge ingests, `markdown` is a job summary or a review comment, and `json` is the finding shape that [spec 4](../spec/04-assurance-model.md) declares. `sarif` writes its own loss set into the artifact. `markdown` declares one in the source and not in the artifact, because nothing it writes is machine-readable. `text` and `json` declare that they drop nothing. The flag moves no verdict and no exit status. |
 | `--json` | The same artifact `--format json` writes, byte for byte, on both streams and with the same exit status. A command line that states both is refused, because two names for one target is a question answered twice. |
 | `--root <path>` | The repository to read. It defaults to the working directory. |
-| `--no-color` | Write no color. Every run of this binary already writes none, on either stream and in every format, so the flag confirms that state and changes no byte. It is declared so that a caller who writes it out of habit gets an answer rather than a refusal. |
+| `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. |
+| `--no-banner` | Suppress the masthead: the line naming this binary and its version, that the root help screen alone prints. It is accepted here and does nothing, since only the root screen prints one. |
 | `--wide` | How wide the help and the report of this verb are laid out. `COLUMNS` states the width, and this binary holds the reading to the range 80 to 120. A reading that is absent or is not a number gives 80, which is the width a run with no flag gives. `headwater check --wide`, `headwater check --wide --format text` and `headwater check --wide --help` are each laid out at that width. The flag is refused beside `--format json`, `--format sarif`, `--format markdown` and `--json`, because nothing lays a machine format out. `--json` is named here as well as `--format json`, because the two spellings reach one target. A refusal that read one of them would accept the other. The read-set block of the report is never laid out, for the reason the Files section gives. |
 
 **Every flag above belongs to this verb, and a flag that belongs to another verb is refused here.** `headwater check --level L0` exits 1 and writes no report, because `--level` is a flag of `headwater conformance`. The table above is the set of flags that reach this verb. Two flags are answered before the verb is reached. `--help` and `--version`, on both spellings, each exit 0, write to standard output alone, and produce no report. `--wide` reaches the verb and states the width of its report, and it exits 1 beside a machine format alone, in either spelling of one. [HW-DR-0033](../decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md) is the ruling that a flag belongs to the verb that reads it. `engine/crates/cli/tests/wiring.rs` holds this paragraph over a corpus where the verb otherwise succeeds, and `engine/crates/cli/tests/width.rs` holds the `--wide` sentence in it at both ends.

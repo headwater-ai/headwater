@@ -209,7 +209,10 @@ fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
     );
 
     let run = check_over(root);
-    let report = run.render(headwater_check::Detail::EveryInstance);
+    let report = run.render(
+        headwater_check::Detail::EveryInstance,
+        headwater_check::paint::ColorMode::Plain,
+    );
 
     // The assertion the issue asks for.
     let against_scaffolded: Vec<String> = run

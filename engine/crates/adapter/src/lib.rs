@@ -754,6 +754,7 @@ pub fn render(
         subject,
         format,
         headwater_check::fill::WIDTH,
+        headwater_check::paint::ColorMode::Plain,
     )
 }
 
@@ -773,9 +774,10 @@ pub fn render_at(
     subject: &Subject<'_>,
     format: Format,
     width: usize,
+    mode: headwater_check::paint::ColorMode,
 ) -> String {
     match format {
-        Format::Text => text::render_at(run, census, graph, subject, width),
+        Format::Text => text::render_at(run, census, graph, subject, width, mode),
         Format::Json => json::render(run, subject),
         Format::Sarif => sarif::render(run, subject),
         Format::Markdown => markdown::render(run, subject),

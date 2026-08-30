@@ -29,6 +29,7 @@
 //! 169, and the number rides on the plan so that no report can lose it.
 
 use headwater_census::census::{Census, Outcome};
+use headwater_check::paint::{paint, ColorMode, Role};
 use headwater_graph::edges::Target;
 use headwater_graph::{Config, Graph};
 
@@ -125,7 +126,17 @@ impl Plan {
     /// `headwater new`, the pointers of `headwater route` — is prose. A second
     /// machine format would be a second contract to keep in step, and the file
     /// that comes *back* is the one that has to parse.
-    pub fn render(&self) -> String {
+    ///
+    /// `mode` colors the `##` headings and the paths named outside the
+    /// ```` ```yaml ```` block. The block itself is never colored: it is the
+    /// template an agent copies into its own return file, and an escape
+    /// sequence inside it would be a byte a strict YAML reader chokes on the
+    /// one time this decision's per-stream sensing does not already save it —
+    /// a caller who redirects `headwater sweep plan` and then pastes a
+    /// terminal's own rendering back in rather than the file. See
+    /// `headwater_check::paint`'s module comment for why this function reads
+    /// no stream itself.
+    pub fn render(&self, mode: ColorMode) -> String {
         use std::fmt::Write;
         let mut out = String::new();
         let _ = writeln!(
@@ -149,10 +160,15 @@ impl Plan {
         );
         let _ = writeln!(out);
 
-        let _ = writeln!(out, "## The slice");
+        let _ = writeln!(out, "{}", paint(Role::Heading, "## The slice", mode));
         let _ = writeln!(out);
         for member in &self.members {
-            let _ = writeln!(out, "- {} ({})", member.path, member.kind);
+            let _ = writeln!(
+                out,
+                "- {} ({})",
+                paint(Role::Path, &member.path, mode),
+                member.kind
+            );
             if let Some(id) = &member.id {
                 let _ = writeln!(out, "    id: {id}");
             }
@@ -165,7 +181,11 @@ impl Plan {
         }
         let _ = writeln!(out);
 
-        let _ = writeln!(out, "## What the graph already declares");
+        let _ = writeln!(
+            out,
+            "{}",
+            paint(Role::Heading, "## What the graph already declares", mode)
+        );
         let _ = writeln!(out);
         match self.declared.is_empty() {
             true => {
@@ -183,13 +203,23 @@ impl Plan {
                 );
                 let _ = writeln!(out);
                 for edge in &self.declared {
-                    let _ = writeln!(out, "- {} {} {}", edge.from, edge.relation, edge.to);
+                    let _ = writeln!(
+                        out,
+                        "- {} {} {}",
+                        paint(Role::Path, &edge.from, mode),
+                        edge.relation,
+                        paint(Role::Path, &edge.to, mode)
+                    );
                 }
             }
         }
         let _ = writeln!(out);
 
-        let _ = writeln!(out, "## What to write back");
+        let _ = writeln!(
+            out,
+            "{}",
+            paint(Role::Heading, "## What to write back", mode)
+        );
         let _ = writeln!(out);
         let _ = writeln!(
             out,
@@ -227,7 +257,7 @@ impl Plan {
         let _ = writeln!(out, "```");
         let _ = writeln!(out);
 
-        let _ = writeln!(out, "## The classes");
+        let _ = writeln!(out, "{}", paint(Role::Heading, "## The classes", mode));
         let _ = writeln!(out);
         for class in crate::Class::ALL {
             let _ = writeln!(out, "- `{}`: {}", class.name(), describe(class));
@@ -280,5 +310,63 @@ mod tests {
         assert!(within("docs/spec", "docs/spec"));
         assert!(!within("docs/specimens/04.md", "docs/spec"));
         assert!(within("docs/anything.md", ""));
+    }
+
+    fn minimal() -> Plan {
+        Plan {
+            lock: "sha256:pinned".to_string(),
+            under: String::new(),
+            members: vec![Member {
+                path: "docs/spec/00-a.md".to_string(),
+                id: None,
+                kind: "design_spec".to_string(),
+                title: None,
+                summary: None,
+            }],
+            declared: vec![Declared {
+                from: "docs/spec/00-a.md".to_string(),
+                relation: "assesses".to_string(),
+                to: "docs/spec/01-b.md".to_string(),
+            }],
+            corpus: 1,
+        }
+    }
+
+    /// `Plain` writes no escape sequence anywhere in the briefing, the
+    /// ` ```yaml ``` ` block included: it is never colored, on the rule the
+    /// module comment states. `Ansi` colors every `##` heading and every
+    /// path outside that block, and neither rewrites a word.
+    #[test]
+    fn headings_and_paths_carry_color_only_under_ansi_and_the_yaml_block_never_does() {
+        let plan = minimal();
+
+        let plain = plan.render(ColorMode::Plain);
+        assert!(!plain.contains('\x1b'), "{plain:?}");
+        assert!(plain.contains("## The slice"), "{plain:?}");
+        assert!(plain.contains("docs/spec/00-a.md"), "{plain:?}");
+
+        let ansi = plan.render(ColorMode::Ansi);
+        assert!(ansi.contains('\x1b'), "{ansi:?}");
+        for word in [
+            "## The slice",
+            "## What the graph already declares",
+            "## What to write back",
+            "## The classes",
+            "docs/spec/00-a.md",
+            "docs/spec/01-b.md",
+        ] {
+            assert!(ansi.contains(word), "{ansi:?} is missing {word:?}");
+        }
+        let block = ansi
+            .split("```yaml")
+            .nth(1)
+            .expect("the briefing carries the yaml block")
+            .split("```")
+            .next()
+            .expect("the block closes");
+        assert!(
+            !block.contains('\x1b'),
+            "the template an agent copies carries an escape sequence: {block:?}"
+        );
     }
 }

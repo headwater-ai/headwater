@@ -22,6 +22,7 @@
 use headwater_census::census::{self, Census};
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
+use headwater_check::paint::ColorMode;
 use headwater_check::Shape;
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -167,7 +168,7 @@ fn reads(surface: &Surface<'_>) -> String {
         "query/specs/asserted-notes.md",
     ] {
         let explanation = surface.explain(target).expect("the fixture");
-        for line in explanation.render().lines() {
+        for line in explanation.render(ColorMode::Plain).lines() {
             let _ = writeln!(out, "  {line}");
         }
     }
@@ -228,8 +229,14 @@ fn two_reads_of_one_corpus_are_byte_identical() {
     }
     let target = "docs/spec/05-ai-integration.md";
     assert_eq!(
-        first.explain(target).expect("the spec").render(),
-        second.explain(target).expect("the spec").render()
+        first
+            .explain(target)
+            .expect("the spec")
+            .render(ColorMode::Plain),
+        second
+            .explain(target)
+            .expect("the spec")
+            .render(ColorMode::Plain)
     );
 }
 

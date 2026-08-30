@@ -1,7 +1,7 @@
 A coherence sweep over corpus, 5 of the 5 classified documents of this corpus.
 Every finding below was written by an agent. Provenance: agent. Nothing here is a verdict, and no exit status reads it.
 
-corpus/0001-an-operator-may-disable-the-cache.md:17:1 info
+corpus/0001-an-operator-may-disable-the-cache.md:17:1 · info
   sweep.undeclared_conflict: One document gives an operator a setting that the other says does not exist, and both are current.
   fix: read both passages. Declare `conflicts_with` between the two documents, or record why they do not conflict
   quoted: "An operator may disable the cache for one run." at corpus/0001-an-operator-may-disable-the-cache.md:17
@@ -13,7 +13,7 @@ corpus/0001-an-operator-may-disable-the-cache.md:17:1 info
         conflicts_with:
           - DR-SWP-0002
 
-corpus/0003-every-check-may-be-disabled-by-an-operator.md:13:1 info
+corpus/0003-every-check-may-be-disabled-by-an-operator.md:13:1 · info
   sweep.unwritten_section: Both sections this kind requires still hold the scaffolder's prompt, and so does the summary that routing serves.
   fix: write the section, or drop the heading if the kind does not require it
   quoted: "TODO write this section." at corpus/0003-every-check-may-be-disabled-by-an-operator.md:13

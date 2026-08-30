@@ -48,6 +48,7 @@
 
 use crate::{Class, PROVENANCE};
 use headwater_census::census::{Census, Outcome};
+use headwater_check::paint::{dim, paint, ColorMode, Role};
 use headwater_check::{Finding, Severity};
 use headwater_graph::declarations::Declarations;
 use headwater_graph::edges::Target;
@@ -578,7 +579,10 @@ fn quoted(text: &str) -> String {
 /// every one of them is stamped [`PROVENANCE`]. See [`crate::json`] for the
 /// same report in the finding shape spec 4 declares.
 impl Report {
-    pub fn render(&self) -> String {
+    /// `mode` is the color decision the caller already made — see
+    /// `headwater_check::paint`'s module comment for why this function reads
+    /// no stream itself.
+    pub fn render(&self, mode: ColorMode) -> String {
         use std::fmt::Write;
         let mut out = String::new();
         let _ = writeln!(
@@ -599,29 +603,39 @@ impl Report {
         }
 
         for verified in &self.verified {
-            let _ = write!(out, "{}", verified.finding.render());
+            let _ = write!(out, "{}", verified.finding.render(mode));
             for evidence in &verified.evidence {
                 let _ = writeln!(
                     out,
-                    "  quoted: {} at {}:{}",
+                    "  {} {} at {}:{}",
+                    dim("quoted:", mode),
                     quoted(&evidence.quote),
-                    evidence.path,
+                    paint(Role::Path, &evidence.path, mode),
                     evidence.line
                 );
             }
             if verified.documents.len() > 1 {
-                let _ = writeln!(out, "  compared: {}", verified.documents.join(", "));
+                let _ = writeln!(
+                    out,
+                    "  {} {}",
+                    dim("compared:", mode),
+                    verified.documents.join(", ")
+                );
             }
             if let Some(proposal) = &verified.proposal {
                 let _ = writeln!(
                     out,
-                    "  proposes: {} {} {}, which the graph does not declare today",
-                    proposal.from, proposal.relation, proposal.to
+                    "  {} {} {} {}, which the graph does not declare today",
+                    dim("proposes:", mode),
+                    proposal.from,
+                    proposal.relation,
+                    proposal.to
                 );
                 let _ = writeln!(
                     out,
-                    "  to declare it, in the front matter of {}:",
-                    verified.documents[0]
+                    "  {} {}:",
+                    dim("to declare it, in the front matter of", mode),
+                    paint(Role::Path, &verified.documents[0], mode)
                 );
                 let _ = writeln!(out, "      relations:");
                 let _ = writeln!(out, "        {}:", proposal.relation);
@@ -672,5 +686,65 @@ impl Report {
             }
         );
         out
+    }
+}
+
+#[cfg(test)]
+mod render_tests {
+    use super::{Evidence, Report, Verified};
+    use crate::Class;
+    use headwater_check::paint::ColorMode;
+    use headwater_check::{Finding, Severity};
+
+    fn report() -> Report {
+        Report {
+            slice: ".".to_string(),
+            read: 1,
+            verified: vec![Verified {
+                finding: Finding {
+                    rule: "sweep.undeclared_conflict",
+                    severity: Severity::Info,
+                    obligation: None,
+                    path: "docs/spec/00-a.md".to_string(),
+                    line: 3,
+                    column: 1,
+                    message: "one document contradicts another".to_string(),
+                    remediation: "read both passages".to_string(),
+                    patch: None,
+                },
+                class: Class::UndeclaredConflict,
+                documents: vec!["docs/spec/00-a.md".to_string()],
+                evidence: vec![Evidence {
+                    path: "docs/spec/00-a.md".to_string(),
+                    quote: "a quoted passage".to_string(),
+                    line: 3,
+                }],
+                proposal: None,
+            }],
+            rejected: Vec::new(),
+            refusal: None,
+            extent: 1,
+            corpus: 1,
+        }
+    }
+
+    /// `Plain` writes no escape sequence anywhere in the report — the finding
+    /// it carries included, on the rule `Finding::render`'s own test states.
+    /// `Ansi` colors the finding and the evidence path, and dims the
+    /// `quoted:` label, and neither rewrites a word.
+    #[test]
+    fn a_finding_and_its_evidence_carry_color_only_under_ansi() {
+        let report = report();
+
+        let plain = report.render(ColorMode::Plain);
+        assert!(!plain.contains('\x1b'), "{plain:?}");
+        assert!(plain.contains("· info"), "{plain:?}");
+        assert!(plain.contains("quoted:"), "{plain:?}");
+
+        let ansi = report.render(ColorMode::Ansi);
+        assert!(ansi.contains('\x1b'), "{ansi:?}");
+        for word in ["docs/spec/00-a.md", "info", "quoted:", "a quoted passage"] {
+            assert!(ansi.contains(word), "{ansi:?} is missing {word:?}");
+        }
     }
 }

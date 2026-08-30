@@ -51,6 +51,8 @@
 //! reading — that the defect has a mechanical remedy — is what the severity
 //! already says, on the bar `CLAUDE.md` states.
 
+use crate::paint::{ColorMode, Role};
+
 /// What a check says about a finding. Whether it blocks is the control's
 /// business ([spec 12](../../../../docs/spec/12-check-layer.md#severity-is-the-checks-posture-is-the-controls)).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -111,20 +113,38 @@ impl Finding {
     }
 
     /// One finding as text, in the form a person reads in a terminal.
-    pub fn render(&self) -> String {
+    ///
+    /// `mode` is the color decision the caller already made —
+    /// [`crate::paint::stdout_color`]'s equivalent under `headwater-cli`, or
+    /// [`ColorMode::Plain`] for a machine format or a recorded fixture. This
+    /// function reads no stream itself, on the rule
+    /// `crate::paint`'s module comment states.
+    pub fn render(&self, mode: ColorMode) -> String {
         use std::fmt::Write;
         let mut out = String::new();
-        let _ = writeln!(out, "{} {}", self.location(), self.severity);
+        let _ = writeln!(
+            out,
+            "{} {}",
+            crate::paint::paint(Role::Path, &self.location(), mode),
+            crate::paint::severity_word(self.severity, mode)
+        );
         // The obligation rides beside the rule, because "why am I being made to
         // do this?" is the question spec 4 gives every rule an answer to, and a
         // reader who has to look the rule up in a register does not ask it.
         let _ = match &self.obligation {
-            Some(obligation) => writeln!(out, "  {} ({obligation}): {}", self.rule, self.message),
+            Some(obligation) => writeln!(
+                out,
+                "  {} ({}): {}",
+                self.rule,
+                crate::paint::paint(Role::Obligation, obligation, mode),
+                self.message
+            ),
             None => writeln!(out, "  {}: {}", self.rule, self.message),
         };
         let _ = writeln!(
             out,
-            "  fix{}: {}",
+            "  {}{}: {}",
+            crate::paint::paint(Role::Verb, "fix", mode),
             if self.fixable() { " (mechanical)" } else { "" },
             self.remediation
         );
@@ -198,6 +218,30 @@ mod tests {
     /// `:0:0` suffix sends a reader to look for something that is not there.
     #[test]
     fn a_finding_with_no_line_prints_the_path_alone() {
-        assert!(finding("a.md", 0, "r").render().starts_with("a.md error\n"));
+        assert!(finding("a.md", 0, "r")
+            .render(ColorMode::Plain)
+            .starts_with("a.md ✗ error\n"));
+    }
+
+    /// `Plain` writes no escape sequence anywhere in the three lines, and
+    /// carries the severity glyph instead. `Ansi` writes the path, the
+    /// severity, the obligation and the `fix` label each in their own SGR
+    /// pair, and changes no word.
+    #[test]
+    fn a_rendered_finding_carries_color_only_under_ansi() {
+        let mut one = finding("a.md", 3, "r");
+        one.obligation = Some("OB-001".to_string());
+
+        let plain = one.render(ColorMode::Plain);
+        assert!(!plain.contains('\x1b'), "{plain:?}");
+        assert!(plain.contains("✗ error"), "{plain:?}");
+        assert!(plain.contains("(OB-001)"), "{plain:?}");
+        assert!(plain.contains("fix"), "{plain:?}");
+
+        let ansi = one.render(ColorMode::Ansi);
+        assert!(ansi.contains('\x1b'), "{ansi:?}");
+        for word in ["a.md:3:1", "error", "OB-001", "fix", "r", "m"] {
+            assert!(ansi.contains(word), "{ansi:?} is missing {word:?}");
+        }
     }
 }

@@ -1,5 +1,9 @@
 # Headwater authoring conventions
 
+## Work in a worktree
+
+Call `EnterWorktree` at the start of every session in this repository, before reading or editing a file, unless the user has already put the session in a worktree another way. A background session gets this already, from the `worktree.bgIsolation` default in `.claude/settings.json`, which blocks `Edit`/`Write` in the main checkout until `EnterWorktree` runs. No `settings.json` key covers an interactive session the same way, so this instruction is what extends the same isolation to one: a session editing the checkout that Claude Code itself is running from can collide with another session doing the same, and a worktree keeps a change isolated until it is ready to commit.
+
 ## The name is Headwater
 
 **Headwater** is the name of the system, not a working name (decided 2026-08-10, [Q10](docs/spec/09-decisions.md#q10--naming)). Capitalize it in prose, including compounds: Headwater's, Headwater-specific, Headwater-native.

@@ -26,6 +26,7 @@
 
 use crate::{Neighbour, Surface};
 use headwater_census::census::Outcome;
+use headwater_check::paint::{dim, paint, ColorMode, Role};
 
 /// One document, explained.
 #[derive(Clone, Debug)]
@@ -144,16 +145,23 @@ fn lines(text: &str) -> Vec<String> {
 
 impl Explanation {
     /// The explanation as text, in spec 2's own order.
-    pub fn render(&self) -> String {
+    ///
+    /// `mode` colors the path and dims the repeated structural labels —
+    /// `purpose`, `summary`, `warrant`, and the rest — that this report prints
+    /// the same way on every run. See `headwater_check::paint`'s module
+    /// comment for why this function reads no stream itself, and
+    /// `crate::explain::tests` for why coloring a label before it is folded
+    /// costs at most an early wrap rather than a broken one.
+    pub fn render(&self, mode: ColorMode) -> String {
         use std::fmt::Write;
         let mut out = String::new();
-        let _ = writeln!(out, "{}", self.path);
+        let _ = writeln!(out, "{}", paint(Role::Path, &self.path, mode));
         if let Some(id) = &self.id {
             let _ = writeln!(out, "  {id}");
         }
         match &self.kind {
             Some(kind) => {
-                let _ = writeln!(out, "  kind {kind}");
+                let _ = writeln!(out, "  {} {kind}", dim("kind", mode));
             }
             None => out.push_str("  no kind, so nothing is required of it\n"),
         }
@@ -164,50 +172,60 @@ impl Explanation {
             ));
         }
         if let Some((name, intent)) = &self.purpose {
+            let label = dim("purpose", mode);
             match intent {
                 Some(intent) => out.push_str(&headwater_check::fill::filled(
-                    &format!("  purpose {name}, to {intent}\n"),
+                    &format!("  {label} {name}, to {intent}\n"),
                     headwater_check::fill::WIDTH,
                 )),
                 None => out.push_str(&headwater_check::fill::filled(
-                    &format!("  purpose {name}\n"),
+                    &format!("  {label} {name}\n"),
                     headwater_check::fill::WIDTH,
                 )),
             };
         }
         if let Some(summary) = &self.summary {
             out.push_str(&headwater_check::fill::filled(
-                &format!("  summary {summary}\n"),
+                &format!("  {} {summary}\n", dim("summary", mode)),
                 headwater_check::fill::WIDTH,
             ));
         }
         if let Some(warrant) = &self.warrant {
             out.push_str(&headwater_check::fill::filled(
-                &format!("  warrant {warrant}\n"),
+                &format!("  {} {warrant}\n", dim("warrant", mode)),
                 headwater_check::fill::WIDTH,
             ));
         }
         if !self.facets.is_empty() {
             out.push_str(&headwater_check::fill::filled(
-                &format!("  requires the facets {}\n", self.facets.join(", ")),
+                &format!(
+                    "  {} {}\n",
+                    dim("requires the facets", mode),
+                    self.facets.join(", ")
+                ),
                 headwater_check::fill::WIDTH,
             ));
         }
         if !self.sections.is_empty() {
             out.push_str(&headwater_check::fill::filled(
-                &format!("  requires the sections {}\n", self.sections.join(", ")),
+                &format!(
+                    "  {} {}\n",
+                    dim("requires the sections", mode),
+                    self.sections.join(", ")
+                ),
                 headwater_check::fill::WIDTH,
             ));
         }
         for permitted in &self.permitted {
+            let label = dim("may declare", mode);
             let line = match &permitted.inverse {
                 Some(inverse) => format!(
-                    "  may declare {} to {}, and the other end writes {inverse}\n",
+                    "  {label} {} to {}, and the other end writes {inverse}\n",
                     permitted.relation,
                     permitted.to.join(", ")
                 ),
                 None => format!(
-                    "  may declare {} to {}\n",
+                    "  {label} {} to {}\n",
                     permitted.relation,
                     permitted.to.join(", ")
                 ),
@@ -224,5 +242,46 @@ impl Explanation {
             ));
         }
         out
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Explanation;
+    use headwater_check::paint::ColorMode;
+
+    fn minimal() -> Explanation {
+        Explanation {
+            path: "docs/spec/00-example.md".to_string(),
+            id: None,
+            kind: Some("design_spec".to_string()),
+            derivation: Vec::new(),
+            purpose: Some(("evidence".to_string(), Some("say why".to_string()))),
+            summary: None,
+            warrant: None,
+            facets: Vec::new(),
+            sections: Vec::new(),
+            permitted: Vec::new(),
+            related: Vec::new(),
+        }
+    }
+
+    /// `Plain` writes no escape sequence anywhere in the report, on the rule
+    /// `headwater_check::paint`'s module comment states. `Ansi` colors the
+    /// path and dims the `purpose` label, and neither rewrites a word.
+    #[test]
+    fn the_path_and_the_structural_labels_carry_color_only_under_ansi() {
+        let explanation = minimal();
+
+        let plain = explanation.render(ColorMode::Plain);
+        assert!(!plain.contains('\x1b'), "{plain:?}");
+        assert!(plain.contains("docs/spec/00-example.md"), "{plain:?}");
+        assert!(plain.contains("purpose evidence, to say why"), "{plain:?}");
+
+        let ansi = explanation.render(ColorMode::Ansi);
+        assert!(ansi.contains('\x1b'), "{ansi:?}");
+        for word in ["docs/spec/00-example.md", "purpose", "evidence", "say why"] {
+            assert!(ansi.contains(word), "{ansi:?} is missing {word:?}");
+        }
     }
 }

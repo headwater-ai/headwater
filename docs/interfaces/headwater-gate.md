@@ -46,9 +46,10 @@ The host must provide a date, or `--now` must provide one in `YYYY-MM-DD` form. 
 | `--now <date>` | Ask about this date instead of the system date. |
 | `--json` | Write the JSON verdict instead of the text report. |
 | `--root <path>` | Select the repository whose lock and listed files are read. |
-| `--no-color` | Confirm the binary's color-free output. It changes no byte. |
+| `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. |
+| `--no-banner` | Suppress the masthead: the line naming this binary and its version, that the root help screen alone prints. It is accepted here and does nothing, since only the root screen prints one. |
 
-`--format` is not an option of this verb. `--wide` is refused because the verb prints no help layout. Global `--help` and `--version` are answered before the verb runs.
+`--format` is not an option of this verb. `--wide` is refused because the verb prints no help layout. Global `--help`, `--version` and `--no-banner` are answered before the verb runs.
 
 ## Exit status
 

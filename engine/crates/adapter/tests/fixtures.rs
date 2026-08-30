@@ -351,6 +351,7 @@ fn render_at(ran: &Ran, format: Format, width: usize) -> String {
         &subject(&lock),
         format,
         width,
+        headwater_check::paint::ColorMode::Plain,
     )
 }
 

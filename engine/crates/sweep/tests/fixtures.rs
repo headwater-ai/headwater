@@ -32,6 +32,7 @@ use headwater_census::census;
 use headwater_census::census::Census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
+use headwater_check::paint::ColorMode;
 use headwater_check::{Cache, Context, Date, Declared, Register, Shape};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -146,7 +147,7 @@ fn returned() -> String {
 fn the_plan_over_the_fixture_corpus_is_recorded() {
     compare(
         &fixtures_dir().join("plan.txt"),
-        &plan_over("corpus").render(),
+        &plan_over("corpus").render(ColorMode::Plain),
     );
 }
 
@@ -154,7 +155,7 @@ fn the_plan_over_the_fixture_corpus_is_recorded() {
 fn the_report_over_the_return_file_is_recorded() {
     compare(
         &fixtures_dir().join("report.txt"),
-        &report_of(&returned()).render(),
+        &report_of(&returned()).render(ColorMode::Plain),
     );
 }
 
@@ -170,13 +171,19 @@ fn the_report_in_the_finding_shape_is_recorded() {
 
 #[test]
 fn a_plan_is_the_same_bytes_twice() {
-    assert_eq!(plan_over("corpus").render(), plan_over("corpus").render());
+    assert_eq!(
+        plan_over("corpus").render(ColorMode::Plain),
+        plan_over("corpus").render(ColorMode::Plain)
+    );
 }
 
 #[test]
 fn a_report_is_the_same_bytes_twice() {
     let source = returned();
-    assert_eq!(report_of(&source).render(), report_of(&source).render());
+    assert_eq!(
+        report_of(&source).render(ColorMode::Plain),
+        report_of(&source).render(ColorMode::Plain)
+    );
     assert_eq!(
         headwater_sweep::json::render(&report_of(&source)),
         headwater_sweep::json::render(&report_of(&source))

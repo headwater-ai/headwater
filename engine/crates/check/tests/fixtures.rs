@@ -21,6 +21,7 @@ use headwater_census::census;
 use headwater_census::census::Census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
+use headwater_check::paint::ColorMode;
 use headwater_check::scope::{over_documents, over_edges, Digests};
 use headwater_check::{
     coverage, declaration, duplicate, endpoint, facet_required, facet_value, fragment, identity,
@@ -292,7 +293,7 @@ tasks:
     assert_eq!(laden.adoption.pending.len(), 1);
 
     // The report says both numbers, and no code adds them together.
-    let report = laden.render(headwater_check::Detail::Findings);
+    let report = laden.render(headwater_check::Detail::Findings, ColorMode::Plain);
     assert!(
         report.contains("1 migration-pending"),
         "the precedence line names the payload:\n{report}"
@@ -392,7 +393,7 @@ tasks:
 fn the_fixture_tree_runs_to_the_recorded_report() {
     compare(
         &fixtures_dir().join("check.report"),
-        &fixture_run().render(Detail::EveryInstance),
+        &fixture_run().render(Detail::EveryInstance, ColorMode::Plain),
     );
 }
 
@@ -462,7 +463,7 @@ fn this_repository_runs_to_the_recorded_report() {
 
     compare(
         &fixtures_dir().join("corpus.checks"),
-        &run.render(Detail::Totals),
+        &run.render(Detail::Totals, ColorMode::Plain),
     );
 }
 
@@ -489,9 +490,9 @@ fn this_repository_reports_the_same_run_from_a_cache_as_from_none() {
     let mut warm = Cache::at(&store, &lock.digest);
     let second = cached_corpus_run(&mut warm);
 
-    let expected = without.render(Detail::Findings);
-    assert_eq!(expected, first.render(Detail::Findings));
-    assert_eq!(expected, second.render(Detail::Findings));
+    let expected = without.render(Detail::Findings, ColorMode::Plain);
+    assert_eq!(expected, first.render(Detail::Findings, ColorMode::Plain));
+    assert_eq!(expected, second.render(Detail::Findings, ColorMode::Plain));
 
     assert!(first.cache.misses > 0, "{:?}", first.cache);
     assert_eq!(second.cache.hits, first.cache.misses, "{:?}", second.cache);
