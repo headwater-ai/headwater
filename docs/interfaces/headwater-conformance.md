@@ -48,9 +48,10 @@ The projections must read from the resolved taxonomy. The host must provide a da
 | `--now <date>` | Evaluate expiry and dated readings against this date. |
 | `--json` | Write the machine-readable conformance report. |
 | `--root <path>` | Select the repository to evaluate. |
-| `--no-color` | Confirm the binary's color-free output. It changes no byte. |
+| `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. |
+| `--no-banner` | Suppress the masthead: the line naming this binary and its version, that the root help screen alone prints. It is accepted here and does nothing, since only the root screen prints one. |
 
-`--format` is not an option of this verb. `--wide` is refused because the verb prints a report rather than help. Global `--help` and `--version` are answered before the verb runs.
+`--format` is not an option of this verb. `--wide` is refused because the verb prints a report rather than help. Global `--help`, `--version` and `--no-banner` are answered before the verb runs.
 
 ## Exit status
 

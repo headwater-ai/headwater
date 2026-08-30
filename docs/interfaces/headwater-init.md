@@ -36,7 +36,8 @@ The repository must not already contain `.headwater/taxonomy.yml`. Without `--co
 | `--corpus <dir>` | Names the corpus root instead of using tree evidence. |
 | `--package <name>` | Names the package to consume. |
 | `--root <path>` | Selects the repository to initialize. |
-| `--no-color` | Confirms color-free output. |
+| `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. |
+| `--no-banner` | Suppress the masthead: the line naming this binary and its version, that the root help screen alone prints. It is accepted here and does nothing, since only the root screen prints one. |
 
 ## Exit status
 

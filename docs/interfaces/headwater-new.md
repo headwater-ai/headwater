@@ -42,7 +42,8 @@ The title is required. A supplied relation must be declared as scaffold-created,
 | `--facet <facet=value>` | Supplies a repeatable hand-entered facet value. |
 | `--now <date>` | Sets the document date in `YYYY-MM-DD` form. |
 | `--root <path>` | Selects the repository to load. |
-| `--no-color` | Confirms color-free output. |
+| `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. |
+| `--no-banner` | Suppress the masthead: the line naming this binary and its version, that the root help screen alone prints. It is accepted here and does nothing, since only the root screen prints one. |
 
 ## Exit status
 

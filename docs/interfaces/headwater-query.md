@@ -31,7 +31,7 @@ None. The command line reaches the refusal without loading a corpus or a taxonom
 
 ## Options
 
-The verb has no verb-specific options. Global `--root`, `--wide`, `--no-color`, `--version` and `--help` are parsed by the binary, but `query` does not read them for this refusal.
+The verb has no verb-specific options. Global `--root`, `--wide`, `--no-color`, `--no-banner`, `--version` and `--help` are parsed by the binary, but `query` does not read them for this refusal.
 
 ## Exit status
 

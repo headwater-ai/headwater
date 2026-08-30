@@ -2440,7 +2440,10 @@ fn explain(root: &Path, target: &str, json: bool) -> ExitCode {
             // with a member missing from it.
             match json {
                 true => print!("{}", headwater_query::json::explain(&explanation)),
-                false => print!("{}", explanation.render()),
+                false => print!(
+                    "{}",
+                    explanation.render(headwater_cli::paint::stdout_color())
+                ),
             }
             ExitCode::SUCCESS
         }
@@ -2999,7 +3002,7 @@ fn sweep_plan(root: &Path, under: Option<String>) -> ExitCode {
         &loaded.bound.digest,
         under.as_deref().unwrap_or(""),
     );
-    print!("{}", plan.render());
+    print!("{}", plan.render(headwater_cli::paint::stdout_color()));
     ExitCode::SUCCESS
 }
 
@@ -3059,7 +3062,7 @@ fn sweep_report(root: &Path, path: &Path, format: Option<String>) -> ExitCode {
     let report = headwater_sweep::Report::read(&source, &tree);
     match wants_json {
         true => println!("{}", headwater_sweep::json::render(&report)),
-        false => print!("{}", report.render()),
+        false => print!("{}", report.render(headwater_cli::paint::stdout_color())),
     }
     ExitCode::SUCCESS
 }
@@ -3990,6 +3993,10 @@ fn fix_over(root: &Path, ctx: &Context, format: Format) -> Result<Written, Strin
         lock: &loaded.bound.digest,
         now: &ctx.now().render(),
     };
+    // Plain, unconditionally: this is the MCP `fix` tool's byte-for-byte
+    // record of a terminal run, and an MCP process is never a terminal, so a
+    // real `headwater check` run piped the same way would sense the same
+    // mode.
     let artifact = headwater_adapter::render(&run, &loaded.census, &loaded.graph, &subject, format);
     // The same audit the verb fails a run on. A caller here holds one artifact
     // rather than a terminal, so a finding that reached no output is invisible
@@ -4143,7 +4150,15 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
     // this binary, so a run with no flag writes the same bytes into a pipe, a
     // file and a terminal. The three machine formats ignore the number.
     let width = headwater_cli::paint::width();
-    let artifact = headwater_adapter::render_at(&run, taken, graph, &subject, format, width);
+    // Color is a property of the text format alone: `--no-color` and a
+    // terminal's own state decide it, and a machine format renders the same
+    // bytes regardless of either, so this reads the stream only where it
+    // would otherwise matter.
+    let mode = match format {
+        Format::Text => headwater_cli::paint::stdout_color(),
+        _ => headwater_cli::paint::ColorMode::Plain,
+    };
+    let artifact = headwater_adapter::render_at(&run, taken, graph, &subject, format, width, mode);
     print!("{artifact}");
     // The census over what was written, in the shape spec 6 fixes for the
     // graph emitters. A finding that reached no output and that no loss

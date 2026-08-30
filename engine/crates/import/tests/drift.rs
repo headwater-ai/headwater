@@ -25,6 +25,7 @@ mod chain;
 
 use chain::{declaration, import, publish, read, tree, Scratch, PAYLOAD};
 use headwater_check::finding::Severity;
+use headwater_check::paint::ColorMode;
 use headwater_check::{Cache, Context, Date, Declared, Detail, Register, Run};
 use headwater_import::Declaration;
 
@@ -136,8 +137,9 @@ fn a_revision_that_moved_under_a_cached_run_is_not_served_from_the_entry_before_
     );
     assert_eq!(suspect(&after)[0].path, DECLARING);
     assert_eq!(
-        after.render(Detail::EveryInstance),
-        run_over(&scratch, &advanced, &mut Cache::disabled()).render(Detail::EveryInstance),
+        after.render(Detail::EveryInstance, ColorMode::Plain),
+        run_over(&scratch, &advanced, &mut Cache::disabled())
+            .render(Detail::EveryInstance, ColorMode::Plain),
         "the cached run reported a verdict over the snapshot as it was"
     );
 

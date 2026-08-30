@@ -54,56 +54,75 @@
 
 use crate::Subject;
 use headwater_census::census::{Census, Detail as CensusDetail};
+use headwater_check::paint::{paint, ColorMode, Role};
 use headwater_check::{fill, Run};
 use headwater_graph::{Detail as GraphDetail, Graph};
 
-/// One run of the check layer, as a terminal reads it, at the standard width.
+/// One run of the check layer, as a terminal reads it, at the standard width,
+/// with no color.
+///
+/// [`render_at`] is the one caller that colors anything: every other caller
+/// of this shorthand is a machine format's cousin or a fixture, neither of
+/// which a color decision was ever asked of.
 pub fn render(run: &Run, census: &Census, graph: &Graph, subject: &Subject<'_>) -> String {
-    render_at(run, census, graph, subject, fill::WIDTH)
+    render_at(run, census, graph, subject, fill::WIDTH, ColorMode::Plain)
 }
 
-/// The same report, laid out at a width the caller states.
+/// The same report, laid out at a width the caller states and colored under
+/// the mode the caller decided.
 ///
 /// `headwater check --wide` is the one caller that states a width, out of
 /// `headwater_cli::paint::width`, which holds a `COLUMNS` reading to
 /// `[80, 120]`. Every other caller goes through [`render`] and gets 80, so a run
 /// piped into a file and a run under a terminal write the same bytes unless
 /// somebody asked for something else on the command line.
+///
+/// `mode` colors the six block headings below and cascades into `run.render`,
+/// which colors a finding's severity, path, obligation and `fix` label. The
+/// census and the graph blocks stay uncolored: neither carries a severity, a
+/// path role or a heading role of its own today, and inventing one for a
+/// palette item this report does not otherwise use would be decoration
+/// without a reader. Every color word is a single word with no space in it,
+/// so [`fill::filled`]'s word-boundary fold never splits one — see
+/// `headwater_check::paint`'s module comment for why counting an escape
+/// sequence as columns costs at most an early wrap, never a broken one.
 pub fn render_at(
     run: &Run,
     census: &Census,
     graph: &Graph,
     subject: &Subject<'_>,
     width: usize,
+    mode: ColorMode,
 ) -> String {
     let mut out = String::new();
-    out.push_str("taxonomy\n");
+    out.push_str(&paint(Role::Heading, "taxonomy", mode));
+    out.push('\n');
     out.push_str(&format!("  {} {}\n", subject.package, subject.version));
     out.push_str(&format!("  {}\n", subject.lock));
     // The injected clock, reported because it is an input to the verdict. The
     // other three formats state it too, and `Subject` is why all four state the
     // same value.
-    out.push_str("\nclock\n");
+    out.push_str(&format!("\n{}\n", paint(Role::Heading, "clock", mode)));
     out.push_str(&format!("  {}\n", subject.now));
-    out.push_str("\ncensus\n");
+    out.push_str(&format!("\n{}\n", paint(Role::Heading, "census", mode)));
     out.push_str(&fill::filled(
         &indent(&census.render(CensusDetail::Exceptions)),
         width,
     ));
-    out.push_str("\ngraph\n");
+    out.push_str(&format!("\n{}\n", paint(Role::Heading, "graph", mode)));
     out.push_str(&fill::filled(
         &indent(&graph.render(GraphDetail::Exceptions)),
         width,
     ));
-    out.push_str("\nchecks\n");
+    out.push_str(&format!("\n{}\n", paint(Role::Heading, "checks", mode)));
     out.push_str(&fill::filled(
-        &indent(&run.render(headwater_check::Detail::Findings)),
+        &indent(&run.render(headwater_check::Detail::Findings, mode)),
         width,
     ));
     // The same bytes `check --read-set` writes to a file, so a gate reading the
     // file and a reader of this report are looking at one artifact. Not laid
     // out, for that reason — see the module comment.
-    out.push_str("\nread set\n");
+    out.push_str(&format!("\n{}\n", paint(Role::Heading, "read set", mode)));
     out.push_str(&indent(&run.read_set.render()));
     out
 }

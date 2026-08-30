@@ -119,7 +119,7 @@ register
   control.mechanism.unimplemented reaches no obligation, so it names none
   adoption.task.expired reaches no obligation, so it names none
 1 findings
-      1 error
+      1 ✗ error
 
 instances
   facet.required.missing corpus/decisions/a-scaffolded-successor.md
@@ -361,6 +361,6 @@ instances
   lifecycle.deletion.not_permitted corpus/decisions/a-scaffolded-successor.md + corpus/decisions/a-second-successor.md + corpus/decisions/an-earlier-decision.md + corpus/exhausted/the-last-one.md + corpus/spec/01-the-first-part.md + corpus/spec/02-the-second-part.md + corpus/spec/03-the-third-part.md + corpus/spec/04-a-scaffolded-fourth-part.md + corpus/standards/a-standard.md
     skipped: change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
 
-corpus/standards/a-standard.md:1:1 error
+corpus/standards/a-standard.md:1:1 ✗ error
   identifier.unusable (OB-FIX-1): a typed `standard` that declares no identifier, so no edge can name it
   fix: write one identifier of this document under the `id` key, because a relation names a document by its identifier and a document with none can stand at neither end of one

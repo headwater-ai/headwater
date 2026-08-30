@@ -53,6 +53,8 @@ The coherence sweep is a sampler and never a check. It reports the five classes 
 
 **Neither half writes a byte.** `report` prints the front matter that would declare a proposed edge and writes none of it. There is no `--write`, and this is the one verb of the write path that has none. A proposal an agent applies to itself is the act that [HW-OBL-0108](../obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md) records at the scale of a whole corpus.
 
+**Both halves render the palette [HW-DR-0045](../decisions/0045-coloring-the-cli-and-where-the-banner-goes.md) rules on, when standard output is a terminal.** `plan` bolds its `##` headings and colors the paths it names. `report` colors a finding's severity, path, obligation and `fix:` label the way `headwater check` does, and dims the repeated labels beside a citation. `report --format json` never colors: a machine reads it. `--no-color` forces the plain text both halves already wrote before this decision. `--no-banner` is accepted and inert on both, the posture every verb takes.
+
 ## Preconditions
 
 **`.headwater/taxonomy.lock` is there, for both halves.** `headwater taxonomy resolve` writes it. Both halves load the corpus through the lock, so a repository that never resolved gets 1 from either one.
@@ -73,6 +75,8 @@ There is no precondition about a model, about a network, or about a plan having 
 | `--format text\|json` | `report` | The vocabulary. `text` is the default and the one a person reads. `json` is the finding shape that [spec 4](../spec/04-assurance-model.md) declares, with the provenance and the evidence a sweep adds. |
 | `--json` | `report` | The same artifact `--format json` writes, byte for byte, on both streams and with the same exit status. A command line that states both is refused, because two names for one target is a question answered twice. |
 | `--root <path>` | both | The repository to read. It defaults to the working directory. |
+| `--no-color` | both | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. |
+| `--no-banner` | both | Suppress the masthead: the line naming this binary and its version, that the root help screen alone prints. It is accepted here and does nothing, since only the root screen prints one. |
 
 **There is no `--strict`, and the parser refuses one.** `headwater sweep report <path> --strict` exits 1 and writes no report. Spec 12 states the absence of a `--strict` that does anything. The parse states the absence of the word, so both readings of that sentence hold of this verb. [HW-DR-0033](../decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md) is the ruling, and `engine/crates/cli/tests/sweep.rs` holds the refusal.
 

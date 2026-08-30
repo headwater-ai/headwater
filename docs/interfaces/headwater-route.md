@@ -45,9 +45,10 @@ The task must contain at least one word of two characters or more after parsing.
 | `--budget <n>` | Set the maximum number of ranked pointers. The default is 5. |
 | `--json` | Write the route as a machine-readable JSON document. |
 | `--root <path>` | Select the repository to read. |
-| `--no-color` | Confirm the binary's color-free output. It changes no byte. |
+| `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. |
+| `--no-banner` | Suppress the masthead: the line naming this binary and its version, that the root help screen alone prints. It is accepted here and does nothing, since only the root screen prints one. |
 
-`--format` is not an option of this verb. `--wide` is refused because the verb prints no help layout. Global `--help` and `--version` are answered before the verb runs.
+`--format` is not an option of this verb. `--wide` is refused because the verb prints no help layout. Global `--help`, `--version` and `--no-banner` are answered before the verb runs.
 
 ## Exit status
 

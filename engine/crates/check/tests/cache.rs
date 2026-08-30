@@ -18,6 +18,7 @@
 use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
+use headwater_check::paint::ColorMode;
 use headwater_check::{Cache, Context, Date, Declared, Detail, Register, Run, Shape};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
@@ -137,12 +138,12 @@ fn a_cached_run_and_a_run_with_no_cache_write_the_same_report() {
     let second = run_over(&root, &mut warm);
 
     assert_eq!(
-        without.render(Detail::EveryInstance),
-        first.render(Detail::EveryInstance)
+        without.render(Detail::EveryInstance, ColorMode::Plain),
+        first.render(Detail::EveryInstance, ColorMode::Plain)
     );
     assert_eq!(
-        without.render(Detail::EveryInstance),
-        second.render(Detail::EveryInstance)
+        without.render(Detail::EveryInstance, ColorMode::Plain),
+        second.render(Detail::EveryInstance, ColorMode::Plain)
     );
 
     assert_eq!(without.cache.hits, 0, "a disabled cache served something");
@@ -204,13 +205,13 @@ fn an_edited_document_is_evaluated_again() {
     let after = run_over(&root, &mut warm);
 
     assert_ne!(
-        before.render(Detail::EveryInstance),
-        after.render(Detail::EveryInstance),
+        before.render(Detail::EveryInstance, ColorMode::Plain),
+        after.render(Detail::EveryInstance, ColorMode::Plain),
         "the edit changed nothing, so this test proves nothing"
     );
     assert_eq!(
-        after.render(Detail::EveryInstance),
-        run_over(&root, &mut Cache::disabled()).render(Detail::EveryInstance),
+        after.render(Detail::EveryInstance, ColorMode::Plain),
+        run_over(&root, &mut Cache::disabled()).render(Detail::EveryInstance, ColorMode::Plain),
         "the cached run reported a verdict over the document as it was"
     );
 
@@ -304,8 +305,8 @@ fn a_duplicate_settled_in_the_other_file_is_not_served_stale() {
             .collect::<Vec<_>>()
     );
     assert_eq!(
-        settled.render(Detail::EveryInstance),
-        run_over(&root, &mut Cache::disabled()).render(Detail::EveryInstance),
+        settled.render(Detail::EveryInstance, ColorMode::Plain),
+        run_over(&root, &mut Cache::disabled()).render(Detail::EveryInstance, ColorMode::Plain),
         "the cached run reported a verdict over the corpus as it was"
     );
 
@@ -403,8 +404,8 @@ fn a_moved_anchor_target_is_not_served_from_the_entry_before_it() {
         "the cache served a verdict about an anchor whose target is no longer there"
     );
     assert_eq!(
-        gone.render(Detail::EveryInstance),
-        run_over(&root, &mut Cache::disabled()).render(Detail::EveryInstance),
+        gone.render(Detail::EveryInstance, ColorMode::Plain),
+        run_over(&root, &mut Cache::disabled()).render(Detail::EveryInstance, ColorMode::Plain),
         "the cached run reported a verdict over the tree as it was"
     );
 
@@ -454,13 +455,14 @@ fn a_clock_that_moved_is_not_served_from_the_entry_before_it() {
     let outside = run_at(&root, &at("2026-09-30"), &mut warm);
 
     assert_ne!(
-        inside.render(Detail::EveryInstance),
-        outside.render(Detail::EveryInstance),
+        inside.render(Detail::EveryInstance, ColorMode::Plain),
+        outside.render(Detail::EveryInstance, ColorMode::Plain),
         "the window did not close, so this test proves nothing"
     );
     assert_eq!(
-        outside.render(Detail::EveryInstance),
-        run_at(&root, &at("2026-09-30"), &mut Cache::disabled()).render(Detail::EveryInstance),
+        outside.render(Detail::EveryInstance, ColorMode::Plain),
+        run_at(&root, &at("2026-09-30"), &mut Cache::disabled())
+            .render(Detail::EveryInstance, ColorMode::Plain),
         "the cached run served a verdict reached on another day"
     );
 
@@ -523,8 +525,8 @@ fn a_damaged_cache_file_costs_one_run_and_nothing_else() {
         let mut cache = Cache::at(&root, LOCK);
         let run = run_over(&root, &mut cache);
         assert_eq!(
-            expected.render(Detail::EveryInstance),
-            run.render(Detail::EveryInstance)
+            expected.render(Detail::EveryInstance, ColorMode::Plain),
+            run.render(Detail::EveryInstance, ColorMode::Plain)
         );
         assert_eq!(run.cache.hits, 0, "{damage:?} served an entry");
     }

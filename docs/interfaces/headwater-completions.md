@@ -38,9 +38,10 @@ The selected shell must be available to the caller when the caller loads the scr
 | `<shell>` | Select `bash`, `zsh`, `fish` or `powershell`. |
 | `--root <path>` | Accept the repository path for the global parser. Completion generation does not read it. |
 | `--wide` | Refused. Completion scripts use a fixed width and do not render help. |
-| `--no-color` | Disable color output. Completion scripts contain no color output. |
+| `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. |
+| `--no-banner` | Suppress the masthead: the line naming this binary and its version, that the root help screen alone prints. It is accepted here and does nothing, since only the root screen prints one. |
 
-The global `--help` and `--version` flags are answered before this command runs. The global `--root` and `--no-color` flags are accepted and have no effect. `--wide` is refused because completion scripts use a fixed width. An option that belongs to another verb is refused.
+The global `--help` and `--version` flags are answered before this command runs. The global `--root`, `--no-color` and `--no-banner` flags are accepted and have no effect: completion scripts carry no color and print no masthead of their own. `--wide` is refused because completion scripts use a fixed width. An option that belongs to another verb is refused.
 
 ## Exit status
 

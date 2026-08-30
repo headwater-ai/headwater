@@ -47,9 +47,10 @@ The process must have readable standard input and writable standard output. The 
 | `--now <date>` | Fix the date for every check and write in this server session. |
 | `--write` | Register the working-tree `new` and `fix` tools. It does not register commit, push or merge tools. |
 | `--root <path>` | Select the repository to load and serve. |
-| `--no-color` | Confirm the binary's color-free output. It changes no byte. |
+| `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. Every response this server writes is JSON on stdio, which carries no color at all. |
+| `--no-banner` | Suppress the masthead: the line naming this binary and its version, that the root help screen alone prints. It is accepted here and does nothing, since only the root screen prints one. |
 
-`--wide` is refused because the server prints protocol responses rather than help. Global `--help` and `--version` are answered before the server runs.
+`--wide` is refused because the server prints protocol responses rather than help. Global `--help`, `--version` and `--no-banner` are answered before the server runs.
 
 ## Exit status
 

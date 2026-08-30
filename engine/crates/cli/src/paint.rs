@@ -239,36 +239,18 @@ pub fn row(name: &str, text: &str, at: usize, width: usize) -> String {
     format!("  {name}{}{body}\n", " ".repeat(pad))
 }
 
-/// Whether a stream renders the palette
-/// [`HW-DR-0045`](../../../../docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md)
-/// names, or its fallback.
+/// [`ColorMode`], [`Role`], [`color_of`], [`paint`] and [`dim`] moved to
+/// `headwater_check::paint`, and are re-exported here unchanged.
 ///
-/// `Plain` is bold and dim weight plus a glyph where one applies, and no
-/// escape sequence at all — exactly as safe under a strict reading of
-/// `NO_COLOR` as writing nothing.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ColorMode {
-    Ansi,
-    Plain,
-}
-
-/// The mode `--no-color`, `NO_COLOR` and a stream's own terminal state come
-/// to, decided once so every caller reads the same answer the same way.
-///
-/// `--no-color` or a set `NO_COLOR` forces [`ColorMode::Plain`] regardless of
-/// `is_terminal`, matching how `--no-color` is already accepted, and until
-/// `HW-DR-0045`, ignored. There is no third state: a caller who wants color
-/// forced into a pipe has no lever here.
-#[must_use]
-pub fn color_of(no_color_flag: bool, no_color_env: bool, is_terminal: bool) -> ColorMode {
-    if no_color_flag || no_color_env {
-        return ColorMode::Plain;
-    }
-    match is_terminal {
-        true => ColorMode::Ansi,
-        false => ColorMode::Plain,
-    }
-}
+/// `Finding::render`, `Run::render`, `explain`'s renderer and the two sweep
+/// renderers all need them and none of the three crates that declare those
+/// functions may depend on `headwater-cli`, so the types live where every
+/// caller can reach them — see the module comment of
+/// `engine/crates/check/src/paint.rs` for the full reasoning. What stays here
+/// is [`stdout_color`] and [`stderr_color`]: the one fact only this crate
+/// holds, which stream this process is attached to.
+pub use headwater_check::paint::{color_of, dim, glyph, paint, severity_role, severity_word};
+pub use headwater_check::paint::{ColorMode, Role};
 
 /// Whether `--no-color` is on the raw command line, scanned the way
 /// [`width`] scans for `--wide`.
@@ -301,43 +283,6 @@ pub fn stderr_color() -> ColorMode {
         no_color_env(),
         std::io::IsTerminal::is_terminal(&std::io::stderr()),
     )
-}
-
-/// One semantic role `HW-DR-0045`'s palette names.
-///
-/// Two variants today: `fail` in `main.rs` is this module's one caller of
-/// [`Role::Error`], and [`banner`] is its one caller of [`Role::Verb`]. A
-/// caller that colors a finding, a rule identifier or a flag name adds the
-/// role it needs here rather than reaching for an escape code of its own.
-#[derive(Debug, Clone, Copy)]
-pub enum Role {
-    Error,
-    Verb,
-}
-
-/// `text`, painted for `role` under `mode`.
-///
-/// `Ansi` writes the standard SGR codes the decision names, which are
-/// remapped by whatever theme the caller's terminal already runs — the
-/// reason the decision refuses a truecolor hex. `Plain` writes `text` back
-/// unchanged.
-#[must_use]
-pub fn paint(role: Role, text: &str, mode: ColorMode) -> String {
-    let (open, close) = match (role, mode) {
-        (Role::Error, ColorMode::Ansi) => ("\x1b[1;31m", "\x1b[0m"),
-        (Role::Verb, ColorMode::Ansi) => ("\x1b[1;32m", "\x1b[0m"),
-        (_, ColorMode::Plain) => ("", ""),
-    };
-    format!("{open}{text}{close}")
-}
-
-/// Dim weight, the one part of the `Plain` fallback that is not color.
-#[must_use]
-pub fn dim(text: &str, mode: ColorMode) -> String {
-    match mode {
-        ColorMode::Ansi => format!("\x1b[2m{text}\x1b[0m"),
-        ColorMode::Plain => text.to_string(),
-    }
 }
 
 /// Whether `--no-banner` or `HEADWATER_NO_BANNER` suppress the masthead,

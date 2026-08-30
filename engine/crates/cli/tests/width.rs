@@ -822,7 +822,10 @@ fn no_finding_states_its_severity_on_a_line_of_its_own() {
         let asked = columns.unwrap_or("80");
         for (at, line) in out.lines().enumerate() {
             assert!(
-                !matches!(line.trim(), "error" | "warn" | "info"),
+                !matches!(
+                    line.trim(),
+                    "error" | "warn" | "info" | "✗ error" | "▲ warn" | "· info"
+                ),
                 "at COLUMNS={asked}, line {} of the report is a bare severity word, so a \
                  finding's location and its severity are on two lines:\n{}",
                 at + 1,
@@ -834,15 +837,18 @@ fn no_finding_states_its_severity_on_a_line_of_its_own() {
             );
         }
         // At least one location line, so a corpus that reported nothing does not
-        // pass this case by having no findings in it.
+        // pass this case by having no findings in it. Plain mode prints a
+        // severity glyph beside the word — `✗`, `▲` or `·`, see
+        // `headwater_check::paint` — so the line is a path, a glyph and a word
+        // rather than a path and a word alone.
         let located = out
             .lines()
             .filter(|line| {
                 let trimmed = line.trim_end();
-                trimmed.split_whitespace().count() == 2
-                    && (trimmed.ends_with(" error")
-                        || trimmed.ends_with(" warn")
-                        || trimmed.ends_with(" info"))
+                trimmed.split_whitespace().count() == 3
+                    && (trimmed.ends_with(" ✗ error")
+                        || trimmed.ends_with(" ▲ warn")
+                        || trimmed.ends_with(" · info"))
             })
             .count();
         assert!(
