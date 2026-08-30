@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 333,
-      "carried": 333,
+      "in the graph": 334,
+      "carried": 334,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 543,
-      "carried": 543,
+      "in the graph": 547,
+      "carried": 547,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1228,6 +1228,35 @@
               "engine/crates/cli/src/main.rs",
               "engine/crates/cli/src/lib.rs",
               "engine/crates/cli/tests/json.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md",
+        "kind": "decision",
+        "id": "HW-DR-0044",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0044",
+          "status": "draft",
+          "status_since": "2026-08-30",
+          "summary": "Bundles decompose into capabilities after adopter evidence, and assemblies name the practices that compose those capabilities.",
+          "last_verified": "2026-08-30",
+          "title": "Q44 — Whether bundles decompose into capabilities and assemblies compose practices",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "codex",
+            "activity": "inspect+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0003",
+              "HW-DR-0040",
+              "HW-SPEC-distribution-and-federation",
+              "HW-OBL-0040"
             ]
           }
         }
@@ -8582,6 +8611,50 @@
           "anchor_kind": "code_path",
           "id": "engine/crates/cli/tests/json.rs",
           "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0003",
+          "path": "docs/decisions/0003-how-much-of-the-default-taxonomy-ships-in-the-box.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0040",
+          "path": "docs/decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-SPEC-distribution-and-federation",
+          "path": "docs/spec/07-distribution-and-federation.md",
+          "kind": "design_spec"
+        }
+      },
+      {
+        "source": "docs/decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0040",
+          "path": "docs/obligations/0040-composition-between-two-library-entries-has-no-add-only-form.md",
+          "kind": "obligation_record"
         }
       },
       {
