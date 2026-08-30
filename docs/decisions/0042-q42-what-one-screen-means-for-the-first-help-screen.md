@@ -1,15 +1,16 @@
 ---
 id: HW-DR-0042
-status: draft
-status_since: 2026-08-28
+status: current
+status_since: 2026-08-30
 summary: "\"One screen\" is retired as a claim about a terminal and replaced by a claim about content: the first screen carries one line per entry, and the ceiling that follows from it is 60 lines."
-last_verified: 2026-08-28
+last_verified: 2026-08-30
 title: "Q42 — What \"one screen\" means for the first help screen"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: mixed
   drafted_by: claude-opus-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   traces_to:

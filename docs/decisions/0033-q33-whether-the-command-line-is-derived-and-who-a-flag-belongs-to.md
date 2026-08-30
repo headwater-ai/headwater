@@ -1,15 +1,16 @@
 ---
 id: HW-DR-0033
-status: draft
-status_since: 2026-08-23
+status: current
+status_since: 2026-08-30
 summary: "`clap` derives the command line for 17 lock entries, and a flag belongs to the verb that reads it rather than to the binary."
-last_verified: 2026-08-24
+last_verified: 2026-08-30
 title: "Q33 — Whether the command line is derived, and who a flag belongs to"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: mixed
   drafted_by: claude-opus-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   governs:

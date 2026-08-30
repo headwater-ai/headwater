@@ -1,15 +1,16 @@
 ---
 id: HW-DR-0029
-status: draft
-status_since: 2026-08-16
+status: current
+status_since: 2026-08-30
 summary: The corpus root stays `docs`, because a path is corpus content only where a file with no front matter is a defect, and 185 of the 186 Markdown files under `engine/` exist to be defective. An interface contract lives inside the root and reaches a crate by a `governs` edge that binds on existence alone.
-last_verified: 2026-08-16
+last_verified: 2026-08-30
 title: "Q29 — Whether a corpus root may contain code, and what an interface contract may reach"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-opus-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   governs:
@@ -97,5 +98,3 @@ The first is an adopter whose source files each carry a header block that the ad
 The second is the first check-layer rule whose subject is the bytes of an anchor target. The reading exists in this tree and it is not a rule. `engine/crates/check/src/fragment.rs` holds a `comment_links` module that walks the comments of every `.rs` file of the engine and resolves their links through the corpus slugger. It is a test of the engine's own suite, and its own comment states that nothing else reads a `.rs` comment. On the day that reading becomes a rule a corpus runs, an anchor stops being a name. The fourth reason above then stops holding.
 
 **What this record does not settle.** Whether an agent may write the acceptance stamp of a document it drafted is [HW-OBL-0108](../obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md). Whether `warrant: proposed` is a value of that facet at all is [HW-OBL-0125](../obligations/0125-nine-documents-state-a-warrant-the-closed-set-does-not-hold-and-no-check-reads-one.md). Which kind, shelf, facet and relation an `interface_contract` declares is [#254](https://github.com/headwater-ai/headwater/issues/254), and this record declares none of them.
-
-**This record is checked prose and unaccepted prose.** Every lexical rule of this repository read it, and no human has.

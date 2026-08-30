@@ -195,7 +195,7 @@ What an obligation waits on is a present-tense state and not a property fixed at
 
 ## Q31 — Whether this repository becomes public, and when
 
-This repository becomes public, and the date is unset. A settled posture with a pending date is not an open question, which is why the record exists. The record is [HW-DR-0031](../decisions/0031-q31-whether-this-repository-becomes-public-and-when.md).
+This repository becomes public on 2026-09-08. The owner set the date, and this record stops each run from raising the schedule as an open question. The record is [HW-DR-0031](../decisions/0031-q31-whether-this-repository-becomes-public-and-when.md).
 
 **This question came from the owner, and the cost of leaving it unwritten was a repeated argument.** The build order carried it on a list of standing escalations as undecided, so each run met it and left it where it was. 22 open obligation records wait for a corpus that another organization keeps, and nobody outside can bring one while the repository is unreadable.
 

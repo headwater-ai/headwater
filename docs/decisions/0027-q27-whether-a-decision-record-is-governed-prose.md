@@ -1,15 +1,16 @@
 ---
 id: HW-DR-0027
-status: draft
-status_since: 2026-08-15
+status: current
+status_since: 2026-08-30
 summary: A decision record is governed prose, and the overlay binds the house language regime to it. The shelf carries a prose problem rather than a quotation problem, and collapsing all 37 inline quotations moves 64 findings to 63.
-last_verified: 2026-08-15
+last_verified: 2026-08-30
 title: "Q27 — Whether a decision record is governed prose"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-opus-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   governs:
@@ -77,5 +78,3 @@ The first is a record that has to quote at length. The measurement above covers 
 The second is an advisory count that nobody works down. 64 advisory findings are a report rather than a rule. A later measurement that finds the count higher, with no finding on this shelf repaired, is evidence that the binding reports without governing. The question then is whether a word limit belongs on this shelf at all.
 
 **What this record does not settle.** Whether an agent may write the acceptance stamp of a document it drafted is [HW-OBL-0108](../obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md). Whether `warrant: proposed` is a value of that facet at all is [HW-OBL-0125](../obligations/0125-nine-documents-state-a-warrant-the-closed-set-does-not-hold-and-no-check-reads-one.md). This ruling closes the half of the problem a machine can close.
-
-**This record is checked prose and unaccepted prose.** Every lexical rule of this repository read it, and no human has.

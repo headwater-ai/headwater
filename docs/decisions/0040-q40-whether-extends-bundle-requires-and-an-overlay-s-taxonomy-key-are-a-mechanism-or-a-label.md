@@ -1,15 +1,16 @@
 ---
 id: HW-DR-0040
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-08-30
 summary: "All four keys of the family are a label rather than a mechanism today, and the specification and the meta-schema now say so in plain prose."
-last_verified: 2026-08-26
+last_verified: 2026-08-30
 title: "Q40 — Whether extends, bundle, requires and an overlay's taxonomy key are a mechanism or a label"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: mixed
   drafted_by: claude-sonnet-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   traces_to:

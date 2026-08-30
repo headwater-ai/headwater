@@ -1,15 +1,16 @@
 ---
 id: HW-DR-0035
-status: draft
-status_since: 2026-08-25
+status: current
+status_since: 2026-08-30
 summary: "The `requirement` and `acceptance_criterion` kinds serve the authored population alone. A transcribed requirement is a marked file that answers no contract, so a separate kind with an empty contract carries the imported case."
-last_verified: 2026-08-25
+last_verified: 2026-08-30
 title: "Q35 — Whether one requirement kind holds an imported requirement and an authored one"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: mixed
   drafted_by: claude-opus-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   traces_to:
