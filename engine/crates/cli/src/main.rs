@@ -612,8 +612,8 @@ fn validate(root: &Path) -> ExitCode {
     let repository = match headwater_resolve::repository(root) {
         Ok(repository) => repository,
         Err(errors) => {
-            eprintln!("headwater: the taxonomy did not resolve");
-            eprint!("{}", indent(&render_errors(&errors)));
+            eprintln!("headwater: {}", err("the taxonomy did not resolve"));
+            eprint!("{}", indent(&err(&render_errors(&errors))));
             return ExitCode::FAILURE;
         }
     };
@@ -641,7 +641,7 @@ fn validate(root: &Path) -> ExitCode {
         return ExitCode::SUCCESS;
     }
     println!("\n{} is not valid", repository.consumer.package);
-    eprint!("{}", indent(&render_errors(&findings)));
+    eprint!("{}", indent(&err(&render_errors(&findings))));
     ExitCode::FAILURE
 }
 
@@ -650,8 +650,11 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
     let repository = match headwater_resolve::repository(root) {
         Ok(repository) => repository,
         Err(errors) => {
-            eprintln!("headwater: the taxonomy did not resolve, so no lock is possible");
-            eprint!("{}", indent(&render_errors(&errors)));
+            eprintln!(
+                "headwater: {}",
+                err("the taxonomy did not resolve, so no lock is possible")
+            );
+            eprint!("{}", indent(&err(&render_errors(&errors))));
             return ExitCode::FAILURE;
         }
     };
@@ -668,7 +671,7 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
     let sources = match headwater_resolve::package::sources(root, &repository.consumer) {
         Ok(sources) => sources,
         Err(errors) => {
-            eprint!("{}", indent(&render_errors(&errors)));
+            eprint!("{}", indent(&err(&render_errors(&errors))));
             return ExitCode::FAILURE;
         }
     };
@@ -687,10 +690,13 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
         Ok(text) => text,
         Err(findings) => {
             eprintln!(
-                "headwater: the taxonomy does not validate, so no lock is written. \
-                 A lock is a validated taxonomy or it is nothing"
+                "headwater: {}",
+                err(
+                    "the taxonomy does not validate, so no lock is written. A lock is a \
+                     validated taxonomy or it is nothing"
+                )
             );
-            eprint!("{}", indent(&render_errors(&findings)));
+            eprint!("{}", indent(&err(&render_errors(&findings))));
             return ExitCode::FAILURE;
         }
     };
@@ -711,22 +717,31 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
             }
             headwater_lock::Divergence::Form { adoption } => {
                 eprintln!(
-                    "headwater: {} carries the taxonomy its sources resolve to, and is not \
-                     written in the form `headwater taxonomy resolve` writes it. Nothing \
-                     about your sources changed",
-                    headwater_lock::LOCK
+                    "headwater: {}",
+                    err(&format!(
+                        "{} carries the taxonomy its sources resolve to, and is not written \
+                         in the form `headwater taxonomy resolve` writes it. Nothing about \
+                         your sources changed",
+                        headwater_lock::LOCK
+                    ))
                 );
                 match adoption {
                     true => eprintln!(
-                        "  The `adoption` block is where the two differ. That block is \
-                         authored, and this file's header invites a person to edit it, so \
-                         what moved is its form and not the debt it declares. Run \
-                         `headwater taxonomy resolve`: every task, owner, expiry and pair \
-                         is carried through"
+                        "  {}",
+                        err(
+                            "The `adoption` block is where the two differ. That block is \
+                             authored, and this file's header invites a person to edit it, so \
+                             what moved is its form and not the debt it declares. Run \
+                             `headwater taxonomy resolve`: every task, owner, expiry and pair \
+                             is carried through"
+                        )
                     ),
                     false => eprintln!(
-                        "  The difference is not inside the `adoption` block. Run `headwater \
-                         taxonomy resolve` and commit the result"
+                        "  {}",
+                        err(
+                            "The difference is not inside the `adoption` block. Run `headwater \
+                             taxonomy resolve` and commit the result"
+                        )
                     ),
                 }
                 ExitCode::FAILURE
@@ -735,9 +750,12 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
             // written for.
             headwater_lock::Divergence::Generated => {
                 eprintln!(
-                    "headwater: {} is not what the sources resolve to. \
-                     Run `headwater taxonomy resolve` and commit the result",
-                    headwater_lock::LOCK
+                    "headwater: {}",
+                    err(&format!(
+                        "{} is not what the sources resolve to. Run `headwater taxonomy \
+                         resolve` and commit the result",
+                        headwater_lock::LOCK
+                    ))
                 );
                 // The lock that is there says which source moved, which is the
                 // line an author acts on.
@@ -754,7 +772,10 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
             // and the state is already read: `Authored::Opaque` is exactly the
             // one the write path below returns on.
             headwater_lock::Divergence::Unreadable(why) => {
-                eprintln!("headwater: {} did not read: {why}", headwater_lock::LOCK);
+                eprintln!(
+                    "headwater: {}",
+                    err(&format!("{} did not read: {why}", headwater_lock::LOCK))
+                );
                 match &authored {
                     headwater_lock::Authored::Opaque { .. } => eprintln!(
                         "  Nothing can be seen of its adoption block, so `headwater taxonomy \
@@ -799,11 +820,17 @@ fn resolve(root: &Path, check_only: bool) -> ExitCode {
              either\n  the lock said: {why}"
         ),
         headwater_lock::Authored::Opaque { why } => {
-            eprintln!("headwater: {} did not read: {why}", headwater_lock::LOCK);
             eprintln!(
-                "  Nothing can be seen of its adoption block, which is the one authored part \
-                 of the file, so this run will not replace it. Repair the file, or delete it \
-                 to resolve from the sources alone and write the block again"
+                "headwater: {}",
+                err(&format!("{} did not read: {why}", headwater_lock::LOCK))
+            );
+            eprintln!(
+                "  {}",
+                err(
+                    "Nothing can be seen of its adoption block, which is the one authored part \
+                     of the file, so this run will not replace it. Repair the file, or delete it \
+                     to resolve from the sources alone and write the block again"
+                )
             );
             return ExitCode::FAILURE;
         }
@@ -873,7 +900,10 @@ fn audit(root: &Path, now: Option<Date>, record: bool) -> ExitCode {
         Err(code) => return code,
     };
     let Some(context) = now.map(Context::at).or_else(Context::from_system_clock) else {
-        eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
+        eprintln!(
+            "headwater: {}",
+            err("this host has no readable clock. Pass `--now <YYYY-MM-DD>`")
+        );
         return ExitCode::FAILURE;
     };
 
@@ -968,7 +998,10 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>, json: bool) 
         Err(code) => return code,
     };
     let Some(context) = now.map(Context::at).or_else(Context::from_system_clock) else {
-        eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
+        eprintln!(
+            "headwater: {}",
+            err("this host has no readable clock. Pass `--now <YYYY-MM-DD>`")
+        );
         return ExitCode::FAILURE;
     };
 
@@ -980,10 +1013,11 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>, json: bool) 
         Ok(waivers) => waivers,
         Err(refusals) => {
             eprintln!(
-                "headwater: the `conformance` block of the consumer declaration did not read"
+                "headwater: {}",
+                err("the `conformance` block of the consumer declaration did not read")
             );
             for refusal in &refusals {
-                eprintln!("  {refusal}");
+                eprintln!("  {}", err(refusal));
             }
             return ExitCode::FAILURE;
         }
@@ -1030,7 +1064,10 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>, json: bool) 
     ) {
         Ok(report) => report,
         Err(refusals) => {
-            eprintln!("headwater: a waiver names no rule this package declares");
+            eprintln!(
+                "headwater: {}",
+                err("a waiver names no rule this package declares")
+            );
             for refusal in &refusals {
                 eprintln!("  {refusal}");
             }
@@ -1073,8 +1110,11 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>, json: bool) 
         }
         false => {
             eprintln!(
-                "headwater: {level} is not passed. Each gap above states the remediation the \
-                 package wrote for it"
+                "headwater: {}",
+                err(&format!(
+                    "{level} is not passed. Each gap above states the remediation the package \
+                     wrote for it"
+                ))
             );
             ExitCode::FAILURE
         }
@@ -1134,10 +1174,13 @@ fn publish(
                     Ok(consumer) => consumer.package,
                     Err(errors) => {
                         eprintln!(
-                            "headwater: no `--package`, no `--from`, and this repository's \
-                             declaration does not read, so nothing says what to publish"
+                            "headwater: {}",
+                            err(
+                                "no `--package`, no `--from`, and this repository's declaration \
+                                 does not read, so nothing says what to publish"
+                            )
                         );
-                        eprint!("{}", indent(&render_errors(&errors)));
+                        eprint!("{}", indent(&err(&render_errors(&errors))));
                         return ExitCode::FAILURE;
                     }
                 },
@@ -1154,8 +1197,8 @@ fn publish(
     let record = match published {
         Ok(record) => record,
         Err(errors) => {
-            eprintln!("headwater: nothing was published");
-            eprint!("{}", indent(&render_errors(&errors)));
+            eprintln!("headwater: {}", err("nothing was published"));
+            eprint!("{}", indent(&err(&render_errors(&errors))));
             return ExitCode::FAILURE;
         }
     };
@@ -1201,8 +1244,8 @@ fn vendor(root: &Path, fetched: &Path, expect: Option<&str>) -> ExitCode {
     let record = match headwater_resolve::package::vendor(root, fetched, &pinned) {
         Ok(record) => record,
         Err(errors) => {
-            eprintln!("headwater: nothing was vendored");
-            eprint!("{}", indent(&render_errors(&errors)));
+            eprintln!("headwater: {}", err("nothing was vendored"));
+            eprint!("{}", indent(&err(&render_errors(&errors))));
             return ExitCode::FAILURE;
         }
     };
@@ -1283,10 +1326,13 @@ fn artifact(
         Ok(record) => record,
         Err(error) => {
             eprintln!(
-                "headwater: {} is not a published artifact this engine can read",
-                fetched.display()
+                "headwater: {}",
+                err(&format!(
+                    "{} is not a published artifact this engine can read",
+                    fetched.display()
+                ))
             );
-            eprintln!("{}", indent(&error.to_string()));
+            eprintln!("{}", indent(&err(&error.to_string())));
             return Err(ExitCode::FAILURE);
         }
     };
@@ -1301,8 +1347,11 @@ fn artifact(
                 .join("\n")),
         })
     {
-        eprintln!("headwater: the artifact is not what its own release record says it is");
-        eprintln!("{}", indent(&error));
+        eprintln!(
+            "headwater: {}",
+            err("the artifact is not what its own release record says it is")
+        );
+        eprintln!("{}", indent(&err(&error)));
         return Err(ExitCode::FAILURE);
     }
 
@@ -1365,7 +1414,10 @@ fn migrate(
     applying: bool,
 ) -> ExitCode {
     let Some(_ctx) = now.map(Context::at).or_else(Context::from_system_clock) else {
-        eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
+        eprintln!(
+            "headwater: {}",
+            err("this host has no readable clock. Pass `--now <YYYY-MM-DD>`")
+        );
         return ExitCode::FAILURE;
     };
     let record = match artifact(fetched, to) {
@@ -1376,7 +1428,7 @@ fn migrate(
     let lock = match headwater_lock::at(root) {
         Ok(lock) => lock,
         Err(error) => {
-            eprintln!("headwater: {error}");
+            eprintln!("headwater: {}", err(&format!("{error}")));
             return ExitCode::FAILURE;
         }
     };
@@ -1393,8 +1445,8 @@ fn migrate(
     let manifest = match headwater_resolve::package::manifest_at(fetched) {
         Ok(manifest) => manifest,
         Err(errors) => {
-            eprintln!("headwater: the artifact manifest did not read");
-            eprint!("{}", indent(&render_errors(&errors)));
+            eprintln!("headwater: {}", err("the artifact manifest did not read"));
+            eprint!("{}", indent(&err(&render_errors(&errors))));
             return ExitCode::FAILURE;
         }
     };
@@ -1402,13 +1454,16 @@ fn migrate(
         Ok(payloads) => payloads,
         Err(refusals) => {
             eprintln!(
-                "headwater: the artifact carries a migration payload this engine cannot read"
+                "headwater: {}",
+                err("the artifact carries a migration payload this engine cannot read")
             );
             eprint!(
                 "{}",
-                indent(&render_errors(&headwater_resolve::migration::as_errors(
-                    &fetched.display().to_string(),
-                    &refusals,
+                indent(&err(&render_errors(
+                    &headwater_resolve::migration::as_errors(
+                        &fetched.display().to_string(),
+                        &refusals,
+                    )
                 )))
             );
             return ExitCode::FAILURE;
@@ -1474,16 +1529,22 @@ fn migrate(
     let consumer = match headwater_resolve::package::consumer(root) {
         Ok(consumer) => consumer,
         Err(errors) => {
-            eprintln!("headwater: the consumer declaration did not read");
-            eprint!("{}", indent(&render_errors(&errors)));
+            eprintln!(
+                "headwater: {}",
+                err("the consumer declaration did not read")
+            );
+            eprint!("{}", indent(&err(&render_errors(&errors))));
             return ExitCode::FAILURE;
         }
     };
     let overlay = match headwater_resolve::package::adopted(root, &consumer) {
         Ok(overlay) => overlay,
         Err(errors) => {
-            eprintln!("headwater: this repository's overlay did not read");
-            eprint!("{}", indent(&render_errors(&errors)));
+            eprintln!(
+                "headwater: {}",
+                err("this repository's overlay did not read")
+            );
+            eprint!("{}", indent(&err(&render_errors(&errors))));
             return ExitCode::FAILURE;
         }
     };
@@ -1638,7 +1699,7 @@ fn migrate(
             }
         );
         for refused in &written.refused {
-            eprintln!("{}", indent(&refused.to_string()));
+            eprintln!("{}", indent(&err(&refused.to_string())));
         }
         return ExitCode::FAILURE;
     }
@@ -1653,7 +1714,7 @@ fn migrate(
                 "\nheadwater: this repository's overlay did not compose, and this run \
                        writes nothing"
             );
-            eprintln!("{}", indent(&refused.to_string()));
+            eprintln!("{}", indent(&err(&refused.to_string())));
             return ExitCode::FAILURE;
         }
         Ok(None) => {}
@@ -1685,7 +1746,7 @@ fn migrate(
         Ok(reserved) => reserved,
         Err(unopened) => {
             eprintln!("\nheadwater: a file of this migration cannot be written, so none was");
-            eprintln!("{}", indent(&unopened.to_string()));
+            eprintln!("{}", indent(&err(&unopened.to_string())));
             return ExitCode::FAILURE;
         }
     };
@@ -1710,7 +1771,7 @@ fn migrate(
         }
         Err(halted) => {
             eprintln!("\nheadwater: the migration stopped part way");
-            eprintln!("{}", indent(&halted.to_string()));
+            eprintln!("{}", indent(&err(&halted.to_string())));
             ExitCode::FAILURE
         }
     }
@@ -1721,7 +1782,10 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     // `check` reads it: two windowed expectations evaluated a second apart
     // would be a difference this verb attributed to the taxonomy.
     let Some(ctx) = now.map(Context::at).or_else(Context::from_system_clock) else {
-        eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
+        eprintln!(
+            "headwater: {}",
+            err("this host has no readable clock. Pass `--now <YYYY-MM-DD>`")
+        );
         return ExitCode::FAILURE;
     };
 
@@ -1740,15 +1804,18 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     let lock = match headwater_lock::at(root) {
         Ok(lock) => lock,
         Err(error) => {
-            eprintln!("headwater: {error}");
+            eprintln!("headwater: {}", err(&format!("{error}")));
             return ExitCode::FAILURE;
         }
     };
     let consumer = match headwater_resolve::package::consumer(root) {
         Ok(consumer) => consumer,
         Err(errors) => {
-            eprintln!("headwater: the consumer declaration did not read");
-            eprint!("{}", indent(&render_errors(&errors)));
+            eprintln!(
+                "headwater: {}",
+                err("the consumer declaration did not read")
+            );
+            eprint!("{}", indent(&err(&render_errors(&errors))));
             return ExitCode::FAILURE;
         }
     };
@@ -1757,8 +1824,11 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     let overlay = match headwater_resolve::package::adopted(root, &consumer) {
         Ok(overlay) => overlay,
         Err(errors) => {
-            eprintln!("headwater: this repository's overlay did not read");
-            eprint!("{}", indent(&render_errors(&errors)));
+            eprintln!(
+                "headwater: {}",
+                err("this repository's overlay did not read")
+            );
+            eprint!("{}", indent(&err(&render_errors(&errors))));
             return ExitCode::FAILURE;
         }
     };
@@ -1773,8 +1843,8 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
     let manifest = match headwater_resolve::package::manifest_at(fetched) {
         Ok(manifest) => manifest,
         Err(errors) => {
-            eprintln!("headwater: the artifact manifest did not read");
-            eprint!("{}", indent(&render_errors(&errors)));
+            eprintln!("headwater: {}", err("the artifact manifest did not read"));
+            eprint!("{}", indent(&err(&render_errors(&errors))));
             return ExitCode::FAILURE;
         }
     };
@@ -1834,8 +1904,11 @@ fn diff(root: &Path, fetched: &Path, to: Option<&str>, now: Option<Date>) -> Exi
         print!("{}", report.render());
         print!("{tasks}");
         eprintln!(
-            "headwater: the candidate did not resolve, so five of the six dimensions were not \
-             measured. The lines above are what this run does know"
+            "headwater: {}",
+            err(
+                "the candidate did not resolve, so five of the six dimensions were not \
+                 measured. The lines above are what this run does know"
+            )
         );
         return ExitCode::FAILURE;
     };
@@ -1994,13 +2067,16 @@ fn payload(
         Ok(payloads) => payloads,
         Err(refusals) => {
             eprintln!(
-                "headwater: the artifact carries a migration payload this engine cannot read"
+                "headwater: {}",
+                err("the artifact carries a migration payload this engine cannot read")
             );
             eprint!(
                 "{}",
-                indent(&render_errors(&headwater_resolve::migration::as_errors(
-                    &fetched.display().to_string(),
-                    &refusals,
+                indent(&err(&render_errors(
+                    &headwater_resolve::migration::as_errors(
+                        &fetched.display().to_string(),
+                        &refusals,
+                    )
                 )))
             );
             return Err(ExitCode::FAILURE);
@@ -2209,7 +2285,7 @@ fn load(root: &Path) -> Result<Loaded, ExitCode> {
     let lock = match headwater_lock::at(root) {
         Ok(lock) => lock,
         Err(error) => {
-            eprintln!("headwater: {error}");
+            eprintln!("headwater: {}", err(&format!("{error}")));
             return Err(ExitCode::FAILURE);
         }
     };
@@ -2225,8 +2301,11 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
     let consumer = match headwater_resolve::package::consumer(root) {
         Ok(consumer) => consumer,
         Err(errors) => {
-            eprintln!("headwater: the consumer declaration did not read");
-            eprint!("{}", indent(&render_errors(&errors)));
+            eprintln!(
+                "headwater: {}",
+                err("the consumer declaration did not read")
+            );
+            eprint!("{}", indent(&err(&render_errors(&errors))));
             return Err(ExitCode::FAILURE);
         }
     };
@@ -2259,8 +2338,8 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
     let imports = match headwater_import::declared(root) {
         Ok(imports) => imports,
         Err(why) => {
-            eprintln!("headwater: the import declarations did not read");
-            eprintln!("{}", indent(&why));
+            eprintln!("headwater: {}", err("the import declarations did not read"));
+            eprintln!("{}", indent(&err(&why)));
             return Err(ExitCode::FAILURE);
         }
     };
@@ -2268,8 +2347,8 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
         resolvers = match resolvers.with(Box::new(items)) {
             Ok(resolvers) => resolvers,
             Err(why) => {
-                eprintln!("headwater: the resolver set is ambiguous");
-                eprintln!("{}", indent(&why));
+                eprintln!("headwater: {}", err("the resolver set is ambiguous"));
+                eprintln!("{}", indent(&err(&why)));
                 return Err(ExitCode::FAILURE);
             }
         };
@@ -2448,7 +2527,12 @@ fn explain(root: &Path, target: &str, json: bool) -> ExitCode {
             ExitCode::SUCCESS
         }
         None => {
-            eprintln!("headwater: `{target}` is neither a path of this corpus nor an identifier it carries");
+            eprintln!(
+                "headwater: {}",
+                err(&format!(
+                    "`{target}` is neither a path of this corpus nor an identifier it carries"
+                ))
+            );
             ExitCode::FAILURE
         }
     }
@@ -3468,7 +3552,7 @@ fn import(root: &Path, name: Option<&str>, expect: Option<&str>, writing: bool) 
     let plan = match headwater_import::plan(root, declaration, expect, &corpus) {
         Ok(plan) => plan,
         Err(refusals) => {
-            eprintln!("headwater: nothing was imported");
+            eprintln!("headwater: {}", err("nothing was imported"));
             eprint!("{}", indent(&headwater_import::render(&refusals)));
             return ExitCode::FAILURE;
         }
@@ -3487,8 +3571,8 @@ fn import(root: &Path, name: Option<&str>, expect: Option<&str>, writing: bool) 
     let composed = match headwater_import::write::compose(root, &pending) {
         Ok(composed) => composed,
         Err(why) => {
-            eprintln!("headwater: nothing was written");
-            eprintln!("{}", indent(&why));
+            eprintln!("headwater: {}", err("nothing was written"));
+            eprintln!("{}", indent(&err(&why)));
             return ExitCode::FAILURE;
         }
     };
@@ -3497,8 +3581,8 @@ fn import(root: &Path, name: Option<&str>, expect: Option<&str>, writing: bool) 
     // write stopped part way* over it for as long as one sentence covered both
     // phases.
     if let Err(unwritten) = headwater_import::write::apply(root, &composed) {
-        eprintln!("headwater: {}", unwritten.headline());
-        eprintln!("{}", indent(&unwritten.to_string()));
+        eprintln!("headwater: {}", err(unwritten.headline()));
+        eprintln!("{}", indent(&err(&unwritten.to_string())));
         return ExitCode::FAILURE;
     }
     println!(
@@ -3551,14 +3635,20 @@ fn generate(root: &Path, check_only: bool) -> ExitCode {
         let drifted = report.wrote.iter().any(|wrote| wrote.verdict.is_error());
         match (check_only, drifted) {
             (true, true) => eprintln!(
-                "headwater: a projection is not what this corpus and this lock produce. \
-                 Run `headwater generate` and commit the result"
+                "headwater: {}",
+                err(
+                    "a projection is not what this corpus and this lock produce. Run \
+                     `headwater generate` and commit the result"
+                )
             ),
             (true, false) => eprintln!(
-                "headwater: a marked file is committed that this run does not write. Running \
-                 this verb again writes it no more, and the line under it above says why"
+                "headwater: {}",
+                err(
+                    "a marked file is committed that this run does not write. Running this \
+                     verb again writes it no more, and the line under it above says why"
+                )
             ),
-            (false, _) => eprintln!("headwater: a projection did not write"),
+            (false, _) => eprintln!("headwater: {}", err("a projection did not write")),
         }
         return ExitCode::FAILURE;
     }
@@ -3620,7 +3710,10 @@ fn export(
         };
         print!("{}", report.render());
         if report.has_errors() {
-            eprintln!("headwater: a declared export is not what this corpus and this lock produce");
+            eprintln!(
+                "headwater: {}",
+                err("a declared export is not what this corpus and this lock produce")
+            );
             return ExitCode::FAILURE;
         }
         return ExitCode::SUCCESS;
@@ -3682,15 +3775,18 @@ fn export(
             eprint!("{}", headwater_generate::export::render(&emission.census));
             if emission.census.is_defective() {
                 eprintln!(
-                    "headwater: the projection census found an omission that no declared loss \
-                     reason covers, which is a defect in this emitter rather than in the corpus"
+                    "headwater: {}",
+                    err(
+                        "the projection census found an omission that no declared loss reason \
+                         covers, which is a defect in this emitter rather than in the corpus"
+                    )
                 );
                 return ExitCode::FAILURE;
             }
             ExitCode::SUCCESS
         }
         Err(refusal) => {
-            eprintln!("headwater: nothing was exported");
+            eprintln!("headwater: {}", err("nothing was exported"));
             eprintln!("  {}", refusal.reason());
             ExitCode::FAILURE
         }
@@ -3733,7 +3829,10 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
     // windowed expectation wrong for as long as it ran, so a host that cannot
     // say what day it is gets no server.
     let Some(ctx) = now.map(Context::at).or_else(Context::from_system_clock) else {
-        eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
+        eprintln!(
+            "headwater: {}",
+            err("this host has no readable clock. Pass `--now <YYYY-MM-DD>`")
+        );
         return ExitCode::FAILURE;
     };
     let loaded = match load(root) {
@@ -3824,7 +3923,10 @@ fn gate(root: &Path, read_set: Option<PathBuf>, now: Option<Date>, json: bool) -
     // The same clock rule `check` follows, and for the same reason: a gate that
     // guessed the day would carry a windowed verdict across the day it expired.
     let Some(asked) = now.or_else(|| Context::from_system_clock().map(|ctx| ctx.now())) else {
-        eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
+        eprintln!(
+            "headwater: {}",
+            err("this host has no readable clock. Pass `--now <YYYY-MM-DD>`")
+        );
         return ExitCode::FAILURE;
     };
     // The lock, and nothing else of the taxonomy. A lock that moved voids every
@@ -3833,7 +3935,7 @@ fn gate(root: &Path, read_set: Option<PathBuf>, now: Option<Date>, json: bool) -
     let lock = match headwater_lock::at(root) {
         Ok(lock) => lock,
         Err(error) => {
-            eprintln!("headwater: {error}");
+            eprintln!("headwater: {}", err(&format!("{error}")));
             return ExitCode::FAILURE;
         }
     };
@@ -3897,7 +3999,7 @@ fn fix(root: &Path, ctx: &Context, cached: bool) -> Result<Fixed, ExitCode> {
         .collect();
     let composed = headwater_scaffold::fix::compose(root, &patches);
     if let Err(refusal) = headwater_scaffold::fix::apply(root, &composed.files) {
-        eprintln!("headwater: {refusal}");
+        eprintln!("headwater: {}", err(&format!("{refusal}")));
         return Err(ExitCode::FAILURE);
     }
     let mut account = String::new();
@@ -4064,7 +4166,10 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
     // whose host cannot say what day it is refuses rather than guesses, because
     // a windowed expectation evaluated against a guess is a wrong verdict.
     let Some(ctx) = now.map(Context::at).or_else(Context::from_system_clock) else {
-        eprintln!("headwater: this host has no readable clock. Pass `--now <YYYY-MM-DD>`");
+        eprintln!(
+            "headwater: {}",
+            err("this host has no readable clock. Pass `--now <YYYY-MM-DD>`")
+        );
         return ExitCode::FAILURE;
     };
     // The second injected value, read here and bound after the walk below. A
@@ -4076,8 +4181,8 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
         Some(path) => match headwater_check::change::Unbound::at(path) {
             Ok(unbound) => Some(unbound),
             Err(why) => {
-                eprintln!("headwater: the change manifest did not read");
-                eprintln!("{}", indent(&why));
+                eprintln!("headwater: {}", err("the change manifest did not read"));
+                eprintln!("{}", indent(&err(&why)));
                 return ExitCode::FAILURE;
             }
         },
@@ -4166,13 +4271,16 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
     // way a defective projection census does.
     let audited = headwater_adapter::census(&run, format, &artifact);
     if audited.is_defective() {
-        eprint!("headwater: {}", audited.complaint(format));
+        eprint!("headwater: {}", err(&audited.complaint(format)));
         return ExitCode::FAILURE;
     }
 
     if let Some(path) = read_set {
         if let Err(error) = std::fs::write(&path, run.read_set.render()) {
-            eprintln!("headwater: cannot write {}: {error}", path.display());
+            eprintln!(
+                "headwater: {}",
+                err(&format!("cannot write {}: {error}", path.display()))
+            );
             return ExitCode::FAILURE;
         }
     }
@@ -4191,7 +4299,10 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
     // anything, which is the difference from the read set above.
     if let Some(path) = register_out {
         if let Err(error) = std::fs::write(&path, run.register.render()) {
-            eprintln!("headwater: cannot write {}: {error}", path.display());
+            eprintln!(
+                "headwater: {}",
+                err(&format!("cannot write {}: {error}", path.display()))
+            );
             return ExitCode::FAILURE;
         }
     }
@@ -4630,14 +4741,20 @@ fn infer(
         Ok(block) => block,
         Err(why) => {
             eprintln!(
-                "headwater: {} declares an adoption block this run cannot add to",
-                headwater_lock::LOCK
+                "headwater: {}",
+                err(&format!(
+                    "{} declares an adoption block this run cannot add to",
+                    headwater_lock::LOCK
+                ))
             );
-            eprintln!("  {why}");
+            eprintln!("  {}", err(&why));
             eprintln!(
-                "  A payload written over it would discard an owner, an expiry and every pair, \
-                 and this run cannot say what it discarded. Repair the block, or remove it to \
-                 write a first payload"
+                "  {}",
+                err(
+                    "A payload written over it would discard an owner, an expiry and every \
+                     pair, and this run cannot say what it discarded. Repair the block, or \
+                     remove it to write a first payload"
+                )
             );
             return ExitCode::FAILURE;
         }
@@ -4649,15 +4766,18 @@ fn infer(
     let repository = match headwater_resolve::repository(root) {
         Ok(repository) => repository,
         Err(errors) => {
-            eprintln!("headwater: the taxonomy did not resolve, so no payload can be written");
-            eprint!("{}", indent(&render_errors(&errors)));
+            eprintln!(
+                "headwater: {}",
+                err("the taxonomy did not resolve, so no payload can be written")
+            );
+            eprint!("{}", indent(&err(&render_errors(&errors))));
             return ExitCode::FAILURE;
         }
     };
     let sources = match headwater_resolve::package::sources(root, &repository.consumer) {
         Ok(sources) => sources,
         Err(errors) => {
-            eprint!("{}", indent(&render_errors(&errors)));
+            eprint!("{}", indent(&err(&render_errors(&errors))));
             return ExitCode::FAILURE;
         }
     };
@@ -4670,7 +4790,7 @@ fn infer(
     ) {
         Ok(text) => text,
         Err(findings) => {
-            eprint!("{}", indent(&render_errors(&findings)));
+            eprint!("{}", indent(&err(&render_errors(&findings))));
             return ExitCode::FAILURE;
         }
     };
@@ -5082,9 +5202,12 @@ fn indent(text: &str) -> String {
 }
 
 fn refused(what: &str, errors: &[headwater_census::shelves::DeclarationError]) -> ExitCode {
-    eprintln!("headwater: {what} did not read, so no run is possible");
+    eprintln!(
+        "headwater: {}",
+        err(&format!("{what} did not read, so no run is possible"))
+    );
     for error in errors {
-        eprintln!("  {error}");
+        eprintln!("  {}", err(&error.to_string()));
     }
     ExitCode::FAILURE
 }
@@ -5156,15 +5279,31 @@ fn refused(what: &str, errors: &[headwater_census::shelves::DeclarationError]) -
 /// this binary writes to standard error opens with its own name. A message with
 /// no newline in it prints exactly the two lines it printed before this loop.
 fn fail(message: &str) -> ExitCode {
-    let mode = headwater_cli::paint::stderr_color();
     for line in message.lines() {
-        eprintln!(
-            "headwater: {}",
-            headwater_cli::paint::paint(headwater_cli::paint::Role::Error, line, mode)
-        );
+        eprintln!("headwater: {}", err(line));
     }
     eprintln!("headwater: run `headwater --help` for the grammar");
     ExitCode::FAILURE
+}
+
+/// `text`, in the `error` role when standard error is a terminal, and
+/// unchanged otherwise.
+///
+/// [`fail`] colored its own message this way from the day
+/// [HW-DR-0045](../../../../docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md)
+/// landed. This is that rule, pulled out once [`refuse`], [`defect`],
+/// [`refused`] and every refusal this binary prints inline needed it too,
+/// rather than a second hand-written wrap at each of them. It reads the
+/// stream itself rather than taking a `mode`, because every call site here
+/// is standard error and none of them is a pure function under test the way
+/// `headwater_check::paint`'s own callers are — see that module's comment for
+/// the boundary.
+fn err(text: &str) -> String {
+    headwater_cli::paint::paint(
+        headwater_cli::paint::Role::Error,
+        text,
+        headwater_cli::paint::stderr_color(),
+    )
 }
 
 /// A refusal no command line reaches past: a fact about the corpus, the
@@ -5187,7 +5326,7 @@ fn fail(message: &str) -> ExitCode {
 /// authored by somebody — a corpus, an overlay, a published artifact — and a
 /// value this run's own code built belongs there instead.
 fn refuse(message: &str) -> ExitCode {
-    eprintln!("headwater: {message}");
+    eprintln!("headwater: {}", err(message));
     ExitCode::FAILURE
 }
 
@@ -5234,10 +5373,13 @@ fn refuse(message: &str) -> ExitCode {
 /// this body to print an address and drop the version constant, and the whole
 /// suite stayed green.
 fn defect(message: &str) -> ExitCode {
-    eprintln!("headwater: {message}");
+    eprintln!("headwater: {}", err(message));
     eprintln!(
-        "headwater: this is a defect in engine {}, and neither your corpus nor your command line caused it",
-        headwater_resolve::release::ENGINE
+        "headwater: {}",
+        err(&format!(
+            "this is a defect in engine {}, and neither your corpus nor your command line caused it",
+            headwater_resolve::release::ENGINE
+        ))
     );
     ExitCode::FAILURE
 }
