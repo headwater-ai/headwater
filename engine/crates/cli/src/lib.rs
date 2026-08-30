@@ -956,6 +956,14 @@ pub enum TaxonomyWord {
         from: Option<PathBuf>,
         #[arg(
             long,
+            value_name = "name",
+            help = "derive and publish this named assembly from the source package. It uses the \
+                    same source selection as `--package` or `--from`, and produces one flattened \
+                    package with no runtime bundle selection"
+        )]
+        assembly: Option<String>,
+        #[arg(
+            long,
             value_name = "dir",
             help = "where to write the artifact. The directory must be empty or absent, because a \
                     published artifact is every file under its root and a stray one would be a \

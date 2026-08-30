@@ -52,6 +52,7 @@ contents:
   taxonomy: taxonomy.yml
   conformance: conformance.yml # the rules an adopter is evaluated against, and the levels over them
   bundles: bundles/            # named overlays that add, selected at init
+  assemblies: assemblies/      # recipes that publish selected bundles as flattened packages
   migrations: migrations/
   doctrine: doctrine/          # prose explaining the method, vendored to consumers
   templates: templates/
@@ -63,7 +64,7 @@ Publishing is a release: a semantic version, a changelog, an integrity digest, a
 
 `headwater taxonomy publish` writes the artifact. It is a directory, because the engine carries no archive format and needs none: whatever moves a directory in the organization moves this one. Beside the manifest it writes a **release record**. The record names every file in the artifact with the digest of its bytes, and it carries one digest over that list. The record does not cover itself, so the digest is over what the artifact holds rather than over the file that states it. So the header of the record is outside the digest. `headwater taxonomy vendor` does not read the package identity from it. It takes the name, the version and the engine range from the manifest, which the digest does cover. It refuses a record whose header disagrees with the manifest.
 
-**Every `contents` path a publisher writes is read.** `taxonomy`, `bundles`, `conformance`, `migrations` and `doctrine` each reach a verb. A key that no verb reads is a claim that a publisher makes and a consumer never sees. That is the defect `requires_engine` refuses from the other side, and `contents.migrations` was it until [the payload](#the-migration-payload) had a reader. A value under `contents` names one path, and the kind of that path is the kind its reader opens. `taxonomy` and `conformance` each name a file, because each one is read as text. `bundles`, `migrations` and `doctrine` each name a directory, because each one is read as a listing. A publish refuses a value of the other kind, and it refuses an empty value before either check. An empty value names the package directory, which no key means. A list or a mapping there is refused, because no verb reads one and the rules that hold a path cannot hold it.
+**Every `contents` path a publisher writes is read.** `taxonomy`, `bundles`, `assemblies`, `conformance`, `migrations` and `doctrine` each reach a verb. A key that no verb reads is a claim that a publisher makes and a consumer never sees. That is the defect `requires_engine` refuses from the other side, and `contents.migrations` was it until [the payload](#the-migration-payload) had a reader. A value under `contents` names one path, and the kind of that path is the kind its reader opens. `taxonomy` and `conformance` each name a file, because each one is read as text. `bundles`, `assemblies`, `migrations` and `doctrine` each name a directory, because each one is read as a listing. A publish refuses a value of the other kind, and it refuses an empty value before either check. An empty value names the package directory, which no key means. A list or a mapping there is refused, because no verb reads one and the rules that hold a path cannot hold it.
 
 **`templates` is the one deliberate exception, and `doctrine` is not one.** `templates` is prose that a publisher ships and a person reads, and no verb opens it as a path. [Spec 3](03-authoring-and-lifecycle.md#templates-and-scaffolding) draws the boundary for what it holds, and [#378](https://github.com/headwater-ai/headwater/issues/378) holds the question of a reader for it. `contents.doctrine` reaches `headwater taxonomy vendor`, which resolves the declared path against the fetched artifact and names where the prose lands ([#81](https://github.com/headwater-ai/headwater/issues/81)). [Q11](09-decisions.md#q11--license-and-distribution-posture) and [the first-contact evaluation](../evaluations/first-contact.md#the-decision--q11) draw the boundary for `doctrine`'s license. That boundary is about the terms of the prose and not about who opens it.
 
@@ -193,15 +194,55 @@ Two rules keep this cheap, and both run on machinery that exists.
 
 **A bundle holds no `override` and no `remove`.** If a bundle needs to change the base, the base declared something that it should not have. Add-only overlays over disjoint addresses commute, so the resolver's static confluence check proves that every subset of bundles resolves. The publisher runs that check once per release, and no adopter can then select a combination that fails.
 
-**A bundle declares its closure, and the publisher checks it at release.** Enabling a bundle is one operation for the adopter, whatever it contains. The dependency list above is data, not documentation.
+**A bundle states its intended closure in `requires`, and [Q40](09-decisions.md#q40--whether-extends-bundle-requires-and-an-overlays-taxonomy-key-are-a-mechanism-or-a-label) rules that key a label today.** The resolver loads only the bundle names in the consumer declaration. Referential integrity refuses a selection that omits content another bundle needs. The label explains the refusal but does not expand the selection.
 
 This is what fixes the size of the base package. A large base forces bundles and profiles to remove, and `remove` carries dependent-key deletion and the most failure modes of the three operations. A minimal base lets every bundle stay add-only. The [first-run walkthrough](../evaluations/default-taxonomy-first-run.md) derives the base from the core on those terms, and it measures what each of five adopters authors and deletes.
 
-### The starter kit is a selection
+### An assembly has two consumption forms
+
+An **assembly** is a named publisher recipe over one package version. It declares a complete bundle selection and may declare one assembly overlay. The overlay holds connections whose meaning spans two or more selected bundles. No selected bundle owns those connections, and the assembly changes none of its bundle sources.
+
+```yaml
+assembly: starter
+package: headwater/starter
+version: 1.0.0
+from:
+  package: headwater/standard@3.4.0
+  bundles: [design-spec, decision-record, standards-spec]
+overlay: overlay.yml
+```
+
+```text
+headwater/standard@3.4.0
+|-- base taxonomy
+|-- bundle: design-spec --------\
+|-- bundle: decision-record -----+--> assembly: starter
+`-- bundle: standards-spec ------/    |-- optional overlay: overlay.yml
+                                      |
+                                      |-- composer: pins standard and selects bundles
+                                      |
+                                      `-- publisher: resolves recipe
+                                          -> headwater/starter (flattened)
+                                          -> batteries-included consumer
+```
+
+An arrow into the assembly identifies a recipe input, not a package dependency. The composer chooses inputs directly. The publisher resolves the assembly, and the flattened package contains that result.
+
+**A composer consumes the recipe inputs.** The consumer pins the source package and lists the bundles it wants. The consumer may take the assembly overlay or write a local overlay instead. This form preserves control over the selected parts and their upgrades.
+
+**A batteries-included consumer takes a flattened package.** The publisher resolves the recipe and emits a complete taxonomy source under the assembly package identity. The package declares no bundle directory, and its consumer selects no bundles. The publisher copies the selected doctrine and templates into namespaced paths in the artifact.
+
+The flattened package is generated output and never an independently authored taxonomy. Its manifest declares `distribution.form: flattened` and records the recipe under `distribution.derived_from`. The record names the source package version, the selected bundles, the assembly overlay, and their digests. These fields state provenance and create no runtime dependency.
+
+The publisher compares the flattened source with a fresh resolution of the recipe. The comparison excludes the package name, package version, and derivation record. Every taxonomy declaration must otherwise have the same canonical text. Publication refuses a difference.
+
+The two forms place upgrades on different owners. A composer can change its selection or advance the source package directly. A flattened consumer waits for a new release from the assembly publisher. Both forms use the same migration and compatibility measurements after publication.
+
+### The starter kit is an assembly
 
 [Spec 0](00-vision-and-scope.md#what-we-build) promises a doctrine starter kit, and [spec 2](02-taxonomy-model.md) refers to a base package. These are two artifacts, and an earlier reading of [Q3](09-decisions.md#q3--how-much-of-the-default-taxonomy-ships-in-the-box) treated them as one. They answer opposite requirements. The base has to be minimal so that bundles stay add-only. The starter kit has to be opinionated so that a new adopter does not face a blank schema.
 
-So `headwater/starter` is the base package, a named bundle selection, and the doctrine prose that explains the selection. Nobody is expected to run the base bare. Everything composes over it.
+`headwater/starter` is the first assembly. Its recipe is a named bundle selection, an assembly overlay, and doctrine that explains the combination. A composer can take the recipe inputs. A batteries-included consumer can take the flattened `headwater/starter` package. Nobody is expected to run the base bare.
 
 ### The interview
 

@@ -24,7 +24,6 @@ fn many(count: usize, singular: &str, plural: &str) -> String {
     }
 }
 
-
 impl Audit {
     pub fn render(&self) -> String {
         let mut out = String::new();

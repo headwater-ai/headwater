@@ -428,16 +428,22 @@ docs/decisions/0002-deliver-at-least-once.md
     shelf `decisions` matched on `docs/decisions/**`
     `decisions` is homogeneous, so placement carries the kind `decision`
   purpose rationale, to explain why a choice was made and what it forecloses
-  summary TODO one sentence: what a reader learns here, which is what routing reads
+  summary TODO one sentence: what a reader learns here, which is what routing
+    reads
   requires the facets status, status_since, summary, last_verified
   requires the sections Context, Decision, Consequences
-  may declare supersedes to governed_document, and the other end writes superseded_by
+  may declare supersedes to governed_document, and the other end writes
+    superseded_by
   may declare governs to code_path
   may declare constrains to decision
   may declare conflicts_with to decision
   may declare traces_to to governed_document, code_path
-  to ACME-DR-0001 supersedes — TODO one sentence: what a reader learns here, which is what routing reads (the target's own summary) [this document governs the reading]
-  from docs/decisions/0001-store-attempts-in-postgres.md superseded_by — TODO one sentence: what a reader learns here, which is what routing reads (the target's own summary) [this document governs the reading]
+  to ACME-DR-0001 supersedes — TODO one sentence: what a reader learns here,
+    which is what routing reads (the target's own summary) [this document
+    governs the reading]
+  from docs/decisions/0001-store-attempts-in-postgres.md superseded_by — TODO
+    one sentence: what a reader learns here, which is what routing reads (the
+    target's own summary) [this document governs the reading]
 ```
 
 **Check.** The first line of that output is the path of the document whose identifier you named.
@@ -456,7 +462,8 @@ route "why do we keep attempts in Postgres"
   distinctive why do we keep attempts in postgres
   purpose behavior 3
   purpose rationale 3
-  docs/decisions/0001-store-attempts-in-postgres.md — TODO one sentence: what a reader learns here, which is what routing reads
+  docs/decisions/0001-store-attempts-in-postgres.md — TODO one sentence: what a
+    reader learns here, which is what routing reads
 ```
 
 **Check.** The last line names `docs/decisions/0001-store-attempts-in-postgres.md`.
