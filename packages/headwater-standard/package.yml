@@ -63,7 +63,7 @@ package: headwater/standard
 # on load and before any comparison a consumer's pin makes, and the refusal
 # names both files and both numbers. Whether a taxonomy source should carry a
 # version at all is a meta-schema question that #212 leaves open.
-version: 3.4.0
+version: 3.5.0
 requires_engine: ">=0.1 <2"
 
 contents:

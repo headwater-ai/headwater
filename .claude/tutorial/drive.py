@@ -310,7 +310,7 @@ def main():
         source = open(path).read()
         assert_true('step 5: the line the tutorial names is in the file',
                     '  version: 0.0.0' in source)
-        open(path, 'w').write(source.replace('  version: 0.0.0', '  version: 3.4.0'))
+        open(path, 'w').write(source.replace('  version: 0.0.0', '  version: 3.5.0'))
         whole("step 5: grep 'version:'",
               run("grep 'version:' .headwater/taxonomy.yml").stdout, 9)
         result = run(blocks[10].strip())

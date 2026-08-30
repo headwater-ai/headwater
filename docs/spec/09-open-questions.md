@@ -186,7 +186,7 @@ relations:
 
 ## Q44 — Whether bundles decompose into capabilities and assemblies compose practices
 
-[HW-DR-0044](../decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md) — Bundles decompose into capabilities after adopter evidence, and assemblies name the practices that compose those capabilities. (asserted, and no human has accepted it)
+[HW-DR-0044](../decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md) — Design-spec's evaluation kind and its two purposes move to a new evidence-and-obligation bundle, so decision-record stops requiring the whole specification tradition.
 
 ## Coloring the CLI, and where the banner goes
 

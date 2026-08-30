@@ -51,6 +51,7 @@ nav:
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
   - "evaluations":
       - "HW-EVAL-adjacent-work": "evaluations/adjacent-work.md"
+      - "HW-EVAL-capability-bundle-address-inventory": "evaluations/capability-bundle-address-inventory.md"
       - "HW-EVAL-default-taxonomy-first-run": "evaluations/default-taxonomy-first-run.md"
       - "HW-EVAL-first-contact": "evaluations/first-contact.md"
       - "HW-EVAL-graph-export-and-federation": "evaluations/graph-export-and-federation.md"

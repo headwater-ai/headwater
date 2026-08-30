@@ -7,36 +7,19 @@
 # at a key that headwater/standard does not declare. doctrine.md states what the
 # tradition is, why each declaration is here, and what this draft assumed where
 # the specification is silent.
+#
+# HW-DR-0044 moved `evaluation`, and the `evidence`/`obligation` purposes it
+# shares with what stayed here, into a new `evidence-and-obligation` entry.
+# `obligation_register`, `review_prompt` and `review_record` stayed: each
+# needs `doc_type` or `sequence`, both of which stay here too, and moving them
+# would have needed a `requires` edge back onto the entry that now requires
+# this one. doctrine.md carries the finding.
 
 bundle: design-spec
 extends: headwater/standard@1.0.0
-requires: []
+requires: [evidence-and-obligation]
 
 add:
-
-  # --- purposes -------------------------------------------------------------
-  # The base declares rationale and behavior. The tradition serves two more
-  # reader intents, and each one has a kind below that serves it.
-
-  purposes.evidence:
-    intent: state what was measured or found, and under which instrument
-    answers:
-      - "what closed this question"
-      - "what did the review find"
-      - "what evidence stands behind this claim"
-
-  purposes.obligation:
-    intent: state what the corpus still owes, and who owes it
-    answers:
-      - "what is missing"
-      - "which claim is unmeasured"
-      - "what waits on whom"
-
-  # --- regimes --------------------------------------------------------------
-  # Evidence documents are time-bound by nature, so they are exempt from the
-  # declarative regime that the base declares (spec 3, Voice).
-
-  regimes.voice.narrative: {}
 
   # --- facets ---------------------------------------------------------------
   # Both facets are required by the kinds that need them rather than globally,
@@ -87,23 +70,9 @@ add:
     facets:
       require: [doc_type, sequence]
 
-  kinds.evaluation:
-    is_a: governed_document
-    purpose: evidence
-    voice: narrative
-    lifecycle: standard
-    facets:
-      forbid: [doc_type]        # its shelf is homogeneous, so placement states the kind
-    relations:
-      expect:
-        - id: evidence-cited
-          relation: cited_by
-          to_kind: decision_register
-          when: {status: current}
-          within: 30d
-          since: state_entered
-          severity: warn
-          rationale: an evaluation that no register cites closed nothing
+  # `evaluation` moved to evidence-and-obligation with HW-DR-0044.
+  # `cites_evidence` below still names it, and this bundle now requires the
+  # entry that owns it.
 
   kinds.review_prompt:
     is_a: governed_document
@@ -168,10 +137,7 @@ add:
     kinds: [design_spec, decision_register, obligation_register]
     layout: "{sequence:02d}-{slug}.md"
 
-  shelves.evaluations:
-    path: docs/evaluations/**
-    homogeneous: true
-    kind: evaluation
+  # `shelves.evaluations` moved to evidence-and-obligation with `evaluation`.
 
   shelves.reviews:
     path: docs/reviews/**
