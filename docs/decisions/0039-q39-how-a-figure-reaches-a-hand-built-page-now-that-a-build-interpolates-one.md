@@ -1,15 +1,16 @@
 ---
 id: HW-DR-0039
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-08-30
 summary: "The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run."
-last_verified: 2026-08-26
+last_verified: 2026-08-30
 title: "Q39 — How a figure reaches a hand-built page, now that a build interpolates one"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: mixed
   drafted_by: claude-opus-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   constrains:

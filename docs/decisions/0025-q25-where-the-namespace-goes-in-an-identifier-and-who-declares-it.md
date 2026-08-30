@@ -1,15 +1,16 @@
 ---
 id: HW-DR-0025
-status: draft
-status_since: 2026-08-15
+status: current
+status_since: 2026-08-30
 summary: The namespace opens every identifier, and a published source declares no namespace at all, because any constant it wrote would be minted by every adopter of it at once.
-last_verified: 2026-08-15
+last_verified: 2026-08-30
 title: "Q25 — Where the namespace goes in an identifier, and who declares it"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-opus-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   governs:

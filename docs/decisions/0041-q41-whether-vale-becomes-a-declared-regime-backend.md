@@ -1,15 +1,16 @@
 ---
 id: HW-DR-0041
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-08-30
 summary: "Vale does not become a declared regime backend, and its findings are not translated into this engine's Finding shape. It stays where spec 00 already puts it, composable alongside, because four structural mismatches answer Q24's reopening condition a second time."
-last_verified: 2026-08-26
+last_verified: 2026-08-30
 title: "Q41 — Whether Vale becomes a declared regime backend"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: mixed
   drafted_by: claude-sonnet-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   traces_to:

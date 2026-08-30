@@ -1,15 +1,16 @@
 ---
 id: HW-DR-0030
-status: draft
-status_since: 2026-08-23
+status: current
+status_since: 2026-08-30
 summary: What an obligation waits on is a state and not a property, and the closed set holds four values. A required `waiting_on` facet on `obligation_record` takes `ruling`, `build`, `measurement` or `adopter`, and the decision-record bundle declares it.
-last_verified: 2026-08-23
+last_verified: 2026-08-30
 title: "Q30 — Whether what an obligation waits on is a state or a property, and how many values it takes"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-opus-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   governs:

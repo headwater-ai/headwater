@@ -1,15 +1,16 @@
 ---
 id: HW-DR-0031
-status: draft
-status_since: 2026-08-23
+status: current
+status_since: 2026-08-30
 summary: This repository becomes public on 2026-09-08. The owner sets the date, and the record stops each run from raising the schedule as an open question.
-last_verified: 2026-08-27
+last_verified: 2026-08-30
 title: "Q31 — Whether this repository becomes public, and when"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: mixed
   drafted_by: claude-opus-5
   activity: draft+revise
+  accepted_by: j.baxter
   evidence_basis: evidenced
 ---
 

@@ -1,15 +1,16 @@
 ---
 id: HW-DR-0028
-status: draft
-status_since: 2026-08-15
+status: current
+status_since: 2026-08-30
 summary: An evaluation is governed prose, and the overlay binds the house language regime to it. The shelf carries 432 advisory findings, and the measurement that explains them is whether a rule was reading the prose when it was written rather than who wrote it.
-last_verified: 2026-08-15
+last_verified: 2026-08-30
 title: "Q28 — Whether an evaluation is governed prose"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-opus-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   governs:
@@ -80,5 +81,3 @@ The first is an evaluation that has to quote at length. 15 findings of the 432 c
 The second is the next evaluation. It lands under this binding. If it still carries findings at the rate of the 15 below it, the third reason above is wrong and the binding only reports. Record 0027 is the same test on the decision shelf and it came back at zero.
 
 **What this record does not settle.** Whether an agent may write the acceptance stamp of a document it drafted is [HW-OBL-0108](../obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md). Whether `warrant: proposed` is a value of that facet at all is [HW-OBL-0125](../obligations/0125-nine-documents-state-a-warrant-the-closed-set-does-not-hold-and-no-check-reads-one.md). The grain of an adoption pair is a defect of the debt mechanism rather than of this ruling. It is filed rather than repaired here.
-
-**This record is checked prose and unaccepted prose.** Every lexical rule of this repository read it, and no human has.

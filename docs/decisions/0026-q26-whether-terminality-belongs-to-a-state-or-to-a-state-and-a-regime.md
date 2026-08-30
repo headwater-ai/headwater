@@ -1,15 +1,16 @@
 ---
 id: HW-DR-0026
-status: draft
-status_since: 2026-08-15
+status: current
+status_since: 2026-08-30
 summary: Terminality stays a property of a state alone, because the per-regime reading is available at both call sites and costs the deferral that keeps one defect one finding. No published tradition wants the collision, and two that met it minted a second state name.
-last_verified: 2026-08-15
+last_verified: 2026-08-30
 title: "Q26 — Whether terminality belongs to a state, or to a state and a regime"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: agent
   drafted_by: claude-opus-5
   activity: measure+draft
+  accepted_by: j.baxter
   evidence_basis: evidenced
 relations:
   governs:

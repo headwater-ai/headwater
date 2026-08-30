@@ -1,15 +1,16 @@
 ---
 id: HW-DR-0032
-status: draft
-status_since: 2026-08-23
+status: current
+status_since: 2026-08-30
 summary: The `self-audit` label states the reader test and not the provenance test. How a finding was found is not the test, and the only question is whether a reader outside this repository is better off.
-last_verified: 2026-08-23
+last_verified: 2026-08-30
 title: "Q32 — Which test the self-audit label states"
 provenance:
-  warrant: asserted
+  warrant: accepted
   agency: mixed
   drafted_by: claude-opus-5
   activity: draft+revise
+  accepted_by: j.baxter
   evidence_basis: evidenced
 ---
 
