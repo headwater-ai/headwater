@@ -573,7 +573,10 @@ impl Ledger {
                     );
                 }
             }
-            out.push_str(&crate::fill::filled(&format!("    {}", task.statement), crate::fill::WIDTH));
+            out.push_str(&crate::fill::filled(
+                &format!("    {}", task.statement),
+                crate::fill::WIDTH,
+            ));
         }
         for refused in &self.refused {
             out.push_str(&crate::fill::filled(
