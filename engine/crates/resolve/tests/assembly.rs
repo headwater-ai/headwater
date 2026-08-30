@@ -42,6 +42,46 @@ contents:
   assemblies: assemblies
 ";
 
+const TAXONOMY: &str = "\
+taxonomy: acme/fixture
+version: 1.0.0
+purposes:
+  behavior: {intent: state what the system does}
+kinds:
+  governed_document: {abstract: true}
+  specification: {is_a: governed_document, purpose: behavior}
+core:
+  requires:
+    - purpose: behavior
+";
+
+const ALPHA: &str = "\
+bundle: alpha
+extends: acme/fixture@1.0.0
+requires: []
+add:
+  kinds.alpha: {is_a: governed_document, purpose: behavior}
+";
+
+const BETA: &str = "\
+bundle: beta
+extends: acme/fixture@1.0.0
+requires: []
+add:
+  kinds.beta: {is_a: governed_document, purpose: behavior}
+";
+
+const GLUE: &str = "\
+add:
+  relations.connects:
+    family: derivation
+    from: [alpha]
+    to: [beta]
+    inverse: connected_by
+    reciprocal: required
+    created_by: scaffold
+";
+
 const ASSEMBLY: &str = "\
 assembly: starter
 package: acme/starter
@@ -54,21 +94,82 @@ overlay: overlay.yml
 
 fn publisher(scratch: &Scratch) {
     scratch.write("packages/acme-fixture/package.yml", PACKAGE);
-    scratch.write(
-        "packages/acme-fixture/bundles/alpha/bundle.yml",
-        "overlay: acme/fixture\n",
-    );
-    scratch.write(
-        "packages/acme-fixture/bundles/beta/bundle.yml",
-        "overlay: acme/fixture\n",
-    );
+    scratch.write("packages/acme-fixture/taxonomy.yml", TAXONOMY);
+    scratch.write("packages/acme-fixture/bundles/alpha/bundle.yml", ALPHA);
+    scratch.write("packages/acme-fixture/bundles/beta/bundle.yml", BETA);
     scratch.write(
         "packages/acme-fixture/assemblies/starter/assembly.yml",
         ASSEMBLY,
     );
+    scratch.write("packages/acme-fixture/assemblies/starter/overlay.yml", GLUE);
+}
+
+#[test]
+fn an_assembly_resolves_the_base_bundles_then_its_glue_relation() {
+    let scratch = Scratch::new("resolve");
+    publisher(&scratch);
+    let directory = scratch.package();
+    let manifest = package::manifest_at(&directory).expect("the manifest reads");
+    let recipe =
+        assembly::read(&scratch.0, &directory, &manifest, "starter").expect("the recipe reads");
+
+    let sources = assembly::sources(&scratch.0, &directory, &manifest, &recipe)
+        .expect("the selected sources read");
+    assert_eq!(sources.len(), 3);
+    assert!(sources[0].name.ends_with("taxonomy.yml"));
+    assert!(sources[1].name.ends_with("bundles/alpha/bundle.yml"));
+    assert!(sources[2].name.ends_with("bundles/beta/bundle.yml"));
+
+    let resolved = assembly::resolve(&scratch.0, &directory, &manifest, &recipe)
+        .expect("the assembly resolves");
+    assert_eq!(resolved.sources.len(), 4);
+    assert!(resolved.sources[3].ends_with("assemblies/starter/overlay.yml"));
+    assert!(resolved.taxonomy.get("relations").is_some());
+}
+
+#[test]
+fn an_assembly_overlay_cannot_restate_a_source_declaration() {
+    let scratch = Scratch::new("restate");
+    publisher(&scratch);
     scratch.write(
         "packages/acme-fixture/assemblies/starter/overlay.yml",
-        "overlay: acme/fixture\n",
+        "add:\n  purposes.behavior: {intent: a second statement}\n",
+    );
+    let directory = scratch.package();
+    let manifest = package::manifest_at(&directory).expect("the manifest reads");
+    let recipe =
+        assembly::read(&scratch.0, &directory, &manifest, "starter").expect("the recipe reads");
+
+    let refused = assembly::resolve(&scratch.0, &directory, &manifest, &recipe)
+        .expect_err("the restatement is refused");
+    assert!(
+        refused[0].to_string().contains("cannot restate"),
+        "the refusal does not name the assembly boundary: {}",
+        refused[0]
+    );
+}
+
+#[test]
+fn an_assembly_relation_must_connect_two_selected_bundle_owners() {
+    let scratch = Scratch::new("one-owner");
+    publisher(&scratch);
+    scratch.write(
+        "packages/acme-fixture/assemblies/starter/overlay.yml",
+        GLUE.replace("to: [beta]", "to: [alpha]").as_str(),
+    );
+    let directory = scratch.package();
+    let manifest = package::manifest_at(&directory).expect("the manifest reads");
+    let recipe =
+        assembly::read(&scratch.0, &directory, &manifest, "starter").expect("the recipe reads");
+
+    let refused = assembly::resolve(&scratch.0, &directory, &manifest, &recipe)
+        .expect_err("the one-bundle relation is refused");
+    assert!(
+        refused[0]
+            .to_string()
+            .contains("at least two selected bundles"),
+        "the refusal does not name the required connection: {}",
+        refused[0]
     );
 }
 

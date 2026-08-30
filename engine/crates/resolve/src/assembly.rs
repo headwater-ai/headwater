@@ -2,14 +2,18 @@
 //! Named selections of one package's bundles.
 //!
 //! An assembly is authored beside the package that owns its base taxonomy and
-//! bundles. This module reads its recipe only. It does not resolve the selected
-//! sources or write a flattened package; those operations take this typed value
-//! as their input.
+//! bundles. This module reads its recipe and resolves that explicit selection.
+//! It does not write a flattened package; publication takes the resulting
+//! resolution as its input.
 
 use crate::error::{ResolveError, ResolveErrorKind};
+use crate::operation::{self, OpKind, Operation};
 use crate::package::{self, ASSEMBLIES, BUNDLES};
-use headwater_yaml::{Mapping, Span};
-use std::collections::BTreeSet;
+use crate::source::{Role, Source};
+use crate::Resolution;
+use headwater_meta::MetaSchema;
+use headwater_yaml::{Mapping, Span, Value};
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Component, Path, PathBuf};
 
 /// The name of the recipe file in one assembly directory.
@@ -124,6 +128,195 @@ pub fn read(
         overlay,
         at,
     })
+}
+
+/// Resolve one assembly's base, explicit bundle selection, and optional glue.
+///
+/// The recipe reader has already held the package pin and bundle names. This
+/// function turns that typed declaration into the same source order a consumer
+/// receives: the base taxonomy, each selected bundle in recipe order, then the
+/// assembly overlay. An assembly overlay is deliberately narrower than an
+/// adopter overlay. It may add relations between kinds that distinct selected
+/// bundles declare, but it cannot redefine package content.
+pub fn resolve(
+    root: &Path,
+    directory: &Path,
+    manifest: &Mapping,
+    recipe: &Assembly,
+) -> Result<Resolution, Vec<ResolveError>> {
+    let mut sources = sources(root, directory, manifest, recipe)?;
+    let without_glue = crate::resolve(&sources)?;
+
+    let Some(path) = &recipe.overlay else {
+        return Ok(without_glue);
+    };
+    let name = display(root, path);
+    let glue = Source::read(path, &name, Role::Overlay)?;
+    validate_glue(&sources, &without_glue, &glue)?;
+    sources.push(glue);
+    crate::resolve(&sources)
+}
+
+/// Read the base taxonomy and the recipe's explicitly named bundles.
+///
+/// This does not append the optional assembly overlay, because a caller that
+/// needs the source list can inspect the package-owned selection before the
+/// glue-specific rule admits its overlay.
+pub fn sources(
+    root: &Path,
+    directory: &Path,
+    manifest: &Mapping,
+    recipe: &Assembly,
+) -> Result<Vec<Source>, Vec<ResolveError>> {
+    let consumer = package::Consumer {
+        package: recipe.from.package.clone(),
+        version: recipe.from.version.clone(),
+        bundles: recipe.from.bundles.clone(),
+        digest: None,
+        overlay: None,
+        corpus_root: String::new(),
+        exclusions: Vec::new(),
+    };
+    package::sources_at(root, directory, manifest, &consumer)
+}
+
+fn validate_glue(
+    sources: &[Source],
+    resolved: &Resolution,
+    glue: &Source,
+) -> Result<(), Vec<ResolveError>> {
+    let schema = MetaSchema::shipped().map_err(|error| {
+        refusal(
+            &glue.name,
+            &format!("cannot load the shipped meta-schema: {error}"),
+        )
+    })?;
+    let invalid = glue.validate(&schema);
+    if !invalid.is_empty() {
+        return Err(invalid);
+    }
+    let glue_index = sources.len();
+    let operations = operation::read(glue_index, &glue.name, &glue.root)?;
+    if operations.is_empty() {
+        return Err(refusal(
+            &glue.name,
+            "an assembly overlay adds a relation between selected bundles; an empty overlay is not glue",
+        ));
+    }
+
+    let owned = source_leaves(sources, resolved);
+    let kinds = bundle_kinds(resolved);
+    let mut errors = Vec::new();
+    for operation in &operations {
+        if restates(operation, &owned) {
+            errors.extend(refusal_at(
+                glue,
+                operation,
+                "an assembly overlay cannot restate a declaration the source package or a selected bundle owns",
+            ));
+            continue;
+        }
+        if !is_cross_bundle_relation(operation, &kinds) {
+            errors.extend(refusal_at(
+                glue,
+                operation,
+                "an assembly overlay adds only a relation whose `from` and `to` kinds come from at least two selected bundles",
+            ));
+        }
+    }
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(errors)
+    }
+}
+
+fn source_leaves(sources: &[Source], resolved: &Resolution) -> Vec<Vec<String>> {
+    let mut out = Vec::new();
+    leaves(&sources[0].root.value, &mut Vec::new(), &mut out);
+    for operation in &resolved.operations {
+        out.extend(operation.writes());
+    }
+    out
+}
+
+fn leaves(value: &Value, prefix: &mut Vec<String>, out: &mut Vec<Vec<String>>) {
+    match value {
+        Value::Map(map) if !map.is_empty() => {
+            for entry in map {
+                prefix.push(entry.key.value.clone());
+                leaves(&entry.value.value, prefix, out);
+                prefix.pop();
+            }
+        }
+        _ => out.push(prefix.clone()),
+    }
+}
+
+fn restates(operation: &Operation, owned: &[Vec<String>]) -> bool {
+    operation.writes().iter().any(|written| {
+        owned
+            .iter()
+            .any(|declared| written.starts_with(declared) || declared.starts_with(written))
+    })
+}
+
+fn bundle_kinds(resolved: &Resolution) -> BTreeMap<String, usize> {
+    resolved
+        .operations
+        .iter()
+        .filter(|operation| operation.source > 0 && operation.kind == OpKind::Add)
+        .filter_map(|operation| {
+            let segments = operation.address.segments();
+            (segments.len() == 2 && segments[0] == "kinds")
+                .then(|| (segments[1].clone(), operation.source))
+        })
+        .collect()
+}
+
+fn is_cross_bundle_relation(operation: &Operation, kinds: &BTreeMap<String, usize>) -> bool {
+    let segments = operation.address.segments();
+    if operation.kind != OpKind::Add || segments.len() != 2 || segments[0] != "relations" {
+        return false;
+    }
+    let Some(value) = &operation.value else {
+        return false;
+    };
+    let Some(map) = value.value.as_map() else {
+        return false;
+    };
+    let mut owners = BTreeSet::new();
+    for key in ["from", "to"] {
+        let Some(values) = map.get(key).and_then(|node| node.value.as_seq()) else {
+            return false;
+        };
+        for value in values {
+            let Some(kind) = value.value.as_scalar() else {
+                return false;
+            };
+            let Some(owner) = kinds.get(&kind.text) else {
+                return false;
+            };
+            owners.insert(*owner);
+        }
+    }
+    owners.len() >= 2
+}
+
+fn refusal_at(glue: &Source, operation: &Operation, message: &str) -> Vec<ResolveError> {
+    vec![ResolveError::new(
+        ResolveErrorKind::SourceRefused(message.to_string()),
+        &glue.name,
+        &operation.at(),
+        operation.span,
+    )]
+}
+
+fn display(root: &Path, path: &Path) -> String {
+    path.strip_prefix(root)
+        .unwrap_or(path)
+        .display()
+        .to_string()
 }
 
 fn declared_directory(
