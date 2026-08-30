@@ -534,8 +534,7 @@ fn flat(text: &str) -> String {
 /// of those promises rather than growing a line onto it.
 #[test]
 fn the_root_screen_alone_carries_the_masthead() {
-    let version =
-        String::from_utf8(ran(&["--version"], None).out).expect("the version is text");
+    let version = String::from_utf8(ran(&["--version"], None).out).expect("the version is text");
     let version = version.trim();
 
     let root = String::from_utf8(ran(&["--help"], None).out).expect("the help is text");
@@ -558,11 +557,16 @@ fn the_root_screen_alone_carries_the_masthead() {
     assert!(usage_at > 1, "the rule sits above Usage:");
 
     let help = String::from_utf8(ran(&["help"], None).out).expect("the help is text");
-    assert_eq!(root, help, "`headwater help` and `headwater --help` still agree");
+    assert_eq!(
+        root, help,
+        "`headwater help` and `headwater --help` still agree"
+    );
 
     let verb = String::from_utf8(ran(&["check", "--help"], None).out).expect("the help is text");
     assert!(
-        !verb.lines().any(|line| !line.is_empty() && line.chars().all(|c| c == '─')),
+        !verb
+            .lines()
+            .any(|line| !line.is_empty() && line.chars().all(|c| c == '─')),
         "a verb's own page carries no rule, and so no masthead"
     );
 
@@ -582,7 +586,9 @@ fn the_root_screen_alone_carries_the_masthead() {
         "the refusal keeps its wording, not {bare_err:?}"
     );
     assert!(
-        !bare_err.lines().any(|line| !line.is_empty() && line.chars().all(|c| c == '─')),
+        !bare_err
+            .lines()
+            .any(|line| !line.is_empty() && line.chars().all(|c| c == '─')),
         "the refusal carries no masthead"
     );
 }
@@ -591,8 +597,7 @@ fn the_root_screen_alone_carries_the_masthead() {
 /// masthead back to today's plain name line, and both are accepted (and
 /// inert) on a verb's own page, the posture `--no-color` already set.
 #[test]
-fn no_banner_and_its_environment_variable_suppress_the_masthead_and_both_are_accepted_everywhere()
-{
+fn no_banner_and_its_environment_variable_suppress_the_masthead_and_both_are_accepted_everywhere() {
     struct Case(
         &'static str,
         &'static [(&'static str, &'static str)],
@@ -621,7 +626,8 @@ fn no_banner_and_its_environment_variable_suppress_the_masthead_and_both_are_acc
         assert_eq!(output.status.code(), Some(0), "{label} exits 0");
         let out = String::from_utf8(output.stdout).expect("the help is text");
         assert!(
-            !out.lines().any(|line| !line.is_empty() && line.chars().all(|c| c == '─')),
+            !out.lines()
+                .any(|line| !line.is_empty() && line.chars().all(|c| c == '─')),
             "{label} suppresses the masthead's rule"
         );
         assert_eq!(
@@ -633,7 +639,10 @@ fn no_banner_and_its_environment_variable_suppress_the_masthead_and_both_are_acc
 
     let deep = ran(&["check", "--no-banner", "--help"], None);
     assert_eq!(deep.code, Some(0), "--no-banner is accepted on a verb page");
-    assert!(deep.err.is_empty(), "and it is silent there, same as --no-color");
+    assert!(
+        deep.err.is_empty(),
+        "and it is silent there, same as --no-color"
+    );
 }
 
 /// **HW-DR-0045.** `--no-color`'s own text states the new behavior on both
@@ -651,7 +660,8 @@ fn no_color_s_own_text_states_the_new_behavior_and_no_banner_has_an_entry() {
         "--no-banner has a summary line on the root screen, not just in:\n{root}"
     );
 
-    let verb = flat(&String::from_utf8(ran(&["check", "--help"], None).out).expect("the help is text"));
+    let verb =
+        flat(&String::from_utf8(ran(&["check", "--help"], None).out).expect("the help is text"));
     assert!(
         verb.contains("senses whether each stream is a terminal"),
         "--no-color's full description states the new default, not:\n{verb}"

@@ -366,9 +366,10 @@ pub fn wants_root_help() -> bool {
         if one == "-h" || one == "--help" {
             has_help = true;
         }
-        if one.to_str().is_some_and(|text| {
-            headwater_verbs::VERBS.iter().any(|verb| verb.name == text)
-        }) {
+        if one
+            .to_str()
+            .is_some_and(|text| headwater_verbs::VERBS.iter().any(|verb| verb.name == text))
+        {
             has_verb = true;
         }
     }
@@ -404,8 +405,16 @@ mod tests {
     fn color_is_plain_off_a_terminal_and_ansi_on_one_unless_overridden() {
         assert_eq!(color_of(false, false, false), ColorMode::Plain);
         assert_eq!(color_of(false, false, true), ColorMode::Ansi);
-        assert_eq!(color_of(true, false, true), ColorMode::Plain, "--no-color wins");
-        assert_eq!(color_of(false, true, true), ColorMode::Plain, "NO_COLOR wins");
+        assert_eq!(
+            color_of(true, false, true),
+            ColorMode::Plain,
+            "--no-color wins"
+        );
+        assert_eq!(
+            color_of(false, true, true),
+            ColorMode::Plain,
+            "NO_COLOR wins"
+        );
         assert_eq!(color_of(true, true, false), ColorMode::Plain);
     }
 
