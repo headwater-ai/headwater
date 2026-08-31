@@ -861,7 +861,7 @@ fn the_mechanical_step_writes_and_a_judgment_step_writes_nothing() {
 
     let ran = root.migrate("2.0.0", &["--apply"]);
     assert_eq!(ran.code, Some(0), "{ran:?}");
-    assert!(ran.out.contains("wrote 1 value in 1 file"), "{ran:?}");
+    assert!(ran.out.contains("wrote 1 value in 2 files"), "{ran:?}");
 
     assert!(
         root.read("docs/decisions/0003-the-document-still-being-written.md")
@@ -902,7 +902,7 @@ fn a_run_without_apply_writes_no_document() {
     assert_eq!(ran.code, Some(0), "{ran:?}");
     assert!(
         ran.out
-            .contains("1 value in 1 file would be written. Nothing was: pass `--apply`"),
+            .contains("1 value in 2 files would be written. Nothing was: pass `--apply`"),
         "{ran:?}"
     );
     assert_eq!(
@@ -933,7 +933,7 @@ fn a_document_that_cannot_be_written_leaves_every_other_document_as_it_was() {
     let planned = root.migrate("2.0.0", &[]);
     assert_eq!(planned.code, Some(0), "{planned:?}");
     assert!(
-        planned.out.contains("3 values in 3 files would be written"),
+        planned.out.contains("3 values in 4 files would be written"),
         "{planned:?}"
     );
 
@@ -988,17 +988,69 @@ fn a_kind_the_shelf_carries_is_named_and_no_document_is_written() {
         ),
         "{ran:?}"
     );
-    assert!(ran.out.contains("wrote 0 values in 0 files"), "{ran:?}");
+    assert!(
+        ran.out.contains("wrote 0 values in 1 file"),
+        "no document moved, and the lock still records the migration: {ran:?}"
+    );
     assert_eq!(
         root.read("docs/decisions/0001-the-live-document.md"),
         before
     );
 }
 
-/// The fourth Done-when clause, where a reader of the run will find it.
+/// HW-DR-0046: `--apply` writes `adoption.from` as `{version, digest}` and
+/// `adoption.to` as the target version, read off the pin `.headwater/
+/// taxonomy.yml` still carries at the moment this run reads it.
 #[test]
-fn every_run_states_that_it_does_not_write_the_lock() {
-    let root = Root::new("says-what-the-lock-is-owed");
+fn apply_records_the_migration_state_in_the_lock() {
+    let root = Root::new("records-the-migration-state");
+    let digest = root
+        .read(".headwater/taxonomy.yml")
+        .lines()
+        .find_map(|line| line.trim().strip_prefix("digest: "))
+        .expect("the fixture's consumer declaration pins a digest")
+        .to_string();
+    assert_eq!(root.publish("1.0.0").code, Some(0));
+    root.candidate(Some(&payload()));
+    assert_eq!(root.publish("2.0.0").code, Some(0));
+
+    let ran = root.migrate("2.0.0", &["--apply"]);
+    assert_eq!(ran.code, Some(0), "{ran:?}");
+    assert!(
+        ran.out
+            .contains("the lock records this migration on `--apply`"),
+        "the run states it: {ran:?}"
+    );
+
+    let lock =
+        std::fs::read_to_string(root.at.join(".headwater/taxonomy.lock")).expect("the lock reads");
+    assert!(
+        lock.contains(&format!(
+            "adoption:\n  from:\n    version: 1.0.0\n    digest: \"{digest}\"\n  to: 2.0.0\n"
+        )),
+        "the block states what this run measured: {lock}"
+    );
+}
+
+/// A run with no digest pinned writes every other file and leaves the lock
+/// exactly as it was, rather than writing a `from` this run cannot verify.
+#[test]
+fn apply_with_no_pinned_digest_writes_no_migration_state() {
+    let root = Root::new("no-digest-no-lock-write");
+    let consumer = root.read(".headwater/taxonomy.yml");
+    assert!(
+        consumer.contains("digest: "),
+        "the fixture pins one to start with"
+    );
+    let unpinned = consumer
+        .lines()
+        .filter(|line| !line.trim_start().starts_with("digest: "))
+        .collect::<Vec<_>>()
+        .join("\n")
+        + "\n";
+    std::fs::write(root.at.join(".headwater/taxonomy.yml"), unpinned)
+        .expect("the consumer declaration writes");
+
     assert_eq!(root.publish("1.0.0").code, Some(0));
     root.candidate(Some(&payload()));
     assert_eq!(root.publish("2.0.0").code, Some(0));
@@ -1008,12 +1060,12 @@ fn every_run_states_that_it_does_not_write_the_lock() {
     let ran = root.migrate("2.0.0", &["--apply"]);
     assert_eq!(ran.code, Some(0), "{ran:?}");
     assert!(
-        ran.out.contains("the lock is not written"),
-        "the run states it: {ran:?}"
+        ran.out.contains("pins no digest, so this run cannot write a verifiable `adoption.from`"),
+        "the run states why: {ran:?}"
     );
     assert!(
-        ran.out.contains("whose seam #61 left unstated"),
-        "and states why: {ran:?}"
+        ran.out.contains("wrote 1 value in 1 file"),
+        "every other file is still written: {ran:?}"
     );
     assert_eq!(
         std::fs::read_to_string(root.at.join(".headwater/taxonomy.lock")).expect("the lock reads"),
@@ -1226,7 +1278,7 @@ fn apply_rewrites_the_overlay_address_beside_the_document() {
 
     let ran = root.migrate("2.0.0", &["--apply"]);
     assert_eq!(ran.code, Some(0), "{ran:?}");
-    assert!(ran.out.contains("wrote 2 values in 2 files"), "{ran:?}");
+    assert!(ran.out.contains("wrote 2 values in 3 files"), "{ran:?}");
     assert!(
         ran.out.contains(
             ".headwater/overlay.yml  add.kinds.specification.identifier  becomes \
