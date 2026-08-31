@@ -272,6 +272,23 @@ pub fn write(
     Ok(render(&lock, &canonical))
 }
 
+/// Rewrite a committed lock's `adoption` block, and nothing else about it.
+///
+/// [`write`] is for a caller that just resolved a taxonomy and wants a lock a
+/// digest can vouch for. This is for a caller — `taxonomy migrate` — that
+/// changes nothing about the resolution and only has a new `adoption` block to
+/// carry. It does not re-validate and it does not re-resolve, because the
+/// package a name under `packages/` resolves to can already disagree with
+/// `lock.version` by the time a migration runs — that disagreement is the
+/// ordinary state a migration exists to be run inside of, and re-resolving here
+/// would fetch whichever one currently sits there instead of standing on the
+/// resolution this lock already committed to.
+pub fn rewrite_adoption(lock: &Lock, adoption: Option<&Mapping>) -> String {
+    let mut next = lock.clone();
+    next.adoption = adoption.cloned();
+    render(&next, &lock.canonical())
+}
+
 /// Read a lock, and verify its digest against the taxonomy it carries.
 pub fn read(text: &str) -> Result<Lock, LockError> {
     let root = headwater_yaml::load(text)

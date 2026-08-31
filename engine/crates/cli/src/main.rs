@@ -1395,17 +1395,32 @@ fn artifact(
 /// in which one is. That is the whole guard, and it is worth more than a check
 /// that a task list is non-empty.
 ///
-/// # This run does not write the lock, and that is a decision
+/// # `--apply` writes `adoption.from` and `adoption.to`, and that is a decision
 ///
 /// [Spec 7](../../../../docs/spec/07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)
-/// records the migration state in the lock. Writing it here would put a verb
-/// into `adoption:`, and [#61 left the seam under that block
-/// unstated](../../../../docs/spec/13-open-obligations.md): no document says
-/// whether `taxonomy resolve --check` may pass while the authored half of the
-/// lock is stale. A verb that wrote there would settle that by precedent
-/// instead of by a decision. So the run reports the state it would have
-/// written and writes none of it, and it says so on every run rather than only
-/// in a commit message.
+/// records the migration state in the lock. [#61 left the seam under
+/// `adoption:` unstated](../../../../docs/spec/13-open-obligations.md): no
+/// document said whether `taxonomy resolve --check` may pass while the
+/// authored half of the lock is stale, or whether a part of it that no digest
+/// covers may sit in a reviewed artifact.
+/// [HW-DR-0046](../../../../docs/decisions/0046-migrating-from-version-carries-a-semver-and-a-release-digest-kept-as-separate-fields.md)
+/// answers the second question for this one field: `from` is a semver and the
+/// release digest [`headwater_resolve::package::consumer`] finds still pinned
+/// in `.headwater/taxonomy.yml`, read before this run moves that pin, and `to`
+/// is the version of the artifact this run applies. Both are written through
+/// [`headwater_scaffold::tree::Reserved`], in the same all-or-nothing batch as
+/// the mechanical document and overlay writes below.
+///
+/// A corpus pinned to no digest — one that takes its package from source
+/// rather than through `vendor` — has nothing this run can honestly write as
+/// `from.digest`. This run then writes every other file and says why the lock
+/// is untouched, rather than refusing the whole migration over a field it
+/// cannot verify.
+///
+/// Every other question `adoption:` still has to answer stays where #61 left
+/// it. This run merges `from` and `to` into whatever the block already
+/// declares and carries every other key, `tasks` above all, through
+/// unchanged.
 fn migrate(
     root: &Path,
     fetched: &Path,
@@ -1432,6 +1447,10 @@ fn migrate(
             return ExitCode::FAILURE;
         }
     };
+    // Cloned before `lock` moves into `Bound::of` below. `rewrite_adoption`
+    // needs the committed lock as it stood before this run, the same reason
+    // `infer` reads `loaded.bound.adoption` before it runs a check over it.
+    let committed_lock = lock.clone();
     if record.package != lock.package {
         return fail(&format!(
             "this repository takes `{}` and the artifact publishes `{}`. Two packages are not \
@@ -1663,14 +1682,19 @@ fn migrate(
     }
     println!();
 
-    // --- what the lock is owed, and does not get --------------------------
-    println!(
-        "  the lock is not written. Spec 7 records the migration state in it — {from} to {to}, an \
-         owner, an expiry and the open task set above — and that state lives in `adoption:`, whose \
-         seam #61 left unstated. A verb that wrote there would settle by precedent whether a \
-         reviewed artifact may hold a part no digest verifies. `headwater infer --owner <name> \
-         --write` is the one writer of that block today"
-    );
+    // --- what the lock records, and what it still does not ----------------
+    match &consumer.digest {
+        Some(digest) => println!(
+            "  the lock records this migration on `--apply`: `adoption.from` becomes \
+             {{version: {from}, digest: {digest}}} and `adoption.to` becomes {to} \
+             (HW-DR-0046). The open task set, if any, is carried through unchanged"
+        ),
+        None => println!(
+            "  `.headwater/taxonomy.yml` pins no digest, so this run cannot write a verifiable \
+             `adoption.from` (HW-DR-0046). `taxonomy vendor` pins one; every other file below is \
+             still written on `--apply`"
+        ),
+    }
 
     if !placed.is_empty() {
         println!(
@@ -1724,6 +1748,9 @@ fn migrate(
         }
     }
 
+    // Counted here, ahead of the branch that builds it, so the preview below
+    // and the write further down agree on how many files are in play.
+    let files = written.files.len() + usize::from(consumer.digest.is_some());
     if !applying {
         println!(
             "\n  {} value{} in {} file{} would be written. Nothing was: pass `--apply`",
@@ -1732,13 +1759,53 @@ fn migrate(
                 1 => "",
                 _ => "s",
             },
-            written.files.len(),
-            match written.files.len() {
+            files,
+            match files {
                 1 => "",
                 _ => "s",
             }
         );
         return ExitCode::SUCCESS;
+    }
+
+    // The lock: `adoption.from` and `adoption.to` (HW-DR-0046). Joins the same
+    // reserved set as the document and overlay writes above, so the migration
+    // state and the files it describes land in one write or none of it does.
+    // Absent where `.headwater/taxonomy.yml` pins no digest — this run states
+    // that above and writes every other file regardless.
+    if let Some(digest) = &consumer.digest {
+        let mut state = String::new();
+        state.push_str("from:\n");
+        state.push_str(&format!("  version: {}\n", quoted(&from)));
+        state.push_str(&format!("  digest: {}\n", quoted(digest)));
+        state.push_str(&format!("to: {}\n", quoted(&to)));
+        let fresh = match headwater_yaml::load(&state) {
+            Ok(node) => match node.value.as_map() {
+                Some(map) => map.clone(),
+                None => {
+                    return defect(
+                        "the migration state this run built is not a mapping, which is a defect",
+                    )
+                }
+            },
+            Err(errors) => {
+                return defect(&format!(
+                    "the migration state this run built does not load: {}",
+                    headwater_yaml::error::render(&errors)
+                ))
+            }
+        };
+        let block = migrated(committed_lock.adoption.as_ref(), &fresh);
+        // Not `headwater_resolve::repository(root)`: that resolves
+        // `packages/<name>` fresh, and a migration is run exactly when that
+        // directory can already disagree with what this lock committed to.
+        // `rewrite_adoption` stands on the resolution the lock already carries
+        // and changes only the block this run computed.
+        let text = headwater_lock::rewrite_adoption(&committed_lock, Some(&block));
+        written.files.push(headwater_scaffold::tree::Composed {
+            path: headwater_lock::LOCK.to_string(),
+            text,
+        });
     }
 
     let replaced = written.replaced;
@@ -4919,6 +4986,35 @@ fn merged(
         })
         .collect();
     Ok(headwater_yaml::Mapping::new(entries))
+}
+
+/// The declared block with `from` and `to` set to this run's measured values.
+///
+/// Unlike [`merged`], this never fails: `from` and `to` are set or replaced
+/// unconditionally, this run states what is true now, and it does not need a
+/// declared shape to add to. Every other entry — `tasks` above all — is
+/// carried exactly as it was loaded, so a key this engine does not know about
+/// survives. `from` and `to` are placed first, which is the order [spec
+/// 7](../../../../docs/spec/07-distribution-and-federation.md#between-majors-the-corpus-is-legitimately-between-valid-states)
+/// states them in.
+fn migrated(
+    declared: Option<&headwater_yaml::Mapping>,
+    fresh: &headwater_yaml::Mapping,
+) -> headwater_yaml::Mapping {
+    let mut entries: Vec<headwater_yaml::Entry> = Vec::new();
+    for key in ["from", "to"] {
+        if let Some(entry) = fresh.entry(key) {
+            entries.push(entry.clone());
+        }
+    }
+    if let Some(declared) = declared {
+        for entry in declared.entries() {
+            if entry.key.value != "from" && entry.key.value != "to" {
+                entries.push(entry.clone());
+            }
+        }
+    }
+    headwater_yaml::Mapping::new(entries)
 }
 
 /// `headwater init`: the consumer declaration and the overlay, scaffolded.

@@ -4,7 +4,7 @@ title: "The lock is half generated and half authored, and nothing states the rul
 status: current
 status_since: 2026-08-13
 waiting_on: ruling
-last_verified: 2026-08-21
+last_verified: 2026-08-31
 summary: "The adoption payload is authored and every other line of the lock is derived, and no document says which is which."
 provenance:
   warrant: accepted
@@ -31,3 +31,5 @@ Three questions stand here, and the second one now has a measured answer beside 
 ## Discharge
 
 The engine answers locally. `taxonomy resolve` reads the committed lock and carries the block through, the header comment names the exception, and the digest still covers the resolution alone.
+
+The third question narrowed to one field rather than the whole block. [Issue #78](https://github.com/headwater-ai/headwater/issues/78) needed `adoption.from` to be writable at all. [HW-DR-0046](../decisions/0046-migrating-from-version-carries-a-semver-and-a-release-digest-kept-as-separate-fields.md) rules that it is a semver and a release digest. The two are kept as plain fields, and never as a bare assertion or a hash of the two. That answers what `from` may hold. It does not answer the first two questions here. Whether a payload surviving a rewrite is a rule spec 7 should state stays the owner's. So does whether `resolve --check` may pass while the authored half is stale.

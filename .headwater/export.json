@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 338,
-      "carried": 338,
+      "in the graph": 339,
+      "carried": 339,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 558,
-      "carried": 558,
+      "in the graph": 560,
+      "carried": 560,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1318,6 +1318,34 @@
               "engine/crates/cli/src/main.rs",
               "engine/crates/cli/tests/help.rs",
               "engine/crates/cli/tests/width.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0046-migrating-from-version-carries-a-semver-and-a-release-digest-kept-as-separate-fields.md",
+        "kind": "decision",
+        "id": "HW-DR-0046",
+        "warrant": "accepted",
+        "facets": {
+          "id": "HW-DR-0046",
+          "status": "current",
+          "status_since": "2026-08-31",
+          "summary": "`adoption.from` is a pair, a semver and the release digest that was pinned when the migration began, and never a hash of the two.",
+          "last_verified": "2026-08-31",
+          "title": "Migrating from-version carries a semver and a release digest, kept as separate fields",
+          "provenance": {
+            "warrant": "accepted",
+            "agency": "mixed",
+            "drafted_by": "claude-sonnet-5",
+            "activity": "draft",
+            "accepted_by": "j.baxter",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-OBL-0082",
+              "HW-DR-0012"
             ]
           }
         }
@@ -4569,7 +4597,7 @@
           "status": "current",
           "status_since": "2026-08-13",
           "waiting_on": "ruling",
-          "last_verified": "2026-08-21",
+          "last_verified": "2026-08-31",
           "summary": "The adoption payload is authored and every other line of the lock is derived, and no document says which is which.",
           "provenance": {
             "warrant": "accepted",
@@ -8849,6 +8877,28 @@
           "anchor_kind": "code_path",
           "id": "engine/crates/cli/tests/width.rs",
           "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0046-migrating-from-version-carries-a-semver-and-a-release-digest-kept-as-separate-fields.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-OBL-0082",
+          "path": "docs/obligations/0082-the-lock-is-half-generated-and-half-authored-and-nothing.md",
+          "kind": "obligation_record"
+        }
+      },
+      {
+        "source": "docs/decisions/0046-migrating-from-version-carries-a-semver-and-a-release-digest-kept-as-separate-fields.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0012",
+          "path": "docs/decisions/0012-migration-path-for-an-existing-corpus.md",
+          "kind": "decision"
         }
       },
       {
