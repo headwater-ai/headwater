@@ -837,6 +837,21 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
 ///    run made on the way to it, and it stops climbing at the first directory
 ///    that is not empty.
 ///
+/// **The undo answers a returned error and not a signal.** [`found::Found::unwind`]
+/// runs from the `Err` arm of phase 2's own `match`, so a kill or a lost
+/// machine never reaches it: `out` is left holding whatever `put` had written
+/// at the instant it died, in the common case every artifact file and no
+/// [`release::RECORD`], because that record is the last thing this phase
+/// writes. That is [`vendor`]'s asymmetry with this verb: `vendor` stages
+/// beside its target and renames, so a kill there leaves the target whole or
+/// untouched, never partial. Here a kill leaves `out` partial, and the next
+/// run's [`found::observe`] is what meets it. It reads [`release::at`] and, if
+/// the record is missing or does not parse, says the leftovers are consistent
+/// with a killed publish and safe to delete on that understanding — it cannot
+/// tell that state apart from a directory a person filled with something else,
+/// since neither carries a record, so it reports what it knows rather than
+/// guessing which one this is. See [#355].
+///
 /// **This is [`headwater_scaffold::tree::Reserved`]'s shape and not its code.**
 /// `headwater-scaffold` depends on `headwater-check`, which depends on this
 /// crate, so a dependency the other way is a cycle the compiler refuses. The
@@ -847,6 +862,7 @@ fn find(root: &Path, name: &str) -> Result<(PathBuf, Mapping), Vec<ResolveError>
 /// nearest thing to holding a handle that a writer of new files has.
 ///
 /// [#271]: https://github.com/headwater-ai/headwater/issues/271
+/// [#355]: https://github.com/headwater-ai/headwater/issues/355
 pub fn publish(root: &Path, name: &str, out: &Path) -> Result<Release, Vec<ResolveError>> {
     let (directory, manifest) = find(root, name)?;
     publish_at(root, &directory, &manifest, out)
@@ -1047,6 +1063,7 @@ fn publish_at(
 ///
 /// [#271]: https://github.com/headwater-ai/headwater/issues/271
 mod found {
+    use crate::release::{self, ReleaseError};
     use std::io::ErrorKind;
     use std::path::{Path, PathBuf};
 
@@ -1117,13 +1134,27 @@ mod found {
     /// there, which is a mistake worth reading about, and the alternative is a
     /// failed publish whose undo removes a link that the run did not make and
     /// that nothing in the artifact records.
+    ///
+    /// # What a complete record does and does not tell the next run
+    ///
+    /// [`release::RECORD`] is the last file [`publish`]'s write phase writes —
+    /// its own doc comment states the order — so [`held`] reads it with
+    /// [`release::at`] to split one case out of the refusal. It parses, and
+    /// `out` already holds a publish this run refuses to repeat, which is the
+    /// message this function has always given. It reports [`ReleaseError::Absent`]
+    /// or any other error, and `out` holds no complete record — which is what a
+    /// kill during `put`, or during the write of the record itself, leaves. It
+    /// is not only that: a directory a person filled with something unrelated
+    /// carries no record either, and the two are the same fact on disk. So the
+    /// refusal says what the absence is consistent with rather than what it
+    /// proves, and it still only reports. Nothing here deletes anything, and a
+    /// later run has to be told to by whoever reads the message. See [#355].
+    ///
+    /// [#355]: https://github.com/headwater-ai/headwater/issues/355
     pub(super) fn observe(out: &Path) -> Result<Found, String> {
         match std::fs::read_dir(out) {
             Ok(mut entries) => match entries.next() {
-                Some(_) => Err("the output directory holds files already, and a published \
-                                artifact is every file under its root. Publish into a directory \
-                                that does not exist yet"
-                    .to_string()),
+                Some(_) => Err(held(out)),
                 None => Ok(Found(State::Empty)),
             },
             Err(error) if error.kind() == ErrorKind::NotFound => {
@@ -1140,6 +1171,37 @@ mod found {
                 }
             }
             Err(error) => Err(format!("the output directory cannot be read: {error}")),
+        }
+    }
+
+    /// The refusal for a non-empty `--out`, naming a complete publish already
+    /// there separately from everything else a directory can hold.
+    ///
+    /// See `observe`'s own doc comment for why [`release::at`] is what draws
+    /// that one line, and not a finer one.
+    fn held(out: &Path) -> String {
+        match release::at(out) {
+            Ok(_) => "the output directory holds files already, and a published \
+                      artifact is every file under its root. Publish into a directory \
+                      that does not exist yet"
+                .to_string(),
+            Err(ReleaseError::Absent(_)) => format!(
+                "the output directory holds files but no {record}. A publish writes {record} \
+                 last, so a run killed while writing this artifact would leave exactly this — \
+                 files with no record — and deleting them and publishing again is safe if that \
+                 is what happened. It is also what a directory holding something unrelated looks \
+                 like, so check what is there before deleting it. Publish into a directory that \
+                 does not exist yet",
+                record = release::RECORD,
+            ),
+            Err(error) => format!(
+                "the output directory holds files and its {record} does not read back cleanly: \
+                 {error}. {record} is the last file a publish writes, so a run killed while \
+                 writing it would leave exactly this, and deleting the directory and publishing \
+                 again is safe if that is what happened. Publish into a directory that does not \
+                 exist yet",
+                record = release::RECORD,
+            ),
         }
     }
 
