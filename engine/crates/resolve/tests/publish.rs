@@ -2734,12 +2734,18 @@ fn out_of(scratch: &Scratch) -> PathBuf {
     scratch.path().join("artifact")
 }
 
-/// An `--out` that holds a file is refused, with the message it has always had,
-/// and the file is untouched.
+/// An `--out` that holds a file and no release record is refused, naming what
+/// the absence is consistent with, and the file is untouched.
 ///
 /// The precondition is what makes the undo total, so it is the one thing here
 /// that a fix to the undo must not weaken. A publish into a directory somebody
-/// else is using is refused before anything is read.
+/// else is using is refused before anything is read. [`release::at`] cannot
+/// tell this caller's own file from what a killed publish leaves — neither
+/// carries a record — so the refusal says so rather than picking one. [#355]
+/// is the case that draws the line this test sits beside: a directory that
+/// does carry a record gets the original message back, unconditionally.
+///
+/// [#355]: https://github.com/headwater-ai/headwater/issues/355
 #[test]
 fn an_output_directory_that_holds_a_file_is_refused_and_the_file_survives() {
     let scratch = Scratch::new("occupied-out");
@@ -2751,14 +2757,86 @@ fn an_output_directory_that_holds_a_file_is_refused_and_the_file_survives() {
     let refused = package::publish(&root, "acme/fixture", &out).expect_err("it does not publish");
     let message = headwater_resolve::render_errors(&refused);
     assert!(
-        message.contains("the output directory holds files already"),
-        "the precondition's message moved: {message}"
+        message.contains("no release.yml"),
+        "the refusal no longer names what the directory is missing: {message}"
+    );
+    assert!(
+        message.contains("check what is there before deleting it"),
+        "the refusal no longer holds off from calling this a dead run: {message}"
     );
     assert_eq!(
         std::fs::read_to_string(out.join("theirs.txt")).expect("their file reads"),
         "the caller's own file"
     );
     assert_eq!(walk_files(&out), 1, "the publish wrote beside the file");
+}
+
+/// An `--out` that already holds a complete publish is refused with the
+/// message this precondition has always given, unchanged by [#355]'s split.
+///
+/// A record that reads back is the one state [`held`] answers before looking
+/// any closer: republishing over a complete artifact is refused the same way
+/// regardless of whether its bytes still match the source, because that
+/// question is `taxonomy resolve`'s and not this precondition's.
+///
+/// [#355]: https://github.com/headwater-ai/headwater/issues/355
+#[test]
+fn an_output_directory_that_holds_a_complete_publish_is_refused_with_the_original_message() {
+    let scratch = Scratch::new("already-published");
+    let root = publisher(&scratch, None);
+    let out = scratch.path().join("artifact");
+    package::publish(&root, "acme/fixture", &out).expect("the first publish lands");
+
+    let refused = package::publish(&root, "acme/fixture", &out).expect_err("it does not republish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("the output directory holds files already"),
+        "the precondition's message for a complete publish moved: {message}"
+    );
+    assert!(
+        release::at(&out).is_ok(),
+        "the first publish's record is still there to have been read"
+    );
+}
+
+/// The state a kill during `put` leaves — a partially written `--out` with no
+/// release record — and what the next run says about it, which is [#355]'s
+/// third Done-when clause.
+///
+/// Nothing here sends a signal to a running publish: [`publisher`] already
+/// establishes that phase 2 writes every artifact file before it writes
+/// [`release::RECORD`] last, so this plants the state that lands in directly,
+/// the same way [`publisher_that_fails_inside_the_write`] plants the state a
+/// returned error unwinds from. The two cases are `held`'s two branches.
+///
+/// [#355]: https://github.com/headwater-ai/headwater/issues/355
+#[test]
+fn a_kill_during_the_write_phase_is_reported_as_leftovers_and_not_silently_repaired() {
+    let scratch = Scratch::new("killed-mid-write");
+    let root = publisher(&scratch, None);
+    let out = scratch.path().join("artifact");
+    package::publish(&root, "acme/fixture", &out).expect("a first publish stages the real shape");
+    std::fs::remove_file(out.join(release::RECORD))
+        .expect("dropping the record is what a kill before it was written leaves");
+
+    let refused = package::publish(&root, "acme/fixture", &out).expect_err("it does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("no release.yml"),
+        "the refusal does not name the missing record: {message}"
+    );
+    assert!(
+        message.contains("a run killed while writing this artifact would leave exactly this"),
+        "the refusal does not connect the state to a kill: {message}"
+    );
+    assert!(
+        matches!(release::at(&out), Err(ReleaseError::Absent(_))),
+        "the planted state still has no record for the assertions above to be about"
+    );
+    assert!(
+        out.join("package.yml").exists(),
+        "the kill's own files are untouched"
+    );
 }
 
 /// Every file under a directory, counted.
