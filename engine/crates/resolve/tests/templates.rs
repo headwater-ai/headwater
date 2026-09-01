@@ -401,16 +401,16 @@ fn a_template_that_agrees_with_its_bundle_publishes() {
     );
 }
 
-/// A Markdown file that declares no front matter is prose beside the templates,
-/// and this reader says nothing about it.
+/// A Markdown file that declares no front matter, and whose own stem names no
+/// kind, is prose beside the templates, and this reader says nothing about it.
 ///
 /// Spec 7's own example manifest ships `templates/note.md` and its comment calls
 /// it prose for a publisher's own authors. Every check here reads front matter,
 /// so a file that declares none takes no check away — which is what separates it
 /// from a block that opens and does not parse, where the declarations exist and
-/// nothing can read them. The rule is about the block and not about the name, so
-/// a file whose stem names no kind and a file whose stem names one are both
-/// silent.
+/// nothing can read them. **This silence is scoped to the stem, not just to the
+/// block**: see `a_markdown_file_with_no_front_matter_and_a_known_kind_stem_is_refused_at_publish`
+/// below for the case where the stem does name a kind, which refuses instead.
 #[test]
 fn a_markdown_file_with_no_front_matter_is_not_a_template() {
     let scratch = Scratch::new("prose-beside");
@@ -428,6 +428,64 @@ fn a_markdown_file_with_no_front_matter_is_not_a_template() {
 
     package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
         .expect("prose beside the templates is not a template");
+}
+
+/// A file whose stem names a real kind is a template's own claim to teach it,
+/// and that claim is checkable even with no front-matter block at all.
+///
+/// This is the case verification found this reader silent over: a leading blank
+/// line before an otherwise-valid `---` block makes `headwater-doc` report
+/// `NoFrontMatter`, identically to a file that never had a block, and the naive
+/// rule — skip whenever the parser reports no front matter — cannot tell them
+/// apart. Skipping on stem-blindness there would leave every one of the four
+/// checks silently off for a file a publisher (or an accident) can trigger with
+/// one newline. This case is the bare version, with no block at all; the
+/// leading-blank-line version is the next case below.
+#[test]
+fn a_markdown_file_with_no_front_matter_and_a_known_kind_stem_is_refused_at_publish() {
+    let scratch = Scratch::new("no-front-matter-known-kind");
+    let root = publisher(
+        &scratch,
+        &[(
+            "functional_spec.md",
+            "# functional_spec\n\nNo front matter here at all.\n",
+        )],
+    );
+    let out = scratch.path().join("artifact");
+
+    let message = refused(&root, &out);
+    assert!(
+        message.contains("functional_spec") && message.contains("no front-matter block"),
+        "the refusal does not name the kind and the missing block:\n{message}"
+    );
+}
+
+/// The exact bypass verification measured: a leading blank line hides a
+/// perfectly normal front-matter block from the parser, and the file underneath
+/// carries the same defect this reader exists to catch.
+///
+/// Before this fix, `headwater-doc` reported `NoFrontMatter` for this file
+/// (identical to a file with no block at all), the reader skipped it on stem
+/// alone, and `taxonomy publish` exited 0 with the bad template inside the
+/// artifact. This case is the regression guard: it must refuse, and it must
+/// refuse for the missing-block reason rather than silently disappearing again.
+#[test]
+fn a_leading_blank_line_does_not_hide_a_template_from_the_reader() {
+    let scratch = Scratch::new("leading-blank-line");
+    let root = publisher(
+        &scratch,
+        &[(
+            "technical_spec.md",
+            "\n---\nstatus: draft\nspec_layer: functional_spec\n---\n\n# x\n",
+        )],
+    );
+    let out = scratch.path().join("artifact");
+
+    let message = refused(&root, &out);
+    assert!(
+        message.contains("technical_spec") && message.contains("no front-matter block"),
+        "the leading blank line hid the template again:\n{message}"
+    );
 }
 
 /// A front-matter block that opens and never closes is refused, and it is the
@@ -498,6 +556,10 @@ fn every_refusal_branch_has_a_case() {
         (
             "standard.md",
             "---\nstatus: draft\nspec_layer: technical_spec\n---\n\n# x\n",
+        ),
+        (
+            "functional_spec.md",
+            "# functional_spec\n\nNo front matter here at all.\n",
         ),
     ] {
         let root = publisher(&scratch, &[(name, body)]);

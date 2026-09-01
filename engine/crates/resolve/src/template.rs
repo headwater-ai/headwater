@@ -58,12 +58,19 @@
 //! that does not parse and the reader reports a pass. A validator with a
 //! documented bypass is worse than no validator.
 //!
-//! **A Markdown file that declares no front matter at all is not a template.**
-//! It is prose beside the templates, which spec 7's own example manifest ships
-//! under this very key, and every check above reads front matter, so skipping it
-//! takes no check away. That is the whole of the difference from the paragraph
-//! before it: a block that opens and does not parse holds declarations nothing
-//! can read, and a file with no block holds none.
+//! **A Markdown file that declares no front matter at all is not a template —
+//! unless its own stem states a kind this package declares.** A file whose
+//! stem names no kind (spec 7's own example manifest ships `templates/note.md`
+//! as prose beside the templates, under this very key) is skipped: every check
+//! above reads front matter, so skipping it takes no check away. But a stem
+//! that names a kind is a template's own claim to teach it, and this reader
+//! cannot tell "deliberately no front matter" apart from "a block exists and
+//! the parser failed to see it" — a leading blank line is exactly that case,
+//! and it is publisher-controllable. So a kind-named stem with no readable
+//! block is refused, on the same ground as the paragraph before it: the
+//! difference between a block that opens and does not parse and a block this
+//! reader cannot find at all is not one this reader can see, and neither may
+//! be a bypass.
 
 use crate::error::ResolveError;
 use headwater_yaml::{Mapping, Value};
@@ -137,6 +144,13 @@ pub enum Reason {
     },
     /// The kind forbids the facet, and the template declares it anyway.
     ForbiddenFacetPresent { facet: String, kind: String },
+    /// The stem names a declared kind, and the file carries no front-matter
+    /// block a parser can find. Unlike a genuine prose file (skipped, see
+    /// `read_one`), a stem that names a kind is a template's own claim to
+    /// teach it, and that claim must be checkable — including when the block
+    /// exists but the parser cannot see it, which is indistinguishable from
+    /// its own perspective and must not be indistinguishable from a refusal.
+    NoFrontMatterForKnownKind { kind: String },
 }
 
 branches![
@@ -147,6 +161,7 @@ branches![
     FacetValueNotPermitted,
     DiscriminatorDisagrees,
     ForbiddenFacetPresent,
+    NoFrontMatterForKnownKind,
 ];
 
 impl std::fmt::Display for Reason {
@@ -214,6 +229,14 @@ impl std::fmt::Display for Reason {
                 "`{facet}` is a facet `kinds.{kind}` forbids, and this template teaches `{kind}`. \
                  A person copies this file to start a document, and the document carries a facet \
                  its own kind refuses"
+            ),
+            Reason::NoFrontMatterForKnownKind { kind } => write!(
+                f,
+                "the file name states the kind a template teaches, `{kind}`, and this file has no \
+                 front-matter block a parser can find — no `---` on its own first line. A template \
+                 with no checkable block is indistinguishable from one this reader never saw, so a \
+                 file named for a real kind is held to it even here: add the block, or rename the \
+                 file so it no longer claims a kind"
             ),
         }
     }
@@ -344,22 +367,43 @@ fn read_one(named: &str, at: &Path, taxonomy: &Mapping, out: &mut Vec<Refused>) 
         }
     };
 
+    let Some(stem) = at.file_stem().and_then(|stem| stem.to_str()) else {
+        return refuse(Reason::Unreadable {
+            why: "its name is not text".to_string(),
+        });
+    };
+
+    let kinds = taxonomy.get("kinds").and_then(|node| node.value.as_map());
+    let named_kind = kinds
+        .and_then(|kinds| kinds.get(stem))
+        .and_then(|node| node.value.as_map());
+
     let document = match headwater_doc::parse(&text) {
         Ok(document) => document,
         // A Markdown file with no `---` block at all is not a document
         // skeleton, so it is not a template and this reader says nothing about
-        // it. Spec 7's own example manifest ships `templates/note.md` as
-        // "prose for a publisher's own authors", and the four checks below all
-        // read front matter, so skipping a file that declares none takes no
-        // check away. A block that opens and does not parse is the opposite
-        // case and stays refused: those declarations exist and nothing can read
-        // them, which is the bypass this reader must not leave open.
+        // it — UNLESS its own stem states a kind this package declares. Spec
+        // 7's own example manifest ships `templates/note.md` as "prose for a
+        // publisher's own authors", and `note` names no kind, so it is skipped
+        // on that ground alone. A file named `technical_spec.md` is a
+        // template's own claim to teach that kind, and this reader cannot
+        // tell "deliberately no front matter" apart from "a block exists and
+        // `headwater-doc` failed to see it" (a leading blank line is exactly
+        // this — the block is real one line down and unreachable from here).
+        // Skipping on stem alone would make that indistinguishable case a
+        // silent pass, which is the bypass a block that opens and does not
+        // parse is already refused for.
         Err(errors)
             if errors
                 .iter()
                 .all(|error| error.reason == headwater_doc::Reason::NoFrontMatter) =>
         {
-            return
+            return match named_kind {
+                None => (),
+                Some(_) => refuse(Reason::NoFrontMatterForKnownKind {
+                    kind: stem.to_string(),
+                }),
+            };
         }
         Err(errors) => {
             return refuse(Reason::Unparseable {
@@ -372,17 +416,7 @@ fn read_one(named: &str, at: &Path, taxonomy: &Mapping, out: &mut Vec<Refused>) 
         }
     };
 
-    let Some(stem) = at.file_stem().and_then(|stem| stem.to_str()) else {
-        return refuse(Reason::Unreadable {
-            why: "its name is not text".to_string(),
-        });
-    };
-
-    let kinds = taxonomy.get("kinds").and_then(|node| node.value.as_map());
-    let Some(declaration) = kinds
-        .and_then(|kinds| kinds.get(stem))
-        .and_then(|node| node.value.as_map())
-    else {
+    let Some(declaration) = named_kind else {
         return refuse(Reason::KindUnknown {
             kind: stem.to_string(),
         });
