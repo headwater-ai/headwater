@@ -1398,17 +1398,23 @@ impl Kind {
 /// - `doctrine` is a directory: [`doctrine_at`] resolves it against the fetched
 ///   artifact inside [`vendor`], and the CLI names the installed path. That
 ///   reader opens a listing and never a file.
+/// - `templates` is a directory: [`crate::template::holds`] globs `*.md` out of
+///   it, and `crate::flatten::assets` walks the same path for an assembly.
 ///
 /// **A key that is not here keeps the existence check and nothing more.** That
 /// is the seam of this table. [`reachable`] still walks the keys the manifest
-/// declares rather than this list, so a key nobody reads yet — spec 7's example
-/// block declares `templates` — is held to being there, and gains a kind on the
-/// day something reads it. Adding a row here is the whole change that takes.
-/// `doctrine` is the row that arrived that way, with its reader beside it.
+/// declares rather than this list, so a key nobody reads yet is held to being
+/// there, and gains a kind on the day something reads it. Adding a row here is
+/// the whole change that takes. `doctrine` is the row that arrived that way, and
+/// `templates` is the second, with
+/// [#378](https://github.com/headwater-ai/headwater/issues/378) as the reader
+/// that took it.
 fn required_kind(key: &str) -> Option<Kind> {
     match key {
         "taxonomy" | "conformance" => Some(Kind::File),
-        BUNDLES | ASSEMBLIES | DOCTRINE | crate::migration::CONTENTS_KEY => Some(Kind::Directory),
+        BUNDLES | ASSEMBLIES | DOCTRINE | TEMPLATES | crate::migration::CONTENTS_KEY => {
+            Some(Kind::Directory)
+        }
         _ => None,
     }
 }
@@ -1803,6 +1809,13 @@ pub const ASSEMBLIES: &str = "assemblies";
 /// and never a path that leaves it, so unlike [`BUNDLES`] there is nothing for
 /// [`publish`] to carry inside and rewrite.
 pub const DOCTRINE: &str = "doctrine";
+
+/// Where a package keeps the document skeletons an adopter copies.
+///
+/// A package-level `templates/` is the shape spec 7's example manifest block
+/// writes. This repository's library keeps one per bundle instead, under
+/// `<bundles>/<name>/templates/`, and [`crate::template::holds`] walks both.
+pub const TEMPLATES: &str = "templates";
 
 /// The `contents.doctrine` node a manifest declares, and nothing where it
 /// declares none.

@@ -27,7 +27,7 @@ The grouped command validates taxonomy sources, resolves the lock, measures sche
 
 `validate` checks taxonomy sources without writing. `resolve` writes the validated `.headwater/taxonomy.lock`, or checks that the committed lock is current with `--check`. `audit` reports schema measurements and remains non-gating. `audit --record` also appends this run's adoption reading to `.headwater/adoption.jsonl`, which is the one write this word performs.
 
-`publish` writes a release artifact and release record. `vendor` reads a fetched artifact into the package area after digest validation. `diff` compares a fetched artifact with the current taxonomy. `migrate` reports migration steps and writes them only with `--apply`.
+`publish` writes a release artifact and release record. Before it writes anything it resolves the base with every bundle the package ships, and it holds every template the package ships against that resolution. It refuses a bundle set that does not resolve, and a template a person could copy into a document that resolves to no kind. `vendor` reads a fetched artifact into the package area after digest validation. `diff` compares a fetched artifact with the current taxonomy. `migrate` reports migration steps and writes them only with `--apply`.
 
 ## Preconditions
 

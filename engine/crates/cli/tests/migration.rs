@@ -219,6 +219,18 @@ impl Root {
             &repository.join("docs/taxonomies"),
             &at.join("docs/taxonomies"),
         );
+        // The scratch package ships no template, and the reason is what every
+        // case below does to it. `taxonomy publish` holds each template a
+        // package ships against the taxonomy that package resolves to
+        // ([#378](https://github.com/headwater-ai/headwater/issues/378)). These
+        // cases rename a lifecycle value or a kind in the base and leave the
+        // templates alone, which is a disagreement the reader is right to
+        // report: a publisher who renames `draft` to `outline` moves the
+        // thirteen templates with it. That is not what any case here measures,
+        // so the copy drops them and the reader has nothing to say. What the
+        // library's own templates are held to is
+        // `resolve/tests/templates.rs::the_library_this_repository_ships_passes_its_own_reader`.
+        without_templates(&at.join("docs/taxonomies"));
         copy(&fixtures().join("docs"), &at.join("docs"));
         for name in ["taxonomy.yml", "overlay.yml"] {
             let to = at.join(".headwater").join(name);
@@ -422,6 +434,18 @@ impl Ran {
             .find_map(|line| line.trim_start().strip_prefix(name))
             .map(|rest| rest.trim().to_string())
             .unwrap_or_else(|| panic!("the report names `{name}`: {self:?}"))
+    }
+}
+
+/// Remove the `templates/` directory of every bundle under a copied library
+/// tree. See the comment at the one call site for why.
+fn without_templates(at: &Path) {
+    for entry in std::fs::read_dir(at).expect("the copied library reads") {
+        let entry = entry.expect("the entry reads");
+        let templates = entry.path().join("templates");
+        if templates.is_dir() {
+            std::fs::remove_dir_all(&templates).expect("the templates directory is removed");
+        }
     }
 }
 

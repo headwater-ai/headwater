@@ -286,7 +286,7 @@ fn files(directory: &Path, manifest: &Mapping) -> Vec<PathBuf> {
     let contents = crate::package::contents_of(manifest);
     let mut out = Vec::new();
 
-    if let Some(declared) = scalar(&contents, "templates") {
+    if let Some(declared) = scalar(&contents, crate::package::TEMPLATES) {
         out.extend(markdown_under(&directory.join(declared)));
     }
 
@@ -302,7 +302,9 @@ fn files(directory: &Path, manifest: &Mapping) -> Vec<PathBuf> {
             .collect();
         bundles.sort();
         for name in bundles {
-            out.extend(markdown_under(&at.join(name).join("templates")));
+            out.extend(markdown_under(
+                &at.join(name).join(crate::package::TEMPLATES),
+            ));
         }
     }
 
