@@ -26,7 +26,7 @@ release:
   package: headwater/standard
   version: 3.5.0
   requires_engine: ">=0.1 <2"
-  digest: sha256:4ae6cd5738f5299cacf6a064fdc3e5dce88b1d4f6ddc09a86aecf31db8fbe03e
+  digest: sha256:e55ceba1cacc3ceb117789bf04d77a0f83da34995b5f4130aa8d6a296cc80398
   members:
     - path: bundles/README.md
       digest: sha256:3b244809dc209c67d00e360b2c91dc67497fa22eb18c11d3b51da9201db10717
@@ -87,7 +87,7 @@ release:
     - path: bundles/design-spec/bundle.yml
       digest: sha256:0eee30500710c12c9aa035d1846ed447120291884ba21abc861f165a93f2669f
     - path: bundles/design-spec/doctrine.md
-      digest: sha256:cd2483d95c195ad1354a03c857cc1d06dd18046eafd3c50ce24a904e5d8a40a4
+      digest: sha256:8655d615c9ab74ea6cbd4ee20ee59b3f5e17945a9a7b8bd23bc31022519506ab
     - path: bundles/design-spec/fixtures/README.md
       digest: sha256:009e327851462f0d3fabaf593398620974800d6ee5e356483014f58e594ecb3d
     - path: bundles/design-spec/fixtures/corpus/docs/evaluations/naming-survey.md
@@ -112,6 +112,22 @@ release:
       digest: sha256:b044504c1cd43c6201154bd1650d06be2d4006fe4ab04b74dea50463ece8e900
     - path: bundles/design-spec/fixtures/corpus/docs/spec/13-obligations.md
       digest: sha256:9609bcd20a4edb2aa7ebf8bed4947ef8c0cf0d211212df74072695136871998a
+    - path: bundles/design-spec/fixtures/n8n/.headwater/overlay.yml
+      digest: sha256:976f9171b28731faeb2e5ffe45710edb9f7bfa2041845991e43d68a5869955a0
+    - path: bundles/design-spec/fixtures/n8n/.headwater/taxonomy.yml
+      digest: sha256:bbd7ded9fdf3d0a9528085097086bb0b376afbc57d55270a858c6a15296a6068
+    - path: bundles/design-spec/fixtures/n8n/LICENSE.md
+      digest: sha256:d2f621f59aa4c10eab79b6333e59d9d3d5b53307dcfd16dbd75e40e679e84965
+    - path: bundles/design-spec/fixtures/n8n/README.md
+      digest: sha256:538ba0ccfe1a5b5e93be369f397f2eb3293cc0cf444642313ec776a16cc3e576
+    - path: bundles/design-spec/fixtures/n8n/corpus/packages/@n8n/expression-runtime/ARCHITECTURE.md
+      digest: sha256:5364510f71013ccc9722f4c36fe62cbf2982a6713584d93cdea72ed36cee566b
+    - path: bundles/design-spec/fixtures/n8n/corpus/packages/@n8n/instance-ai/docs/architecture.md
+      digest: sha256:d5a14db9f5be56a3b47b22631d8a6a3fdac61f377789b70009efb1320f66232f
+    - path: bundles/design-spec/fixtures/n8n/corpus/packages/@n8n/instance-ai/evaluations/ARCHITECTURE.md
+      digest: sha256:3a3c1abcf3c3af937793cddbbe7d5f151a800f2b9dd74d19c6a43323e981b411
+    - path: bundles/design-spec/fixtures/n8n/corpus/packages/@n8n/local-gateway/docs/ARCHITECTURE_CONNECTION_VS_SETTINGS.md
+      digest: sha256:9a2d9c1389872f8d267d806fe6655883fde61a6ca09da750fc98fc4312360107
     - path: bundles/design-spec/templates/decision_register.md
       digest: sha256:7c03d20afbd116798b8d20150efac3a5ca94173f74510421abeb9602aed01e57
     - path: bundles/design-spec/templates/design_spec.md

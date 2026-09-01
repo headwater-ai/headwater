@@ -20,6 +20,10 @@ docs/taxonomies/design-spec/doctrine.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/taxonomies/design-spec/fixtures/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/taxonomies/design-spec/fixtures/n8n/LICENSE.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
+docs/taxonomies/design-spec/fixtures/n8n/README.md
+  1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/taxonomies/diataxis/doctrine.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/taxonomies/diataxis/fixtures/README.md
