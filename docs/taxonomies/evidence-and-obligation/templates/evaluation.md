@@ -1,15 +1,15 @@
 ---
 status: draft
-status_since: {{today}}
-last_verified: {{today}}
-summary: {{the question this evaluation closes, and how it closed}}
+status_since: "{{today}}"
+last_verified: "{{today}}"
+summary: "{{the question this evaluation closes, and how it closed}}"
 provenance:
   warrant: accepted
-  agency: {{human | agent | mixed}}
-  accepted_by: {{a human, always named}}
+  agency: "{{human | agent | mixed}}"
+  accepted_by: "{{a human, always named}}"
   evidence_basis: evidenced
 cited_by:
-  - {{the register entry this closes — the reciprocal half of cites_evidence}}
+  - "{{the register entry this closes — the reciprocal half of cites_evidence}}"
 ---
 
 # {{title}}

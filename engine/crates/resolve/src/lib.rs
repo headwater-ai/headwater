@@ -83,6 +83,7 @@ pub mod release;
 pub mod render;
 pub mod rules;
 pub mod source;
+pub mod template;
 
 pub use error::{render as render_errors, ResolveError, ResolveErrorKind};
 pub use operation::{OpKind, Operation};

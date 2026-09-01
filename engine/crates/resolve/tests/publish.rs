@@ -51,11 +51,27 @@ purposes:
   rationale: {intent: explain why a choice was made and what it forecloses}
 ";
 
+/// The one bundle [`publisher`] ships.
+///
+/// It opened `overlay: acme/fixture` until
+/// [#387](https://github.com/headwater-ai/headwater/issues/387) landed, and
+/// nothing noticed, because no publish resolved a bundle unless a migration
+/// payload happened to reach one. An overlay's root takes `taxonomy`, `bundle`,
+/// `extends` and `requires` beside its operations and `overlay` is not one of
+/// them, so this fixture shipped a source the resolver refuses through fifteen
+/// cases of this file. `publish` now resolves the base with every bundle on
+/// every release, and the header is what that measured.
+///
+/// The operation addresses `purposes.procedure` rather than writing `procedure`
+/// under a nested `purposes`, for the same reason and found the same way. `add`
+/// states a whole value, so the nested spelling addresses `purposes` — which the
+/// base declares — and collides with it.
 const BUNDLE: &str = "\
-overlay: acme/fixture
+bundle: extra
+extends: acme/fixture
 add:
-  purposes:
-    procedure: {intent: state how a task is carried out}
+  purposes.procedure:
+    intent: state how a task is carried out
 ";
 
 /// A publisher whose manifest points its bundles out of the package, the way
@@ -677,9 +693,16 @@ fn a_manifest_whose_package_is_a_yaml_null_does_not_vendor_into_a_directory() {
         "publisher/packages/source/package.yml",
         "package:\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n",
     );
+    // The source states the same name as a quoted scalar rather than as a
+    // second null. `publish` resolves the package on every release since
+    // [#387](https://github.com/headwater-ai/headwater/issues/387), and the
+    // meta-schema types the root `taxonomy` key as a string, so a null there
+    // refuses the publish before `vendor` — which is what this case is about —
+    // ever runs. `agrees` still holds the two declarations to each other,
+    // because a null's source text is the literal `~`.
     scratch.write(
         "publisher/packages/source/taxonomy.yml",
-        &TAXONOMY.replace("taxonomy: acme/fixture", "taxonomy:"),
+        &TAXONOMY.replace("taxonomy: acme/fixture", "taxonomy: \"~\""),
     );
     let root = scratch.path().join("publisher");
     let out = scratch.path().join("artifact");
@@ -2523,46 +2546,36 @@ fn publisher_with_colliding_bundles(scratch: &Scratch, at: &str, payload: bool) 
 /// artifact rather than a limit of the check, and a consumer who selected both
 /// would be the one who found out.
 ///
-/// The second half is the arbitrary part, recorded rather than argued. The same
-/// two bundles publish with exit 0 the moment the payload is taken away, because
-/// nothing else in `publish` resolves a bundle at all.
-/// [#387](https://github.com/headwater-ai/headwater/issues/387) is the work that
-/// ends that, and this case is what changes when it lands.
+/// The second half used to be the arbitrary part, recorded rather than argued:
+/// the same two bundles published with exit 0 the moment the payload was taken
+/// away, because nothing else in `publish` resolved a bundle at all.
+/// [#387](https://github.com/headwater-ai/headwater/issues/387) ended that.
+/// `publish_at` now resolves the shipped set once per release and hands it to
+/// both readers that want one, so the payload decides nothing about whether the
+/// guarantee is proved.
 #[test]
-fn a_bundle_set_that_does_not_resolve_is_refused_where_a_payload_reaches_it() {
+fn a_bundle_set_that_does_not_resolve_is_refused_whether_or_not_a_payload_reaches_it() {
     let scratch = Scratch::new("colliding-bundles");
 
-    let with = publisher_with_colliding_bundles(&scratch, "with", true);
-    let refused = package::publish_from(
-        &with,
-        &with.join("packages/acme-fixture"),
-        &scratch.path().join("artifact-with"),
-    )
-    .expect_err("a bundle set that does not resolve does not publish");
-    let message = headwater_resolve::render_errors(&refused);
-    assert!(
-        message.contains(
-            "the payload is held against this package with every bundle it ships, \
-                          and that set does not resolve:"
-        ),
-        "the refusal does not say which question reached it: {message}"
-    );
-    assert!(
-        message.contains("duplicate"),
-        "the refusal does not name the address the two bundles collide on: {message}"
-    );
-    assert!(
-        !scratch.path().join("artifact-with").exists(),
-        "a refused publish writes no artifact"
-    );
-
-    let without = publisher_with_colliding_bundles(&scratch, "without", false);
-    package::publish_from(
-        &without,
-        &without.join("packages/acme-fixture"),
-        &scratch.path().join("artifact-without"),
-    )
-    .expect("the same two bundles publish where no payload reaches them");
+    for (at, payload) in [("with", true), ("without", false)] {
+        let root = publisher_with_colliding_bundles(&scratch, at, payload);
+        let out = scratch.path().join(format!("artifact-{at}"));
+        let refused = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+            .expect_err("a bundle set that does not resolve does not publish");
+        let message = headwater_resolve::render_errors(&refused);
+        assert!(
+            message.contains(
+                "this package is published with every bundle it ships, and that set does not \
+                 resolve:"
+            ),
+            "the refusal does not say which question reached it: {message}"
+        );
+        assert!(
+            message.contains("duplicate"),
+            "the refusal does not name the address the two bundles collide on: {message}"
+        );
+        assert!(!out.exists(), "a refused publish writes no artifact");
+    }
 }
 
 /// The bundle order the maximal selection is built in decides nothing.
@@ -3736,10 +3749,11 @@ purposes:
     scratch.write(
         &format!("{package_dir}/bundles/extra/bundle.yml"),
         "\
-overlay: acme/headwater-taxonomy
+bundle: extra
+extends: acme/headwater-taxonomy
 add:
-  purposes:
-    procedure: {intent: state how a task is carried out}
+  purposes.procedure:
+    intent: state how a task is carried out
 ",
     );
     scratch.write(

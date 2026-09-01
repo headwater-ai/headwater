@@ -875,7 +875,7 @@ pub fn declares(taxonomy: &Mapping, subject: &Subject, value: &str) -> bool {
 
 /// The value one entry of a `values` list carries, in either spelling: a bare
 /// scalar, or a mapping that carries `value:` beside a role.
-fn named(value: &headwater_yaml::Value) -> Option<&str> {
+pub(crate) fn named(value: &headwater_yaml::Value) -> Option<&str> {
     match value {
         headwater_yaml::Value::Scalar(scalar) => Some(scalar.text.as_str()),
         headwater_yaml::Value::Map(map) => map

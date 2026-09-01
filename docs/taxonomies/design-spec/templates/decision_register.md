@@ -1,14 +1,14 @@
 ---
 status: current
-status_since: {{today}}
-last_verified: {{today}}
-summary: {{what this register holds, and what it refuses}}
+status_since: "{{today}}"
+last_verified: "{{today}}"
+summary: "{{what this register holds, and what it refuses}}"
 doc_type: decision_register
-sequence: {{number in the series}}
+sequence: "{{number in the series}}"
 provenance:
   warrant: accepted
-  agency: {{human | agent | mixed}}
-  accepted_by: {{a human, always named}}
+  agency: "{{human | agent | mixed}}"
+  accepted_by: "{{a human, always named}}"
   evidence_basis: evidenced
 ---
 

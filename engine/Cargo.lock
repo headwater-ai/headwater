@@ -378,6 +378,7 @@ dependencies = [
 name = "headwater-resolve"
 version = "0.1.0"
 dependencies = [
+ "headwater-doc",
  "headwater-hash",
  "headwater-meta",
  "headwater-ref",

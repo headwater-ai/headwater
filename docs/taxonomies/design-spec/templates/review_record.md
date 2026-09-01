@@ -1,17 +1,17 @@
 ---
 status: current
-status_since: {{today}}
-last_verified: {{today}}
-summary: {{what this run of the instrument found}}
+status_since: "{{today}}"
+last_verified: "{{today}}"
+summary: "{{what this run of the instrument found}}"
 doc_type: review_record
 provenance:
   warrant: accepted
-  agency: {{human | agent | mixed}}
-  accepted_by: {{a human, always named}}
+  agency: "{{human | agent | mixed}}"
+  accepted_by: "{{a human, always named}}"
   evidence_basis: evidenced
-applies: {{the review prompt this run applied}}
+applies: "{{the review prompt this run applied}}"
 assesses:
-  - {{each document that this review read}}
+  - "{{each document that this review read}}"
 ---
 
 # {{title}}

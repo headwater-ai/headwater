@@ -241,7 +241,7 @@ fn taxonomy_source(
 }
 
 /// The `contents` block of a manifest, empty where it declares none.
-fn contents_of(manifest: &Mapping) -> Mapping {
+pub(crate) fn contents_of(manifest: &Mapping) -> Mapping {
     manifest
         .get("contents")
         .and_then(|node| node.value.as_map())
@@ -506,6 +506,56 @@ fn shipped(
         out.push(Source::read(&path, &display(root, &path), Role::Overlay)?);
     }
     Ok(out)
+}
+
+/// The base with every bundle the package ships, resolved.
+///
+/// [`shipped`] builds the source list and this resolves it. One resolution per
+/// publish, held by [`publish_at`] and read by both [`crate::template::holds`]
+/// and [`migrations`]. It is what
+/// [#387](https://github.com/headwater-ai/headwater/issues/387) asked for: spec
+/// 7 states the confluence guarantee for every release, so a package whose
+/// bundles collide is refused whether or not it carries a migration payload.
+///
+/// The prefix on a refusal says which question reached it, because the only
+/// failures a maximal selection can take are `NotConfluent` and `AddCollides`
+/// and neither one names the reason it was asked.
+fn maximal_from(
+    root: &Path,
+    directory: &Path,
+    name: &str,
+    contents: &Mapping,
+    base: Source,
+) -> Result<crate::Resolution, Vec<ResolveError>> {
+    crate::resolve(&shipped(root, directory, contents, base)?).map_err(|errors| {
+        let mut out = refusal(
+            name,
+            "this package is published with every bundle it ships, and that set does not resolve:",
+        );
+        out.extend(errors);
+        out
+    })
+}
+
+/// The same resolution, for a caller that holds a package directory and nothing
+/// else.
+///
+/// [`publish_at`] does not use it: that path has already read the taxonomy
+/// source to hold the two version declarations to each other, and reading it a
+/// second time is the shape of the defect [`agrees`] exists for. So the rule has
+/// one implementation, [`maximal_from`], and this wrapper supplies only the
+/// reads a publish had already made.
+pub fn maximal(root: &Path, directory: &Path) -> Result<crate::Resolution, Vec<ResolveError>> {
+    let manifest = manifest_at(directory)?;
+    let contents = contents_of(&manifest);
+    let source = taxonomy_source(root, directory, &contents)?;
+    maximal_from(
+        root,
+        directory,
+        &manifest_name(root, directory),
+        &contents,
+        source,
+    )
 }
 
 /// The adopter's own overlay, read on its own and merged into nothing.
@@ -1018,9 +1068,24 @@ fn publish_at(
     let source = taxonomy_source(root, directory, &contents)?;
     agrees(&declared, manifest, &source)?;
 
+    // The base with every bundle the package ships, resolved once for the whole
+    // publish. [#387](https://github.com/headwater-ai/headwater/issues/387) is
+    // why it is here rather than inside `migrations`: spec 7 states the
+    // confluence guarantee for every release, and resolving the shipped set only
+    // where a migration payload happens to exist made the proof conditional on
+    // something unrelated to it. Two readers take this one resolution — the
+    // template reader below, which needs it on every publish, and the payload
+    // check, which used to build its own.
+    let widest = maximal_from(root, directory, &declared, &contents, source.clone())?;
+
+    // Before `--out` is observed, so a template refusal fires with no output
+    // directory in existence and `found::Found`'s undo is never entangled with
+    // it. Spec 7's "Nothing is written until everything is read" holds unchanged.
+    crate::template::holds(root, directory, manifest, &widest.taxonomy)?;
+
     let found = found::observe(out).map_err(|why| refusal(&display(root, out), &why))?;
 
-    migrations(root, directory, manifest, source)?;
+    migrations(root, directory, manifest, source, &widest)?;
 
     let staged = stage(root, directory, manifest)?;
 
@@ -1674,15 +1739,17 @@ fn put(out: &Path, staged: &[Staged]) -> Result<(), String> {
 /// `crate::migration::holds` argues which half reads which. The adopter overlay
 /// is in neither, because it is not the publisher's at all.
 ///
-/// Both resolutions happen only where a payload exists, so a package that has
-/// published no major version pays nothing for this. That condition is arbitrary
-/// with respect to the confluence guarantee spec 7 states for every release, and
-/// [#387](https://github.com/headwater-ai/headwater/issues/387) is the work that
-/// moves the second resolution out to `publish_at` and lets this one reuse it.
+/// The maximal half is resolved once for the whole publish and handed in, which
+/// is [#387](https://github.com/headwater-ai/headwater/issues/387). It used to
+/// be built here and only where a payload exists, so a package that had
+/// published no major version proved nothing about a guarantee spec 7 states for
+/// every release. The base half stays here, because it is a second source list
+/// rather than a second reading of the same one, and only a payload asks the
+/// question it answers.
 ///
 /// The maximal selection reaches no validate layer, so the only failures it can
 /// take are `NotConfluent` and `AddCollides`. Both are defects of the artifact
-/// under spec 2, and the prefix says which question reached them.
+/// under spec 2, and [`maximal_from`]'s prefix says which question reached them.
 ///
 /// The source is handed in rather than read here. [`publish`] holds the two
 /// version declarations to each other and needs the same file to do it, and two
@@ -1692,6 +1759,7 @@ fn migrations(
     directory: &Path,
     manifest: &Mapping,
     source: Source,
+    widest: &crate::Resolution,
 ) -> Result<(), Vec<ResolveError>> {
     let name = manifest_name(root, directory);
     let payloads = crate::migration::at(directory, manifest)
@@ -1700,18 +1768,7 @@ fn migrations(
         return Ok(());
     }
 
-    let contents = contents_of(manifest);
     let base = crate::resolve(std::slice::from_ref(&source))?;
-    let widest =
-        crate::resolve(&shipped(root, directory, &contents, source)?).map_err(|errors| {
-            let mut out = refusal(
-            &name,
-            "the payload is held against this package with every bundle it ships, and that set \
-             does not resolve:",
-        );
-            out.extend(errors);
-            out
-        })?;
     let scope = crate::migration::Scope {
         base: &base.taxonomy,
         shipped: &widest.taxonomy,
@@ -2756,7 +2813,7 @@ fn manifest_name(root: &Path, directory: &Path) -> String {
 /// The `..` is resolved lexically rather than by the file system, because the
 /// name in a message is for a person and `packages/x/../../docs/y` names a file
 /// that nobody can find in a tree view.
-fn display(root: &Path, path: &Path) -> String {
+pub(crate) fn display(root: &Path, path: &Path) -> String {
     let mut parts: Vec<std::ffi::OsString> = Vec::new();
     for part in path.components() {
         match part {
@@ -2782,12 +2839,21 @@ fn text(map: &Mapping, key: &str) -> Option<String> {
 }
 
 fn refusal(source: &str, message: &str) -> Vec<ResolveError> {
-    vec![ResolveError::new(
+    vec![refusal_at(source, message)]
+}
+
+/// One refusal, for a caller that already holds a list of them.
+///
+/// [`crate::template`] reports every bad template of a package rather than the
+/// first, so it builds its own list and needs one error at a time. Both
+/// spellings make the same value.
+pub(crate) fn refusal_at(source: &str, message: &str) -> ResolveError {
+    ResolveError::new(
         ResolveErrorKind::SourceRefused(message.to_string()),
         source,
         "",
         headwater_yaml::Span::default(),
-    )]
+    )
 }
 
 #[cfg(test)]
