@@ -1,15 +1,15 @@
 ---
 status: draft
-status_since: {{today}}
-last_verified: {{today}}
-summary: {{one sentence, for the index and for routing}}
+status_since: "{{today}}"
+last_verified: "{{today}}"
+summary: "{{one sentence, for the index and for routing}}"
 doc_type: design_spec
-sequence: {{next number in the series}}
+sequence: "{{next number in the series}}"
 provenance:
   warrant: accepted
-  agency: {{human | agent | mixed}}
-  accepted_by: {{a human, always named}}
-  evidence_basis: {{evidenced | reconstructed | unevidenced}}
+  agency: "{{human | agent | mixed}}"
+  accepted_by: "{{a human, always named}}"
+  evidence_basis: "{{evidenced | reconstructed | unevidenced}}"
 ---
 
 # {{sequence}} — {{title}}

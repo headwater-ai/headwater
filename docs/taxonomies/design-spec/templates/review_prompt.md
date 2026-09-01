@@ -1,16 +1,16 @@
 ---
 status: current
-status_since: {{today}}
-last_verified: {{today}}
-summary: {{what this instrument asks a reviewer to do}}
+status_since: "{{today}}"
+last_verified: "{{today}}"
+summary: "{{what this instrument asks a reviewer to do}}"
 doc_type: review_prompt
 provenance:
   warrant: accepted
-  agency: {{human | agent | mixed}}
-  accepted_by: {{a human, always named}}
+  agency: "{{human | agent | mixed}}"
+  accepted_by: "{{a human, always named}}"
   evidence_basis: evidenced
 applied_in:
-  - {{the review record this instrument produced, once it exists}}
+  - "{{the review record this instrument produced, once it exists}}"
 ---
 
 # {{title}}

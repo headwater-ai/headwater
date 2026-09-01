@@ -20,43 +20,6 @@ docs/taxonomies/design-spec/doctrine.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/taxonomies/design-spec/fixtures/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
-docs/taxonomies/design-spec/templates/decision_register.md
-  3:16: a key must be a scalar; nothing can address a key that is not one
-  4:17: a key must be a scalar; nothing can address a key that is not one
-  5:11: a key must be a scalar; nothing can address a key that is not one
-  7:12: a key must be a scalar; nothing can address a key that is not one
-  10:12: a key must be a scalar; nothing can address a key that is not one
-  11:17: a key must be a scalar; nothing can address a key that is not one
-docs/taxonomies/design-spec/templates/design_spec.md
-  3:16: a key must be a scalar; nothing can address a key that is not one
-  4:17: a key must be a scalar; nothing can address a key that is not one
-  5:11: a key must be a scalar; nothing can address a key that is not one
-  7:12: a key must be a scalar; nothing can address a key that is not one
-  10:12: a key must be a scalar; nothing can address a key that is not one
-  11:17: a key must be a scalar; nothing can address a key that is not one
-  12:20: a key must be a scalar; nothing can address a key that is not one
-docs/taxonomies/design-spec/templates/obligation_register.md
-  3:16: a key must be a scalar; nothing can address a key that is not one
-  4:17: a key must be a scalar; nothing can address a key that is not one
-  5:11: a key must be a scalar; nothing can address a key that is not one
-  7:12: a key must be a scalar; nothing can address a key that is not one
-  10:12: a key must be a scalar; nothing can address a key that is not one
-  11:17: a key must be a scalar; nothing can address a key that is not one
-docs/taxonomies/design-spec/templates/review_prompt.md
-  3:16: a key must be a scalar; nothing can address a key that is not one
-  4:17: a key must be a scalar; nothing can address a key that is not one
-  5:11: a key must be a scalar; nothing can address a key that is not one
-  9:12: a key must be a scalar; nothing can address a key that is not one
-  10:17: a key must be a scalar; nothing can address a key that is not one
-  13:6: a key must be a scalar; nothing can address a key that is not one
-docs/taxonomies/design-spec/templates/review_record.md
-  3:16: a key must be a scalar; nothing can address a key that is not one
-  4:17: a key must be a scalar; nothing can address a key that is not one
-  5:11: a key must be a scalar; nothing can address a key that is not one
-  9:12: a key must be a scalar; nothing can address a key that is not one
-  10:17: a key must be a scalar; nothing can address a key that is not one
-  12:11: a key must be a scalar; nothing can address a key that is not one
-  14:6: a key must be a scalar; nothing can address a key that is not one
 docs/taxonomies/diataxis/doctrine.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/taxonomies/diataxis/fixtures/README.md
@@ -65,13 +28,6 @@ docs/taxonomies/evidence-and-obligation/doctrine.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/taxonomies/evidence-and-obligation/fixtures/README.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
-docs/taxonomies/evidence-and-obligation/templates/evaluation.md
-  3:16: a key must be a scalar; nothing can address a key that is not one
-  4:17: a key must be a scalar; nothing can address a key that is not one
-  5:11: a key must be a scalar; nothing can address a key that is not one
-  8:12: a key must be a scalar; nothing can address a key that is not one
-  9:17: a key must be a scalar; nothing can address a key that is not one
-  12:6: a key must be a scalar; nothing can address a key that is not one
 docs/taxonomies/standards-spec/doctrine.md
   1:1: no front matter; a document declares its facets in a `---` block on the first line
 docs/taxonomies/standards-spec/fixtures/README.md

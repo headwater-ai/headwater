@@ -19,6 +19,13 @@ headwater-ref = { path = "../ref" }
 # reach.
 headwater-meta = { path = "../meta" }
 
+# Front matter. A template is a Markdown document with a YAML block at the top,
+# and `taxonomy publish` holds every template a package ships against the
+# taxonomy that package resolves to. It reads that block through the one parser
+# spec 12 names a correctness root, because a second reading of front matter
+# would pass its own tests and admit what the corpus reader refuses.
+headwater-doc = { path = "../doc" }
+
 # The digest of a published package, member by member. One implementation of
 # SHA-256 serves the lock, the census, the check cache and a release record, so
 # a number this crate writes and a number a verifier recomputes cannot come from

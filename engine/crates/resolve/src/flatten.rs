@@ -164,10 +164,12 @@ fn contents(source: &Mapping, recipe: &Assembly, at: &Path) -> Result<Mapping, V
                     && entry.key.value != BUNDLES
                     && entry.key.value != ASSEMBLIES
             })
-            .filter(|entry| entry.key.value != package::DOCTRINE && entry.key.value != "templates")
+            .filter(|entry| {
+                entry.key.value != package::DOCTRINE && entry.key.value != package::TEMPLATES
+            })
             .cloned(),
     );
-    for key in [package::DOCTRINE, "templates"] {
+    for key in [package::DOCTRINE, package::TEMPLATES] {
         if source_contents.get(key).is_some() {
             entries.push(entry(key, scalar(&format!("{key}/{}", recipe.name))));
         }
@@ -224,7 +226,7 @@ fn assets(
         return Ok(Vec::new());
     };
     let mut out = Vec::new();
-    for key in [package::DOCTRINE, "templates"] {
+    for key in [package::DOCTRINE, package::TEMPLATES] {
         let Some(path) = contents
             .get(key)
             .and_then(|node| node.value.as_scalar())

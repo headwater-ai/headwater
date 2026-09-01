@@ -1,14 +1,14 @@
 ---
 status: current
-status_since: {{today}}
-last_verified: {{today}}
-summary: {{what this register owes, in one sentence}}
+status_since: "{{today}}"
+last_verified: "{{today}}"
+summary: "{{what this register owes, in one sentence}}"
 doc_type: obligation_register
-sequence: {{number in the series}}
+sequence: "{{number in the series}}"
 provenance:
   warrant: accepted
-  agency: {{human | agent | mixed}}
-  accepted_by: {{a human, always named}}
+  agency: "{{human | agent | mixed}}"
+  accepted_by: "{{a human, always named}}"
   evidence_basis: evidenced
 ---
 
