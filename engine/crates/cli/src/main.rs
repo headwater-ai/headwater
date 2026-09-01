@@ -2572,6 +2572,25 @@ fn route(root: &Path, task: &str, budget: Option<usize>, json: bool) -> ExitCode
 /// A target that names no document exits non-zero. That is not a finding about
 /// a corpus, it is a question about a document that is not there, and a caller
 /// who mistyped a path needs to know from the exit status.
+///
+/// # A target with no document still classifies
+///
+/// [#319](https://github.com/headwater-ai/headwater/issues/319): the census
+/// only ever answers for a path it walked, so a target with no document behind
+/// it used to get one sentence whether it named a place this corpus owns, a
+/// place it excludes, or nowhere this corpus has ever heard of. `.claude/hooks/write.sh`
+/// asks exactly this question of a path that does not exist yet, and it used
+/// to answer it with a matcher of its own rather than waiting on this verb.
+/// [`Corpus::classify`] is the one matcher now, reached here and by
+/// `.claude/hooks/write.sh` alike, over `Corpus::declared` rebuilt from the
+/// same [`headwater_resolve::package::Consumer`] `load` already read — no
+/// second read of the declaration, because nothing in it is re-read from
+/// disk.
+///
+/// The exit status stays non-zero and `--json` still writes nothing
+/// ([HW-DR-0043](../../../../docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md)):
+/// this remains a refusal, and what changes is only the English sentence a
+/// caller, or a hook, reads on standard error.
 fn explain(root: &Path, target: &str, json: bool) -> ExitCode {
     let loaded = match load(root) {
         Ok(loaded) => loaded,
@@ -2594,13 +2613,47 @@ fn explain(root: &Path, target: &str, json: bool) -> ExitCode {
             ExitCode::SUCCESS
         }
         None => {
+            let corpus = Corpus::declared(
+                root,
+                &loaded.consumer.corpus_root,
+                &loaded.consumer.exclusions,
+            );
             eprintln!(
                 "headwater: {}",
-                err(&format!(
-                    "`{target}` is neither a path of this corpus nor an identifier it carries"
+                err(&classification_text(
+                    target,
+                    &corpus.classify(Path::new(target))
                 ))
             );
             ExitCode::FAILURE
+        }
+    }
+}
+
+/// The sentence [`explain`]'s refusal prints for a target with no document,
+/// one per state of [`headwater_census::walk::Classification`].
+///
+/// A closed match rather than a `Display` on the type itself: the type lives
+/// in `headwater_census`, which states facts about a corpus and states them
+/// to every crate that reads it, and the words a caller reads belong to the
+/// one binary that owns a caller.
+fn classification_text(
+    target: &str,
+    classification: &headwater_census::walk::Classification,
+) -> String {
+    use headwater_census::walk::Classification;
+    match classification {
+        Classification::Corpus => {
+            format!("`{target}` is a path of this corpus, with no document written there yet")
+        }
+        Classification::Excluded(pattern) => {
+            format!("`{target}` is excluded by `{pattern}`, so it is not corpus content")
+        }
+        Classification::Outside => {
+            format!("`{target}` is outside every corpus root this repository declares")
+        }
+        Classification::Unclassifiable => {
+            format!("`{target}` is not a path this repository can classify")
         }
     }
 }

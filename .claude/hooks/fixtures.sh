@@ -130,6 +130,52 @@ expect 'a file that is not Markdown passes' \
     write.sh 0 '' \
     '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"docs/obligations/notes.txt"}}'
 
+printf '\n# write.sh, on PreToolUse: one matcher decides an exclusion\n'
+# #319: this hook used to read `.headwater/corpus.json` and test each
+# exclusion with Python's `fnmatch`. `headwater_meta::pattern::Pattern` is
+# what the census walk matches an existing file against, and nothing compared
+# the two. They agree on the plain `prefix/**` exclusion this repository
+# declares for real, so the drift never showed up here — it takes a
+# mid-pattern `*` to see it: `fnmatch` treats `*` as any run of characters,
+# including `/`, so it would call a path four segments deep excluded.
+# `Pattern` keeps `*` inside one segment, so it does not, and the write is
+# corpus content. This scratch corpus declares exactly that pattern, over
+# this repository's own maintained taxonomy source, so a second matcher
+# reintroduced anywhere on the path from this hook to the walk answers the
+# first case below wrong.
+if [ -x "$engine" ]; then
+    classify_root=$(mktemp -d "${TMPDIR:-/tmp}/headwater-classify-XXXXXX")
+    mkdir -p "$classify_root/packages" "$classify_root/docs" "$classify_root/.headwater" \
+        "$classify_root/engine/target/release"
+    cp -r "$root/taxonomy-source/headwater-standard" "$classify_root/packages/headwater-standard"
+    cp -r "$root/docs/taxonomies" "$classify_root/docs/taxonomies"
+    cp "$root/.headwater/overlay.yml" "$classify_root/.headwater/overlay.yml"
+    awk '{print} /^  exclude:$/{
+        print "    - path: docs/excluded/*.md"
+        print "      reason: a fixture for #319, where a `*` inside one segment and a `*` across `/` disagree."
+    }' "$root/.headwater/taxonomy.yml" > "$classify_root/.headwater/taxonomy.yml"
+    cp "$engine" "$classify_root/engine/target/release/headwater"
+
+    if resolved=$("$classify_root/engine/target/release/headwater" taxonomy resolve --root "$classify_root" 2>&1); then
+        HEADWATER_HOOK_ROOT="$classify_root"
+        export HEADWATER_HOOK_ROOT
+        expect 'a path four segments deep is corpus content under the segment-aware matcher, so the write is refused' \
+            write.sh 0 '"permissionDecision":"deny"' \
+            '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"docs/excluded/sub/dir.md"}}'
+        expect 'a path one segment deep is excluded under either matcher, so the write passes' \
+            write.sh 0 '' \
+            '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"docs/excluded/dir.md"}}'
+        HEADWATER_HOOK_ROOT="$root"
+        export HEADWATER_HOOK_ROOT
+    else
+        printf 'FAIL one matcher decides an exclusion (setup)\n  the scratch corpus did not resolve:\n%s\n' "$resolved"
+        failed=$((failed + 1))
+    fi
+    rm -rf "$classify_root"
+else
+    skip 'write.sh PreToolUse classify cases' 'no built engine'
+fi
+
 printf '\n# write.sh, on PreToolUse: Copilot names the same field `path`\n'
 # Confirmed live: Copilot passes `Write`/`Edit` tool names like Claude Code,
 # but `tool_input.path` rather than `tool_input.file_path`.

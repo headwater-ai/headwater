@@ -1,6 +1,6 @@
-272 nodes, 560 declared edge halves
+272 nodes, 561 declared edge halves
     440 to a document
-    120 to an anchor
+    121 to an anchor
 0 prose links that did not resolve
 
 anchors
@@ -23,6 +23,7 @@ anchors
       1 code_path `engine/README.md` via source-tree
       1 code_path `engine/crates/audit/src/lib.rs` via source-tree
       1 code_path `engine/crates/audit/src/reading.rs` via source-tree
+      1 code_path `engine/crates/census/src/walk.rs` via source-tree
       1 code_path `engine/crates/check/src/dependency.rs` via source-tree
       1 code_path `engine/crates/check/src/gate.rs` via source-tree
       1 code_path `engine/crates/check/src/language.rs` via source-tree
