@@ -1779,22 +1779,21 @@ fn migrate(
         state.push_str(&format!("  version: {}\n", quoted(&from)));
         state.push_str(&format!("  digest: {}\n", quoted(digest)));
         state.push_str(&format!("to: {}\n", quoted(&to)));
-        let fresh = match headwater_yaml::load(&state) {
-            Ok(node) => match node.value.as_map() {
-                Some(map) => map.clone(),
-                None => {
-                    return defect(
+        let fresh =
+            match headwater_yaml::load(&state) {
+                Ok(node) => match node.value.as_map() {
+                    Some(map) => map.clone(),
+                    None => return defect(
                         "the migration state this run built is not a mapping, which is a defect",
-                    )
+                    ),
+                },
+                Err(errors) => {
+                    return defect(&format!(
+                        "the migration state this run built does not load: {}",
+                        headwater_yaml::error::render(&errors)
+                    ))
                 }
-            },
-            Err(errors) => {
-                return defect(&format!(
-                    "the migration state this run built does not load: {}",
-                    headwater_yaml::error::render(&errors)
-                ))
-            }
-        };
+            };
         let block = migrated(committed_lock.adoption.as_ref(), &fresh);
         // Not `headwater_resolve::repository(root)`: that resolves
         // `packages/<name>` fresh, and a migration is run exactly when that
