@@ -123,6 +123,18 @@ Three places where the specification is silent and the draft had to pick. Each o
 
 **No `$`-reference appears in this draft, and that was a small datum for the grammar that was open when it was written.** The sublanguage has three uses: a vocabulary reference, a reference to optional package content, and an overlay address. A bundle that declares its own vocabulary inline and adds at fresh keys needs none of the three. So the first pressure on that grammar comes from an entry that reuses a base vocabulary, not from this one. [Spec 2](../../spec/02-taxonomy-model.md#the--reference-sublanguage) has since defined the sublanguage, and every `add` address in this draft parses under it.
 
+## Worked instances
+
+Criterion 4 asks for at least one real or realistic corpus that the entry types. This entry carries two.
+
+**[Beacon](fixtures/README.md), a realistic corpus.** Documents on the `spec_series` and `reviews` shelves, with planted defects that the fixture README names one by one. Beacon is invented, and four entries of this library share it, so a reader can hold four traditions over one project.
+
+**[n8n](fixtures/n8n/README.md), a real one.** Four architecture documents from `n8n-io/n8n`, pinned at `b0550cb3cb4d1752546a69056c55eccfb9111a12` on `master`, copied with a front-matter block added and every body byte-identical. It is the first corpus this library has met that keeps its governed prose beside the code it governs, one document per package, with no collected documentation root. [HW-EVAL-n8n-worked-example](../../evaluations/n8n-worked-example.md) is the report, and two of its results belong here.
+
+**This entry as it ships types none of that corpus, and the strict run over it exits 0.** The one shelf is `spec_series` at `docs/spec/**`, and no document of a monorepo is under `docs/`. Four real governing documents go untyped, no rule instantiates, and nothing but the census says so. The shelf that reaches them has to be rooted at `packages`, has to fix one path segment out of 27,688 files, and has to be heterogeneous with a single admitted kind. That last one is forced. `design_spec` requires `doc_type`, and a homogeneous shelf refuses a document that restates the kind its placement already states, so the kind cannot sit cleanly on a homogeneous shelf at all.
+
+**`sequence` has no value in a corpus that files one design specification per package.** The facet is required by three kinds of this entry and it means a position in a numbered series. n8n's architecture documents are one per package, and a package is not a position. Every one of the four reports `facet.required.missing`, and no number was invented to stop it. The assumption the entry made is that a design specification belongs to a series, and the first real corpus it met does not.
+
 ## Findings
 
 These go to [13 — Open obligations](../../spec/13-open-obligations.md), on the route that the [library index](../README.md#where-a-finding-goes) fixes. Nothing here reopens a closed decision.

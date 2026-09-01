@@ -1,14 +1,14 @@
-354 files under the corpus root
-    271 typed
+363 files under the corpus root
+    272 typed
       4 generated
       2 untyped
-     75 excluded
+     83 excluded
       2 not a document
       1 typed acceptance_criterion
      46 typed decision
       1 typed decision_register
      13 typed design_spec
-     18 typed evaluation
+     19 typed evaluation
      19 typed interface_contract
     159 typed obligation_record
       1 typed obligation_register
@@ -19,7 +19,7 @@
       1 typed tutorial
 
 exclusions
-     75 `docs/taxonomies/**`
+     83 `docs/taxonomies/**`
         package content. This directory is the canonical taxonomy library, and a taxonomy package that lives inside the corpus it types has no home in the shelf model. Nothing in the base package or in either entry says whether package content is corpus content, and spec 13 records the gap; this repository answers it locally, here, with a reason. A fixture corpus under an entry is package content twice over, because it is a corpus that another root is meant to walk.
 
 docs/LICENSE
@@ -117,6 +117,22 @@ docs/taxonomies/design-spec/fixtures/corpus/docs/spec/04-transport.md
 docs/taxonomies/design-spec/fixtures/corpus/docs/spec/09-decisions.md
   excluded: docs/taxonomies/**
 docs/taxonomies/design-spec/fixtures/corpus/docs/spec/13-obligations.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/n8n/.headwater/overlay.yml
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/n8n/.headwater/taxonomy.yml
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/n8n/LICENSE.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/n8n/README.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/n8n/corpus/packages/@n8n/expression-runtime/ARCHITECTURE.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/n8n/corpus/packages/@n8n/instance-ai/docs/architecture.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/n8n/corpus/packages/@n8n/instance-ai/evaluations/ARCHITECTURE.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/design-spec/fixtures/n8n/corpus/packages/@n8n/local-gateway/docs/ARCHITECTURE_CONNECTION_VS_SETTINGS.md
   excluded: docs/taxonomies/**
 docs/taxonomies/design-spec/templates/decision_register.md
   excluded: docs/taxonomies/**

@@ -59,6 +59,7 @@ nav:
       - "HW-EVAL-language-choice": "evaluations/language-choice.md"
       - "HW-EVAL-language-spike-results": "evaluations/language-spike-results.md"
       - "HW-EVAL-linkml-worked-example": "evaluations/linkml-worked-example.md"
+      - "HW-EVAL-n8n-worked-example": "evaluations/n8n-worked-example.md"
       - "HW-EVAL-owl-skos-worked-example": "evaluations/owl-skos-worked-example.md"
       - "HW-EVAL-relation-storage": "evaluations/relation-storage.md"
       - "HW-EVAL-schema-format-walkthrough": "evaluations/schema-format-walkthrough.md"
