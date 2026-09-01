@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 340,
-      "carried": 340,
+      "in the graph": 341,
+      "carried": 341,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1582,6 +1582,26 @@
             "cited_by": [
               "HW-REG-decisions"
             ]
+          }
+        }
+      },
+      {
+        "path": "docs/evaluations/n8n-worked-example.md",
+        "kind": "evaluation",
+        "id": "HW-EVAL-n8n-worked-example",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-EVAL-n8n-worked-example",
+          "status": "current",
+          "status_since": "2026-09-01",
+          "last_verified": "2026-09-01",
+          "summary": "Four real architecture documents from n8n, typed against the design-spec entry, and what the run found in a corpus that keeps its prose beside the code.",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "mixed",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
           }
         }
       },
