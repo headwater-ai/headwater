@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 339,
-      "carried": 339,
+      "in the graph": 340,
+      "carried": 340,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 560,
-      "carried": 560,
+      "in the graph": 561,
+      "carried": 561,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1999,7 +1999,8 @@
               "engine/crates/cli/src/main.rs",
               "engine/crates/query/src/lib.rs",
               "engine/crates/query/src/explain.rs",
-              "engine/crates/query/src/json.rs"
+              "engine/crates/query/src/json.rs",
+              "engine/crates/census/src/walk.rs"
             ]
           }
         }
@@ -7633,6 +7634,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "engine/crates/census/src/walk.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "engine/crates/check/src/dependency.rs",
         "resolver": "source-tree"
       },
@@ -10020,6 +10026,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/query/src/json.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-explain.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/census/src/walk.rs",
           "resolver": "source-tree"
         }
       },

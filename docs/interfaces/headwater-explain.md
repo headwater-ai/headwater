@@ -12,6 +12,7 @@ relations:
     - engine/crates/query/src/lib.rs
     - engine/crates/query/src/explain.rs
     - engine/crates/query/src/json.rs
+    - engine/crates/census/src/walk.rs
 ---
 
 # headwater explain
@@ -36,7 +37,7 @@ The text report follows the order above. JSON carries the same fields in a docum
 
 The repository must carry a readable `.headwater/taxonomy.lock`, consumer declaration and corpus. The target must resolve to a typed or untyped census row.
 
-An identifier resolves through the graph index. A target that matches neither a corpus path nor an identifier is refused.
+An identifier resolves through the graph index. A target that matches neither a corpus path nor an identifier is refused. Exit status states which of four things it named instead.
 
 ## Options
 
@@ -55,6 +56,17 @@ An identifier resolves through the graph index. A target that matches neither a 
 **0** means that the target resolved and its explanation was printed.
 
 **1** means that the target was missing, the command line was invalid, or the repository could not load. A missing target writes its refusal to standard error and no explanation to standard output.
+
+**A missing target still classifies.** The refusal names one of four states.
+
+| The state | What the refusal says |
+|---|---|
+| Under the corpus root, with no document there | "is a path of this corpus, with no document written there yet" |
+| Under the corpus root, and an exclusion claims it | "is excluded by `<pattern>`" |
+| Outside every corpus root this repository declares | "is outside every corpus root this repository declares" |
+| Not a path this repository can classify | "is not a path this repository can classify" |
+
+One matcher decides all four: `headwater_census::walk::Corpus::classify`, which the walk also uses for an existing file. `.claude/hooks/write.sh` reads the first row and refuses a raw write there.
 
 ## Environment
 

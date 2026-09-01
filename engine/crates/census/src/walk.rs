@@ -102,6 +102,75 @@ impl Corpus {
             .iter()
             .find(|exclusion| exclusion.pattern.matches(path))
     }
+
+    /// Where `path` falls in this corpus, decided by name alone.
+    ///
+    /// [#319](https://github.com/headwater-ai/headwater/issues/319): the walk
+    /// above answers this question for every file it finds, one entry at a
+    /// time, and only for a file that is there to find. A write-time hook asks
+    /// the same question of a path that does not exist yet — that is the one
+    /// case the walk never reaches — and until this method existed, nothing in
+    /// the engine could answer, so a hook read `.headwater/corpus.json` and
+    /// matched the exclusion patterns itself, in a second language. This is
+    /// [`Exclusion::pattern`] deciding both callers now.
+    ///
+    /// `path` may be absolute (on disk, under [`Corpus::base`]) or relative to
+    /// the repository root; either form normalizes to the same answer.
+    pub fn classify(&self, path: &Path) -> Classification {
+        let Some(relative) = self.locate(path) else {
+            return Classification::Unclassifiable;
+        };
+        let under_root = relative == self.root || relative.starts_with(&format!("{}/", self.root));
+        if !under_root {
+            return Classification::Outside;
+        }
+        match self.exclusion_for(&relative) {
+            Some(exclusion) => Classification::Excluded(exclusion.pattern.source().to_string()),
+            None => Classification::Corpus,
+        }
+    }
+
+    /// `path`, relative to [`Corpus::base`] and written with `/` — or `None`
+    /// where it names somewhere this repository has no way to express as one:
+    /// outside `base` on disk, or a relative path whose `..` climbs above it.
+    ///
+    /// This never touches the filesystem. It reasons about the path as
+    /// written, which is what lets it answer for a path with no file behind
+    /// it.
+    fn locate(&self, path: &Path) -> Option<String> {
+        let path = match path.is_absolute() {
+            true => path.strip_prefix(&self.base).ok()?,
+            false => path,
+        };
+        let mut segments: Vec<&str> = Vec::new();
+        for component in path.components() {
+            match component {
+                std::path::Component::Normal(segment) => segments.push(segment.to_str()?),
+                std::path::Component::CurDir => {}
+                std::path::Component::ParentDir => {
+                    segments.pop()?;
+                }
+                std::path::Component::RootDir | std::path::Component::Prefix(_) => return None,
+            }
+        }
+        Some(segments.join("/"))
+    }
+}
+
+/// Where a path falls in a corpus, decided by name alone — the closed set
+/// [#319](https://github.com/headwater-ai/headwater/issues/319) asks for: a
+/// path a caller has not written yet still lands in exactly one of these.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Classification {
+    /// Under the corpus root, and no exclusion claims it.
+    Corpus,
+    /// Under the corpus root, and this pattern claims it.
+    Excluded(String),
+    /// Not under this corpus root at all.
+    Outside,
+    /// Not a path this repository can classify: outside the repository root
+    /// on disk, or a relative path that climbs above it.
+    Unclassifiable,
 }
 
 /// One entry of the walk: a path, and what the filesystem said it was.
@@ -303,5 +372,42 @@ mod tests {
         // The rule of spec 7 applied to the walk: the exclusion changes the
         // outcome of a row and never the presence of one.
         assert!(entries.iter().any(|e| e.path.starts_with("walk/excluded/")));
+    }
+
+    /// [#319](https://github.com/headwater-ai/headwater/issues/319): the four
+    /// states a path falls into, none of which needs the path to exist. This
+    /// is the test the issue's first Done-when bar asks for.
+    #[test]
+    fn classify_answers_for_a_path_with_no_file_behind_it() {
+        let corpus = fixture_corpus().excluding(vec![Exclusion::new(
+            "walk/excluded/**",
+            "a declared exclusion, so that a test has one",
+        )]);
+
+        assert_eq!(
+            corpus.classify(Path::new("walk/never-written.md")),
+            Classification::Corpus
+        );
+        assert_eq!(
+            corpus.classify(Path::new("walk/excluded/never-written.md")),
+            Classification::Excluded("walk/excluded/**".to_string())
+        );
+        assert_eq!(
+            corpus.classify(Path::new("engine/never-written.rs")),
+            Classification::Outside
+        );
+        assert_eq!(
+            corpus.classify(Path::new("/etc/passwd")),
+            Classification::Unclassifiable
+        );
+        assert_eq!(
+            corpus.classify(Path::new("../../etc/passwd")),
+            Classification::Unclassifiable
+        );
+
+        // The absolute form of the same path on disk answers exactly as the
+        // relative form does — a caller with either shape gets one verdict.
+        let absolute = corpus.base.join("walk/never-written.md");
+        assert_eq!(corpus.classify(&absolute), Classification::Corpus);
     }
 }

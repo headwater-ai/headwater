@@ -1060,7 +1060,8 @@ fn apply_with_no_pinned_digest_writes_no_migration_state() {
     let ran = root.migrate("2.0.0", &["--apply"]);
     assert_eq!(ran.code, Some(0), "{ran:?}");
     assert!(
-        ran.out.contains("pins no digest, so this run cannot write a verifiable `adoption.from`"),
+        ran.out
+            .contains("pins no digest, so this run cannot write a verifiable `adoption.from`"),
         "the run states why: {ran:?}"
     );
     assert!(

@@ -18,8 +18,14 @@
 #                            reflex, and that destroys the signal.
 #
 # What it passes to the engine: one path. What it gets back: for the refusal,
-# nothing — the hook decides from the corpus descriptor the engine generated.
-# For the advisory, the pointers `headwater route` resolves from the anchor.
+# the classification `headwater explain` reports on standard error for a path
+# with no document behind it — [#319](https://github.com/headwater-ai/headwater/issues/319)
+# is what put that answer inside the engine rather than in this file. The
+# question is answered by `explain`, an existing verb, and not by a new
+# `headwater hook write` verb: spec 5's hook contract states "no hook
+# introduces a verb", because "two entry points to one answer are two answers
+# as soon as one drifts". For the advisory, the pointers `headwater route`
+# resolves from the anchor.
 #
 # What a refusal means: the harness does not run the tool call, and the agent
 # reads the reason. What happens when the harness ignores it: the write lands.
@@ -66,39 +72,27 @@ PreToolUse)
     [ -e "$hw_root/$rel" ] && exit 0
     case $rel in *.md) ;; *) exit 0 ;; esac
 
-    # Whether the corpus claims this path is read from `.headwater/corpus.json`,
-    # which `headwater generate` writes and `generate --check` holds. The hook
-    # keeps no second copy of where the corpus is.
-    command -v python3 >/dev/null 2>&1 || exit 0
-    claimed=$(HW_REL="$rel" HW_ROOT="$hw_root" python3 -c '
-import fnmatch, json, os, sys
-rel = os.environ["HW_REL"]
-try:
-    with open(os.path.join(os.environ["HW_ROOT"], ".headwater", "corpus.json")) as f:
-        descriptor = json.load(f)
-except Exception:
-    sys.exit(1)
-for corpus in descriptor.get("corpora", []):
-    root = corpus.get("root")
-    if not root or not (rel == root or rel.startswith(root + "/")):
-        continue
-    for exclusion in corpus.get("excluded", []):
-        pattern = exclusion.get("path", "")
-        base = pattern[:-3] if pattern.endswith("/**") else pattern
-        if rel == base or rel.startswith(base + "/") or fnmatch.fnmatch(rel, pattern):
-            sys.exit(1)
-    sys.stdout.write(root)
-    sys.exit(0)
-sys.exit(1)
-' 2>/dev/null) || exit 0
+    # Whether the corpus claims this path is a question `headwater explain`
+    # now answers for a path with no file behind it — the same
+    # `headwater_meta::pattern::Pattern` the walk itself matches an existing
+    # file against, reached through one verb rather than reimplemented here.
+    # #319: this used to read the generated corpus descriptor and match the
+    # exclusion patterns with a Python glob matcher, a second implementation
+    # nothing compared against the engine's own.
+    engine=$(hw_engine) || exit 0
+    account=$("$engine" explain --root "$hw_root" "$rel" 2>&1 >/dev/null)
+    case $account in
+        *'is a path of this corpus, with no document written there yet'*) ;;
+        *) exit 0 ;;
+    esac
 
-    reason="\`$rel\` is a new document under the corpus root \`$claimed\`, and a raw write invents what the taxonomy already decides.
+    reason="\`$rel\` is a new document under this corpus, and a raw write invents what the taxonomy already decides.
 
 Run \`headwater new <kind> --title \"<title>\"\` instead. It reads .headwater/taxonomy.lock and derives the shelf that fixes the path, the front matter the kind requires, an identifier under the kind's scheme, and the sections the contract requires. It refuses rather than guessing, and it never overwrites a document.
 
 Then edit the file it wrote. This refusal is for creation only, and every later edit passes.
 
-If the file is genuinely not a document of any kind this taxonomy declares, it does not belong under \`$claimed\`."
+If the file is genuinely not a document of any kind this taxonomy declares, it does not belong under this corpus."
     quoted=$(hw_quote "$reason") || exit 0
     printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":%s}}\n' "$quoted"
     exit 0
