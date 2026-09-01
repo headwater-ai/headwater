@@ -3,7 +3,7 @@ id: HW-EVAL-n8n-worked-example
 status: current
 status_since: 2026-09-01
 last_verified: 2026-09-01
-summary: Four real architecture documents from n8n, typed against the design-spec entry, and what the run found in a corpus that keeps its prose beside the code.
+summary: Eleven real governing documents from n8n, typed against two entries of the library, and what two runs and one coherence sweep found in a corpus that keeps its prose beside the code.
 provenance:
   warrant: asserted
   agency: mixed
@@ -20,7 +20,9 @@ It is also the first corpus in this library with no collected documentation root
 
 **The short answer is that it does not, and the correction it needs is one declaration.** The longer answer is below, with the run that produced it.
 
-This document reports one of the three kinds that [#492](https://github.com/headwater-ai/headwater/issues/492) names. The other two are [#508](https://github.com/headwater-ai/headwater/issues/508) and [#509](https://github.com/headwater-ai/headwater/issues/509). The reason for the split is that one of the three has no admitted kind to be typed against at all.
+This document reports two of the three kinds that [#492](https://github.com/headwater-ai/headwater/issues/492) names. The architecture documents are [#492](https://github.com/headwater-ai/headwater/issues/492) itself and the review rules are [#508](https://github.com/headwater-ai/headwater/issues/508), and the two halves are marked below. The third is [#509](https://github.com/headwater-ai/headwater/issues/509). The reason for the split is that the third has no admitted kind to be typed against at all.
+
+**The first half of this document reads `packages/`, and [the second half](#the-review-rules-a-second-corpus-of-the-same-repository) reads `.agents/review-rules/`.** They are two corpora at one pin, because `corpus.root` is a single scalar and one root cannot reach both trees.
 
 ## The pin, and the fork
 
@@ -174,15 +176,103 @@ The second column is a probe and not a declaration, on the precedent the [brd-pr
 
 **What the count says.** Under the canonical library alone the honest total is 8. Every one of the 8 is about a declaration rather than about n8n, and every one is invisible to both of n8n's tools. Under a house language regime the total is 162, of which one is mechanically fixable and 136 are one editor's line-wrapping habit. Neither number is a claim that Headwater found 8 or 162 problems in n8n. The 8 are what a taxonomy learns about itself by meeting a corpus it did not author.
 
+## The review rules, a second corpus of the same repository
+
+[#508](https://github.com/headwater-ai/headwater/issues/508) types the second of the three kinds that #492 names. It reads the rules that n8n's AI code reviewer loads on every pull request. It also asks a question that no check answers: whether the three-level model n8n publishes about those rules holds.
+
+The fork is the same fork and the pin is the same commit. The corpus is not the same corpus. `corpus.root` is a single scalar string. n8n keeps its architecture prose under `packages/` and its review rules under `.agents/`, and one root cannot reach both. So the work built a second fixture beside the first, under the entry it evidences: [`docs/taxonomies/standards-spec/fixtures/n8n/`](../taxonomies/standards-spec/fixtures/n8n/README.md).
+
+**This is where the headline claim of #492 narrows usefully.** n8n's architecture documents are scattered, one per package, across a source tree of 27,688 files. Its review rules are collected: 23 files under one directory, six subdirectories deep at most. **One repository is a scattered corpus for one of its kinds and a collected corpus for another.** The shelf model met both. The first cost a broad pattern and a forced exclusion. The second cost one ordinary path pattern.
+
+### What was typed, and as what
+
+Seven documents, all typed as `kinds.standard` of the [standards-spec entry](../taxonomies/standards-spec/doctrine.md). Six are rule files across five of the six directories. The seventh is the `README.md` that files them, and it is here because a sweep finding may only name a typed document.
+
+**The kind is right on its declared ground, and the granularity mismatch is the finding.** The purpose of `standard` is `constraint`, which reads "state what must hold across the documents and code it governs, and what it rules out". A rule file decides what a reviewer comments on, which is what a constraint is. #492 guessed that this kind was requirement shaped. That guess points at the `brd-prd` entry, which declares `kinds.brd` and `kinds.prd` and nothing granular. A granular `kinds.requirement` exists in this repository's own overlay and nowhere else. An overlay is not an admitted library entry, so it cannot satisfy criterion 4. **No admitted entry of this library declares a kind for one rule.** `kinds.standard` is the closest admitted target. Every one of the 21 findings below comes from the distance between a whole standard and one rule of one.
+
+**Typing means one front-matter block on a copy, and nothing else.** Byte identity was verified twice. Each copy had its front-matter block stripped and the remainder diffed against the file at the pin, which gave seven empty diffs. Each file at the pin was then compared by `git hash-object` against the blob the fork reports at that commit, which gave seven matches.
+
+The [fixture directory](../taxonomies/standards-spec/fixtures/n8n/) carries its own verbatim copy of n8n's license and its own modification notice. Neither is inherited from the design-spec fixture. A second set of copied files is a second receipt of part of the software. A modification notice is a claim about which files were modified, and these are different files. **None of the seven is under n8n's Enterprise License.** The tree at the pin holds 91 paths under `.agents/`, and zero of them match `.ee` in any form. The check was run rather than assumed.
+
+### What the run reported
+
+The [fixture README](../taxonomies/standards-spec/fixtures/n8n/README.md#what-a-run-reports) carries the run in full. The summary:
+
+**7 files under the corpus root, 7 typed, 0 excluded, 7 checked, 93 check instances, 21 findings, all 21 of them errors.** `headwater check --strict` exits 1. The graph reads 7 nodes and 0 declared edge halves.
+
+Three findings per document, and the same three on every one. `section.required.missing`, an error, under `OB-SECT-1`, once each for `Scope`, `Requirements` and `Conformance`.
+
+**This is the first time in the n8n work that the rule instantiated at all.** The design-spec run recorded that it never did, because `design_spec` declares no required sections. Here it produces the whole run.
+
+**The finding is sharper than a heading count.** Not one heading at any level of any of the 23 upstream files carries the word `Scope`, `Requirements` or `Conformance`. The corpus is not missing the content. Every one of the 22 rule files opens with a line `Applies to: …`, which is the scope written as a labeled paragraph. 16 of them use the imperative `Flag` somewhere to state what to flag, and only six write a literal `Flag:` block. **The required section is present in substance in the whole corpus and absent in form in the whole of it.** The contract is lexical over headings, and the tradition writes a labeled paragraph. `Conformance` is the honest third. No rule file says how conformance is judged, because the AI reviewer judges it, so that section is genuinely absent.
+
+**One expectation was checked and is not due.** `kinds.standard` expects a `regulates` edge to a `functional_spec` within 180 days of `state_entered`, at severity `warn`. `relation.participation.overdue` instantiated seven times and reported nothing, because `status_since` and the injected clock are both the pin date. The window opens on 2026-09-01 and its deadline falls on 2027-02-28. The rule fires only once the clock passes that date, so the seven warnings appear from 2027-03-01. That is a fact about the clock and not about n8n.
+
+### Whether the three-level reach model holds
+
+This is the fourth Done-when bullet of #508, and it is a `headwater sweep` job rather than a check. **It is the first coherence sweep run and recorded anywhere in this repository.** There was no committed briefing, no return file and no report before this one. All three artifacts are committed under [`sweep/`](../taxonomies/standards-spec/fixtures/n8n/sweep/) beside the corpus. `sweep plan` is byte-reproducible, and the return file is the only thing that lets a later reader reach the same verdict.
+
+`headwater sweep report` confirmed four things and no more. The return file names the lock this tree carries. Every path it names is a typed row of the census. Every quotation is really in the document it is attributed to. No proposed edge restates one the graph already declares. **3 findings carried, 0 refused, of 3 the file held.** It confirms nothing about whether a reading is right.
+
+**The answer is that the model holds for the two cases the corpus declares, and a third case broke it that nobody noticed.**
+
+**The two declared exceptions are exceptions.** `testing/coverage.md` is one file listed in two agents' `file_paths`, Backend and Frontend, exactly as the README declares. Security and QA & DX not linking it is stated with a reason in the same paragraph. Neither is a contradiction and the sweep names neither.
+
+**The third case is a genuine defect.** The README names two agents that deliberately do not link `testing/`. Read against `cubic.yaml`, three do not. The DB migrations agent's `file_paths` holds only its own five files. The README's own Layout table is already consistent with three and maps `testing/` to Backend and Frontend. So the table was updated when the `db-migrations/` category arrived and the prose two paragraphs below it was not. The reason that prose gives, coverage nagging on a credential fix or a Dockerfile, does not describe a migration. **The defect is causally tied to the drift the pin exists to capture.**
+
+**A second finding is a real reading and a contestable one.** The README rules that a policy identical across domains is one shared file and never a copy per directory. `testing/coverage.md` holds the shared coverage policy. `db-migrations/conventions-and-tests.md` holds a second coverage policy under its own `## Tests` heading. A defender would call this specialization rather than duplication. The README's own test is "word-for-word the same", and a migration test is not word-for-word a service-method test. Both readings are honest. The sampler adjudicates neither, and that is what a sampler is for.
+
+**A third finding is about the corpus's organizing term.** The README opens its instructions to a rule author with "Pick the level of reach first." The term is defined nowhere in the slice. Its only definition is a header comment in `cubic.yaml`.
+
+### What the sweep could not reach, which is three results
+
+**`cubic.yaml` can never be a finding path.** A sweep finding may only name a typed row of the census, and `cubic.yaml` is a configuration file that no taxonomy here types. **The document that asserts the three-level model cannot appear in the sweep that checks it.** Every quotation from it lives in a message, where nothing verifies it. The sampler can confirm a contradiction between two governed documents and cannot reach the configuration file that governs them.
+
+**`conflicts_with` cannot join two standards, and the intake carried the proposal anyway.** The base package declares it `from: [decision] to: [decision]`. The second finding proposes an edge between two standards on purpose, to find out. The intake's four confirmations do not include endpoint-kind validation, so the proposal passed and the report printed the front matter to write. Writing that front matter and re-running `headwater check` reports **2 `relation.endpoint.not_permitted` errors**, one for each end. **A sweep proposes an edge that the gate then refuses, and nothing between the two says so.**
+
+**The front matter the report prints names the wrong document.** The proposal names `N8N-STD-coverage` as its source. The line beneath it points the reader at the first path in the finding's document list, which is the README. A reader who follows the instruction declares an edge from `N8N-STD-review-rules`, which is not the edge the sweep proposed. Both arms were run and both report the same 23 findings, so the gate catches the substitution for the wrong reason and never names it.
+
+**One result belongs to the register rather than to the corpus.** The standards-spec entry declares `obligations.OB-SS-1` with `class: coherence`. [Spec 4](../spec/04-assurance-model.md) and [HW-OBL-0114](../obligations/0114-a-control-that-names-a-sweep-marks-its-obligation-verified-with-nothing-run.md) both record that this repository's register has no coherence-class obligation, so a sweep here discharges nothing. This corpus gives that class its first member anywhere in the library. It still discharges nothing, because OB-SS-1's disposition is `unverifiable` and no control names a `sweep:` mechanism. The gap moves from hypothetical to visible.
+
+### The count, extended to a third tool
+
+**`prettier` catches 0, and this slice has two independent reasons where the architecture documents had one.** `.prettierignore` carries `**/*.md` at the repository root, which is the reason already recorded above. And `lefthook.yml`'s prettier glob is `packages/**/*.{vue,yml,md,css,scss}`, which never reaches `.agents/` at all. Either one alone gives zero.
+
+**`cubic` catches 0, and the reason is worth one sentence on its own.** Not one `include` pattern of the five `custom_rules` reaches `.agents/`. The five lists cover `packages/`, `.github/`, `docker/`, `scripts/`, `patches/` and eight file-level entries. **cubic reviews its own rule files under no rule at all.** `lefthook.yml` carries a `.agents/skills/**` job and no `.agents/review-rules/**` job, which points the same way.
+
+**A third tool reads exactly these files, and it catches 0 as well.** `pnpm check:cubic-config` runs `.github/scripts/quality/check-cubic-config.mjs`, and CI runs it on every pull request. It validates `cubic.yaml` against a vendored copy of cubic's schema. It then fails on a missing linked path, an agent over the 10,000-character ceiling, or a rule file that no agent links. Its constants name `.agents/review-rules` directly. **It reads no prose.** It counts characters and resolves paths, so the overlap with 21 findings about headings is zero. The zero is measured rather than assumed.
+
+**One detail of that third tool is a result in itself.** Its file list excludes `README.md` by name, because the README is not a rule and no agent links it. **The one document the sweep found three findings in is the one document n8n's own checker declines to open.**
+
+| | Under the entry alone | Under the entry plus this repository's house regime |
+|---|---|---|
+| Findings raised | 21 | 143 |
+| Already caught by `prettier` | 0 | 0 |
+| Already caught by `cubic` | 0 | 0 |
+| Already caught by `check:cubic-config` | 0 | 0 |
+| Caught by none of the three | 21 | 143 |
+| Of those, written by `headwater check --fix` | 0 | 6 |
+| Of those, needing a human rewrite or a declaration change | 21 | 137 |
+
+**Two things in that second column correct what the design-spec run recorded.**
+
+**The hard wraps are spread across all seven documents, and there they were not.** 87 of the 122 extra findings are `language.source_form.not_met`, and every one of the seven documents carries between 2 and 42. In the architecture corpus 136 of 136 came from two documents of four, and the other two were already written one line per paragraph. Same repository, same pin, one editorial convention per corpus.
+
+**The British-spelling claim was wrong in both directions.** The design-spec run recorded that there is no British spelling anywhere in its four documents. There are four in this corpus: `behaviour`, `defence`, `colours` and `denormalised`. Three of them are in the typed set. **The rule reports one.** The engine's spelling table is closed at 24 words and holds `behaviour` and not `defence`, `colour` or `denormalise`. So a corpus-level count and a rule-level count differ here by a factor of three, and only the second is what a run measures.
+
+**Six findings of 143 are mechanically fixable, against one of 162 before.** Five contractions and one spelling are the whole intersection, and the report marks each with `fix (mechanical)`. The 87 hard wraps are mechanical to a reader and carry no patch. `headwater check --fix` was never run over this corpus.
+
 ## What this adds to criterion 4
 
-This is the seventh Done-when bullet, scoped to the one kind typed here. The design-spec entry now carries two worked instance corpora: the invented Beacon corpus, and this one. Its [doctrine](../taxonomies/design-spec/doctrine.md#worked-instances) cites both.
+This is the seventh Done-when bullet of #492 and the sixth of #508. Two entries of the library now carry this repository. The design-spec entry carries the invented Beacon corpus and n8n's architecture documents, and its [doctrine](../taxonomies/design-spec/doctrine.md#worked-instances) cites both. The standards-spec entry carries the invented Beacon ladder and n8n's review rules, and its [doctrine](../taxonomies/standards-spec/doctrine.md#worked-instances) gained a `Worked instances` section that cites both.
 
 **One note, which is not fixed here.** This document is a `kinds.evaluation`, and `evaluation` moved out of design-spec into the `evidence-and-obligation` entry with HW-DR-0044. That entry is not in the admitted-entry table of `docs/taxonomies/README.md`, which still lists five rows while `docs/taxonomies/` holds six directories. Two admitted entries now declare `requires: [evidence-and-obligation]`. That gap is [#510](https://github.com/headwater-ai/headwater/issues/510) and is not touched here.
 
 ## What this did not cover
 
-Two of the three kinds [#492](https://github.com/headwater-ai/headwater/issues/492) names. `.agents/review-rules/` is [#508](https://github.com/headwater-ai/headwater/issues/508), which also carries the consistency question about n8n's own three-level reach model. `.agents/skills/` is [#509](https://github.com/headwater-ai/headwater/issues/509), and it is blocked on a ruling rather than on effort, because no admitted entry declares a procedure-shaped concrete kind.
+The third of the three kinds [#492](https://github.com/headwater-ai/headwater/issues/492) names. `.agents/skills/` is [#509](https://github.com/headwater-ai/headwater/issues/509), and it is blocked on a ruling rather than on effort, because no admitted entry declares a procedure-shaped concrete kind.
+
+A census of all 22 review-rule files as typed documents. Seven is the sample, and #508's own scope note sets that bar.
 
 Fixing any finding, or sending anything upstream to n8n, is [#495](https://github.com/headwater-ai/headwater/issues/495). Nothing here was reported to n8n and no pull request was opened against their repository.
 
@@ -192,4 +282,4 @@ A census of every architecture document in the monorepo. Four is the sample, and
 
 ## Reproducing this
 
-The [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#how-to-run-this-corpus) carries the five commands. Nothing in CI runs this corpus, which is the same posture the three earlier fixture corpora of this library have.
+The [design-spec fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#how-to-run-this-corpus) carries the five commands for the architecture corpus. The [standards-spec fixture README](../taxonomies/standards-spec/fixtures/n8n/README.md#how-to-run-this-corpus) carries six for the review rules, and the sixth is the sweep. Nothing in CI runs either corpus, which is the same posture the earlier fixture corpora of this library have.

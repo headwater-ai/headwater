@@ -1,8 +1,8 @@
-363 files under the corpus root
+377 files under the corpus root
     272 typed
       4 generated
       2 untyped
-     83 excluded
+     97 excluded
       2 not a document
       1 typed acceptance_criterion
      46 typed decision
@@ -19,7 +19,7 @@
       1 typed tutorial
 
 exclusions
-     83 `docs/taxonomies/**`
+     97 `docs/taxonomies/**`
         package content. This directory is the canonical taxonomy library, and a taxonomy package that lives inside the corpus it types has no home in the shelf model. Nothing in the base package or in either entry says whether package content is corpus content, and spec 13 records the gap; this repository answers it locally, here, with a reason. A fixture corpus under an entry is package content twice over, because it is a corpus that another root is meant to walk.
 
 docs/LICENSE
@@ -193,6 +193,34 @@ docs/taxonomies/standards-spec/fixtures/corpus/docs/component-specs/webhooks/fun
 docs/taxonomies/standards-spec/fixtures/corpus/docs/standards/api-design.md
   excluded: docs/taxonomies/**
 docs/taxonomies/standards-spec/fixtures/corpus/docs/standards/logging-baseline.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/standards-spec/fixtures/n8n/.headwater/overlay.yml
+  excluded: docs/taxonomies/**
+docs/taxonomies/standards-spec/fixtures/n8n/.headwater/taxonomy.yml
+  excluded: docs/taxonomies/**
+docs/taxonomies/standards-spec/fixtures/n8n/LICENSE.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/standards-spec/fixtures/n8n/README.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/standards-spec/fixtures/n8n/corpus/.agents/review-rules/README.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/standards-spec/fixtures/n8n/corpus/.agents/review-rules/db-migrations/conventions-and-tests.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/standards-spec/fixtures/n8n/corpus/.agents/review-rules/db-migrations/data-safety.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/standards-spec/fixtures/n8n/corpus/.agents/review-rules/frontend/design-system.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/standards-spec/fixtures/n8n/corpus/.agents/review-rules/qa-dx/workflow-safety.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/standards-spec/fixtures/n8n/corpus/.agents/review-rules/security/credentials-and-secrets.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/standards-spec/fixtures/n8n/corpus/.agents/review-rules/testing/coverage.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/standards-spec/fixtures/n8n/sweep/briefing.md
+  excluded: docs/taxonomies/**
+docs/taxonomies/standards-spec/fixtures/n8n/sweep/findings.yml
+  excluded: docs/taxonomies/**
+docs/taxonomies/standards-spec/fixtures/n8n/sweep/report.txt
   excluded: docs/taxonomies/**
 docs/taxonomies/standards-spec/templates/functional_spec.md
   excluded: docs/taxonomies/**
