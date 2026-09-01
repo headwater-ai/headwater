@@ -91,7 +91,7 @@ Two findings per document, and the same two on every one.
 
     a typed `design_spec` that declares no identifier, so no edge can name it
 
-The design-spec entry declares six kinds and no identifier scheme for any of them. This repository's own overlay mints `spec_id` for its own use, and an overlay is not an admitted library entry. So a corpus that takes the entry alone gets four documents that cannot stand at either end of a relation. The `diataxis` fixture reported the same rule six times for the same reason, and the two together are one finding about the library rather than two about two corpora.
+The design-spec entry declares five kinds and no identifier scheme for any of them. This repository's own overlay mints `spec_id` for its own use, and an overlay is not an admitted library entry. So a corpus that takes the entry alone gets four documents that cannot stand at either end of a relation. The `diataxis` fixture reported the same rule six times for the same reason, and the two together are one finding about the library rather than two about two corpora.
 
 ## The prose link that no rule reports
 

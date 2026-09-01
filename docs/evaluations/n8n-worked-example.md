@@ -73,7 +73,7 @@ Two findings per document, and the same two on each one.
 | all four | `facet.required.missing` (`OB-FACET-1`), `sequence` not declared | error |
 | all four | `identifier.unusable` (`OB-ID-2`), a typed `design_spec` that declares no identifier | error |
 
-`identifier.unusable` is a second finding about the entry rather than about n8n. The design-spec entry declares six kinds and no identifier scheme for any of them. This repository mints `spec_id` in its own overlay, and an overlay is not an admitted library entry. So a corpus that takes the entry alone gets documents that can stand at neither end of a relation. The [diataxis fixture](../taxonomies/diataxis/fixtures/README.md) reported the same rule six times for the same reason.
+`identifier.unusable` is a second finding about the entry rather than about n8n. The design-spec entry declares five kinds and no identifier scheme for any of them. This repository mints `spec_id` in its own overlay, and an overlay is not an admitted library entry. So a corpus that takes the entry alone gets documents that can stand at neither end of a relation. The [diataxis fixture](../taxonomies/diataxis/fixtures/README.md) reported the same rule six times for the same reason.
 
 ### Not one finding is about n8n's writing
 
@@ -145,7 +145,7 @@ The counterfactual is worth one line, because it bounds the overlap. Run prettie
 | Backend | the same six | no |
 | DB migrations | `packages/@n8n/db/src/migrations/**`, `packages/cli/test/migration/**` | no |
 | Frontend | `packages/frontend/**` | no |
-| QA & DX | `.github/**`, `docker/**`, `scripts/**`, `patches/**`, `packages/testing/**`, four `packages/@n8n/*-config/**` entries, and seven file-level patterns | no |
+| QA & DX | `.github/**`, `docker/**`, `scripts/**`, `patches/**`, `packages/testing/**`, four `packages/@n8n/*-config/**` entries, and eight file-level patterns | no |
 
 Not one pattern reaches `packages/@n8n/instance-ai/`, `packages/@n8n/expression-runtime/` or `packages/@n8n/local-gateway/`. Two further facts point the same way. Cubic reviews only the lines a pull request adds or modifies, and its `custom_instructions` block states the bar in terms of code rather than prose.
 
