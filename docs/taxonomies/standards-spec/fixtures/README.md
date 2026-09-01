@@ -2,6 +2,8 @@
 
 A miniature standards ladder for Beacon, under `corpus/`. Beacon is invented. The [design-spec fixtures](../../design-spec/fixtures/README.md), the [decision-record fixtures](../../decision-record/fixtures/README.md) and the [diataxis fixtures](../../diataxis/fixtures/README.md) use the same invented system. A reader can therefore hold four entries over one project.
 
+The [n8n fixture](n8n/README.md) beside this one is the real corpus this entry types: seven of the rule files n8n's AI code reviewer loads on every pull request, pinned and copied with every body byte-identical. Beacon is where the planted defects are, and n8n is where the entry meets a tradition that did not read it.
+
 Everything here is invented, including the names. `warrant: accepted` requires an `accepted_by` that names a human, so the fixtures write `fixture-acceptor`. The namespace is `SCR`, which the assembly overlay declares and no bundle may.
 
 Every number below came from the run this file quotes. Nothing here is predicted.

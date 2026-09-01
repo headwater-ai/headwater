@@ -2,6 +2,8 @@
 
 Four real architecture documents from [`n8n-io/n8n`](https://github.com/n8n-io/n8n), typed against this entry. Nothing here is invented. The [other fixtures of this entry](../README.md) hold a miniature corpus for an imaginary system called Beacon, which is what criterion 4 calls a *realistic* corpus. This one is what criterion 4 calls a *real* one.
 
+The [standards-spec fixture](../../../standards-spec/fixtures/n8n/README.md) types a second corpus of the same repository at the same pin: the rule files n8n's AI code reviewer loads. It is a separate tree rather than a wider one, because `corpus.root` is a single scalar string and one root cannot reach both `packages/` and `.agents/`. Several results below read differently beside it, and that README says which.
+
 Every number below came from the run this file quotes. Nothing here is predicted.
 
 ## Modification notice
@@ -134,7 +136,7 @@ Per document:
 
 **The 136 hard-wrap findings come from two documents and not four.** `instance-ai/docs/architecture.md` carries 108 and `instance-ai/evaluations/ARCHITECTURE.md` carries 27. The other two documents carry one between them, because they are written one line per paragraph already. A house rule that reads as a verdict on a project turns out to be a verdict on the editor two of its authors used.
 
-**There is no British spelling anywhere in the four documents.** The rule that catches one ran on every document and found nothing. n8n writes `organisation` and `behavioural` elsewhere in the repository, and not here.
+**There is no British spelling anywhere in the four documents.** The rule that catches one ran on every document and found nothing. n8n writes `organisation` and `behavioural` elsewhere in the repository, and not here. **The [standards-spec corpus](../../../standards-spec/fixtures/n8n/README.md#what-this-repositorys-own-house-regime-would-have-reported) at the same pin carries four of them, and the rule reports one of the four**, because the engine's spelling table is closed at 24 words. Read the two together: this sentence is a fact about four documents, and that one separates a corpus count from a rule count.
 
 **One finding of 162 is mechanically fixable, and it is the contraction.** `headwater check --fix` writes a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal link. Of the 162, exactly one is in that set, and the report marks it: it is the only line that reads `fix (mechanical)`. The 136 hard wraps are mechanical to a reader and carry no patch, and `engine/crates/check/src/source_form.rs` states why in its own comment. Nothing here was ever run with `--fix`.
 
