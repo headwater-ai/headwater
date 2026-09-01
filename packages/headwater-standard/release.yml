@@ -26,7 +26,7 @@ release:
   package: headwater/standard
   version: 3.5.0
   requires_engine: ">=0.1 <2"
-  digest: sha256:7b07d23b0ccea2f3507e4de45cb9101d02386361d6f582ba15d1ae461a3320fb
+  digest: sha256:6c0aa8b2552c04d4300e8a210f0f48bc1b03fce8994540d1444a4e65adfc7c86
   members:
     - path: bundles/README.md
       digest: sha256:3b244809dc209c67d00e360b2c91dc67497fa22eb18c11d3b51da9201db10717
@@ -169,7 +169,7 @@ release:
     - path: bundles/standards-spec/bundle.yml
       digest: sha256:a269874010fd3d980a8d317f76f1dd260c44040798fc281264656e3be5eaa83a
     - path: bundles/standards-spec/doctrine.md
-      digest: sha256:d24212278fe8fa3835618a9f8871b932e04b94818665146d97ecc2d150e7f4af
+      digest: sha256:a2ce079a49df05b1e6b78f55058222b0cb56e453f3a1c82812ab29d55efeda22
     - path: bundles/standards-spec/fixtures/README.md
       digest: sha256:708c6a4ba72eee6a414afebe7b48e5c3572f7b52d86562f21eea96a939192526
     - path: bundles/standards-spec/fixtures/corpus/docs/component-specs/delivery/functional.md
@@ -195,7 +195,7 @@ release:
     - path: bundles/standards-spec/fixtures/n8n/LICENSE.md
       digest: sha256:d2f621f59aa4c10eab79b6333e59d9d3d5b53307dcfd16dbd75e40e679e84965
     - path: bundles/standards-spec/fixtures/n8n/README.md
-      digest: sha256:6414cd7f3775a24ffc6de2fbdf58082f11fb0f5ce478166e29792524c530889b
+      digest: sha256:b783a05540a499d3c645a1efef5c9f759e0579ee68e311cb8662eb770f620618
     - path: bundles/standards-spec/fixtures/n8n/corpus/.agents/review-rules/README.md
       digest: sha256:73c2048fde76a64c27b3d35ed8e9593d5d3260055a557d97fe887ad14869f2e5
     - path: bundles/standards-spec/fixtures/n8n/corpus/.agents/review-rules/db-migrations/conventions-and-tests.md
