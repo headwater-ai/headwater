@@ -1007,6 +1007,8 @@ pub enum TaxonomyWord {
                     found it, so a second run meets the same precondition the first one did"
         )]
         out: Option<PathBuf>,
+        #[arg(long, help = JSON_ALONE)]
+        json: bool,
     },
     Vendor {
         #[arg(

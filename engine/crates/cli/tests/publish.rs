@@ -159,6 +159,31 @@ fn publish_real_source_into(out: &Path) -> (Option<i32>, String) {
     )
 }
 
+/// `taxonomy publish --from` over the maintained source, with or without
+/// `--json`, and both streams kept apart: the document is on one, and an
+/// account of a refusal is on the other.
+fn publish_real_source(out: &Path, json: bool) -> (Option<i32>, String, String) {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_headwater"));
+    command
+        .arg("taxonomy")
+        .arg("publish")
+        .arg("--from")
+        .arg(repository().join("taxonomy-source/headwater-standard"))
+        .arg("--out")
+        .arg(out)
+        .arg("--root")
+        .arg(repository());
+    if json {
+        command.arg("--json");
+    }
+    let output = command.output().expect("the binary runs");
+    (
+        output.status.code(),
+        String::from_utf8_lossy(&output.stdout).into_owned(),
+        String::from_utf8_lossy(&output.stderr).into_owned(),
+    )
+}
+
 /// A source package with one named assembly, small enough to make the publish
 /// boundary visible without depending on a future public starter assembly.
 fn assembly_source(root: &Root, invalid: bool) -> PathBuf {
@@ -689,6 +714,92 @@ fn the_vendored_bundles_agree_with_a_fresh_publish_of_the_maintained_source() {
 
 /// Every regular file under `root`, as a path relative to it, in no
 /// particular order.
+/// #353: the digest a publisher hands on is readable without a text search.
+///
+/// The prose run prints it inside a paragraph. `--json` writes one document
+/// whose `digest` member is the same number, and the number both are held to is
+/// the one in the record on disk, so this holds the document to the artifact
+/// and not only to the other rendering. The member list is held to the record
+/// the same way, and `version` names the document's own shape rather than the
+/// engine, which is what `json.rs` asks of every document this binary writes.
+#[test]
+fn a_json_publish_carries_the_digest_a_consumer_pins() {
+    let base = Path::new(env!("CARGO_TARGET_TMPDIR")).join("publish-json");
+    let _ = std::fs::remove_dir_all(&base);
+    let prose_out = base.join("prose");
+    let json_out = base.join("json");
+
+    let (code, prose, stderr) = publish_real_source(&prose_out, false);
+    assert_eq!(code, Some(0), "{stderr}");
+    let (code, document, stderr) = publish_real_source(&json_out, true);
+    assert_eq!(code, Some(0), "{stderr}");
+    assert!(
+        stderr.is_empty(),
+        "a JSON run that succeeded accounts for nothing on standard error: {stderr}"
+    );
+
+    let record = std::fs::read_to_string(json_out.join("release.yml")).expect("the record reads");
+    let record = headwater_resolve::release::read(&record).expect("the record parses");
+
+    let value = headwater_yaml::load(&document)
+        .unwrap_or_else(|errors| panic!("the document does not parse: {errors:?}\n{document}"))
+        .value;
+    let map = value.as_map().expect("the document is an object");
+    let text = |key: &str| -> Option<String> {
+        map.get(key)
+            .and_then(|spanned| spanned.value.as_scalar())
+            .map(headwater_yaml::core_schema::as_str)
+            .map(str::to_string)
+    };
+
+    assert_eq!(
+        text("version").as_deref(),
+        Some(headwater_resolve::release::DOCUMENT),
+        "the document names its own shape"
+    );
+    assert_eq!(text("digest").as_deref(), Some(record.digest.as_str()));
+    assert_eq!(text("out").as_deref(), json_out.to_str());
+
+    let package = map
+        .get("package")
+        .and_then(|spanned| spanned.value.as_map())
+        .expect("a `package` member");
+    let identity = |key: &str| -> Option<String> {
+        package
+            .get(key)
+            .and_then(|spanned| spanned.value.as_scalar())
+            .map(headwater_yaml::core_schema::as_str)
+            .map(str::to_string)
+    };
+    assert_eq!(identity("name").as_deref(), Some(record.package.as_str()));
+    assert_eq!(
+        identity("version").as_deref(),
+        Some(record.version.as_str())
+    );
+    assert_eq!(identity("requires_engine"), record.requires_engine);
+
+    let members = map
+        .get("members")
+        .and_then(|spanned| spanned.value.as_seq())
+        .expect("a `members` member");
+    assert_eq!(members.len(), record.members.len());
+    for (written, recorded) in members.iter().zip(&record.members) {
+        let member = written.value.as_map().expect("a member is an object");
+        let field = |key: &str| -> Option<&str> {
+            member
+                .get(key)
+                .and_then(|spanned| spanned.value.as_scalar())
+                .map(headwater_yaml::core_schema::as_str)
+        };
+        assert_eq!(field("path"), Some(recorded.path.as_str()));
+        assert_eq!(field("digest"), Some(recorded.digest.as_str()));
+    }
+
+    // The prose run and the JSON run published one artifact twice, and the
+    // paragraph a person reads carries the number the document carries.
+    assert!(prose.contains(&record.digest), "{prose}");
+}
+
 fn relative_files(root: &Path) -> Vec<String> {
     fn walk(base: &Path, dir: &Path, into: &mut Vec<String>) {
         for entry in std::fs::read_dir(dir).expect("the directory reads") {

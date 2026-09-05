@@ -323,6 +323,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                 from,
                 assembly,
                 out,
+                json,
             }) => {
                 publish(
                     root,
@@ -330,6 +331,7 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
                     from.as_deref(),
                     assembly.as_deref(),
                     out.as_deref(),
+                    json,
                 )
             }
             Some(TaxonomyWord::Vendor { path, expect }) => match path {
@@ -1139,13 +1141,25 @@ fn conformance(root: &Path, level: Option<&str>, now: Option<Date>, json: bool) 
 /// the first run's leftovers. `engine/crates/cli/tests/publish.rs` holds this
 /// line to the disk from the state an adopter is in.
 ///
+/// **`--json` writes the record as one document, because the handoff is a step
+/// somebody scripts.** The digest has to be told to a consumer out of band, so
+/// passing it on is automated, and a paragraph of English is what that
+/// automation had to read until [#353]. The document is
+/// [`headwater_resolve::release::document`], and it names its own shape rather
+/// than this engine's version. A refusal writes no document and stays on
+/// standard error, which is [HW-DR-0043]'s rule for every `--json` this binary
+/// takes.
+///
 /// [#271]: https://github.com/headwater-ai/headwater/issues/271
+/// [#353]: https://github.com/headwater-ai/headwater/issues/353
+/// [HW-DR-0043]: ../../../../docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md
 fn publish(
     root: &Path,
     package: Option<&str>,
     from: Option<&Path>,
     assembly: Option<&str>,
     out: Option<&Path>,
+    json: bool,
 ) -> ExitCode {
     let Some(out) = out else {
         return fail("`taxonomy publish` writes into a directory. Name it with `--out <dir>`");
@@ -1202,6 +1216,14 @@ fn publish(
             return ExitCode::FAILURE;
         }
     };
+
+    if json {
+        print!(
+            "{}",
+            headwater_resolve::release::document(&record, out).render_pretty()
+        );
+        return ExitCode::SUCCESS;
+    }
 
     println!("published {} {}", record.package, record.version);
     println!("  into {}", out.display());
