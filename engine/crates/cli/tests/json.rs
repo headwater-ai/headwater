@@ -52,6 +52,21 @@ fn scratch() -> PathBuf {
     at
 }
 
+/// A fresh, absent directory for one `taxonomy publish --out`. That verb
+/// refuses a directory that exists and holds anything, and `documents()` runs
+/// once per case in one process. A counter rather than the pid: cargo runs a
+/// target's cases as threads of one process, so the pid is one number for all
+/// of them.
+fn publish_out() -> PathBuf {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    static NEXT: AtomicUsize = AtomicUsize::new(0);
+    let at = scratch().join(format!("publish-{}", NEXT.fetch_add(1, Ordering::SeqCst)));
+    if at.exists() {
+        std::fs::remove_dir_all(&at).expect("the leftover is removed");
+    }
+    at
+}
+
 /// The two streams held apart, because an artifact is on one and an account of
 /// a refusal is on the other.
 #[derive(Debug)]
@@ -174,6 +189,8 @@ fn both_spellings() -> Vec<(&'static str, Vec<String>)> {
 fn documents() -> Vec<(&'static str, Ran)> {
     let returned = sweep_return();
     let recorded = read_set();
+    let source = repository().join("taxonomy-source/headwater-standard");
+    let out = publish_out();
     vec![
         ("check --json", ran(&["check", "--json"])),
         ("capture --json", ran(&["capture", "--json"])),
@@ -188,6 +205,21 @@ fn documents() -> Vec<(&'static str, Ran)> {
                 "report",
                 returned.to_str().expect("a path"),
                 "--json",
+            ]),
+        ),
+        // The publisher's half of the handoff #353 is about. `--from` names the
+        // maintained source rather than `--package`: the copy under `packages/`
+        // carries a release record, so it was vendored, and publish refuses it.
+        (
+            "taxonomy publish --json",
+            ran(&[
+                "taxonomy",
+                "publish",
+                "--json",
+                "--from",
+                source.to_str().expect("a path"),
+                "--out",
+                out.to_str().expect("a path"),
             ]),
         ),
         ("route --json, offered", ran(&["route", "--json", ANSWERED])),
@@ -332,6 +364,22 @@ fn refusals() -> Vec<(&'static str, Vec<&'static str>)> {
         (
             "export --format json, two profiles",
             vec!["export", "--format", "json"],
+        ),
+        (
+            "taxonomy publish --json, no --out",
+            vec!["taxonomy", "publish", "--json"],
+        ),
+        (
+            "taxonomy publish --json, --package beside --from",
+            vec![
+                "taxonomy",
+                "publish",
+                "--json",
+                "--package",
+                "headwater/standard",
+                "--from",
+                "taxonomy-source/headwater-standard",
+            ],
         ),
         (
             "check --json --format json",
@@ -482,10 +530,17 @@ fn a_refusal_names_the_spelling_the_caller_typed() {
 }
 
 /// Every document parses, and the parser is not this system.
+///
+/// The count at the end is held to the list rather than to a number written
+/// here: a literal was a second copy of `documents()`'s length, and it went
+/// red in CI, where the oracle is required, the first time a writer joined the
+/// list.
 #[test]
 fn every_document_this_binary_writes_is_read_by_a_parser_that_is_not_this_one() {
+    let documents = documents();
+    let expected = documents.len();
     let mut outside = 0;
-    for (name, run) in documents() {
+    for (name, run) in documents {
         assert!(
             !run.out.is_empty(),
             "`{name}` writes a document at all: {run:?}"
@@ -501,7 +556,10 @@ fn every_document_this_binary_writes_is_read_by_a_parser_that_is_not_this_one() 
         }
     }
     if std::env::var_os("HEADWATER_JSON_ORACLE").is_some() {
-        assert_eq!(outside, 10, "every document reached the outside parser");
+        assert_eq!(
+            outside, expected,
+            "every document reached the outside parser"
+        );
     }
 }
 
@@ -632,7 +690,7 @@ fn no_escape_byte_reaches_a_document_this_binary_writes() {
 /// because dropping the earlier key is a member removed and a major bump under
 /// the rule that constant's own doc comment states.
 ///
-/// Ten entries, eight command lines: `route` and `conformance` each write two
+/// Eleven entries, nine command lines: `route` and `conformance` each write two
 /// documents here.
 #[test]
 fn every_document_this_binary_writes_names_its_own_shape() {

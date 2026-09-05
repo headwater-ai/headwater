@@ -271,7 +271,7 @@ headwater taxonomy    validate | resolve [--check]
                     | migrate <dir> [--to <version>] [--apply] [--now <date>]
                     | diff <dir> [--to <version>] [--now <date>]
                     | audit [--now <date>] [--record]
-                    | publish [--package <name>] --out <dir>
+                    | publish [--package <name> | --from <dir>] [--assembly <name>] --out <dir> [--json]
                     | vendor <dir> [--expect <digest>]
 headwater coverage    [--format ...]
 headwater probe       plan [--tier regression|campaign] [--arm present|absent]

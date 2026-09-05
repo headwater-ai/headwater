@@ -86,6 +86,7 @@
 //! only assert.
 
 use crate::error::{ResolveError, ResolveErrorKind};
+use headwater_yaml::json::Json;
 use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};
 
@@ -103,6 +104,14 @@ pub const FORMAT: u32 = 1;
 /// module there was none: the workspace carried the placeholder `0.0.0` and no
 /// verb printed it. The number below is the tag this repository published.
 pub const ENGINE: &str = env!("CARGO_PKG_VERSION");
+
+/// The shape of the JSON document `taxonomy publish --json` writes, which a
+/// consumer of that document pins rather than [`ENGINE`].
+///
+/// A member added moves the minor and a member removed or renamed moves the
+/// major, which is the rule every other document this binary writes states
+/// for itself.
+pub const DOCUMENT: &str = "1.0";
 
 /// One published package: what it is, and the digest of every file in it.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -400,6 +409,49 @@ release:
 }
 
 /// Read a release record.
+/// The JSON document `taxonomy publish --json` writes, for the caller who
+/// scripts the handoff rather than reading a paragraph.
+///
+/// It carries what the prose run prints and nothing the record does not hold:
+/// the package identity from the manifest, the directory the artifact went
+/// into, the digest a consumer pins, and every member with its own digest.
+/// `requires_engine` is absent where the manifest declares none, rather than
+/// an empty string a consumer could not tell from a range somebody wrote.
+///
+/// `version` is [`DOCUMENT`] and never [`ENGINE`]: a consumer pins the shape
+/// it reads, and the engine that wrote it is a fact about the publisher's
+/// machine.
+pub fn document(release: &Release, out: &Path) -> Json {
+    let mut identity: Vec<(&'static str, Json)> = vec![
+        ("name", Json::string(release.package.clone())),
+        ("version", Json::string(release.version.clone())),
+    ];
+    if let Some(range) = &release.requires_engine {
+        identity.push(("requires_engine", Json::string(range.clone())));
+    }
+    Json::object([
+        ("version", Json::string(DOCUMENT)),
+        ("package", Json::object(identity)),
+        ("out", Json::string(out.display().to_string())),
+        ("digest", Json::string(release.digest.clone())),
+        (
+            "members",
+            Json::Array(
+                release
+                    .members
+                    .iter()
+                    .map(|member| {
+                        Json::object([
+                            ("path", Json::string(member.path.clone())),
+                            ("digest", Json::string(member.digest.clone())),
+                        ])
+                    })
+                    .collect(),
+            ),
+        ),
+    ])
+}
+
 pub fn read(text: &str) -> Result<Release, ReleaseError> {
     let root = headwater_yaml::load(text)
         .map_err(|errors| ReleaseError::Unreadable(headwater_yaml::error::render(&errors)))?;

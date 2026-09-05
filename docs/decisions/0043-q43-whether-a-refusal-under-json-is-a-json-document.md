@@ -33,7 +33,7 @@ relations:
 
 ## Decision
 
-**A refusal is an English sentence on standard error, and it is never a JSON document.** `--json` names the shape of an artifact. It moves no stream and no grammar. The engine behavior stands as it is, and the contracts of the eight verbs state it. Four grounds carry the ruling, and the third one settles it.
+**A refusal is an English sentence on standard error, and it is never a JSON document.** `--json` names the shape of an artifact. It moves no stream and no grammar. The engine behavior stands as it is, and the contracts of the nine verbs state it. Four grounds carry the ruling, and the third one settles it.
 
 **One — the split between an artifact and an account is a rule this engine already states.** [Spec 6](../spec/06-engine-architecture.md) says of `--fix` that the account of what was written goes to standard error, because `--format` puts one artifact on standard output. The doc comment of `export` says the same for its census, so that a redirected artifact is the artifact and nothing else. A refusal is an account. A JSON refusal on standard output would contradict a rule this engine states twice for other reasons.
 
@@ -45,7 +45,7 @@ relations:
 
 ## Consequences
 
-**Eight interface contracts state the rule under `## Exit status`.** The overlay declares a closed set of eight headings for an `interface_contract`, and `section.required.missing` reads that set. So the sentence goes inside a heading that exists, and no contract gains a ninth heading of its own.
+**Nine interface contracts state the rule under `## Exit status`.** The ninth is `headwater taxonomy`, whose `publish` took `--json` under [#353](https://github.com/headwater-ai/headwater/issues/353) after this ruling. The overlay declares a closed set of eight headings for an `interface_contract`, and `section.required.missing` reads that set. So the sentence goes inside a heading that exists, and no contract gains a ninth heading of its own.
 
 **`check` takes a two-case form, because "standard output is empty on a non-zero exit" is false for it.** Five of the eleven reasons `check` exits 1 are decided after the report is written. `check --json --read-set /no/such/dir/run.readset` exits 1 and puts a whole JSON report on standard output. So the property is that a refusal writes nothing, and not that a non-zero exit writes nothing. `docs/interfaces/headwater-check.md` draws that line for the text report, and the same line holds for `json`, `sarif` and `markdown`.
 
