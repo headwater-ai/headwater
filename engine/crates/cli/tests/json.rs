@@ -530,10 +530,17 @@ fn a_refusal_names_the_spelling_the_caller_typed() {
 }
 
 /// Every document parses, and the parser is not this system.
+///
+/// The count at the end is held to the list rather than to a number written
+/// here: a literal was a second copy of `documents()`'s length, and it went
+/// red in CI, where the oracle is required, the first time a writer joined the
+/// list.
 #[test]
 fn every_document_this_binary_writes_is_read_by_a_parser_that_is_not_this_one() {
+    let documents = documents();
+    let expected = documents.len();
     let mut outside = 0;
-    for (name, run) in documents() {
+    for (name, run) in documents {
         assert!(
             !run.out.is_empty(),
             "`{name}` writes a document at all: {run:?}"
@@ -549,7 +556,10 @@ fn every_document_this_binary_writes_is_read_by_a_parser_that_is_not_this_one() 
         }
     }
     if std::env::var_os("HEADWATER_JSON_ORACLE").is_some() {
-        assert_eq!(outside, 10, "every document reached the outside parser");
+        assert_eq!(
+            outside, expected,
+            "every document reached the outside parser"
+        );
     }
 }
 
