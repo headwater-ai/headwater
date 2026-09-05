@@ -11,9 +11,9 @@ Work one iteration of the Headwater build order (org project "Headwater build or
 
 ## What differs when you run one iteration yourself
 
-**You are the doer and there is no parent to adjudicate for you.** In `/next-run` a subagent that meets a stale premise is told to adjudicate and keep going, because the parent will verify the result and can redirect. Here nobody will.
+**You are the doer and there is no parent to adjudicate for you.** The procedure already branches on this: its stale-premise check tells the solo case to say what changed and ask rather than guess, because here the second reader is a person rather than a verifier.
 
-So: **if the issue's premise no longer holds, or its "Done when" does not parse into a checkable bar, say what changed and ask rather than guess.** That is the one instruction that reverses between the two commands, and it reverses because the second reader is a person rather than a verifier.
+The same holds for a case the procedure does not name: **if the issue's "Done when" does not parse into a checkable bar, say what changed and ask rather than pick an interpretation yourself.**
 
 **Verify your own work before you claim it.** Nobody is going to break the corpus by hand on your behalf. At minimum: run the suite, run all five gates, and make the thing you built fail before you believe it works. If you added a rule, break the corpus and watch it fire with a message that names the offender. If you fixed something, revert the fix and confirm a named test goes red — a fix no test holds is a fix nobody can keep.
 
