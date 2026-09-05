@@ -13,8 +13,14 @@
 # What `mkdocs build` writes, per `mkdocs.yml`. It is the rendered projection of
 # the corpus and every byte of it is recomputable from the tree beside it, so
 # nothing is lost by leaving it out. It is deliberately not the MkDocs default
-# of `site/`, which is the hand-built half HW-DR-0037 governs and which
-# Cloudflare deploys on every push.
+# of `site/`, which is the hand-built half HW-DR-0037 governs and which is
+# committed byte for byte.
 .headwater/site-build/
+
+# What `tools/assemble-site.sh` composes from the two halves above, and what the
+# deploy serves. Every byte of it is a copy of a byte that is either committed
+# under `site/` or recomputable into `.headwater/site-build/`, so it holds
+# nothing of its own. HW-DR-0045 rules that this is the served directory.
+.headwater/site-deploy/
 
 __pycache__/

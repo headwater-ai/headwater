@@ -246,6 +246,52 @@ jobs:
             printf '%s\n' "$missing" >&2
             exit 1
           fi
+      - name: The two halves of the site compose into one served directory
+        # This is the input the deploy serves, and this step is the only place
+        # that runs the composition where a person reads the result. The
+        # deploy runs the same script — HW-DR-0045 rules that it does — so a
+        # break in the assembly is found by this runner, on the push that
+        # caused it, rather than by a visitor.
+        #
+        # `--check` re-asserts what the step above already holds about
+        # `site/`: the assembly reads that half and never writes it. Two
+        # independent guards on one invariant is deliberate. The #430 step
+        # catches `mkdocs build` writing there, and this one catches the
+        # assembly writing there, and the two run different code.
+        #
+        # The spot checks below are paths from each half plus the theme
+        # assets and the descriptor, because a composition that silently
+        # produced only one half would otherwise exit 0. They are named
+        # paths rather than a count: a count moves whenever a shelf gains a
+        # document, and a step that has to be re-blessed on ordinary work
+        # stops being read.
+        #
+        # Only three shelf roots are named, and that is a measurement rather
+        # than a selection. `spec`, `decisions` and `interfaces` are the
+        # shelves `.headwater/overlay.yml` declares an index projection for,
+        # so `headwater generate` writes `docs/<shelf>/README.md` for those
+        # three and MkDocs renders each as `<shelf>/index.html`. The other
+        # seven shelf roots have no index page and answer 404 on the served
+        # site, which is #528 rather than anything this step can hold. The
+        # last check reads the obligations shelf by shape instead: the
+        # records are there even though the root that should list them is
+        # not, and naming one record here would make an ordinary rename a
+        # red build.
+        run: |
+          sh tools/assemble-site.sh --check
+          for path in spec/index.html decisions/index.html interfaces/index.html \
+                      tutorials/your-first-governed-corpus/index.html \
+                      css/base.css js/base.js search/search_index.json corpus.json \
+                      index.html ns/index.html tutorial/index.html; do
+            if [ ! -f ".headwater/site-deploy/$path" ]; then
+              echo "the assembled site is missing \`$path\`" >&2
+              exit 1
+            fi
+          done
+          if [ -z "$(find .headwater/site-deploy/obligations -name index.html -print -quit)" ]; then
+            echo "the assembled site carries no obligation record page" >&2
+            exit 1
+          fi
       - name: Every declared export profile is what this corpus produces
         # `export_plan()` is a separate code path from `plan()`: it re-filters
         # the declared projections by `--profile` rather than writing every
