@@ -26,7 +26,24 @@
 #   Nothing here is typed by a person. A figure appears in the HTML inside a
 #   `<span data-figure="KEY">` element, and this script rewrites the text of
 #   every such element from the measurement above. A key with no measurement is
-#   an error, and a measurement with no key in any page is reported.
+#   an error, and a measurement that reaches no page is an error too. The
+#   second half of that is the denominator: a renamed marker, a moved page or
+#   an empty `site/` leaves every figure unused, and a check with no
+#   denominator passes over a site that proves nothing.
+#   `tools/refresh-site-tokens.sh` refuses an unmarked page for the same
+#   reason, and HW-DR-0050 rules it: a page that opts out of the register is
+#   refused rather than skipped.
+#
+# WHAT `--check` COMPARES, AND WHAT IT DOES NOT
+#
+#   `--check` compares the figures that are functions of the tree. One figure
+#   is not: `run.date` is `check --json .clock`, which is the system date, and
+#   three pages carry it. A tree nobody touched therefore disagrees with a
+#   fresh run every midnight. A date-only difference is reported and does not
+#   fail, because the page's claim is that these numbers came from a run on
+#   that date, and that claim is still true. The date is the timestamp of the
+#   act of measuring rather than a measurement of the corpus. Write mode
+#   rewrites the date on every run, as it always did.
 #
 # WHY THIS SCRIPT EXISTS AT ALL
 #
@@ -47,11 +64,17 @@
 #   hand-run figure has a source, a date, and a command that reproduces it — and
 #   `--check` fails when the page and the run disagree.
 #
-# THE DISCIPLINE
+# THE DISCIPLINE, AND WHAT RUNS IT
 #
 #   Run this before any commit that touches a page carrying a figure, and read
 #   what it prints. `--check` writes nothing and exits non-zero when a page is
 #   stale, which is the form to put in front of a reviewer.
+#
+#   Two callers run it, and a person is neither of them. `.githooks/pre-commit`
+#   refuses a commit whose page disagrees with a fresh run, under
+#   `HEADWATER_SKIP_FIGURE_CHECK`, and it announces the skip. The CI step named
+#   "The figures on the hand-built pages came from a run" reads the committed
+#   tree, has no escape hatch, and is the half that holds.
 #
 # USAGE
 #
@@ -263,11 +286,22 @@ for page in pages:
     if mode == "write" and after != before:
         page.write_text(after)
 
+# `run.date` is the clock of the run rather than a measurement of the corpus,
+# so a page that differs from a fresh run in the date alone is not stale. See
+# WHAT `--check` COMPARES above.
+CLOCK_KEYS = {"run.date"}
+stale_measured = [s for s in stale if s[1] not in CLOCK_KEYS]
+stale_clock = [s for s in stale if s[1] in CLOCK_KEYS]
+
 rel = lambda p: p.relative_to(root)
 for page, key in unknown:
     print("unknown figure key %s in %s" % (key, rel(page)), file=sys.stderr)
-for page, key, was, now in stale:
+for page, key, was, now in stale_measured:
     verb = "rewrote" if mode == "write" else "stale"
+    print("%s %s in %s: %s -> %s" % (verb, key, rel(page), was, now),
+          file=sys.stderr)
+for page, key, was, now in stale_clock:
+    verb = "rewrote" if mode == "write" else "date only"
     print("%s %s in %s: %s -> %s" % (verb, key, rel(page), was, now),
           file=sys.stderr)
 
@@ -278,60 +312,88 @@ for page, key, was, now in stale:
 # the page that is no longer in that document is drift, and this is what
 # catches it. Nothing here rewrites the page: the remedy is to regenerate the
 # blocks from the document, and never to edit the page.
+#
+# The page is not optional. HW-DR-0037 governs it by name, so a page that is
+# gone takes 43 checked blocks with it, and that is an error rather than a
+# skip. The same reasoning as the denominator guard below, one layer up.
+import html as _html
+
 drift = []
 tutpage = root / "site/tutorial/index.html"
-if tutpage.exists():
-    import html as _html
-    tut = (root / "docs/tutorials/your-first-governed-corpus.md").read_text()
-    page = tutpage.read_text()
-    blocks = re.findall(r'<pre class="[^"]*\bverbatim\b[^"]*">(.*?)</pre>',
-                        page, re.S)
-    for block in blocks:
-        if _html.unescape(block).rstrip("\n") not in tut:
-            drift.append(_html.unescape(block).split("\n")[0][:70])
-    m = re.search(r"<span data-tutorial-date>([^<]*)</span>", page)
-    stated = m.group(1) if m else None
-    m = re.search(r"The date of the run is (\d{4}-\d{2}-\d{2})\.", tut)
-    real = m.group(1) if m else None
-    if stated != real:
-        drift.append("the run date: page says %r, the document says %r"
-                     % (stated, real))
-    for d in drift:
-        print("tutorial drift: %s" % d, file=sys.stderr)
-    print("%d verbatim tutorial blocks checked against the document, %d adrift"
-          % (len(blocks), len(drift)))
+if not tutpage.exists():
+    sys.exit("refresh-figures.sh: site/tutorial/index.html is not there, and "
+             "HW-DR-0037 governs that page by name, so its absence is an error "
+             "and not a skip")
+tut = (root / "docs/tutorials/your-first-governed-corpus.md").read_text()
+page = tutpage.read_text()
+blocks = re.findall(r'<pre class="[^"]*\bverbatim\b[^"]*">(.*?)</pre>',
+                    page, re.S)
+for block in blocks:
+    if _html.unescape(block).rstrip("\n") not in tut:
+        drift.append(_html.unescape(block).split("\n")[0][:70])
+m = re.search(r"<span data-tutorial-date>([^<]*)</span>", page)
+stated = m.group(1) if m else None
+m = re.search(r"The date of the run is (\d{4}-\d{2}-\d{2})\.", tut)
+real = m.group(1) if m else None
+if stated != real:
+    drift.append("the run date: page says %r, the document says %r"
+                 % (stated, real))
+for d in drift:
+    print("tutorial drift: %s" % d, file=sys.stderr)
+print("%d verbatim tutorial blocks checked against the document, %d adrift"
+      % (len(blocks), len(drift)))
 
 # --- the landing page's quotation of HW-DR-0037 --------------------------
 # The hero card quotes the front matter of the record that governs these
 # pages. A field that record no longer carries is drift of the same kind the
 # tutorial check catches, so it is caught the same way.
+#
+# `landing` is the landing check's own list, and it is printed rather than a
+# tail of `drift`. A slice of `drift` here printed the last three TUTORIAL
+# entries under the label `landing drift:` on every run where the tutorial had
+# any, which is a refusal naming a check that did not fail.
+landing = []
 home = root / "site/index.html"
-if home.exists():
-    import html as _html
-    rec = next(root.glob("docs/decisions/0037-*.md")).read_text()
-    m = re.search(r'<pre class="quotes-0037">(.*?)</pre>',
-                  home.read_text(), re.S)
-    if not m:
-        drift.append("site/index.html no longer quotes HW-DR-0037")
-    else:
-        quoted = _html.unescape(re.sub(r"<[^>]+>", "", m.group(1)))
-        for line in quoted.split("\n"):
-            if line.strip() in ("", "---"):
-                continue
-            if line not in rec:
-                drift.append("HW-DR-0037 no longer carries %r" % line.strip())
-        for d in drift[-3:]:
-            print("landing drift: %s" % d, file=sys.stderr)
+if not home.exists():
+    sys.exit("refresh-figures.sh: site/index.html is not there, and HW-DR-0037 "
+             "governs that page by name, so its absence is an error and not a "
+             "skip")
+rec = next(root.glob("docs/decisions/0037-*.md")).read_text()
+m = re.search(r'<pre class="quotes-0037">(.*?)</pre>', home.read_text(), re.S)
+if not m:
+    landing.append("site/index.html no longer quotes HW-DR-0037")
+else:
+    quoted = _html.unescape(re.sub(r"<[^>]+>", "", m.group(1)))
+    for line in quoted.split("\n"):
+        if line.strip() in ("", "---"):
+            continue
+        if line not in rec:
+            landing.append("HW-DR-0037 no longer carries %r" % line.strip())
+for d in landing:
+    print("landing drift: %s" % d, file=sys.stderr)
+drift.extend(landing)
 
+# --- the denominator ------------------------------------------------------
+# A measured figure that reaches no page is the whole check contributing
+# nothing, silently. An empty `site/`, a renamed marker attribute and a moved
+# page all produce it, and all three used to exit 0.
 never = sorted(set(fig) - used)
 if never:
     print("measured but on no page: %s" % ", ".join(never), file=sys.stderr)
+    print("  a figure that reaches no page means a page stopped carrying it. "
+          "HW-DR-0050 refuses a page that opts out of the register rather than "
+          "skipping it, and this refuses the same thing for a figure.",
+          file=sys.stderr)
 
 print("%d figures measured, %d used across %d pages, %d stale, run of %s"
-      % (len(fig), len(used), len(pages), len(stale), fig["run.date"]))
+      % (len(fig), len(used), len(pages), len(stale_measured), fig["run.date"]))
+if mode == "check" and stale_clock:
+    print("%d of the pages carry a run date this run does not share. The date "
+          "of a run is the clock rather than a function of the tree, so it is "
+          "reported here and does not fail." % len(stale_clock))
 
-if unknown or drift:
+if unknown or drift or never:
     raise SystemExit(1)
-if mode == "check" and stale:
+if mode == "check" and stale_measured:
     raise SystemExit(1)
 PY

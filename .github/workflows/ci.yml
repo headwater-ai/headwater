@@ -408,6 +408,31 @@ jobs:
         # deliberate: a ninth page opting out of the shared register would do it
         # by carrying no marker, and a silent skip is what would let it.
         run: sh tools/refresh-site-tokens.sh --check
+      - name: The figures on the hand-built pages came from a run
+        # HW-DR-0039 rules that a number on a hand-built page is interpolated
+        # from a run of this engine rather than typed by a person, and
+        # `tools/refresh-figures.sh` is that build. It writes 34 measured
+        # figures into `data-figure` elements, and it holds the 43 verbatim
+        # blocks of `site/tutorial/index.html` against the tutorial document
+        # that `.claude/tutorial/fixtures.sh` runs.
+        #
+        # This is the third step that reads `site/`, and it belongs beside the
+        # other two and before the assembly, so the composed directory carries
+        # figures that already agree with this tree.
+        #
+        # Measured rather than supposed: HW-DR-0039 recorded that no hook and
+        # no job ran this script. Nothing ran it between 2026-08-26 and
+        # 2026-09-06, and by then 59 figure occurrences on three pages and 11
+        # of the 43 verbatim blocks had gone stale, on a site the deploy was
+        # already serving.
+        #
+        # The pre-commit clause of the same name carries an escape hatch and a
+        # `python3` guard that let a commit through. This step carries neither,
+        # which is what makes it the half that holds. A figure measured but
+        # reaching no page fails it too, for the same reason a page with no
+        # marker pair fails the step above: an empty `site/`, a renamed marker
+        # or a moved page otherwise passes over a check that ran on nothing.
+        run: sh tools/refresh-figures.sh --check
       - name: The two halves of the site compose into one served directory
         # This is the input the deploy serves, and this step is the only place
         # that runs the composition where a person reads the result. The
