@@ -17,7 +17,7 @@ git checkout v0.1.0
 cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml
 ```
 
-The binary lands at `engine/target/release/headwater`, and `headwater --version` prints the number the tag names. The GitHub release for that tag states the digest of `packages/headwater-standard/release.yml`, so `headwater taxonomy vendor --expect <digest>` checks the package against a number published outside the artifact it verifies rather than one read out of it.
+The binary lands at `engine/target/release/headwater`, and `headwater --version` prints the number the tag names. The GitHub release for that tag states one digest: the value of the `release.digest` field inside `packages/headwater-standard/release.yml`. It is not what `sha256sum` prints for that file, because the field covers the files the record lists and cannot cover the record itself. Pass the stated value to `headwater taxonomy vendor --expect <digest>`. The check then rests on a number published outside the artifact rather than on one read out of it.
 
 The tutorial above builds whatever tree you cloned, which is the default branch and moves. That is deliberate, because the tutorial is a claim about the default branch and CI holds it there. This paragraph is where the fixed version is.
 
