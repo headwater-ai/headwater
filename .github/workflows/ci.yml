@@ -18,20 +18,43 @@
 # promotion is one flag on one line, with the diff that added it as its audit
 # trail, rather than a `continue-on-error` that hides which rules block.
 #
-# No third-party action beyond `actions/checkout`.
+# No action from outside the `actions` organization. `actions/checkout` and
+# `actions/cache` are GitHub's own, and the bar this states is that rather
+# than a count of two: an action from anywhere else runs code nobody here
+# reviews, on every push, with a token in the environment.
 #
-# Both jobs run on a self-hosted runner rather than `ubuntu-latest`, because
-# the org's included Actions minutes (2,000/month on the Free plan) are spent
-# for the month and its spending limit defaults to $0, which refuses a
-# GitHub-hosted job outright rather than billing it. A self-hosted runner's
-# compute is not metered against that limit at all. The runner carries its
-# own rustup-managed stable toolchain rather than a distro one, so the pinned
-# floor is still what the container command in `engine/README.md` is for, and
-# `--break-system-packages` on every `pip install --user` below is this
-# runner's Python being a PEP 668 environment, which the comment ahead of the
-# `mkdocs` install already names as a thing a contributor hits reproducing
-# this locally. Move back to `ubuntu-latest` once the org's spending limit is
-# raised, or add it back as a second choice of runner if both should work.
+# Which runner both jobs take is a repository variable rather than a value
+# written here, so moving between the self-hosted runner and `ubuntu-latest`
+# costs no commit and no pull request. `CI_RUNNER` holds a JSON list of
+# labels, and an unset variable means the self-hosted runner:
+#
+#   gh variable set CI_RUNNER --body '["ubuntu-latest"]'   # GitHub-hosted
+#   gh variable delete CI_RUNNER                           # self-hosted again
+#   gh variable list                                       # which one is live
+#
+# The self-hosted runner is the default because a GitHub-hosted job spends the
+# org's included Actions minutes (2,000/month on the Free plan), and the
+# spending limit defaults to $0, which refuses such a job outright rather than
+# billing it. A self-hosted runner's compute is not metered against that limit
+# at all. The hosted image answers a different question: it takes 20 concurrent
+# jobs on this plan where the self-hosted runner takes one, so several branches
+# under review at once are a reason to spend minutes that one branch is not.
+#
+# Both images carry a rustup-managed stable toolchain rather than a distro one,
+# so the pinned floor is still what the container command in
+# `engine/README.md` is for. `--break-system-packages` on every
+# `pip install --user` below is what a PEP 668 Python needs, which the
+# self-hosted runner is and which the comment ahead of the `mkdocs` install
+# already names as a thing a contributor hits reproducing this locally. pip
+# accepts the flag where PEP 668 does not apply, so it costs the hosted image
+# nothing.
+#
+# A hosted job restores a cargo cache and a pip cache, and the self-hosted
+# runner takes neither: `~/.cargo` and `engine/target` already persist on its
+# disk, so restoring them there would be an upload and a download in place of
+# a directory that is already correct. `runner.environment` is what tells the
+# two apart. So a hosted minute estimate is a cold build on the first run of a
+# lock file and a warm one after it.
 
 name: CI
 
@@ -40,11 +63,13 @@ on:
     branches: [main]
   pull_request:
 
-# One self-hosted runner serves this repository, and it takes one job at a
-# time. So a superseded run is not merely wasted compute here: it holds the
-# only runner, and every other branch waits behind a verdict about a commit
-# nobody will merge. Three pushes to one branch in ten minutes queued three
-# full runs of both jobs, at three to fourteen minutes each.
+# On the self-hosted runner a superseded run is not merely wasted compute: one
+# runner serves this repository and it takes one job at a time, so a run
+# nobody will read holds the only runner, and every other branch waits behind
+# a verdict about a commit nobody will merge. Three pushes to one branch in
+# ten minutes queued three full runs of both jobs, at three to fourteen
+# minutes each. On a GitHub-hosted runner the queue is not the cost and the
+# minutes are, which is the same reason under a different meter.
 #
 # The group is per ref, so two different pull requests never cancel each
 # other. `github.ref` is `refs/pull/N/merge` on a pull request and
@@ -64,9 +89,39 @@ permissions:
 jobs:
   engine:
     name: Engine tests
-    runs-on: [self-hosted, headwater]
+    runs-on: ${{ fromJSON(vars.CI_RUNNER || '["self-hosted", "headwater"]') }}
     steps:
       - uses: actions/checkout@v4
+      - name: The cargo cache, on a hosted runner only
+        # A hosted runner starts empty, so with no cache the registry is
+        # refetched and every dependency is rebuilt on every run. The
+        # self-hosted runner needs none of it, because `~/.cargo` and
+        # `engine/target` persist on its disk between runs. Hence the
+        # condition rather than a comment asking somebody to remember.
+        #
+        # The key is the lock file, so a dependency change starts a new cache
+        # rather than patching an old one. `restore-keys` then falls back to
+        # the newest cache of this job, which is what makes a lock bump pay
+        # for the crates that moved rather than for all of them.
+        #
+        # The job name is in the key because this job builds test and debug
+        # artifacts and the job below builds a release binary. One key over
+        # both would have each run evict the other's `target`.
+        #
+        # A restored `engine/target` reaches nothing that reads it but cargo,
+        # which decides for itself what is stale. `.githooks/fixtures.sh`
+        # copies with `ls-files -co --exclude-standard` and `target/` is
+        # ignored, so the scratch repository that step builds does not see it.
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            engine/target
+          key: cargo-${{ runner.os }}-engine-${{ hashFiles('engine/Cargo.lock') }}
+          restore-keys: cargo-${{ runner.os }}-engine-
       - name: The toolchain this build needs
         # Rust 1.85 or later. `saphyr-parser` is on edition 2024, and an older
         # cargo reports `feature edition2024 is required` and nothing else.
@@ -113,7 +168,7 @@ jobs:
 
   headwater:
     name: headwater check (advisory)
-    runs-on: [self-hosted, headwater]
+    runs-on: ${{ fromJSON(vars.CI_RUNNER || '["self-hosted", "headwater"]') }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -123,6 +178,36 @@ jobs:
           # rather than describing a shorter change, so a depth of 1 would turn
           # that step red instead of quietly reporting a change of nothing.
           fetch-depth: 0
+      - name: The cargo cache, on a hosted runner only
+        # The same step in the `engine` job above carries the reasoning. The
+        # key differs by one word because that job builds test artifacts and
+        # this one builds a release binary, and a shared key would have each
+        # run evict the other's `target`.
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            engine/target
+          key: cargo-${{ runner.os }}-headwater-${{ hashFiles('engine/Cargo.lock') }}
+          restore-keys: cargo-${{ runner.os }}-headwater-
+      - name: The pip cache, on a hosted runner only
+        # For the `mkdocs` and `pymdown-extensions` install below, which is
+        # pinned and is the only pip step here heavy enough to be worth a
+        # cache round-trip. The two pure-Python packages the `engine` job
+        # installs are not, so that job has no equivalent of this step.
+        #
+        # The key is this file, because this file is where those pins are
+        # written. Any edit here starts a new cache, which costs one download
+        # and never serves a wheel that a changed pin no longer names.
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('.github/workflows/ci.yml') }}
+          restore-keys: pip-${{ runner.os }}-
       - name: The toolchain this build needs
         run: |
           rustup update --no-self-update stable
