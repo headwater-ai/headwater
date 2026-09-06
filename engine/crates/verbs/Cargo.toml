@@ -4,6 +4,7 @@ name = "headwater-verbs"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+license.workspace = true
 
 # No dependencies, for the reason `headwater-mark` has none. Two components read
 # the command surface and they sit on opposite sides of the engine: the binary

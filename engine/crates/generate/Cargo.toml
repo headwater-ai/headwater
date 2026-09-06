@@ -4,6 +4,7 @@ name = "headwater-generate"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [dependencies]
 # The projections block is read off the resolved taxonomy, which is a mapping,

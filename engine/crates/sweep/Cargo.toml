@@ -4,6 +4,7 @@ name = "headwater-sweep"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+license.workspace = true
 
 # The dependency direction is the whole argument that a sweep cannot gate.
 #

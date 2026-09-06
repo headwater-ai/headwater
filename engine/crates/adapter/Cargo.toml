@@ -4,6 +4,7 @@ name = "headwater-adapter"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [dependencies]
 # The run is what an adapter translates: its findings, the two escape
