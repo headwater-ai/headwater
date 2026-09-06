@@ -108,8 +108,20 @@ same() {
     fi
 }
 
-# The install command, written once here and nowhere else in this file.
-install_cmd='cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml'
+# The install command, assembled from two halves so that this file never holds
+# a verbatim copy of it. That is not fastidiousness: this file is a tracked file
+# and `git grep` reads it, so a whole copy written here would be a copy of the
+# install command with no `--locked` on it, and case 7 would report its own
+# source as the offender. The first CI run of this suite did exactly that.
+#
+# It did not fail locally, and the reason is worth knowing: `git grep` reads
+# tracked files only, and this file was still untracked when the suite was first
+# run over it. A new file that a suite reads through git is invisible to that
+# suite until it is committed, so a local green over an uncommitted addition is
+# not a reading of the population the suite will see.
+install_head='cargo build --release -p headwater-cli'
+install_tail='--manifest-path engine/Cargo.toml'
+install_cmd="$install_head $install_tail"
 
 # unflagged FILE SELECTOR
 #
@@ -231,14 +243,36 @@ same "  and there are two of them, beside the one \`fmt\` that cannot" 2 "$rd_fl
 same "  which is every cargo run on an image line" 3 "$rd_total"
 same "  and the exempt one is \`fmt\`" 1 "$rd_exempt"
 
-# 7. The install command a stranger and every agent is handed. Thirteen
-#    verbatim copies today, in files that no single reader owns, and the
-#    failure this refuses is the fourteenth landing unflagged: a README that
-#    says `--locked` beside twelve copies that do not is worse than none of
-#    them saying it, because it reads as a guarantee.
-copies=$(cd "$root" && git grep -c -F "$install_cmd" | awk -F: '{n += $2} END {print n + 0}')
-flagged=$(cd "$root" && git grep -c -F "$install_cmd --locked" | awk -F: '{n += $2} END {print n + 0}')
-same "every copy of the install command carries it" "$copies" "$flagged"
+# 7. The install command a stranger and every agent is handed. Fourteen
+#    verbatim copies today across thirteen files, none of which a single reader
+#    owns, and the failure this refuses is the fifteenth landing unflagged: a
+#    README that says `--locked` beside thirteen copies that do not is worse
+#    than none of them saying it, because it reads as a guarantee.
+#
+#    The offenders are named rather than counted. A case that reports
+#    `expected 15, got 14` is a case whose reader has to go and find out which
+#    one, and the first CI run of this suite made somebody do that.
+#    Written as a function taking a directory, so case 11 can drive the same
+#    code over a scratch repository holding a planted unflagged copy.
+install_offenders() {
+    ( cd "$1" && git grep -n -F "$install_cmd" 2>/dev/null |
+        grep -v -F "$install_cmd --locked" )
+}
+install_copies() {
+    ( cd "$1" && git grep -c -F "$2" 2>/dev/null |
+        awk -F: '{n += $2} END {print n + 0}' )
+}
+
+copies=$(install_copies "$root" "$install_cmd")
+flagged=$(install_copies "$root" "$install_cmd --locked")
+bad=$(install_offenders "$root")
+if [ "$copies" = "$flagged" ] && [ -z "$bad" ]; then
+    pass "every copy of the install command carries it"
+else
+    fail "every copy of the install command carries it" \
+        "$copies copies, $flagged flagged. Unflagged:
+          $(echo "$bad" | sed 's/^/          /')"
+fi
 if [ "$copies" -gt 0 ]; then
     pass "  over every copy in the tracked tree ($copies read)"
 else
@@ -285,6 +319,26 @@ for dir in "$scratch"/crates/*/; do
     grep -q '^license\.workspace = true$' "$dir/Cargo.toml" || named="$named $(basename "$dir")"
 done
 same "the license judge names a crate that forgot to inherit" " forgot" "$named"
+
+# 11. The install-command judge, over a scratch repository holding one flagged
+#     copy and one unflagged one. This is the case that failed on this suite's
+#     first CI run, and it failed against this suite's own source: a tracked
+#     file holding a whole copy of the install command is a copy of it, and
+#     `git grep` does not care which file it lives in. It reads through git, so
+#     the planted copies have to be committed to be seen at all — which is the
+#     same reason the defect was invisible to the local run that preceded it.
+repo="$scratch/copies"
+mkdir -p "$repo"
+git -C "$repo" init -q
+git -C "$repo" symbolic-ref HEAD refs/heads/main
+printf 'build it: %s --locked\n' "$install_cmd" >"$repo/good.md"
+printf 'build it: %s\n' "$install_cmd" >"$repo/bad.md"
+git -C "$repo" add -A >/dev/null 2>&1
+git -C "$repo" -c user.name=fixture -c user.email=fixture@example.invalid \
+    -c commit.gpgsign=false commit -q -m "one of each" >/dev/null 2>&1
+same "the install judge names the unflagged copy and not the flagged one" \
+    "bad.md:1:build it: $install_cmd" "$(install_offenders "$repo")"
+same "  and counts both copies" 2 "$(install_copies "$repo" "$install_cmd")"
 
 echo
 echo "$passed passed, $failed failed"
