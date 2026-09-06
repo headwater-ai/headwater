@@ -192,6 +192,118 @@ else
     fail 'every verb a skill names ships' "these do not:$missing"
 fi
 
+# --- claimed: what git reports about a merged branch, and what the skill says -
+
+# repo-cleanup decides merged by content because ancestry answers a different
+# question. These cases are about git rather than about this engine, so they
+# run with no built binary. Each one builds a scratch repository, reproduces
+# one of the three causes the skill names, and holds the result against a
+# sentence the skill has to keep saying.
+
+printf '\n# repo-cleanup, against the git behavior it describes\n'
+
+cleanup_skill="$skills/repo-cleanup/SKILL.md"
+
+# Assert a sentence is still in the skill, then run a scenario builder and hold
+# its verdict. Both halves, so the prose and git cannot drift apart.
+git_claim() {
+    name=$1 sentence=$2 expected=$3 builder=$4
+    if ! grep -qF "$sentence" "$cleanup_skill" 2>/dev/null; then
+        fail "$name" "repo-cleanup no longer says: $sentence"
+        return
+    fi
+    got=$($builder 2>&1 | tail -1)
+    if [ "$got" = "$expected" ]; then
+        pass "$name"
+    else
+        fail "$name" "expected \`$expected\`, got \`$got\`"
+    fi
+}
+
+# A throwaway repository with one commit on main, and the identity set locally
+# so the suite never reads the ambient git config.
+new_repo() {
+    d=$(mktemp -d "${TMPDIR:-/tmp}/headwater-cleanup-XXXXXX")
+    git -C "$d" init -q -b main
+    git -C "$d" config user.email fixture@example.invalid
+    git -C "$d" config user.name Fixture
+    git -C "$d" config commit.gpgsign false
+    echo base > "$d/file.txt"
+    git -C "$d" add file.txt
+    git -C "$d" commit -qm 'Base'
+    printf '%s' "$d"
+}
+
+# Squash merge: the work of the branch is on main, and no commit of the branch
+# is an ancestor of main.
+case_squash() {
+    d=$(new_repo)
+    git -C "$d" checkout -qb topic
+    echo work > "$d/file.txt"
+    git -C "$d" commit -qam 'Do the work'
+    git -C "$d" checkout -q main
+    git -C "$d" merge -q --squash topic
+    git -C "$d" commit -qm 'Do the work (#1)'
+    refused=no
+    git -C "$d" branch -d topic >/dev/null 2>&1 || refused=yes
+    identical=no
+    [ -z "$(git -C "$d" diff main topic)" ] && identical=yes
+    rm -rf "$d"
+    echo "refused=$refused identical=$identical"
+}
+
+# A history rewritten after the merge. Main carries the same tree and the
+# branch is no longer reachable from it.
+case_rewrite() {
+    d=$(new_repo)
+    git -C "$d" checkout -qb topic
+    echo work > "$d/file.txt"
+    git -C "$d" commit -qam 'Do the work'
+    git -C "$d" checkout -q main
+    git -C "$d" merge -q --ff-only topic
+    git -C "$d" commit -q --amend -m 'Do the work, rewritten'
+    refused=no
+    git -C "$d" branch -d topic >/dev/null 2>&1 || refused=yes
+    identical=no
+    [ -z "$(git -C "$d" diff main topic)" ] && identical=yes
+    rm -rf "$d"
+    echo "refused=$refused identical=$identical"
+}
+
+# The branch is merged into main by ancestry, and the session sits on another
+# branch. -d measures against HEAD and refuses anyway.
+case_other_head() {
+    d=$(new_repo)
+    git -C "$d" checkout -qb topic
+    echo work > "$d/file.txt"
+    git -C "$d" commit -qam 'Do the work'
+    git -C "$d" checkout -q main
+    git -C "$d" merge -q --ff-only topic
+    git -C "$d" checkout -q -b other main~1
+    refused=no
+    git -C "$d" branch -d topic >/dev/null 2>&1 || refused=yes
+    ancestor=no
+    git -C "$d" merge-base --is-ancestor topic main && ancestor=yes
+    rm -rf "$d"
+    echo "refused=$refused ancestor=$ancestor"
+}
+
+if ! command -v git >/dev/null 2>&1; then
+    skip 'the repo-cleanup git cases' 'no git on the path'
+else
+    git_claim 'a squash-merged branch is identical to main and -d refuses it' \
+        'Under a squash merge the forge writes one new commit on `origin/main`, and no commit of the branch is an ancestor of it.' \
+        'refused=yes identical=yes' case_squash
+
+    git_claim 'a rewritten history leaves a merged branch that -d refuses' \
+        'A history rewritten after the merge leaves the branch unreachable from `origin/main` although its work landed.' \
+        'refused=yes identical=yes' case_rewrite
+
+    git_claim '-d refuses a branch merged into main while HEAD is elsewhere' \
+        'It never measures against `origin/main` unless `origin/main` is the branch checked out.' \
+        'refused=yes ancestor=yes' case_other_head
+fi
+
 # --- derived: every rule a skill names is one this engine runs ---------------
 
 if [ -x "$engine" ]; then
