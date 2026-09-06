@@ -70,3 +70,26 @@
 .headwater/taxonomy.lock merge=headwater-regenerate
 engine/crates/check/fixtures/corpus.checks merge=headwater-regenerate
 engine/crates/lock/fixtures/corpus.lock merge=headwater-regenerate
+
+# The generated documents, which are the same shape for the same reason. Each
+# one opens with a count of the shelf below it, and `headwater generate` writes
+# every one of them from the corpus. Two branches that each add a decision both
+# write `48` where the merged tree holds 49.
+#
+# They are listed rather than matched. `docs/*/README.md` would reach
+# `docs/taxonomies/README.md` and `docs/w3id/README.md`, which nobody generates
+# and somebody edits by hand, and refusing a merge of a hand-authored file is a
+# worse failure than the one this list prevents. A list goes stale instead, so
+# `the_generated_documents_are_declared_unmergeable` in the census crate holds
+# every row the census calls generated against this block.
+docs/acceptance-criteria/README.md merge=headwater-regenerate
+docs/decisions/README.md merge=headwater-regenerate
+docs/evaluations/README.md merge=headwater-regenerate
+docs/interfaces/README.md merge=headwater-regenerate
+docs/obligations/README.md merge=headwater-regenerate
+docs/probes/README.md merge=headwater-regenerate
+docs/requirements/README.md merge=headwater-regenerate
+docs/reviews/README.md merge=headwater-regenerate
+docs/spec/09-open-questions.md merge=headwater-regenerate
+docs/spec/README.md merge=headwater-regenerate
+docs/tutorials/README.md merge=headwater-regenerate

@@ -49,7 +49,7 @@ ours="$2"
 path="$4"
 
 case "$path" in
-  .headwater/corpus.json|.headwater/export.json|.headwater/nav.yml)
+  .headwater/corpus.json|.headwater/export.json|.headwater/nav.yml|docs/*)
     remedy="headwater generate    (CI holds it with: headwater generate --check)"
     ;;
   .headwater/taxonomy.lock)

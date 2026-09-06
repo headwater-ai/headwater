@@ -98,6 +98,8 @@ docs/decisions/0046-migrating-from-version-carries-a-semver-and-a-release-digest
   typed: decision
 docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md
   typed: decision
+docs/decisions/0048-a-corpus-wide-fold-is-derived-and-never-stored.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md

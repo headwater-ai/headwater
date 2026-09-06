@@ -83,6 +83,22 @@ What did change is worth having on its own. **Peak context per agent falls from 
 
 **The coordination has outgrown the waiting.** Three phases and two handoffs was the line this paragraph drew, past which the sequence belongs in a script rather than in your turns. Verification makes it four phases and three handoffs, so the shape is now over that line by its own rule. `Workflow` is that script: it runs the phases in a fixed order, hands you each phase's return value directly, keeps every phase's tool output out of your context, and never puts you in a position to wait at all — which retires the polling failure above by construction rather than by a rule a parent has to keep remembering for ten hours. It costs a decision from the human to start, so **raise it at the top of a run rather than in the middle of one**, with the measured numbers from this section as the case. Judgment between iterations — what to merge, what a stale premise means — stays with you either way.
 
+## Running more than one iteration at a time
+
+**This is a different question from the four-agent split above, and the two do not substitute.** That split divides *one* iteration into phases that need disjoint context. This divides the *run* into iterations that land in parallel. The line at the top of this file — *parallel runs do not stack, they collide* — was written about running the whole loop twice, and it stands. What follows is the narrower thing that works: several iterations building at once, one merge decision, still yours.
+
+**What used to make this unsafe is fixed, and knowing which half is fixed matters.** [HW-DR-0048](../../docs/decisions/0048-a-corpus-wide-fold-is-derived-and-never-stored.md) rules that a recorded artifact holds one record per entity and derives every total. The census and the graph now merge correctly when two branches each add a document. What is *not* fixed is the artifact that keeps its fold, and the rule that record states is the one to carry into every parallel branch: **an artifact that stores a count over the whole corpus merges quietly and wrongly when the branch carrying it is behind `main`.** Nothing in a private repository on a free plan refuses that merge. Read the record rather than a summary of it here.
+
+**So the one instruction every parallel worker gets, in its prompt, is this.** Before you ask for a merge, rebase onto `main`, then run `headwater generate` and re-bless the recorded fixtures, and read that diff. A branch that skips it can be green on its own tip and still turn `main` red, and no reviewer of that branch could have seen it.
+
+**Claim through the board, never through a coordinator.** A worker takes its issue by assigning it to itself and moving it to In Progress. That claim is atomic, it is durable, it survives a worker that dies, and you can read the whole state without asking anybody. A coordinator holding N workers' states in its own context is the polling failure of the section above with N times the input, and every message it routes re-reads its whole context. Scaling up or down is then starting or stopping a worker rather than correcting a scheduler written in prose.
+
+**Cap it at two or three and raise it on a measurement.** The merge decision never leaves you, and verification was 36% of the parent's cost in the last measured run. Adding workers multiplies the part that is already the constraint rather than the part that is cheap. Watch one number: worker idle time against wall clock from branch-ready to merged. If workers wait on you or on the runner, another worker buys nothing.
+
+**One self-hosted runner serves this repository and it takes one job at a time.** Three or four workers pushing turns CI into a queue. `.github/workflows/ci.yml` cancels a superseded run on a pull request so that a dead commit does not hold the runner, and that is the whole of what configuration can do here. More parallelism than the runner can absorb shows up as idle workers, which is the number above.
+
+**Prefer issues that do not collide.** Engine-only work that adds no document under `docs/` touches none of the recorded artifacts. Two issues in different milestones rarely edit one register. An `adopter-blocking` issue is worth your own attention rather than a pool slot, and there are few of them.
+
 ## Each iteration's prompt
 
 Build it fresh. It must contain all seven parts.

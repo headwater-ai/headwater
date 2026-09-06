@@ -36,6 +36,10 @@ The workspace, from `engine/`. CI runs it with no filter, so the workspace is th
 
 [DEVELOPING.md](../../../DEVELOPING.md) carries the three invocations, the environment variable that re-records, and which files move. This file used to carry them too, and a second copy of a command is a second thing to keep true.
 
+**Rebase onto `main` before you bless, and treat that as part of blessing rather than as a courtesy.** [HW-DR-0048](../../../docs/decisions/0048-a-corpus-wide-fold-is-derived-and-never-stored.md) rules why. Most recorded artifacts now hold one record per entity, so two branches that each add a document merge correctly. The ones that keep a count over the whole corpus do not: both branches write the same new count, git takes one change written twice with no conflict, and the merged file states a number true of neither branch. A branch blessed against a stale `main` can be green on its own tip and turn `main` red on landing. `.gitattributes` names the artifacts that still carry a fold, and no attribute of any kind catches this case, which the record measures rather than assumes.
+
+Nothing enforces the rebase. Branch protection and a merge queue both need a plan this repository does not have while it is private, so this paragraph and the request in `.claude/commands/next-run.md` are the whole mechanism, and both cite the record rather than restating it.
+
 ## The five mistakes
 
 **`cargo test` from the repository root.** There is no manifest there. The workspace is under `engine/`, and the error names a missing `Cargo.toml` rather than the directory you are in.

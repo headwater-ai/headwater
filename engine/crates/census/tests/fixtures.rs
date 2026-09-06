@@ -152,6 +152,61 @@ fn the_census_rows_are_in_path_order() {
     );
 }
 
+/// Every generated document is declared unmergeable, and a list is why this runs.
+///
+/// A generated document opens with a count of the shelf below it, which is a
+/// fold, and [HW-DR-0048](../../../../docs/decisions/0048-a-corpus-wide-fold-is-derived-and-never-stored.md)
+/// rules that a fold answers to a check on the merged state rather than to a
+/// merge. `.gitattributes` names each one, and it names them one at a time
+/// rather than by a pattern, because `docs/*/README.md` reaches two files that
+/// nobody generates and somebody edits by hand.
+///
+/// A list goes stale, and this is the guard on it. A new shelf brings a new
+/// index, `headwater generate` writes it, and nothing else would notice that
+/// the new file merges the way the old ones must not. The census already knows
+/// which files are generated, so the list is checked against the corpus rather
+/// than against somebody's memory of it.
+#[test]
+fn the_generated_documents_are_declared_unmergeable() {
+    let root = repository_root();
+    let taken = census::take(&corpus_of(&root), &resolved_taxonomy(&root));
+
+    let attributes =
+        std::fs::read_to_string(root.join(".gitattributes")).expect("the attributes file");
+    let declared: Vec<&str> = attributes
+        .lines()
+        .filter(|line| line.contains("merge=headwater-regenerate"))
+        .filter_map(|line| line.split_whitespace().next())
+        .collect();
+    assert!(
+        declared.len() > 5,
+        "only {} paths declare the driver, so this proves nothing",
+        declared.len()
+    );
+
+    let generated: Vec<&str> = taken
+        .rows
+        .iter()
+        .filter(|row| row.outcome.class() == "generated")
+        .map(|row| row.path.as_str())
+        .collect();
+    assert!(
+        !generated.is_empty(),
+        "the census reports no generated document, so this proves nothing"
+    );
+
+    let missing: Vec<&str> = generated
+        .iter()
+        .filter(|path| !declared.contains(*path))
+        .copied()
+        .collect();
+    assert!(
+        missing.is_empty(),
+        "these generated documents merge like ordinary files, and each one opens \
+         with a count that two branches would both move: {missing:#?}"
+    );
+}
+
 /// The census and the parser's exception list are two accounts of one corpus.
 ///
 /// [#44](https://github.com/headwater-ai/headwater/issues/44) says they must not

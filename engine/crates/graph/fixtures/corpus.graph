@@ -21,6 +21,8 @@ anchors
     cited by HW-DR-0024
   code_path `.claude/skills/headwater-taxonomy/SKILL.md` via source-tree
     cited by HW-SPEC-ai-integration
+  code_path `.githooks/merge-regenerate` via source-tree
+    cited by HW-DR-0048
   code_path `.headwater/overlay.yml` via source-tree
     cited by HW-DR-0027
   code_path `.headwater/overlay.yml` via source-tree
@@ -43,6 +45,8 @@ anchors
     cited by HW-IFACE-headwater-taxonomy
   code_path `engine/crates/audit/src/reading.rs` via source-tree
     cited by HW-IFACE-headwater-taxonomy
+  code_path `engine/crates/census/src/census.rs` via source-tree
+    cited by HW-DR-0048
   code_path `engine/crates/census/src/walk.rs` via source-tree
     cited by HW-IFACE-headwater-explain
   code_path `engine/crates/check/src/dependency.rs` via source-tree
@@ -169,6 +173,8 @@ anchors
     cited by HW-IFACE-headwater-generate
   code_path `engine/crates/graph/src/anchors.rs` via source-tree
     cited by HW-REQ-0001
+  code_path `engine/crates/graph/src/lib.rs` via source-tree
+    cited by HW-DR-0048
   code_path `engine/crates/import/src/lib.rs` via source-tree
     cited by HW-IFACE-headwater-import
   code_path `engine/crates/meta/meta-schema.yml` via source-tree
