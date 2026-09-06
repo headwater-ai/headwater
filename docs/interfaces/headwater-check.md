@@ -35,7 +35,7 @@ The verb takes no operand. A word after `check` is refused, and the message name
 
 **The `text` format renders the palette [HW-DR-0045](../decisions/0045-coloring-the-cli-and-where-the-banner-goes.md) rules on, when standard output is a terminal.** A severity word, a path, an obligation identifier and a `fix:` label each carry their own color, and the six block headings do too. The other three formats never color, whatever stream they reach. A machine reads them, and an escape sequence in JSON or SARIF is a defect rather than a courtesy. `--no-color` forces the same plain text every format already wrote before this decision.
 
-**The run is advisory unless `--strict` is passed.** A finding of any severity leaves the exit status at 0, which [spec 6](../spec/06-engine-architecture.md#exit-codes) fixes as the default. A tool that blocks on first contact is a tool somebody removes, and a removed tool catches nothing.
+**The run is advisory unless `--strict` is passed.** A finding of any severity leaves the exit status at 0, which [spec 6](../spec/06-engine-architecture.md#cli) fixes as the default. A tool that blocks on first contact is a tool somebody removes, and a removed tool catches nothing.
 
 **Two streams carry two different facts, and a caller that merges them reads a correct report as a broken one.** The report goes to standard output. The cache accounting goes to standard error, because it is a fact about the disk of one machine rather than about the corpus. `--fix` puts its account of what it wrote on standard error for the same reason. A cached run and a `--no-cache` run write the same bytes to standard output. A line about the cache on that stream is the one thing that would make the two differ.
 
@@ -123,7 +123,7 @@ Without `--fix`, this verb writes no byte of the corpus. The cache is outside th
 
 ## See also
 
-[`headwater taxonomy resolve`](../spec/06-engine-architecture.md#the-verbs) writes the lock this verb reads, and a check that reports a rule nobody declared is a lock that was not written again.
+[`headwater taxonomy resolve`](../spec/06-engine-architecture.md#cli) writes the lock this verb reads, and a check that reports a rule nobody declared is a lock that was not written again.
 
 `headwater gate` reads the file that `--read-set` writes, and answers whether the verdicts of this run carry to another tree.
 
@@ -131,6 +131,6 @@ Without `--fix`, this verb writes no byte of the corpus. The cache is outside th
 
 [The command surface](README.md) lists every verb this binary dispatches, and it marks the ones that no contract describes. `headwater generate` writes it.
 
-[Spec 12](../spec/12-check-layer.md) declares the check layer: the scopes, the cache, the read set, and the [fixability](../spec/12-check-layer.md#fixability) bar that decides which findings `--fix` acts on. [Spec 4](../spec/04-assurance-model.md) declares the finding shape and the register. [Spec 6](../spec/06-engine-architecture.md#exit-codes) declares the exit-code convention this verb follows.
+[Spec 12](../spec/12-check-layer.md) declares the check layer: the scopes, the cache, the read set, and the [fixability](../spec/12-check-layer.md#fixability) bar that decides which findings `--fix` acts on. [Spec 4](../spec/04-assurance-model.md) declares the finding shape and the register. [Spec 6](../spec/06-engine-architecture.md#cli) declares the exit-code convention this verb follows.
 
 The commit gate of this repository is `.githooks/pre-commit`, and it runs `headwater check --strict` after `.githooks/change-manifest` writes the manifest that `--change` reads.

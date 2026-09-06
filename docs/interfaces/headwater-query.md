@@ -51,6 +51,6 @@ None. The verb reads and writes no file.
 
 [HW-OBL-0029](../obligations/0029-what-headwater-query-takes.md) records the missing expression grammar and waits on a build.
 
-[`headwater route`](../spec/06-engine-architecture.md#the-verbs) matches a task description to the graph.
+[`headwater route`](../spec/06-engine-architecture.md#cli) matches a task description to the graph.
 
-[`headwater explain`](../spec/06-engine-architecture.md#the-verbs) reports the kind, purpose and edges of one document.
+[`headwater explain`](../spec/06-engine-architecture.md#cli) reports the kind, purpose and edges of one document.

@@ -171,8 +171,16 @@ jobs:
         # reads `.headwater/taxonomy.lock` with it, so leaving it implicit
         # would make that step fail on a release of MkDocs that stopped
         # depending on it.
+        #
+        # `pymdown-extensions` is pinned for the reason `mkdocs` is, and it
+        # carries more weight than a version floor: `mkdocs.yml` names
+        # `pymdownx.slugs.slugify` as the rule that derives every heading
+        # anchor on the site, so a release that moved that function would move
+        # 2577 anchors and 3559 links with no commit in this repository. #431
+        # is what the pin protects, and the step below is what would catch it.
         run: |
-          python3 -m pip install --user --break-system-packages mkdocs==1.6.1 PyYAML
+          python3 -m pip install --user --break-system-packages \
+            mkdocs==1.6.1 pymdown-extensions==10.11.2 PyYAML
           python3 -m mkdocs build --strict
       - name: The build wrote nothing into the deployed site
         # `site/` is the hand-built half HW-DR-0037 governs, `wrangler.jsonc`
@@ -344,6 +352,42 @@ jobs:
 
           print("%d shelf roots each serve an index page: %s" % (len(roots), ", ".join(sorted(roots))))
           PY
+      - name: Every in-site fragment resolves against the page it is served beside
+        # THE INSTRUMENT THAT WOULD HAVE CAUGHT #431 ON THE DAY IT LANDED
+        #
+        #   335 links pointed at an anchor no built page carried, for three
+        #   weeks, under a green build. MkDocs reported every one of them at
+        #   `info` and exited 0, and until the generated half was served
+        #   nobody could follow one. `validation.anchors: warn` in
+        #   `mkdocs.yml` fixes the severity, and the step above would now fail
+        #   on the same population.
+        #
+        #   This step is the second reader, and it is not redundant with that
+        #   one. MkDocs validates links between *source documents*. This
+        #   parses the *served bytes*: it walks every `.html` file under the
+        #   assembled directory, collects the `id` attributes each page
+        #   actually carries, and resolves every in-site `href` fragment
+        #   against them. That population is larger — 3559 links against 293
+        #   pages on the tree that added this step — and it includes the
+        #   theme's own table of contents, the generated navigation and the
+        #   hand-built half, none of which reaches MkDocs's validator at all.
+        #
+        #   It runs after the compose step because the assembled directory is
+        #   what a visitor is served, and #431 existed precisely because the
+        #   only instrument over this read Markdown.
+        #
+        # It fails on a dead fragment and reports a dead path without failing.
+        # The tool's own header states why, and #406 owns the path half.
+        # `sh tools/site-fragments-fixtures.sh` provokes every one of those
+        # outcomes, including each refusal, and runs in the step below.
+        run: python3 tools/check-site-fragments.py
+      - name: The fragment checker refuses what it claims to refuse
+        # Spec 12 refuses a check that ships with no failing fixture, and
+        # `.githooks/fixtures.sh` is the shape this follows: every refusal is
+        # provoked on purpose and so is every pass, because a gate that
+        # refuses everything is as useless as one that refuses nothing. It
+        # writes only under a temporary directory.
+        run: sh tools/site-fragments-fixtures.sh
       - name: Every declared export profile is what this corpus produces
         # `export_plan()` is a separate code path from `plan()`: it re-filters
         # the declared projections by `--profile` rather than writing every
