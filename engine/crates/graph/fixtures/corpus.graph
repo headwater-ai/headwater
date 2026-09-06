@@ -1,92 +1,253 @@
-304 nodes, 609 declared edge halves
-    463 to a document
-    146 to an anchor
-0 prose links that did not resolve
-
 anchors
-      1 code_path `.claude/agents/headwater-maintainer.md` via source-tree
-      1 code_path `.claude/commands/next-run.md` via source-tree
-      2 code_path `.claude/hooks/intent.sh` via source-tree
-      2 code_path `.claude/hooks/lib.sh` via source-tree
-      2 code_path `.claude/hooks/review.sh` via source-tree
-      1 code_path `.claude/hooks/write.sh` via source-tree
-      1 code_path `.claude/settings.json` via source-tree
-      1 code_path `.claude/skills/fixtures.sh` via source-tree
-      2 code_path `.claude/skills/headwater-authoring/SKILL.md` via source-tree
-      1 code_path `.claude/skills/headwater-sweep/SKILL.md` via source-tree
-      1 code_path `.claude/skills/headwater-taxonomy/SKILL.md` via source-tree
-      1 code_path `.github/workflows/ci.yml` via source-tree
-      2 code_path `.headwater/overlay.yml` via source-tree
-      1 code_path `.headwater/taxonomy.yml` via source-tree
-      2 code_path `docs/taxonomies/decision-record/bundle.yml` via source-tree
-        inside `docs/taxonomies/**`, which this corpus declares is not corpus content
-      1 code_path `engine/Cargo.lock` via source-tree
-      1 code_path `engine/Cargo.toml` via source-tree
-      1 code_path `engine/README.md` via source-tree
-      1 code_path `engine/crates/adapter/src/lib.rs` via source-tree
-      1 code_path `engine/crates/audit/src/lib.rs` via source-tree
-      1 code_path `engine/crates/audit/src/reading.rs` via source-tree
-      1 code_path `engine/crates/census/src/walk.rs` via source-tree
-      1 code_path `engine/crates/check/src/dependency.rs` via source-tree
-      2 code_path `engine/crates/check/src/facet_blank.rs` via source-tree
-      1 code_path `engine/crates/check/src/gate.rs` via source-tree
-      1 code_path `engine/crates/check/src/language.rs` via source-tree
-      1 code_path `engine/crates/check/src/lib.rs` via source-tree
-      1 code_path `engine/crates/check/src/lifecycle_state.rs` via source-tree
-      1 code_path `engine/crates/check/src/voice.rs` via source-tree
-      1 code_path `engine/crates/cli/Cargo.toml` via source-tree
-     20 code_path `engine/crates/cli/src/lib.rs` via source-tree
-     22 code_path `engine/crates/cli/src/main.rs` via source-tree
-      2 code_path `engine/crates/cli/src/paint.rs` via source-tree
-      2 code_path `engine/crates/cli/tests/help.rs` via source-tree
-      1 code_path `engine/crates/cli/tests/json.rs` via source-tree
-      1 code_path `engine/crates/cli/tests/width.rs` via source-tree
-      1 code_path `engine/crates/cli/tests/wiring.rs` via source-tree
-      1 code_path `engine/crates/compat/src/lib.rs` via source-tree
-      1 code_path `engine/crates/conformance/src/json.rs` via source-tree
-      1 code_path `engine/crates/conformance/src/lib.rs` via source-tree
-      1 code_path `engine/crates/conformance/src/render.rs` via source-tree
-      1 code_path `engine/crates/conformance/tests/render.rs` via source-tree
-      1 code_path `engine/crates/doc/src/sentences.rs` via source-tree
-      1 code_path `engine/crates/generate/src/export.rs` via source-tree
-      2 code_path `engine/crates/generate/src/lib.rs` via source-tree
-      1 code_path `engine/crates/graph/src/anchors.rs` via source-tree
-      1 code_path `engine/crates/import/src/lib.rs` via source-tree
-      2 code_path `engine/crates/meta/meta-schema.yml` via source-tree
-      1 code_path `engine/crates/probe/src/lib.rs` via source-tree
-      1 code_path `engine/crates/query/src/explain.rs` via source-tree
-      2 code_path `engine/crates/query/src/json.rs` via source-tree
-      3 code_path `engine/crates/query/src/lib.rs` via source-tree
-      1 code_path `engine/crates/query/src/mcp.rs` via source-tree
-      1 code_path `engine/crates/query/src/route.rs` via source-tree
-      1 code_path `engine/crates/resolve/src/lib.rs` via source-tree
-      2 code_path `engine/crates/resolve/src/rules.rs` via source-tree
-      1 code_path `engine/crates/scaffold/src/lib.rs` via source-tree
-      3 code_path `engine/crates/scaffold/src/reading.rs` via source-tree
-      1 code_path `engine/crates/sweep/src/intake.rs` via source-tree
-      2 code_path `engine/crates/sweep/src/lib.rs` via source-tree
-      1 code_path `engine/crates/verbs/src/lib.rs` via source-tree
-      1 code_path `engine/crates/yaml/src/json.rs` via source-tree
-      1 code_path `mkdocs-overrides/main.html` via source-tree
-      4 code_path `notes/website-design-brief.md` via source-tree
-      1 code_path `packages/headwater-standard/taxonomy.yml` via source-tree
-      1 code_path `site/_headers` via source-tree
-      1 code_path `site/changelog/index.html` via source-tree
-      1 code_path `site/compare/index.html` via source-tree
-      1 code_path `site/glossary/index.html` via source-tree
-      1 code_path `site/how-it-works/index.html` via source-tree
-      1 code_path `site/index.html` via source-tree
-      1 code_path `site/ns/index.html` via source-tree
-      1 code_path `site/proof/index.html` via source-tree
-      1 code_path `site/tutorial/index.html` via source-tree
-      1 code_path `taxonomy-source/headwater-standard/package.yml` via source-tree
-      1 code_path `tools/assemble-site.sh` via source-tree
-      1 code_path `tools/cloudflare-build.sh` via source-tree
-      1 code_path `tools/language-spike/build.sh` via source-tree
-      1 code_path `tools/rdf-probe/emit.py` via source-tree
-      1 code_path `tools/refresh-crawler-files.sh` via source-tree
-      1 code_path `tools/refresh-figures.sh` via source-tree
-      1 code_path `tools/refresh-site-tokens.sh` via source-tree
-      1 code_path `tools/site-tokens.css` via source-tree
-      1 code_path `tools/sitemap.py` via source-tree
-      1 code_path `wrangler.jsonc` via source-tree
+  code_path `.claude/agents/headwater-maintainer.md` via source-tree
+    cited by HW-SPEC-ai-integration
+  code_path `.claude/hooks/intent.sh` via source-tree
+    cited by HW-SPEC-ai-integration
+  code_path `.claude/hooks/lib.sh` via source-tree
+    cited by HW-SPEC-ai-integration
+  code_path `.claude/hooks/review.sh` via source-tree
+    cited by HW-SPEC-ai-integration
+  code_path `.claude/hooks/write.sh` via source-tree
+    cited by HW-SPEC-ai-integration
+  code_path `.claude/settings.json` via source-tree
+    cited by HW-SPEC-harness-support
+  code_path `.claude/skills/fixtures.sh` via source-tree
+    cited by HW-SPEC-ai-integration
+  code_path `.claude/skills/headwater-authoring/SKILL.md` via source-tree
+    cited by HW-PROBE-the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document
+  code_path `.claude/skills/headwater-authoring/SKILL.md` via source-tree
+    cited by HW-SPEC-ai-integration
+  code_path `.claude/skills/headwater-sweep/SKILL.md` via source-tree
+    cited by HW-DR-0024
+  code_path `.claude/skills/headwater-taxonomy/SKILL.md` via source-tree
+    cited by HW-SPEC-ai-integration
+  code_path `.headwater/overlay.yml` via source-tree
+    cited by HW-DR-0027
+  code_path `.headwater/overlay.yml` via source-tree
+    cited by HW-DR-0028
+  code_path `.headwater/taxonomy.yml` via source-tree
+    cited by HW-DR-0029
+  code_path `docs/taxonomies/decision-record/bundle.yml` via source-tree
+    cited by HW-DR-0025
+    inside `docs/taxonomies/**`, which this corpus declares is not corpus content
+  code_path `docs/taxonomies/decision-record/bundle.yml` via source-tree
+    cited by HW-DR-0030
+    inside `docs/taxonomies/**`, which this corpus declares is not corpus content
+  code_path `engine/Cargo.lock` via source-tree
+    cited by HW-REQ-0001
+  code_path `engine/Cargo.toml` via source-tree
+    cited by HW-DR-0023
+  code_path `engine/README.md` via source-tree
+    cited by HW-DR-0029
+  code_path `engine/crates/audit/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-taxonomy
+  code_path `engine/crates/audit/src/reading.rs` via source-tree
+    cited by HW-IFACE-headwater-taxonomy
+  code_path `engine/crates/census/src/walk.rs` via source-tree
+    cited by HW-IFACE-headwater-explain
+  code_path `engine/crates/check/src/dependency.rs` via source-tree
+    cited by HW-DR-0026
+  code_path `engine/crates/check/src/gate.rs` via source-tree
+    cited by HW-IFACE-headwater-gate
+  code_path `engine/crates/check/src/language.rs` via source-tree
+    cited by HW-EVAL-what-a-check-can-know
+  code_path `engine/crates/check/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-check
+  code_path `engine/crates/check/src/lifecycle_state.rs` via source-tree
+    cited by HW-DR-0026
+  code_path `engine/crates/cli/Cargo.toml` via source-tree
+    cited by HW-DR-0033
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-DR-0033
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-DR-0042
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-DR-0043
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-DR-0045
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-capture
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-completions
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-conformance
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-explain
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-export
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-gate
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-generate
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-help
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-import
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-infer
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-init
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-mcp
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-new
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-route
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-taxonomy
+  code_path `engine/crates/cli/src/lib.rs` via source-tree
+    cited by HW-REV-the-sixty-four-restored-help-strings-checked-against-the-binary
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-DR-0043
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-DR-0045
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-capture
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-check
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-completions
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-conformance
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-explain
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-export
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-gate
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-generate
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-help
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-import
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-infer
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-init
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-mcp
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-new
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-probe
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-query
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-route
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-sweep
+  code_path `engine/crates/cli/src/main.rs` via source-tree
+    cited by HW-IFACE-headwater-taxonomy
+  code_path `engine/crates/cli/src/paint.rs` via source-tree
+    cited by HW-DR-0045
+  code_path `engine/crates/cli/src/paint.rs` via source-tree
+    cited by HW-IFACE-headwater-help
+  code_path `engine/crates/cli/tests/help.rs` via source-tree
+    cited by HW-DR-0042
+  code_path `engine/crates/cli/tests/help.rs` via source-tree
+    cited by HW-DR-0045
+  code_path `engine/crates/cli/tests/json.rs` via source-tree
+    cited by HW-DR-0043
+  code_path `engine/crates/cli/tests/width.rs` via source-tree
+    cited by HW-DR-0045
+  code_path `engine/crates/cli/tests/wiring.rs` via source-tree
+    cited by HW-REV-the-sixty-four-restored-help-strings-checked-against-the-binary
+  code_path `engine/crates/compat/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-taxonomy
+  code_path `engine/crates/conformance/src/json.rs` via source-tree
+    cited by HW-IFACE-headwater-conformance
+  code_path `engine/crates/conformance/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-conformance
+  code_path `engine/crates/conformance/src/render.rs` via source-tree
+    cited by HW-IFACE-headwater-conformance
+  code_path `engine/crates/doc/src/sentences.rs` via source-tree
+    cited by HW-OBL-0159
+  code_path `engine/crates/generate/src/export.rs` via source-tree
+    cited by HW-IFACE-headwater-export
+  code_path `engine/crates/generate/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-generate
+  code_path `engine/crates/graph/src/anchors.rs` via source-tree
+    cited by HW-REQ-0001
+  code_path `engine/crates/import/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-import
+  code_path `engine/crates/meta/meta-schema.yml` via source-tree
+    cited by HW-DR-0025
+  code_path `engine/crates/meta/meta-schema.yml` via source-tree
+    cited by HW-DR-0040
+  code_path `engine/crates/probe/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-probe
+  code_path `engine/crates/query/src/explain.rs` via source-tree
+    cited by HW-IFACE-headwater-explain
+  code_path `engine/crates/query/src/json.rs` via source-tree
+    cited by HW-IFACE-headwater-explain
+  code_path `engine/crates/query/src/json.rs` via source-tree
+    cited by HW-IFACE-headwater-route
+  code_path `engine/crates/query/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-explain
+  code_path `engine/crates/query/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-query
+  code_path `engine/crates/query/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-route
+  code_path `engine/crates/query/src/mcp.rs` via source-tree
+    cited by HW-IFACE-headwater-mcp
+  code_path `engine/crates/query/src/route.rs` via source-tree
+    cited by HW-IFACE-headwater-route
+  code_path `engine/crates/resolve/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-taxonomy
+  code_path `engine/crates/resolve/src/rules.rs` via source-tree
+    cited by HW-DR-0025
+  code_path `engine/crates/resolve/src/rules.rs` via source-tree
+    cited by HW-DR-0026
+  code_path `engine/crates/scaffold/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-new
+  code_path `engine/crates/scaffold/src/reading.rs` via source-tree
+    cited by HW-IFACE-headwater-capture
+  code_path `engine/crates/scaffold/src/reading.rs` via source-tree
+    cited by HW-OBL-0111
+  code_path `engine/crates/scaffold/src/reading.rs` via source-tree
+    cited by HW-OBL-0112
+  code_path `engine/crates/sweep/src/intake.rs` via source-tree
+    cited by HW-DR-0024
+  code_path `engine/crates/sweep/src/lib.rs` via source-tree
+    cited by HW-DR-0024
+  code_path `engine/crates/sweep/src/lib.rs` via source-tree
+    cited by HW-IFACE-headwater-sweep
+  code_path `engine/crates/verbs/src/lib.rs` via source-tree
+    cited by HW-REV-the-sixty-four-restored-help-strings-checked-against-the-binary
+  code_path `mkdocs-overrides/main.html` via source-tree
+    cited by HW-DR-0038
+  code_path `packages/headwater-standard/taxonomy.yml` via source-tree
+    cited by HW-DR-0025
+  code_path `site/DESIGN-BRIEF.md` via source-tree
+    cited by HW-DR-0037
+  code_path `site/DESIGN-BRIEF.md` via source-tree
+    cited by HW-DR-0039
+  code_path `site/_headers` via source-tree
+    cited by HW-DR-0047
+  code_path `site/changelog/index.html` via source-tree
+    cited by HW-DR-0037
+  code_path `site/compare/index.html` via source-tree
+    cited by HW-DR-0037
+  code_path `site/glossary/index.html` via source-tree
+    cited by HW-DR-0037
+  code_path `site/how-it-works/index.html` via source-tree
+    cited by HW-DR-0037
+  code_path `site/index.html` via source-tree
+    cited by HW-DR-0037
+  code_path `site/ns/index.html` via source-tree
+    cited by HW-DR-0037
+  code_path `site/proof/index.html` via source-tree
+    cited by HW-DR-0037
+  code_path `site/tutorial/index.html` via source-tree
+    cited by HW-DR-0037
+  code_path `spike` via source-tree
+    cited by HW-EVAL-language-spike-results
+  code_path `tools/assemble-site.sh` via source-tree
+    cited by HW-DR-0047
+  code_path `tools/rdf-probe/emit.py` via source-tree
+    cited by HW-EVAL-owl-skos-worked-example
+  code_path `tools/refresh-figures.sh` via source-tree
+    cited by HW-DR-0039
+  code_path `wrangler.jsonc` via source-tree
+    cited by HW-DR-0047

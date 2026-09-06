@@ -389,6 +389,88 @@ impl Graph {
         out
     }
 
+    /// The graph as records that survive a merge, with no count anywhere.
+    ///
+    /// # What this rendering drops, and why every one of them is a fold
+    ///
+    /// [`Graph::render`] opens with `N nodes, M declared edge halves` and gives
+    /// each anchor the number of edges that reach it. Every one of those is a
+    /// fold over the edges, and a fold does not survive a merge. Two branches
+    /// that each cite one more code path both rewrite one anchor's count from
+    /// `2` to `3`, the merge reads one change written twice, and the record
+    /// then says 3 for a tree that holds 4. The same arithmetic applies to
+    /// `0 prose links that did not resolve`, and that one is worse: it is the
+    /// regression tripwire this fixture exists for, so two branches that each
+    /// break one link merge to a record claiming one break rather than two.
+    ///
+    /// So the anchors are written one line per edge rather than one line per
+    /// anchor with a count. An edge depends on no other edge, two branches
+    /// insert two lines, and the merge of them is the correct graph of the
+    /// merged tree. Nothing is asserted less, because a count is a function of
+    /// the lines it counts.
+    ///
+    /// `0 prose links that did not resolve` is dropped outright rather than
+    /// decomposed, because [`Graph::exceptions`] already writes one line per
+    /// broken link. The header restated as a number what the section below it
+    /// states by name.
+    ///
+    /// The argument in full is under *The shapes a record takes* in
+    /// [what a check can know](../../../../docs/evaluations/what-a-check-can-know.md).
+    pub fn render_rows(&self) -> String {
+        use std::fmt::Write;
+        let mut out = String::new();
+
+        // One line per edge that reaches an anchor, in the order of the anchor
+        // and then of the document that cites it. Both keys are needed: the
+        // anchor alone leaves the lines of one anchor in edge-discovery order,
+        // which is not stable under an edit elsewhere in the corpus.
+        let mut citations: Vec<(String, String, String, String, Option<String>)> = Vec::new();
+        for edge in &self.edges {
+            let Target::Anchor {
+                anchor_kind,
+                resolver,
+                normalized,
+                excluded_by,
+                revision: _,
+            } = &edge.target
+            else {
+                continue;
+            };
+            citations.push((
+                normalized.clone(),
+                edge.source.id.clone(),
+                anchor_kind.clone(),
+                resolver.clone(),
+                excluded_by.clone(),
+            ));
+        }
+        citations.sort();
+        if !citations.is_empty() {
+            out.push_str("anchors\n");
+            for (normalized, source, anchor_kind, resolver, excluded_by) in citations {
+                let _ = writeln!(
+                    out,
+                    "  {anchor_kind} `{normalized}` via {resolver}\n    cited by {source}"
+                );
+                if let Some(pattern) = excluded_by {
+                    let _ = writeln!(
+                        out,
+                        "    inside `{pattern}`, which this corpus declares is not corpus content"
+                    );
+                }
+            }
+        }
+
+        let report = self.exceptions();
+        if !report.is_empty() {
+            out.push('\n');
+            for line in report {
+                out.push_str(&line);
+            }
+        }
+        out
+    }
+
     /// Every fact that says something did not resolve, in path order.
     fn exceptions(&self) -> Vec<String> {
         let mut lines: Vec<(String, usize, String)> = Vec::new();

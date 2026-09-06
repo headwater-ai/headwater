@@ -21,3 +21,52 @@
 # stands until a person deletes it. What the writer's `(lock, date)` refusal
 # holds is the other direction: no later run adds a third copy.
 .headwater/adoption.jsonl merge=union
+
+# --- derived artifacts, which no merge may reconcile ------------------------
+#
+# Everything below holds a fold: a count over the whole corpus, or a digest over
+# the whole canonical text. The two stores above are the opposite shape, and the
+# contrast is the whole rule. A line of an append-only store depends on no other
+# line, so two branches that each add one may both be kept and `union` keeps
+# them. A fold depends on every line, so two branches that each add one document
+# both rewrite the same total to the same value. A three-way merge reads that as
+# one change written twice, takes it with no conflict, and leaves a number that
+# was true on neither branch and is true of nothing.
+#
+# A record that decomposes into one line per entity escapes this, and where the
+# decomposition is affordable this repository takes it rather than listing the
+# file here. `engine/crates/census/fixtures/corpus.census` holds one record per
+# file and no total, and `engine/crates/graph/fixtures/corpus.graph` holds one
+# record per citation rather than a count per anchor. Both merge, and both still
+# assert every number they used to state, because a total is a function of the
+# records it counts.
+#
+# What is listed here is the remainder: the folds whose decomposition costs more
+# than it returns. `corpus.checks` is the case that fixes the price. One record
+# per check instance would be a five-thousand-line file that moves on every
+# commit, which is a file nobody reads, and the count it would replace moves on
+# every commit anyway.
+#
+# `merge=headwater-regenerate` needs one command per clone, which git will not
+# take from a repository because a merge driver is an executable:
+#
+#     git config merge.headwater-regenerate.name "regenerate a derived artifact"
+#     git config merge.headwater-regenerate.driver ".githooks/merge-regenerate %O %A %B %P"
+#
+# Without it git falls back to an ordinary merge and the anomaly above is
+# available again, so `.githooks/pre-commit` reports a clone that has not run it.
+# The driver refuses rather than reconciling, and `.githooks/merge-regenerate`
+# says why it cannot regenerate during a merge.
+#
+# **This reaches a local merge and a rebase, and it does not reach the merge
+# button on the forge.** A server-side merge runs no driver from this file. What
+# covers that is the pull-request run, which builds `refs/pull/N/merge` and holds
+# each of these artifacts with `--check`, and that run is only conclusive while
+# the branch is current with `main`.
+
+.headwater/corpus.json merge=headwater-regenerate
+.headwater/export.json merge=headwater-regenerate
+.headwater/nav.yml merge=headwater-regenerate
+.headwater/taxonomy.lock merge=headwater-regenerate
+engine/crates/check/fixtures/corpus.checks merge=headwater-regenerate
+engine/crates/lock/fixtures/corpus.lock merge=headwater-regenerate

@@ -1,51 +1,573 @@
-415 files under the corpus root
-    303 typed
-     11 generated
-      2 untyped
-     97 excluded
-      2 not a document
-      1 typed acceptance_criterion
-     58 typed decision
-      1 typed decision_register
-     13 typed design_spec
-     19 typed evaluation
-     20 typed interface_contract
-    177 typed obligation_record
-      1 typed obligation_register
-      4 typed probe
-      1 typed requirement
-      1 typed review_prompt
-      6 typed review_record
-      1 typed tutorial
-
-exclusions
-     97 `docs/taxonomies/**`
-        package content. This directory is the canonical taxonomy library, and a taxonomy package that lives inside the corpus it types has no home in the shelf model. Nothing in the base package or in either entry says whether package content is corpus content, and spec 13 records the gap; this repository answers it locally, here, with a reason. A fixture corpus under an entry is package content twice over, because it is a corpus that another root is meant to walk.
-
 docs/LICENSE
   not a document: not a Markdown file
+docs/acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md
+  typed: acceptance_criterion
 docs/acceptance-criteria/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/decisions/0001-implementation-language.md
+  typed: decision
+docs/decisions/0002-schema-format.md
+  typed: decision
+docs/decisions/0003-how-much-of-the-default-taxonomy-ships-in-the-box.md
+  typed: decision
+docs/decisions/0004-relation-storage.md
+  typed: decision
+docs/decisions/0005-voice-checking-depth.md
+  typed: decision
+docs/decisions/0006-where-the-corpus-graph-lives-at-rest.md
+  typed: decision
+docs/decisions/0007-scope-of-the-mcp-surface.md
+  typed: decision
+docs/decisions/0008-probe-cost-and-cadence.md
+  typed: decision
+docs/decisions/0009-multi-repository-corpora.md
+  typed: decision
+docs/decisions/0010-naming.md
+  typed: decision
+docs/decisions/0011-license-and-distribution-posture.md
+  typed: decision
+docs/decisions/0012-migration-path-for-an-existing-corpus.md
+  typed: decision
+docs/decisions/0013-linkml-and-shacl-as-substrate.md
+  typed: decision
+docs/decisions/0014-discovery-surface.md
+  typed: decision
+docs/decisions/0015-a-synthesized-content-tier.md
+  typed: decision
+docs/decisions/0016-public-presence.md
+  typed: decision
+docs/decisions/0017-governed-access-and-the-solution-layer.md
+  typed: decision
+docs/decisions/0018-recording-adjudicated-disagreements.md
+  typed: decision
+docs/decisions/0019-inbound-integration-an-external-system-of-record.md
+  typed: decision
+docs/decisions/0020-where-scent-lives.md
+  typed: decision
+docs/decisions/0021-terminological-succession-and-validity-under-merge.md
+  typed: decision
+docs/decisions/0022-q22-the-integrity-posture-of-a-published-package.md
+  typed: decision
+docs/decisions/0023-the-engine-lint-floor.md
+  typed: decision
+docs/decisions/0024-q24-readability-and-what-a-sweep-can-be-asked-about.md
+  typed: decision
+docs/decisions/0025-q25-where-the-namespace-goes-in-an-identifier-and-who-declares-it.md
+  typed: decision
+docs/decisions/0026-q26-whether-terminality-belongs-to-a-state-or-to-a-state-and-a-regime.md
+  typed: decision
+docs/decisions/0027-q27-whether-a-decision-record-is-governed-prose.md
+  typed: decision
+docs/decisions/0028-q28-whether-an-evaluation-is-governed-prose.md
+  typed: decision
+docs/decisions/0029-q29-whether-a-corpus-root-may-contain-code-and-what-an-interface-contract-may-reach.md
+  typed: decision
+docs/decisions/0030-q30-whether-what-an-obligation-waits-on-is-a-state-or-a-property-and-how-many-values-it-takes.md
+  typed: decision
+docs/decisions/0031-q31-whether-this-repository-becomes-public-and-when.md
+  typed: decision
+docs/decisions/0032-q32-which-test-the-self-audit-label-states.md
+  typed: decision
+docs/decisions/0033-q33-whether-the-command-line-is-derived-and-who-a-flag-belongs-to.md
+  typed: decision
+docs/decisions/0034-q34-whether-acceptance-means-merged-to-main-and-what-an-agent-may-write-before-that.md
+  typed: decision
+docs/decisions/0035-q35-whether-one-requirement-kind-holds-an-imported-requirement-and-an-authored-one.md
+  typed: decision
+docs/decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md
+  typed: decision
+docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md
+  typed: decision
+docs/decisions/0038-q38-which-link-relation-a-rendered-page-carries-to-the-served-corpus-descriptor.md
+  typed: decision
+docs/decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md
+  typed: decision
+docs/decisions/0040-q40-whether-extends-bundle-requires-and-an-overlay-s-taxonomy-key-are-a-mechanism-or-a-label.md
+  typed: decision
+docs/decisions/0041-q41-whether-vale-becomes-a-declared-regime-backend.md
+  typed: decision
+docs/decisions/0042-q42-what-one-screen-means-for-the-first-help-screen.md
+  typed: decision
+docs/decisions/0043-q43-whether-a-refusal-under-json-is-a-json-document.md
+  typed: decision
+docs/decisions/0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md
+  typed: decision
+docs/decisions/0045-coloring-the-cli-and-where-the-banner-goes.md
+  typed: decision
+docs/decisions/0046-migrating-from-version-carries-a-semver-and-a-release-digest-kept-as-separate-fields.md
+  typed: decision
+docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md
+  typed: decision
 docs/decisions/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/doctrine/maturity-model.md
   untyped: no shelf pattern claims this path
 docs/evaluations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/evaluations/adjacent-work.md
+  typed: evaluation
+docs/evaluations/capability-bundle-address-inventory.md
+  typed: evaluation
+docs/evaluations/default-taxonomy-first-run.md
+  typed: evaluation
+docs/evaluations/first-contact.md
+  typed: evaluation
+docs/evaluations/graph-export-and-federation.md
+  typed: evaluation
+docs/evaluations/language-choice.md
+  typed: evaluation
+docs/evaluations/language-spike-results.md
+  typed: evaluation
+docs/evaluations/linkml-worked-example.md
+  typed: evaluation
+docs/evaluations/n8n-worked-example.md
+  typed: evaluation
+docs/evaluations/owl-skos-worked-example.md
+  typed: evaluation
+docs/evaluations/relation-storage.md
+  typed: evaluation
+docs/evaluations/schema-format-walkthrough.md
+  typed: evaluation
+docs/evaluations/shacl-worked-example.md
+  typed: evaluation
+docs/evaluations/specifying-the-engine.md
+  typed: evaluation
+docs/evaluations/the-measurement-layer.md
+  typed: evaluation
+docs/evaluations/the-serving-boundary.md
+  typed: evaluation
+docs/evaluations/theoretical-foundations.md
+  typed: evaluation
+docs/evaluations/warrant-and-adjudication.md
+  typed: evaluation
+docs/evaluations/what-a-check-can-know.md
+  typed: evaluation
 docs/interfaces/README.md
   generated: `verb_index`, and `headwater generate --check` holds it rather than this census
+docs/interfaces/headwater-capture.md
+  typed: interface_contract
+docs/interfaces/headwater-check.md
+  typed: interface_contract
+docs/interfaces/headwater-completions.md
+  typed: interface_contract
+docs/interfaces/headwater-conformance.md
+  typed: interface_contract
+docs/interfaces/headwater-explain.md
+  typed: interface_contract
+docs/interfaces/headwater-export.md
+  typed: interface_contract
+docs/interfaces/headwater-gate.md
+  typed: interface_contract
+docs/interfaces/headwater-generate.md
+  typed: interface_contract
+docs/interfaces/headwater-help.md
+  typed: interface_contract
+docs/interfaces/headwater-import.md
+  typed: interface_contract
+docs/interfaces/headwater-infer.md
+  typed: interface_contract
+docs/interfaces/headwater-init.md
+  typed: interface_contract
+docs/interfaces/headwater-mcp.md
+  typed: interface_contract
+docs/interfaces/headwater-new.md
+  typed: interface_contract
+docs/interfaces/headwater-probe.md
+  typed: interface_contract
+docs/interfaces/headwater-query.md
+  typed: interface_contract
+docs/interfaces/headwater-route.md
+  typed: interface_contract
+docs/interfaces/headwater-sweep.md
+  typed: interface_contract
+docs/interfaces/headwater-taxonomy.md
+  typed: interface_contract
+docs/obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md
+  typed: obligation_record
+docs/obligations/0002-declarative-voice-is-called-detectable-at-useful-precision.md
+  typed: obligation_record
+docs/obligations/0003-the-rebuild-and-cache-design-is-measured-at-spike-scale-alone.md
+  typed: obligation_record
+docs/obligations/0004-working-tree-write-tools-have-no-measured-effect.md
+  typed: obligation_record
+docs/obligations/0005-a-closed-set-expectation-has-no-reproducibility-reading-under.md
+  typed: obligation_record
+docs/obligations/0006-route-latency-at-a-harvesting-tier-is-unmeasured.md
+  typed: obligation_record
+docs/obligations/0007-no-count-exists-of-adopters-who-stopped-at-the-license-terms.md
+  typed: obligation_record
+docs/obligations/0008-an-adoption-payload-has-a-first-reading-and-no-elapsed-time.md
+  typed: obligation_record
+docs/obligations/0009-the-shape-origin-finding-rate-is-already-zero.md
+  typed: obligation_record
+docs/obligations/0010-the-corpus-descriptor-exists-and-no-probe-has-run-against.md
+  typed: obligation_record
+docs/obligations/0011-nothing-has-been-promoted-out-of-the-synthesized-tier.md
+  typed: obligation_record
+docs/obligations/0012-the-human-half-of-the-public-presence-claim-has-no-instrument.md
+  typed: obligation_record
+docs/obligations/0013-no-probe-tests-whether-a-counted-tombstone-stops-a-confident.md
+  typed: obligation_record
+docs/obligations/0014-no-probe-tests-whether-an-agent-reaches-the-adjudication-from.md
+  typed: obligation_record
+docs/obligations/0015-imported-edge-staleness-is-unmeasured-against-scaffolded-edges.md
+  typed: obligation_record
+docs/obligations/0016-a-cue-has-no-measured-effect-on-traversal-precision.md
+  typed: obligation_record
+docs/obligations/0017-publishing-the-read-set-skips-a-re-run-on-two-of-the-eighteen.md
+  typed: obligation_record
+docs/obligations/0018-the-bundle-set-is-a-guess-about-how-adopters-cluster.md
+  typed: obligation_record
+docs/obligations/0019-whether-any-corpus-needs-a-second-export-profile.md
+  typed: obligation_record
+docs/obligations/0020-whether-a-solution-corpus-vendors-each-source-export.md
+  typed: obligation_record
+docs/obligations/0021-emitters-3-through-6-have-no-named-consumer.md
+  typed: obligation_record
+docs/obligations/0022-whether-the-transcription-projection-ships-at-all.md
+  typed: obligation_record
+docs/obligations/0023-no-corpus-has-authored-enough-cues-to-grade.md
+  typed: obligation_record
+docs/obligations/0024-whether-any-corpus-other-than-this-one-needs-a-retired-term.md
+  typed: obligation_record
+docs/obligations/0025-where-the-probe-kind-ships-is-an-unsettled-clustering-question.md
+  typed: obligation_record
+docs/obligations/0026-the-operational-shape-of-a-hosted-server-is-unstated.md
+  typed: obligation_record
+docs/obligations/0027-what-optional-holds-under-the-package-root.md
+  typed: obligation_record
+docs/obligations/0028-a-run-cannot-report-the-corpus-tree-because-nothing-computes.md
+  typed: obligation_record
+docs/obligations/0029-what-headwater-query-takes.md
+  typed: obligation_record
+docs/obligations/0030-the-provenance-block-belongs-to-the-engine-and-nothing-states.md
+  typed: obligation_record
+docs/obligations/0031-list-extension-in-an-add-only-overlay.md
+  typed: obligation_record
+docs/obligations/0032-a-remove-that-orphans-a-name-is-refused-and-the-message-names.md
+  typed: obligation_record
+docs/obligations/0033-a-required-declaration-that-an-overlay-may-supply.md
+  typed: obligation_record
+docs/obligations/0034-two-rules-of-taxonomy-validate-name-a-declaration.md
+  typed: obligation_record
+docs/obligations/0035-section-contracts-in-the-base.md
+  typed: obligation_record
+docs/obligations/0036-identity-below-the-grain-of-a-document.md
+  typed: obligation_record
+docs/obligations/0037-the-register-is-not-a-projection-of-the-lock-alone-so-generate.md
+  typed: obligation_record
+docs/obligations/0038-a-corpus-that-never-runs-generate-check-has-no-test.md
+  typed: obligation_record
+docs/obligations/0039-a-participation-expectation-names-one-target-kind.md
+  typed: obligation_record
+docs/obligations/0040-composition-between-two-library-entries-has-no-add-only-form.md
+  typed: obligation_record
+docs/obligations/0041-no-declaration-expresses-a-rule-about-content-or-state-over.md
+  typed: obligation_record
+docs/obligations/0042-a-declared-invalid-when-reaches-no-check-and-two-live.md
+  typed: obligation_record
+docs/obligations/0043-two-meta-schema-surfaces-have-a-required-declaration.md
+  typed: obligation_record
+docs/obligations/0044-a-generated-index-labels-a-document-with-its-identifier.md
+  typed: obligation_record
+docs/obligations/0045-what-shelf-expands-to-in-a-projection-output.md
+  typed: obligation_record
+docs/obligations/0046-the-identifier-scheme-grammar.md
+  typed: obligation_record
+docs/obligations/0047-the-scope-of-a-sub-document-identifier.md
+  typed: obligation_record
+docs/obligations/0048-a-mapping-key-holds-a-dot-and-no-address-reaches.md
+  typed: obligation_record
+docs/obligations/0049-the-meta-schema-closes-eight-value-sets-that-nothing-states.md
+  typed: obligation_record
+docs/obligations/0050-a-relation-that-declares-no-cardinality-has-no-stated-default.md
+  typed: obligation_record
+docs/obligations/0051-downstream-delivery-of-a-standards-corpus.md
+  typed: obligation_record
+docs/obligations/0052-a-document-has-no-identifier-and-every-relation-target-must.md
+  typed: obligation_record
+docs/obligations/0053-the-front-matter-key-that-carries-an-identifier-is-undeclared.md
+  typed: obligation_record
+docs/obligations/0054-the-templates-and-the-fixtures-of-the-first-library-entry.md
+  typed: obligation_record
+docs/obligations/0055-the-tradition-has-no-relation-for-the-link-that-this-corpus.md
+  typed: obligation_record
+docs/obligations/0056-a-lookup-document-has-no-kind-and-the-shelf-layout-cannot-hold.md
+  typed: obligation_record
+docs/obligations/0057-a-retrofit-cannot-recover-the-two-dates-or-the-acceptance.md
+  typed: obligation_record
+docs/obligations/0058-no-relation-records-that-one-argument-settled-several.md
+  typed: obligation_record
+docs/obligations/0059-kind-resolution-declares-a-fourth-step-that-no-syntax-supports.md
+  typed: obligation_record
+docs/obligations/0060-the-most-specific-shelf-wins-names-no-order.md
+  typed: obligation_record
+docs/obligations/0061-an-anchor-resolver-normalizes-and-nothing-states-how.md
+  typed: obligation_record
+docs/obligations/0062-a-relation-may-admit-a-document-and-an-anchor-and-no-rule.md
+  typed: obligation_record
+docs/obligations/0063-an-anchor-that-resolves-inside-a-declared-exclusion.md
+  typed: obligation_record
+docs/obligations/0064-two-identity-components-are-correctness-roots-that-spec-12.md
+  typed: obligation_record
+docs/obligations/0065-a-classified-document-with-no-check-instance-has-a-third-cause.md
+  typed: obligation_record
+docs/obligations/0066-a-finding-names-one-obligation-and-a-control-discharges-a-list.md
+  typed: obligation_record
+docs/obligations/0067-a-rule-that-reads-the-taxonomy-has-no-grain-in-spec-12s-list.md
+  typed: obligation_record
+docs/obligations/0068-the-promotion-record-has-three-members-and-no-unit-scale.md
+  typed: obligation_record
+docs/obligations/0069-a-suppressed-finding-leaves-its-obligation-verified-and-spec-4.md
+  typed: obligation_record
+docs/obligations/0070-one-of-the-four-warrant-values-has-no-instance-in-this-corpus.md
+  typed: obligation_record
+docs/obligations/0071-a-corpus-scoped-check-makes-the-coverage-rule-unreachable.md
+  typed: obligation_record
+docs/obligations/0072-a-cache-of-check-results-does-not-make-a-run-proportional.md
+  typed: obligation_record
+docs/obligations/0073-the-prior-version-still-owes-the-key-edit-that-the-clock.md
+  typed: obligation_record
+docs/obligations/0074-a-check-version-is-raised-by-hand-and-nothing-catches-a-stale.md
+  typed: obligation_record
+docs/obligations/0075-a-participation-expectation-needs-depth-one-and-edge.md
+  typed: obligation_record
+docs/obligations/0076-a-generated-check-reads-its-severity-from-the-taxonomy.md
+  typed: obligation_record
+docs/obligations/0077-a-fragment-on-a-path-needs-a-grain-that-no-scope-supplies.md
+  typed: obligation_record
+docs/obligations/0078-two-positions-that-the-meta-schema-marks-a-gap-are-a-closed.md
+  typed: obligation_record
+docs/obligations/0079-a-correctness-root-that-is-a-type-has-no-failing-fixture.md
+  typed: obligation_record
+docs/obligations/0080-changed-only-is-the-content-addressed-cache-under-another-name.md
+  typed: obligation_record
+docs/obligations/0081-a-published-read-set-never-says-which-instances-must-run-again.md
+  typed: obligation_record
+docs/obligations/0082-the-lock-is-half-generated-and-half-authored-and-nothing.md
+  typed: obligation_record
+docs/obligations/0083-the-pair-grain-absorbs-a-second-violation-inside-one-cell.md
+  typed: obligation_record
+docs/obligations/0084-debt-that-no-rule-states-cannot-enter-a-payload.md
+  typed: obligation_record
+docs/obligations/0085-headwater-init-cannot-reach-a-package-that-is-not-already.md
+  typed: obligation_record
+docs/obligations/0086-an-inline-quotation-reaches-every-lexical-rule-as-this-authors.md
+  typed: obligation_record
+docs/obligations/0087-fixable-has-two-readings-inside-one-engine.md
+  typed: obligation_record
+docs/obligations/0088-correcting-an-identifier-is-mechanical-and-it-is-not-local.md
+  typed: obligation_record
+docs/obligations/0089-a-profile-names-its-rules-and-never-states-them.md
+  typed: obligation_record
+docs/obligations/0090-one-rule-carries-four-sub-rules-and-a-suppression.md
+  typed: obligation_record
+docs/obligations/0091-the-friction-signal-that-q4-narrowed-is-still-unread.md
+  typed: obligation_record
+docs/obligations/0092-how-a-probe-reaches-a-harvesting-tier-and-what-a-transcript.md
+  typed: obligation_record
+docs/obligations/0093-whether-a-harvesting-tier-owes-conformance-rules-of-its-own.md
+  typed: obligation_record
+docs/obligations/0094-where-a-commercial-tier-could-sit-and-how-thin-the-trademark.md
+  typed: obligation_record
+docs/obligations/0095-whether-the-rdf-emitter-carries-owl-inverseof.md
+  typed: obligation_record
+docs/obligations/0096-whether-anything-is-ever-promoted-out-of-the-asserted-tier.md
+  typed: obligation_record
+docs/obligations/0097-whether-the-four-modes-of-di-taxis-are-the-kind-set.md
+  typed: obligation_record
+docs/obligations/0098-whether-a-withheld-anchor-needs-a-class-beside-its-count.md
+  typed: obligation_record
+docs/obligations/0099-whether-an-adjudication-is-ever-partial.md
+  typed: obligation_record
+docs/obligations/0100-the-size-of-a-committed-snapshot-with-full-requirement-text.md
+  typed: obligation_record
+docs/obligations/0101-whether-the-read-set-of-a-real-corpus-is-small-enough.md
+  typed: obligation_record
+docs/obligations/0102-two-documents-state-what-voids-a-verdict-and-they-do-not.md
+  typed: obligation_record
+docs/obligations/0103-the-front-matter-half-of-a-patch-has-no-writer.md
+  typed: obligation_record
+docs/obligations/0104-a-governs-edge-reaches-the-path-it-names-and-nothing.md
+  typed: obligation_record
+docs/obligations/0105-nothing-plays-the-hook-role-that-two-relations-name.md
+  typed: obligation_record
+docs/obligations/0106-a-shelf-layout-names-a-file-at-birth-and-no-rule-reads-it.md
+  typed: obligation_record
+docs/obligations/0107-the-base-package-ships-a-kind-that-the-scaffolder-refuses-to-write.md
+  typed: obligation_record
+docs/obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md
+  typed: obligation_record
+docs/obligations/0109-the-capture-cost-denominator-is-set-by-declaration-and-not-by-work.md
+  typed: obligation_record
+docs/obligations/0110-the-loss-census-carries-a-finding-by-substring-so-an-index-of-rules-and-paths-passes-it.md
+  typed: obligation_record
+docs/obligations/0111-the-capture-cost-surface-names-an-entry-point-and-never-the-caller.md
+  typed: obligation_record
+docs/obligations/0112-a-surface-cannot-move-the-assisted-fraction-of-a-run.md
+  typed: obligation_record
+docs/obligations/0113-every-check-passes-a-document-that-is-still-the-scaffolder-s-placeholder.md
+  typed: obligation_record
+docs/obligations/0114-a-control-that-names-a-sweep-marks-its-obligation-verified-with-nothing-run.md
+  typed: obligation_record
+docs/obligations/0115-a-pinned-digest-authenticates-the-pin-and-never-the-publisher.md
+  typed: obligation_record
+docs/obligations/0116-no-anchor-resolver-reads-a-committed-snapshot-so-every-imported-edge-lands-unresolved.md
+  typed: obligation_record
+docs/obligations/0117-a-cached-verdict-about-an-anchor-survives-the-change-that-falsifies-it.md
+  typed: obligation_record
+docs/obligations/0118-the-published-read-set-names-no-anchor-so-a-gate-decides-nothing-about-one.md
+  typed: obligation_record
+docs/obligations/0119-an-audit-reading-carries-no-declared-bar-so-a-distribution-cannot-become-a-finding.md
+  typed: obligation_record
+docs/obligations/0120-no-reader-takes-a-waiver-against-a-check-finding-so-one-arm-of-the-escape-partition-is-empty.md
+  typed: obligation_record
+docs/obligations/0121-three-conformance-rules-name-an-attestation-that-no-record-format-exists-for.md
+  typed: obligation_record
+docs/obligations/0122-nothing-holds-the-conformance-rule-set-of-a-package-a-consumer-takes-from-source.md
+  typed: obligation_record
+docs/obligations/0123-a-facet-that-applies-to-one-value-of-another-facet-has-nowhere-to-say-so.md
+  typed: obligation_record
+docs/obligations/0124-a-probe-result-is-printed-and-never-committed-so-nothing-regenerates-one.md
+  typed: obligation_record
+docs/obligations/0125-nine-documents-state-a-warrant-the-closed-set-does-not-hold-and-no-check-reads-one.md
+  typed: obligation_record
+docs/obligations/0126-every-asserted-document-carries-the-freshness-date-that-spec-3-says-it-cannot.md
+  typed: obligation_record
+docs/obligations/0127-a-deletion-is-invisible-where-the-version-that-stood-there-does-not-parse.md
+  typed: obligation_record
+docs/obligations/0128-nothing-holds-a-crate-to-having-a-contract-under-a-root-that-excludes-it.md
+  typed: obligation_record
+docs/obligations/0129-spec-12-calls-two-phase-a-outcomes-structural-findings-and-the-engine-emits-none.md
+  typed: obligation_record
+docs/obligations/0130-the-publication-date-of-this-repository-is-unset-and-the-owner-alone-sets-it.md
+  typed: obligation_record
+docs/obligations/0131-the-cli-crate-wires-every-verb-and-carries-no-tests-so-two-wiring-defects-passed-a-green-suite.md
+  typed: obligation_record
+docs/obligations/0132-survey-the-wiring-decisions-of-main-rs-verb-by-verb-and-cover-the-quiet-ones.md
+  typed: obligation_record
+docs/obligations/0133-two-test-helpers-key-a-scratch-directory-on-the-pid-alone-and-the-race-springs-on-the-next-case-added.md
+  typed: obligation_record
+docs/obligations/0134-the-comment-prose-defines-by-contrast-979-times-in-179-000-words-and-no-mechanism-here-performs-an-editorial-pass.md
+  typed: obligation_record
+docs/obligations/0135-repo-cleanup-names-one-cause-for-a-gone-upstream-and-this-repository-produced-a-second.md
+  typed: obligation_record
+docs/obligations/0136-seven-rustdoc-relative-links-in-comments-point-at-pages-the-doc-tree-does-not-have.md
+  typed: obligation_record
+docs/obligations/0137-a-british-spelling-reaches-a-serialized-grain-string-so-the-rename-is-a-corpus-change-and-a-derived-bytes-change-at-once.md
+  typed: obligation_record
+docs/obligations/0138-the-rest-of-the-editorial-pass-with-cli-src-main-rs-at-the-head-of-the-distribution.md
+  typed: obligation_record
+docs/obligations/0139-an-identifier-scheme-glues-three-parts-into-one-string-so-nothing-can-decide-that-two-schemes-are-disjoint.md
+  typed: obligation_record
+docs/obligations/0140-a-check-can-meet-the-failing-fixture-bar-with-a-fixture-that-cannot-distinguish-the-rule-from-its-neighbour.md
+  typed: obligation_record
+docs/obligations/0141-an-identifier-scheme-names-no-prefix-so-an-rdf-projection-derives-a-document-iri-from-a-file-path.md
+  typed: obligation_record
+docs/obligations/0142-the-obligation-register-states-its-own-size-by-hand-and-it-went-stale-three-times-in-two-days.md
+  typed: obligation_record
+docs/obligations/0143-a-specification-sentence-closes-a-set-with-a-count-the-source-exceeds-and-115-of-127-candidates-are-unchecked.md
+  typed: obligation_record
+docs/obligations/0144-the-cache-identity-test-reads-the-live-working-tree-so-an-edit-during-the-run-reports-the-correctness-root-as-violated.md
+  typed: obligation_record
+docs/obligations/0145-the-ci-job-named-advisory-carries-every-blocking-shell-suite-in-the-repository.md
+  typed: obligation_record
+docs/obligations/0146-the-stop-hook-reads-its-re-entry-guard-with-an-interpreter-it-does-not-require-so-a-machine-with-no-python3-re-blocks-the-same-turn.md
+  typed: obligation_record
+docs/obligations/0147-the-skills-fixture-suite-passes-on-an-empty-input-set-and-always-fails-in-a-clone-that-has-not-built-the-engine.md
+  typed: obligation_record
+docs/obligations/0148-the-help-assertion-never-asks-a-subcommand-and-no-rust-version-declares-the-floor-clap-now-sits-on.md
+  typed: obligation_record
+docs/obligations/0149-the-write-time-hook-still-picks-pointer-lines-out-of-prose-by-their-em-dash.md
+  typed: obligation_record
+docs/obligations/0150-a-current-decision-declares-no-required-edge-to-the-document-it-settled-so-22-of-23-reach-no-specification-at-all.md
+  typed: obligation_record
+docs/obligations/0151-the-glossary-s-package-entry-omits-conformance-and-still-lists-plugins-which-367-dropped.md
+  typed: obligation_record
+docs/obligations/0152-ledger-render-in-adoption-rs-has-the-same-zero-count-defect-suppression-rs-had-before-pr-450-still-latent.md
+  typed: obligation_record
+docs/obligations/0153-the-rewritten-sentence-splitter-has-no-dedicated-conformance-fixtures.md
+  typed: obligation_record
+docs/obligations/0154-the-adoption-decay-section-is-fixture-recorded-only-in-its-empty-shape.md
+  typed: obligation_record
+docs/obligations/0155-probe-s-fourteen-refusals-have-no-coverage-test-and-three-of-them-are-named-by-no-test-at-all.md
+  typed: obligation_record
+docs/obligations/0156-a-help-string-and-the-interface-contract-that-restates-it-can-both-be-false-with-the-whole-suite-green.md
+  typed: obligation_record
+docs/obligations/0157-the-capture-report-says-two-denominators-over-a-store-that-named-seventeen-taxonomies.md
+  typed: obligation_record
+docs/obligations/0158-clap-owns-the-help-flag-so-h-help-reads-print-help-on-all-32-verb-pages.md
+  typed: obligation_record
+docs/obligations/0159-a-sentence-that-opens-with-a-hash-and-an-issue-number-is-folded-into-the-sentence-before-it.md
+  typed: obligation_record
+docs/obligations/0160-the-generated-half-of-the-site-loads-highlight-js-from-a-third-party-with-no-subresource-integrity.md
+  typed: obligation_record
 docs/obligations/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/probes/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md
+  typed: probe
+docs/probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md
+  typed: probe
+docs/probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md
+  typed: probe
+docs/probes/the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document.md
+  typed: probe
+docs/requirements/0001-the-engine-reaches-no-network-at-check-time.md
+  typed: requirement
 docs/requirements/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
 docs/reviews/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/reviews/core-concepts-findings-assessment.md
+  typed: review_record
+docs/reviews/core-concepts-independent-review.md
+  typed: review_record
+docs/reviews/core-concepts-review-findings-2.md
+  typed: review_record
+docs/reviews/core-concepts-review-findings.md
+  typed: review_record
+docs/reviews/core-concepts-review-prompt.md
+  typed: review_prompt
+docs/reviews/ste-editorial-pass-findings.md
+  typed: review_record
+docs/reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md
+  typed: review_record
+docs/spec/00-vision-and-scope.md
+  typed: design_spec
+docs/spec/01-conceptual-model.md
+  typed: design_spec
+docs/spec/02-taxonomy-model.md
+  typed: design_spec
+docs/spec/03-authoring-and-lifecycle.md
+  typed: design_spec
+docs/spec/04-assurance-model.md
+  typed: design_spec
+docs/spec/05-ai-integration.md
+  typed: design_spec
+docs/spec/06-engine-architecture.md
+  typed: design_spec
+docs/spec/07-distribution-and-federation.md
+  typed: design_spec
+docs/spec/08-design-departures.md
+  typed: design_spec
+docs/spec/09-decisions.md
+  typed: decision_register
 docs/spec/09-open-questions.md
   generated: `shelf_sections`, and `headwater generate --check` holds it rather than this census
+docs/spec/12-check-layer.md
+  typed: design_spec
+docs/spec/13-open-obligations.md
+  typed: obligation_register
+docs/spec/15-the-recorder-contract.md
+  typed: design_spec
+docs/spec/16-harness-support.md
+  typed: design_spec
 docs/spec/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/spec/glossary.md
+  typed: design_spec
 docs/taxonomies/README.md
   excluded: docs/taxonomies/**
 docs/taxonomies/brd-prd/bundle.yml
@@ -242,6 +764,8 @@ docs/taxonomies/standards-spec/templates/technical_spec.md
   excluded: docs/taxonomies/**
 docs/tutorials/README.md
   generated: `shelf_index`, and `headwater generate --check` holds it rather than this census
+docs/tutorials/your-first-governed-corpus.md
+  typed: tutorial
 docs/w3id/.htaccess
   not a document: not a Markdown file
 docs/w3id/README.md
