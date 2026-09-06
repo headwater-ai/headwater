@@ -26,6 +26,22 @@ pub struct Flattened {
     pub taxonomy: String,
     /// Package-owned prose and templates, under assembly-namespaced paths.
     pub assets: Vec<Asset>,
+    /// The `contents` keys the source declared that nothing in this package
+    /// represents, in the order the source declared them.
+    ///
+    /// A publisher who declared one of these asked for something the artifact
+    /// does not carry, so the verb names them. That is the same defect
+    /// [#581](https://github.com/headwater-ai/headwater/issues/581) refuses in
+    /// the other direction — a manifest naming a member the artifact lacks —
+    /// and an artifact quietly lacking a member the source named is the same
+    /// loss wearing the other face. [`DROPPED`] is the rule and this is what one
+    /// run of it decided, so nothing downstream re-derives the list.
+    ///
+    /// A key [`DROPPED`] marks [`Fate::Absorbed`] is **not** here, because
+    /// flattening is that transformation rather than a loss. A message that
+    /// fired on every publish would be a message nobody reads on the one publish
+    /// that loses something.
+    pub dropped: Vec<String>,
 }
 
 /// One non-taxonomy file a flattened package carries.
@@ -44,6 +60,10 @@ pub struct Asset {
 /// records the source taxonomy, each selected bundle, and optional glue by
 /// digest. Assets declared as doctrine or templates move below a directory
 /// named for the assembly, so two flattened packages can live side by side.
+/// Every other declared member travels at the relative path the source names,
+/// unchanged, except the keys [`DROPPED`] names. [`members`] is the one
+/// enumeration the generated manifest, the carried bytes and
+/// [`Flattened::dropped`] all come from, and its doc comment carries the arms.
 pub fn materialize(
     root: &Path,
     directory: &Path,
@@ -52,13 +72,15 @@ pub fn materialize(
 ) -> Result<Flattened, Vec<ResolveError>> {
     let resolution = assembly::resolve(root, directory, source_manifest, recipe)?;
     let sources = assembly_sources(root, directory, source_manifest, recipe)?;
-    let manifest = manifest(source_manifest, recipe, &sources)?;
+    let contents = members(directory, source_manifest, recipe, &recipe.at)?;
+    let manifest = manifest(source_manifest, recipe, &sources, &contents.members)?;
     let taxonomy = taxonomy(&resolution, recipe);
-    let assets = assets(directory, source_manifest, recipe)?;
+    let assets = assets(&contents.members, &recipe.at)?;
     let flattened = Flattened {
         manifest,
         taxonomy,
         assets,
+        dropped: contents.dropped,
     };
     if equivalent(&resolution, &flattened, recipe) {
         Ok(flattened)
@@ -123,6 +145,7 @@ fn manifest(
     source: &Mapping,
     recipe: &Assembly,
     sources: &[Source],
+    members: &[Member],
 ) -> Result<Mapping, Vec<ResolveError>> {
     let mut entries: Vec<Entry> = source
         .entries()
@@ -133,10 +156,7 @@ fn manifest(
         .collect();
     entries.insert(0, entry("package", scalar(&recipe.package)));
     entries.insert(1, entry("version", scalar(&recipe.version)));
-    entries.push(entry(
-        "contents",
-        Value::Map(contents(source, recipe, &recipe.at)?),
-    ));
+    entries.push(entry("contents", Value::Map(contents(members))));
     entries.push(entry(
         "distribution",
         Value::Map(distribution(recipe, sources)?),
@@ -144,7 +164,121 @@ fn manifest(
     Ok(Mapping::new(entries))
 }
 
-fn contents(source: &Mapping, recipe: &Assembly, at: &Path) -> Result<Mapping, Vec<ResolveError>> {
+/// What became of a `contents` key the source declared and the flattened
+/// manifest does not.
+///
+/// The distinction is whether the artifact still represents the thing, and it is
+/// the difference between a transformation and a loss. Only [`Fate::Discarded`]
+/// is worth a publisher's attention, which is why this is a fate and not a
+/// second list of keys kept somewhere a reporter can drift from.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Fate {
+    /// The key is gone and what it named is still in the artifact, by another
+    /// route. Flattening *is* this transformation, so nothing is lost and
+    /// nothing is said.
+    Absorbed,
+    /// The key is gone and nothing in the artifact represents what it named.
+    /// The publisher asked for something they did not receive, so the verb says
+    /// so.
+    Discarded,
+}
+
+/// The `contents` keys a flattened manifest does not declare, whatever the
+/// source declared, and what became of each.
+///
+/// All three state the **source package's composition or its version line**, and
+/// a flattened package inherits neither: it takes a new identity and a new
+/// version. `taxonomy`, `conformance`, `doctrine` and `templates` state the
+/// taxonomy's *content*, which a flattened package does inherit, so none of them
+/// is here.
+///
+/// - **`bundles` is absorbed.** Flattening resolves the selected bundles into
+///   the generated `taxonomy.yml`, so every declaration they added is in the
+///   artifact. Spec 7 states the consequence a consumer sees: the package
+///   declares no bundle directory and its consumer selects no bundles.
+/// - **`assemblies` is absorbed.** The recipe that produced this package is
+///   recorded under `distribution.derived_from`, by digest. A flattened package
+///   is not itself a source anybody publishes a recipe over.
+/// - **`migrations` is discarded, and it is the only one.** `taxonomy diff`
+///   selects a payload by the ranges that payload declares, so a payload written
+///   for `headwater/standard` 3 to 4 has no reader against a starter version
+///   line. Nothing in the artifact represents it, and a publisher who wrote one
+///   receives an artifact without it.
+///
+/// **A flattened package therefore carries no migration payload at all today**,
+/// including one for its own version line, because nothing writes a
+/// `contents.migrations` into a generated manifest and a recipe has no field for
+/// one. That is a gap in what a flattening publisher can express. It is not a
+/// gap this table creates: before
+/// [#581](https://github.com/headwater-ai/headwater/issues/581) the key was
+/// copied into the flattened manifest and the payload was never carried, so the
+/// artifact made the claim and broke it.
+///
+/// **This table is the rule and it has one reader.** [`members`] walks it and
+/// records the discarded keys on [`Flattened::dropped`], which the CLI prints. A
+/// second function deciding the same thing separately is the defect #581 exists
+/// for, which is why the keys travel out of the run that dropped them rather
+/// than being re-derived by whoever reports them.
+pub const DROPPED: [(&str, Fate); 3] = [
+    (BUNDLES, Fate::Absorbed),
+    (ASSEMBLIES, Fate::Absorbed),
+    (crate::migration::CONTENTS_KEY, Fate::Discarded),
+];
+
+/// One walk of a source `contents` block: what the flattened manifest declares,
+/// and what it leaves behind.
+struct Contents {
+    members: Vec<Member>,
+    dropped: Vec<String>,
+}
+
+/// One `contents` key of a flattened package: what the generated manifest
+/// declares for it, and where the bytes it names come from.
+struct Member {
+    /// The key, written the same way in both manifests.
+    key: String,
+    /// The path the generated manifest declares, relative to the artifact.
+    declared: String,
+    /// The source path whose bytes travel to `declared`, where any do. The
+    /// stager writes `taxonomy.yml` out of the resolution, so that member has
+    /// no source file.
+    from: Option<PathBuf>,
+}
+
+/// The `contents` of a flattened package, enumerated once.
+///
+/// [`contents`] renders the mapping from this and [`assets`] copies the bytes
+/// from it, so the manifest a consumer reads and the files it opens come from
+/// one walk of one declaration. That they came from two was
+/// [#581](https://github.com/headwater-ai/headwater/issues/581): `contents`
+/// passed through every key it did not filter and `assets` wrote two, so a
+/// flattened `headwater/standard` declared a conformance rule set it did not
+/// carry and `headwater conformance` failed for whoever vendored it.
+///
+/// Four arms, and each one states what it rests on.
+///
+/// - **`taxonomy` is declared at the artifact root and has no source file.**
+///   [`crate::package::stage_flattened`] writes the rendered resolution there.
+/// - **Every key in [`DROPPED`] is dropped, and recorded as dropped.** That
+///   constant carries the reason and the consequence. The key goes onto
+///   [`Contents::dropped`] rather than being skipped in silence, because a
+///   publisher who declared it asked for something the artifact will not carry.
+/// - **`doctrine` and `templates` are namespaced under the recipe name.** The
+///   module header states the reason: two flattened packages derived from one
+///   source can then hold their prose side by side.
+/// - **Every other key travels at the relative path the source declares,
+///   unchanged.** `taxonomy` already sits at the artifact root, so a second
+///   file beside it is a shape this artifact already has rather than a new one.
+///   Namespacing has no purchase on a single file, which has no directory to
+///   rename, and `contents.conformance` is resolved against the installed
+///   package directory by its one reader. Leaving the scalar alone also makes
+///   the manifest that was a lie true with no change to what it declares.
+fn members(
+    directory: &Path,
+    source: &Mapping,
+    recipe: &Assembly,
+    at: &Path,
+) -> Result<Contents, Vec<ResolveError>> {
     let source_contents = source
         .get("contents")
         .and_then(|node| node.value.as_map())
@@ -154,27 +288,57 @@ fn contents(source: &Mapping, recipe: &Assembly, at: &Path) -> Result<Mapping, V
                 "the source package manifest has no mapping at `contents`",
             )
         })?;
-    let mut entries = vec![entry("taxonomy", scalar("taxonomy.yml"))];
-    entries.extend(
-        source_contents
-            .entries()
-            .iter()
-            .filter(|entry| {
-                entry.key.value != "taxonomy"
-                    && entry.key.value != BUNDLES
-                    && entry.key.value != ASSEMBLIES
-            })
-            .filter(|entry| {
-                entry.key.value != package::DOCTRINE && entry.key.value != package::TEMPLATES
-            })
-            .cloned(),
-    );
-    for key in [package::DOCTRINE, package::TEMPLATES] {
-        if source_contents.get(key).is_some() {
-            entries.push(entry(key, scalar(&format!("{key}/{}", recipe.name))));
+    let mut out = Contents {
+        members: vec![Member {
+            key: "taxonomy".to_string(),
+            declared: "taxonomy.yml".to_string(),
+            from: None,
+        }],
+        dropped: Vec::new(),
+    };
+    for found in source_contents {
+        let key = found.key.value.as_str();
+        if key == "taxonomy" {
+            continue;
         }
+        if let Some((_, fate)) = DROPPED.iter().find(|(dropped, _)| *dropped == key) {
+            if *fate == Fate::Discarded {
+                out.dropped.push(key.to_string());
+            }
+            continue;
+        }
+        // A value that is not a scalar and an empty value are both refused by
+        // `crate::package::reachable`, which runs over this same source
+        // manifest before `materialize` is called. Refusing them again here
+        // would be a second definition of one rule.
+        let Some(scalar) = found.value.value.as_scalar() else {
+            continue;
+        };
+        let declared = scalar.text.as_str();
+        if declared.is_empty() {
+            continue;
+        }
+        let from = contained(directory, key, declared, at)?;
+        let declared = match key {
+            package::DOCTRINE | package::TEMPLATES => format!("{key}/{}", recipe.name),
+            _ => declared.to_string(),
+        };
+        out.members.push(Member {
+            key: key.to_string(),
+            declared,
+            from: Some(from),
+        });
     }
-    Ok(Mapping::new(entries))
+    Ok(out)
+}
+
+fn contents(members: &[Member]) -> Mapping {
+    Mapping::new(
+        members
+            .iter()
+            .map(|member| entry(&member.key, scalar(&member.declared)))
+            .collect(),
+    )
 }
 
 fn distribution(recipe: &Assembly, sources: &[Source]) -> Result<Mapping, Vec<ResolveError>> {
@@ -214,39 +378,50 @@ fn distribution(recipe: &Assembly, sources: &[Source]) -> Result<Mapping, Vec<Re
     ]))
 }
 
-fn assets(
-    directory: &Path,
-    manifest: &Mapping,
-    recipe: &Assembly,
-) -> Result<Vec<Asset>, Vec<ResolveError>> {
-    let Some(contents) = manifest
-        .get("contents")
-        .and_then(|node| node.value.as_map())
-    else {
-        return Ok(Vec::new());
-    };
+/// The bytes each member carries, at the path its `declared` names.
+///
+/// A directory-valued member is walked and a file-valued one is read. Which
+/// one a key is comes from [`crate::package::required_kind`] where that table
+/// names it, and from the disk where it does not — [`contained`] settles it
+/// once, so this dispatch and the manifest above it cannot disagree.
+fn assets(members: &[Member], at: &Path) -> Result<Vec<Asset>, Vec<ResolveError>> {
     let mut out = Vec::new();
-    for key in [package::DOCTRINE, package::TEMPLATES] {
-        let Some(path) = contents
-            .get(key)
-            .and_then(|node| node.value.as_scalar())
-            .map(|scalar| scalar.text.as_str())
-        else {
+    for member in members {
+        let Some(from) = &member.from else {
             continue;
         };
-        let at = contained(directory, path, &recipe.at)?;
-        collect(
-            &at,
-            &at,
-            &format!("{key}/{}", recipe.name),
-            &mut out,
-            &recipe.at,
-        )?;
+        if from.is_dir() {
+            collect(from, from, &member.declared, &mut out, at)?;
+            continue;
+        }
+        out.push(Asset {
+            path: member.declared.clone(),
+            bytes: std::fs::read(from).map_err(|error| {
+                refusal(at, &format!("cannot read {}: {error}", from.display()))
+            })?,
+        });
     }
     Ok(out)
 }
 
-fn contained(directory: &Path, declared: &str, at: &Path) -> Result<PathBuf, Vec<ResolveError>> {
+/// The source path a `contents` key names, held inside the source package and
+/// held to the kind its reader opens.
+///
+/// The boundary check and the kind check are two questions and this answers
+/// both, because a member that leaves the package and a member that is the
+/// wrong kind are both paths a consumer cannot use. The kind comes from
+/// [`crate::package::required_kind`] rather than from a hard-coded `is_dir`:
+/// `contents.conformance` names a file, and requiring a directory here is what
+/// kept a file-valued member out of a flattened artifact for as long as this
+/// function had only two callers. A key that table does not name keeps the
+/// containment check and takes whatever kind is on disk, which is the seam that
+/// table's own doc comment states.
+fn contained(
+    directory: &Path,
+    key: &str,
+    declared: &str,
+    at: &Path,
+) -> Result<PathBuf, Vec<ResolveError>> {
     let path = Path::new(declared);
     if path.is_absolute()
         || path
@@ -255,7 +430,7 @@ fn contained(directory: &Path, declared: &str, at: &Path) -> Result<PathBuf, Vec
     {
         return Err(refusal(
             at,
-            &format!("`contents` path `{declared}` leaves the source package"),
+            &format!("`contents.{key}` path `{declared}` leaves the source package"),
         ));
     }
     let boundary = directory.canonicalize().map_err(|error| {
@@ -270,14 +445,28 @@ fn contained(directory: &Path, declared: &str, at: &Path) -> Result<PathBuf, Vec
     let candidate = directory.join(path).canonicalize().map_err(|error| {
         refusal(
             at,
-            &format!("cannot read declared asset directory `{declared}`: {error}"),
+            &format!("cannot read declared `contents.{key}` path `{declared}`: {error}"),
         )
     })?;
-    if !candidate.starts_with(boundary) || !candidate.is_dir() {
+    if !candidate.starts_with(boundary) {
         return Err(refusal(
             at,
-            &format!("`contents` path `{declared}` is not a directory inside the source package"),
+            &format!("`contents.{key}` path `{declared}` is not inside the source package"),
         ));
+    }
+    if let Some(needed) = package::required_kind(key) {
+        let found = package::Kind::of(&candidate);
+        if found != needed {
+            return Err(refusal(
+                at,
+                &format!(
+                    "`contents.{key}` path `{declared}` is a {}, and the verb that reads it reads \
+                     a {}",
+                    found.name(),
+                    needed.name()
+                ),
+            ));
+        }
     }
     Ok(candidate)
 }

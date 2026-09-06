@@ -981,7 +981,7 @@ pub fn publish_assembly(
     name: &str,
     assembly: &str,
     out: &Path,
-) -> Result<Release, Vec<ResolveError>> {
+) -> Result<Flattening, Vec<ResolveError>> {
     let (directory, manifest) = find(root, name)?;
     publish_assembly_at(root, &directory, &manifest, assembly, out)
 }
@@ -993,7 +993,7 @@ pub fn publish_assembly_from(
     directory: &Path,
     assembly: &str,
     out: &Path,
-) -> Result<Release, Vec<ResolveError>> {
+) -> Result<Flattening, Vec<ResolveError>> {
     let manifest = manifest_at(directory)?;
     publish_assembly_at(root, directory, &manifest, assembly, out)
 }
@@ -1011,7 +1011,7 @@ fn publish_assembly_at(
     manifest: &Mapping,
     assembly: &str,
     out: &Path,
-) -> Result<Release, Vec<ResolveError>> {
+) -> Result<Flattening, Vec<ResolveError>> {
     let declared = manifest_name(root, directory);
     let contents = contents_of(manifest);
     reachable(root, &declared, directory, &contents)?;
@@ -1020,7 +1020,7 @@ fn publish_assembly_at(
 
     let recipe = crate::assembly::read(root, directory, manifest, assembly)?;
     let flattened = crate::flatten::materialize(root, directory, manifest, &recipe)?;
-    let staged = stage_flattened(directory, &flattened)?;
+    let staged = stage_flattened(directory, &declared, &flattened)?;
     let found = found::observe(out).map_err(|why| refusal(&display(root, out), &why))?;
 
     let written = put(out, &staged)
@@ -1034,12 +1034,30 @@ fn publish_assembly_at(
         });
 
     match written {
-        Ok(record) => Ok(record),
+        Ok(release) => Ok(Flattening {
+            release,
+            dropped: flattened.dropped,
+        }),
         Err(errors) => {
             found.unwind(out);
             Err(errors)
         }
     }
+}
+
+/// What a flattening publish produced.
+///
+/// The release record, and the `contents` keys the flattened manifest does not
+/// declare although the source did. The second half travels out of the run that
+/// decided it rather than being re-derived by whoever reports it: two functions
+/// answering one question separately is the defect
+/// [#581](https://github.com/headwater-ai/headwater/issues/581) exists for, and
+/// a reporter that drifted from [`crate::flatten::DROPPED`] would tell a
+/// publisher the artifact carries something it does not. `dropped` is empty for
+/// every source that declares none of those keys.
+pub struct Flattening {
+    pub release: Release,
+    pub dropped: Vec<String>,
 }
 
 /// The publish sequence shared by [`publish`] and [`publish_from`], once each
@@ -1109,6 +1127,11 @@ fn publish_at(
     migrations(root, directory, manifest, source, &widest)?;
 
     let staged = stage(root, directory, manifest)?;
+    // After `found::observe` and before `put`, which is where `migrations` one
+    // line above already returns from without unwinding: nothing has been
+    // written yet, because `put` is what calls `create_dir_all`. The
+    // `!out.exists()` assertion in the CLI's publish target holds that.
+    carried(&staged, &declared)?;
 
     let written = put(out, &staged)
         .map_err(|why| refusal(&display(root, out), &why))
@@ -1342,8 +1365,13 @@ struct Staged {
 
 /// The generated flattened package, expressed in the same staged-file shape
 /// ordinary publication passes to [`put`].
+///
+/// `name` is the source manifest a message names, because that is the file a
+/// publisher edits: the generated manifest [`carried`] reads is derived from it
+/// and exists only in memory.
 fn stage_flattened(
     directory: &Path,
+    name: &str,
     flattened: &crate::flatten::Flattened,
 ) -> Result<Vec<Staged>, Vec<ResolveError>> {
     let mode = std::fs::metadata(directory.join(MANIFEST))
@@ -1372,26 +1400,159 @@ fn stage_flattened(
         mode: mode.clone(),
     }));
     staged.sort_by(|left, right| left.path.cmp(&right.path));
+    carried(&staged, name)?;
     Ok(staged)
+}
+
+/// Every path the staged manifest declares, held to the staged set.
+///
+/// [`reachable`] holds a `contents` path to the publisher's tree, and this
+/// holds the same key to the artifact. They are two readings and not one rule
+/// twice: `reachable` answers whether a publisher can read what the manifest
+/// declares, and a key can pass it and still reach a consumer as a hole. Two
+/// mechanisms produce that hole and both were live at
+/// [#581](https://github.com/headwater-ai/headwater/issues/581):
+///
+/// - **The stagers enumerate the manifest differently from each other.**
+///   [`crate::flatten::contents`] copies through every source key it does not
+///   filter and [`crate::flatten::assets`] writes two of them, so `conformance`
+///   was declared by one function and written by neither. That is an engine
+///   defect and the instance fix is in `flatten`.
+/// - **A declared directory holds no file.** `reachable` admits it — the
+///   directory is there and it is a directory — and the walk that carries bytes
+///   then carries none, on either publish path. That is a publisher's tree and
+///   no fix in this engine removes it, which is why the guard is general and
+///   permanent rather than a second per-key check beside [`doctrine_at`].
+///
+/// **It runs over the staged set in memory, before `put`.** [`doctrine_at`]'s
+/// doc comment argues the same placement from `vendor`'s side and the argument
+/// here is stronger: nothing has been written when this fires, so `--out` does
+/// not exist to be unwound. The alternative — a post-condition over the written
+/// artifact — hands a publisher a directory the run has to take back.
+///
+/// **It reads the manifest out of the staged bytes rather than out of the
+/// `Mapping` a caller holds.** [`stage`] rewrites `contents.bundles` into the
+/// staged `package.yml` at its end while the in-memory manifest still names the
+/// library outside the package, so the staged bytes are the only copy of the
+/// manifest the artifact will actually carry. Reading them keeps no second copy
+/// of the rewrite rule here.
+///
+/// **A non-scalar and an empty value are skipped, and that is not a gap.**
+/// [`reachable`] refuses both, on both publish paths, above every call of this.
+/// Refusing them again would be a second definition of one rule, and the
+/// message a publisher reads would depend on which check happened to run first.
+///
+/// **The declared scalar is resolved into an artifact path before the compare,
+/// and comparing the raw string refuses two things a publisher may write.**
+/// `headwater/standard` declares `assemblies: assemblies/` and `doctrine:
+/// doctrine/`, and a staged path never carries the trailing separator. And
+/// [#303](https://github.com/headwater-ai/headwater/issues/303) ruled that
+/// `sub/../taxonomy.yml` names `taxonomy.yml` and publishes, because
+/// [`reachable`] judges a path by where it resolves rather than by the string a
+/// manifest wrote. [`member_path`] is that resolution and the suite pins both.
+///
+/// **Every bad key is reported, not the first one.** [`reachable`] and
+/// [`agrees`] collect for the same stated reason: a second run should not have
+/// to discover the second defect.
+fn carried(staged: &[Staged], manifest: &str) -> Result<(), Vec<ResolveError>> {
+    let Some(file) = staged.iter().find(|file| file.path == MANIFEST) else {
+        return Err(refusal(
+            manifest,
+            "the staged artifact carries no manifest to read its own members from",
+        ));
+    };
+    let text = String::from_utf8(file.bytes.clone())
+        .map_err(|_| refusal(manifest, "the staged manifest is not text"))?;
+    let loaded = headwater_yaml::load(&text).map_err(|errors| {
+        vec![ResolveError::new(
+            ResolveErrorKind::SourceRefused(headwater_yaml::error::render(&errors)),
+            manifest,
+            "",
+            headwater_yaml::Span::default(),
+        )]
+    })?;
+    let Some(map) = loaded.value.as_map() else {
+        return Err(refusal(manifest, "the staged manifest is not a mapping"));
+    };
+
+    let mut refused = Vec::new();
+    for entry in &contents_of(map) {
+        let key = entry.key.value.as_str();
+        let Some(scalar) = entry.value.value.as_scalar() else {
+            continue;
+        };
+        let declared = scalar.text.as_str();
+        let Some(member) = member_path(declared) else {
+            continue;
+        };
+        let prefix = format!("{member}/");
+        let held = staged
+            .iter()
+            .any(|file| file.path == member || file.path.starts_with(&prefix));
+        if !held {
+            refused.extend(refusal(
+                manifest,
+                &format!(
+                    "`contents.{key}` names {declared}, and the artifact does not carry it. Every \
+                     key a published manifest declares is a path a consumer opens, so publishing \
+                     this would ship a manifest naming a member no consumer received. A declared \
+                     directory that holds no file is the common way to reach this"
+                ),
+            ));
+        }
+    }
+    match refused.is_empty() {
+        true => Ok(()),
+        false => Err(refused),
+    }
+}
+
+/// The artifact path a declared `contents` scalar names, or `None` where the
+/// scalar names nothing inside the artifact.
+///
+/// A staged path is built out of directory entries, so it carries no `.`
+/// segment, no `..` segment and no trailing separator. A declared scalar may
+/// carry all three and still be legal, so the compare needs the scalar in the
+/// staged form rather than as written.
+///
+/// `None` covers the two values [`reachable`] has already refused above every
+/// call of this — an empty scalar, and a path that climbs above the package —
+/// and [`carried`] skips rather than reporting them, so one rule keeps one
+/// message.
+fn member_path(declared: &str) -> Option<String> {
+    let mut parts: Vec<&str> = Vec::new();
+    for part in declared.split('/') {
+        match part {
+            "" | "." => continue,
+            ".." => {
+                parts.pop()?;
+            }
+            other => parts.push(other),
+        }
+    }
+    match parts.is_empty() {
+        true => None,
+        false => Some(parts.join("/")),
+    }
 }
 
 /// Which kind of thing a `contents` key's reader opens.
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum Kind {
+pub(crate) enum Kind {
     File,
     Directory,
 }
 
 impl Kind {
     /// The kind a path on disk is, where it is one of these two.
-    fn of(at: &Path) -> Kind {
+    pub(crate) fn of(at: &Path) -> Kind {
         match at.is_dir() {
             true => Kind::Directory,
             false => Kind::File,
         }
     }
 
-    fn name(self) -> &'static str {
+    pub(crate) fn name(self) -> &'static str {
         match self {
             Kind::File => "file",
             Kind::Directory => "directory",
@@ -1430,7 +1591,11 @@ impl Kind {
 /// `templates` is the second, with
 /// [#378](https://github.com/headwater-ai/headwater/issues/378) as the reader
 /// that took it.
-fn required_kind(key: &str) -> Option<Kind> {
+///
+/// [`crate::flatten::members`] reads the same table for the same reason, so a
+/// flattening publish carries a member as the kind its reader opens rather than
+/// as whatever the walk that carries it happened to be written for.
+pub(crate) fn required_kind(key: &str) -> Option<Kind> {
     match key {
         "taxonomy" | "conformance" => Some(Kind::File),
         BUNDLES | ASSEMBLIES | DOCTRINE | TEMPLATES | crate::migration::CONTENTS_KEY => {

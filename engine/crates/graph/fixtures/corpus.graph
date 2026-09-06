@@ -1,13 +1,13 @@
-287 nodes, 588 declared edge halves
+289 nodes, 593 declared edge halves
     455 to a document
-    133 to an anchor
+    138 to an anchor
 0 prose links that did not resolve
 
 anchors
       1 code_path `.claude/agents/headwater-maintainer.md` via source-tree
-      1 code_path `.claude/hooks/intent.sh` via source-tree
-      1 code_path `.claude/hooks/lib.sh` via source-tree
-      1 code_path `.claude/hooks/review.sh` via source-tree
+      2 code_path `.claude/hooks/intent.sh` via source-tree
+      2 code_path `.claude/hooks/lib.sh` via source-tree
+      2 code_path `.claude/hooks/review.sh` via source-tree
       1 code_path `.claude/hooks/write.sh` via source-tree
       1 code_path `.claude/settings.json` via source-tree
       1 code_path `.claude/skills/fixtures.sh` via source-tree
@@ -32,7 +32,7 @@ anchors
       1 code_path `engine/crates/check/src/voice.rs` via source-tree
       1 code_path `engine/crates/cli/Cargo.toml` via source-tree
      20 code_path `engine/crates/cli/src/lib.rs` via source-tree
-     21 code_path `engine/crates/cli/src/main.rs` via source-tree
+     22 code_path `engine/crates/cli/src/main.rs` via source-tree
       2 code_path `engine/crates/cli/src/paint.rs` via source-tree
       2 code_path `engine/crates/cli/tests/help.rs` via source-tree
       1 code_path `engine/crates/cli/tests/json.rs` via source-tree
@@ -61,6 +61,7 @@ anchors
       1 code_path `engine/crates/sweep/src/intake.rs` via source-tree
       2 code_path `engine/crates/sweep/src/lib.rs` via source-tree
       1 code_path `engine/crates/verbs/src/lib.rs` via source-tree
+      1 code_path `engine/crates/yaml/src/json.rs` via source-tree
       1 code_path `mkdocs-overrides/main.html` via source-tree
       4 code_path `notes/website-design-brief.md` via source-tree
       1 code_path `packages/headwater-standard/taxonomy.yml` via source-tree
