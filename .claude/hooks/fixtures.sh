@@ -104,6 +104,22 @@ if [ -x "$engine" ]; then
 else
     skip 'intent.sh cases that call the engine' 'no built engine'
 fi
+# Two prompts nobody wrote. A harness running agents in parallel submits one
+# each time an agent finishes, carrying that agent's whole closing report, and
+# another when a peer session sends a message. The route has nothing to say
+# about either, and the pointers it offered over them were chosen against text
+# no person submitted as an intent.
+#
+# The hook tests the opening characters rather than searching the body, so a
+# question that merely mentions a task notification still routes. The first case
+# in this file is that control: it carries ordinary prose and expects pointers.
+expect 'a completion notification is not a task, and routes to nothing' \
+    intent.sh 0 '' \
+    '{"hook_event_name":"UserPromptSubmit","user_input":"<task-notification>\n<task-id>a1</task-id>\n<result>I shipped the check and the fixtures pass.</result>\n</task-notification>"}'
+expect 'a message from another session is not a task either' \
+    intent.sh 0 '' \
+    '{"hook_event_name":"UserPromptSubmit","user_input":"<cross-session-message from=\"peer\">the branch is green</cross-session-message>"}'
+
 expect 'an input with no prompt in it is silent rather than an error' \
     intent.sh 0 '' \
     '{"hook_event_name":"UserPromptSubmit"}'
