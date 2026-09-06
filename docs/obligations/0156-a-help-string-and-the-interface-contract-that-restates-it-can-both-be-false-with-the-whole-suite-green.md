@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0156
-status: draft
-status_since: 2026-08-28
+status: current
+status_since: 2026-09-06
 summary: "Two suites read the shape of the help and the headings of the contract, and neither reads a word of either."
 last_verified: 2026-08-28
 title: "A help string and the interface contract that restates it can both be false with the whole suite green"

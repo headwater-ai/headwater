@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0157
-status: draft
-status_since: 2026-08-28
+status: current
+status_since: 2026-09-06
 summary: "The capture report warns that its aggregate crosses two denominators, on a run whose own next line lists seventeen of them."
 last_verified: 2026-08-28
 title: "The capture report says two denominators over a store that named seventeen taxonomies"

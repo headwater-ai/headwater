@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0140
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 last_verified: 2026-08-26
 title: "A check can meet the failing-fixture bar with a fixture that cannot distinguish the rule from its neighbour"
 summary: "A fixture set can meet the failing-fixture bar in full and never exercise the choice between a rule and its neighbor."

@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0138
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 summary: "The editorial pass measured 180,255 words of comment prose and rewrote two files, leaving cli/src/main.rs, the largest, untouched."
 provenance:
   warrant: accepted

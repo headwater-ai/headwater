@@ -1,7 +1,7 @@
 ---
 id: HW-IFACE-headwater-export
-status: draft
-status_since: 2026-08-25
+status: current
+status_since: 2026-09-06
 summary: "How to emit a taxonomy export profile to a file or standard output with a declared loss census."
 last_verified: 2026-08-25
 title: "headwater export"

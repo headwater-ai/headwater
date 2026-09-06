@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0131
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 last_verified: 2026-08-26
 title: "The CLI crate wires every verb and carries no tests, so two wiring defects passed a green suite"
 summary: "Two wiring defects in the CLI crate's verb dispatch were found by hand, and reverting either fix still leaves the test suite green."

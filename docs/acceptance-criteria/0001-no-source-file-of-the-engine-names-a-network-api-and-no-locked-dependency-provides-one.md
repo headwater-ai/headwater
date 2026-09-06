@@ -1,7 +1,7 @@
 ---
 id: HW-AC-0001
-status: draft
-status_since: 2026-08-25
+status: current
+status_since: 2026-09-06
 summary: "Two facts settle whether the engine can reach a network: no source file under engine/crates names a network API, and no locked package provides one."
 last_verified: 2026-08-25
 title: "No source file of the engine names a network API and no locked dependency provides one"

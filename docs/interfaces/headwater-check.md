@@ -1,7 +1,7 @@
 ---
 id: HW-IFACE-headwater-check
-status: draft
-status_since: 2026-08-16
+status: current
+status_since: 2026-09-06
 summary: "What headwater check reads, what goes to each of its two streams, and the eleven causes behind its one non-zero exit."
 last_verified: 2026-08-24
 title: "headwater check"

@@ -10,7 +10,7 @@ relations:
 
 # decisions
 
-50 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+51 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -211,3 +211,7 @@ relations:
 ## Q51 — What licenses a term into the public glossary, and what licenses a sixteenth
 
 [HW-DR-0051](../decisions/0051-q51-what-licenses-a-term-into-the-public-glossary-and-what-licenses-a-sixteenth.md) — A term reaches the public glossary because it recurs in the visitor-facing pages of the site, and for no other reason. The tutorial and the glossary itself are not sources, and the specification glossary answers to a different reader. (asserted, and no human has accepted it)
+
+## A document is proposed at the state it will hold, and the merge activates it
+
+[HW-DR-0052](../decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md) — An author writes the state a document will hold once it lands, and the merge activates it. The state facet answers to the merge, the way HW-DR-0034 made the warrant facet answer to it.

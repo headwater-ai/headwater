@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0146
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 last_verified: 2026-08-26
 title: "The Stop hook reads its re-entry guard with an interpreter it does not require, so a machine with no python3 re-blocks the same turn"
 summary: "The Stop hook reads its re-entry guard through python3 with no fallback, so a machine without python3 re-blocks the same turn."

@@ -1,7 +1,7 @@
 ---
 id: HW-IFACE-headwater-probe
-status: draft
-status_since: 2026-08-25
+status: current
+status_since: 2026-09-06
 summary: "How plan, record, grade and stale compose probe measurements without gating a build."
 last_verified: 2026-08-25
 title: "headwater probe"

@@ -1,7 +1,7 @@
 ---
 id: HW-IFACE-headwater-sweep
-status: draft
-status_since: 2026-08-16
+status: current
+status_since: 2026-09-06
 summary: "Why no result of headwater sweep can move an exit status, and the four caller errors that move one anyway."
 last_verified: 2026-08-24
 title: "headwater sweep"

@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0132
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 last_verified: 2026-08-26
 title: "Survey the wiring decisions of main.rs, verb by verb, and cover the quiet ones"
 summary: "Two more wiring decisions in main.rs went uncovered by hand alone, and the other twenty-seven verbs have never been surveyed for the same failure."

@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0133
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 last_verified: 2026-08-26
 title: "Two test helpers key a scratch directory on the pid alone, and the race springs on the next case added"
 summary: "Two scratch-directory test helpers key on the process id alone, safe only while their files hold one test each."

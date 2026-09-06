@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0151
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 title: "The glossary's Package entry omits conformance and still lists plugins, which #367 dropped"
 summary: "The glossary's Package entry is missing `conformance` and still names `plugins`, a key spec 7 no longer carries."
 provenance:

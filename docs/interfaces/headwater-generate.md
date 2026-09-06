@@ -1,7 +1,7 @@
 ---
 id: HW-IFACE-headwater-generate
-status: draft
-status_since: 2026-08-25
+status: current
+status_since: 2026-09-06
 summary: "How to write the projections declared by the taxonomy and detect stale generated files."
 last_verified: 2026-08-25
 title: "headwater generate"

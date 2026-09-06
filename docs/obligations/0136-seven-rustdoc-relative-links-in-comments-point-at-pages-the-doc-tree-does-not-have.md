@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0136
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 title: "Seven rustdoc-relative links in comments point at pages the doc tree does not have"
 summary: "Seven links in engine comments are written for rustdoc output that no job ever builds, so nothing has ever resolved them."
 provenance:

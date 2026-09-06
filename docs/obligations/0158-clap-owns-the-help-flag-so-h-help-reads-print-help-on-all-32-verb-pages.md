@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0158
-status: draft
-status_since: 2026-08-28
+status: current
+status_since: 2026-09-06
 summary: "The fifth entry of the GLOBALS table carries clap's own two words rather than a description this repository wrote, because clap adds its help argument after the point where a caller can name it."
 last_verified: 2026-08-28
 title: "clap owns the help flag, so -h, --help reads Print help on all 32 verb pages"

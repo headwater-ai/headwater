@@ -1,7 +1,7 @@
 ---
 id: HW-IFACE-headwater-completions
-status: draft
-status_since: 2026-08-25
+status: current
+status_since: 2026-09-06
 summary: "How to write one of four shell completion scripts, and which caller errors prevent any script output."
 last_verified: 2026-08-25
 title: "headwater completions"

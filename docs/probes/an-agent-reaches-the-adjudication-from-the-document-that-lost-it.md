@@ -1,7 +1,7 @@
 ---
 id: HW-PROBE-an-agent-reaches-the-adjudication-from-the-document-that-lost-it
-status: draft
-status_since: 2026-08-14
+status: current
+status_since: 2026-09-06
 summary: A session that meets the superseded register first either reaches the decision that replaced it or reports the stale answer.
 last_verified: 2026-08-14
 probe_category: navigability

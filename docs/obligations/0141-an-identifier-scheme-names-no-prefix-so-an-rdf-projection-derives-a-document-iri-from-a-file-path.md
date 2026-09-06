@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0141
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 summary: "The gap `HW-OBL-0046` left open, a document IRI built from a file path rather than a name, is gated on a consumer for `rdf` or `skos` that has not appeared."
 provenance:
   warrant: accepted

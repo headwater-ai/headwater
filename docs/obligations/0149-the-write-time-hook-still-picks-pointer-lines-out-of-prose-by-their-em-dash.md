@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0149
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 last_verified: 2026-08-26
 title: "The write-time hook still picks pointer lines out of prose by their em dash"
 summary: "The write-time hook still finds pointer lines by grepping for an em dash, so a document with no summary drops out in silence."

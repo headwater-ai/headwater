@@ -1,7 +1,7 @@
 ---
 id: HW-IFACE-headwater-import
-status: draft
-status_since: 2026-08-25
+status: current
+status_since: 2026-09-06
 summary: "How to validate a pinned fetched snapshot and import its declared relation edges into documents."
 last_verified: 2026-08-25
 title: "headwater import"

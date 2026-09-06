@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0127
-status: draft
-status_since: 2026-08-15
+status: current
+status_since: 2026-09-06
 waiting_on: build
 summary: "A path a change named that no census row holds keeps its prior version only where that version parsed, so a deleted document with malformed front matter reaches no rule."
 last_verified: 2026-08-15

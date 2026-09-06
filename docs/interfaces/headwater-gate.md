@@ -1,7 +1,7 @@
 ---
 id: HW-IFACE-headwater-gate
-status: draft
-status_since: 2026-08-25
+status: current
+status_since: 2026-09-06
 summary: "How a published read set carries a verdict to another tree, and why new documents stay outside its reach."
 last_verified: 2026-08-25
 title: "headwater gate"

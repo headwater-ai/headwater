@@ -1,7 +1,7 @@
 ---
 id: HW-IFACE-headwater-explain
-status: draft
-status_since: 2026-08-25
+status: current
+status_since: 2026-09-06
 summary: "How a path or identifier yields the taxonomy derivation, requirements, relations, and graph edges."
 last_verified: 2026-08-25
 title: "headwater explain"

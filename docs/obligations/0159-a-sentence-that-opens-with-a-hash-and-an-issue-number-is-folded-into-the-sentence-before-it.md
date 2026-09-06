@@ -1,7 +1,7 @@
 ---
 id: HW-OBL-0159
-status: draft
-status_since: 2026-08-28
+status: current
+status_since: 2026-09-06
 summary: "`opens_a_sentence` admits a digit and not a hash, so a sentence that cites an issue as `#346` is counted with the sentence before it and reported at their combined length."
 last_verified: 2026-08-28
 title: "A sentence that opens with a hash and an issue number is folded into the sentence before it"

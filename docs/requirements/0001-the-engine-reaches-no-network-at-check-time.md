@@ -1,7 +1,7 @@
 ---
 id: HW-REQ-0001
-status: draft
-status_since: 2026-08-25
+status: current
+status_since: 2026-09-06
 summary: "The engine opens no network connection while it reads a corpus, so a check runs offline and a resolution result stays reproducible."
 last_verified: 2026-08-25
 title: "The engine reaches no network at check time"

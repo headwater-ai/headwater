@@ -1,7 +1,7 @@
 ---
 id: HW-SPEC-harness-support
-status: draft
-status_since: 2026-08-25
+status: current
+status_since: 2026-09-06
 summary: The ten capabilities a harness supplies at the four moments, stated once for every harness, and the recorded support of Claude Code, GitHub Copilot and OpenAI Codex.
 last_verified: 2026-08-25
 doc_type: design_spec

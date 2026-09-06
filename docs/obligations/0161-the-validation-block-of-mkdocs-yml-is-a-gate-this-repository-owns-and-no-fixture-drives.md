@@ -1,6 +1,6 @@
 ---
 id: HW-OBL-0161
-status: draft
+status: current
 status_since: 2026-09-06
 summary: "Two raised severities in mkdocs.yml are the whole of two gates, and no case in this repository fails when either one is lowered"
 last_verified: 2026-09-06
