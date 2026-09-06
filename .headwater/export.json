@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 363,
-      "carried": 363,
+      "in the graph": 365,
+      "carried": 365,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1768,7 +1768,7 @@
               "HW-SPEC-check-layer"
             ],
             "traces_to": [
-              "spike/"
+              "tools/language-spike/build.sh"
             ]
           }
         }
@@ -6934,12 +6934,40 @@
         }
       },
       {
-        "path": "docs/obligations/0164-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md",
+        "path": "docs/obligations/0164-the-regeneration-check-tests-byte-equality-before-the-marker-so-a-file-the-census-stopped-counting-as-generated-still-passes.md",
         "kind": "obligation_record",
         "id": "HW-OBL-0164",
-        "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0164",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "`generate --check` reads byte equality before it reads the marker, so a generated file the census dropped from the generated set still passes it",
+          "last_verified": "2026-09-06",
+          "title": "The regeneration check tests byte equality before the marker, so a file the census stopped counting as generated still passes",
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0165-a-rendered-page-gate-greps-for-a-string-it-requires-and-states-no-denominator-so-an-empty-build-passes-it.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0165",
+        "facets": {
+          "id": "HW-OBL-0165",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "The CI step that holds every rendered page to a corpus pointer exits 0 over a served directory with no page in it",
+          "last_verified": "2026-09-06",
+          "title": "A rendered-page gate greps for a string it requires and states no denominator, so an empty build passes it",
+          "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0168",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0168",
           "status": "current",
           "status_since": "2026-09-06",
           "summary": "The voice rule reports zero because not one of its forty patterns occurs here, and that reads the same as a clean corpus.",
@@ -8272,17 +8300,17 @@
       },
       {
         "anchor_kind": "code_path",
-        "id": "spike",
-        "resolver": "source-tree"
-      },
-      {
-        "anchor_kind": "code_path",
         "id": "tools/assemble-site.sh",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
         "id": "tools/cloudflare-build.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "tools/language-spike/build.sh",
         "resolver": "source-tree"
       },
       {
@@ -9946,7 +9974,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "spike",
+          "id": "tools/language-spike/build.sh",
           "resolver": "source-tree"
         }
       },
@@ -13174,7 +13202,7 @@
         }
       },
       {
-        "source": "docs/obligations/0164-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md",
+        "source": "docs/obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -13185,7 +13213,7 @@
         }
       },
       {
-        "source": "docs/obligations/0164-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md",
+        "source": "docs/obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {

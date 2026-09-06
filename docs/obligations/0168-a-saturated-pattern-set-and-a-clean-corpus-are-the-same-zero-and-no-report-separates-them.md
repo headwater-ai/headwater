@@ -1,5 +1,5 @@
 ---
-id: HW-OBL-0164
+id: HW-OBL-0168
 status: current
 status_since: 2026-09-06
 summary: "The voice rule reports zero because not one of its forty patterns occurs here, and that reads the same as a clean corpus."

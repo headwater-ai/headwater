@@ -113,7 +113,56 @@ impl Root {
         );
         std::fs::write(&overlay, text.replacen(anchor, &added, 1)).expect("the overlay writes");
     }
+
+    /// Narrow the consumer's selection until its closure is incomplete.
+    ///
+    /// It removes one bundle from whatever `bundles:` names, rather than writing
+    /// a selection of its own, so the case follows the declaration this
+    /// repository ships instead of a copy of it that nothing holds current. The
+    /// assertion is what makes that safe: a shipped selection that stops
+    /// carrying `evidence-and-obligation` fails here by name, rather than
+    /// quietly measuring a refusal these cases are not about.
+    ///
+    /// Returns what is left, so a case can say which bundles the advice is
+    /// allowed to know about.
+    fn drops_the_bundle_the_others_read(&self) -> Vec<String> {
+        let path = self.at.join(".headwater/taxonomy.yml");
+        let text = std::fs::read_to_string(&path).expect("the consumer declaration reads");
+        let line = text
+            .lines()
+            .find(|line| line.trim_start().starts_with("bundles:"))
+            .expect("the consumer declares `bundles:`")
+            .to_string();
+        let inside = line
+            .split_once('[')
+            .and_then(|(_, rest)| rest.split_once(']'))
+            .map(|(inside, _)| inside)
+            .expect("`bundles:` is a flow sequence");
+        let held: Vec<String> = inside
+            .split(',')
+            .map(|name| name.trim().to_string())
+            .filter(|name| !name.is_empty())
+            .collect();
+        assert!(
+            held.iter().any(|name| name == DROPPED),
+            "the shipped selection carries `{DROPPED}`, and these cases are about removing it: \
+             {line}"
+        );
+        let kept: Vec<String> = held.into_iter().filter(|name| name != DROPPED).collect();
+        let indent = &line[..line.len() - line.trim_start().len()];
+        let replaced = format!("{indent}bundles: [{}]", kept.join(", "));
+        std::fs::write(&path, text.replacen(&line, &replaced, 1))
+            .expect("the consumer declaration writes");
+        kept
+    }
 }
+
+/// The bundle the shipped selection carries that the other two read.
+const DROPPED: &str = "evidence-and-obligation";
+
+/// The line the advice opens with. One copy, because three cases read it and
+/// two of them read it for its absence.
+const ADVICE: &str = "this bundle selection is incomplete";
 
 impl Drop for Root {
     fn drop(&mut self) {
@@ -270,4 +319,128 @@ fn resolve_reports_a_founding_on_standard_error_and_still_writes_the_lock() {
         1,
         "the verdict is still one line: {checked:?}"
     );
+}
+
+/// The whole user-visible deliverable of
+/// [#579](https://github.com/headwater-ai/headwater/issues/579), at the verb.
+///
+/// The library holds the derivation and `engine/crates/resolve/tests/selection.rs`
+/// is where that is measured. Nothing there reaches the print. Both call sites
+/// are one line each in `main.rs`, and deleting either one leaves that suite
+/// green and this issue unfixed, so the text, the stream and the status code
+/// are asserted here.
+#[test]
+fn resolve_names_the_bundle_an_incomplete_selection_left_out() {
+    let root = Root::new("resolve-incomplete");
+    let kept = root.drops_the_bundle_the_others_read();
+    let ran = root.run(&["taxonomy", "resolve"]);
+
+    assert_eq!(
+        ran.code,
+        Some(1),
+        "an incomplete selection is refused: {ran:?}"
+    );
+    assert!(
+        ran.err.contains("referential integrity"),
+        "the refusal that reports it is the one it always was: {ran:?}"
+    );
+    assert!(
+        ran.err.contains(ADVICE),
+        "the advice reaches a reader: {ran:?}"
+    );
+    assert!(
+        ran.err.contains(&format!("`{DROPPED}` declares")),
+        "and it names the bundle to add, with what that bundle supplies: {ran:?}"
+    );
+    assert!(
+        ran.err.contains(".headwater/taxonomy.yml"),
+        "and the file to edit: {ran:?}"
+    );
+
+    // Every bundle the package ships that neither helps nor is selected. Taken
+    // from the package rather than listed, so a library that grows a bundle
+    // grows this assertion with it.
+    for name in shipped_bundles() {
+        if name == DROPPED || kept.contains(&name) {
+            continue;
+        }
+        assert!(
+            !ran.err.contains(&format!("`{name}`")),
+            "the message names no bundle that does not help (`{name}`): {ran:?}"
+        );
+    }
+
+    assert!(
+        !ran.out.contains(ADVICE),
+        "the advice is on standard error and never on standard output: {ran:?}"
+    );
+    assert!(
+        !root.at.join(".headwater/taxonomy.lock").is_file(),
+        "a refused taxonomy writes no lock: {ran:?}"
+    );
+}
+
+/// The same advice at the other verb, which is a second call site and not the
+/// same code path.
+#[test]
+fn validate_names_the_bundle_an_incomplete_selection_left_out() {
+    let root = Root::new("validate-incomplete");
+    root.drops_the_bundle_the_others_read();
+    let ran = root.run(&["taxonomy", "validate"]);
+
+    assert_eq!(ran.code, Some(1), "the taxonomy is not valid: {ran:?}");
+    assert!(
+        ran.out.contains("headwater/standard is not valid"),
+        "the verdict is still on standard output: {ran:?}"
+    );
+    assert!(
+        ran.err.contains("referential integrity"),
+        "under the refusal that reports it: {ran:?}"
+    );
+    assert!(
+        ran.err.contains(ADVICE) && ran.err.contains(&format!("`{DROPPED}` declares")),
+        "the advice names the bundle to add: {ran:?}"
+    );
+    assert!(
+        !ran.out.contains(ADVICE),
+        "on standard error and never on standard output: {ran:?}"
+    );
+}
+
+/// The quiet direction, which is the one a message can lose in silence.
+///
+/// A message that always prints is a message that will eventually name the
+/// wrong thing, so the selection this repository actually ships must reach
+/// neither stream.
+#[test]
+fn a_selection_whose_closure_is_complete_is_told_nothing_about_bundles() {
+    let root = Root::new("complete-selection");
+    let ran = root.run(&["taxonomy", "validate"]);
+
+    assert_eq!(ran.code, Some(0), "the shipped selection is valid: {ran:?}");
+    assert!(
+        !ran.err.contains(ADVICE) && !ran.out.contains(ADVICE),
+        "nothing is advised about a selection that resolves: {ran:?}"
+    );
+
+    let resolved = root.run(&["taxonomy", "resolve"]);
+    assert_eq!(resolved.code, Some(0), "and it resolves: {resolved:?}");
+    assert!(
+        !resolved.err.contains(ADVICE) && !resolved.out.contains(ADVICE),
+        "at the other verb as well: {resolved:?}"
+    );
+}
+
+/// Every bundle the copied package ships, read off the package.
+fn shipped_bundles() -> Vec<String> {
+    let at = repository().join("packages/headwater-standard/bundles");
+    let mut names: Vec<String> = std::fs::read_dir(&at)
+        .expect("the bundle root reads")
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| at.join(entry.file_name()).join("bundle.yml").is_file())
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .collect();
+    names.sort();
+    assert!(names.len() > 1, "the package ships bundles: {names:?}");
+    names
 }

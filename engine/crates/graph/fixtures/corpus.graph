@@ -1,4 +1,4 @@
-285 nodes, 588 declared edge halves
+287 nodes, 588 declared edge halves
     455 to a document
     133 to an anchor
 0 prose links that did not resolve
@@ -73,9 +73,9 @@ anchors
       1 code_path `site/ns/index.html` via source-tree
       1 code_path `site/proof/index.html` via source-tree
       1 code_path `site/tutorial/index.html` via source-tree
-      1 code_path `spike` via source-tree
       1 code_path `tools/assemble-site.sh` via source-tree
       1 code_path `tools/cloudflare-build.sh` via source-tree
+      1 code_path `tools/language-spike/build.sh` via source-tree
       1 code_path `tools/rdf-probe/emit.py` via source-tree
       1 code_path `tools/refresh-crawler-files.sh` via source-tree
       1 code_path `tools/refresh-figures.sh` via source-tree

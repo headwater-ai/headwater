@@ -39,6 +39,6 @@ The instrument is a run of the three categories over this corpus, with an adjudi
 
 `voice.forbidden_construction` implements `future_intent`, `change_narration` and `phased_rollout`, which are the categories that the declarative regime forbids. So the implementation exists, and what this record holds open is the sample.
 
-Edition two of the `change_narration` set reports 60 findings over this corpus, which clears the bar of 50 for one category of the three. `future_intent` and `phased_rollout` report nothing. [HW-OBL-0164](0164-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md) states why a zero from a pattern set carries two readings rather than one.
+Edition two of the `change_narration` set reports 60 findings over this corpus, which clears the bar of 50 for one category of the three. `future_intent` and `phased_rollout` report nothing. [HW-OBL-0168](0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md) states why a zero from a pattern set carries two readings rather than one.
 
 So this claim is short by two categories rather than by three. A wider corpus is one way to reach the other two. A pattern set curated against the prose those two categories are written in is the second way, and it asks nothing of an adopter.

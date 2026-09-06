@@ -823,5 +823,5 @@ fi
 
 printf '\n%s passed, %s failed, %s skipped\n' "$passed" "$failed" "$skipped"
 [ "$failed" -eq 0 ] || exit 1
-[ "$skipped" -eq 0 ] || printf 'Build the engine to run the skipped cases:\n  cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml\n'
+[ "$skipped" -eq 0 ] || printf 'Build the engine to run the skipped cases:\n  cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked\n'
 exit 0

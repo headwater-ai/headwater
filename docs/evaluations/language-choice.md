@@ -126,7 +126,7 @@ That spike answers nothing now. Both candidates produce a working parse-classify
 
 Replace it with a risk-retirement spike in Rust alone. Each item below can falsify the decision, and Go remains the fallback until all four pass.
 
-**All four passed.** The code is in [`spike/`](../../spike/) and the measurements are in the [results](language-spike-results.md).
+**All four passed.** The code is in [`tools/language-spike/`](../../tools/language-spike/) and the measurements are in the [results](language-spike-results.md).
 
 | Retires | Acceptance | Result |
 |---|---|---|

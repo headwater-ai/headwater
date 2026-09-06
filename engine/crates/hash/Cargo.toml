@@ -4,6 +4,7 @@ name = "headwater-hash"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+license.workspace = true
 
 # No dependencies, and none of the crates that use this one may add any through
 # it. Three components hash: the lock hashes a canonical taxonomy, the census
