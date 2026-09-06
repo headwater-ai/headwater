@@ -9,7 +9,12 @@
 # a hard-wrapped block, four retired terms, a dead link and a dead fragment
 # into the root `README.md` and got exit 0 with a byte-identical check report.
 # So the most-read prose in this repository was the only prose in it with no
-# gate at all, and this suite is that gate.
+# gate at all.
+#
+# This suite closes TWO of those eight — the dead link and the dead fragment —
+# and it holds four further claims the page makes about itself. It closes none
+# of the other six. The section below says so with the measurement, rather than
+# leaving a reader to assume from a passing step that the page is covered.
 #
 # Run it from anywhere:
 #     sh tools/readme-fixtures.sh
@@ -69,10 +74,17 @@
 #   Case group 3 judges only the ORG AND REPOSITORY a GitHub URL names, which
 #   is the part a rename breaks silently and the part that is knowable offline.
 #
-#   The prose itself answers to no rule. American spelling, the hard-wrapping
-#   rule and the retired terms are declared over the corpus under `docs/`, and
-#   this file is not on a shelf. Putting it on one buys the census move that
-#   #600 priced and refused, for a file GitHub renders and MkDocs never sees.
+#   The prose itself answers to no rule, and that is measured rather than
+#   assumed: a British spelling, a contraction, a hard-wrapped paragraph, a
+#   retired term and `headwater` written lower case in running prose were
+#   planted on the page together, and this suite reported every case passing.
+#   The language regime binds the kinds declared under the corpus root and this
+#   file is not on a shelf, so this suite reimplements none of those rules — a
+#   second copy of a rule living in a script is what this repository refuses
+#   everywhere else. Putting the file on a shelf instead buys the census move
+#   that #600 priced and refused, for a file GitHub renders and MkDocs never
+#   sees, so whether the regime should reach outside `docs/` is a question
+#   about the taxonomy and not a gap here.
 #
 # # WHAT IT NEEDS, AND WHAT IT WRITES
 #
@@ -137,47 +149,102 @@ more_than() {
     fi
 }
 
-# links_of FILE — every `](target)` occurrence outside a fence, as `line<TAB>target`.
-# Per occurrence, so two links on one line are two rows. A nested image link,
-# `[![alt](badge)](href)`, yields both targets.
+# The two awk helpers every link reader below shares, defined once and pasted
+# into each program because awk has no include. Both exist because the first
+# cut of this suite reddened on correct Markdown, and a required check on the
+# most-read page in the project that refuses legitimate syntax is a check the
+# first person it annoys turns off — after which it guards nothing. A false
+# positive here costs more than a missed defect.
+#
+#   `strip_code` removes every inline code span, so a link PRINTED as an
+#   example inside backticks is not read as a link. Fenced blocks were exempt
+#   from the start and inline spans were not, which is the same rule applied
+#   inconsistently. A run of n backticks closes on the next run of n, and an
+#   unterminated run is treated as ordinary text, which is what CommonMark
+#   does with it.
+#
+#   `dest` takes the link destination out of what stands between `](` and `)`.
+#   CommonMark allows a title after the destination — `[a](p "t")`, `'t'` or
+#   `(t)` — and the first cut carried the title into the path and reported the
+#   file as missing. The destination is `<…>` if it is angle-bracketed and
+#   everything up to the first space otherwise, which is the rule itself rather
+#   than a list of the title shapes.
+awk_helpers='
+function strip_code(s,   out, i, run, open, rest, j) {
+    out = ""
+    while ((i = index(s, "`")) > 0) {
+        out = out substr(s, 1, i - 1)
+        s = substr(s, i)
+        run = 0
+        while (substr(s, run + 1, 1) == "`") run++
+        open = substr(s, 1, run)
+        rest = substr(s, run + 1)
+        j = index(rest, open)
+        if (j == 0) return out rest
+        s = substr(rest, j + run)
+    }
+    return out s
+}
+function dest(d,   i) {
+    sub(/^[ \t]+/, "", d)
+    if (substr(d, 1, 1) == "<") {
+        d = substr(d, 2)
+        i = index(d, ">")
+        return (i > 0) ? substr(d, 1, i - 1) : d
+    }
+    i = index(d, " ")
+    if (i > 0) d = substr(d, 1, i - 1)
+    i = index(d, "\t")
+    if (i > 0) d = substr(d, 1, i - 1)
+    return d
+}
+'
+
+# links_of FILE — every `](target)` occurrence outside a fence and outside an
+# inline code span, as `line<TAB>target`. Per occurrence, so two links on one
+# line are two rows. A nested image link, `[![alt](badge)](href)`, yields both.
 links_of() {
-    awk '
+    awk "$awk_helpers"'
         /^[ \t]*```/ { fence = 1 - fence; next }
         fence { next }
         {
-            rest = $0
+            rest = strip_code($0)
             while ((i = index(rest, "](")) > 0) {
                 rest = substr(rest, i + 2)
                 j = index(rest, ")")
                 if (j == 0) { print NR "\t<unterminated>"; break }
-                print NR "\t" substr(rest, 1, j - 1)
+                print NR "\t" dest(substr(rest, 1, j - 1))
                 rest = substr(rest, j + 1)
             }
         }
     ' "$1"
 }
 
-# images_of FILE — every `![alt](target)` occurrence outside a fence.
+# images_of FILE — every `![alt](target)` occurrence outside a fence and outside
+# an inline code span.
 images_of() {
-    awk '
+    awk "$awk_helpers"'
         /^[ \t]*```/ { fence = 1 - fence; next }
         fence { next }
         {
-            rest = $0
+            rest = strip_code($0)
             while (match(rest, /!\[[^]]*\]\([^)]*\)/)) {
                 m = substr(rest, RSTART, RLENGTH)
                 sub(/^!\[[^]]*\]\(/, "", m)
                 sub(/\)$/, "", m)
-                print NR "\t" m
+                print NR "\t" dest(m)
                 rest = substr(rest, RSTART + RLENGTH)
             }
         }
     ' "$1"
 }
 
-# urls_of FILE — every absolute URL, fences included, because the clone command
-# inside the fence names the repository too and a rename breaks it just as
-# quietly as it breaks a badge.
+# urls_of FILE — every absolute URL, fences AND inline code spans included,
+# because the clone command inside the fence names the repository too and a
+# rename breaks it just as quietly as it breaks a badge. This is deliberately
+# the opposite of the two readers above, and the difference is the reason: a
+# link is markup, so where it is printed decides whether it is markup at all,
+# while a URL naming this repository is wrong wherever it is printed.
 urls_of() {
     awk '
         {
@@ -491,6 +558,51 @@ set -- $(link_judge "$scratch/links.d" "$scratch/links.d/README.md" | tail -1)
 same "  and counts five occurrences over three lines" 5 "$1"
 same "  four of them relative" 4 "$2"
 same "  two of them carrying a fragment" 2 "$3"
+
+# 1g. A CommonMark title after the destination. `[a](p "t")` is correct
+#     Markdown and the first cut of this suite carried the title into the path
+#     and reported the file as missing — twice, because an image carries one
+#     too. A required check that reddens on correct syntax is a check the first
+#     person it annoys turns off, so this is a worse defect than a missed one.
+#     All three title delimiters are here, and so is an angle-bracketed
+#     destination, which is the other shape the destination rule has to read.
+mkdir -p "$scratch/titles"
+printf '%s\n' '## A real heading' >"$scratch/titles/there.md"
+printf '\211PNG\r\n\032\n\0\0\0\rIHDR\0\0\005\0\0\0\002\200' >"$scratch/titles/preview.png"
+printf '%s\n' \
+    'Double: [a](there.md "a title") and image ![b](preview.png "another").' \
+    '' \
+    "Single: [c](there.md 'a title'), parens: [d](there.md (a title))." \
+    '' \
+    'Angled: [e](<there.md>) and angled with a fragment [f](<there.md#a-real-heading>).' >"$scratch/titles/README.md"
+got=$(link_judge "$scratch/titles" "$scratch/titles/README.md" | sed '$d' | tr '\n' '|')
+same "a CommonMark title is not part of the path" "" "$got"
+got=$(image_judge "$scratch/titles" "$scratch/titles/README.md" | sed '$d' | tr '\n' '|')
+same "  nor of an image path" "" "$got"
+set -- $(link_judge "$scratch/titles" "$scratch/titles/README.md" | tail -1)
+same "  and all six links are still read" 6 "$1"
+
+# 1h. A link inside an inline code span. Fenced blocks were exempt from the
+#     first line of this suite and inline spans were not, which is one rule
+#     applied in one place. A page that prints `[label](path)` as an example of
+#     the syntax is not linking anywhere, and the file it names does not have
+#     to exist.
+mkdir -p "$scratch/spans"
+printf '%s\n' '## A real heading' >"$scratch/spans/there.md"
+printf '%s\n' \
+    'Write a link as `[label](never/written.md)` and it points nowhere.' \
+    '' \
+    'A double span too: ``[x](also/missing.md)`` beside a live [one](there.md).' \
+    '' \
+    'And a backtick that never closes: `[y](third/missing.md) — read as text.' \
+    '' \
+    'Backticks inside the LABEL are not a span around the link: [`there.md`](there.md).' >"$scratch/spans/README.md"
+got=$(link_judge "$scratch/spans" "$scratch/spans/README.md" | sed '$d' | tr '\n' '|')
+same "a link inside an inline code span is not a link" \
+    "5: third/missing.md  no such file|" \
+    "$got"
+set -- $(link_judge "$scratch/spans" "$scratch/spans/README.md" | tail -1)
+same "  and only the three outside a closed span are read" 3 "$1"
 
 echo "the image the first screen opens with"
 
