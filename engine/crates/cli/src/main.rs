@@ -56,7 +56,7 @@ use headwater_census::census;
 use headwater_census::shelves::Taxonomy;
 use headwater_census::walk::Corpus;
 use headwater_check::{Cache, Context, Date, Declared, Register, Shape};
-use headwater_cli::{ProbeWord, SweepWord, TaxonomyWord, Verb};
+use headwater_cli::{JsonWord, ProbeWord, SweepWord, TaxonomyWord, Verb};
 use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::{Config, Graph};
@@ -308,6 +308,22 @@ fn dispatch(root: &Path, verb: Verb) -> ExitCode {
              is, so this engine implements none. See `docs/spec/13-open-obligations.md`. \
              `headwater route` and `headwater explain` are the reads that exist",
         ),
+        Verb::Json { word } => match word {
+            None => fail(&format!(
+                "`json` takes a second word: {}",
+                headwater_verbs::words_of("json")
+            )),
+            Some(JsonWord::Field { path }) => match path.is_empty() {
+                true => fail(
+                    "`json field` takes the path of keys to a member. Try \
+                     `headwater json field tool_input file_path`",
+                ),
+                false => json_field(&path),
+            },
+            Some(JsonWord::Count { path }) => json_count(&path),
+            Some(JsonWord::Quote) => json_quote(),
+            Some(JsonWord::Other(words)) => no_such_second_word("json", &words),
+        },
         Verb::Help { verb } => print_help_for(&verb),
         Verb::Completions { shell } => completions(shell),
         Verb::Taxonomy { word } => match word {
@@ -599,6 +615,80 @@ fn listed(words: &[&str]) -> String {
         Some((last, [])) => last.clone(),
         Some((last, rest)) => format!("{} and {last}", rest.join(", ")),
     }
+}
+
+/// Standard input, whole, or `None` where it is not text.
+///
+/// The three `json` words each read one message, so this reads to the end
+/// rather than by line. A harness writes one object and closes the stream.
+fn stdin_text() -> Option<String> {
+    use std::io::Read;
+    let mut text = String::new();
+    std::io::stdin().read_to_string(&mut text).ok()?;
+    Some(text)
+}
+
+/// `headwater json field <key>...`.
+///
+/// The artifact is the member, on standard output, with a newline after it. A
+/// shell substitution strips that newline, and a person reading the value at a
+/// terminal gets a line rather than a value with the prompt against it.
+///
+/// The refusal says which path reached nothing and stops there. Every way of
+/// reaching no scalar is one answer, which `headwater_yaml::json::field`
+/// states the reason for: a caller that told them apart would be acting on the
+/// shape of a message it did not write.
+fn json_field(path: &[String]) -> ExitCode {
+    let Some(text) = stdin_text() else {
+        return refuse("standard input is not text, so no JSON object was read from it");
+    };
+    match headwater_yaml::json::field(&text, path) {
+        Some(value) => {
+            println!("{value}");
+            ExitCode::SUCCESS
+        }
+        None => refuse(&format!(
+            "`{}` reaches no scalar of the object on standard input",
+            path.join(".")
+        )),
+    }
+}
+
+/// `headwater json count [<key>...]`.
+///
+/// With no key it counts the object on standard input itself, which is the
+/// reading a caller wants when the message is the collection.
+fn json_count(path: &[String]) -> ExitCode {
+    let Some(text) = stdin_text() else {
+        return refuse("standard input is not text, so no JSON object was read from it");
+    };
+    match headwater_yaml::json::count(&text, path) {
+        Some(count) => {
+            println!("{count}");
+            ExitCode::SUCCESS
+        }
+        None => refuse(&format!(
+            "`{}` reaches no array and no object of the object on standard input",
+            match path.is_empty() {
+                true => ".".to_string(),
+                false => path.join("."),
+            }
+        )),
+    }
+}
+
+/// `headwater json quote`.
+///
+/// The artifact is one JSON string literal and nothing else, so a caller can
+/// put it straight into the object it writes back to a harness. No newline
+/// follows it, because a literal is a fragment of a message rather than a
+/// message.
+fn json_quote() -> ExitCode {
+    let Some(text) = stdin_text() else {
+        return refuse("standard input is not text, so nothing was quoted");
+    };
+    print!("{}", headwater_yaml::json::Json::string(text).render());
+    ExitCode::SUCCESS
 }
 
 /// The command a sequence of words names, or `None` for a word that names none.
