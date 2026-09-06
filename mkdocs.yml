@@ -123,3 +123,23 @@ validation:
     # `tools/check-site-fragments.py` is the reader of that last step, and CI
     # runs both.
     anchors: warn
+
+  nav:
+    # Raised from the MkDocs 1.6 default of `info`, for the same reason and in
+    # the same order as `links.anchors` above. That default is why ten
+    # generated index pages were served and reachable by address while no
+    # sidebar named one of them, over a green `--strict` build: ten `info`
+    # lines printed to a log nobody reads, and an exit status of 0 over them
+    # (#528).
+    #
+    # It is raised in the same change that empties the population, and not
+    # before. Measured over this corpus in both directions: with the nav this
+    # branch generates the build exits 0, and with the nav of the commit before
+    # it the same build exits 1 and names all ten pages. The guard is therefore
+    # live rather than vacuous, and it holds against the eleventh generated
+    # page nobody has written yet.
+    #
+    # This reads which files under `docs_dir` no `nav:` entry names. It says
+    # nothing about whether an entry points at a file that is there, which is
+    # `nav.not_found`, left at its default.
+    omitted_files: warn
