@@ -61,7 +61,7 @@ fn repository() -> PathBuf {
 }
 
 /// Everything the declaration carries before the version block.
-const DECLARATION_HEAD: &str = r#"# The consumer declaration, written by `headwater init`. It says two things,
+const DECLARATION_HEAD: &str = r"# The consumer declaration, written by `headwater init`. It says two things,
 # and they are different questions: what schema this repository takes, and what
 # tree it walks.
 #
@@ -70,21 +70,21 @@ const DECLARATION_HEAD: &str = r#"# The consumer declaration, written by `headwa
 
 taxonomy:
   package: headwater/standard
-"#;
+";
 
 /// The version block of the arm that found no package, which is an interview
 /// stub and four lines of comment.
-const NO_PACKAGE_VERSION: &str = r#"  # INTERVIEW: no package of this name is under `packages/`, and nothing in this
+const NO_PACKAGE_VERSION: &str = r"  # INTERVIEW: no package of this name is under `packages/`, and nothing in this
   # engine fetches one. Copy a package directory into `packages/`, or run
   # `headwater taxonomy vendor <dir>` on a published artifact. Either way, pin
   # the version that the package itself declares.
   version: 0.0.0
-"#;
+";
 
 /// Everything the declaration carries after the version block.
 ///
 /// Its first line is the comment at column zero that the module header names.
-const DECLARATION_TAIL: &str = r#"# A bundle is an optional part of the package, and a selection is add-only.
+const DECLARATION_TAIL: &str = r"# A bundle is an optional part of the package, and a selection is add-only.
   # INTERVIEW: which traditions does this corpus already follow?
   bundles: []
   overlay: .headwater/overlay.yml
@@ -97,7 +97,7 @@ corpus:
   # exclude:
   #   - path: docs/vendor/**
   #     reason: vendored copies of documents another team owns
-"#;
+";
 
 /// The whole overlay. It is one arm, because `init` writes the same overlay
 /// whether a package is on the tree or not.
