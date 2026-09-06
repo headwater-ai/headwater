@@ -38,10 +38,14 @@
 #   Run this before any commit that adds, removes or retitles a page under
 #   `site/`, and read what it prints. `--check` writes nothing and exits
 #   non-zero when either committed file disagrees with a fresh run, which is
-#   the form to put in front of a reviewer. It is not wired into CI: CI is
-#   down org-wide as of this writing, and `wrangler.jsonc` runs no build
-#   step between commit and served bytes, so a human has to run this by
-#   hand before committing, the same discipline `refresh-figures.sh` uses.
+#   the form to put in front of a reviewer. `--check` runs in CI, in the
+#   step named "The crawler files are what the committed pages say", so a
+#   stale file is a red build rather than something a person had to
+#   remember. It was left out of CI while CI was down org-wide and while
+#   `wrangler.jsonc` ran no build step between the commit and the served
+#   bytes; neither holds now. Run it by hand as well, before any commit
+#   that adds, removes or retitles a page, so the diff you push is the one
+#   you meant.
 #
 # USAGE
 #

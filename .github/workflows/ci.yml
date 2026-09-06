@@ -278,6 +278,25 @@ jobs:
             printf '%s\n' "$missing" >&2
             exit 1
           fi
+      - name: The crawler files are what the committed pages say
+        # `tools/refresh-crawler-files.sh` derives `site/llms.txt` and
+        # `site/robots.txt` from the `<title>` and `<meta name="description">`
+        # of every page committed under `site/`. Nothing in either file is
+        # typed by a person, so a page added, removed or retitled makes both
+        # stale and nothing said so.
+        #
+        # The script's own header records why it was left out of CI: CI was
+        # down org-wide, and `wrangler.jsonc` ran no build step between the
+        # commit and the served bytes, so a human had to run it by hand. Both
+        # of those have stopped being true. This job runs, and HW-DR-0047 puts
+        # a build on the deploy path. The discipline that header asks for is
+        # held here instead of asked for.
+        #
+        # Measured rather than supposed: adding `site/changelog/index.html` in
+        # #546 staled `llms.txt`, and the only thing that caught it was a
+        # person remembering to run the script. `--check` writes nothing and
+        # prints a diff of committed against measured.
+        run: sh tools/refresh-crawler-files.sh --check
       - name: The two halves of the site compose into one served directory
         # This is the input the deploy serves, and this step is the only place
         # that runs the composition where a person reads the result. The
