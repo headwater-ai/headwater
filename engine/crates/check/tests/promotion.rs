@@ -99,7 +99,8 @@ fn run_with(ctx: &Context, cache: &mut Cache) -> Run {
         },
         &headwater_check::claim::Claims::empty(),
         ctx,
-        cache)
+        cache,
+    )
 }
 
 fn at(prior: Option<&str>) -> Context {

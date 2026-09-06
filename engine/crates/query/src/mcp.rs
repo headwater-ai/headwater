@@ -986,7 +986,8 @@ fn check(server: &Server<'_>, format: &str) -> Result<String, Failure> {
         &server.declared,
         server.claims,
         &server.now,
-        &mut cache);
+        &mut cache,
+    );
     let artifact = headwater_adapter::render(
         &run,
         server.census,

@@ -101,7 +101,8 @@ fn run() -> Run {
         },
         &headwater_check::claim::Claims::empty(),
         &Context::at(Date::parse(PINNED).expect("the pinned date")),
-        &mut Cache::disabled())
+        &mut Cache::disabled(),
+    )
 }
 
 /// The documents this rule reported, under one arm, as bare file names.

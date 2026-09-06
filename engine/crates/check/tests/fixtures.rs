@@ -128,7 +128,8 @@ fn run_at(
         },
         &headwater_check::claim::Claims::at(&corpus.base),
         ctx,
-        cache)
+        cache,
+    )
 }
 
 fn fixture_run() -> Run {
@@ -1613,7 +1614,10 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         .collect();
     assert_eq!(
         storing,
-        [headwater_check::claim::MISSING, headwater_check::claim::STALE]
+        [
+            headwater_check::claim::MISSING,
+            headwater_check::claim::STALE
+        ]
     );
     assert_eq!(
         run.served

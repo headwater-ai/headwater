@@ -731,7 +731,9 @@ pub fn run(
         cache,
     ));
     instances.extend(scope::over_documents(&standing, census, graph, ctx, cache));
-    instances.extend(scope::over_corpus(&retention, census, graph, claims, ctx, cache));
+    instances.extend(scope::over_corpus(
+        &retention, census, graph, claims, ctx, cache,
+    ));
 
     let coverage = Coverage::of(census, &instances);
 

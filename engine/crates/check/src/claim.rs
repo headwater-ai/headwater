@@ -142,7 +142,10 @@ impl Claims {
                 continue;
             };
             for claim in claims.flatten() {
-                if !claim.file_type().is_ok_and(|kind| kind.is_file()) {
+                // A directory and nothing else is refused. `is_file` would
+                // also refuse a symbolic link, and a claim reached through one
+                // is a claim, because the reader is `read_to_string`.
+                if claim.file_type().is_ok_and(|kind| kind.is_dir()) {
                     continue;
                 }
                 let Some(id) = claim.file_name().to_str().map(str::to_string) else {

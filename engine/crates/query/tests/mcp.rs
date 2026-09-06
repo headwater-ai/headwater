@@ -686,7 +686,8 @@ fn the_check_tool_answers_the_bytes_the_cli_answers() {
         &built.declared(),
         &built.claims,
         &Context::at(Date::parse(RECORDED_AT).expect("a date")),
-        &mut cache);
+        &mut cache,
+    );
     let subject = Subject {
         package: "query-fixture",
         version: "0.0.0",

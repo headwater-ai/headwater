@@ -150,7 +150,8 @@ fn run_with(ctx: &Context) -> Run {
         },
         &headwater_check::claim::Claims::empty(),
         ctx,
-        &mut Cache::disabled())
+        &mut Cache::disabled(),
+    )
 }
 
 fn over(lines: &str) -> Run {
@@ -408,9 +409,16 @@ fn the_departed_version_is_an_input_of_the_instance() {
     );
 
     // And the coverage block says the denominator does not hold it, which is
-    // the one place a reader learns that this run read outside the census.
+    // the one place a reader learns that this run read outside the census. The
+    // two entries in front of it are the claim store, which the two rules of
+    // `headwater_check::claim` name in every run: it sits beside the corpus
+    // root, so no walk reaches it either.
     assert_eq!(
         run.coverage.unaccounted,
-        ["retention/kept/gone-superseded.md"]
+        [
+            headwater_check::claim::STORE,
+            headwater_check::claim::STORE,
+            "retention/kept/gone-superseded.md"
+        ]
     );
 }

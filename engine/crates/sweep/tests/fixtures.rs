@@ -199,6 +199,25 @@ fn a_report_is_the_same_bytes_twice() {
 /// assertion. If a rule ever starts to report a document whose sections are the
 /// scaffolder's prompt, this test fails and the record is discharged. Until
 /// then it says, in a file that runs, that the run names nothing.
+/// A claim for every identifier the fixture tree declares, as a bootstrapped
+/// store holds them.
+///
+/// `sweep.taxonomy.yml` declares one scheme and it allocates reconcile-first,
+/// so every typed document of this tree owes a claim.
+fn claims_over(index: &headwater_graph::index::Index) -> headwater_check::claim::Claims {
+    headwater_check::claim::Claims::of(
+        index
+            .typed
+            .iter()
+            .map(|node| headwater_check::claim::Claim {
+                scheme: "decision_id".to_string(),
+                id: node.id.clone(),
+                claimant: node.path.clone(),
+            })
+            .collect(),
+    )
+}
+
 #[test]
 fn no_check_names_the_placeholder_document_and_the_sweep_does() {
     let placeholder = "corpus/0003-every-check-may-be-disabled-by-an-operator.md";
@@ -223,9 +242,15 @@ fn no_check_names_the_placeholder_document_and_the_sweep_does() {
             adoption: None,
             source: "engine/crates/sweep/fixtures/sweep.taxonomy.yml",
         },
-        &headwater_check::claim::Claims::empty(),
+        // A store that covers what this fixture tree already spent, because
+        // the subject here is what a rule can read in a document's prose and
+        // an unclaimed identifier is a fact about the tree instead. A run over
+        // an empty store would name this document for the one reason that has
+        // nothing to do with HW-OBL-0113.
+        &claims_over(&graph.index),
         &Context::at(Date::parse(PINNED).expect("the pinned date")),
-        &mut Cache::disabled());
+        &mut Cache::disabled(),
+    );
 
     // It is a classified document, so it was seen and it was checked. That is
     // the half that makes the silence a result rather than an omission.

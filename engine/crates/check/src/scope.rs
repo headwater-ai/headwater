@@ -249,11 +249,7 @@ impl Scope {
         }
     }
 
-    pub(crate) const fn corpus(
-        needs_phase_a: bool,
-        needs_prior: bool,
-        needs_claims: bool,
-    ) -> Self {
+    pub(crate) const fn corpus(needs_phase_a: bool, needs_prior: bool, needs_claims: bool) -> Self {
         Scope {
             grain: Grain::Corpus,
             needs_body: false,

@@ -104,7 +104,8 @@ fn run_with(ctx: &Context) -> Run {
         },
         &headwater_check::claim::Claims::empty(),
         ctx,
-        &mut Cache::disabled())
+        &mut Cache::disabled(),
+    )
 }
 
 fn over(entries: &[(&str, &str)]) -> Run {

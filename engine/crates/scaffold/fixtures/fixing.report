@@ -29,7 +29,9 @@ findings before
   check/spec/07-prose-defects.md language.source_form.not_met `ste_house` writes one paragraph on one line, and this line continues the paragraph above
   check/spec/07-prose-defects.md language.source_form.not_met `ste_house` writes one paragraph on one line, and this line continues the paragraph above
   check/spec/07-prose-defects.md link.fragment.unresolved `#no-such-section` names no heading of this document
+  check/spec/08-contract-met.md identifier.claim.missing `DR-FIX-0008` is spent by check/spec/08-contract-met.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it
   check/spec/09-contract-missing.md section.required.missing `decision_record` requires the section `Decision`, and no heading of this document says so
+  check/spec/09-contract-missing.md identifier.claim.missing `DR-FIX-0009` is spent by check/spec/09-contract-missing.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it
   check/spec/10-suppressed.md language.controlled.not_met `ste_house` holds prose to 25 words a sentence, and this one has 31
   check/spec/11-identifier-mismatch.md identifier.pattern.not_met `SPEC-XX-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `XX-mismatch` is where the namespace `FIX` was expected
   check/spec/13-dangling.md relation.target.unresolved `SPEC-FIX-dangling` declares `assesses: SPEC-FIX-no-such-document`, and that target resolves to nothing at all

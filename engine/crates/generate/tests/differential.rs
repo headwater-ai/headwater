@@ -209,7 +209,8 @@ fn engine_run(built: &Built) -> Run {
         },
         &headwater_check::claim::Claims::empty(),
         &Context::at(Date::parse("2026-08-12").expect("the pinned date")),
-        &mut Cache::disabled())
+        &mut Cache::disabled(),
+    )
 }
 
 /// The findings the engine reports for the two claimed families.

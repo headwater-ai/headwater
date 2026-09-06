@@ -12,7 +12,7 @@
     "classified": 23,
     "checked": 22,
     "generated": 1,
-    "instances": 267,
+    "instances": 269,
     "skipped": 67,
     "skips": [
       {
@@ -44,7 +44,10 @@
         "instances": 24
       }
     ],
-    "unaccounted": []
+    "unaccounted": [
+      ".headwater/ids",
+      ".headwater/ids"
+    ]
   },
   "rules": [
     {
@@ -144,6 +147,18 @@
     },
     {
       "rule": "identifier.claimed_twice",
+      "scope": "corpus",
+      "version": 1,
+      "obligations": []
+    },
+    {
+      "rule": "identifier.claim.missing",
+      "scope": "corpus",
+      "version": 1,
+      "obligations": []
+    },
+    {
+      "rule": "identifier.claim.stale",
       "scope": "corpus",
       "version": 1,
       "obligations": []
@@ -554,6 +569,17 @@
       "escape": "none"
     },
     {
+      "rule": "identifier.claim.missing",
+      "severity": "error",
+      "path": "check/spec/08-contract-met.md",
+      "line": 2,
+      "column": 1,
+      "message": "`DR-FIX-0008` is spent by check/spec/08-contract-met.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it",
+      "remediation": "run `headwater check --fix`, which writes `.headwater/ids/decision_id/DR-FIX-0008` holding `check/spec/08-contract-met.md`",
+      "fixable": true,
+      "escape": "none"
+    },
+    {
       "rule": "section.required.missing",
       "severity": "error",
       "obligation": "OB-FIX-9",
@@ -563,6 +589,17 @@
       "message": "`decision_record` requires the section `Decision`, and no heading of this document says so",
       "remediation": "add a `Decision` heading to check/spec/09-contract-missing.md, with the content the kind is for",
       "fixable": false,
+      "escape": "none"
+    },
+    {
+      "rule": "identifier.claim.missing",
+      "severity": "error",
+      "path": "check/spec/09-contract-missing.md",
+      "line": 2,
+      "column": 1,
+      "message": "`DR-FIX-0009` is spent by check/spec/09-contract-missing.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it",
+      "remediation": "run `headwater check --fix`, which writes `.headwater/ids/decision_id/DR-FIX-0009` holding `check/spec/09-contract-missing.md`",
+      "fixable": true,
       "escape": "none"
     },
     {
@@ -809,6 +846,10 @@
     }
   ],
   "read_set": [
+    {
+      "path": ".headwater/ids",
+      "digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
     {
       "path": "check/evaluations/alpha.md",
       "digest": "sha256:e651a58ed6489f388954343391d6321a708a2b7492bb4dc1386699a8bf65cc7b"

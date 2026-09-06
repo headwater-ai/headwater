@@ -2236,7 +2236,8 @@ fn run_of(loaded: &Loaded, ctx: &Context) -> headwater_check::Run {
         &loaded.declared(),
         &loaded.claims,
         ctx,
-        &mut cache)
+        &mut cache,
+    )
 }
 
 /// The projection plan of one side, under an identity the caller supplies.
@@ -4155,7 +4156,8 @@ fn fix(root: &Path, ctx: &Context, cached: bool) -> Result<Fixed, ExitCode> {
         &loaded.declared(),
         &loaded.claims,
         ctx,
-        &mut cache);
+        &mut cache,
+    );
     cache.write(root);
 
     // A suppressed finding is not in this list, which is the author asking for
@@ -4282,7 +4284,8 @@ fn fix_over(root: &Path, ctx: &Context, format: Format) -> Result<Written, Strin
         &loaded.declared(),
         &loaded.claims,
         ctx,
-        &mut cache);
+        &mut cache,
+    );
     let subject = Subject {
         package: &loaded.bound.package,
         version: &loaded.bound.version,
@@ -4614,7 +4617,8 @@ fn infer(
         },
         &loaded.claims,
         &ctx,
-        &mut Cache::disabled());
+        &mut Cache::disabled(),
+    );
 
     // One task per rule. A rule is the unit an adopter works down, because the
     // fix for every pair under it is the same fix, and it is the unit the
