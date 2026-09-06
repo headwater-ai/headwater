@@ -1768,7 +1768,7 @@
               "HW-SPEC-check-layer"
             ],
             "traces_to": [
-              "spike/"
+              "tools/language-spike/build.sh"
             ]
           }
         }
@@ -8239,17 +8239,17 @@
       },
       {
         "anchor_kind": "code_path",
-        "id": "spike",
-        "resolver": "source-tree"
-      },
-      {
-        "anchor_kind": "code_path",
         "id": "tools/assemble-site.sh",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
         "id": "tools/cloudflare-build.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "tools/language-spike/build.sh",
         "resolver": "source-tree"
       },
       {
@@ -9913,7 +9913,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "spike",
+          "id": "tools/language-spike/build.sh",
           "resolver": "source-tree"
         }
       },
