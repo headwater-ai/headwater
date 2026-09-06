@@ -1,17 +1,17 @@
 ---
 id: HW-OBL-0135
-status: draft
-status_since: 2026-08-26
+status: current
+status_since: 2026-09-06
 title: "repo-cleanup names one cause for a gone upstream, and this repository produced a second"
-summary: "Four merged branches survived repo-cleanup's first run with a gone upstream that ancestry misread, caused by a rewritten history the skill never names."
+summary: "Ancestry misreads a merged branch as unmerged wherever a squash merge or a rewritten history left it unreachable, and git branch -d then refuses on no evidence about content."
 provenance:
   warrant: accepted
   agency: agent
   drafted_by: claude-sonnet-5
-  activity: draft
+  activity: draft+revise
   accepted_by: j.baxter
   evidence_basis: evidenced
-last_verified: 2026-08-26
+last_verified: 2026-09-06
 waiting_on: adopter
 ---
 
@@ -31,6 +31,14 @@ No fixture in `.claude/skills/fixtures.sh` holds this case, because the claim is
 
 ## Discharge
 
-What closes this is a rewrite of the `gone` paragraph in `repo-cleanup`, naming both causes and how to tell them apart. The rewritten paragraph tells a reader to check the pull request state for the branch. It also tells the reader to compare the tree the branch produces against `origin/main` at the paths it touched. Content answers the question, and ancestry is only the proxy that a rewrite breaks. The report section owes the same split, so "gone and unmerged" no longer stands as a single finding.
+**This record is discharged.** The `gone` paragraph of the skill names three causes. A merged pull request deletes its own head branch wherever the repository sets `delete_branch_on_merge`. A closed pull request deletes a branch it did not merge. A history rewritten after the merge leaves the branch unreachable although its work landed. Pull request state separates the first cause from the second, and content separates the third from a branch that holds real unmerged work.
 
-A fixture over a scratch repository could hold the gap that `.claude/skills/fixtures.sh` currently leaves open. That fixture would merge a branch, rewrite the history carrying the merge, and assert that `-d` still refuses it. This obligation waits on the adopter to rewrite that paragraph and add the fixture.
+**The rewrite this record named is one case of a wider fault, and squash merging is the ordinary one.** A `gone` upstream and a broken ancestry are two questions rather than one. This repository squash merges, so the forge writes a single commit onto `origin/main` and no commit of the branch is an ancestor of it. Ancestry reports every finished branch as unmerged, permanently, with no rewrite and no deleted remote in the story.
+
+**A second run of the skill measured the size of that fault.** Of 35 local branches, `git branch --merged origin/main` reported 8. Of the 29 branches the run then deleted, `git branch -d` refused all 29. Every one of the 29 carried a pull request whose merged head equaled the local tip or descended from it.
+
+**The refusal from `git branch -d` carries no information about content, and that is the correction both causes share.** The flag measures a branch against the upstream of that branch, and against `HEAD` where the upstream is gone. It never measures against `origin/main` unless `origin/main` is the branch checked out. The four survivors of the first run and the twenty-nine of the second have this one shape.
+
+**The skill decides merged by content, and ancestry opens a sweep rather than closing one.** A section states the pull request as the record that survives all three causes. A branch with no pull request gets the same question asked of the commit subjects that reached `origin/main` under another identifier. The report section splits a `gone` upstream into a closed pull request and a branch that never had one.
+
+**The fixture this record left open now holds the claim.** `.claude/skills/fixtures.sh` builds a scratch repository three times. The cases are a squash merge and a history rewritten after a fast-forward merge. The third is a branch merged into main while `HEAD` sits elsewhere. Each case pairs one sentence of the skill with the verdict git returns, so the prose and git cannot disagree without a failure.
