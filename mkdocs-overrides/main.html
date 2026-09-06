@@ -2,10 +2,30 @@
 
 {#
   Spec 7 requires that a rendered page carry a link relation to the served
-  copy of the corpus descriptor. This file is the whole of that, and it is
-  the only reason a custom_dir exists.
+  copy of the corpus descriptor. That is the reason this custom directory
+  exists at all, and HW-DR-0038 is the ruling.
+
+  The `scripts` block below is the second reason. It is added rather than
+  reproduced: `{{ super() }}` emits the theme's own four script tags
+  unchanged, so no upstream line is copied into this repository and no drift
+  check is owed on one. The theme emits `extra_javascript` *after* its own
+  `js/base.js`, which is why the shim cannot be an `extra_javascript` entry —
+  it has to run before the file it protects.
 #}
 
 {% block extrahead %}
   <link rel="describedby" type="application/json" href="{{ 'corpus.json'|url }}">
+{% endblock %}
+
+{% block scripts %}
+  {#
+    A heading anchor that starts with a digit is a valid URL fragment and an
+    invalid CSS selector, and the theme's `js/base.js` hands the one to the
+    other through Bootstrap's ScrollSpy. The file below states the whole
+    mechanism. It is loaded first because the throw it prevents happens at the
+    top level of `js/base.js`, and it is a no-op on every page whose sidebar
+    carries no such anchor.
+  #}
+  <script src="{{ 'js/leading-digit-anchor-shim.js'|url }}"></script>
+  {{ super() }}
 {% endblock %}
