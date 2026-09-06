@@ -2,7 +2,7 @@
 
 # obligations
 
-167 documents on this shelf, in the reading order this corpus derives.
+168 documents on this shelf, in the reading order this corpus derives.
 
 - [The promotion fix has no reading of the assisted fraction](0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) — Q4 claims that the promotion fix raises author-attributable edges without more hand entry, and no run supports it.
 - [Declarative voice is called detectable at useful precision, and the sample is unreachable](0002-declarative-voice-is-called-detectable-at-useful-precision.md) — The three voice categories run over this corpus, and each one is an order of magnitude short of the sample the instrument asks for.
@@ -169,5 +169,6 @@
 - [Ten decision records claim a Q number the decision register does not carry](0163-ten-decision-records-claim-a-q-number-the-decision-register-does-not-carry.md) — Ten decision records name a Q number in their file name that docs/spec/09-decisions.md has no section for, and nothing reads either side of the pair. (asserted, and no human has accepted it)
 - [The regeneration check tests byte equality before the marker, so a file the census stopped counting as generated still passes](0164-the-regeneration-check-tests-byte-equality-before-the-marker-so-a-file-the-census-stopped-counting-as-generated-still-passes.md) — `generate --check` reads byte equality before it reads the marker, so a generated file the census dropped from the generated set still passes it
 - [A rendered-page gate greps for a string it requires and states no denominator, so an empty build passes it](0165-a-rendered-page-gate-greps-for-a-string-it-requires-and-states-no-denominator-so-an-empty-build-passes-it.md) — The CI step that holds every rendered page to a corpus pointer exits 0 over a served directory with no page in it
+- [Spec 2 states a corpus-wide default language regime that no rule of this engine reads](0166-spec-2-states-a-corpus-wide-default-language-regime-that-no-rule-of-this-engine-reads.md) — Spec 2 tells an adopter that a corpus declares one default language regime. The engine resolves a regime through a kind and implements no fallback, so the first half of that sentence describes nothing. (asserted, and no human has accepted it)
 - [The default branch requires no approving review, which is the condition HW-DR-0034 named as reopening it](0167-the-default-branch-requires-no-approving-review-which-is-the-condition-hw-dr-0034-named-as-reopening-it.md) — The ruleset on the default branch requires zero approving reviews, which is the posture HW-DR-0034 named as the thing that erases its line. The corpus owes a ruling. (asserted, and no human has accepted it)
 - [A saturated pattern set and a clean corpus are the same zero, and no report separates them](0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md) — The voice rule reports zero because not one of its forty patterns occurs here, and that reads the same as a clean corpus. (asserted, and no human has accepted it)

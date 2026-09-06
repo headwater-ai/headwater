@@ -295,8 +295,10 @@ def main():
         # — the printed one naming two routes and the written one naming a route
         # an adopter cannot take — because the printed one is held here and the
         # written one was held by nothing. The page now says what the comment
-        # says, so these hold the half that had no reader. Their proper home is a
-        # test of the CLI crate, which has none: #174.
+        # says, so these hold the half that had no reader. Their proper home is
+        # `engine/crates/cli/tests/init.rs`, which holds both written files byte
+        # for byte; these stay because they read the tutorial's own scratch tree
+        # and because a drift between the page and the file is what #276 was.
         declaration = open(os.path.join(cwd['at'], '.headwater/taxonomy.yml')).read()
         for claim, token in [
                 ('the copy route', 'Copy a package directory into `packages/`'),

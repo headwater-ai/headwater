@@ -10,7 +10,7 @@ relations:
 
 # decisions
 
-54 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+55 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -227,3 +227,7 @@ relations:
 ## A hook reads a wire format through the engine and not through an interpreter
 
 [HW-DR-0055](../decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md) — A harness payload is read by a verb of this engine rather than by an interpreter a session does not otherwise require. The verb answers nothing about a corpus, which is what puts it outside the term that forbids a hook verb. (asserted, and no human has accepted it)
+
+## A language regime reaches prose through a kind, so the starter kit's doctrine carries the writing profile
+
+[HW-DR-0056](../decisions/0056-a-language-regime-reaches-prose-through-a-kind-so-the-starter-kit-s-doctrine-carries-the-writing-profile.md) — No kind in the base package or in any bundle binds a language regime. A package that set the default value would change nothing, so the doctrine page of the starter kit carries the promise. (asserted, and no human has accepted it)
