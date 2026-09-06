@@ -500,6 +500,134 @@ fn every_refusal_branch_has_a_case() {
     );
 }
 
+/// A value the claim store holds is refused, and the allocator steps over it.
+///
+/// Two readings of one question, and this is the second. `propose` already
+/// refuses an identifier a document of the corpus declares; the store is the
+/// other set that feeds the same refusal, and it is the set that carries what
+/// another branch has taken. Without a case here the store's half of
+/// `Refusal::IdentifierTaken` would ship with no fixture, and
+/// `every_refusal_branch_has_a_case` cannot tell the two routes apart.
+///
+/// The second half is what makes the first half rare. `mint()` takes the
+/// maximum of the corpus and the store, so a claim on the next value moves the
+/// allocator past it rather than into it. The refusal is reachable only where
+/// an identifier was written by hand.
+#[test]
+fn a_value_the_store_holds_is_taken_and_the_allocator_mints_past_it() {
+    let loaded = Loaded::over(
+        &fixtures_dir(),
+        "corpus",
+        &fixtures_dir().join("scaffold.taxonomy.yml"),
+    );
+    fn ask<'a>(title: &'a str) -> Request<'a> {
+        Request {
+            kind: "decision_record",
+            title,
+            now: pinned(),
+            relates: &[],
+            given: &[],
+        }
+    }
+
+    // What the corpus alone allows. The fixture tree spends up to 0007, so the
+    // free value is 0008 and this run takes it.
+    let free = propose(
+        &loaded.sources(),
+        &ask("A decision the store knows nothing about"),
+    )
+    .expect("the corpus offers a free value");
+    let taken = free
+        .minting
+        .as_ref()
+        .expect("a minted identifier")
+        .id
+        .clone();
+    assert_eq!(taken, "DR-FIX-0008");
+
+    // The same corpus, with a store that holds exactly that value. The
+    // allocator now mints past it, and the refusal below is what stops a hand
+    // written identifier from landing on it.
+    let claims = headwater_check::claim::Claims::of(vec![headwater_check::claim::Claim {
+        scheme: "decision_id".to_string(),
+        id: taken.clone(),
+        claimant: "corpus/decisions/on-another-branch.md".to_string(),
+    }]);
+    let sources = Sources {
+        claims: &claims,
+        ..loaded.sources()
+    };
+    let past = propose(&sources, &ask("A decision minted against the store"))
+        .expect("the store moves the bound and does not block it");
+    assert_eq!(
+        past.minting.as_ref().expect("a minted identifier").id,
+        "DR-FIX-0009",
+        "the allocator took the maximum of the corpus and the store"
+    );
+
+    // The claimant is preserved rather than overwritten, which is what makes
+    // the refusal in `propose` worth having at all: the store still names the
+    // document on the other branch after a run that minted past it.
+    assert_eq!(
+        claims.claimant("decision_id", &taken),
+        Some("corpus/decisions/on-another-branch.md")
+    );
+}
+
+/// The store's half of `Refusal::IdentifierTaken` is unreachable here, and the
+/// reason is the assertion above rather than a claim about the code.
+///
+/// `propose` asks the store whether the value it just minted is claimed. For a
+/// scheme whose pattern carries a `{seq}` that question cannot answer yes,
+/// because `mint()` took the maximum of the corpus and the store one step
+/// earlier. Every scheme of this fixture taxonomy and every `reconcile-first`
+/// scheme of the shipped package is `{seq}`-patterned, so no case in this
+/// workspace reaches it.
+///
+/// It is reachable two ways, and this states both rather than leaving a reader
+/// to find them. A scheme that declares `reconcile-first` over a `{slug}`
+/// pattern mints no sequence, so `mint()` has no maximum to take and the store
+/// is the only reader of the question; `taxonomy validate` admits such a
+/// scheme and no taxonomy in this workspace declares one. And the branch is a
+/// guard on the allocator itself: deleting the store from `mint()`'s chain
+/// and running the test above turns its clean mint into that refusal, which is
+/// measured rather than argued. So an allocator that stopped reading the store
+/// would refuse rather than silently mint onto a claimed value.
+#[test]
+fn no_scheme_in_this_workspace_reaches_the_stores_half_of_identifier_taken() {
+    let loaded = Loaded::over(
+        &fixtures_dir(),
+        "corpus",
+        &fixtures_dir().join("scaffold.taxonomy.yml"),
+    );
+    let sequenced: Vec<&str> = loaded
+        .shape
+        .identifier_schemes
+        .iter()
+        .filter(|scheme| scheme.allocation.as_deref() == Some("reconcile-first"))
+        .map(|scheme| scheme.name.as_str())
+        .collect();
+    assert!(
+        !sequenced.is_empty(),
+        "no scheme here allocates reconcile-first, so this test proves nothing"
+    );
+    for name in sequenced {
+        let scheme = loaded
+            .shape
+            .identifier_schemes
+            .iter()
+            .find(|scheme| scheme.name == name)
+            .expect("the scheme");
+        assert!(
+            scheme.pattern.contains("{seq"),
+            "`{name}` allocates reconcile-first over `{}`, which mints no \
+             sequence, so the store is the only bound and the refusal this \
+             test says is unreachable now is",
+            scheme.pattern
+        );
+    }
+}
+
 /// A front matter the splice cannot read refuses, and writes nothing.
 ///
 /// The splice assumes a two-space nesting that no declaration states. The
