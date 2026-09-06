@@ -23,7 +23,7 @@ The binary lands at `engine/target/release/headwater`, and `headwater --version`
 
 The tutorial above builds whatever tree you cloned, which is the default branch and moves. That is deliberate, because the tutorial is a claim about the default branch and CI holds it there. This paragraph is where the fixed version is.
 
-<https://headwater.tools/> is the project site. Its documentation pages are this corpus, rendered by the same generator the tutorial ends with.
+<https://headwater.tools/> is the project site, and its documentation pages are the `docs/` tree of this repository, rendered.
 
 > **Status: the engine runs, and two layers of it are unfinished.** M1 to M5 shipped, so this repository types its own corpus, checks it on every commit, and scaffolds, explains, routes, generates and exports it. M6 (distribution) and M7 (the measurement layer) are open, and every efficacy claim in this repository is still marked unmeasured.
 
