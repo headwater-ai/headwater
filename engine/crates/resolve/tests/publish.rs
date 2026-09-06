@@ -2578,6 +2578,142 @@ fn a_bundle_set_that_does_not_resolve_is_refused_whether_or_not_a_payload_reache
     }
 }
 
+/// A base declaration that reads a name only one bundle declares.
+///
+/// The shelf reads `beta` as a kind, and `kinds.beta` is in the `beta` bundle.
+/// So the base alone dangles and the base with both bundles does not, which is
+/// the difference between the two cases below.
+const READS_A_BUNDLE_KIND: &str = "\
+taxonomy: acme/fixture
+version: 1.0.0
+purposes:
+  rationale: {intent: explain why a choice was made and what it forecloses}
+kinds:
+  governed_document: {abstract: true}
+shelves:
+  betas: {path: docs/betas/**, homogeneous: true, kind: beta}
+";
+
+const DECLARES_BETA: &str = "\
+bundle: beta
+extends: acme/fixture
+add:
+  kinds.beta: {is_a: governed_document, purpose: rationale}
+";
+
+/// A bundle both arms ship, so `contents.bundles` names a directory that is
+/// there either way.
+///
+/// Without it the refusing arm has no `bundles/` directory at all and
+/// `reachable` refuses it before a single source is read, which is a different
+/// rule and would make the case measure nothing.
+const DECLARES_ALPHA: &str = "\
+bundle: alpha
+extends: acme/fixture
+add:
+  kinds.alpha: {is_a: governed_document, purpose: rationale}
+";
+
+/// A publisher whose base reads a name a bundle declares, with `ships` deciding
+/// whether the bundle that declares it is in the tree.
+///
+/// One builder and one boolean, so the refusing arm and the publishing arm
+/// differ in exactly that and nothing else about the fixture changed.
+fn publisher_reading_a_bundle_kind(scratch: &Scratch, at: &str, ships: bool) -> PathBuf {
+    scratch.write(
+        &format!("{at}/packages/acme-fixture/package.yml"),
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  bundles: \
+         bundles\n",
+    );
+    scratch.write(
+        &format!("{at}/packages/acme-fixture/taxonomy.yml"),
+        READS_A_BUNDLE_KIND,
+    );
+    scratch.write(
+        &format!("{at}/packages/acme-fixture/bundles/alpha/bundle.yml"),
+        DECLARES_ALPHA,
+    );
+    if ships {
+        scratch.write(
+            &format!("{at}/packages/acme-fixture/bundles/beta/bundle.yml"),
+            DECLARES_BETA,
+        );
+    }
+    scratch.path().join(at)
+}
+
+/// A package whose widest selection reads a name nothing declares does not
+/// publish.
+///
+/// The plain path's half of
+/// [#582](https://github.com/headwater-ai/headwater/issues/582). Before it,
+/// `publish_at` resolved the shipped set and asked it two questions — does it
+/// merge, and does it commute — and never asked whether every name it reads is
+/// declared. A package that resolves and dangles published with exit 0, and the
+/// adopter met the refusal.
+///
+/// It is a different failure from
+/// `a_bundle_set_that_does_not_resolve_is_refused_whether_or_not_a_payload_reaches_it`
+/// above, and the distinction is the reason both cases exist. That one fails
+/// inside `crate::resolve`, before any rule runs. This one resolves cleanly and
+/// then reads a name that is not there.
+///
+/// The refusal is scoped to referential integrity and to nothing else.
+/// `rules::check` runs eighteen rules and `identifier_integrity` is one of them:
+/// it refuses a scheme that declares no namespace, and its own message says a
+/// package leaves the namespace to the corpus that adopts it. Measured on
+/// `2bd1e96`, this repository's own package carries **seven** of those over its
+/// widest set and **zero** referential-integrity findings, so a publish that ran
+/// every rule would refuse the release of `headwater/standard`.
+#[test]
+fn a_package_whose_widest_selection_reads_a_name_nothing_declares_does_not_publish() {
+    let scratch = Scratch::new("widest-dangles");
+    let root = publisher_reading_a_bundle_kind(&scratch, "dangles", false);
+    let out = scratch.path().join("artifact-dangles");
+
+    let refused = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+        .expect_err("a widest selection that reads an undeclared name does not publish");
+    let message = headwater_resolve::render_errors(&refused);
+    assert!(
+        message.contains("this package is published with every bundle it ships"),
+        "the refusal does not say which question reached it: {message}"
+    );
+    assert!(
+        message.contains("shelves.betas.kind"),
+        "the refusal does not name the address that reads the name: {message}"
+    );
+    assert!(
+        message.contains("reads `beta`, and no kind of that name is declared"),
+        "the publisher's message is not the consumer's: {message}"
+    );
+    assert!(!out.exists(), "a refused publish writes no artifact");
+}
+
+/// The same package, with the bundle that declares the name in the tree.
+///
+/// The negative half. `publish` is the verb a stranger runs to hand an artifact
+/// to somebody else, and a false refusal stops a publisher shipping, which is as
+/// bad as the false success the case above is about.
+/// `the_package_in_this_repository_publishes_and_its_digest_covers_what_is_on_disk`
+/// is the other half of it, over this repository's own package rather than a
+/// synthetic one.
+#[test]
+fn a_package_whose_widest_selection_declares_what_it_reads_still_publishes() {
+    let scratch = Scratch::new("widest-declares");
+    let root = publisher_reading_a_bundle_kind(&scratch, "declares", true);
+    let out = scratch.path().join("artifact-declares");
+
+    let release = package::publish_from(&root, &root.join("packages/acme-fixture"), &out)
+        .unwrap_or_else(|refused| {
+            panic!(
+                "a complete package does not publish: {}",
+                headwater_resolve::render_errors(&refused)
+            )
+        });
+    assert_eq!(release.package, "acme/fixture");
+    assert!(out.join("taxonomy.yml").is_file());
+}
+
 /// The bundle order the maximal selection is built in decides nothing.
 ///
 /// `package::shipped` sorts the bundle directories by name, and the sort is a
@@ -2588,7 +2724,7 @@ fn a_bundle_set_that_does_not_resolve_is_refused_whether_or_not_a_payload_reache
 /// in `founded.rs` pins — and the payload check reads `.taxonomy` and discards
 /// it, so the order-dependent output never reaches a verdict.
 ///
-/// The five bundles of this repository are the set, because a pair cut down to
+/// The six bundles of this repository are the set, because a pair cut down to
 /// what one case needs would commute for reasons that say nothing about a real
 /// bundle tree.
 #[test]

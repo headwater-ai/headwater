@@ -209,6 +209,17 @@ enum Arm {
     /// "every key the manifest declares" a measurement. It also pins that every
     /// bad key is reported and not the first.
     UnwrittenMembers,
+    /// The recipe selects `alpha` alone, so `shelves.betas.kind` reads `beta`
+    /// and only the `beta` bundle declares it.
+    ///
+    /// **This arm declares no overlay, and that is the whole reason it
+    /// measures anything.** The overlay every other arm carries is
+    /// `relations.connects {from: [alpha], to: [beta]}`, and `validate_glue`
+    /// refuses it the moment `beta` is not selected, because glue that is not
+    /// cross-bundle is not glue. An arm that narrowed the selection and kept
+    /// the overlay would be refused for that reason, go red before this change
+    /// as well as after it, and say nothing at all about referential integrity.
+    IncompleteSelection,
 }
 
 /// A source package with one named assembly, small enough to make the publish
@@ -256,12 +267,17 @@ fn assembly_source(root: &Root, arm: Arm) -> PathBuf {
     );
     let selected = match arm {
         Arm::UnselectableBundle => "[alpha, missing]",
+        Arm::IncompleteSelection => "[alpha]",
         Arm::Sound | Arm::UnwrittenMembers => "[alpha, beta]",
+    };
+    let glue = match arm {
+        Arm::IncompleteSelection => "",
+        Arm::Sound | Arm::UnselectableBundle | Arm::UnwrittenMembers => "overlay: overlay.yml\n",
     };
     write(
         &source.join("assemblies/starter/assembly.yml"),
         &format!(
-            "assembly: starter\npackage: acme/starter\nversion: 2.0.0\nfrom:\n  package: acme/fixture@1.0.0\n  bundles: {selected}\noverlay: overlay.yml\n"
+            "assembly: starter\npackage: acme/starter\nversion: 2.0.0\nfrom:\n  package: acme/fixture@1.0.0\n  bundles: {selected}\n{glue}"
         ),
     );
     write(
@@ -283,7 +299,7 @@ fn assembly_source(root: &Root, arm: Arm) -> PathBuf {
                 "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  conformance: conformance.yml\n  glossary: glossary\n  bundles: bundles\n  assemblies: assemblies\n  doctrine: doctrine\n  templates: templates\n",
             );
         }
-        Arm::Sound | Arm::UnselectableBundle => {
+        Arm::Sound | Arm::UnselectableBundle | Arm::IncompleteSelection => {
             write(&source.join("doctrine/guide.md"), "# Fixture doctrine\n");
             write(&source.join("templates/decision.md"), "# Decision\n");
         }
@@ -810,6 +826,97 @@ fn an_invalid_assembly_refuses_before_it_creates_output() {
         !out.exists(),
         "the refused run left partial output at {out:?}"
     );
+}
+
+/// A recipe whose selection leaves a name dangling is refused at the publish.
+///
+/// This is [#582](https://github.com/headwater-ai/headwater/issues/582), and
+/// before it the same run exited 0 and printed `published acme/starter 2.0.0`.
+/// The artifact it wrote was refused at the consumer's own `taxonomy resolve`,
+/// so the publisher was told the handoff was good and the adopter found out it
+/// was not.
+///
+/// **The case lives here rather than in `resolve/tests/publish.rs`, which is
+/// where #582's own second clause puts it.** The assembly fixtures are here:
+/// `assembly_source` already carries a source package with a recipe and a
+/// broken/working boolean, and `an_invalid_assembly_refuses_before_it_creates
+/// _output` above already asserts the exit status, the message and the disk over
+/// it. A third assembly fixture in the other file would be a second enumeration
+/// of one thing. The plain publish path has its own case, over there, beside the
+/// widest-set refusal it belongs to.
+///
+/// Four assertions. The exit status is the one that moved. The recipe path and
+/// the selection are what tell a publisher which line to edit. `beta` is the
+/// name the omission left dangling, and it is also the bundle the advice names,
+/// which is [#579](https://github.com/headwater-ai/headwater/issues/579)'s
+/// recipe half arriving here. `!out.exists()` is the same disk claim every
+/// refusal on this path makes.
+#[test]
+fn an_assembly_whose_selection_omits_a_bundle_another_bundle_needs_does_not_publish() {
+    let root = Root::scratch("assembly-incomplete");
+    let source = assembly_source(&root, Arm::IncompleteSelection);
+    let out = root.path().join("release");
+
+    let (code, _stdout, stderr) = publish_assembly_from(root.path(), &source, &out);
+    assert_eq!(code, Some(1), "{stderr}");
+    assert!(stderr.contains("nothing was published"), "{stderr}");
+    assert!(
+        stderr.contains("assembly.yml"),
+        "the refusal names the recipe file to edit: {stderr}"
+    );
+    assert!(
+        stderr.contains("[alpha]"),
+        "the refusal names the selection: {stderr}"
+    );
+    assert!(
+        stderr.contains("`beta`"),
+        "the refusal names the dangling name: {stderr}"
+    );
+    assert!(
+        stderr.contains("shelves.betas.kind"),
+        "the refusal names the address that reads it: {stderr}"
+    );
+    // #579's recipe half. The consumer path already names the bundle to add;
+    // a publisher who narrows a recipe is in the same position and, before
+    // this, was told nothing at all.
+    assert!(
+        stderr.contains("`beta` declares 1 of the 1"),
+        "the advice names the bundle to add back: {stderr}"
+    );
+    assert!(
+        stderr.contains("`from.bundles:`"),
+        "the advice names the key a publisher edits, not the consumer's: {stderr}"
+    );
+    assert!(
+        !stderr.contains(".headwater/taxonomy.yml"),
+        "the advice sends a publisher to the recipe and never to a consumer declaration: {stderr}"
+    );
+    assert!(
+        !out.exists(),
+        "the refused run left partial output at {out:?}"
+    );
+}
+
+/// The same recipe with the selection complete still publishes.
+///
+/// The negative half, and it matters more than the positive: `publish` is the
+/// verb a stranger runs to hand an artifact to somebody else, and a false
+/// refusal stops a publisher shipping. `assembly_source`'s sound arm ships a
+/// taxonomy that shares no name with `headwater/standard`, so this says the new
+/// check admits a library nothing like this repository's.
+///
+/// `the_shipped_starter_recipe_publishes_vendors_and_resolves` is the other
+/// half, over the real maintained source and the recipe an adopter is invited to
+/// copy.
+#[test]
+fn an_assembly_whose_selection_is_complete_still_publishes() {
+    let root = Root::scratch("assembly-complete");
+    let source = assembly_source(&root, Arm::Sound);
+    let out = root.path().join("release");
+
+    let (code, stdout, stderr) = publish_assembly_from(root.path(), &source, &out);
+    assert_eq!(code, Some(0), "{stderr}");
+    assert!(stdout.contains("published acme/starter 2.0.0"), "{stdout}");
 }
 
 /// `nothing was published` and the disk agree, and the second run is the proof.
