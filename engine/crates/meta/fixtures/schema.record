@@ -66,6 +66,7 @@ declarations
       kinds seq of scalar:string
       group_by scalar:string
       layout scalar:string
+      title scalar:string
   kinds map of members
       abstract scalar:boolean
       is_a scalar:string

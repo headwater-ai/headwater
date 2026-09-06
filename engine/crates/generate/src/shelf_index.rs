@@ -179,7 +179,12 @@ pub(crate) fn emit(
             }
         };
         plan.outputs.push(Output {
-            bytes: render(&name, &path, &ordered, front.as_deref()),
+            bytes: render(
+                &crate::shelf_label(shelf),
+                &path,
+                &ordered,
+                front.as_deref(),
+            ),
             path,
             kind: Kind::ShelfIndex,
         });

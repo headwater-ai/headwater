@@ -1,8 +1,8 @@
 # headwater:generated site_nav. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file.
 
 nav:
-  - "decisions":
-      - "decisions": "decisions/README.md"
+  - "Decision records":
+      - "Decision records": "decisions/README.md"
       - "Q1 — Implementation language": "decisions/0001-implementation-language.md"
       - "Q2 — Schema format": "decisions/0002-schema-format.md"
       - "Q3 — How much of the default taxonomy ships in the box": "decisions/0003-how-much-of-the-default-taxonomy-ships-in-the-box.md"
@@ -58,11 +58,11 @@ nav:
       - "The upper bound of a reconcile-first allocator is the corpus and a claim store": "decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md"
       - "A hook reads a wire format through the engine and not through an interpreter": "decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md"
       - "A language regime reaches prose through a kind, so the starter kit's doctrine carries the writing profile": "decisions/0056-a-language-regime-reaches-prose-through-a-kind-so-the-starter-kit-s-doctrine-carries-the-writing-profile.md"
-  - "acceptance_criteria":
-      - "acceptance_criteria": "acceptance-criteria/README.md"
+  - "Acceptance criteria":
+      - "Acceptance criteria": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
-  - "evaluations":
-      - "evaluations": "evaluations/README.md"
+  - "Evaluations":
+      - "Evaluations": "evaluations/README.md"
       - "Adjacent work and tooling": "evaluations/adjacent-work.md"
       - "The capability-bundle address inventory": "evaluations/capability-bundle-address-inventory.md"
       - "What ships in the box — a first-run walkthrough": "evaluations/default-taxonomy-first-run.md"
@@ -82,8 +82,8 @@ nav:
       - "Theoretical foundations": "evaluations/theoretical-foundations.md"
       - "Warrant — what stands behind a document, and who vouched for it": "evaluations/warrant-and-adjudication.md"
       - "What a check can know — the Q5 and Q21 evaluation": "evaluations/what-a-check-can-know.md"
-  - "interfaces":
-      - "interfaces": "interfaces/README.md"
+  - "The command surface":
+      - "The command surface": "interfaces/README.md"
       - "headwater capture": "interfaces/headwater-capture.md"
       - "headwater check": "interfaces/headwater-check.md"
       - "headwater completions": "interfaces/headwater-completions.md"
@@ -104,8 +104,8 @@ nav:
       - "headwater route": "interfaces/headwater-route.md"
       - "headwater sweep": "interfaces/headwater-sweep.md"
       - "headwater taxonomy": "interfaces/headwater-taxonomy.md"
-  - "obligations":
-      - "obligations": "obligations/README.md"
+  - "Obligation records":
+      - "Obligation records": "obligations/README.md"
       - "The promotion fix has no reading of the assisted fraction": "obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md"
       - "Declarative voice is called detectable at useful precision, and the sample is unreachable": "obligations/0002-declarative-voice-is-called-detectable-at-useful-precision.md"
       - "The rebuild-and-cache design is measured at spike scale alone": "obligations/0003-the-rebuild-and-cache-design-is-measured-at-spike-scale-alone.md"
@@ -274,17 +274,17 @@ nav:
       - "Spec 2 states a corpus-wide default language regime that no rule of this engine reads": "obligations/0166-spec-2-states-a-corpus-wide-default-language-regime-that-no-rule-of-this-engine-reads.md"
       - "The default branch requires no approving review, which is the condition HW-DR-0034 named as reopening it": "obligations/0167-the-default-branch-requires-no-approving-review-which-is-the-condition-hw-dr-0034-named-as-reopening-it.md"
       - "A saturated pattern set and a clean corpus are the same zero, and no report separates them": "obligations/0168-a-saturated-pattern-set-and-a-clean-corpus-are-the-same-zero-and-no-report-separates-them.md"
-  - "probes":
-      - "probes": "probes/README.md"
+  - "Probes":
+      - "Probes": "probes/README.md"
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"
       - "A counted tombstone separates a withheld answer from an absent answer": "probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md"
       - "An agent reaches the adjudication from the document that lost it": "probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md"
       - "The authoring skill reaches an agent that is about to write a governed document": "probes/the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document.md"
-  - "requirements":
-      - "requirements": "requirements/README.md"
+  - "Requirements":
+      - "Requirements": "requirements/README.md"
       - "The engine reaches no network at check time": "requirements/0001-the-engine-reaches-no-network-at-check-time.md"
-  - "reviews":
-      - "reviews": "reviews/README.md"
+  - "Review records":
+      - "Review records": "reviews/README.md"
       - "Assessment of the existing core-concepts findings": "reviews/core-concepts-findings-assessment.md"
       - "Core-concepts independent review": "reviews/core-concepts-independent-review.md"
       - "Core-concepts review: findings, second run": "reviews/core-concepts-review-findings-2.md"
@@ -292,8 +292,8 @@ nav:
       - "Review the core concepts of headwater: simplification and robustness": "reviews/core-concepts-review-prompt.md"
       - "STE editorial pass — source findings to address": "reviews/ste-editorial-pass-findings.md"
       - "The sixty-four restored help strings, checked against the binary": "reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md"
-  - "spec_series":
-      - "spec_series": "spec/README.md"
+  - "The specification series":
+      - "The specification series": "spec/README.md"
       - "Vision and scope": "spec/00-vision-and-scope.md"
       - "Conceptual model": "spec/01-conceptual-model.md"
       - "The taxonomy model": "spec/02-taxonomy-model.md"
@@ -310,6 +310,6 @@ nav:
       - "The recorder contract": "spec/15-the-recorder-contract.md"
       - "Harness support": "spec/16-harness-support.md"
       - "Glossary": "spec/glossary.md"
-  - "tutorials":
-      - "tutorials": "tutorials/README.md"
+  - "Tutorials":
+      - "Tutorials": "tutorials/README.md"
       - "Your first governed corpus": "tutorials/your-first-governed-corpus.md"

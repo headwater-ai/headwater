@@ -1072,6 +1072,36 @@ pub(crate) fn label(pointer: &Pointer) -> String {
         .unwrap_or_else(|| shelf_index::file_name(&pointer.path))
 }
 
+/// The name one *shelf* is rendered under, wherever an emitter of this crate
+/// prints a shelf rather than a document.
+///
+/// The declared display name first, and the shelf's own key second. A key is
+/// written for a machine — `spec_series`, `acceptance_criteria` — and a
+/// corpus whose keys read well needs no declaration, so the fall-through is a
+/// poor label rather than no label. It is the same order [`label`] takes over
+/// a document, for the same reason.
+///
+/// **One function, and this one has three callers.** `site_nav` prints the
+/// shelf twice, as a navigation group key and as the label of the index entry
+/// under it; `shelf_index` prints it as the `# heading` of the shelf's own
+/// index page; and `shelf_sections` prints it as the heading of
+/// `docs/spec/09-open-questions.md`. Those are four writes across three
+/// modules, and until this function existed each of them took the key
+/// separately. That is the defect [`label`] was extracted for, one level up:
+/// a shelf renamed for a reader in one emitter and not in another leaves one
+/// shelf with two names, and nothing would say which was right.
+///
+/// The reach of the value is wider than the four writes, because MkDocs
+/// serves a navigation label as the page's `<title>` and its search plugin
+/// reads the same string. So the group key of `site_nav` reaches a browser
+/// tab, a bookmark and a search result as well as the sidebar, which is why
+/// [#538](https://github.com/headwater-ai/headwater/issues/538) could not be
+/// answered in a theme: a template filter runs after the search index is
+/// written and cannot reach it.
+pub(crate) fn shelf_label(shelf: &headwater_census::shelves::Shelf) -> String {
+    shelf.title.clone().unwrap_or_else(|| shelf.name.clone())
+}
+
 #[cfg(test)]
 mod label_tests {
     use super::label;

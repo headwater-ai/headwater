@@ -221,11 +221,13 @@ add:
   # subdirectory. doctrine.md records the omission as an assumption.
 
   shelves.standards:
+    title: Standards
     path: docs/standards/**
     homogeneous: true
     kind: standard
 
   shelves.component_specs:
+    title: Component specifications
     path: docs/component-specs/**
     homogeneous: false
     discriminator: spec_layer

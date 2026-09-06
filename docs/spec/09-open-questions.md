@@ -8,7 +8,7 @@ relations:
     - HW-REG-open-obligations
 ---
 
-# decisions
+# Decision records
 
 55 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 

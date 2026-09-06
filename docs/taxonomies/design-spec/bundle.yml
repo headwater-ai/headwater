@@ -145,6 +145,7 @@ add:
   # --- shelves --------------------------------------------------------------
 
   shelves.spec_series:
+    title: The specification series
     path: docs/spec/**
     homogeneous: false
     discriminator: doc_type
@@ -154,6 +155,7 @@ add:
   # `shelves.evaluations` moved to evidence-and-obligation with `evaluation`.
 
   shelves.reviews:
+    title: Review records
     path: docs/reviews/**
     homogeneous: false
     discriminator: doc_type
