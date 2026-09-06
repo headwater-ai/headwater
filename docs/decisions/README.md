@@ -2,7 +2,7 @@
 
 # decisions
 
-47 documents on this shelf, in the reading order this corpus derives.
+48 documents on this shelf, in the reading order this corpus derives.
 
 - [Q1 — Implementation language](0001-implementation-language.md) — The language is Rust, with a WebAssembly build of the same crate for editor and browser embedding.
 - [Q2 — Schema format](0002-schema-format.md) — YAML 1.2 is the concrete syntax, and Headwater owns the schema language, the reference sublanguage, the overlay language and the meta-schema.
@@ -50,4 +50,5 @@
 - [Q44 — Whether bundles decompose into capabilities and assemblies compose practices](0044-q44-whether-bundles-decompose-into-capabilities-and-assemblies-compose-practices.md) — Design-spec's evaluation kind and its two purposes move to a new evidence-and-obligation bundle, so decision-record stops requiring the whole specification tradition.
 - [Coloring the CLI, and where the banner goes](0045-coloring-the-cli-and-where-the-banner-goes.md) — Color is sensed per stream and off by default in a pipe, and turned off everywhere by `--no-color` or `NO_COLOR`. A new masthead banner prints on the root help screen alone, off by `--no-banner` or `HEADWATER_NO_BANNER`.
 - [Migrating from-version carries a semver and a release digest, kept as separate fields](0046-migrating-from-version-carries-a-semver-and-a-release-digest-kept-as-separate-fields.md) — `adoption.from` is a pair, a semver and the release digest that was pinned when the migration began, and never a hash of the two.
+- [The served sitemap is derived from the served directory](0048-the-served-sitemap-is-derived-from-the-served-directory.md) — The sitemap a reader gets is derived from the directory that is served, by one walk that both halves call. Nobody types a page list, and the assembled directory is the only place the union exists. (asserted, and no human has accepted it)
 - [How the two halves of the site share one host](0047-how-the-two-halves-of-the-site-share-one-host.md) — One directory holds both halves of the site, composed by `tools/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time. (asserted, and no human has accepted it)

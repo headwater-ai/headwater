@@ -364,11 +364,16 @@ jobs:
             exit 1
           fi
       - name: The crawler files are what the committed pages say
-        # `tools/refresh-crawler-files.sh` derives `site/llms.txt` and
-        # `site/robots.txt` from the `<title>` and `<meta name="description">`
-        # of every page committed under `site/`. Nothing in either file is
-        # typed by a person, so a page added, removed or retitled makes both
-        # stale and nothing said so.
+        # `tools/refresh-crawler-files.sh` derives `site/llms.txt`,
+        # `site/robots.txt` and `site/sitemap.xml` from the `<title>`, the
+        # `<meta name="description">` and the path of every page committed
+        # under `site/`. Nothing in the three is typed by a person, so a page
+        # added, removed or retitled makes them stale and nothing said so.
+        #
+        # The sitemap joined them in #554. The copy #535 committed was a list
+        # of seven URLs a person typed, and it already omitted
+        # `site/changelog/` on the day it landed — the same failure this step
+        # was added to catch, in the one file that was not yet covered.
         #
         # The script's own header records why it was left out of CI: CI was
         # down org-wide, and `wrangler.jsonc` ran no build step between the
