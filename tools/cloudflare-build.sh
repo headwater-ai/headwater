@@ -21,13 +21,29 @@
 #
 #   and every dependency below moves in a reviewed commit instead.
 #
-#   TWO DASHBOARD FIELDS NAME THIS FILE, NOT ONE. Workers Builds keeps a
-#   build configuration for the default branch and a second one for every
-#   other branch, and each carries its own build command. The second is what
-#   runs on a pull request, and it deploys with `wrangler versions upload`
-#   rather than `wrangler deploy`. Both read `wrangler.jsonc`, so both need
-#   the asset directory that this script writes. A second field left empty
-#   costs the live site nothing and fails every pull request's build.
+#   TWO CONFIGURATIONS NAME THIS FILE, AND THE DASHBOARD SHOWS ONE OF THEM.
+#   Workers Builds keeps a build configuration for the default branch and a
+#   second one for every other branch, and each carries its own build command.
+#   The second is what runs on a pull request, and it deploys with
+#   `wrangler versions upload` rather than `wrangler deploy`. Both read
+#   `wrangler.jsonc`, so both need the asset directory that this script
+#   writes, and a second one left empty costs the live site nothing and fails
+#   every pull request's build.
+#
+#   The Builds settings page carries one `Build command` field, and that field
+#   writes the first configuration only. There is no second field and no
+#   preview settings page. The second configuration is reachable through the
+#   API that page itself calls:
+#
+#       GET   /accounts/<account>/builds/workers/<script_tag>
+#       PATCH /accounts/<account>/builds/workers/<script_tag>
+#             {"previews_base_config": {…, "build_command": "sh tools/cloudflare-build.sh"}}
+#
+#   Send `previews_base_config` back as the GET returned it with that one key
+#   changed, and omit `production_settings` so the live path is untouched.
+#   Read it back afterwards, because nothing else reports what it holds:
+#   a build record names its own build command, so a green preview build on a
+#   branch cut after the asset directory changed is the only proof that lands.
 #
 # THE PINS, AND WHY THEY ARE THE SAME PINS CI USES
 #

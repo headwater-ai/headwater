@@ -55,6 +55,8 @@ Two halves make up `https://headwater.tools/`. `site/` holds the hand-built page
 
 **A build configuration with no build command has no directory to serve.** The second configuration deploys a preview of each pull request, with `wrangler versions upload` in place of `wrangler deploy`. It reaches the same `wrangler.jsonc` and therefore the same asset directory, which only a build writes. A preview build that fails on every change reports nothing about any change, and a check that is always red is a check nobody reads.
 
+**One of the two configurations is edited in a dashboard and the other through an API.** The Builds settings page carries a single build command, and it writes the configuration of the default branch. `tools/cloudflare-build.sh` records the request that reaches the other one. So the record above states a requirement that the vendor's own interface does not present. A reader who looks for a second field finds none.
+
 **The order of the two acts is not free.** `wrangler.jsonc` names a directory that git ignores, so the build command has to exist before that name reaches the default branch. The reverse order serves a directory that is not there.
 
 **A wide content policy reaches every generated page.** A generated page links its stylesheet, its script, its web fonts and its search index as files beside it. `default-src 'none'` serves such a page with none of them. `site/_headers` carries the wide policy as the default and re-asserts the narrow one on each hand-built path.

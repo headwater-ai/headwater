@@ -35,9 +35,9 @@
   //   file. `tools/cloudflare-build.sh` states why the dashboard field names
   //   a file rather than carrying those commands itself.
   //
-  //   THERE ARE TWO OF THAT FIELD, AND BOTH HAVE TO NAME THE SCRIPT.
-  //   Workers Builds keeps one build configuration for the default branch
-  //   and a second for every other branch, each with its own build command:
+  //   TWO CONFIGURATIONS HAVE TO NAME THAT SCRIPT, AND THE DASHBOARD EDITS
+  //   ONE OF THEM. Workers Builds keeps one build configuration for the
+  //   default branch and a second for every other branch:
   //
   //       default branch   sh tools/cloudflare-build.sh   npx wrangler deploy
   //       every other      sh tools/cloudflare-build.sh   npx wrangler versions upload
@@ -47,6 +47,11 @@
   //   configuration left empty does not touch the live site — it fails every
   //   pull request's build instead, which is a red check that says nothing
   //   about the change under it.
+  //
+  //   The Builds settings page shows a single `Build command`, and it writes
+  //   the first configuration only. `tools/cloudflare-build.sh` carries the
+  //   API call that reaches the second, because no page of that dashboard
+  //   does.
   //
   //   If a build command is ever unset, this directory is absent and that
   //   deploy has nothing to serve. Restore the command first, and only then
