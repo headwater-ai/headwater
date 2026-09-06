@@ -592,6 +592,9 @@ pub fn plan(
     verbs: &[headwater_verbs::Verb],
 ) -> Plan {
     let mut plan = Plan::default();
+    // A `site_nav` reads the outputs of every other declaration, so it runs
+    // after all of them rather than in its turn. See the second loop below.
+    let mut navs: Vec<&Declaration> = Vec::new();
     for declaration in &projections.declared {
         match declaration.kind {
             Kind::ShelfIndex => shelf_index::emit(surface, census, declaration, &mut plan),
@@ -601,13 +604,27 @@ pub fn plan(
                 probe_result::emit(surface, census, declaration, runs, identity, &mut plan);
             }
             Kind::VerbIndex => verb_index::emit(surface, declaration, verbs, &mut plan),
-            Kind::SiteNav => site_nav::emit(surface, census, declaration, identity, &mut plan),
+            Kind::SiteNav => navs.push(declaration),
             other => plan.unwritten.push(Unwritten {
                 at: declaration.output.clone(),
                 kind: other,
                 reason: unbuilt(other).to_string(),
             }),
         }
+    }
+    // The second pass. A generated shelf index is no node of the graph, so a
+    // `site_nav` cannot find one among the documents and has to read it from
+    // what this plan already holds. Running the navs last rather than in
+    // declaration order is what makes the result independent of the order the
+    // overlay lists its projections in: a nav declared above a shelf index
+    // and a nav declared below one write the same file.
+    for declaration in navs {
+        let written: Vec<String> = plan
+            .outputs
+            .iter()
+            .map(|output| output.path.clone())
+            .collect();
+        site_nav::emit(surface, census, declaration, identity, &written, &mut plan);
     }
     descriptor::emit(surface, identity, projections, &mut plan);
     plan.unwritten.extend(engine_defined());

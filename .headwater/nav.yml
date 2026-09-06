@@ -2,6 +2,7 @@
 
 nav:
   - "decisions":
+      - "Index": "decisions/README.md"
       - "Q1 — Implementation language": "decisions/0001-implementation-language.md"
       - "Q2 — Schema format": "decisions/0002-schema-format.md"
       - "Q3 — How much of the default taxonomy ships in the box": "decisions/0003-how-much-of-the-default-taxonomy-ships-in-the-box.md"
@@ -51,8 +52,10 @@ nav:
       - "The served sitemap is derived from the served directory": "decisions/0048-the-served-sitemap-is-derived-from-the-served-directory.md"
       - "How the two halves of the site share one host": "decisions/0047-how-the-two-halves-of-the-site-share-one-host.md"
   - "acceptance_criteria":
+      - "Index": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
   - "evaluations":
+      - "Index": "evaluations/README.md"
       - "Adjacent work and tooling": "evaluations/adjacent-work.md"
       - "The capability-bundle address inventory": "evaluations/capability-bundle-address-inventory.md"
       - "What ships in the box — a first-run walkthrough": "evaluations/default-taxonomy-first-run.md"
@@ -73,6 +76,7 @@ nav:
       - "Warrant — what stands behind a document, and who vouched for it": "evaluations/warrant-and-adjudication.md"
       - "What a check can know — the Q5 and Q21 evaluation": "evaluations/what-a-check-can-know.md"
   - "interfaces":
+      - "Index": "interfaces/README.md"
       - "headwater capture": "interfaces/headwater-capture.md"
       - "headwater check": "interfaces/headwater-check.md"
       - "headwater completions": "interfaces/headwater-completions.md"
@@ -93,6 +97,7 @@ nav:
       - "headwater sweep": "interfaces/headwater-sweep.md"
       - "headwater taxonomy": "interfaces/headwater-taxonomy.md"
   - "obligations":
+      - "Index": "obligations/README.md"
       - "The promotion fix has no reading of the assisted fraction": "obligations/0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md"
       - "Declarative voice is called detectable at useful precision, and the sample is unreachable": "obligations/0002-declarative-voice-is-called-detectable-at-useful-precision.md"
       - "The rebuild-and-cache design is measured at spike scale alone": "obligations/0003-the-rebuild-and-cache-design-is-measured-at-spike-scale-alone.md"
@@ -253,14 +258,18 @@ nav:
       - "clap owns the help flag, so -h, --help reads Print help on all 32 verb pages": "obligations/0158-clap-owns-the-help-flag-so-h-help-reads-print-help-on-all-32-verb-pages.md"
       - "A sentence that opens with a hash and an issue number is folded into the sentence before it": "obligations/0159-a-sentence-that-opens-with-a-hash-and-an-issue-number-is-folded-into-the-sentence-before-it.md"
       - "The generated half of the site loads highlight.js from a third party with no subresource integrity": "obligations/0160-the-generated-half-of-the-site-loads-highlight-js-from-a-third-party-with-no-subresource-integrity.md"
+      - "The validation block of mkdocs.yml is a gate this repository owns and no fixture drives": "obligations/0161-the-validation-block-of-mkdocs-yml-is-a-gate-this-repository-owns-and-no-fixture-drives.md"
   - "probes":
+      - "Index": "probes/README.md"
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"
       - "A counted tombstone separates a withheld answer from an absent answer": "probes/a-counted-tombstone-separates-a-withheld-answer-from-an-absent-answer.md"
       - "An agent reaches the adjudication from the document that lost it": "probes/an-agent-reaches-the-adjudication-from-the-document-that-lost-it.md"
       - "The authoring skill reaches an agent that is about to write a governed document": "probes/the-authoring-skill-reaches-an-agent-that-is-about-to-write-a-governed-document.md"
   - "requirements":
+      - "Index": "requirements/README.md"
       - "The engine reaches no network at check time": "requirements/0001-the-engine-reaches-no-network-at-check-time.md"
   - "reviews":
+      - "Index": "reviews/README.md"
       - "Assessment of the existing core-concepts findings": "reviews/core-concepts-findings-assessment.md"
       - "Core-concepts independent review": "reviews/core-concepts-independent-review.md"
       - "Core-concepts review: findings, second run": "reviews/core-concepts-review-findings-2.md"
@@ -269,6 +278,7 @@ nav:
       - "STE editorial pass — source findings to address": "reviews/ste-editorial-pass-findings.md"
       - "The sixty-four restored help strings, checked against the binary": "reviews/the-sixty-four-restored-help-strings-checked-against-the-binary.md"
   - "spec_series":
+      - "Index": "spec/README.md"
       - "Vision and scope": "spec/00-vision-and-scope.md"
       - "Conceptual model": "spec/01-conceptual-model.md"
       - "The taxonomy model": "spec/02-taxonomy-model.md"
@@ -286,4 +296,5 @@ nav:
       - "Harness support": "spec/16-harness-support.md"
       - "Glossary": "spec/glossary.md"
   - "tutorials":
+      - "Index": "tutorials/README.md"
       - "Your first governed corpus": "tutorials/your-first-governed-corpus.md"

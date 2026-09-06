@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 351,
-      "carried": 351,
+      "in the graph": 352,
+      "carried": 352,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -6732,6 +6732,20 @@
               "HW-DR-0047"
             ]
           }
+        }
+      },
+      {
+        "path": "docs/obligations/0161-the-validation-block-of-mkdocs-yml-is-a-gate-this-repository-owns-and-no-fixture-drives.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0161",
+        "facets": {
+          "id": "HW-OBL-0161",
+          "status": "draft",
+          "status_since": "2026-09-06",
+          "summary": "Two raised severities in mkdocs.yml are the whole of two gates, and no case in this repository fails when either one is lowered",
+          "last_verified": "2026-09-06",
+          "title": "The validation block of mkdocs.yml is a gate this repository owns and no fixture drives",
+          "waiting_on": "build"
         }
       },
       {

@@ -52,8 +52,19 @@ theme:
 #   LICENSE      carries no `.md` extension, so MkDocs would copy it as a
 #                static asset. The license text belongs to the hand-built half.
 #
-# None of these is excluded because the gate would otherwise fail. MkDocs 1.6
-# reports an unlisted file at `info`, and `--strict` does not fail on one.
+# None of these was excluded because the gate would otherwise fail, and that
+# was true of the tree the list was written against: MkDocs 1.6 reports an
+# unlisted file at `info`, and `--strict` did not fail on one.
+#
+# `validation.nav.omitted_files` below now raises that to `warn`, so this list
+# is part of the gate whatever it was written for. 374 markdown files sit under
+# `docs/`, `.headwater/nav.yml` names 287 of them, and every one of the
+# remaining 87 is under a directory named here. Narrowed to `LICENSE` alone,
+# the build exits 1 and names `doctrine/maturity-model.md`, `taxonomies/**` and
+# `w3id/README.md`. Measured on 2026-09-06.
+#
+# So a directory added here still has to earn its place on the four reasons
+# above, and a directory taken off this list has to reach the nav instead.
 exclude_docs: |
   taxonomies/
   doctrine/
@@ -123,3 +134,23 @@ validation:
     # `tools/check-site-fragments.py` is the reader of that last step, and CI
     # runs both.
     anchors: warn
+
+  nav:
+    # Raised from the MkDocs 1.6 default of `info`, for the same reason and in
+    # the same order as `links.anchors` above. That default is why ten
+    # generated index pages were served and reachable by address while no
+    # sidebar named one of them, over a green `--strict` build: ten `info`
+    # lines printed to a log nobody reads, and an exit status of 0 over them
+    # (#528).
+    #
+    # It is raised in the same change that empties the population, and not
+    # before. Measured over this corpus in both directions: with the nav this
+    # branch generates the build exits 0, and with the nav of the commit before
+    # it the same build exits 1 and names all ten pages. The guard is therefore
+    # live rather than vacuous, and it holds against the eleventh generated
+    # page nobody has written yet.
+    #
+    # This reads which files under `docs_dir` no `nav:` entry names. It says
+    # nothing about whether an entry points at a file that is there, which is
+    # `nav.not_found`, left at its default.
+    omitted_files: warn
