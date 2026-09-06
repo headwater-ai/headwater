@@ -856,17 +856,45 @@ add:
 # nothing states whether a *bundle* may use `add_to`. An adopter overlay is not
 # a bundle, and spec 2 supplies the operation for a list.
 #
-# The base declares an index for the two shelves that it declares, and this
-# corpus holds neither of them. The shelf that this corpus does hold is
-# `spec_series`, which the design-spec bundle declares. The specification table
-# in the root README was the copy of that shelf that a human kept aligned, and
-# the index below replaced it.
+# The base declares an index for the two shelves that it declares, `decisions`
+# and `specifications`. This corpus holds the first and not the second, so the
+# base writes `docs/decisions/README.md` and reports the other as an index of
+# an empty shelf. Every other shelf of this corpus is named below.
 
 add_to:
 
   projections:
+    # An index at the root of each shelf this corpus holds that no other
+    # declaration covers. `{shelf}` is the shelf's directory, so one entry
+    # writes one file per shelf and no two land on one path.
+    #
+    # **The root of a shelf is a page a reader reaches.** HW-DR-0047 rules that
+    # the generated half of the site is served at `https://headwater.tools/`,
+    # and MkDocs renders `docs/<shelf>/README.md` as `<shelf>/index.html`. A
+    # shelf with no index declaration has no such file, so its root answers 404
+    # while every record under it is served. `/obligations/` is the register
+    # this project points at as its own evidence, and it was one of the seven
+    # roots in that state.
+    #
+    # Five shelves are absent, for three reasons. `decisions` is absent because
+    # the base already declares an index for it. `interfaces` is absent because
+    # the `verb_index` below writes `docs/interfaces/README.md`, and two
+    # declarations on one path would each write over the other. `specifications`,
+    # `probe_runs` and `probe_results` are absent because they hold no document,
+    # and `headwater generate` reports an index of an empty shelf rather than
+    # writing a file that asserts a shelf is there.
+    #
+    # **`probes` is the one name here another projection kind could claim.**
+    # `facets.expectation` declares five predicate forms and this shelf holds
+    # four probes, so an index driven from the closed set would name the form
+    # that no probe measures, the way `verb_index` names the verb that no
+    # contract describes. No emitter reads a facet's value set as the row
+    # source, and
+    # [#531](https://github.com/headwater-ai/headwater/issues/531) carries the
+    # writing of the missing probes. A shelf index reads what is on the shelf,
+    # which is the whole of what this declaration claims.
     - kind: shelf_index
-      for: [spec_series]
+      for: [spec_series, obligations, evaluations, requirements, acceptance_criteria, probes, reviews, tutorials]
       output: "{shelf}/README.md"
 
     # The redirect map. `docs/spec/09-open-questions.md` is a tombstone: all

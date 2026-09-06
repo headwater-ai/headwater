@@ -766,6 +766,13 @@ projections:
   - kind: shelf_index
     for:
       - spec_series
+      - obligations
+      - evaluations
+      - requirements
+      - acceptance_criteria
+      - probes
+      - reviews
+      - tutorials
     output: "{shelf}/README.md"
   - kind: shelf_sections
     for:

@@ -573,24 +573,35 @@ fn every_output_carries_its_own_marker() {
     }
 }
 
-/// This repository generates its six artifacts, and it says why for everything
-/// else.
+/// This repository generates its fourteen artifacts, and it says why for
+/// everything else.
 ///
 /// A property and not a recording, for the reason the query crate states about
 /// its own repository run: the corpus is prose somebody edits. What is asserted
-/// is what a prose edit must not change. Seven files are written. The descriptor
-/// sits at the path Q14 fixes, and the index of the specification shelf sits at
-/// the path this repository's overlay declares. That second one is the list the
-/// root README used to carry by hand. The third is the index of the decisions
-/// shelf, which the package has declared since the first-run walkthrough and
-/// which produced a reason rather than a file until #124 filled that shelf. The
-/// fourth is the redirect map that the open-questions tombstone carries, and the
-/// fifth is the verb index #257 asked for. The sixth is the graph export #414
-/// names: the whole graph, for the reader Q16 draws with no principal to filter
-/// for. The seventh is the site navigation HW-DR-0036 and #418 name: MkDocs's
-/// `nav:` over the reading order `by_precedence` derives. The package still
-/// declares an index for one shelf this tree holds no document on, so that one
-/// produces a reason, and the register produces a second.
+/// is what a prose edit must not change.
+///
+/// **Nine of the fourteen are shelf indexes, one per shelf that holds a
+/// document.** The first is the decisions shelf, which the package has declared
+/// since the first-run walkthrough and which produced a reason rather than a
+/// file until #124 filled that shelf. The other eight are the overlay's own
+/// entry, in the order its `for` list names them, and the specification index
+/// leads it because that is the list the root README used to carry by hand.
+/// #528 is why the seven after it are there: each of those shelf roots answered
+/// 404 on the served site while every record under it was served, because a
+/// shelf with no index declaration writes no page for MkDocs to render.
+///
+/// The other five are one each. The redirect map that the open-questions
+/// tombstone carries. The verb index #257 asked for, which reads the binary
+/// rather than the `interfaces` shelf and is why that shelf is absent from the
+/// index list above. The graph export #414 names: the whole graph, for the
+/// reader Q16 draws with no principal to filter for. The site navigation
+/// HW-DR-0036 and #418 name: MkDocs's `nav:` over the reading order
+/// `by_precedence` derives. And the descriptor, at the path Q14 fixes.
+///
+/// Three declarations produce a reason rather than a file, and the count below
+/// asserts it. The package declares an index for one shelf this tree holds no
+/// document on, the probe-result declaration has no transcript to read, and the
+/// register is a function of the clock.
 ///
 /// **The order is the plan's order, and it is asserted.** A declared projection
 /// is planned before the engine-defined descriptor, so a taxonomy that declares
@@ -601,7 +612,7 @@ fn every_output_carries_its_own_marker() {
 /// compares bytes, so a contributor who edits a `summary` and does not
 /// regenerate fails this test before CI runs.
 #[test]
-fn this_repository_generates_its_seven_artifacts_and_accounts_for_the_rest() {
+fn this_repository_generates_its_fourteen_artifacts_and_accounts_for_the_rest() {
     let root = repository_root();
     let resolved = headwater_resolve::repository(&root)
         .unwrap_or_else(|errors| panic!("{}", headwater_resolve::render_errors(&errors)));
@@ -637,15 +648,22 @@ fn this_repository_generates_its_seven_artifacts_and_accounts_for_the_rest() {
         vec![
             "docs/decisions/README.md",
             "docs/spec/README.md",
+            "docs/obligations/README.md",
+            "docs/evaluations/README.md",
+            "docs/requirements/README.md",
+            "docs/acceptance-criteria/README.md",
+            "docs/probes/README.md",
+            "docs/reviews/README.md",
+            "docs/tutorials/README.md",
             "docs/spec/09-open-questions.md",
             "docs/interfaces/README.md",
             ".headwater/export.json",
             ".headwater/nav.yml",
             descriptor::PATH
         ],
-        "this repository writes the decisions index, the specification index, the \
-         redirect map, the verb index, the graph export, the site navigation and \
-         the descriptor, in that order"
+        "this repository writes an index for each of its nine shelves that hold a \
+         document, then the redirect map, the verb index, the graph export, the \
+         site navigation and the descriptor, in that order"
     );
     // One declared shelf that holds no document, one declared projection whose
     // source this corpus does not hold, and the register. Nothing is passed
