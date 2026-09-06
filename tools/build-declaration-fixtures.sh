@@ -74,10 +74,14 @@
 # Three cargo shapes in this tree are out of scope, each for its own reason,
 # written here rather than left to be inferred from their absence:
 #
-#   `spike/` is a second cargo workspace with its own committed
-#   `spike/Cargo.lock`. No workflow runs `spike/build.sh` and nothing builds
-#   that workspace, so its lock is a second ungated committed lock and this
-#   suite leaves it that way rather than pretending otherwise.
+#   The Q1 language spike is a second cargo workspace with its own committed
+#   `Cargo.lock` and its own `build.sh`. No workflow runs that script and
+#   nothing builds that workspace, so its lock is a second ungated committed
+#   lock and this suite leaves it that way rather than pretending otherwise.
+#   It is named here by what it is rather than by where it lives, because it
+#   moved once already: #591 took it from `spike/` to `tools/language-spike/`
+#   while this branch was open. It names no `-p headwater-cli`, so the move
+#   changes no population read below — measured on `origin/main`, not assumed.
 #
 #   `engine/.cargo/config.toml` declares four aliases, two of which expand to a
 #   release build of the CLI. An alias is invoked as `cargo release-cli`, is a
