@@ -1,7 +1,8 @@
 #!/bin/sh
 # The intent-time hook: `headwater route`, on the task before the agent reads a
 # file. Registered on `UserPromptSubmit`, which takes no matcher, so it sees
-# every prompt.
+# every prompt, including the ones no person wrote. It answers only the ones a
+# person did: the envelope test below is the whole of that distinction.
 #
 # What it passes to the engine: the prompt, as text. Nothing else. The engine
 # reads the checkout itself.
@@ -44,6 +45,27 @@ engine=$(hw_engine) || exit 0
 
 task=$(hw_field "$input" user_input) || task=$(hw_field "$input" prompt) || exit 0
 [ -n "$task" ] || exit 0
+
+# Not every prompt was written by a person. This position takes no matcher, and
+# the header above says it therefore sees every prompt — written when a prompt
+# meant somebody typing. A harness that runs agents in parallel submits a prompt
+# each time one of them finishes, and the text of that prompt is the agent's own
+# closing report inside an envelope. Routing over it is a category error twice
+# over: the report is not a task, and it is already in the reader's context, so
+# every pointer the route offers was chosen against text nobody wrote as an
+# intent.
+#
+# Measured on run 22, on 2026-09-06: 39 of this hook's 46 firings were a
+# `<task-notification>`, and none of the 39 had a task in it. One of them routed
+# over a finished agent's report, emitted 45.4KB, and reported that the budget
+# had withheld 279 more pointers.
+#
+# So the envelope is the signal, and the test is the first characters rather
+# than a search: a person may well write the words `task-notification` in a
+# question about this repository, and that question deserves its pointers.
+case $task in
+    '<task-notification>'* | '<cross-session-message'* ) exit 0 ;;
+esac
 
 route=$("$engine" route --root "$hw_root" --json "$task" 2>/dev/null) || exit 0
 
