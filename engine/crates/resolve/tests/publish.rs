@@ -3765,10 +3765,32 @@ add:
         "# Templates\n\nProse for a publisher's own authors, not a scaffolder source.\n",
     );
     scratch.write(&format!("{package_dir}/interview.yml"), "questions: []\n");
-    // `migrations/` is a real, existing directory — empty is the ordinary state
-    // of a package that has published no major version yet.
-    std::fs::create_dir_all(scratch.path().join(format!("{package_dir}/migrations")))
-        .expect("the migrations directory is made");
+    // `migrations/` carries one payload, and an empty directory here would be a
+    // defect rather than an economy. An artifact is a set of files, so an empty
+    // directory is not a member of one: `put` creates a directory only as the
+    // parent of a file it writes, the release record names no such path, and the
+    // manifest then declares `migrations/` to a consumer whose
+    // `migration::at` opens it with `read_dir` and refuses. That function's own
+    // doc comment states the rule this fixture used to contradict — the ordinary
+    // state of a package that has published no major version is declaring no
+    // `contents.migrations` key at all, not declaring one over an empty
+    // directory. `carried` refuses it at publish since
+    // [#581](https://github.com/headwater-ai/headwater/issues/581).
+    scratch.write(
+        &format!("{package_dir}/migrations/2-to-3.yml"),
+        "\
+migration:
+  format: 1
+  from: \">=2 <3\"
+  to: \">=3 <4\"
+
+steps:
+  - subject: overlay_address
+    from: purposes.gone
+    to: [purposes.rationale]
+    because: the case is about where the two keys sit and never about the step
+",
+    );
 
     scratch.path().join(at)
 }

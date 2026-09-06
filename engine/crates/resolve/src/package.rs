@@ -1424,10 +1424,14 @@ fn stage_flattened(
 /// Refusing them again would be a second definition of one rule, and the
 /// message a publisher reads would depend on which check happened to run first.
 ///
-/// **The membership test strips one trailing `/`.** `headwater/standard`
-/// declares `assemblies: assemblies/` and `doctrine: doctrine/`, and a staged
-/// path never carries the separator, so a test that compared the declared
-/// scalar unchanged would refuse this repository's own publish.
+/// **The declared scalar is resolved into an artifact path before the compare,
+/// and comparing the raw string refuses two things a publisher may write.**
+/// `headwater/standard` declares `assemblies: assemblies/` and `doctrine:
+/// doctrine/`, and a staged path never carries the trailing separator. And
+/// [#303](https://github.com/headwater-ai/headwater/issues/303) ruled that
+/// `sub/../taxonomy.yml` names `taxonomy.yml` and publishes, because
+/// [`reachable`] judges a path by where it resolves rather than by the string a
+/// manifest wrote. [`member_path`] is that resolution and the suite pins both.
 ///
 /// **Every bad key is reported, not the first one.** [`reachable`] and
 /// [`agrees`] collect for the same stated reason: a second run should not have
@@ -1460,10 +1464,9 @@ fn carried(staged: &[Staged], manifest: &str) -> Result<(), Vec<ResolveError>> {
             continue;
         };
         let declared = scalar.text.as_str();
-        let member = declared.trim_end_matches('/');
-        if member.is_empty() {
+        let Some(member) = member_path(declared) else {
             continue;
-        }
+        };
         let prefix = format!("{member}/");
         let held = staged
             .iter()
@@ -1486,23 +1489,52 @@ fn carried(staged: &[Staged], manifest: &str) -> Result<(), Vec<ResolveError>> {
     }
 }
 
+/// The artifact path a declared `contents` scalar names, or `None` where the
+/// scalar names nothing inside the artifact.
+///
+/// A staged path is built out of directory entries, so it carries no `.`
+/// segment, no `..` segment and no trailing separator. A declared scalar may
+/// carry all three and still be legal, so the compare needs the scalar in the
+/// staged form rather than as written.
+///
+/// `None` covers the two values [`reachable`] has already refused above every
+/// call of this — an empty scalar, and a path that climbs above the package —
+/// and [`carried`] skips rather than reporting them, so one rule keeps one
+/// message.
+fn member_path(declared: &str) -> Option<String> {
+    let mut parts: Vec<&str> = Vec::new();
+    for part in declared.split('/') {
+        match part {
+            "" | "." => continue,
+            ".." => {
+                parts.pop()?;
+            }
+            other => parts.push(other),
+        }
+    }
+    match parts.is_empty() {
+        true => None,
+        false => Some(parts.join("/")),
+    }
+}
+
 /// Which kind of thing a `contents` key's reader opens.
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum Kind {
+pub(crate) enum Kind {
     File,
     Directory,
 }
 
 impl Kind {
     /// The kind a path on disk is, where it is one of these two.
-    fn of(at: &Path) -> Kind {
+    pub(crate) fn of(at: &Path) -> Kind {
         match at.is_dir() {
             true => Kind::Directory,
             false => Kind::File,
         }
     }
 
-    fn name(self) -> &'static str {
+    pub(crate) fn name(self) -> &'static str {
         match self {
             Kind::File => "file",
             Kind::Directory => "directory",
@@ -1541,7 +1573,11 @@ impl Kind {
 /// `templates` is the second, with
 /// [#378](https://github.com/headwater-ai/headwater/issues/378) as the reader
 /// that took it.
-fn required_kind(key: &str) -> Option<Kind> {
+///
+/// [`crate::flatten::members`] reads the same table for the same reason, so a
+/// flattening publish carries a member as the kind its reader opens rather than
+/// as whatever the walk that carries it happened to be written for.
+pub(crate) fn required_kind(key: &str) -> Option<Kind> {
     match key {
         "taxonomy" | "conformance" => Some(Kind::File),
         BUNDLES | ASSEMBLIES | DOCTRINE | TEMPLATES | crate::migration::CONTENTS_KEY => {
