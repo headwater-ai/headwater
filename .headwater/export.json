@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 347,
-      "carried": 347,
+      "in the graph": 348,
+      "carried": 348,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 569,
-      "carried": 569,
+      "in the graph": 570,
+      "carried": 570,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1378,6 +1378,7 @@
             ],
             "governs": [
               "tools/assemble-site.sh",
+              "tools/cloudflare-build.sh",
               "wrangler.jsonc",
               "site/_headers"
             ]
@@ -8015,6 +8016,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "tools/cloudflare-build.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "tools/rdf-probe/emit.py",
         "resolver": "source-tree"
       },
@@ -9105,6 +9111,17 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "tools/assemble-site.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/cloudflare-build.sh",
           "resolver": "source-tree"
         }
       },

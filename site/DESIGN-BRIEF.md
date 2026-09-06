@@ -110,6 +110,8 @@ No row below carries a count. A shelf gains and loses documents on ordinary chan
 | `/tutorial` | The tutorial's own page, mirroring `docs/tutorials/your-first-governed-corpus.md` | Hand-built, and distinct from the generated `/tutorials/your-first-governed-corpus/` below |
 | `/glossary` | The terms a reader meets before the specification | Hand-built |
 | `/ns` | Namespace documentation, and what `https://w3id.org/headwater/` redirects to | Hand-built. `_headers` gives it `Access-Control-Allow-Origin: *`, as it does the corpus descriptor |
+| `/changelog` | What a release carries, and what the tag names | Hand-built, and it carries no date, because a date typed here goes stale silently |
+| `sitemap.xml` | The crawler's index of the site | Hand-built, and it is the one path both halves carry. `tools/assemble-site.sh` serves the hand-built bytes, so the generated sitemap reaches no crawler. Which sitemap should win is [#554](https://github.com/headwater-ai/headwater/issues/554) |
 | `llms.txt`, `robots.txt` | Q16: *"Ship it, and count it as nothing"* — 97% of llms.txt files go unread in a month | Written by `tools/refresh-crawler-files.sh` from the committed pages under `site/`, never by hand |
 
 ### Generated projection
@@ -127,7 +129,7 @@ No row below carries a count. A shelf gains and loses documents on ordinary chan
 | `/reviews/*` | `docs/reviews/` |
 | `/tutorials/your-first-governed-corpus/` | `docs/tutorials/your-first-governed-corpus.md` — the steps `.claude/tutorial/fixtures.sh` drives. Note the path MkDocs gives it, which is not the `/docs/tutorial` this brief once named, and not `/tutorial/`, which is the hand-built page above |
 | `/corpus.json` | `.headwater/corpus.json`, copied to the served root by `tools/assemble-site.sh`. Every generated page names it in a `rel="describedby"` link, which is HW-DR-0038 |
-| `/css/*`, `/js/*`, `/img/*`, `/search/*`, `/webfonts/*`, `/404.html`, `/sitemap.xml` | The MkDocs theme's own assets. `site/_headers` admits them under `'self'`, which is why the wide content policy exists |
+| `/css/*`, `/js/*`, `/img/*`, `/search/*`, `/webfonts/*`, `/404.html` | The MkDocs theme's own assets. `site/_headers` admits them under `'self'`, which is why the wide content policy exists |
 
 **The root of each shelf above serves a generated index of that shelf.** `.headwater/overlay.yml` declares a `shelf_index` projection for every shelf that holds a document, `headwater generate` writes `docs/<shelf>/README.md`, and MkDocs renders it as `<shelf>/index.html`. Seven of these roots answered 404 until 2026-09-06. The CI step that composes the two halves derives the shelf list from the corpus and asserts the file at each root, so a shelf added later is covered by the push that adds it. None of the ten is listed in the sidebar, which is [#536](https://github.com/headwater-ai/headwater/issues/536).
 

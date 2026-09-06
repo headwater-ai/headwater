@@ -18,6 +18,7 @@ relations:
     - HW-DR-0039
   governs:
     - tools/assemble-site.sh
+    - tools/cloudflare-build.sh
     - wrangler.jsonc
     - site/_headers
 ---
@@ -28,7 +29,7 @@ relations:
 
 Two halves make up `https://headwater.tools/`. `site/` holds the hand-built pages, committed byte for byte, and [HW-DR-0037](0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md) governs them by name. `mkdocs build --strict` renders the corpus into `.headwater/site-build`, which git ignores.
 
-**The generated half reaches no reader.** `/spec/`, `/decisions/`, `/obligations/`, `/tutorials/your-first-governed-corpus/` and `/corpus.json` all answer 404, measured on 2026-09-06. The build runs as a blocking step on every push and nothing reads the directory after the job ends.
+**The generated half reached no reader, which is the problem this record answers.** `/spec/`, `/decisions/`, `/obligations/`, `/tutorials/your-first-governed-corpus/` and `/corpus.json` all answered 404 on 2026-09-06. The build ran as a blocking step on every push, and nothing read the directory after the job ended.
 
 **The owner ruled on 2026-09-04 that the generated half deploys before the repository becomes public.** That ruling settles whether, and this record settles how.
 
@@ -38,7 +39,7 @@ Two halves make up `https://headwater.tools/`. `site/` holds the hand-built page
 
 **One directory holds both halves, and `tools/assemble-site.sh` composes it.** The script copies the generated half into `.headwater/site-deploy` first and the hand-built half second. A path that both halves carry is served with the committed bytes, and the script names every such path on each run.
 
-**The Cloudflare Workers Builds build command runs that script.** The command installs the pinned MkDocs version, runs the build, and runs the assembly. `wrangler.jsonc` then names `.headwater/site-deploy` as the asset directory, and it carries the two acts in that order.
+**The Cloudflare Workers Builds build command runs that script.** The command names one file, `tools/cloudflare-build.sh`, which installs the pinned site toolchain, runs the build, and runs the assembly. A dashboard field carries no commit and goes stale in silence, so every version this deploy installs moves in a reviewed change instead. `wrangler.jsonc` names `.headwater/site-deploy` as the asset directory and states what writes it.
 
 **The repository keeps one deploy path.** A second path in GitHub Actions would race the first, and the last writer would decide what a reader sees.
 

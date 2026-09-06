@@ -474,6 +474,52 @@ jobs:
 
           print("%d shelf roots each serve an index page: %s" % (len(roots), ", ".join(sorted(roots))))
           PY
+      - name: Every hand-built page carries the narrow content policy
+        # `site/_headers` sets the wide policy under `/*`, because a generated
+        # page links its stylesheet, its script, its fonts and its search
+        # index as files beside it. Each hand-built path then re-asserts the
+        # narrow policy that half has always carried, and HW-DR-0037 is the
+        # record stating that a hand-built page reaches nothing at read time.
+        #
+        # A hand-built page with no rule of its own falls through to the wide
+        # policy, in silence and with nothing to read. That already happened:
+        # #534 wrote the wide default, #546 added `site/changelog/` hours
+        # later, and the changelog page has served the wide policy since.
+        # Neither pull request was wrong on its own and nothing connected
+        # them, which is the shape of defect this repository exists to report.
+        #
+        # So the list below is derived from the committed pages rather than
+        # typed, and a page added tomorrow is covered by the push that adds
+        # it.
+        run: |
+          python3 - <<'PY'
+          import os, sys
+
+          pages = []
+          for entry in sorted(os.listdir("site")):
+              if entry == "index.html":
+                  pages.append("/")
+              elif os.path.isfile(os.path.join("site", entry, "index.html")):
+                  pages.append("/%s/*" % entry)
+
+          declared = {
+              line.strip() for line in open("site/_headers") if line.startswith("/")
+          }
+
+          missing = [path for path in pages if path not in declared]
+          if missing:
+              print("hand-built pages with no rule in `site/_headers`:", file=sys.stderr)
+              for path in missing:
+                  print("    %s" % path, file=sys.stderr)
+              print(
+                  "each one falls through to the wide policy under `/*`, which exists for "
+                  "the generated half. Give it the narrow policy the pages beside it carry.",
+                  file=sys.stderr,
+              )
+              raise SystemExit(1)
+
+          print("%d hand-built pages each carry a rule: %s" % (len(pages), ", ".join(pages)))
+          PY
       - name: Every in-site fragment resolves against the page it is served beside
         # THE INSTRUMENT THAT WOULD HAVE CAUGHT #431 ON THE DAY IT LANDED
         #

@@ -3,37 +3,44 @@
   // the https://w3id.org/headwater/ permanent identifier redirects to.
   //
   // There is no Worker script. The project serves static files and nothing
-  // else, so there is no "main" entry point. Cloudflare runs
-  // `npx wrangler deploy` from the repository root on each push.
+  // else, so there is no "main" entry point.
   //
-  // THIS STILL SERVES THE HAND-BUILT HALF ALONE, AND HW-DR-0047 SAYS WHAT
-  // REPLACES IT.
+  // WHAT THE DIRECTORY BELOW IS, AND WHY IT IS NOT `./site`
   //
-  // That record rules that both halves are served out of one directory,
-  // `.headwater/site-deploy`, which `tools/assemble-site.sh` composes from
-  // the pages under `site/` and the pages `mkdocs build` renders from the
-  // corpus. The directory is not committed, so nothing writes it unless the
-  // deploy runs the assembly first.
+  //   The site has two halves. `site/` is hand-built and committed byte for
+  //   byte, and HW-DR-0037 governs it by name. `.headwater/site-build/` is
+  //   what `mkdocs build --strict` renders from the corpus under `docs/` —
+  //   the specification, the decisions, the obligations, the tutorial — and
+  //   git ignores it, because every byte of it is recomputable.
   //
-  // Two acts make that switch, and the order is not free. Reversing it
-  // serves a directory that is not there.
+  //   `tools/assemble-site.sh` composes the two into `.headwater/site-deploy`,
+  //   the generated half first and the hand-built half last, so a path that
+  //   both halves carry is served with the committed bytes. That directory is
+  //   what this deploy serves, and HW-DR-0047 rules the arrangement.
   //
-  //   1. In the Cloudflare dashboard, set the Workers Builds build command:
+  //   So the name below points at a directory that no commit carries. It
+  //   exists only because the build command ran, which is the one thing this
+  //   file depends on and cannot state itself.
   //
-  //          python3 -m pip install --break-system-packages mkdocs==1.6.1 \
-  //            && python3 -m mkdocs build --strict \
-  //            && sh tools/assemble-site.sh
+  // WHAT CLOUDFLARE RUNS BEFORE IT READS THIS FILE
   //
-  //      This is free while the line below still reads `./site`. A build
-  //      command that fails leaves the previous deploy live, so it is also
-  //      the cheapest test of whether that image carries `python3` and
-  //      `pip`, which is the one risk here this repository cannot retire.
+  //   The Workers Builds build command, which is set in the Cloudflare
+  //   dashboard and is one line that names a file in this repository:
   //
-  //   2. Then, and only after a green build, change the line below to
-  //      `./.headwater/site-deploy`.
+  //       sh tools/cloudflare-build.sh
+  //
+  //   That script installs the pinned site toolchain, runs
+  //   `mkdocs build --strict`, and runs `tools/assemble-site.sh`. Cloudflare
+  //   then runs `npx wrangler deploy` from the repository root, which reads
+  //   this file. `tools/cloudflare-build.sh` states why the dashboard field
+  //   names a file rather than carrying those commands itself.
+  //
+  //   If that build command is ever unset, this directory is absent and the
+  //   deploy has nothing to serve. Restore the command first, and only then
+  //   change the name below.
   "name": "headwater",
   "compatibility_date": "2026-08-11",
   "assets": {
-    "directory": "./site"
+    "directory": "./.headwater/site-deploy"
   }
 }
