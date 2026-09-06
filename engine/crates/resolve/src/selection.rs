@@ -40,8 +40,47 @@
 //! none of this.
 
 use crate::package::{self, Consumer};
+use crate::source::Source;
+use headwater_yaml::Mapping;
 use std::collections::BTreeSet;
 use std::path::Path;
+
+/// The declaration a bundle selection is written in.
+///
+/// One incomplete selection, two readers. A corpus writes its selection in
+/// `.headwater/taxonomy.yml` and meets the refusal at `taxonomy resolve`; a
+/// publisher writes one in an assembly recipe and meets it at `taxonomy
+/// publish`. The names to add are the same names and the sentence that names
+/// them is the same sentence. What differs is the file the reader opens and the
+/// key inside it, and telling a publisher to edit a consumer declaration they do
+/// not have is advice nobody can take.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Selection {
+    /// A corpus's own `bundles:`, read by `taxonomy resolve` and `taxonomy
+    /// validate`.
+    Corpus,
+    /// An assembly recipe's `from.bundles:`, read by `taxonomy publish
+    /// --assembly`, at the path the publisher edits.
+    Recipe(String),
+}
+
+impl Selection {
+    /// Who made the selection, as the message's subject.
+    fn selector(&self) -> &'static str {
+        match self {
+            Selection::Corpus => "this repository",
+            Selection::Recipe(_) => "this recipe",
+        }
+    }
+
+    /// The key and the file a reader adds a bundle to.
+    fn add_to(&self) -> String {
+        match self {
+            Selection::Corpus => format!("`bundles:` in {}", package::CONSUMER),
+            Selection::Recipe(at) => format!("`from.bundles:` in {at}"),
+        }
+    }
+}
 
 /// One bundle, and the dangling names it would supply.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -73,6 +112,9 @@ pub struct Advice {
     /// Each unselected bundle that declares at least one of them, in the order
     /// the package ships them.
     pub bundles: Vec<Supplies>,
+    /// Where the selection is written, which decides what the last line tells
+    /// the reader to edit.
+    pub selection: Selection,
 }
 
 impl Advice {
@@ -101,9 +143,10 @@ impl Advice {
         };
         let mut out = format!(
             "this bundle selection is incomplete. The findings above read {named} that nothing \
-             declares. {subject} `{}` ships that this repository did not select {stated} \
-             {supplied} of them:\n",
-            self.package
+             declares. {subject} `{}` ships that {} did not select {stated} {supplied} of \
+             them:\n",
+            self.package,
+            self.selection.selector()
         );
         for supplies in &self.bundles {
             let names: Vec<String> = supplies
@@ -119,8 +162,8 @@ impl Advice {
             ));
         }
         out.push_str(&format!(
-            "Add what you need to `bundles:` in {}\n",
-            package::CONSUMER
+            "Add what you need to {}\n",
+            self.selection.add_to()
         ));
         out
     }
@@ -151,14 +194,86 @@ impl Advice {
 /// introduces means a second traversal per candidate and a message that carries
 /// two lists, and it is not built here.
 pub fn advice(root: &Path, consumer: &Consumer) -> Option<Advice> {
-    let wanted = dangling(root, consumer)?;
+    let (directory, manifest) = package::located(root, &consumer.package)?;
+    derive(
+        root,
+        &directory,
+        &manifest,
+        consumer,
+        Selection::Corpus,
+        &|trial| dangling(root, trial),
+    )
+}
+
+/// The same advice for a publisher whose selection is an assembly recipe.
+///
+/// [#582](https://github.com/headwater-ai/headwater/issues/582) put a
+/// referential-integrity refusal on the publish path, and this is what a
+/// publisher who meets it reads under it. It is the recipe half of
+/// [#579](https://github.com/headwater-ai/headwater/issues/579): the refusal
+/// names the addresses that read a missing name, and this names the bundle that
+/// declares them and the key to add it to.
+///
+/// It is one entry point rather than two, because the recipe is where every
+/// input comes from: `assembly::read` holds the recipe to the package that
+/// carries it, and `recipe.from` is already the shape of a [`Consumer`]. A
+/// caller that had to build that pairing itself would be a second answer to
+/// "what did this recipe select".
+///
+/// `None` for every reason [`advice`] returns `None`, and additionally where the
+/// recipe does not read at all. A caller reaching this is already reporting a
+/// refusal, so a second refusal here is noise: it prints nothing rather than
+/// saying that the thing the reader is already being refused for could not be
+/// read a second time.
+pub fn for_recipe(root: &Path, directory: &Path, assembly: &str) -> Option<Advice> {
+    let manifest = package::manifest_at(directory).ok()?;
+    let recipe = crate::assembly::read(root, directory, &manifest, assembly).ok()?;
+    let consumer = Consumer {
+        package: recipe.from.package.clone(),
+        version: recipe.from.version.clone(),
+        bundles: recipe.from.bundles.clone(),
+        digest: None,
+        overlay: None,
+        corpus_root: String::new(),
+        exclusions: Vec::new(),
+    };
+    let at = recipe
+        .at
+        .strip_prefix(root)
+        .unwrap_or(&recipe.at)
+        .display()
+        .to_string();
+    derive(
+        root,
+        directory,
+        &manifest,
+        &consumer,
+        Selection::Recipe(at),
+        &|trial| dangling_at(root, directory, &manifest, trial),
+    )
+}
+
+/// The reading both entry points share.
+///
+/// `dangling` is passed rather than chosen here because the two callers reach a
+/// package two ways. A corpus names its package and is held to the version it
+/// pinned; a recipe holds a directory it was read out of and the pin was already
+/// checked when the recipe was read. One traversal, two ways in.
+fn derive(
+    root: &Path,
+    directory: &Path,
+    manifest: &Mapping,
+    consumer: &Consumer,
+    selection: Selection,
+    dangling: &dyn Fn(&Consumer) -> Option<Vec<String>>,
+) -> Option<Advice> {
+    let wanted = dangling(consumer)?;
     if wanted.is_empty() {
         return None;
     }
 
-    let (directory, manifest) = package::located(root, &consumer.package)?;
-    let contents = package::contents_of(&manifest);
-    let (_, shipped) = package::bundle_names(root, &directory, &contents).ok()??;
+    let contents = package::contents_of(manifest);
+    let (_, shipped) = package::bundle_names(root, directory, &contents).ok()??;
 
     let mut bundles: Vec<Supplies> = Vec::new();
     for candidate in shipped {
@@ -182,7 +297,7 @@ pub fn advice(root: &Path, consumer: &Consumer) -> Option<Advice> {
         // selected, is not advice. Its refusal is about the candidate and the
         // reader asked about their own selection, so it is dropped here rather
         // than carried up in place of the refusal they are reading.
-        let Some(remaining) = dangling(root, &trial) else {
+        let Some(remaining) = dangling(&trial) else {
             continue;
         };
         let remaining: BTreeSet<String> = remaining.into_iter().collect();
@@ -211,6 +326,7 @@ pub fn advice(root: &Path, consumer: &Consumer) -> Option<Advice> {
         dangling: wanted.len(),
         supplied: supplied.len(),
         bundles,
+        selection,
     })
 }
 
@@ -221,7 +337,25 @@ pub fn advice(root: &Path, consumer: &Consumer) -> Option<Advice> {
 /// refusal with a different remedy, and this module is about the one refusal it
 /// can explain.
 fn dangling(root: &Path, consumer: &Consumer) -> Option<Vec<String>> {
-    let sources = package::sources(root, consumer).ok()?;
+    names(package::sources(root, consumer).ok()?)
+}
+
+/// The same names out of a package directory the caller already holds.
+///
+/// [`package::sources_at`] is [`package::sources`] with the version-pin
+/// comparison dropped, and dropping it is right here: a recipe's `from.package`
+/// was held to the manifest it sits beside when the recipe was read, so a second
+/// comparison would answer a question already answered.
+fn dangling_at(
+    root: &Path,
+    directory: &Path,
+    manifest: &Mapping,
+    consumer: &Consumer,
+) -> Option<Vec<String>> {
+    names(package::sources_at(root, directory, manifest, consumer).ok()?)
+}
+
+fn names(sources: Vec<Source>) -> Option<Vec<String>> {
     let resolution = crate::resolve(&sources).ok()?;
     let mut seen: BTreeSet<String> = BTreeSet::new();
     Some(

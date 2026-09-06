@@ -558,6 +558,80 @@ fn maximal_from(
     })
 }
 
+/// Refuse a publish whose taxonomy reads a name nothing in it declares.
+///
+/// [`crate::rules::referential`] is the rule and this is the sentence a
+/// publisher gets in front of it. The findings themselves are the consumer's
+/// own, rendered by the consumer's own code, so the two verbs report one defect
+/// in one wording — which is what
+/// [#582](https://github.com/headwater-ai/headwater/issues/582) means by "the
+/// same check". `said` is what the publish was published *as*, because the two
+/// paths ship two different selections and the remedy differs: a plain publish
+/// ships every bundle, and a recipe ships the list it names.
+///
+/// The count is stated because the findings are addresses and the names are
+/// fewer: seven addresses can read four names, and a publisher who is not told
+/// the denominator reads seven problems where there are four.
+fn dangles(at: &str, taxonomy: &Mapping, said: &str) -> Result<(), Vec<ResolveError>> {
+    let found = crate::rules::referential(taxonomy);
+    if found.is_empty() {
+        return Ok(());
+    }
+    let names: std::collections::BTreeSet<String> = crate::rules::dangling(taxonomy)
+        .into_iter()
+        .map(|one| one.name)
+        .collect();
+    let counted = if names.len() == 1 {
+        "one name".to_string()
+    } else {
+        format!("{} names", names.len())
+    };
+    let mut out = refusal(
+        at,
+        &format!(
+            "{said} {counted} nothing declares. A consumer of this artifact is refused at \
+             `headwater taxonomy resolve`, so it is refused here:"
+        ),
+    );
+    out.extend(found);
+    Err(out)
+}
+
+/// The same rule over what a flattening publish is about to write.
+///
+/// It reads the rendered `taxonomy.yml` back rather than asking the upstream
+/// resolution, because the rendered bytes are the artifact that reaches the
+/// adopter and a verification of a rendered artifact against its source is a
+/// verification of the wrong thing. [`crate::flatten::equivalent`] already reads
+/// it back the same way, one step earlier, for the same reason.
+///
+/// The refusal names the recipe file and the selection in it. A flattened
+/// artifact declares no bundles, so its consumer has no selection left to get
+/// wrong: this is the whole of what referential integrity can say about that
+/// artifact, and the publisher is the only party who can act on it.
+fn publish_assembly_referential(
+    root: &Path,
+    recipe: &crate::assembly::Assembly,
+    flattened: &crate::flatten::Flattened,
+) -> Result<(), Vec<ResolveError>> {
+    let at = display(root, &recipe.at);
+    let rendered = Source::from_text(&at, Role::Taxonomy, &flattened.taxonomy)?;
+    let Some(taxonomy) = rendered.root.value.as_map() else {
+        return Err(refusal(
+            &at,
+            "the flattened taxonomy this recipe produced is not a mapping",
+        ));
+    };
+    dangles(
+        &at,
+        taxonomy,
+        &format!(
+            "this recipe selects [{}], and that selection reads",
+            recipe.from.bundles.join(", ")
+        ),
+    )
+}
+
 /// The same resolution, for a caller that holds a package directory and nothing
 /// else.
 ///
@@ -1020,6 +1094,7 @@ fn publish_assembly_at(
 
     let recipe = crate::assembly::read(root, directory, manifest, assembly)?;
     let flattened = crate::flatten::materialize(root, directory, manifest, &recipe)?;
+    publish_assembly_referential(root, &recipe, &flattened)?;
     let staged = stage_flattened(directory, &declared, &flattened)?;
     let found = found::observe(out).map_err(|why| refusal(&display(root, out), &why))?;
 
@@ -1116,6 +1191,23 @@ fn publish_at(
     // template reader below, which needs it on every publish, and the payload
     // check, which used to build its own.
     let widest = maximal_from(root, directory, &declared, &contents, source.clone())?;
+
+    // Referential integrity over the widest set, which is the selection a plain
+    // publish ships: every bundle the package carries. `maximal_from` above
+    // asks whether that set merges and whether it commutes, and until
+    // [#582](https://github.com/headwater-ai/headwater/issues/582) nothing
+    // asked whether every name it reads is declared. A package that resolved
+    // and dangled published with exit 0 and the adopter met the refusal.
+    //
+    // Here rather than inside `maximal_from`, because that function has a
+    // second caller — `maximal`, which `taxonomy diff` reaches — and a
+    // comparison of two versions is not a release. The rule belongs to the
+    // publish.
+    dangles(
+        &declared,
+        &widest.taxonomy,
+        "this package is published with every bundle it ships, and that set reads",
+    )?;
 
     // Before `--out` is observed, so a template refusal fires with no output
     // directory in existence and `found::Found`'s undo is never entangled with
