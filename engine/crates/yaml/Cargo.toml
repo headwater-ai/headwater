@@ -4,6 +4,7 @@ name = "headwater-yaml"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [dependencies]
 # An event stream with a span per event, and nothing else. Q2 rules out a

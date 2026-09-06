@@ -99,7 +99,7 @@ cd "$ROOT"
 HW="$ROOT/engine/target/release/headwater"
 if [ ! -x "$HW" ]; then
   echo "refresh-figures.sh: no engine at $HW" >&2
-  echo "  build it: cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml" >&2
+  echo "  build it: cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked" >&2
   exit 2
 fi
 

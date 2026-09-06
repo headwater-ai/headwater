@@ -4,6 +4,7 @@ name = "headwater-compat"
 version.workspace = true
 edition.workspace = true
 publish = false
+license.workspace = true
 
 [dependencies]
 # The six dimensions read what four phases already produced, and this crate

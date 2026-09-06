@@ -4,6 +4,7 @@ name = "headwater-graph"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [dependencies]
 # The census is the input set. Only a typed row can be an edge endpoint, and a

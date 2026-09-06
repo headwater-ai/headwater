@@ -84,17 +84,28 @@ run() {
 echo "over the assembled site"
 
 # 1. The corpus as it stands. This is the number the gate protects, and a
-#    failure here is a real dead fragment rather than a broken fixture.
+#    failure here is a real defect rather than a broken fixture. The tool
+#    makes two passes over one walk and fails on either, so this one status
+#    covers both and the two cases under it say which pass produced it.
 status=$(run "$deploy")
-report "the served site has no dead fragment" 0 "$status" "0 dead fragments" "$scratch/out"
+report "the served site passes every pass this tool makes" 0 "$status"
+report "  no fragment on it is dead" 0 "$status" "0 dead fragments" "$scratch/out"
+report "  no title on it is carried twice" 0 "$status" \
+    "0 repeated titles and 0 pages with no title" "$scratch/out"
 
-# 2. The denominator is stated and is not zero. A run that checked nothing
-#    would print `0 dead fragments` too, and that is the pass this suite must
-#    not accept on the corpus's behalf.
+# 2. The denominator is stated and is not zero, on both passes. A run that
+#    checked nothing would print `0 dead fragments` too, and that is the pass
+#    this suite must not accept on the corpus's behalf.
 if grep -qE 'out of [1-9][0-9]* in-site fragment links across [1-9][0-9]* served pages' "$scratch/out"; then
-    passed=$((passed + 1)); echo "  ok    the run states a non-zero denominator"
+    passed=$((passed + 1)); echo "  ok    the fragment pass states a non-zero denominator"
 else
-    failed=$((failed + 1)); echo "  FAIL  the run states a non-zero denominator"
+    failed=$((failed + 1)); echo "  FAIL  the fragment pass states a non-zero denominator"
+    echo "          it reported: $(grep -c '' "$scratch/out") lines, last: $(tail -1 "$scratch/out")"
+fi
+if grep -qE 'out of [1-9][0-9]* distinct titles across [1-9][0-9]* served pages' "$scratch/out"; then
+    passed=$((passed + 1)); echo "  ok    the title pass states a non-zero denominator"
+else
+    failed=$((failed + 1)); echo "  FAIL  the title pass states a non-zero denominator"
     echo "          it reported: $(tail -1 "$scratch/out")"
 fi
 
@@ -244,6 +255,95 @@ report "a missing root exits 2 and names \`assemble-site.sh\`" 2 "$status" "asse
 # 13. An unknown flag is refused rather than ignored.
 status=$(run "$deploy" --not-a-flag)
 report "an unknown argument exits 2" 2 "$status" "unknown argument" "$scratch/err"
+
+echo "the title half, which #567 added"
+
+# The pages below are written rather than doctored from the real site. A dead
+# fragment is a property of one page and can be provoked inside a copy of one;
+# a repeated title is a property of a *set* of pages, and the assembled site
+# carries one shape of that set at a time. So the set is built here on purpose,
+# which is the same posture every case above takes toward its own defect.
+titles="$scratch/titles"
+
+page() {
+    # page RELATIVE-PATH HEAD-CONTENT
+    mkdir -p "$(dirname "$titles/$1")"
+    printf '<html><head>%s</head><body><h1>x</h1></body></html>\n' "$2" >"$titles/$1"
+}
+
+# 14. Two pages carrying one title. This is #567 in miniature: ten shelf index
+#     pages served `Index - Headwater` between them, so a browser tab, a
+#     bookmark and a search result could not tell any of them apart.
+rm -rf "$titles"
+page a/index.html '<title>Same - Headwater</title>'
+page b/index.html '<title>Same - Headwater</title>'
+page c/index.html '<title>Other - Headwater</title>'
+status=$(run "$titles")
+report "a title carried by two pages fails the run" 1 "$status" "of 2 served pages" "$scratch/out"
+report "  and it names the first of them" 1 "$status" "a/index.html" "$scratch/out"
+report "  and it names the second of them" 1 "$status" "b/index.html" "$scratch/out"
+report "  and it names the string they share" 1 "$status" "Same - Headwater" "$scratch/out"
+report "  and it counts one repetition, not two" 1 "$status" "1 repeated title and" "$scratch/out"
+
+# 15. A page with no title element at all.
+rm -rf "$titles"
+page a/index.html '<meta charset="utf-8">'
+page b/index.html '<title>B - Headwater</title>'
+status=$(run "$titles")
+report "a page with no title fails the run" 1 "$status" "a/index.html: carries no" "$scratch/out"
+
+# 16. An empty title element is untitled. A reader gets the same nothing from
+#     it that a missing element gives, so counting it as a distinct title
+#     would let the defect through under a value no page displays.
+rm -rf "$titles"
+page a/index.html '<title></title>'
+page b/index.html '<title>B - Headwater</title>'
+status=$(run "$titles")
+report "an empty title element is untitled" 1 "$status" "a/index.html: carries no" "$scratch/out"
+
+# 17. And so is a whitespace-only one.
+rm -rf "$titles"
+page a/index.html '<title>   </title>'
+page b/index.html '<title>B - Headwater</title>'
+status=$(run "$titles")
+report "a whitespace-only title element is untitled" 1 "$status" "a/index.html: carries no" "$scratch/out"
+
+# 18. An inline icon may carry a `<title>` as its accessible name. A reader
+#     that took the first `<title>` in document order would read that icon's
+#     label as the page's title, so an untitled page would report as titled
+#     under a string it never displays, and two pages sharing one icon would
+#     report as a collision on it. The tool skips a `<title>` inside `<svg>`,
+#     and this case fails without that skip.
+rm -rf "$titles"
+mkdir -p "$titles/a" "$titles/b"
+printf '<html><head><meta charset="utf-8"></head><body><svg><title>menu</title></svg></body></html>\n' >"$titles/a/index.html"
+printf '<html><head><title>B - Headwater</title></head><body><svg><title>menu</title></svg></body></html>\n' >"$titles/b/index.html"
+status=$(run "$titles")
+report "an svg icon's title is not the page's title" 1 "$status" "a/index.html: carries no" "$scratch/out"
+
+# 19. Distinct titles throughout, over a stated denominator that is not zero.
+#     A suite of refusals alone cannot tell a working gate from one that
+#     refuses everything.
+rm -rf "$titles"
+page a/index.html '<title>A - Headwater</title>'
+page b/index.html '<title>B - Headwater</title>'
+status=$(run "$titles")
+report "distinct titles throughout pass" 0 "$status" \
+    "0 repeated titles and 0 pages with no title" "$scratch/out"
+report "  over a stated, non-zero denominator" 0 "$status" \
+    "out of 2 distinct titles across 2 served pages" "$scratch/out"
+
+# 20. The empty-root refusal covers this pass too. The tool returns before
+#     either pass runs, so no title summary is printed at all. A title pass
+#     that printed `0 repeated titles` over zero pages would be case 11's
+#     defect arriving through the door #567 opened.
+status=$(run "$empty")
+if [ "$status" = 2 ] && ! grep -q "repeated title" "$scratch/out"; then
+    passed=$((passed + 1)); echo "  ok    an empty root states no title verdict"
+else
+    failed=$((failed + 1)); echo "  FAIL  an empty root states no title verdict"
+    echo "          exit $status, and the report said: $(cat "$scratch/out")"
+fi
 
 echo
 echo "$passed passed, $failed failed"

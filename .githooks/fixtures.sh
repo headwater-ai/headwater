@@ -33,7 +33,7 @@ engine="$root/engine/target/release/headwater"
 
 if [ ! -x "$engine" ]; then
     echo "no built engine, so nothing here can run."
-    echo "  cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml"
+    echo "  cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked"
     exit 1
 fi
 

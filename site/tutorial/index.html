@@ -223,7 +223,7 @@
       <div>
         <pre class="cmd verbatim">git clone https://github.com/headwater-ai/headwater.git ~/headwater
 cd ~/headwater
-cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml
+cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked
 export HEADWATER_SRC="$HOME/headwater"
 export PATH="$HEADWATER_SRC/engine/target/release:$PATH"</pre>
         <p class="check"><span class="checkword">Check</span> <span><code>command -v headwater</code> prints a path that ends in <code>engine/target/release/headwater</code>. Every step below runs in that same shell.</span></p>

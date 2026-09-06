@@ -27,11 +27,41 @@
 //!
 //! `zsh`, `fish` and PowerShell get no case of their own here, and the reason is
 //! that this repository has no way to run one. What holds those three is
-//! [`every_shell_writes_one_script_to_standard_output_and_nothing_beside_it`]
-//! and [`a_script_carries_every_command_line_this_binary_dispatches`], which are
+//! [`every_shell_writes_one_script_to_standard_output_and_nothing_beside_it`],
+//! [`a_script_carries_every_command_line_this_binary_dispatches`] and
+//! [`no_quoted_string_of_a_completion_script_spans_a_newline`], which are
 //! claims about the artifact rather than about a shell's reading of it. The
 //! pull request that added this verb states which shells were executed and
 //! where.
+//!
+//! # Where a shell stops being an oracle, which is a measurement
+//!
+//! The paragraph above says a shell is the only thing that can say a shell
+//! accepts a script, and that stays true. It does not follow that a shell can
+//! say a script is *right*, and for the defect
+//! [`no_quoted_string_of_a_completion_script_spans_a_newline`] reports it
+//! cannot. That was measured rather than assumed, on 2026-09-06 against a zsh
+//! script carrying thirteen broken specifications, with zsh 5.9 in a container
+//! because this host and this repository's self-hosted runner carry no `zsh`:
+//! `zsh -n` exited 0, sourcing the script under `compinit` exited 0, and
+//! `_headwater` was defined afterwards. All three pass on the broken artifact,
+//! because a single-quoted string in zsh may legally span a newline and
+//! `clap_complete` escapes the `:` that `_arguments` splits a specification on.
+//! Nothing is malformed. The newline lands in the message `_arguments`
+//! displays and nowhere else.
+//!
+//! A `zsh/zpty` harness driving a real completion is the only remaining route
+//! through a shell, and it is not an oracle either: a pseudoterminal wraps a
+//! long description at its own width whatever the script said, so the capture
+//! cannot separate an emitted newline from a terminal wrap. The instrument that
+//! can see this defect reads the bytes in the shell's own quoting grammar,
+//! which is what that test is.
+//!
+//! It therefore spawns nothing and cannot skip. `HEADWATER_SHELL_ORACLE` is
+//! deliberately not consulted there: this repository's only runner has no
+//! `zsh`, no `fish` and no `pwsh`, so gating an arm on that variable would fail
+//! the runner permanently and leaving it ungated would skip permanently. A
+//! byte assertion that always runs is better than both.
 //!
 //! # No corpus is read
 //!
@@ -300,4 +330,241 @@ fn the_script_does_not_move_with_the_terminal_of_whoever_asked_for_it() {
     let widened = ran(&["completions", "bash", "--wide"]);
     assert_eq!(widened.code, Some(1), "{widened:?}");
     assert!(widened.out.is_empty(), "{widened:?}");
+}
+
+/// One shell's rule for where a quoted string starts and stops.
+///
+/// Each field below is a difference between the four that the scan needs, and
+/// each one was measured against the script it describes rather than taken from
+/// a manual. A field set wrong shows up as `unterminated`, because a scan that
+/// misreads a close runs to the end of the file inside a string.
+struct Quoting {
+    /// The byte that opens a string and the byte that closes it.
+    quote: u8,
+    /// A backslash inside a string takes the next byte with it. `fish` writes
+    /// `package\'s` inside a description and needs this; `zsh` and PowerShell
+    /// write no backslash escape inside a string and must not have it, or a
+    /// `\:` before a quote would swallow the close.
+    backslash_escapes_inside: bool,
+    /// A doubled quote inside a string is one literal quote. PowerShell writes
+    /// `package''s`; `zsh` writes the same character as `'\''`, which this scan
+    /// reads as a close, an escaped quote outside, and a fresh open.
+    doubled_quote_inside: bool,
+    /// A `#` outside a string runs to the end of its line. `fish` needs it: the
+    /// generator's own first line is a comment reading "cmd's options", and
+    /// without this the apostrophe there opens a string that never closes and
+    /// every description after it is reported. That false positive was observed
+    /// before this field existed.
+    hash_comments: bool,
+}
+
+/// A string that opened on one line and closed on another.
+struct Spanned {
+    line: usize,
+    newlines: usize,
+    head: String,
+}
+
+/// What one pass of a script under one quoting model saw.
+struct Scan {
+    opens: usize,
+    spanning: Vec<Spanned>,
+    unterminated: bool,
+}
+
+/// Every quoted string of a script, and which of them span a newline.
+///
+/// The scan is over bytes, and every byte it branches on is ASCII, so the
+/// slices it takes are on character boundaries whatever the description says.
+fn scan(script: &str, model: &Quoting) -> Scan {
+    let bytes = script.as_bytes();
+    let mut opens = 0;
+    let mut spanning = Vec::new();
+    let mut line = 1;
+    let mut i = 0;
+    // The byte after the opening quote, and the line the quote was on.
+    let mut inside: Option<(usize, usize)> = None;
+    while i < bytes.len() {
+        let byte = bytes[i];
+        if let Some((start, at)) = inside {
+            if model.backslash_escapes_inside && byte == b'\\' && i + 1 < bytes.len() {
+                if bytes[i + 1] == b'\n' {
+                    line += 1;
+                }
+                i += 2;
+                continue;
+            }
+            if byte == model.quote {
+                if model.doubled_quote_inside && bytes.get(i + 1) == Some(&model.quote) {
+                    i += 2;
+                    continue;
+                }
+                let body = &script[start..i];
+                let newlines = body.matches('\n').count();
+                if newlines > 0 {
+                    spanning.push(Spanned {
+                        line: at,
+                        newlines,
+                        head: body.lines().next().unwrap_or_default().to_owned(),
+                    });
+                }
+                inside = None;
+                i += 1;
+                continue;
+            }
+            if byte == b'\n' {
+                line += 1;
+            }
+            i += 1;
+            continue;
+        }
+        // A backslash outside a string takes the next byte with it, and the
+        // byte it most often takes here is the newline continuing a `zsh`
+        // specification. Counting the line without this reads every one of
+        // those as no line at all.
+        if byte == b'\\' && i + 1 < bytes.len() {
+            if bytes[i + 1] == b'\n' {
+                line += 1;
+            }
+            i += 2;
+            continue;
+        }
+        if model.hash_comments && byte == b'#' {
+            while i < bytes.len() && bytes[i] != b'\n' {
+                i += 1;
+            }
+            continue;
+        }
+        if byte == b'\n' {
+            line += 1;
+            i += 1;
+            continue;
+        }
+        if byte == model.quote {
+            opens += 1;
+            inside = Some((i + 1, line));
+            i += 1;
+            continue;
+        }
+        i += 1;
+    }
+    Scan {
+        opens,
+        spanning,
+        unterminated: inside.is_some(),
+    }
+}
+
+/// No quoted string a completion script writes runs past the end of its line.
+///
+/// # What goes wrong when one does
+///
+/// `clap_complete` writes a `zsh` positional as
+/// `'::name -- <help>:<action>'`, and it puts the help in there exactly as the
+/// command tree carries it. This binary folds every help string to
+/// [`headwater_cli::paint::WIDTH`] before `clap` sees it, which is clause 12 of
+/// [#321](https://github.com/headwater-ai/headwater/issues/321) and is right
+/// for a help screen. A completion script is not a help screen. The fold's
+/// newlines land inside the quotes and `_arguments` prints them, so a caller
+/// who presses tab gets a description broken across lines at a width nobody
+/// chose, with the reservation this binary makes for `clap`'s
+/// `[possible values: …]` folded in beside it.
+///
+/// # The defect is `clap_complete`'s split, not `zsh`'s
+///
+/// Only the `zsh` script carries it today, and that is not a property of `zsh`.
+/// All four scripts come from one tree whose help strings are all folded.
+/// `clap_complete` flattens **flag** and **subcommand** help and does not
+/// flatten **positional** help, and its `bash`, `fish` and PowerShell
+/// generators emit no positional description at all. So those three are clean
+/// for a reason this repository does not control, and a dependency bump that
+/// starts emitting positional help for `fish` or PowerShell brings the
+/// identical defect there. That is why this reads all four rather than `zsh`,
+/// and why the fix flattens the tree rather than patching the `zsh` path.
+///
+/// # Why the arms cannot go vacuous
+///
+/// An arm that finds no string to read would pass while reporting nothing, so
+/// each one states what it expects to find. `bash` is the interesting one: its
+/// generator writes word lists and no descriptions, so it writes **no**
+/// single-quoted string at all, and the day it writes one is the day this arm
+/// has to be given a quoting model of its own. Its double-quoted strings are
+/// read on the same terms as the other three.
+#[test]
+fn no_quoted_string_of_a_completion_script_spans_a_newline() {
+    // A floor rather than a count, so an ordinary edit to a help string does
+    // not move it, and a generator that stopped writing descriptions does.
+    const FLOOR: usize = 100;
+    let single = |backslash_escapes_inside, doubled_quote_inside, hash_comments| Quoting {
+        quote: b'\'',
+        backslash_escapes_inside,
+        doubled_quote_inside,
+        hash_comments,
+    };
+    let rows = [
+        // `bash`: no description, so no single-quoted string, and the word
+        // lists it does write are double-quoted.
+        ("bash", single(false, false, false), Some(0)),
+        (
+            "bash",
+            Quoting {
+                quote: b'"',
+                backslash_escapes_inside: true,
+                doubled_quote_inside: false,
+                hash_comments: false,
+            },
+            None,
+        ),
+        ("zsh", single(false, false, false), None),
+        ("fish", single(true, false, true), None),
+        ("powershell", single(false, true, false), None),
+    ];
+
+    let mut wrong = String::new();
+    for (shell, model, exactly) in rows {
+        let script = ran(&["completions", shell]).text();
+        let read = scan(&script, &model);
+        let quote = model.quote as char;
+        assert!(
+            !read.unterminated,
+            "the `{shell}` script ends inside a {quote}-quoted string, so this model does not \
+             read it"
+        );
+        match exactly {
+            Some(count) => assert_eq!(
+                read.opens, count,
+                "the `{shell}` script writes {} {quote}-quoted strings and this arm expects \
+                 {count}; a generator that started writing descriptions here needs a quoting \
+                 model of its own rather than this assertion relaxed",
+                read.opens
+            ),
+            None => assert!(
+                read.opens >= FLOOR,
+                "the `{shell}` script writes only {} {quote}-quoted strings, so this arm read \
+                 almost nothing",
+                read.opens
+            ),
+        }
+        if read.spanning.is_empty() {
+            continue;
+        }
+        let newlines: usize = read.spanning.iter().map(|one| one.newlines).sum();
+        wrong.push_str(&format!(
+            "\n  `{shell}`: {} of {} {quote}-quoted strings span a newline, {newlines} newlines \
+             in all\n",
+            read.spanning.len(),
+            read.opens
+        ));
+        for one in &read.spanning {
+            wrong.push_str(&format!(
+                "    line {}, {} newline(s): {}\n",
+                one.line, one.newlines, one.head
+            ));
+        }
+    }
+    assert!(
+        wrong.is_empty(),
+        "a completion script carries a folded help string inside a quoted description, so a \
+         shell prints it broken across lines:\n{wrong}"
+    );
 }

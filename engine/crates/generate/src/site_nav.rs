@@ -61,22 +61,27 @@
 //! over: by its stem and by the graph. And a shelf that holds no document has
 //! no group here, so it takes no index entry either.
 //!
-//! The label is the constant `Index`. A shelf declaration is
-//! `{path, homogeneous, kind}` and carries no reader-facing name, so nothing
-//! in the taxonomy supplies one, and the index page's own heading is the
-//! machine shelf name, which would restate the group key. [#427] and
-//! HW-OBL-0044 own what the entries and the groups of this file are called.
+//! The label is the shelf the index indexes. MkDocs serves a nav label as the
+//! page's `<title>` and as its search-index entry, above the front-matter meta
+//! title, above the first `<h1>` and above the file name, so a constant here
+//! is ten browser tabs, ten bookmarks and ten search results that a reader
+//! cannot tell apart. That was measured over the served bytes on ten pages and
+//! is [#567]. A shelf declaration is `{path, homogeneous, kind}` and carries no
+//! reader-facing name, so the machine shelf name is what there is, and it
+//! restates the group key in the sidebar. That restatement is the smaller
+//! defect and it is deliberate. [#538] is where a shelf display name replaces
+//! both strings through one function, and this is the one call site it
+//! redirects. [#427] and HW-OBL-0044 own what the entries and the groups of
+//! this file are called.
 //!
 //! [HW-DR-0036]: ../../../../docs/decisions/0036-q36-which-of-mkdocs-docusaurus-or-astro-this-corpus-emits-navigation-for-and-why.md
 //! [#427]: https://github.com/headwater-ai/headwater/issues/427
+//! [#538]: https://github.com/headwater-ai/headwater/issues/538
+//! [#567]: https://github.com/headwater-ai/headwater/issues/567
 
 use crate::{pointers, shelf_of, Declaration, Identity, Kind, Output, Plan, Unwritten};
 use headwater_census::census::Census;
 use headwater_query::{Pointer, Surface};
-
-/// What a group's index entry is called. See the module comment: nothing in a
-/// shelf declaration supplies a name, so this emitter chooses a constant.
-const INDEX_LABEL: &str = "Index";
 
 /// The one group of the emitted `nav:` list: a shelf, the generated index of
 /// that shelf if the plan wrote one, and the shelf's documents in order.
@@ -221,11 +226,12 @@ fn render(output: &str, groups: &[Group], corpus_root: &str) -> String {
     {
         out.push_str(&format!("  - {}:\n", quoted(shelf)));
         // The index first, so a reader who opens a group lands on the page
-        // that summarizes it before the first document of it.
+        // that summarizes it before the first document of it. Its label is
+        // the shelf, because MkDocs serves this string as that page's title.
         if let Some(path) = index {
             out.push_str(&format!(
                 "      - {}: {}\n",
-                quoted(INDEX_LABEL),
+                quoted(shelf),
                 quoted(&crate::shelf_index::relative(corpus_root, path))
             ));
         }

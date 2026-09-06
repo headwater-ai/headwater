@@ -1,6 +1,17 @@
 #!/usr/bin/env python3
-"""check-site-fragments.py — resolve every in-site fragment link against the
-`id` attributes the served page actually carries.
+"""check-site-fragments.py — read the served bytes for two properties: every
+in-site fragment link resolves against the `id` attributes its target page
+carries, and every served page carries a `<title>` that no other page carries.
+
+WHY ONE SCRIPT READS TWO PROPERTIES
+
+  #567 needed an instrument over the served `<title>` of every page. That is
+  the same walk, the same parser, the same empty-root refusal and the same
+  denominator this file already derives, so a second script would be a second
+  copy of all four, and a second CI step to keep beside this one. The two
+  properties are independent — a page can carry a correct set of anchors and
+  an indistinguishable title — so each one reports on its own line and each
+  one fails the run on its own.
 
 WHY THIS READS THE SERVED DIRECTORY AND NOT THE SOURCE
 
@@ -36,6 +47,27 @@ WHAT COUNTS AS A LINK IT CHECKS
   is a different defect from a dead *fragment*; it is counted and reported
   separately so that neither hides inside the other's number.
 
+WHAT THE TITLE PASS ASSERTS, AND WHY IT IS NOT A STRING MATCH
+
+  Every served page carries a `<title>`, and no title is carried by more than
+  one page. It names no expected string. A checker that asserted a particular
+  title would have to take that string from `.headwater/nav.yml`, which is
+  the artifact the emitter under test writes, so an emitter that wrote the
+  wrong label would agree with its own expectation and pass. Distinctness
+  reads the served bytes and takes its expectation from nothing. That is also
+  why #538 renaming every shelf, #556 adding a canonical URL and #566
+  replacing the theme each leave this pass green with no edit here.
+
+  A repeated title cannot be reported unless both colliding pages were read,
+  so a failure here is positive evidence that the walk reached each page it
+  names. An assertion of the form "no page carries the title X" has no such
+  evidence behind it: a walk that reached nothing satisfies it too.
+
+  The element it reads is the first `<title>` outside any `<svg>`. An inline
+  icon may carry a `<title>` of its own as its accessible name, and a reader
+  that took the first one in document order would compare icon labels on the
+  pages that have one and page titles on the pages that do not.
+
 WHAT FAILS THE RUN, AND WHAT ONLY REPORTS
 
   A dead fragment fails. A dead path reports and does not, and the reason is
@@ -68,10 +100,12 @@ USAGE
   python3 tools/check-site-fragments.py [ROOT] [--source-dir DIR] [--quiet]
 
   ROOT defaults to `.headwater/site-deploy`. Exit 0 when every in-site
-  fragment resolves, 1 when one does not, 2 when the assumption above fails.
-  `--strict-paths` also fails on a dead path.
+  fragment resolves and every page carries a title no other page carries, 1
+  when one does not, 2 when the assumption above fails. `--strict-paths` also
+  fails on a dead path.
 """
 
+import collections
 import html.parser
 import os
 import posixpath
@@ -83,15 +117,23 @@ DEFAULT_SOURCE_DIR = "docs"
 
 
 class Page(html.parser.HTMLParser):
-    """One served page: the ids it carries and the hrefs it writes."""
+    """One served page: its title, the ids it carries, the hrefs it writes."""
 
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.ids = set()
         self.links = []  # (href, line)
+        self.title = None
+        self._svg_depth = 0
+        self._in_title = False
+        self._title_text = []
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
+        if tag == "svg":
+            self._svg_depth += 1
+        elif tag == "title" and self.title is None and self._svg_depth == 0:
+            self._in_title = True
         ident = a.get("id")
         if ident:
             self.ids.add(ident)
@@ -105,6 +147,17 @@ class Page(html.parser.HTMLParser):
             href = a.get("href")
             if href is not None:
                 self.links.append((href, self.getpos()[0]))
+
+    def handle_endtag(self, tag):
+        if tag == "svg" and self._svg_depth > 0:
+            self._svg_depth -= 1
+        elif tag == "title" and self._in_title:
+            self._in_title = False
+            self.title = "".join(self._title_text)
+
+    def handle_data(self, data):
+        if self._in_title:
+            self._title_text.append(data)
 
 
 def parse(path):
@@ -254,6 +307,21 @@ def main(argv):
         ids[page_rel] = page.ids
         parsed[page_rel] = page
 
+    # The title pass. It reads the same parse of the same walk. A page whose
+    # `<title>` is absent, empty or whitespace is untitled: an empty element
+    # is the same defect as a missing one to every reader of it.
+    untitled = []
+    by_title = collections.defaultdict(list)
+    for page_rel in sorted(parsed):
+        title = parsed[page_rel].title
+        if title is None or not title.strip():
+            untitled.append(page_rel)
+        else:
+            by_title[title.strip()].append(page_rel)
+    repeated = sorted(
+        (title, paths) for title, paths in by_title.items() if len(paths) > 1
+    )
+
     checked = 0
     dead_fragments = []
     dead_paths = []
@@ -296,6 +364,12 @@ def main(argv):
                 "    resolves to no file in `%s`%s"
                 % (root, "" if strict_paths else " (reported, not fatal: #406)")
             )
+        for page_rel in untitled:
+            print("%s: carries no `<title>`" % page_rel)
+        for title, paths in repeated:
+            print("`%s` is the `<title>` of %d served pages:" % (title, len(paths)))
+            for page_rel in paths:
+                print("    %s" % page_rel)
 
     print(
         "%d dead fragment%s and %d dead path%s, "
@@ -314,8 +388,24 @@ def main(argv):
             "" if external == 1 else "s",
         )
     )
+    print(
+        "%d repeated title%s and %d page%s with no title, "
+        "out of %d distinct title%s across %d served page%s"
+        % (
+            len(repeated),
+            "" if len(repeated) == 1 else "s",
+            len(untitled),
+            "" if len(untitled) == 1 else "s",
+            len(by_title),
+            "" if len(by_title) == 1 else "s",
+            len(pages),
+            "" if len(pages) == 1 else "s",
+        )
+    )
 
     if dead_fragments:
+        return 1
+    if repeated or untitled:
         return 1
     if dead_paths and strict_paths:
         return 1

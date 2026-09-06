@@ -9,6 +9,8 @@ The first code meant to survive. The [Q1 spike](../spike) retired four risks and
 
 `check` reads `.headwater/taxonomy.lock` and never the sources, so `taxonomy resolve` has to have written one. The lock is committed, and CI fails when the sources no longer produce it.
 
+**Why the commands above carry no `--locked` and the two container commands below do.** `engine/Cargo.lock` is committed, and `--locked` refuses any cargo run that would rewrite it. That is what CI wants and what the one install route in the root `README.md` wants: on those, a rewritten lock means the run tested a dependency set nobody recorded, and it happens in silence. It is the opposite of what a maintainer's own loop wants, where rewriting the lock is the intended result of adding a dependency, so the loop above and the bless commands at the end of this file take no flag. The two container commands reproduce CI's floor, so they match CI. `tools/build-declaration-fixtures.sh` holds the sites where the flag is required and states this boundary as the reason it holds no others.
+
 Needs Rust 1.85 or later. The floor comes from `saphyr-parser`, which is on edition 2024. A distribution `cargo` older than that reports `feature edition2024 is required` and nothing else, so check the toolchain first when a clean checkout will not build.
 
 ## Format, lint and test in a container
@@ -19,14 +21,16 @@ First the format and the lint, as root, because that is the only user `rustup` c
 
     docker run --rm -v "$(git rev-parse --show-toplevel)":/w:ro -w /w/engine \
       -e CARGO_HOME=/tmp/cargo -e CARGO_TARGET_DIR=/tmp/target \
-      rust:1.85-slim sh -c "rustup component add rustfmt clippy && cargo fmt --check && cargo clippy --all-targets"
+      rust:1.85-slim sh -c "rustup component add rustfmt clippy && cargo fmt --check && cargo clippy --all-targets --locked"
+
+Only the clippy half of that line carries `--locked`. `cargo fmt` rejects the flag — `error: unexpected argument '--locked' found` — because it reads no manifest and resolves nothing, so there is no lock for it to rewrite.
 
 Then the tests, as yourself, because three of them require a process that a read-only file can stop:
 
     docker run --rm --user "$(id -u):$(id -g)" \
       -v "$(git rev-parse --show-toplevel)":/w:ro -w /w/engine \
       -e CARGO_HOME=/tmp/cargo -e CARGO_TARGET_DIR=/tmp/target \
-      rust:1.85-slim cargo test
+      rust:1.85-slim cargo test --locked
 
 Run them in that order and read each exit status on its own. The first is red on a format or a lint finding and the second on a test, and a shell that joins the two with a pipe reports the wrong one. The second run reports the same target count, the same test count and the same `0 failed` as a bare `cargo test` on your host, and that equality is the thing to check rather than any number written here. A container run that reports fewer tests than your host is filtering something.
 
@@ -40,7 +44,7 @@ Run them in that order and read each exit status on its own. The first is red on
 
 The mount is read only, the target directory sits inside the container, and the second run is your own user, so neither run writes into the checkout and neither can leave a file you cannot delete. `git status` and `ls engine/target` after a run are the check on that. A container that leaves a root-owned `engine/target` behind has moved a failure into the next unrelated run rather than fixed one, and the symptom there is a `NotFound` out of `std::fs::copy`.
 
-**This command is not CI, in two ways that each cost a run.** CI runs `cargo clippy --all-targets -- -D warnings` and this command does not, and must not. `[workspace.lints.clippy]` denies `manual_assert_eq`, which clippy at 1.85 does not know, so `-D warnings` here turns `unknown lint` into an error in every crate. Clippy at 1.85 also reports `nonminimal_bool` on code that the current stable passes. So a lint CI reports and this command does not is newer than 1.85, and one this command reports and CI does not is older than the fix. The message names the remedy in both directions. Second, the image carries no `python3`, so the two differential suites skip here, while CI sets `HEADWATER_STOCK_VALIDATOR` and `HEADWATER_SARIF_VALIDATOR` to `required` and fails instead of skipping.
+**This command is not CI, in two ways that each cost a run.** CI runs `cargo clippy --all-targets --locked -- -D warnings` and this command does not run the `-D warnings` half, and must not. `[workspace.lints.clippy]` denies `manual_assert_eq`, which clippy at 1.85 does not know, so `-D warnings` here turns `unknown lint` into an error in every crate. Clippy at 1.85 also reports `nonminimal_bool` on code that the current stable passes. So a lint CI reports and this command does not is newer than 1.85, and one this command reports and CI does not is older than the fix. The message names the remedy in both directions. Second, the image carries no `python3`, so the two differential suites skip here, while CI sets `HEADWATER_STOCK_VALIDATOR` and `HEADWATER_SARIF_VALIDATOR` to `required` and fails instead of skipping.
 
 ## What is here
 
