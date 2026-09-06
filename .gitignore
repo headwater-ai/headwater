@@ -4,6 +4,12 @@
 .claude/state/
 .claude/worktrees/
 
+# What the Cloudflare CLI caches when somebody runs `wrangler` in this
+# repository, which holds an account identifier and nothing this project
+# authored. `wrangler.jsonc` beside it is committed, because it names the
+# directory the deploy serves and a reviewer reads that.
+.wrangler/
+
 # The check cache. The lock beside it is committed, because a reviewer reads
 # the taxonomy a verdict came from. This one holds no fact of its own: every
 # entry is recomputable from the tree it was written over, and a run that finds
