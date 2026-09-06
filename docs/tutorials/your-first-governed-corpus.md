@@ -30,7 +30,7 @@ You need four things.
 
 - `git`, and a name and an email address configured in it.
 - A Rust toolchain, version 1.85 or later. The floor comes from a dependency on edition 2024.
-- A checkout of the Headwater repository. The repository is private today, so you need access to it.
+- A checkout of the Headwater repository, which is public at https://github.com/headwater-ai/headwater.
 - About twenty minutes.
 
 Step 10 makes a commit, and git refuses a commit from an author it cannot name. `git config user.name` prints yours. If it prints nothing, run `git config --global user.name "Your Name"` and then `git config --global user.email "you@example.com"` with your own values.
