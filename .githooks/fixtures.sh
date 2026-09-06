@@ -250,14 +250,15 @@ printf '# the deployed site, which no engine reads\n'
 # The clause that refuses them sits above the engine check in the hook and reads
 # the index rather than the working tree, so every case below stages its change.
 #
-# The file the pair of cases moves is `site/_headers`, and the choice is
-# measured rather than arbitrary. It is the one file under `site/` that no
-# relation of this corpus names: HW-DR-0037 declares `governs` over
-# `site/index.html` and `site/ns/index.html` and `traces_to`
-# `site/DESIGN-BRIEF.md`, and removing any of those three raises
-# `relation.target.unresolved` whatever this clause decides. So `_headers` is
-# the only one whose removal the engine has no second opinion about, which is
-# what lets the release case below reach exit 0 and mean what it says.
+# The file the refusal case below removes is `site/_headers`, and any file
+# under `site/` would serve for it, because this clause sits above the engine
+# check and refuses before a relation is read.
+#
+# The choice that has to be measured is the escape-hatch case further down,
+# which asserts exit 0 and so needs a path that no relation of this corpus
+# names. HW-DR-0037 declares `governs` over the eight pages it names and
+# HW-DR-0047 declares it over `site/_headers`, so removing any of those nine
+# raises `relation.target.unresolved` whatever this clause decides.
 reset
 git -C "$scratch" rm -q site/_headers
 out=$(gate); status=$?
@@ -357,6 +358,48 @@ git -C "$scratch" rm -q site/index.html
 out=$(cd "$scratch" && HEADWATER_ALLOW_SITE_DELETE=1 sh .githooks/pre-commit 2>&1); status=$?
 judge 'the variable releases this clause and not the rule that reads a governed path' 1 "$status" \
     'relation.target.unresolved' "$out"
+
+# The token clause. `tools/site-tokens.css` is the one copy of the visual
+# register, and each hand-built page carries it between two markers. Before
+# HW-DR-0050 every page carried its own copy of the six color tokens, and four
+# of the eight had drifted to a seventh the other four did not declare. The
+# case edits a value inside a page's block, which is the drift with no other
+# witness: a title is unchanged, so the crawler clause above passes and this
+# one is what refuses.
+reset
+sed -i 's|--accent: #1d5c54|--accent: #b30000|' "$scratch/site/proof/index.html"
+out=$(gate); status=$?
+judge 'a page whose visual register was edited by hand is refused' 1 "$status" \
+    'disagrees with' "$out"
+judge 'and the refusal names the page that moved' 1 "$status" \
+    'site/proof/index.html' "$out"
+judge 'and it names the command that repairs it' 1 "$status" \
+    'sh tools/refresh-site-tokens.sh' "$out"
+
+# A page with no marker pair is refused rather than skipped, which is the half
+# of the clause a stale-block case cannot reach. A ninth page that opted out of
+# the shared register would do it by carrying no marker, so a silent skip is
+# what would let one through. `HEADWATER_SKIP_CRAWLER_CHECK` is set for the
+# same reason the site-delete cases above set it: adding a page necessarily
+# stales the crawler files, that clause runs first, and this case is about this
+# clause.
+reset
+mkdir -p "$scratch/site/unmarked"
+cat > "$scratch/site/unmarked/index.html" <<'HTML'
+<title>Unmarked</title>
+<meta name="description" content="A page added with no visual register markers.">
+<style>
+  body { background: rebeccapurple; }
+</style>
+HTML
+out=$(cd "$scratch" && HEADWATER_SKIP_CRAWLER_CHECK=1 sh .githooks/pre-commit 2>&1); status=$?
+judge 'a page added under site/ with no register markers is refused' 1 "$status" \
+    'no marker pair in site/unmarked/index.html' "$out"
+
+reset
+sed -i 's|--accent: #1d5c54|--accent: #b30000|' "$scratch/site/proof/index.html"
+out=$(cd "$scratch" && HEADWATER_SKIP_TOKEN_CHECK=1 sh .githooks/pre-commit 2>&1); status=$?
+judge 'and the named variable releases that one clause' 0 "$status" '' "$out"
 
 # A finding whose location line lands on the width boundary, printed whole.
 #

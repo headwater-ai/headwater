@@ -56,14 +56,17 @@ root=$(git rev-parse --show-toplevel) || exit 0
 # built engine, and this clause needs no engine.
 #
 # The variable releases this clause and nothing below it, and on this tree that
-# matters for every file under `site/` but one. HW-DR-0037 declares `governs`
-# over the pages it names and `traces_to` `site/DESIGN-BRIEF.md`, and it obliges
-# a page added under `site/` to carry an edge of its own. So removing any page
-# it governs is refused a second time by `relation.target.unresolved`, which
-# names the record that has to move first. `site/_headers` is the one file the
-# variable releases on its own, and it is the one that carries the HSTS,
-# `nosniff` and CSP headers. So this clause is the whole gate on exactly the
-# file whose loss is a security regression.
+# matters for three files. HW-DR-0037 declares `governs` over the eight pages it
+# names, HW-DR-0047 declares it over `site/_headers`, and both oblige a page
+# added under `site/` to carry an edge of its own. So removing any of those nine
+# is refused a second time by `relation.target.unresolved`, which names the
+# record that has to move first.
+#
+# `site/llms.txt`, `site/robots.txt` and `site/sitemap.xml` are the three the
+# variable releases on its own. No record names them,
+# `tools/refresh-crawler-files.sh` writes all three from the pages under
+# `site/`, and a crawler reads each one at a fixed path with no link to follow.
+# So this clause is the whole gate on exactly the files whose loss is silent.
 if [ -z "${HEADWATER_ALLOW_SITE_DELETE:-}" ]; then
     gone=$(git -C "$root" diff --cached --name-only --diff-filter=D -- site/)
     if [ -n "$gone" ]; then
@@ -149,6 +152,39 @@ if [ "$status" -eq 0 ] && [ -z "${HEADWATER_SKIP_CRAWLER_CHECK:-}" ]; then
         fi
     else
         echo "headwater: no python3, so the crawler files are not checked."
+    fi
+fi
+
+# The shared visual register of the hand-built pages, which HW-DR-0050 rules.
+# `tools/site-tokens.css` is the one copy of it, and every page carries the
+# block between its two `headwater:tokens` markers. A page cannot link that
+# file: `site/_headers` gives every hand-built path `default-src 'none'` with
+# no `'self'`, so the copy happens before the commit and the committed bytes
+# are what Cloudflare serves.
+#
+# WHY IT SITS HERE. The same reason as the clause above. A page deleted or
+# added under `site/` moves this too, and an engine finding outranks a
+# regenerable one, so this runs only once the engine has passed.
+#
+# WHAT IT DOES NOT CATCH. The script reads the working tree rather than the
+# index, so a partially staged commit can pass here. The CI step of the same
+# name reads the committed tree, and that is what holds it.
+if [ "$status" -eq 0 ] && [ -z "${HEADWATER_SKIP_TOKEN_CHECK:-}" ]; then
+    if command -v python3 >/dev/null 2>&1; then
+        if ! tokens=$(sh "$root/tools/refresh-site-tokens.sh" --check 2>&1); then
+            echo "headwater: a hand-built page under \`site/\` carries a visual register"
+            echo "  that disagrees with \`tools/site-tokens.css\`, which is the one copy"
+            echo "  of it. The block between the \`headwater:tokens\` markers is written"
+            echo "  by \`tools/refresh-site-tokens.sh\` and never by hand."
+            printf '%s\n' "$tokens" | sed 's/^/    /'
+            echo "  Edit \`tools/site-tokens.css\`, regenerate, and stage the result:"
+            echo "        sh tools/refresh-site-tokens.sh"
+            echo "  Or skip this one clause for one commit:"
+            echo "        HEADWATER_SKIP_TOKEN_CHECK=1 git commit ..."
+            exit 1
+        fi
+    else
+        echo "headwater: no python3, so the site tokens are not checked."
     fi
 fi
 

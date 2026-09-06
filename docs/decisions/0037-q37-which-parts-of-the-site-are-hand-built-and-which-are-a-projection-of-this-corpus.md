@@ -25,7 +25,7 @@ relations:
     - site/glossary/index.html
     - site/changelog/index.html
   traces_to:
-    - site/DESIGN-BRIEF.md
+    - notes/website-design-brief.md
 ---
 
 # Q37 — Which parts of the site are hand-built and which are a projection of this corpus
@@ -36,7 +36,7 @@ relations:
 
 **[Q16](0016-public-presence.md) ruled that the site is a projection of this corpus, and it stated the mechanism.** "Every number on the site comes from the evidence register, and a claim with no instrument is generated as unmeasured." The same entry adds that "a hand-written number on the site is then a finding, in the way that a hand-edited shelf index is."
 
-**The owner amended that ruling on 2026-08-23, and no record held the amendment.** `site/DESIGN-BRIEF.md` opens with a table of decisions already taken. One row reads "Site architecture — Marketing hand-built, docs generated from the corpus". The source column marks that row "this amends Q16 and needs a decision record". Section 8 of the brief states the debt in its own words. It asks for two things. The first is which paths are hand-built. The second is the rule that a figure on such a page is "machine-inserted or linked to the run that produced it". This record is the record the brief asks for.
+**The owner amended that ruling on 2026-08-23, and no record held the amendment.** `notes/website-design-brief.md` opens with a table of decisions already taken. One row reads "Site architecture — Marketing hand-built, docs generated from the corpus". The source column marks that row "this amends Q16 and needs a decision record". Section 8 of the brief states the debt in its own words. It asks for two things. The first is which paths are hand-built. The second is the rule that a figure on such a page is "machine-inserted or linked to the run that produced it". This record is the record the brief asks for.
 
 **The brief also demonstrates the cost of the rule it asks for.** Its section 3 types a table of run figures by hand, and reports 523 findings and 4 suppressions. A run of this engine over this corpus on 2026-08-26 reports 524 findings and 5 suppressions. Three days moved two of the numbers, in the one document that states why a hand-typed number is a defect.
 

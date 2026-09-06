@@ -10,7 +10,7 @@ relations:
 
 # decisions
 
-48 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
+50 documents on this shelf, in the reading order this corpus derives. Each heading below is the name that the document declares, so a citation of a heading is a citation of a document.
 
 ## Q1 — Implementation language
 
@@ -75,6 +75,10 @@ relations:
 ## Q39 — How a figure reaches a hand-built page, now that a build interpolates one
 
 [HW-DR-0039](../decisions/0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md) — The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run.
+
+## Q50 — Where the visual register of the hand-built pages lives, now that eight pages each carried a copy
+
+[HW-DR-0050](../decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives-now-that-eight-pages-each-carried-a-copy.md) — The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each page before the commit, because the content policy of those pages admits no linked stylesheet. (asserted, and no human has accepted it)
 
 ## Q37 — Which parts of the site are hand-built and which are a projection of this corpus
 
@@ -203,3 +207,7 @@ relations:
 ## How the two halves of the site share one host
 
 [HW-DR-0047](../decisions/0047-how-the-two-halves-of-the-site-share-one-host.md) — One directory holds both halves of the site, composed by `tools/assemble-site.sh` with the hand-built half last. The Cloudflare Workers Builds build command runs that script, which puts a build on the deploy path for the first time. (asserted, and no human has accepted it)
+
+## Q51 — What licenses a term into the public glossary, and what licenses a sixteenth
+
+[HW-DR-0051](../decisions/0051-q51-what-licenses-a-term-into-the-public-glossary-and-what-licenses-a-sixteenth.md) — A term reaches the public glossary because it recurs in the visitor-facing pages of the site, and for no other reason. The tutorial and the glossary itself are not sources, and the specification glossary answers to a different reader. (asserted, and no human has accepted it)

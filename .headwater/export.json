@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 352,
-      "carried": 352,
+      "in the graph": 356,
+      "carried": 356,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 575,
-      "carried": 575,
+      "in the graph": 581,
+      "carried": 581,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1061,7 +1061,7 @@
               "site/changelog/index.html"
             ],
             "traces_to": [
-              "site/DESIGN-BRIEF.md"
+              "notes/website-design-brief.md"
             ]
           }
         }
@@ -1125,7 +1125,7 @@
               "tools/refresh-figures.sh"
             ],
             "traces_to": [
-              "site/DESIGN-BRIEF.md"
+              "notes/website-design-brief.md"
             ]
           }
         }
@@ -1415,6 +1415,66 @@
             "governs": [
               "tools/sitemap.py",
               "tools/refresh-crawler-files.sh"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives-now-that-eight-pages-each-carried-a-copy.md",
+        "kind": "decision",
+        "id": "HW-DR-0050",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0050",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "The hand-built pages read as a specification rather than as a product page, and one file holds the color tokens and type stacks that carry it. A script writes that file into each page before the commit, because the content policy of those pages admits no linked stylesheet.",
+          "last_verified": "2026-09-06",
+          "title": "Q50 — Where the visual register of the hand-built pages lives, now that eight pages each carried a copy",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "constrains": [
+              "HW-DR-0037"
+            ],
+            "governs": [
+              "tools/site-tokens.css",
+              "tools/refresh-site-tokens.sh"
+            ],
+            "traces_to": [
+              "notes/website-design-brief.md"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0051-q51-what-licenses-a-term-into-the-public-glossary-and-what-licenses-a-sixteenth.md",
+        "kind": "decision",
+        "id": "HW-DR-0051",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0051",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "A term reaches the public glossary because it recurs in the visitor-facing pages of the site, and for no other reason. The tutorial and the glossary itself are not sources, and the specification glossary answers to a different reader.",
+          "last_verified": "2026-09-06",
+          "title": "Q51 — What licenses a term into the public glossary, and what licenses a sixteenth",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0037",
+              "notes/website-design-brief.md"
             ]
           }
         }
@@ -7999,12 +8059,12 @@
       },
       {
         "anchor_kind": "code_path",
-        "id": "packages/headwater-standard/taxonomy.yml",
+        "id": "notes/website-design-brief.md",
         "resolver": "source-tree"
       },
       {
         "anchor_kind": "code_path",
-        "id": "site/DESIGN-BRIEF.md",
+        "id": "packages/headwater-standard/taxonomy.yml",
         "resolver": "source-tree"
       },
       {
@@ -8080,6 +8140,16 @@
       {
         "anchor_kind": "code_path",
         "id": "tools/refresh-figures.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "tools/refresh-site-tokens.sh",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "tools/site-tokens.css",
         "resolver": "source-tree"
       },
       {
@@ -8750,7 +8820,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "site/DESIGN-BRIEF.md",
+          "id": "notes/website-design-brief.md",
           "resolver": "source-tree"
         }
       },
@@ -8816,7 +8886,7 @@
         "target": {
           "bound": "anchor",
           "anchor_kind": "code_path",
-          "id": "site/DESIGN-BRIEF.md",
+          "id": "notes/website-design-brief.md",
           "resolver": "source-tree"
         }
       },
@@ -9257,6 +9327,72 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "tools/refresh-crawler-files.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives-now-that-eight-pages-each-carried-a-copy.md",
+        "relation": "constrains",
+        "written_as": "constrains",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0037",
+          "path": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives-now-that-eight-pages-each-carried-a-copy.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/site-tokens.css",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives-now-that-eight-pages-each-carried-a-copy.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/refresh-site-tokens.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0050-q50-where-the-visual-register-of-the-hand-built-pages-lives-now-that-eight-pages-each-carried-a-copy.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "notes/website-design-brief.md",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0051-q51-what-licenses-a-term-into-the-public-glossary-and-what-licenses-a-sixteenth.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0037",
+          "path": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0051-q51-what-licenses-a-term-into-the-public-glossary-and-what-licenses-a-sixteenth.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "notes/website-design-brief.md",
           "resolver": "source-tree"
         }
       },
