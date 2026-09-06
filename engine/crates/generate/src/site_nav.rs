@@ -102,6 +102,14 @@ pub(crate) fn emit(
         false => declaration.shelves.clone(),
     };
 
+    // Read once rather than per shelf. `index_of` needs it to tell a generated
+    // index from a projection that writes a document of the graph.
+    let documents: Vec<&str> = surface
+        .documents()
+        .into_iter()
+        .map(|document| document.path)
+        .collect();
+
     let mut groups: Vec<Group> = Vec::new();
     for name in &wanted {
         let Some(shelf) = taxonomy.shelves.iter().find(|shelf| &shelf.name == name) else {
@@ -130,7 +138,7 @@ pub(crate) fn emit(
         surface.by_precedence(&mut ordered);
         groups.push(Group {
             shelf: name.clone(),
-            index: index_of(shelf.pattern.source(), written, surface),
+            index: index_of(shelf.pattern.source(), written, &documents),
             ordered,
         });
     }
@@ -157,7 +165,7 @@ pub(crate) fn emit(
 ///
 /// Where a plan somehow wrote two, the first in path order is taken, so that
 /// the result is a function of the plan's outputs and not of their order.
-fn index_of(pattern: &str, written: &[String], surface: &Surface<'_>) -> Option<String> {
+fn index_of(pattern: &str, written: &[String], documents: &[&str]) -> Option<String> {
     let directory = crate::shelf_index::directory_of(pattern);
     let mut found: Vec<&String> = written
         .iter()
@@ -170,14 +178,103 @@ fn index_of(pattern: &str, written: &[String], surface: &Surface<'_>) -> Option<
                         .map(|(stem, _)| stem),
                     Some("README") | Some("index")
                 )
-                && !surface
-                    .documents()
-                    .iter()
-                    .any(|document| document.path == path.as_str())
+                && !documents.contains(&path.as_str())
         })
         .collect();
     found.sort();
     found.first().map(|path| (*path).clone())
+}
+
+/// One case per condition of [`index_of`], because the corpus this engine runs
+/// over exercises two of the four and no fixture tree reaches the rest.
+///
+/// The repository's own `docs/spec/09-open-questions.md` is the live case for
+/// the stem, and `docs/interfaces/README.md` for the kind the rule does not
+/// read. Nothing committed anywhere reaches the nested-directory case or the
+/// case of an index that is also a document, so each of those conditions
+/// survives its own removal against every other test in this crate. These
+/// cases are what fails instead, and each one was run against the removal of
+/// the condition it names.
+#[cfg(test)]
+mod index_tests {
+    use super::index_of;
+
+    fn written(paths: &[&str]) -> Vec<String> {
+        paths.iter().map(|path| (*path).to_string()).collect()
+    }
+
+    #[test]
+    fn the_index_of_a_shelf_is_the_readme_in_its_own_directory() {
+        let plan = written(&["docs/decisions/README.md", "docs/spec/README.md"]);
+        assert_eq!(
+            index_of("docs/decisions/**", &plan, &[]),
+            Some("docs/decisions/README.md".to_string())
+        );
+    }
+
+    #[test]
+    fn an_index_stem_is_read_as_well_as_a_readme_stem() {
+        let plan = written(&["docs/decisions/index.md"]);
+        assert_eq!(
+            index_of("docs/decisions/**", &plan, &[]),
+            Some("docs/decisions/index.md".to_string())
+        );
+    }
+
+    /// A shelf whose plan holds no index takes no entry, which is what leaves
+    /// `a_declared_site_nav_is_held_to_regeneration` listing documents alone.
+    #[test]
+    fn a_shelf_with_no_index_among_the_outputs_has_none() {
+        let plan = written(&["docs/spec/README.md"]);
+        assert_eq!(index_of("docs/decisions/**", &plan, &[]), None);
+    }
+
+    /// The stem condition. `docs/spec/09-open-questions.md` is the live case:
+    /// a `shelf_sections` output on the shelf, which the group already lists.
+    #[test]
+    fn an_output_on_the_shelf_that_is_not_an_index_is_not_read_as_one() {
+        let plan = written(&["docs/spec/09-open-questions.md", "docs/spec/SECTIONS.md"]);
+        assert_eq!(index_of("docs/spec/**", &plan, &[]), None);
+    }
+
+    /// The directory condition. A shelf's glob reaches every depth under it,
+    /// and a `README.md` two directories down indexes that directory rather
+    /// than the shelf.
+    #[test]
+    fn a_readme_below_the_shelf_directory_is_not_the_shelf_s_index() {
+        let plan = written(&["docs/decisions/superseded/README.md"]);
+        assert_eq!(index_of("docs/decisions/**", &plan, &[]), None);
+    }
+
+    /// The graph condition. A projection may declare an `identity` block and
+    /// write a document, and the group lists that document as a node. To list
+    /// it a second time as the group's index is a duplicate entry, which
+    /// MkDocs refuses.
+    #[test]
+    fn an_index_that_is_a_document_of_the_graph_is_left_to_the_node_listing() {
+        let plan = written(&["docs/decisions/README.md"]);
+        assert_eq!(
+            index_of("docs/decisions/**", &plan, &["docs/decisions/README.md"]),
+            None
+        );
+    }
+
+    /// Two indexes in one directory is a plan nothing writes today. The answer
+    /// is a function of the set rather than of the order, so that a second
+    /// declaration cannot move an entry by being listed first.
+    #[test]
+    fn two_indexes_in_one_directory_resolve_by_path_and_not_by_plan_order() {
+        let forward = written(&["docs/decisions/README.md", "docs/decisions/index.md"]);
+        let backward = written(&["docs/decisions/index.md", "docs/decisions/README.md"]);
+        assert_eq!(
+            index_of("docs/decisions/**", &forward, &[]),
+            index_of("docs/decisions/**", &backward, &[])
+        );
+        assert_eq!(
+            index_of("docs/decisions/**", &forward, &[]),
+            Some("docs/decisions/README.md".to_string())
+        );
+    }
 }
 
 /// A double-quoted YAML scalar: `"` and `\` escaped, never written bare.
