@@ -141,6 +141,10 @@ resolves the kind, allocates an identifier, seeds front matter, and emits requir
 
 **Allocation reads a tree, and a tree holds no history.** The rule below says that a deleted document does not free its number. The corpus is what the engine reads, and a deleted document is not on it. So the highest value that a run finds is a lower bound on every value ever allocated. The report of each minted identifier states that bound.
 
+**A tree also holds no concurrency, and the claim store is the answer.** Every branch cut from one state reads the same corpus, so two runs on two branches find the same highest value and mint the same number. Each branch is correct on its own, the two file names differ, and the merge is silent. The pair first exists after the second merge, when no run is looking at either change. So a reconcile-first scheme writes one file for each identifier it mints, at `.headwater/ids/<scheme>/<identifier>`, and that file holds the path of the document that minted it. The allocator takes the highest value of the corpus and of the store together.
+
+**The store does not report the collision. It makes the two branches meet.** Two branches that claim one value add one path with two different contents, which the version control system refuses to merge. To resolve that refusal, the second branch takes the first one into its own tree, and the rule that no two documents claim one identifier then reports the pair on the branch, before the merge. The path inside the file is what makes the two sides differ, so a claim file is never empty.
+
 **The verb reports where every value came from, and a reader needs that more than the file.** A tool that printed only its output would ask for trust on one ground: that a tool produced it. This specification refuses that reading everywhere else. Each field names the declaration behind it, and the [assisted fraction](#capture-cost-is-a-tracked-metric) is the count of those origins rather than a second number beside them.
 
 ## Identifiers
@@ -153,7 +157,7 @@ The resolved taxonomy declares the pattern, the namespace, and the allocation po
 
 2. **Resolvable without its document.** Given `ACME-DR-0042` and nothing else, the engine resolves it to a path. The graph contains an identifier index, so identifiers work in commit messages, code comments, tickets, and agent prompts.
 
-3. **Never reused.** Allocation is reconcile-first. The allocator scans the corpus (terminal-state documents included) for the highest allocated value before it mints a new one. A deleted document does not free its number.
+3. **Never reused.** Allocation is reconcile-first. The allocator scans the corpus (terminal-state documents included) and the claim store for the highest allocated value before it mints a new one. A deleted document does not free its number, and its claim stands after it. A claim that names a document the corpus no longer holds is therefore correct, and no rule reports one.
 
 ## Evidence has three honest states, not two
 

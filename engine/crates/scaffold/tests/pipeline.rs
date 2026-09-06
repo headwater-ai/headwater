@@ -132,9 +132,9 @@ fn check_over(root: &Path) -> Run {
             adoption: None,
             source: TAXONOMY,
         },
+        &headwater_check::claim::Claims::at(root),
         &Context::at(Date::parse(PINNED).expect("the pinned date")),
-        &mut Cache::disabled(),
-    )
+        &mut Cache::disabled())
 }
 
 /// Scaffold, then check, and record what the checks made of the result.
@@ -176,6 +176,10 @@ fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
         let taken: Census = census::take(&corpus, &shelves);
         let config = Config::default();
         let index = Index::build(&taken, &config);
+        // Re-read with the corpus, and for the same reason: the allocator's
+        // upper bound is the corpus and the store together, so a second run has
+        // to see the claim the first one made.
+        let claims = headwater_check::claim::Claims::at(root);
         let sources = Sources {
             resolved: &resolved,
             shape: &shape,
@@ -184,6 +188,7 @@ fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
             census: &taken,
             index: &index,
             config: &config,
+            claims: &claims,
         };
         let request = Request {
             kind,
@@ -199,6 +204,8 @@ fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
         for file in &composed {
             touched.push(file.path.clone());
         }
+        // The claim first and the document second, as the verb does it.
+        headwater_scaffold::claim::write(root, &plan).expect("the claim writes");
         write::apply(root, &composed).expect("the files write");
     }
 

@@ -314,9 +314,9 @@ fn scoped_at(adoption: Option<&Mapping>, scoping: Scoping) -> Ran {
             adoption,
             source: "engine/crates/check/fixtures/check.taxonomy.yml",
         },
+        &headwater_check::claim::Claims::empty(),
         &ctx,
-        &mut Cache::disabled(),
-    );
+        &mut Cache::disabled());
     Ran {
         run,
         census: taken,

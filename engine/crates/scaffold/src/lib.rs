@@ -77,6 +77,7 @@
 //! corpus can tell a scaffolded edge from a hand-typed one. So the run writes
 //! the reading down, and [`reading`] is where it lands and what it holds.
 
+pub mod claim;
 pub mod declared;
 pub mod fix;
 pub mod json;
@@ -140,6 +141,14 @@ pub struct Sources<'a> {
     pub census: &'a Census,
     pub index: &'a Index,
     pub config: &'a Config,
+    /// The identifier claim store, read off the tree beside the corpus.
+    ///
+    /// A tree holds no history and no concurrency, so the highest value the
+    /// corpus carries is a lower bound twice over: on every value ever
+    /// allocated, and on every value another branch has already taken. The
+    /// store is the second half of the bound, and [`crate::claim`] is what
+    /// writes into it. See [`headwater_check::claim`].
+    pub claims: &'a headwater_check::claim::Claims,
 }
 
 /// Where a value came from, which is the whole of the assisted fraction.
@@ -421,6 +430,13 @@ pub enum Refusal {
         id: String,
         path: String,
     },
+    /// The claim this run owes did not land. The create is the test for an
+    /// occupied path, so `AlreadyExists` arrives here rather than as an
+    /// overwrite. See [`crate::claim`].
+    ClaimUnwritable {
+        path: String,
+        why: String,
+    },
     PathTaken {
         path: String,
     },
@@ -624,6 +640,11 @@ impl std::fmt::Display for Refusal {
                 f,
                 "{path} is already there, and this verb never overwrites a document"
             ),
+            Refusal::ClaimUnwritable { path, why } => write!(
+                f,
+                "the identifier claim `{path}` was not written: {why}. Nothing else was written \
+                 either, because the claim is made before the document"
+            ),
             Refusal::PlacementDoesNotResolve { path, kind, found } => write!(
                 f,
                 "{path} classifies as {found} rather than as `{kind}`, so the placement this run \
@@ -774,6 +795,17 @@ pub fn propose(sources: &Sources<'_>, request: &Request<'_>) -> Result<Plan, Ref
             return Err(Refusal::IdentifierTaken {
                 id: minting.id.clone(),
                 path: node.path.clone(),
+            });
+        }
+        // The same refusal, from the other reader of the same question. In
+        // normal operation this is unreachable, because the allocator above
+        // takes the maximum of the corpus and the store. It becomes reachable
+        // the moment an identifier is written by hand, which is why it is a
+        // refusal rather than an assertion.
+        if let Some(claimant) = sources.claims.claimant(&minting.scheme, &minting.id) {
+            return Err(Refusal::IdentifierTaken {
+                id: minting.id.clone(),
+                path: claimant.to_string(),
             });
         }
     }
@@ -1211,6 +1243,13 @@ fn mint(sources: &Sources<'_>, kind: &str, slug: &str) -> Result<Option<Minting>
         .needs()
         .iter()
         .any(|need| matches!(need, Needs::Sequence { .. }));
+    // The claim store is the second half of the bound. A tree holds no history,
+    // which spec 3 states, and it holds no concurrency either: every branch cut
+    // from one `main` reads the same corpus, so *n* branches minting at once all
+    // mint the same value. The store carries what other branches have already
+    // taken, and one grammar reads both — the same `sequence_of` call over the
+    // same template, which is why a claim file is named for the whole identifier
+    // rather than for the bare sequence.
     let reconciled_from = match needs_sequence {
         false => None,
         true => sources
@@ -1218,7 +1257,9 @@ fn mint(sources: &Sources<'_>, kind: &str, slug: &str) -> Result<Option<Minting>
             .typed
             .iter()
             .chain(sources.index.untyped.iter())
-            .filter_map(|node| template.sequence_of(&node.id))
+            .map(|node| node.id.as_str())
+            .chain(sources.claims.ids_of(&scheme.name))
+            .filter_map(|id| template.sequence_of(id))
             .max(),
     };
     let next = reconciled_from

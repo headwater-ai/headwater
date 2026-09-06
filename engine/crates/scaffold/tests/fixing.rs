@@ -144,9 +144,9 @@ fn check_over(root: &Path) -> Run {
             adoption: None,
             source: TAXONOMY,
         },
+        &headwater_check::claim::Claims::at(root),
         &Context::at(Date::parse(PINNED).expect("the pinned date")),
-        &mut Cache::disabled(),
-    )
+        &mut Cache::disabled())
 }
 
 /// One finding as the line this test compares, without the offsets that a fix

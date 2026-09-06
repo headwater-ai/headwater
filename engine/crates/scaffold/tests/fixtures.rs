@@ -99,6 +99,9 @@ struct Loaded {
     census: Census,
     index: Index,
     config: Config,
+    /// No store under the fixture tree, so this is empty. Held rather than made
+    /// at the point of use, because `sources` returns a borrow of it.
+    claims: headwater_check::claim::Claims,
 }
 
 impl Loaded {
@@ -119,6 +122,7 @@ impl Loaded {
             census,
             index,
             config,
+            claims: headwater_check::claim::Claims::at(root),
         }
     }
 
@@ -131,6 +135,7 @@ impl Loaded {
             census: &self.census,
             index: &self.index,
             config: &self.config,
+            claims: &self.claims,
         }
     }
 }
@@ -328,6 +333,7 @@ branches![
     RelationUnknown,
     RelationNotScaffolded,
     EndpointNotPermitted,
+    ClaimUnwritable,
     TargetUnresolved,
     ReciprocalUnwritable,
     TargetUnopened,
@@ -479,6 +485,10 @@ fn every_refusal_branch_has_a_case() {
     reached.push("DocumentUncreated");
     reached.push("WriteHalted");
     reached.push("NotOneDocument");
+    // The claim writer, whose one refusal is an occupied path. It is in
+    // `tests/writing.rs` beside the four above, because `propose` writes
+    // nothing and so cannot reach it.
+    reached.push("ClaimUnwritable");
 
     let missing: Vec<&&str> = BRANCHES
         .iter()

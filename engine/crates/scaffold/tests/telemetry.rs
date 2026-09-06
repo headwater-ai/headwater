@@ -108,6 +108,7 @@ fn scaffold(root: &Path, kind: &str, title: &str) -> headwater_scaffold::Plan {
             census: &taken,
             index: &index,
             config: &config,
+            claims: &headwater_check::claim::Claims::empty(),
         },
         &Request {
             kind,

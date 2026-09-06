@@ -126,9 +126,9 @@ fn run_at(
             adoption,
             source,
         },
+        &headwater_check::claim::Claims::at(&corpus.base),
         ctx,
-        cache,
-    )
+        cache)
 }
 
 fn fixture_run() -> Run {

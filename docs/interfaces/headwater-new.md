@@ -24,13 +24,13 @@ The command proposes and writes one document whose kind, shelf, facets, sections
 
 The command decides the complete artifact before it writes any file. It derives engine-owned fields, accepts a title and declared facet values, and can add scaffold-created relation edges.
 
-It never overwrites a document. It writes the document and appends one capture-cost reading. If the document lands but the reading does not, the command reports the line to append and exits non-zero.
+It never overwrites a document, and it never overwrites a claim. A kind whose scheme allocates `reconcile-first` gets one file of the identifier claim store, written before the document and holding the path of the document. That file records what the run minted, so an allocator on another branch reads a value this tree does not yet hold. The command writes the document and appends one capture-cost reading. If the document lands but the reading does not, the command reports the line to append and exits non-zero.
 
 ## Preconditions
 
 The repository must have a readable consumer declaration, resolved taxonomy lock, corpus and configuration. The requested kind must exist in the resolved taxonomy.
 
-The title is required. A supplied relation must be declared as scaffold-created, connect permitted kinds and resolve at its target. A supplied facet must be required by the kind, must not be one that a declaration decides, and must use a permitted value.
+The title is required. A supplied relation must be declared as scaffold-created, connect permitted kinds and resolve at its target. A supplied facet must be required by the kind, must not be one that a declaration decides, and must use a permitted value. The identifier the run mints must be claimed by no document and by no file of the claim store.
 
 ## Options
 
@@ -49,7 +49,7 @@ The title is required. A supplied relation must be declared as scaffold-created,
 
 **0** means that the document and its capture-cost reading were written.
 
-**1** means that the command line, taxonomy, requested values or write failed. A failed run can leave a document when its reading failed to append.
+**1** means that the command line, taxonomy, requested values or write failed. A failed run can leave a document when its reading failed to append. A run whose claim could not be made writes nothing at all, because the claim is made before the document.
 
 ## Environment
 
@@ -62,6 +62,7 @@ The command reads the system date when `--now` is absent. It reads no other envi
 | `.headwater/taxonomy.lock` and corpus configuration | Read to derive the artifact. |
 | Documents and graph indexes | Read to validate identifiers and relations. |
 | The selected document path | Written when it does not already exist. |
+| `.headwater/ids/<scheme>/<identifier>` | Written before the document, for a scheme that allocates `reconcile-first`. It holds the path of the document, it is never written twice, and it is never modified. |
 | `.headwater/capture-cost.jsonl` | Appended with one reading after the document write. |
 
 ## See also

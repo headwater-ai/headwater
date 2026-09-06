@@ -133,6 +133,7 @@
 pub mod adoption;
 pub mod cache;
 pub mod change;
+pub mod claim;
 pub mod context;
 pub mod coverage;
 pub mod declaration;
@@ -203,7 +204,7 @@ use headwater_graph::{Declarations, Graph};
 /// The order is the five origins of
 /// [spec 12](../../../../docs/spec/12-check-layer.md#the-five-origins-of-a-check),
 /// which is Shape, then Graph, then the runner's own accounting.
-pub const RULES: [&str; 27] = [
+pub const RULES: [&str; 29] = [
     facet_required::RULE,
     facet_value::RULE,
     identifier::RULE,
@@ -217,6 +218,8 @@ pub const RULES: [&str; 27] = [
     declaration::RULE,
     identity::RULE,
     duplicate::RULE,
+    claim::MISSING,
+    claim::STALE,
     voice::RULE,
     language::RULE,
     retired::RULE,
@@ -426,6 +429,18 @@ fn registry() -> [(&'static str, Scope, u32, scope::ExportTargets); RULES.len()]
             scope::corpus_exports::<duplicate::Duplicate>(),
         ),
         (
+            claim::MISSING,
+            scope::corpus_scope::<claim::Missing<'_>>(),
+            scope::corpus_version::<claim::Missing<'_>>(),
+            scope::corpus_exports::<claim::Missing<'_>>(),
+        ),
+        (
+            claim::STALE,
+            scope::corpus_scope::<claim::Stale<'_>>(),
+            scope::corpus_version::<claim::Stale<'_>>(),
+            scope::corpus_exports::<claim::Stale<'_>>(),
+        ),
+        (
             voice::RULE,
             scope::document_scope::<voice::Voice>(),
             scope::document_version::<voice::Voice>(),
@@ -553,6 +568,7 @@ pub fn run(
     census: &Census,
     graph: &Graph,
     declared: &Declared<'_>,
+    claims: &claim::Claims,
     ctx: &Context,
     cache: &mut Cache,
 ) -> Run {
@@ -582,6 +598,12 @@ pub fn run(
         &declared.config.identifier_facet,
     );
     let duplicates = duplicate::Duplicate::over(&declared.config.identifier_facet);
+    // The two rules that hold the identifier claim store. They read the index
+    // the build already made rather than the corpus a second time, and the
+    // store reaches them through the view, which is what puts it in the key.
+    // See [`claim`].
+    let claim_missing = claim::Missing::over(declared.shape, &graph.index);
+    let claim_stale = claim::Stale::over(&declared.config.identifier_facet, &graph.index);
     let voice = voice::Voice::over(declared.shape);
     let language = language::Language::over(declared.shape);
     let retired = retired::Retired::over(declared.shape);
@@ -664,7 +686,30 @@ pub fn run(
         ctx,
         cache,
     ));
-    instances.extend(scope::over_corpus(&duplicates, census, graph, ctx, cache));
+    instances.extend(scope::over_corpus(
+        &duplicates,
+        census,
+        graph,
+        claims,
+        ctx,
+        cache,
+    ));
+    instances.extend(scope::over_corpus(
+        &claim_missing,
+        census,
+        graph,
+        claims,
+        ctx,
+        cache,
+    ));
+    instances.extend(scope::over_corpus(
+        &claim_stale,
+        census,
+        graph,
+        claims,
+        ctx,
+        cache,
+    ));
     instances.extend(scope::over_documents(&voice, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&language, census, graph, ctx, cache));
     instances.extend(scope::over_documents(&retired, census, graph, ctx, cache));
@@ -686,7 +731,7 @@ pub fn run(
         cache,
     ));
     instances.extend(scope::over_documents(&standing, census, graph, ctx, cache));
-    instances.extend(scope::over_corpus(&retention, census, graph, ctx, cache));
+    instances.extend(scope::over_corpus(&retention, census, graph, claims, ctx, cache));
 
     let coverage = Coverage::of(census, &instances);
 

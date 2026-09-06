@@ -97,9 +97,9 @@ fn run_with(ctx: &Context, cache: &mut Cache) -> Run {
             adoption: None,
             source: "engine/crates/check/fixtures/promotion.taxonomy.yml",
         },
+        &headwater_check::claim::Claims::empty(),
         ctx,
-        cache,
-    )
+        cache)
 }
 
 fn at(prior: Option<&str>) -> Context {

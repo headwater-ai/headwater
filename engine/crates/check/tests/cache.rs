@@ -114,9 +114,9 @@ fn run_at(root: &Path, ctx: &Context, cache: &mut Cache) -> Run {
             adoption: None,
             source: "engine/crates/check/tests/cache.rs",
         },
+        &headwater_check::claim::Claims::at(root),
         ctx,
-        cache,
-    )
+        cache)
 }
 
 /// Three runs over one tree: no cache, a cold cache, a warm one.

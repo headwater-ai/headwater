@@ -110,6 +110,11 @@ pub enum Refused {
     Unrecognizable { path: String, why: String },
     /// The reciprocal half did not splice. The reason is the scaffolder's own.
     HalfUnwritable { path: String, why: String },
+    /// A [`Patch::Create`] met a path that is already there, or a create that
+    /// the operating system refused. See [`make`]: the create is the test, so
+    /// an occupied path arrives here as `AlreadyExists` and never as an
+    /// overwrite.
+    Uncreatable { path: String, why: String },
 }
 
 impl Refused {
@@ -122,7 +127,8 @@ impl Refused {
             | Refused::Overlapping { path, .. }
             | Refused::Unparseable { path, .. }
             | Refused::Unrecognizable { path, .. }
-            | Refused::HalfUnwritable { path, .. } => path,
+            | Refused::HalfUnwritable { path, .. }
+            | Refused::Uncreatable { path, .. } => path,
         }
     }
 }
@@ -165,6 +171,12 @@ impl std::fmt::Display for Refused {
                  written"
             ),
             Refused::HalfUnwritable { path, why } => write!(f, "{path}: {why}"),
+            Refused::Uncreatable { path, why } => write!(
+                f,
+                "{path} was not made: {why}. This writer creates and never overwrites, because a \
+                 file of the identifier claim store is the only record of who minted an \
+                 identifier and nothing repairs one that was written over"
+            ),
         }
     }
 }
@@ -174,12 +186,16 @@ impl std::fmt::Display for Refused {
 pub struct Composed {
     /// In path order, so two runs over one tree report the same thing.
     pub files: Vec<Fixed>,
+    /// The files this run would make, which are not documents and which no
+    /// entry of `files` can carry: every member of that list is read off the
+    /// tree first and these are not there. In path order, on the same terms.
+    pub created: Vec<Fixed>,
     pub refused: Vec<Refused>,
 }
 
 impl Composed {
     pub fn is_empty(&self) -> bool {
-        self.files.is_empty() && self.refused.is_empty()
+        self.files.is_empty() && self.created.is_empty() && self.refused.is_empty()
     }
 }
 
@@ -190,8 +206,16 @@ impl Composed {
 /// and it holds here for the same reason.
 pub fn compose(root: &Path, patches: &[Patch]) -> Composed {
     let mut grouped: BTreeMap<&str, Vec<&Patch>> = BTreeMap::new();
+    let mut making: BTreeMap<&str, &str> = BTreeMap::new();
     for patch in patches {
-        grouped.entry(patch.path()).or_default().push(patch);
+        match patch {
+            // A file that is not there is not a file this composer reads, so
+            // it takes the other half of this function and never `one_file`.
+            Patch::Create { path, contents } => {
+                making.insert(path.as_str(), contents.as_str());
+            }
+            _ => grouped.entry(patch.path()).or_default().push(patch),
+        }
     }
     let mut out = Composed::default();
     for (path, patches) in grouped {
@@ -201,7 +225,71 @@ pub fn compose(root: &Path, patches: &[Patch]) -> Composed {
             Err(refused) => out.refused.push(refused),
         }
     }
+    for (path, contents) in making {
+        // The path is not tested here. `make` creates, and the create is the
+        // test: a `std::path::Path::exists` in front of it would be a second
+        // answer with a window between the two, and the window is exactly
+        // where a concurrent mint lands.
+        out.created.push(Fixed {
+            path: path.to_string(),
+            text: contents.to_string(),
+            applied: 1,
+        });
+    }
     out
+}
+
+/// Make every file [`compose`] planned to create, and undo the lot on a
+/// failure.
+///
+/// **Create-new, never truncate-or-create.** Each file is opened with
+/// `create_new`, so the test for an existing file and the create are one
+/// syscall and there is no window between them. `AlreadyExists` is a refusal
+/// like every other error. That is a data-loss bar rather than a preference:
+/// a file of [`headwater_check::claim`]'s store is the only record of which
+/// document minted an identifier, the tree does not hold it, and nothing in
+/// this engine ever modifies one, so a fixer that overwrote a claim would
+/// destroy a fact no later run can reconstruct.
+///
+/// The undo unlinks the paths this call created, and nothing else. A path that
+/// `create_new` refused was not made here, so it is not removed here.
+pub fn make(root: &Path, files: &[Fixed]) -> Result<(), Refused> {
+    let mut made: Vec<std::path::PathBuf> = Vec::new();
+    let undo = |made: &[std::path::PathBuf]| {
+        for path in made {
+            let _ = std::fs::remove_file(path);
+        }
+    };
+    for file in files {
+        let at = root.join(&file.path);
+        let refuse = |why: String| Refused::Uncreatable {
+            path: file.path.clone(),
+            why,
+        };
+        if let Some(parent) = at.parent() {
+            if let Err(error) = std::fs::create_dir_all(parent) {
+                undo(&made);
+                return Err(refuse(error.to_string()));
+            }
+        }
+        let handle = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&at);
+        let mut handle = match handle {
+            Ok(handle) => handle,
+            Err(error) => {
+                undo(&made);
+                return Err(refuse(error.to_string()));
+            }
+        };
+        made.push(at.clone());
+        if let Err(error) = std::io::Write::write_all(&mut handle, file.text.as_bytes()) {
+            undo(&made);
+            return Err(refuse(error.to_string()));
+        }
+    }
+    Ok(())
 }
 
 /// Write what [`compose`] produced, all of it or none of it.

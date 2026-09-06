@@ -223,9 +223,9 @@ fn no_check_names_the_placeholder_document_and_the_sweep_does() {
             adoption: None,
             source: "engine/crates/sweep/fixtures/sweep.taxonomy.yml",
         },
+        &headwater_check::claim::Claims::empty(),
         &Context::at(Date::parse(PINNED).expect("the pinned date")),
-        &mut Cache::disabled(),
-    );
+        &mut Cache::disabled());
 
     // It is a classified document, so it was seen and it was checked. That is
     // the half that makes the silence a result rather than an omission.
