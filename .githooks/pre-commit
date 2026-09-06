@@ -103,6 +103,53 @@ else
     report=$("$engine" check --strict 2>&1)
 fi
 status=$?
+
+# `site/llms.txt` and `site/robots.txt` are derived from the `<title>` and the
+# `<meta name="description">` of every page committed under `site/`, so a page
+# added, removed or retitled makes both stale and nothing else notices.
+#
+# THE MEASUREMENT THAT PUT THIS HERE. Since the two files were introduced on
+# 2026-08-27, three commits moved a title, a description or the set of pages.
+# Two updated the files. One did not — `0219db3`, fourteen minutes after the
+# mechanism landed — and the repair cost a second commit, `19b8d3e`, and an
+# issue of its own, #443. One in three, and a miss is not free.
+#
+# WHY IT REFUSES RATHER THAN REGENERATES. A hook that writes produces a commit
+# whose contents nobody read, and it would stage bytes the author never saw
+# into a commit the clauses above already checked against different ones. The
+# writing form is the script, run by hand — the separation `headwater check
+# --fix` already keeps.
+#
+# WHY IT SITS HERE AND NOT ABOVE. Deleting a page under `site/` necessarily
+# makes both files stale, which is the same act the `HEADWATER_ALLOW_SITE_DELETE`
+# clause governs and the same act that can leave a `governs` edge dangling.
+# Placed earlier, this clause fired first and reported a derived file while
+# hiding a `relation.target.unresolved` finding underneath it. An engine finding
+# outranks a regenerable one, so this runs only once the engine has passed.
+#
+# WHAT IT DOES NOT CATCH. A clone with no built engine exits above this line, so
+# the check does not run there. The script also reads the working tree and not
+# the index, so a partially staged commit can pass here. The CI step of the same
+# name reads the committed tree, and that is what actually holds this.
+#
+# COST. 0.13 seconds, against about 1.0 for the rest of this hook.
+if [ "$status" -eq 0 ] && [ -z "${HEADWATER_SKIP_CRAWLER_CHECK:-}" ]; then
+    if command -v python3 >/dev/null 2>&1; then
+        if ! crawler=$(sh "$root/tools/refresh-crawler-files.sh" --check 2>&1); then
+            echo "headwater: \`site/llms.txt\` or \`site/robots.txt\` no longer matches the"
+            echo "  pages committed under \`site/\`. Neither file is written by hand."
+            printf '%s\n' "$crawler" | sed 's/^/    /'
+            echo "  Regenerate and stage the result:"
+            echo "        sh tools/refresh-crawler-files.sh"
+            echo "  Or skip this one clause for one commit:"
+            echo "        HEADWATER_SKIP_CRAWLER_CHECK=1 git commit ..."
+            exit 1
+        fi
+    else
+        echo "headwater: no python3, so the crawler files are not checked."
+    fi
+fi
+
 [ "$status" -eq 0 ] && exit 0
 
 # The error findings alone, whole. Every other finding is advisory and belongs

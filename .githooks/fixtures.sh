@@ -294,9 +294,39 @@ governed=$(grep -rl "^    - $hatch\$" "$scratch/docs" 2>/dev/null | tr '\n' ' ')
 judge 'the escape-hatch case still names a page no document governs' 0 0 \
     'ungoverned' "$governed (declares \`governs\` over $hatch)"
 
+# `HEADWATER_SKIP_CRAWLER_CHECK` is set here and nowhere else in this block,
+# and the reason is a collision worth stating rather than working around. The
+# only pages no document governs are `site/llms.txt` and `site/robots.txt`,
+# because HW-DR-0037 governs every hand-built page by name. Those two are also
+# the two the crawler clause protects, since both are derived from the pages
+# beside them. So the page this case needs and the page that clause guards are
+# the same page, and there is no third one to pick. This case is about the
+# site-delete clause, so it declares which clause it is testing and lets the
+# other one alone. The crawler clause has its own case below.
 git -C "$scratch" rm -q "$hatch"
-out=$(cd "$scratch" && HEADWATER_ALLOW_SITE_DELETE=1 sh .githooks/pre-commit 2>&1); status=$?
+out=$(cd "$scratch" && HEADWATER_ALLOW_SITE_DELETE=1 HEADWATER_SKIP_CRAWLER_CHECK=1 \
+    sh .githooks/pre-commit 2>&1); status=$?
 judge 'the same removal with the named variable set is allowed through' 0 "$status" '' "$out"
+
+# The crawler clause. `site/llms.txt` and `site/robots.txt` are derived from the
+# title and description of every page under `site/`, and a retitled page makes
+# both stale with nothing else to notice. That happened once, in `0219db3`,
+# fourteen minutes after the two files were introduced, and cost a second commit
+# and issue #443 to repair.
+reset
+sed -i 's|<title>|<title>RETITLED |' "$scratch/site/proof/index.html"
+out=$(gate); status=$?
+judge 'a retitled page whose crawler files are stale is refused' 1 "$status" \
+    'no longer matches the' "$out"
+judge 'and the refusal names the line that moved' 1 "$status" \
+    'RETITLED' "$out"
+judge 'and it names the command that repairs it' 1 "$status" \
+    'sh tools/refresh-crawler-files.sh' "$out"
+
+reset
+sed -i 's|<title>|<title>RETITLED |' "$scratch/site/proof/index.html"
+out=$(cd "$scratch" && HEADWATER_SKIP_CRAWLER_CHECK=1 sh .githooks/pre-commit 2>&1); status=$?
+judge 'and the named variable releases that one clause' 0 "$status" '' "$out"
 
 # What the variable releases, and what it does not. It lifts this clause and
 # nothing else, so a page that a document of this corpus declares `governs`
