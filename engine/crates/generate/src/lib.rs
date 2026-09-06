@@ -976,3 +976,84 @@ pub(crate) fn pointers(surface: &Surface<'_>, documents: &[Document<'_>]) -> Vec
         .map(|document| surface.pointer(document))
         .collect()
 }
+
+/// The name one document is rendered under, wherever an emitter of this crate
+/// writes a list of documents.
+///
+/// The declared `name`-role facet first, because that is what the document
+/// calls itself and spec 2 puts a reader-facing name in a facet rather than in
+/// body prose. The identifier next, for a kind that declares no name: it is
+/// stable and it is short, and it is a poor label rather than no label. The
+/// file name last, for the one shape that carries neither.
+///
+/// **One function, because two emitters disagreeing about this is the defect it
+/// was extracted for.** `site_nav` read the `name` role and `shelf_index` read
+/// the identifier alone, so the same document was "Vision and scope" in the
+/// sidebar and `HW-SPEC-vision-and-scope` on the shelf's own index page. The
+/// second reading also made the `title` facet look ineffective on the two
+/// shelves that had carried one since the decision-record entry declared it:
+/// `docs/decisions/README.md` listed 47 records as `HW-DR-nnnn` while every one
+/// of them declared a title (#123, #427). A projection added later would have
+/// had to choose between the two readings with nothing to say which was right.
+pub(crate) fn label(pointer: &Pointer) -> String {
+    pointer
+        .name
+        .clone()
+        .or_else(|| pointer.id.clone())
+        .unwrap_or_else(|| shelf_index::file_name(&pointer.path))
+}
+
+#[cfg(test)]
+mod label_tests {
+    use super::label;
+    use headwater_query::Pointer;
+
+    fn pointer(id: Option<&str>, name: Option<&str>) -> Pointer {
+        Pointer {
+            path: "docs/spec/00-vision-and-scope.md".into(),
+            id: id.map(Into::into),
+            kind: "design_spec".into(),
+            name: name.map(Into::into),
+            purpose: None,
+            summary: None,
+            unwarranted: false,
+        }
+    }
+
+    /// The arm that #427 declared the `title` facet to reach. A document that
+    /// names itself is rendered under that name and never under its identifier.
+    #[test]
+    fn a_declared_name_is_the_label() {
+        assert_eq!(
+            label(&pointer(Some("HW-SPEC-vision-and-scope"), Some("Vision and scope"))),
+            "Vision and scope"
+        );
+    }
+
+    /// The fall-through, which is a poor label rather than no label. A kind
+    /// that requires no `name`-role facet still renders in every list.
+    #[test]
+    fn a_document_with_no_name_falls_through_to_its_identifier() {
+        assert_eq!(
+            label(&pointer(Some("HW-REG-open-questions"), None)),
+            "HW-REG-open-questions"
+        );
+    }
+
+    /// The last arm. A generated document that declares no identity carries
+    /// neither, and the file name is what is left.
+    #[test]
+    fn a_document_with_neither_falls_through_to_its_file_name() {
+        assert_eq!(label(&pointer(None, None)), "00-vision-and-scope.md");
+    }
+
+    /// The precedence, asserted on its own. An identifier beside a name never
+    /// wins: this is the reading `shelf_index` did not have, which left
+    /// `docs/decisions/README.md` listing 47 titled records as `HW-DR-nnnn`.
+    #[test]
+    fn a_name_beats_an_identifier_rather_than_the_other_way_round() {
+        let both = pointer(Some("HW-DR-0001"), Some("Implementation language"));
+        assert_eq!(label(&both), "Implementation language");
+        assert_ne!(label(&both), "HW-DR-0001");
+    }
+}

@@ -1,4 +1,4 @@
-headwater/standard 3.5.0
+headwater/standard 3.6.0
 
 sources, in application order
   packages/headwater-standard/taxonomy.yml
@@ -25,7 +25,6 @@ operations
   add.regimes.voice.narrative (packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
   add.kinds.evaluation (packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
   add.shelves.evaluations (packages/headwater-standard/bundles/evidence-and-obligation/bundle.yml)
-  add.facets.title (packages/headwater-standard/bundles/decision-record/bundle.yml)
   add.facets.waiting_on (packages/headwater-standard/bundles/decision-record/bundle.yml)
   add.kinds.decision.facets (packages/headwater-standard/bundles/decision-record/bundle.yml)
   add.kinds.obligation_record (packages/headwater-standard/bundles/decision-record/bundle.yml)
@@ -91,7 +90,7 @@ operations
 
 declarations, by member count
   taxonomy: headwater/standard
-  version: 3.5.0
+  version: 3.6.0
   purposes: 6 members
   vocabularies: 1 member
   facets: 14 members

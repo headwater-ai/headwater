@@ -94,19 +94,6 @@ pub(crate) fn emit(
     });
 }
 
-/// The label MkDocs shows for one entry: the declared `name`-role facet
-/// first, because that is the document's actual title where the kind
-/// declares one. The identifier next, because it is a stable human-facing
-/// short form for the kinds that declare no name (a spec part, an
-/// obligation). The file name last, for the one shape that carries neither.
-fn label(pointer: &Pointer) -> String {
-    pointer
-        .name
-        .clone()
-        .or_else(|| pointer.id.clone())
-        .unwrap_or_else(|| crate::shelf_index::file_name(&pointer.path))
-}
-
 /// A double-quoted YAML scalar: `"` and `\` escaped, never written bare.
 ///
 /// The one correctness-critical detail this emitter carries. A title in this
@@ -140,7 +127,7 @@ fn render(output: &str, groups: &[(String, Vec<Pointer>)], corpus_root: &str) ->
         for pointer in ordered {
             out.push_str(&format!(
                 "      - {}: {}\n",
-                quoted(&label(pointer)),
+                quoted(&crate::label(pointer)),
                 quoted(&crate::shelf_index::relative(corpus_root, &pointer.path))
             ));
         }

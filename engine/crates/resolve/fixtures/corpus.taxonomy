@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 3.5.0
+version: 3.6.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -85,6 +85,11 @@ facets:
     type: string
     required: true
     volatility: mutable
+  title:
+    role: name
+    type: string
+    required: false
+    volatility: stable
   arm:
     guidance:
       absent: "the session ran against the declared ablation of it"
@@ -153,11 +158,6 @@ facets:
     values:
       - regression
       - campaign
-    volatility: stable
-  title:
-    required: false
-    role: name
-    type: string
     volatility: stable
   verification_method:
     guidance:
@@ -325,6 +325,7 @@ kinds:
       require:
         - doc_type
         - sequence
+        - title
     identifier:
       scheme: register_id
     is_a: governed_document
@@ -337,6 +338,7 @@ kinds:
       require:
         - doc_type
         - sequence
+        - title
     identifier:
       scheme: spec_id
     is_a: governed_document
@@ -345,6 +347,9 @@ kinds:
     purpose: behavior
     voice: declarative
   evaluation:
+    facets:
+      require:
+        - title
     identifier:
       scheme: evaluation_id
     is_a: governed_document
@@ -395,6 +400,7 @@ kinds:
       require:
         - doc_type
         - sequence
+        - title
     identifier:
       scheme: register_id
     is_a: governed_document
@@ -408,6 +414,7 @@ kinds:
         - probe_category
         - expectation
         - oracle
+        - title
     identifier:
       scheme: probe_id
     is_a: governed_document
@@ -471,6 +478,7 @@ kinds:
     facets:
       require:
         - doc_type
+        - title
     identifier:
       scheme: review_id
     is_a: governed_document
@@ -492,6 +500,7 @@ kinds:
     facets:
       require:
         - doc_type
+        - title
     identifier:
       scheme: review_id
     is_a: governed_document

@@ -7,8 +7,8 @@ the plan
 
 2 documents on this shelf, in the reading order this corpus derives.
 
-- [DR-FIX-0002](0002-rebuild-the-graph.md) — the graph is rebuilt on every run and never stored, which supersedes DR-FIX-0001
-- [DR-FIX-0001](0001-store-the-graph.md) — the first ruling on where the corpus graph lives, replaced by DR-FIX-0002
+- [Rebuild the graph on every run](0002-rebuild-the-graph.md) — the graph is rebuilt on every run and never stored, which supersedes DR-FIX-0001
+- [Store the graph on disk](0001-store-the-graph.md) — the first ruling on where the corpus graph lives, replaced by DR-FIX-0002
 
 === generate/guides/README.md (shelf_index) ===
 <!-- headwater:generated shelf_index. `headwater generate` writes this file, and `headwater generate --check` holds it. Edit the corpus, not this file. -->
@@ -17,7 +17,7 @@ the plan
 
 2 documents on this shelf, in the reading order this corpus derives.
 
-- [GD-FIX-first-run](first-run.md) — what to do on a first run, and what to read when it refuses
+- [The first run](first-run.md) — what to do on a first run, and what to read when it refuses
 - [GD-FIX-recovery](recovery.md) — how to recover a corpus whose lock and sources disagree (asserted, and no human has accepted it)
 
 === generate/decisions/SECTIONS.md (shelf_sections) ===
