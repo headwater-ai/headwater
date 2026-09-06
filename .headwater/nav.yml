@@ -49,7 +49,7 @@ nav:
       - "Coloring the CLI, and where the banner goes": "decisions/0045-coloring-the-cli-and-where-the-banner-goes.md"
       - "Migrating from-version carries a semver and a release digest, kept as separate fields": "decisions/0046-migrating-from-version-carries-a-semver-and-a-release-digest-kept-as-separate-fields.md"
       - "How the two halves of the site share one host": "decisions/0047-how-the-two-halves-of-the-site-share-one-host.md"
-      - "A corpus-wide fold is derived and never stored": "decisions/0048-a-corpus-wide-fold-is-derived-and-never-stored.md"
+      - "A corpus-wide fold is derived and never stored": "decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md"
   - "acceptance_criteria":
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"
   - "evaluations":

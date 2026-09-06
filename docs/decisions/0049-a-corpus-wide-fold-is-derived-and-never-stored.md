@@ -1,5 +1,5 @@
 ---
-id: HW-DR-0048
+id: HW-DR-0049
 status: draft
 status_since: 2026-09-06
 summary: "A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict."

@@ -1385,12 +1385,12 @@
         }
       },
       {
-        "path": "docs/decisions/0048-a-corpus-wide-fold-is-derived-and-never-stored.md",
+        "path": "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
         "kind": "decision",
-        "id": "HW-DR-0048",
+        "id": "HW-DR-0049",
         "warrant": "asserted",
         "facets": {
-          "id": "HW-DR-0048",
+          "id": "HW-DR-0049",
           "status": "draft",
           "status_since": "2026-09-06",
           "summary": "A recorded artifact holds one record per entity and derives every total, because two branches that each add one document write the same new total and a merge takes it without a conflict.",
@@ -9175,7 +9175,7 @@
         }
       },
       {
-        "source": "docs/decisions/0048-a-corpus-wide-fold-is-derived-and-never-stored.md",
+        "source": "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -9186,7 +9186,7 @@
         }
       },
       {
-        "source": "docs/decisions/0048-a-corpus-wide-fold-is-derived-and-never-stored.md",
+        "source": "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -9197,7 +9197,7 @@
         }
       },
       {
-        "source": "docs/decisions/0048-a-corpus-wide-fold-is-derived-and-never-stored.md",
+        "source": "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {
@@ -9208,7 +9208,7 @@
         }
       },
       {
-        "source": "docs/decisions/0048-a-corpus-wide-fold-is-derived-and-never-stored.md",
+        "source": "docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md",
         "relation": "traces_to",
         "written_as": "traces_to",
         "target": {

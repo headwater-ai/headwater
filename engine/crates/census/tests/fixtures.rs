@@ -155,7 +155,7 @@ fn the_census_rows_are_in_path_order() {
 /// Every generated document is declared unmergeable, and a list is why this runs.
 ///
 /// A generated document opens with a count of the shelf below it, which is a
-/// fold, and [HW-DR-0048](../../../../docs/decisions/0048-a-corpus-wide-fold-is-derived-and-never-stored.md)
+/// fold, and [HW-DR-0049](../../../../docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md)
 /// rules that a fold answers to a check on the merged state rather than to a
 /// merge. `.gitattributes` names each one, and it names them one at a time
 /// rather than by a pattern, because `docs/*/README.md` reaches two files that

@@ -1,9 +1,11 @@
 ---
 description: Run N stacked iterations of the Headwater build order, four subagents each, merging between
-argument-hint: "[iteration count, default 20]"
+argument-hint: "[iteration count, default 20] [--parallel N]"
 ---
 
 Run `$ARGUMENTS` iterations (default 20) of the Headwater build order, four Opus 5 subagents per iteration, **sequentially**. Merge between each, so iteration N+1 branches from N's merge and reads a board N already changed. Parallel runs do not stack; they collide.
+
+**`--parallel N` is the one way to ask for anything else, and its absence means sequential.** Read the arguments for it, take N as the batch size, and follow *Running more than one iteration at a time* below. Without the flag, run the sequential shape this paragraph describes and do not offer the other one in the middle of a run. The flag is also the opt-in that `Workflow` requires: a run that carries it has been asked for multi-agent orchestration in the user's own words, and a run that does not has not been.
 
 You are the parent. The subagents do the volume. Your job is judgment: what to merge, what a stale premise means, which of the agent's surprises is a lesson and which is noise. Almost everything you control sits in two places — **what you put in the next prompt, and what you refuse to take on trust.**
 
@@ -87,11 +89,25 @@ What did change is worth having on its own. **Peak context per agent falls from 
 
 **This is a different question from the four-agent split above, and the two do not substitute.** That split divides *one* iteration into phases that need disjoint context. This divides the *run* into iterations that land in parallel. The line at the top of this file — *parallel runs do not stack, they collide* — was written about running the whole loop twice, and it stands. What follows is the narrower thing that works: several iterations building at once, one merge decision, still yours.
 
-**What used to make this unsafe is fixed, and knowing which half is fixed matters.** [HW-DR-0048](../../docs/decisions/0048-a-corpus-wide-fold-is-derived-and-never-stored.md) rules that a recorded artifact holds one record per entity and derives every total. The census and the graph now merge correctly when two branches each add a document. What is *not* fixed is the artifact that keeps its fold, and the rule that record states is the one to carry into every parallel branch: **an artifact that stores a count over the whole corpus merges quietly and wrongly when the branch carrying it is behind `main`.** Nothing in a private repository on a free plan refuses that merge. Read the record rather than a summary of it here.
+**What used to make this unsafe is fixed, and knowing which half is fixed matters.** [HW-DR-0049](../../docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) rules that a recorded artifact holds one record per entity and derives every total. The census and the graph now merge correctly when two branches each add a document. What is *not* fixed is the artifact that keeps its fold, and the rule that record states is the one to carry into every parallel branch: **an artifact that stores a count over the whole corpus merges quietly and wrongly when the branch carrying it is behind `main`.** Nothing in a private repository on a free plan refuses that merge. Read the record rather than a summary of it here.
 
 **So the one instruction every parallel worker gets, in its prompt, is this.** Before you ask for a merge, rebase onto `main`, then run `headwater generate` and re-bless the recorded fixtures, and read that diff. A branch that skips it can be green on its own tip and still turn `main` red, and no reviewer of that branch could have seen it.
 
 **Claim through the board, never through a coordinator.** A worker takes its issue by assigning it to itself and moving it to In Progress. That claim is atomic, it is durable, it survives a worker that dies, and you can read the whole state without asking anybody. A coordinator holding N workers' states in its own context is the polling failure of the section above with N times the input, and every message it routes re-reads its whole context. Scaling up or down is then starting or stopping a worker rather than correcting a scheduler written in prose.
+
+**`Workflow` is what runs the workers, and the shape is one call.** The paragraph above about coordination outgrowing the waiting makes the case, and it makes it for the phases of one iteration. It carries to several iterations without change, because `pipeline(issues, adjudicate, construct, verify, write_back)` is that shape exactly: each issue moves through all four stages independently, with no barrier between them, so issue A can be in verification while issue B is still being adjudicated. Wall clock is the slowest single chain rather than the sum of the slowest stage in each round. Do not reach for `parallel()` between the stages. A barrier there would hold every finished construction until the slowest adjudication returned, which is the cost this whole section exists to avoid.
+
+**Give construction `isolation: 'worktree'`, and nothing else.** Two agents building two issues write files at the same time, which is the one case the flag is for. It costs setup and disk for each agent, so adjudication, verification and write-back do not take it.
+
+**A workflow cannot merge, and that is the constraint that shapes the run rather than a limitation to work around.** You are not in the loop while it runs, so nothing inside it can make the decision that this file says never leaves you. So a run produces *N branches ready for review*, and you then merge them one at a time. Each one rebases onto the merge before it, which is where the rebase that [HW-DR-0049](../../docs/decisions/0049-a-corpus-wide-fold-is-derived-and-never-stored.md) asks for actually happens, and it happens once per branch rather than once per run. That serial tail is not waste. It is the merge queue this repository cannot buy, run by you.
+
+**So the loop is: fan out, drain, merge, fan out again.** One workflow per batch, and you read what came back before choosing the next batch. That keeps the property the top of this file cares about — an iteration reading a board that the one before it changed — at the grain of a batch rather than of a single issue.
+
+**Four stages times N issues is 4N agents, and this session's guideline is 15.** Three issues is twelve and fits. Four is sixteen and does not, so raise the guideline under *Dynamic workflow size* in `/config` before asking for four, rather than discovering the ceiling in the middle of a run. Concurrency has a second and lower ceiling that no setting moves: a workflow runs at most `min(16, CPUs - 2)` agents at once, and the rest queue.
+
+**A stage that throws drops its own issue and leaves the others running.** That item becomes `null` and skips its remaining stages. So one bad issue costs one branch rather than the batch, and `.filter(Boolean)` on what comes back is what tells you which ones survived. Say which ones did not, rather than reporting the survivors as the batch.
+
+**It needs the human to start it, every time.** `Workflow` is opt-in per run and this file cannot grant that. Raise it at the top of a run with the numbers from the cost section as the case, never in the middle of one.
 
 **Cap it at two or three and raise it on a measurement.** The merge decision never leaves you, and verification was 36% of the parent's cost in the last measured run. Adding workers multiplies the part that is already the constraint rather than the part that is cheap. Watch one number: worker idle time against wall clock from branch-ready to merged. If workers wait on you or on the runner, another worker buys nothing.
 
