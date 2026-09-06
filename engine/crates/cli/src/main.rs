@@ -533,13 +533,25 @@ fn print_help_for(words: &[String]) -> ExitCode {
 /// offered a verb this binary does not carry would be a discrepancy that walk
 /// already fails on.
 ///
-/// It is built at [`headwater_cli::paint::WIDTH`] rather than at
-/// `paint::width()`. The two are the same number on every run that reaches
-/// this function, because `--wide` is refused on a run that prints no help and
-/// this run prints none. Naming the constant is what makes the script
-/// independent of the command line rather than incidentally so: the bytes of a
-/// completion script are read by a shell and must not move with a caller's
-/// terminal.
+/// # A script carries no layout of this engine's
+///
+/// The property a caller depends on is that the bytes do not move with the
+/// terminal of whoever asked for them, and
+/// `engine/crates/cli/tests/completions.rs` asserts exactly that. This function
+/// holds it in two steps. It builds at [`headwater_cli::paint::WIDTH`] rather
+/// than at `paint::width()`, so no reading of `COLUMNS` reaches the tree; the
+/// two are the same number on every run that gets here, because `--wide` is
+/// refused on a run that prints no help and this run prints none. Then
+/// [`headwater_cli::paint::flattened`] puts every string back on one line, so
+/// no fold reaches the script either.
+///
+/// The second step is what a shell needs. `clap_complete` writes a `zsh`
+/// positional as `'::name -- <help>:<action>'` and puts the help in the quotes
+/// as the tree carries it, so a folded help string arrives as a description
+/// broken across lines at a width the shell did not choose. A shell lays a
+/// completion listing out itself and is the only party entitled to. Flattening
+/// a folded string returns the source string, so the flag and subcommand
+/// descriptions are unchanged and the positionals stop carrying a break.
 ///
 /// # Standard output, and nothing else
 ///
@@ -564,7 +576,8 @@ fn completions(shell: Option<headwater_cli::Shell>) -> ExitCode {
             headwater_verbs::BINARY
         ));
     };
-    let mut command = headwater_cli::command_at(headwater_cli::paint::WIDTH);
+    let mut command =
+        headwater_cli::paint::flattened(headwater_cli::command_at(headwater_cli::paint::WIDTH));
     clap_complete::generate(
         clap_complete::Shell::from(shell),
         &mut command,
