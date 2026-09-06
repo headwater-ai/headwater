@@ -616,7 +616,15 @@ Mappings are what let a cross-repository aggregator answer "show me every decisi
 
 Past a handful of taxonomies, "whoever needs the correspondence" is only ever the aggregator tier. That is the normative topology, not a tendency. Pairwise mappings between fifty independent taxonomies permit 1,225 unordered pairs before direction and versions multiply them. Every pair goes stale on every publisher release. Peers do not map to peers at scale. The aggregator owns the correspondences, because it is the only party that reads them.
 
-The engine can also emit the resolved taxonomy as SKOS (`headwater export --format skos`). That is partly interoperability with knowledge-organization tooling that already exists, and partly a sanity check. A taxonomy that no standard concept-scheme vocabulary can express probably contains something idiosyncratic.
+A SKOS projection of the resolved taxonomy is staged and unbuilt. [Q13](09-decisions.md#q13--linkml-and-shacl-as-substrate) orders six emitter targets and puts every one after the second behind a named external consumer. None has asked, so the target parses and reports the consumer it waits on:
+
+```
+$ headwater export --format skos --profile default
+headwater: nothing was exported
+  the `skos` emitter waits on a named external consumer. Q13 stages the six emitters and puts every one after the second behind a consumer who asks for it, and none has. `json` and `jsonschema` ship
+```
+
+The target is declared for two reasons. One is interoperability with the knowledge-organization tooling that already exists. The other is a sanity check: a taxonomy that no standard concept-scheme vocabulary can express probably holds something idiosyncratic.
 
 ## Kind resolution
 
