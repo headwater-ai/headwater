@@ -233,7 +233,10 @@ fn no_other_format_in_spec_2_names_an_emitter_this_engine_does_not_build() {
         .filter(|(at, _)| !block.contains(at))
         .filter_map(|(at, _)| {
             let line_start = text[..at].rfind('\n').map(|nl| nl + 1).unwrap_or(0);
-            let line_end = text[at..].find('\n').map(|nl| at + nl).unwrap_or(text.len());
+            let line_end = text[at..]
+                .find('\n')
+                .map(|nl| at + nl)
+                .unwrap_or(text.len());
             let line = &text[line_start..line_end];
             let unbuilt = format_argument(&text[at..line_end])
                 .and_then(Emitter::parse)

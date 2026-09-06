@@ -1248,6 +1248,12 @@ fn the_schema_export_carries_constraints_and_accounts_for_every_instance() {
 /// external consumer. None exists, so five of the seven targets parse and emit
 /// nothing, and the message says which and why. An empty artifact would be a
 /// worse answer than a refusal.
+///
+/// The two assertions below are substrings, so this case holds that the refusal
+/// happens and names its emitter, and holds nothing about the wording.
+/// `docs/spec/02-taxonomy-model.md` quotes that wording verbatim, and
+/// `tests/spec_two_emitters.rs` is what compares the two byte for byte. Reword
+/// the message and this case stays green; that one reddens.
 #[test]
 fn an_unbuilt_emitter_refuses_and_says_what_it_waits_on() {
     let (built, root) = fixture_tree();
