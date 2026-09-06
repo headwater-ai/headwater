@@ -166,7 +166,7 @@
     {
       "rule": "voice.forbidden_construction",
       "scope": "document",
-      "version": 1,
+      "version": 2,
       "obligations": [
         "OB-FIX-7"
       ]

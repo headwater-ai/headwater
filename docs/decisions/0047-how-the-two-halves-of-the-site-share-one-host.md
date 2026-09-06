@@ -49,7 +49,7 @@ Two halves make up `https://headwater.tools/`. `site/` holds the hand-built page
 
 ## Consequences
 
-**Something now runs between the commit and the served bytes.** HW-DR-0037 states that nothing does, and that sentence measured a tree with no build command. [HW-DR-0039](0039-q39-how-a-figure-reaches-a-hand-built-page-now-that-a-build-interpolates-one.md) names a build command on the deploy path as one of the two events that retire `tools/refresh-figures.sh` as the only answer. Both sentences answer to this record.
+**Something now runs between the commit and the served bytes.** HW-DR-0037 states that nothing does, and that sentence measured a tree with no build command. [HW-DR-0039](0039-q39-how-a-figure-reaches-a-hand-built-page.md) names a build command on the deploy path as one of the two events that retire `tools/refresh-figures.sh` as the only answer. Both sentences answer to this record.
 
 **The build image carries the risk this repository cannot test.** The Cloudflare image must hold `python3` and `pip`. CI runs the same assembly on every push, so a break in the script is found by the runner that already builds the site. A break in the image is found by the deploy, which fails visibly and leaves the previous deploy live.
 
