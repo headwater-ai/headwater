@@ -265,3 +265,35 @@ fn a_run_that_can_finish_writes_the_new_document_and_the_edited_one() {
     assert_eq!(dir.read("shelf/new.md"), "NEW");
     assert_eq!(dir.read("recip.md"), "EDITED");
 }
+
+/// A claim of the identifier store is made once and never written over.
+///
+/// The one refusal of `headwater_scaffold::claim`, and it is a data-loss bar
+/// rather than a preference. A claim file is the only record of which document
+/// minted an identifier — the tree cannot hold it, which is why the store
+/// exists at all — and nothing in this engine modifies one. So an overwrite
+/// here would delete a fact no later run can reconstruct, and the create-new
+/// syscall is what makes the refusal a property of the kernel rather than of a
+/// check somebody can forget.
+#[test]
+fn a_claim_that_is_already_there_refuses_and_the_first_claimant_stands() {
+    let dir = Dir::with("claim", &[]);
+    let claim = ".headwater/ids/decision_id/HW-DR-0049";
+
+    headwater_scaffold::claim::make(dir.path(), claim, "docs/decisions/0049-first.md")
+        .expect("the shelf directory is made and the claim lands");
+    assert_eq!(dir.read(claim), "docs/decisions/0049-first.md\n");
+
+    let refused =
+        headwater_scaffold::claim::make(dir.path(), claim, "docs/decisions/0049-second.md")
+            .expect_err("a claim is never written twice");
+    assert!(
+        matches!(refused, Refusal::ClaimUnwritable { .. }),
+        "{refused}"
+    );
+    assert_eq!(
+        dir.read(claim),
+        "docs/decisions/0049-first.md\n",
+        "and the claimant that was there is the claimant that is there"
+    );
+}

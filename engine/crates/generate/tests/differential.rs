@@ -207,6 +207,7 @@ fn engine_run(built: &Built) -> Run {
             adoption: None,
             source: "engine/crates/generate/fixtures/differential.taxonomy.yml",
         },
+        &headwater_check::claim::Claims::empty(),
         &Context::at(Date::parse("2026-08-12").expect("the pinned date")),
         &mut Cache::disabled(),
     )

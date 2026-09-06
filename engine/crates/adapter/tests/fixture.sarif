@@ -218,6 +218,34 @@
               }
             },
             {
+              "id": "identifier.claim.missing",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and what phase A could not make of each document's identity, and the identifier claim store, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
+              "id": "identifier.claim.stale",
+              "shortDescription": {
+                "text": "corpus scope, every row of the census, and the identifier claim store, and it is a barrier"
+              },
+              "properties": {
+                "headwater": {
+                  "scope": "corpus",
+                  "version": 1,
+                  "obligations": [],
+                  "exportable_as": []
+                }
+              }
+            },
+            {
               "id": "voice.forbidden_construction",
               "shortDescription": {
                 "text": "document scope, one document, its front matter and its body"
@@ -439,6 +467,17 @@
         }
       ],
       "artifacts": [
+        {
+          "location": {
+            "uri": ".headwater/ids"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
         {
           "location": {
             "uri": "check/evaluations/alpha.md"
@@ -915,7 +954,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 14,
+          "ruleIndex": 16,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -948,7 +987,7 @@
         },
         {
           "ruleId": "coverage.document_unchecked",
-          "ruleIndex": 23,
+          "ruleIndex": 25,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1004,7 +1043,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 14,
+          "ruleIndex": 16,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1070,7 +1109,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 14,
+          "ruleIndex": 16,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1103,7 +1142,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 13,
+          "ruleIndex": 15,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1136,7 +1175,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 13,
+          "ruleIndex": 15,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1169,7 +1208,7 @@
         },
         {
           "ruleId": "voice.forbidden_construction",
-          "ruleIndex": 13,
+          "ruleIndex": 15,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1202,7 +1241,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 14,
+          "ruleIndex": 16,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1235,7 +1274,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 14,
+          "ruleIndex": 16,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1268,7 +1307,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 14,
+          "ruleIndex": 16,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1301,7 +1340,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 14,
+          "ruleIndex": 16,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1334,7 +1373,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 14,
+          "ruleIndex": 16,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1367,7 +1406,7 @@
         },
         {
           "ruleId": "language.retired_term.used",
-          "ruleIndex": 15,
+          "ruleIndex": 17,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1400,7 +1439,7 @@
         },
         {
           "ruleId": "language.retired_term.used",
-          "ruleIndex": 15,
+          "ruleIndex": 17,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1433,7 +1472,7 @@
         },
         {
           "ruleId": "language.source_form.not_met",
-          "ruleIndex": 16,
+          "ruleIndex": 18,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1466,7 +1505,7 @@
         },
         {
           "ruleId": "language.source_form.not_met",
-          "ruleIndex": 16,
+          "ruleIndex": 18,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1499,7 +1538,7 @@
         },
         {
           "ruleId": "link.fragment.unresolved",
-          "ruleIndex": 18,
+          "ruleIndex": 20,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1531,8 +1570,39 @@
           }
         },
         {
+          "ruleId": "identifier.claim.missing",
+          "ruleIndex": 13,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`DR-FIX-0008` is spent by check/spec/08-contract-met.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it",
+            "markdown": "`DR-FIX-0008` is spent by check/spec/08-contract-met.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it\n\n**Fix:** run `headwater check --fix`, which writes `.headwater/ids/decision_id/DR-FIX-0008` holding `check/spec/08-contract-met.md`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/08-contract-met.md"
+                },
+                "region": {
+                  "startLine": 2,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": true,
+              "remediation": "run `headwater check --fix`, which writes `.headwater/ids/decision_id/DR-FIX-0008` holding `check/spec/08-contract-met.md`",
+              "escape": "none"
+            }
+          }
+        },
+        {
           "ruleId": "section.required.missing",
-          "ruleIndex": 17,
+          "ruleIndex": 19,
           "level": "error",
           "kind": "fail",
           "message": {
@@ -1560,8 +1630,39 @@
           }
         },
         {
-          "ruleId": "voice.forbidden_construction",
+          "ruleId": "identifier.claim.missing",
           "ruleIndex": 13,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "`DR-FIX-0009` is spent by check/spec/09-contract-missing.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it",
+            "markdown": "`DR-FIX-0009` is spent by check/spec/09-contract-missing.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it\n\n**Fix:** run `headwater check --fix`, which writes `.headwater/ids/decision_id/DR-FIX-0009` holding `check/spec/09-contract-missing.md`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "check/spec/09-contract-missing.md"
+                },
+                "region": {
+                  "startLine": 2,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "headwater": {
+              "severity": "error",
+              "fixable": true,
+              "remediation": "run `headwater check --fix`, which writes `.headwater/ids/decision_id/DR-FIX-0009` holding `check/spec/09-contract-missing.md`",
+              "escape": "none"
+            }
+          }
+        },
+        {
+          "ruleId": "voice.forbidden_construction",
+          "ruleIndex": 15,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1606,7 +1707,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 14,
+          "ruleIndex": 16,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -1651,7 +1752,7 @@
         },
         {
           "ruleId": "language.controlled.not_met",
-          "ruleIndex": 14,
+          "ruleIndex": 16,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2014,7 +2115,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 25,
+          "ruleIndex": 27,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2043,7 +2144,7 @@
         },
         {
           "ruleId": "control.mechanism.unimplemented",
-          "ruleIndex": 25,
+          "ruleIndex": 27,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2072,7 +2173,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 24,
+          "ruleIndex": 26,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2101,7 +2202,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 24,
+          "ruleIndex": 26,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2130,7 +2231,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 24,
+          "ruleIndex": 26,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2159,7 +2260,7 @@
         },
         {
           "ruleId": "obligation.disposition.not_one",
-          "ruleIndex": 24,
+          "ruleIndex": 26,
           "level": "warning",
           "kind": "fail",
           "message": {
@@ -2201,7 +2302,7 @@
             "classified": 23,
             "checked": 22,
             "generated": 1,
-            "instances": 267,
+            "instances": 269,
             "skipped": 67,
             "skips": [
               {
@@ -2233,7 +2334,10 @@
                 "instances": 24
               }
             ],
-            "unaccounted": []
+            "unaccounted": [
+              ".headwater/ids",
+              ".headwater/ids"
+            ]
           },
           "escaped": {
             "waived": "no waiver reaches a check finding",
@@ -2241,7 +2345,7 @@
             "suppressed": 2
           },
           "read_set": {
-            "inputs": 24,
+            "inputs": 25,
             "unhashed": 0
           },
           "loss_set": [

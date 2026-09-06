@@ -102,6 +102,7 @@ fn run_with(ctx: &Context) -> Run {
             adoption: None,
             source: "engine/crates/check/fixtures/transition.taxonomy.yml",
         },
+        &headwater_check::claim::Claims::empty(),
         ctx,
         &mut Cache::disabled(),
     )

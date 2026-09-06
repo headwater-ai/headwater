@@ -55,7 +55,7 @@ graph
     identifier: the identifier is not a scalar, and an identifier is a word
 
 checks
-  25 seen, 23 classified, 22 checked, 267 check instances
+  25 seen, 23 classified, 22 checked, 269 check instances
         1 generated, held to regeneration by `headwater generate --check`
         1 skipped: no `id` facet, which is the key this engine reads an
           identifier from and which no declaration states
@@ -69,12 +69,14 @@ checks
        21 skipped: this document writes no fragment into itself
        24 skipped: change-scoped-only: the prior version is available only in
          change-scoped evaluation, and this run carries no change
+    a check read .headwater/ids, which the census never walked
+    a check read .headwater/ids, which the census never walked
   adoption
     1 pairs open, 0 closed, holding 1 finding, in 1 task
     AD-1 1 open, 0 closed, holding 1 finding, owner the fixture tree, until
       2027-01-01
-      one pair, so that a run carries a migration-pending finding24 documents in
-        the read set, and 2 barriers that no gate carries across a merge
+      one pair, so that a run carries a migration-pending finding25 documents in
+        the read set, and 4 barriers that no gate carries across a merge
        22 instances of facet.required.missing
        22 instances of facet.value.not_permitted
        22 instances of identifier.pattern.not_met
@@ -86,6 +88,8 @@ checks
        22 instances of relation.declaration.unusable
        22 instances of identifier.unusable
         1 instances of identifier.claimed_twice
+        1 instances of identifier.claim.missing
+        1 instances of identifier.claim.stale
        15 instances of voice.forbidden_construction
        15 instances of language.controlled.not_met
        13 instances of language.retired_term.used
@@ -136,6 +140,13 @@ checks
     identifier.claimed_twice
       corpus scope, every row of the census, and what phase A could not make of
         each document's identity, and it is a barrier
+    identifier.claim.missing
+      corpus scope, every row of the census, and what phase A could not make of
+        each document's identity, and the identifier claim store, and it is a
+        barrier
+    identifier.claim.stale
+      corpus scope, every row of the census, and the identifier claim store, and
+        it is a barrier
     voice.forbidden_construction
       document scope, one document, its front matter and its body
     language.controlled.not_met
@@ -204,14 +215,16 @@ checks
       names one obligation, so it names none
     lifecycle.dependency.on_terminal reaches no obligation, so it names none
     identifier.claimed_twice reaches no obligation, so it names none
+    identifier.claim.missing reaches no obligation, so it names none
+    identifier.claim.stale reaches no obligation, so it names none
     warrant.promoted reaches no obligation, so it names none
     lifecycle.transition.not_permitted reaches no obligation, so it names none
     lifecycle.state.not_admitted reaches no obligation, so it names none
     lifecycle.deletion.not_permitted reaches no obligation, so it names none
     coverage.document_unchecked reaches no obligation, so it names none
     adoption.task.expired reaches no obligation, so it names none
-  42 findings
-       24 ✗ error
+  44 findings
+       26 ✗ error
        18 ▲ warn
 
   check/evaluations/epsilon.md:4:1 ▲ warn
@@ -326,11 +339,27 @@ checks
       this document
     fix: point it at a heading of check/spec/07-prose-defects.md, or write the
       heading it names
+  check/spec/08-contract-met.md:2:1 ✗ error
+    identifier.claim.missing: `DR-FIX-0008` is spent by
+      check/spec/08-contract-met.md and no file of `.headwater/ids` claims it,
+      so this identifier is invisible to the allocator of every other branch and
+      a second document can be minted onto it
+    fix (mechanical): run `headwater check --fix`, which writes
+      `.headwater/ids/decision_id/DR-FIX-0008` holding
+      `check/spec/08-contract-met.md`
   check/spec/09-contract-missing.md ✗ error
     section.required.missing (OB-FIX-9): `decision_record` requires the section
       `Decision`, and no heading of this document says so
     fix: add a `Decision` heading to check/spec/09-contract-missing.md, with the
       content the kind is for
+  check/spec/09-contract-missing.md:2:1 ✗ error
+    identifier.claim.missing: `DR-FIX-0009` is spent by
+      check/spec/09-contract-missing.md and no file of `.headwater/ids` claims
+      it, so this identifier is invisible to the allocator of every other branch
+      and a second document can be minted onto it
+    fix (mechanical): run `headwater check --fix`, which writes
+      `.headwater/ids/decision_id/DR-FIX-0009` holding
+      `check/spec/09-contract-missing.md`
   check/spec/10-suppressed.md:27:1 ▲ warn
     language.controlled.not_met (OB-FIX-8): `ste_house` holds prose to 25 words
       a sentence, and this one has 31
@@ -440,6 +469,8 @@ read set
   lock f56bcd0fbdb55db9caf432a8df7904bc47d417d9333f5561baceece2d6f94037
   clock 2026-08-12
   barrier identifier.claimed_twice
+  barrier identifier.claim.missing
+  barrier identifier.claim.stale
   barrier lifecycle.deletion.not_permitted
   windowed relation.participation.overdue
   version facet.required.missing 1
@@ -455,6 +486,8 @@ read set
   version relation.declaration.unusable 1
   version identifier.unusable 1
   version identifier.claimed_twice 1
+  version identifier.claim.missing 1
+  version identifier.claim.stale 1
   version voice.forbidden_construction 1
   version language.controlled.not_met 1
   version language.retired_term.used 1
@@ -469,6 +502,7 @@ read set
   version obligation.disposition.not_one 1
   version control.mechanism.unimplemented 1
   version adoption.task.expired 1
+  input .headwater/ids sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
   input check/evaluations/alpha.md sha256:e651a58ed6489f388954343391d6321a708a2b7492bb4dc1386699a8bf65cc7b
   input check/evaluations/beta.md sha256:37e03d2c518cced7604d74dd38c1949cbc72186db9b4a4bd5bb8f3fe9503d31d
   input check/evaluations/delta.md sha256:2f0828576f6ae90573d0a3e6acb2ba64eacf43fd4221e4b821efd5ea335c948f

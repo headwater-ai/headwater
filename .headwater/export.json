@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 359,
-      "carried": 359,
+      "in the graph": 361,
+      "carried": 361,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 585,
-      "carried": 585,
+      "in the graph": 586,
+      "carried": 586,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1530,6 +1530,32 @@
             "traces_to": [
               "HW-DR-0044",
               "HW-DR-0003"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md",
+        "kind": "decision",
+        "id": "HW-DR-0054",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0054",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "A tree holds no concurrency, so two branches mint one number in silence. A claim store of one file for each identifier makes the two branches meet, and the rule that already reports a duplicate then fires on the branch.",
+          "last_verified": "2026-09-06",
+          "title": "The upper bound of a reconcile-first allocator is the corpus and a claim store",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0021"
             ]
           }
         }
@@ -6886,6 +6912,28 @@
         }
       },
       {
+        "path": "docs/obligations/0163-ten-decision-records-claim-a-q-number-the-decision-register-does-not-carry.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0163",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0163",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "Ten decision records name a Q number in their file name that docs/spec/09-decisions.md has no section for, and nothing reads either side of the pair.",
+          "last_verified": "2026-09-06",
+          "title": "Ten decision records claim a Q number the decision register does not carry",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
         "path": "docs/probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md",
         "kind": "probe",
         "id": "HW-PROBE-a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor",
@@ -9514,6 +9562,17 @@
           "bound": "document",
           "id": "HW-DR-0003",
           "path": "docs/decisions/0003-how-much-of-the-default-taxonomy-ships-in-the-box.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0021",
+          "path": "docs/decisions/0021-terminological-succession-and-validity-under-merge.md",
           "kind": "decision"
         }
       },

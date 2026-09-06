@@ -207,6 +207,7 @@ pub struct Scope {
     needs_phase_a: bool,
     needs_clock: bool,
     needs_prior: bool,
+    needs_claims: bool,
 }
 
 impl Scope {
@@ -222,6 +223,7 @@ impl Scope {
             needs_phase_a,
             needs_clock,
             needs_prior,
+            needs_claims: false,
         }
     }
 
@@ -232,6 +234,7 @@ impl Scope {
             needs_phase_a: false,
             needs_clock,
             needs_prior: false,
+            needs_claims: false,
         }
     }
 
@@ -242,16 +245,18 @@ impl Scope {
             needs_phase_a: false,
             needs_clock,
             needs_prior: false,
+            needs_claims: false,
         }
     }
 
-    pub(crate) const fn corpus(needs_phase_a: bool, needs_prior: bool) -> Self {
+    pub(crate) const fn corpus(needs_phase_a: bool, needs_prior: bool, needs_claims: bool) -> Self {
         Scope {
             grain: Grain::Corpus,
             needs_body: false,
             needs_phase_a,
             needs_clock: false,
             needs_prior,
+            needs_claims,
         }
     }
 
@@ -262,6 +267,7 @@ impl Scope {
             needs_phase_a: false,
             needs_clock: false,
             needs_prior: false,
+            needs_claims: false,
         }
     }
 
@@ -296,6 +302,20 @@ impl Scope {
     /// run, because that is the run that has no change to take one from.
     pub fn needs_prior(&self) -> bool {
         self.needs_prior
+    }
+
+    /// Whether an instance of this scope receives the identifier claim store,
+    /// and so whether its cache key carries the flag and its read set carries
+    /// the store's digest. One fact, both uses, as the clock is.
+    ///
+    /// The store is not a document and it lives outside the corpus root, so it
+    /// reaches an instance through this flag and through nothing else. A flag
+    /// that changed what an instance read and did not reach the key is the
+    /// correctness bug
+    /// [spec 12](../../../../docs/spec/12-check-layer.md#determinism-concretely)
+    /// names.
+    pub fn needs_claims(&self) -> bool {
+        self.needs_claims
     }
 
     /// The scope as one line of a report, in spec 12's own words for the
@@ -343,6 +363,13 @@ impl Scope {
             }
             (true, _) => ", and the version of it that stood before the change",
         };
+        // The one input of this engine that is not a document and not an
+        // injected value. A reader who asks how a rule reaches a directory
+        // beside the corpus root reads the answer here.
+        let claims = match self.needs_claims {
+            true => ", and the identifier claim store",
+            false => "",
+        };
         // Spec 12 calls the corpus-scoped checks the barriers, and the word is
         // last so that it reads as a statement about the scope rather than
         // about the inputs listed before it.
@@ -351,7 +378,7 @@ impl Scope {
             _ => "",
         };
         format!(
-            "{} scope, {carries}{phase_a}{clock}{prior}{barrier}",
+            "{} scope, {carries}{phase_a}{clock}{prior}{claims}{barrier}",
             self.grain.name()
         )
     }
@@ -517,6 +544,21 @@ pub trait CorpusCheck {
     /// names no change, because that run has no change to take one from.
     const NEEDS_PRIOR: bool = false;
 
+    /// Whether the view carries the identifier claim store.
+    ///
+    /// The store is at `.headwater/ids`, beside the corpus and not inside it,
+    /// so no census row covers it and no read set would carry it by accident.
+    /// A rule that declares this receives [`headwater_check::claim::Claims`]
+    /// and one more [`Input`] in its read set, whose digest is over the store's
+    /// canonical listing. See [`crate::claim`].
+    ///
+    /// It carries none of [`CorpusCheck::NEEDS_PRIOR`]'s consequence. An absent
+    /// store is an empty store rather than a missing input, so an instance that
+    /// declares this runs in every run, which is what the drift it reports
+    /// requires: a rule that skipped in a plain `headwater check` would be
+    /// dormant in exactly the run that reads this corpus end to end.
+    const NEEDS_CLAIMS: bool = false;
+
     fn evaluate(&self, view: &CorpusView<'_>) -> Outcome;
 }
 
@@ -562,7 +604,7 @@ pub fn neighbourhood_scope<C: NeighbourhoodCheck>() -> Scope {
 
 /// The scope of a corpus-scoped check, derived from its trait.
 pub fn corpus_scope<C: CorpusCheck>() -> Scope {
-    Scope::corpus(C::NEEDS_PHASE_A, C::NEEDS_PRIOR)
+    Scope::corpus(C::NEEDS_PHASE_A, C::NEEDS_PRIOR, C::NEEDS_CLAIMS)
 }
 
 /// The edition of a document-scoped check, derived from its trait.
@@ -1008,6 +1050,7 @@ impl<'a> NeighbourhoodView<'a> {
 pub struct CorpusView<'a> {
     identity: Option<&'a [headwater_graph::index::Reported]>,
     departed: &'a [Departed<'a>],
+    claims: Option<&'a crate::claim::Claims>,
     reads: Vec<Input>,
 }
 
@@ -1034,6 +1077,18 @@ impl<'a> CorpusView<'a> {
     /// that declared the same input.
     pub fn departed(&self) -> &[Departed<'a>] {
         self.departed
+    }
+
+    /// The identifier claim store, and only for a check that declared
+    /// `NEEDS_CLAIMS`.
+    ///
+    /// An empty store and no store are two different answers, and the option is
+    /// the difference: a run whose scope did not admit the store receives
+    /// `None`, and a repository that has minted nothing receives an empty
+    /// [`crate::claim::Claims`]. The first is a rule reading what it did not
+    /// declare and the second is a fact about a corpus.
+    pub fn claims(&self) -> Option<&'a crate::claim::Claims> {
+        self.claims
     }
 
     /// Every document this view was built over. See the type comment for why
@@ -1383,6 +1438,7 @@ pub fn over_corpus<C: CorpusCheck>(
     check: &C,
     census: &Census,
     graph: &Graph,
+    claims: &crate::claim::Claims,
     ctx: &Context,
     cache: &mut Cache,
 ) -> Vec<Instance> {
@@ -1424,12 +1480,26 @@ pub fn over_corpus<C: CorpusCheck>(
             .iter()
             .map(|entry| Input::new(entry.path, Some(entry.digest))),
     );
+    // The store, named in the read set with a digest. `readset.rs` says an
+    // input a run read has to appear or the union is not a union, and
+    // `cache.rs` refuses to key an instance carrying an input with no digest,
+    // so a store named and not hashed would leave both claim rules permanently
+    // re-evaluated. The path is a directory rather than a file, which is why
+    // `headwater gate`'s reader answers for it specially.
+    if C::NEEDS_CLAIMS {
+        let digest = claims.digest();
+        reads.push(Input::new(crate::claim::STORE, Some(digest.as_str())));
+    }
     let view = CorpusView {
         identity: match C::NEEDS_PHASE_A {
             true => Some(&graph.index.defects),
             false => None,
         },
         departed: &departed,
+        claims: match C::NEEDS_CLAIMS {
+            true => Some(claims),
+            false => None,
+        },
         reads: reads.clone(),
     };
     // No clock. `CorpusCheck` declares none, so `clock_for` would have nothing

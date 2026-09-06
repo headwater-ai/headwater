@@ -144,6 +144,7 @@ fn check_over(root: &Path) -> Run {
             adoption: None,
             source: TAXONOMY,
         },
+        &headwater_check::claim::Claims::at(root),
         &Context::at(Date::parse(PINNED).expect("the pinned date")),
         &mut Cache::disabled(),
     )
@@ -179,6 +180,15 @@ fn what_the_fixer_wrote_passes_the_engines_own_checks() {
         composed.refused
     );
     fix::apply(root, &composed.files).expect("the files write");
+    // The other half of a composition, and the verb writes both. A patch that
+    // makes a file is not a patch that edits one, so it takes a second writer
+    // with create-new semantics rather than an entry in `files`.
+    assert!(
+        !composed.created.is_empty(),
+        "the fixture corpus offers no patch that makes a file, so the create \
+         half of this test proves nothing"
+    );
+    fix::make(root, &composed.created).expect("the files are made");
 
     let after = check_over(root);
 

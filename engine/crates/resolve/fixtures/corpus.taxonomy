@@ -1,5 +1,5 @@
 taxonomy: headwater/standard
-version: 4.0.0
+version: 4.1.0
 purposes:
   rationale:
     intent: "explain why a choice was made and what it forecloses"
@@ -883,6 +883,18 @@ obligations:
     class: cohesion
     prevents: content.inconsistent
     severity: high
+  OB-ID-4:
+    statement: "Every identifier a reconcile-first scheme has minted is recorded in the identifier claim store"
+    rationale: "An allocator that reads only the tree reads a lower bound twice over, on every value ever allocated and on every value another branch has already taken, so two branches cut from one state both mint the same number, each one passes every check on its own, the file names differ and the merge is silent. The pair first exists after the second merge, when no gate is looking at either change"
+    class: cohesion
+    prevents: content.incomplete
+    severity: high
+  OB-ID-5:
+    statement: "A claim of the identifier store names the document that holds the identifier it records"
+    rationale: "A claim that names the wrong document, or names none at all, records a mint that did not happen, and the store is the one artifact a later allocator trusts about what is already spent. A claim with no claimant is worse than an absent one, because two branches adding the same empty claim merge clean and the store stops answering the question it exists for"
+    class: cohesion
+    prevents: content.inconsistent
+    severity: medium
   OB-REL-2:
     statement: "Both ends of a relation instance are kinds that the relation permits"
     rationale: "An edge between kinds a relation forbids is an assertion that the taxonomy never sanctioned, and every query over that relation inherits it"
@@ -1144,6 +1156,30 @@ controls:
       criteria:
         window: "one release of the taxonomy over an adopting corpus"
         threshold: "no false positive, because the rule reports the collision the identifier index already found rather than comparing identifiers a second time"
+        sample: "every finding of one run over the adopting corpus, adjudicated once"
+  CT-ID-4:
+    mechanism: "check:identifier.claim.missing"
+    discharges:
+      - OB-ID-4
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: "one release of the taxonomy over an adopting corpus"
+        threshold: "no false positive, because the rule compares the identifiers the corpus declares against the files of the store and reports neither where the two agree"
+        sample: "every finding of one run over the adopting corpus, adjudicated once"
+  CT-ID-5:
+    mechanism: "check:identifier.claim.stale"
+    discharges:
+      - OB-ID-5
+    trigger: pull_request
+    posture: advisory
+    acts: detective
+    promotion:
+      criteria:
+        window: "one release of the taxonomy over an adopting corpus"
+        threshold: "no false positive, because the rule reads the claimant a claim names and reports nothing for a claimant the corpus no longer holds"
         sample: "every finding of one run over the adopting corpus, adjudicated once"
   CT-REL-2:
     mechanism: "check:relation.endpoint.not_permitted"

@@ -187,6 +187,7 @@ fn the_check_layer_reports_no_unresolved_target_over_an_imported_edge() {
             adoption: None,
             source: "taxonomy.yml",
         },
+        &headwater_check::claim::Claims::empty(),
         &Context::at(Date::parse("2026-08-14").expect("the pinned date")),
         &mut Cache::disabled(),
     );

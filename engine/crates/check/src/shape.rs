@@ -61,10 +61,11 @@ pub struct Shape {
 
 /// An identifier scheme: the shape a minted identifier takes.
 ///
-/// Three members, and this reader keeps two of them. `pattern` and `namespace`
-/// decide what an identifier looks like. `allocation` decides how one is
-/// issued, which is a corpus-grained question about collision and reuse, and no
-/// document-scoped rule reads it. See [`crate::identifier`].
+/// Three members, and this reader keeps all three. `pattern` and `namespace`
+/// decide what an identifier looks like, and no document-scoped rule reads
+/// anything else of a scheme ([`crate::identifier`]). `allocation` decides how
+/// one is issued, which is a corpus-grained question about collision and reuse,
+/// and [`crate::claim`] is the corpus-grained rule that asks it.
 #[derive(Clone, Debug)]
 pub struct IdentifierScheme {
     pub name: String,
@@ -74,6 +75,9 @@ pub struct IdentifierScheme {
     /// The one part of the template that an overlay may not change
     /// ([spec 2](../../../../docs/spec/02-taxonomy-model.md#the-immutable-core)).
     pub namespace: String,
+    /// `minted-once` or `reconcile-first`, as declared, and nothing where the
+    /// scheme declares neither. Held as written, because it is quoted back.
+    pub allocation: Option<String>,
     pub span: Span,
 }
 
@@ -455,6 +459,7 @@ impl Shape {
                             name: entry.key.value.clone(),
                             pattern: scalar(body, "pattern").unwrap_or_default(),
                             namespace: scalar(body, "namespace").unwrap_or_default(),
+                            allocation: scalar(body, "allocation"),
                             span: entry.key.span,
                         });
                     }

@@ -78,6 +78,9 @@ fn fixtures_dir() -> PathBuf {
 
 struct Built {
     census: Census,
+    /// No store under the fixture tree, so this is empty. The server takes one
+    /// as a check run does, and empty is a real answer rather than a stand-in.
+    claims: headwater_check::claim::Claims,
     graph: Graph,
     shape: Shape,
     taxonomy: Taxonomy,
@@ -110,6 +113,7 @@ fn fixture_tree() -> Built {
     );
     Built {
         census,
+        claims: headwater_check::claim::Claims::at(&fixtures_dir()),
         graph,
         shape,
         taxonomy,
@@ -156,6 +160,7 @@ impl Built {
             census: &self.census,
             graph: &self.graph,
             declared: self.declared(),
+            claims: &self.claims,
             package: "query-fixture",
             version: "0.0.0",
             now: Context::at(Date::parse(at).expect("a date")),
@@ -679,6 +684,7 @@ fn the_check_tool_answers_the_bytes_the_cli_answers() {
         &built.census,
         &built.graph,
         &built.declared(),
+        &built.claims,
         &Context::at(Date::parse(RECORDED_AT).expect("a date")),
         &mut cache,
     );

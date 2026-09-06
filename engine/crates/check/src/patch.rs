@@ -23,7 +23,7 @@
 //! **error** by severity and carries remediation prose, which is where
 //! `CLAUDE.md` already puts the first reading.
 //!
-//! # Two shapes, and the second one writes through the scaffolder
+//! # Three shapes, and only the first one edits prose
 //!
 //! [`Patch::Text`] replaces a byte range of one file. [`Patch::Half`] declares
 //! one edge half in a document's front matter, and the writer for it is
@@ -31,6 +31,17 @@
 //! into one `relations:` block would disagree the first time a document nested
 //! differently, and the splice already carries the read-back guard that makes a
 //! wrong guess a refusal.
+//!
+//! [`Patch::Create`] makes a file that does not exist. It is the one shape that
+//! touches no document: the file it writes is a claim of
+//! [`crate::claim`]'s store, which holds no prose and which nothing in this
+//! engine ever modifies. **Its writer opens with create-new semantics and
+//! refuses an occupied path**, and that is a bar rather than a convenience. A
+//! claim file is the only record of which document minted an identifier, the
+//! tree does not hold it, and no rule repairs a claim that was overwritten. So
+//! a fixer that truncated one would destroy a fact a person cannot
+//! reconstruct, which is a worse failure than any wrong report this module can
+//! produce.
 //!
 //! # Nothing here writes, and nothing here reads a file
 //!
@@ -67,6 +78,13 @@ pub enum Patch {
         relation: String,
         id: String,
     },
+    /// Make `path`, holding `contents`, where no file stands.
+    ///
+    /// No offset and no `expect`, because there is nothing to hold a belief
+    /// against: the belief is that the path is free, and the create-new syscall
+    /// is what answers it. An occupied path is a refusal and never an
+    /// overwrite. See the module comment.
+    Create { path: String, contents: String },
 }
 
 impl Patch {
@@ -77,6 +95,7 @@ impl Patch {
         match self {
             Patch::Text { path, .. } => path,
             Patch::Half { path, .. } => path,
+            Patch::Create { path, .. } => path,
         }
     }
 }

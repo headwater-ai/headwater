@@ -1,8 +1,8 @@
 ## `headwater check`
 
-42 findings, 24 of them errors across 22 of 25 documents, against `headwater/fixture` 1.0.0 at `f56bcd0fbdb55db9caf432a8df7904bc47d417d9333f5561baceece2d6f94037`, evaluated at 2026-08-12.
+44 findings, 26 of them errors across 22 of 25 documents, against `headwater/fixture` 1.0.0 at `f56bcd0fbdb55db9caf432a8df7904bc47d417d9333f5561baceece2d6f94037`, evaluated at 2026-08-12.
 
-**Coverage.** This run saw 25 files and classified 23 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 267 check instances, and 67 of them reached no verdict.
+**Coverage.** This run saw 25 files and classified 23 of them, and left 1 to `headwater generate --check`, which holds a generated file to the bytes its emitter writes. It created 269 check instances, and 67 of them reached no verdict.
 
 - 1 — no `id` facet, which is the key this engine reads an identifier from and which no declaration states
 - 1 — the `id` facet is a sequence, and an identifier is a word
@@ -11,6 +11,11 @@
 - 2 — `ste_strict` declares ASD-STE100, profile strict, and this engine has no rules for it
 - 21 — this document writes no fragment into itself
 - 24 — change-scoped-only: the prior version is available only in change-scoped evaluation, and this run carries no change
+
+2 readings of a path the census never walked, so the coverage above is computed over a set that does not hold them:
+
+- `.headwater/ids`
+- `.headwater/ids`
 
 | Severity | Where | Rule | Finding |
 |---|---|---|---|
@@ -38,7 +43,9 @@
 | error | `check/spec/07-prose-defects.md:56` | `language.source_form.not_met` | `ste_house` writes one paragraph on one line, and this line continues the paragraph above |
 | error | `check/spec/07-prose-defects.md:57` | `language.source_form.not_met` | `ste_house` writes one paragraph on one line, and this line continues the paragraph above |
 | error | `check/spec/07-prose-defects.md:61` | `link.fragment.unresolved` | `#no-such-section` names no heading of this document |
+| error | `check/spec/08-contract-met.md:2` | `identifier.claim.missing` | `DR-FIX-0008` is spent by check/spec/08-contract-met.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it |
 | error | `check/spec/09-contract-missing.md` | `section.required.missing` | `decision_record` requires the section `Decision`, and no heading of this document says so |
+| error | `check/spec/09-contract-missing.md:2` | `identifier.claim.missing` | `DR-FIX-0009` is spent by check/spec/09-contract-missing.md and no file of `.headwater/ids` claims it, so this identifier is invisible to the allocator of every other branch and a second document can be minted onto it |
 | warn | `check/spec/10-suppressed.md:27` | `language.controlled.not_met` | `ste_house` holds prose to 25 words a sentence, and this one has 31 |
 | error | `check/spec/11-identifier-mismatch.md:2` | `identifier.pattern.not_met` | `SPEC-XX-mismatch` does not match `SPEC-FIX-<slug>`, which scheme `spec_id` declares: `XX-mismatch` is where the namespace `FIX` was expected |
 | error | `check/spec/13-dangling.md:9` | `relation.target.unresolved` | `SPEC-FIX-dangling` declares `assesses: SPEC-FIX-no-such-document`, and that target resolves to nothing at all |
@@ -67,4 +74,4 @@
 
 </details>
 
-24 documents in the read set, and 2 barriers that no gate carries across a merge. 27 obligations, 22 verified.
+25 documents in the read set, and 4 barriers that no gate carries across a merge. 27 obligations, 22 verified.

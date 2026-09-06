@@ -66,6 +66,7 @@ fn run_over(scratch: &Scratch, declaration: &Declaration, cache: &mut Cache) -> 
             adoption: None,
             source: "taxonomy.yml",
         },
+        &headwater_check::claim::Claims::empty(),
         &Context::at(Date::parse(TODAY).expect("the pinned date")),
         cache,
     )

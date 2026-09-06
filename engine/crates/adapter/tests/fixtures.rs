@@ -314,6 +314,7 @@ fn scoped_at(adoption: Option<&Mapping>, scoping: Scoping) -> Ran {
             adoption,
             source: "engine/crates/check/fixtures/check.taxonomy.yml",
         },
+        &headwater_check::claim::Claims::empty(),
         &ctx,
         &mut Cache::disabled(),
     );
@@ -1097,26 +1098,36 @@ fn every_format_states_how_many_instances_reached_no_verdict() {
             assert_eq!(&text(entry, "reason"), reason);
             assert_eq!(count(entry, "instances"), *instances);
         }
-        // Present and empty rather than absent. This is a full-corpus run, so
-        // the one rule that reads outside the census reads nothing at all: it
-        // declares the prior version and skips where there is no change. The
-        // scoped fixture is where the member carries paths, and a member that
-        // appeared only when it was non-empty would make a reader tell "none"
-        // from "not reported".
+        // Present rather than absent, and it carries the claim store twice.
+        // This is a full-corpus run, so the rule that declares the prior
+        // version skips and reads nothing outside the census, and the two rules
+        // over the store read it whatever the run: it sits beside the corpus
+        // root, so no walk reaches it. One entry per reading, which is what
+        // separates two rules reading one path from one rule reading two. A
+        // member that appeared only when it was non-empty would make a reader
+        // tell "none" from "not reported".
+        let outside: Vec<String> = member(&block, "unaccounted")
+            .expect("the unaccounted paths")
+            .as_seq()
+            .expect("an array")
+            .iter()
+            .map(|path| scalar(&path.value))
+            .collect();
         assert_eq!(
-            member(&block, "unaccounted")
-                .expect("the unaccounted paths")
-                .as_seq()
-                .expect("an array")
-                .len(),
-            0
+            outside,
+            [
+                headwater_check::claim::STORE.to_string(),
+                headwater_check::claim::STORE.to_string()
+            ],
+            "the store, once for each rule that reads it, in {}",
+            format.name()
         );
     }
 
     let text_report = render(&ran, Format::Text);
     let markdown = render(&ran, Format::Markdown);
-    assert!(text_report.contains("267 check instances"));
-    assert!(markdown.contains("It created 267 check instances, and 67 of them reached no verdict."));
+    assert!(text_report.contains("269 check instances"));
+    assert!(markdown.contains("It created 269 check instances, and 67 of them reached no verdict."));
     // The report is laid out at a width, so a long reason arrives over more
     // than one line. The class is a run of words either way.
     let flat = flowed(&text_report);
@@ -1136,11 +1147,14 @@ fn every_format_states_how_many_instances_reached_no_verdict() {
 ///
 /// `Coverage::unaccounted` is written when an instance reads a file the census
 /// never walked. That was unreachable until `lifecycle.deletion.not_permitted`,
-/// which reads the version of every path a change named that no row holds, so
-/// the recorded scoped artifact now carries two entries and the recorded
-/// full-corpus one still carries none. This test predates both and keeps its
-/// own state, because what it holds is the emitter rather than the rule: one
-/// instance over a path that is on no row of a real census.
+/// which reads the version of every path a change named that no row holds. The
+/// two rules of `headwater_check::claim` reach it too, and every run does:
+/// each one names `.headwater/ids` in its read set, and that directory sits
+/// beside the corpus root rather than inside it. So no run of any tree writes
+/// an empty block any more, and the empty case below is composed rather than
+/// taken from a run. This test predates all three and keeps its own state,
+/// because what it holds is the emitter rather than the rule: one instance over
+/// a path that is on no row of a real census.
 ///
 /// What it proves is what the block is for — a check that read outside the
 /// denominator read outside the set every coverage guarantee is computed over,
@@ -1177,12 +1191,35 @@ fn a_path_the_census_never_walked_is_named_and_not_counted() {
         "the path, and not a count of them"
     );
     // And the empty case is a different artifact, so the member states which of
-    // the two this run was.
-    let clean = headwater_adapter::json::coverage(&ran.run.coverage).render_pretty();
-    assert!(ran.run.coverage.unaccounted.is_empty());
+    // the two this run was. It is composed here rather than taken from `ran`,
+    // because the two claim rules put `.headwater/ids` in every run's block.
+    let inside = ran.census.rows[0].path.clone();
+    let clean = headwater_check::Coverage::of(
+        &ran.census,
+        &[headwater_check::instance::Instance::of(
+            "duplicate.identifier",
+            headwater_check::scope::Grain::Document,
+            vec![headwater_check::instance::Input {
+                path: inside,
+                digest: None,
+            }],
+            headwater_check::instance::Outcome::Passed,
+        )],
+    );
+    assert!(clean.unaccounted.is_empty());
     assert_ne!(
-        clean,
+        headwater_adapter::json::coverage(&clean).render_pretty(),
         headwater_adapter::json::coverage(&outside).render_pretty()
+    );
+
+    // The run's own block is not the empty one, and it names the store rather
+    // than a path this repository lost track of.
+    assert_eq!(
+        ran.run.coverage.unaccounted,
+        [
+            headwater_check::claim::STORE.to_string(),
+            headwater_check::claim::STORE.to_string()
+        ]
     );
 }
 

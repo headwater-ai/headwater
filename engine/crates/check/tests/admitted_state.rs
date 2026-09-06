@@ -78,6 +78,7 @@ fn run() -> Run {
             adoption: None,
             source: "engine/crates/check/fixtures/admitted-state.taxonomy.yml",
         },
+        &headwater_check::claim::Claims::empty(),
         &Context::at(Date::parse(PINNED).expect("the pinned date")),
         &mut Cache::disabled(),
     )

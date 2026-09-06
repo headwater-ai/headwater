@@ -582,6 +582,16 @@ jobs:
         # refuses everything is as useless as one that refuses nothing. It
         # writes only under a temporary directory.
         run: sh tools/site-fragments-fixtures.sh
+      - name: The identifier claim store conflicts on a collision and merges on a coincidence
+        # The store answers "is this number taken" through git rather than
+        # through a rule, so the two outcomes it rests on are properties of
+        # `git merge` and of `.gitattributes` and nothing in this repository
+        # states them. This suite drives two branches from one base over
+        # scratch repositories and pins both, provokes the `merge=union`
+        # failure on purpose, and refuses an empty claim anywhere in the
+        # shipped store. It builds no engine and writes only under a temporary
+        # directory.
+        run: sh tools/id-store-fixtures.sh
       - name: Every declared export profile is what this corpus produces
         # `export_plan()` is a separate code path from `plan()`: it re-filters
         # the declared projections by `--profile` rather than writing every

@@ -2234,6 +2234,7 @@ fn run_of(loaded: &Loaded, ctx: &Context) -> headwater_check::Run {
         &loaded.census,
         &loaded.graph,
         &loaded.declared(),
+        &loaded.claims,
         ctx,
         &mut cache,
     )
@@ -2367,6 +2368,12 @@ struct Loaded {
     /// the same key. Two `Config::default()` calls would be two guesses that a
     /// future adopter setting could pull apart.
     config: Config,
+    /// The identifier claim store, read off the tree beside the corpus rather
+    /// than out of it. Held here, and read once, for the reason `config` is:
+    /// every verb that runs the checks reads the same store, and two reads
+    /// would be two answers that a mint between them could pull apart. See
+    /// [`headwater_check::claim`].
+    claims: headwater_check::claim::Claims,
 }
 
 fn load(root: &Path) -> Result<Loaded, ExitCode> {
@@ -2455,6 +2462,7 @@ fn load_against(root: &Path, bound: Bound) -> Result<Loaded, ExitCode> {
         relations,
         register,
         config,
+        claims: headwater_check::claim::Claims::at(root),
     })
 }
 
@@ -2781,6 +2789,7 @@ fn scaffold(
         census: &loaded.census,
         index: &index,
         config: &loaded.config,
+        claims: &loaded.claims,
     };
     let request = headwater_scaffold::Request {
         kind,
@@ -2795,13 +2804,17 @@ fn scaffold(
     let plan = headwater_scaffold::propose(&sources, &request).map_err(|why| why.to_string())?;
     let composed =
         headwater_scaffold::write::compose(root, &plan).map_err(|why| why.to_string())?;
+    // The claim, then the document. Nothing above this line has written a byte,
+    // so a claim that cannot be made refuses with the tree untouched. See
+    // `headwater_scaffold::claim` for why this order and not the other one.
+    let claimed = headwater_scaffold::claim::write(root, &plan).map_err(|why| why.to_string())?;
     headwater_scaffold::write::apply(root, &composed).map_err(|why| why.to_string())?;
 
     let reading =
         headwater_scaffold::reading::Reading::of(&plan, &loaded.bound.digest, now, surface);
     let recorded = headwater_scaffold::reading::append(root, &reading);
     Ok(Written {
-        artifact: scaffold_report(&plan, &composed, recorded.is_ok()),
+        artifact: scaffold_report(&plan, &composed, claimed.as_deref(), recorded.is_ok()),
         // The document landed and its reading did not, which is the one outcome
         // a store of this shape cannot report later: a run with no reading and a
         // corpus that never ran the verb are the same file. So the run says so
@@ -2830,6 +2843,7 @@ fn scaffold(
 fn scaffold_report(
     plan: &headwater_scaffold::Plan,
     composed: &[headwater_scaffold::write::Composed],
+    claimed: Option<&str>,
     recorded: bool,
 ) -> String {
     use std::fmt::Write;
@@ -2841,6 +2855,11 @@ fn scaffold_report(
             false => "edited",
         };
         let _ = writeln!(out, "{verb} {}", file.path);
+    }
+    // The claim, named where the reader is already reading what this run
+    // wrote. It is not a document, so it is not in `composed`.
+    if let Some(claim) = claimed {
+        let _ = writeln!(out, "claimed {claim}");
     }
 
     let _ = writeln!(out, "\nwhat the taxonomy decided");
@@ -2856,9 +2875,10 @@ fn scaffold_report(
         if let Some(highest) = minting.reconciled_from {
             let _ = writeln!(
                 out,
-                "    reconciled against {highest}, which is the highest value on this tree. \
-                 A document that was deleted is not on the tree, so this is a lower bound on \
-                 what was ever allocated"
+                "    reconciled against {highest}, which is the highest value this tree and \
+                 the identifier claim store carry between them. A document that was deleted is \
+                 not on the tree, and the store outlives it, so the pair is a lower bound only \
+                 on a value that no claim recorded"
             );
         }
     } else {
@@ -4014,6 +4034,7 @@ fn mcp(root: &Path, now: Option<Date>, writing: bool) -> ExitCode {
         census: &loaded.census,
         graph: &loaded.graph,
         declared: loaded.declared(),
+        claims: &loaded.claims,
         package: &loaded.bound.package,
         version: &loaded.bound.version,
         now: ctx,
@@ -4081,6 +4102,14 @@ fn gate(root: &Path, read_set: Option<PathBuf>, now: Option<Date>, json: bool) -
         }
     };
     let verdict = headwater_check::gate::decide(&recorded, &lock.digest, asked, |listed| {
+        // The one input of a published read set that is not a file. The claim
+        // store is a directory, so `read` refuses it and the gate would report
+        // a store that is right there as a path that is gone. Its digest is
+        // over the canonical listing, which is the same value the run that
+        // wrote this read set recorded.
+        if listed == headwater_check::claim::STORE {
+            return Some(headwater_check::claim::Claims::at(root).digest());
+        }
         std::fs::read(root.join(listed))
             .ok()
             .map(|bytes| headwater_hash::digest(&bytes))
@@ -4125,6 +4154,7 @@ fn fix(root: &Path, ctx: &Context, cached: bool) -> Result<Fixed, ExitCode> {
         &loaded.census,
         &loaded.graph,
         &loaded.declared(),
+        &loaded.claims,
         ctx,
         &mut cache,
     );
@@ -4143,6 +4173,14 @@ fn fix(root: &Path, ctx: &Context, cached: bool) -> Result<Fixed, ExitCode> {
         eprintln!("headwater: {}", err(&format!("{refusal}")));
         return Err(ExitCode::FAILURE);
     }
+    // After the edits, and never before them. A create that cannot happen
+    // leaves every edited file already written, which is the ordering the
+    // scaffolder argues for: the reservation refuses with an unchanged tree,
+    // and the create is the step that can meet a path somebody else took.
+    if let Err(refusal) = headwater_scaffold::fix::make(root, &composed.created) {
+        eprintln!("headwater: {}", err(&format!("{refusal}")));
+        return Err(ExitCode::FAILURE);
+    }
     let mut account = String::new();
     for file in &composed.files {
         use std::fmt::Write;
@@ -4157,6 +4195,23 @@ fn fix(root: &Path, ctx: &Context, cached: bool) -> Result<Fixed, ExitCode> {
             }
         );
     }
+    // Counted rather than listed one line at a time. The bootstrap of a corpus
+    // that has minted for years writes hundreds of these in one run, and a
+    // caller reading standard error needs the number and the directory rather
+    // than every path.
+    if !composed.created.is_empty() {
+        use std::fmt::Write;
+        let _ = writeln!(
+            account,
+            "headwater: made {} file{} under `{}`",
+            composed.created.len(),
+            match composed.created.len() {
+                1 => "",
+                _ => "s",
+            },
+            headwater_check::claim::STORE
+        );
+    }
     if composed.is_empty() {
         account.push_str("headwater: no finding of this run carries a patch\n");
     }
@@ -4164,7 +4219,7 @@ fn fix(root: &Path, ctx: &Context, cached: bool) -> Result<Fixed, ExitCode> {
         account,
         // The seal of a writing MCP server reads this, and so does nothing
         // else. A run that composed no file left the tree as it found it.
-        landed: !composed.files.is_empty(),
+        landed: !composed.files.is_empty() || !composed.created.is_empty(),
         refused: composed.refused,
     })
 }
@@ -4227,6 +4282,7 @@ fn fix_over(root: &Path, ctx: &Context, format: Format) -> Result<Written, Strin
         &loaded.census,
         &loaded.graph,
         &loaded.declared(),
+        &loaded.claims,
         ctx,
         &mut cache,
     );
@@ -4372,7 +4428,14 @@ fn check(root: &Path, asked: Asked) -> ExitCode {
         true => Cache::at(root, &bound.digest),
         false => Cache::disabled(),
     };
-    let run = headwater_check::run(taken, graph, &loaded.declared(), &ctx, &mut cache);
+    let run = headwater_check::run(
+        taken,
+        graph,
+        &loaded.declared(),
+        &loaded.claims,
+        &ctx,
+        &mut cache,
+    );
     cache.write(root);
 
     // The run, in the vocabulary the caller asked for. Spec 6 lists four
@@ -4552,6 +4615,7 @@ fn infer(
             adoption: declared.as_ref(),
             source: headwater_lock::LOCK,
         },
+        &loaded.claims,
         &ctx,
         &mut Cache::disabled(),
     );

@@ -333,12 +333,13 @@ impl Cache {
         text.push_str(&format!("rule {rule}\n"));
         text.push_str(&format!("version {version}\n"));
         text.push_str(&format!(
-            "scope {} body={} phase_a={} clock={} prior={}\n",
+            "scope {} body={} phase_a={} clock={} prior={} claims={}\n",
             scope.grain().name(),
             scope.needs_body(),
             scope.needs_phase_a(),
             scope.needs_clock(),
-            scope.needs_prior()
+            scope.needs_prior(),
+            scope.needs_claims()
         ));
         // The one injected value, and it is written exactly when the scope
         // admits it to the view. A scope that declares the clock and was handed
@@ -470,6 +471,9 @@ fn encode_patch(patch: Option<&Patch>) -> String {
             escape(relation),
             escape(id)
         ),
+        Some(Patch::Create { path, contents }) => {
+            format!("create\t{}\t{}", escape(path), escape(contents))
+        }
     }
 }
 
@@ -493,6 +497,10 @@ fn decode_patch<'a>(fields: &mut impl Iterator<Item = &'a str>) -> Option<Option
             path: unescape(fields.next()?),
             relation: unescape(fields.next()?),
             id: unescape(fields.next()?),
+        })),
+        "create" => Some(Some(Patch::Create {
+            path: unescape(fields.next()?),
+            contents: unescape(fields.next()?),
         })),
         _ => None,
     }

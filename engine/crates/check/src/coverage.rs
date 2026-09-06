@@ -91,7 +91,7 @@ pub const RULE: &str = "coverage.document_unchecked";
 
 /// The grain this rule has. See the module comment for why it is stated here
 /// rather than derived from a trait: this rule receives no view.
-pub const SCOPE: Scope = Scope::corpus(false, false);
+pub const SCOPE: Scope = Scope::corpus(false, false, false);
 
 /// Which edition of this rule reached a verdict, stated here for the reason
 /// [`SCOPE`] is: no trait carries it. It is published in the read set beside
@@ -190,14 +190,18 @@ impl Coverage {
                     // about the denominator rather than about coverage: an
                     // instance of any grain that read outside the census read
                     // outside the set every guarantee here is computed over.
-                    // A check that read a file the census never walked. One
-                    // rule does it deliberately: a corpus-scoped instance of
-                    // `lifecycle.deletion.not_permitted` reads the version of
-                    // every path a change named that no row holds, which is
-                    // outside this denominator by definition. Every other way
-                    // of arriving here is a defect, and one line reports both,
-                    // because the fact stated is the same one — coverage was
-                    // computed over a set that does not hold this path.
+                    // A check that read a file the census never walked.
+                    // Three rules do it deliberately. A corpus-scoped instance
+                    // of `lifecycle.deletion.not_permitted` reads the version
+                    // of every path a change named that no row holds, which is
+                    // outside this denominator by definition. The two rules of
+                    // `crate::claim` each read `.headwater/ids`, which sits
+                    // beside the corpus root rather than inside it, and which
+                    // a census walk therefore never reaches. Every other way
+                    // of arriving here is a defect, and one line reports all
+                    // of them, because the fact stated is the same one —
+                    // coverage was computed over a set that does not hold this
+                    // path.
                     unaccounted.push(path.to_string());
                     continue;
                 };

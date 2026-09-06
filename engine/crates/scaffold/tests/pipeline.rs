@@ -44,7 +44,7 @@ use headwater_graph::anchors::Resolvers;
 use headwater_graph::declarations::Declarations;
 use headwater_graph::index::Index;
 use headwater_graph::{Config, Graph};
-use headwater_scaffold::{propose, write, Request, Sources};
+use headwater_scaffold::{fix, propose, write, Request, Sources};
 use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};
 
@@ -132,6 +132,7 @@ fn check_over(root: &Path) -> Run {
             adoption: None,
             source: TAXONOMY,
         },
+        &headwater_check::claim::Claims::at(root),
         &Context::at(Date::parse(PINNED).expect("the pinned date")),
         &mut Cache::disabled(),
     )
@@ -142,6 +143,26 @@ fn check_over(root: &Path) -> Run {
 fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
     let scratch = Scratch::new();
     let root = &scratch.0;
+
+    // Bootstrap the claim store, the way `headwater check --fix` does over a
+    // corpus that minted before it had one. The fixture tree ships documents
+    // and no claims, and every one of those identifiers is spent, so a run
+    // that skipped this would report the fixture's own documents rather than
+    // the scaffolder's output.
+    let bootstrap = fix::compose(
+        root,
+        &check_over(root)
+            .findings
+            .iter()
+            .filter_map(|finding| finding.patch.clone())
+            .collect::<Vec<_>>(),
+    );
+    assert!(
+        !bootstrap.created.is_empty(),
+        "the fixture corpus spends identifiers that no claim covers, and the \
+         fixer offered no claim, so this bootstrap did nothing"
+    );
+    fix::make(root, &bootstrap.created).expect("the claims are made");
 
     // Three runs, because the three things a scaffolder writes are a document,
     // an edge, and a half of an edge in somebody else's document.
@@ -176,6 +197,10 @@ fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
         let taken: Census = census::take(&corpus, &shelves);
         let config = Config::default();
         let index = Index::build(&taken, &config);
+        // Re-read with the corpus, and for the same reason: the allocator's
+        // upper bound is the corpus and the store together, so a second run has
+        // to see the claim the first one made.
+        let claims = headwater_check::claim::Claims::at(root);
         let sources = Sources {
             resolved: &resolved,
             shape: &shape,
@@ -184,6 +209,7 @@ fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
             census: &taken,
             index: &index,
             config: &config,
+            claims: &claims,
         };
         let request = Request {
             kind,
@@ -199,6 +225,8 @@ fn what_the_scaffolder_wrote_passes_the_engines_own_checks() {
         for file in &composed {
             touched.push(file.path.clone());
         }
+        // The claim first and the document second, as the verb does it.
+        headwater_scaffold::claim::write(root, &plan).expect("the claim writes");
         write::apply(root, &composed).expect("the files write");
     }
 

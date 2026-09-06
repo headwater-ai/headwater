@@ -210,6 +210,11 @@ pub struct Server<'a> {
     /// The declarations one run of the check layer reads, out of the committed
     /// lock.
     pub declared: Declared<'a>,
+    /// The identifier claim store, read off the tree at start-up beside the
+    /// census. A check run takes it as an input, and this server holds it for
+    /// the reason it holds the census: one read, so every tool answers over one
+    /// state of the tree.
+    pub claims: &'a headwater_check::claim::Claims,
     /// The taxonomy package and its version, which every rendered report
     /// states beside the lock digest.
     pub package: &'a str,
@@ -979,6 +984,7 @@ fn check(server: &Server<'_>, format: &str) -> Result<String, Failure> {
         server.census,
         server.graph,
         &server.declared,
+        server.claims,
         &server.now,
         &mut cache,
     );
