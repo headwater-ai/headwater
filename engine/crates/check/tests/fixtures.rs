@@ -941,9 +941,18 @@ fn a_corpus_instance_reads_a_document_without_covering_it() {
         "nothing would have changed, so this test proves nothing"
     );
 
-    // It read nothing outside the census either, which is the denominator
-    // question and is asked of every grain.
-    assert!(run.coverage.unaccounted.is_empty());
+    // It read nothing outside the census that is not the claim store, which is
+    // the denominator question and is asked of every grain. The store is the
+    // deliberate case: it sits beside the corpus root, so the walk never
+    // reaches it, and the two rules of `claim` name it in their read sets.
+    assert_eq!(
+        run.coverage.unaccounted,
+        vec![
+            headwater_check::claim::STORE.to_string(),
+            headwater_check::claim::STORE.to_string()
+        ],
+        "one entry per reading, and the two claim rules are the two readers"
+    );
 }
 
 /// The unit is the authored entry, and the fixture tree shows both consequences.
@@ -1303,7 +1312,14 @@ fn an_edge_instance_is_counted_against_both_of_its_endpoints() {
         .find(|document| document.path == "check/spec/02-cited-only.md")
         .expect("the fixture");
     assert!(document.ran >= counted, "{document:#?}");
-    assert!(run.coverage.unaccounted.is_empty());
+    assert_eq!(
+        run.coverage.unaccounted,
+        vec![
+            headwater_check::claim::STORE.to_string(),
+            headwater_check::claim::STORE.to_string()
+        ],
+        "one entry per reading, and the two claim rules are the two readers"
+    );
 }
 
 /// A suppressed finding leaves the report and never leaves the instance.
@@ -1469,6 +1485,12 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
             // documents that no edge connects. Nothing smaller than the corpus
             // holds both claimants of one identifier.
             Grain::Corpus,
+            // The two rules over the identifier claim store. Each one decides
+            // from the whole set of identifiers the corpus declares against
+            // the whole store, and the store is one input outside the corpus
+            // root, so nothing smaller than the corpus holds either question.
+            Grain::Corpus,
+            Grain::Corpus,
             // The six Document-origin rules, which read the body rather than
             // the front matter. The grain is the same and the view is not:
             // each one declares `NEEDS_BODY`.
@@ -1557,9 +1579,12 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         ]
     );
 
-    // Exactly two rules read what phase A could not make of their document,
-    // and the report names them. The declaration is on the same footing as the
-    // body: a view returns nothing to a check that did not ask.
+    // Four rules read what phase A could not make of their document, and the
+    // report names them. The declaration is on the same footing as the body: a
+    // view returns nothing to a check that did not ask. The fourth reads it as
+    // a guard rather than as its subject: one claim path cannot hold two
+    // claimants, so a claim written for a contended identifier would pick a
+    // winner in silence.
     let structural: Vec<&str> = run
         .served
         .iter()
@@ -1568,7 +1593,39 @@ fn the_scope_of_every_rule_comes_from_the_trait_that_binds_it() {
         .collect();
     assert_eq!(
         structural,
-        [declaration::RULE, identity::RULE, duplicate::RULE]
+        [
+            declaration::RULE,
+            identity::RULE,
+            duplicate::RULE,
+            headwater_check::claim::MISSING
+        ]
+    );
+
+    // The one flag that reaches a directory rather than a document, and the
+    // two rules that declare it. It is on the scope line of the cache key as
+    // well, which is what keeps a claim written between two runs from serving
+    // a stale verdict.
+    let storing: Vec<&str> = run
+        .served
+        .iter()
+        .filter(|served| served.scope.needs_claims())
+        .map(|served| served.rule)
+        .collect();
+    assert_eq!(
+        storing,
+        [headwater_check::claim::MISSING, headwater_check::claim::STALE]
+    );
+    assert_eq!(
+        run.served
+            .iter()
+            .find(|served| served.rule == headwater_check::claim::STALE)
+            .expect("the rule ran")
+            .scope
+            .render(),
+        concat!(
+            "corpus scope, every row of the census, and the identifier claim store, ",
+            "and it is a barrier"
+        )
     );
     assert_eq!(
         run.served[10].scope.render(),

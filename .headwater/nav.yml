@@ -55,6 +55,7 @@ nav:
       - "Q51 — What licenses a term into the public glossary, and what licenses a sixteenth": "decisions/0051-q51-what-licenses-a-term-into-the-public-glossary-and-what-licenses-a-sixteenth.md"
       - "A document is proposed at the state it will hold, and the merge activates it": "decisions/0052-a-document-is-proposed-at-the-state-it-will-hold-and-the-merge-activates-it.md"
       - "A package manifest declares no selection, a recipe declares one, and a flattened manifest records provenance": "decisions/0053-a-package-manifest-declares-no-selection-a-recipe-declares-one-and-a-flattened-manifest-records-provenance.md"
+      - "The upper bound of a reconcile-first allocator is the corpus and a claim store": "decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md"
   - "acceptance_criteria":
       - "Index": "acceptance-criteria/README.md"
       - "No source file of the engine names a network API and no locked dependency provides one": "acceptance-criteria/0001-no-source-file-of-the-engine-names-a-network-api-and-no-locked-dependency-provides-one.md"

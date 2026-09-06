@@ -102,3 +102,9 @@ It owns the structure of the board and never its scope. It closes a finished mil
 Nothing checks this. No hook, no rule and no CI job reads an issue body, so the template and this paragraph are the whole mechanism.
 
 `sh .claude/skills/fixtures.sh` holds every claim these files make about the engine. It is a blocking CI step, half of its cases are derived from the skill files rather than listed, and it writes only into a scratch copy of the corpus.
+
+## The identifier claim store
+
+`headwater new` mints under a `reconcile-first` scheme by reading the tree, and a tree holds no concurrency: every branch cut from one `main` reads the same corpus, so two branches mint the same number, each one passes `check --strict` alone, the file names differ, and the merge is silent. `.headwater/ids/<scheme>/<identifier>` is the answer, and [HW-DR-0054](docs/decisions/0054-the-upper-bound-of-a-reconcile-first-allocator-is-the-corpus-and-a-claim-store.md) is the ruling. Each file holds the path of the document that minted it, it is written once and never modified, and two branches that claim one value hit an `add/add` conflict on that one path.
+
+Three things about it bind a change to this repository. **A claim file is never empty**, because two identical empty blobs merge clean and that is the whole mechanism gone. **`.gitattributes` sets no `merge` attribute on `.headwater/ids/**`**, because `merge=union` there concatenates two claimants and loses the only record of who minted what. **Both writers create and never overwrite**, so a claim you met is a claim you leave. `sh tools/id-store-fixtures.sh` holds all three and runs in CI. `headwater check --fix` writes a claim the store is owed, and it is what bootstraps the store of a corpus that minted before it had one.
