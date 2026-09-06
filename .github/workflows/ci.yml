@@ -104,6 +104,11 @@ jobs:
         # the newest cache of this job, which is what makes a lock bump pay
         # for the crates that moved rather than for all of them.
         #
+        # `v2` is in the key because a hit on the primary key never re-saves.
+        # So a change to what belongs in the directory, rather than to what
+        # the lock names, reaches no stored cache until the key moves. It was
+        # turning incremental compilation off that needed it.
+        #
         # The job name is in the key because this job builds test and debug
         # artifacts and the job below builds a release binary. One key over
         # both would have each run evict the other's `target`.
@@ -120,8 +125,19 @@ jobs:
             ~/.cargo/registry/cache
             ~/.cargo/git/db
             engine/target
-          key: cargo-${{ runner.os }}-engine-${{ hashFiles('engine/Cargo.lock') }}
-          restore-keys: cargo-${{ runner.os }}-engine-
+          key: cargo-v2-${{ runner.os }}-engine-${{ hashFiles('engine/Cargo.lock') }}
+          restore-keys: cargo-v2-${{ runner.os }}-engine-
+      - name: Incremental compilation, on a hosted runner only
+        # Incremental artifacts are worth their size to a runner that keeps
+        # `engine/target` on its own disk, and they are worth nothing to a
+        # hosted one: every hosted job starts on a different machine with a
+        # fresh checkout, so no run ever reads what a previous run wrote. They
+        # are not free there either. They went into the cache the step above
+        # restores, which is most of why that restore is measured at 45s for
+        # 944 MiB, against 73s of compiling that the cache saves. Off here,
+        # and left alone where the directory actually persists.
+        if: runner.environment == 'github-hosted'
+        run: echo "CARGO_INCREMENTAL=0" >> "$GITHUB_ENV"
       - name: The toolchain this build needs
         # Rust 1.85 or later. `saphyr-parser` is on edition 2024, and an older
         # cargo reports `feature edition2024 is required` and nothing else.
@@ -191,8 +207,8 @@ jobs:
             ~/.cargo/registry/cache
             ~/.cargo/git/db
             engine/target
-          key: cargo-${{ runner.os }}-headwater-${{ hashFiles('engine/Cargo.lock') }}
-          restore-keys: cargo-${{ runner.os }}-headwater-
+          key: cargo-v2-${{ runner.os }}-headwater-${{ hashFiles('engine/Cargo.lock') }}
+          restore-keys: cargo-v2-${{ runner.os }}-headwater-
       - name: The pip cache, on a hosted runner only
         # For the `mkdocs` and `pymdown-extensions` install below, which is
         # pinned and is the only pip step here heavy enough to be worth a
@@ -208,6 +224,17 @@ jobs:
           path: ~/.cache/pip
           key: pip-${{ runner.os }}-${{ hashFiles('.github/workflows/ci.yml') }}
           restore-keys: pip-${{ runner.os }}-
+      - name: Incremental compilation, on a hosted runner only
+        # Incremental artifacts are worth their size to a runner that keeps
+        # `engine/target` on its own disk, and they are worth nothing to a
+        # hosted one: every hosted job starts on a different machine with a
+        # fresh checkout, so no run ever reads what a previous run wrote. They
+        # are not free there either. They went into the cache the step above
+        # restores, which is most of why that restore is measured at 45s for
+        # 944 MiB, against 73s of compiling that the cache saves. Off here,
+        # and left alone where the directory actually persists.
+        if: runner.environment == 'github-hosted'
+        run: echo "CARGO_INCREMENTAL=0" >> "$GITHUB_ENV"
       - name: The toolchain this build needs
         run: |
           rustup update --no-self-update stable
