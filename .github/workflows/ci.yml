@@ -130,10 +130,22 @@ jobs:
           rustup default stable
           cargo --version
       - name: Format
+        # No `--locked` here, and it is not an omission: `cargo fmt` rejects
+        # the flag outright with `error: unexpected argument '--locked' found`.
+        # It reads no manifest and resolves nothing, so there is no lock for it
+        # to rewrite. `cargo --version` above is exempt for the same underlying
+        # reason and a different surface one: it ACCEPTS `--locked` and exits 0,
+        # ignoring it. Every cargo step in this file that resolves a manifest
+        # carries the flag, and `tools/build-declaration-fixtures.sh` reads that
+        # population by parsing every `run:` value rather than by matching a
+        # line shape, so a step added below answers for itself whether it is
+        # written plainly, behind a `cd`, behind an environment assignment, in a
+        # nested shell or in a block scalar.
         run: cargo fmt --check
         working-directory: engine
       - name: Lint
-        run: cargo clippy --all-targets -- -D warnings
+        # `--locked` before the `--`, or clippy passes it to rustc.
+        run: cargo clippy --all-targets --locked -- -D warnings
         working-directory: engine
       - name: The second implementation of SHA-256 the cross-check runs against
         # `crates/hash/tests/oracle.rs` holds this engine's SHA-256 against
@@ -153,7 +165,7 @@ jobs:
         # so neither gate can go quiet by losing a dependency.
         run: python3 -m pip install --user --break-system-packages jsonschema PyYAML
       - name: Test
-        run: cargo test
+        run: cargo test --locked
         working-directory: engine
         env:
           HEADWATER_STOCK_VALIDATOR: required
@@ -213,7 +225,7 @@ jobs:
           rustup update --no-self-update stable
           rustup default stable
       - name: Build the engine
-        run: cargo build --release -p headwater-cli
+        run: cargo build --release -p headwater-cli --locked
         working-directory: engine
       - name: The commit gate refuses what it claims to refuse
         # `.githooks/pre-commit` and the producer under it sit outside the
@@ -592,6 +604,23 @@ jobs:
         # shipped store. It builds no engine and writes only under a temporary
         # directory.
         run: sh tools/id-store-fixtures.sh
+      - name: The build still declares its license and still refuses to rewrite its lock
+        # Two declarations that are green the day they land and green forever.
+        # `--locked` on a lock that is in sync changes no exit status, so
+        # dropping it from a step, or landing one more copy of the install
+        # command without it, costs nothing until the day it costs everything.
+        # The license half is self-guarding in the removal direction — deleting
+        # the `[workspace.package]` key fails every cargo command with
+        # `error inheriting 'license' from workspace root manifest` — and not
+        # at all in the direction where a crate added later forgets the member
+        # line.
+        #
+        # This suite enumerates every population from the tree rather than
+        # listing it, gives each one a case that fails when the enumeration
+        # comes back empty, and provokes every one of its judges against a
+        # planted defect so that an empty offender list means something. It
+        # builds nothing: its one cargo call is `metadata --no-deps --locked`.
+        run: sh tools/build-declaration-fixtures.sh
       - name: Every declared export profile is what this corpus produces
         # `export_plan()` is a separate code path from `plan()`: it re-filters
         # the declared projections by `--profile` rather than writing every

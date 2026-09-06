@@ -23,7 +23,7 @@ bin=${HEADWATER_BIN:-$root/engine/target/release/headwater}
 
 if [ ! -x "$bin" ]; then
   echo "tutorial fixtures: no engine at $bin" >&2
-  echo "  build one with: cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml" >&2
+  echo "  build one with: cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked" >&2
   exit 1
 fi
 

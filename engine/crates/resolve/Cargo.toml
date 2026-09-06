@@ -4,6 +4,7 @@ name = "headwater-resolve"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [dependencies]
 # The dialect. A base package, a bundle and an overlay are all YAML sources on

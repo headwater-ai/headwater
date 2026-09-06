@@ -4,6 +4,7 @@ name = "headwater-mark"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+license.workspace = true
 
 # No dependencies, for the reason `headwater-hash` has none. Two components read
 # a generated-file marker and they sit on opposite sides of the engine: the

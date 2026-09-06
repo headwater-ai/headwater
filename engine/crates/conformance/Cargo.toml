@@ -4,6 +4,7 @@ name = "headwater-conformance"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [dependencies]
 # The rule set is package content, so it is read with the loader that reads the

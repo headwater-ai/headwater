@@ -4,6 +4,7 @@ name = "headwater-scaffold"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [dependencies]
 # The kind, facet and identifier-scheme declarations.

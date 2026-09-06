@@ -4,6 +4,7 @@ name = "headwater-meta"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [dependencies]
 # The dialect, and the sublanguage. Nothing else: the meta-schema is shape, and
