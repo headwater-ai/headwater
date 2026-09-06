@@ -37,7 +37,7 @@ Two halves make up `https://headwater.tools/`. `site/` holds the hand-built page
 
 ## Decision
 
-**One directory holds both halves, and `tools/assemble-site.sh` composes it.** The script copies the generated half into `.headwater/site-deploy` first and the hand-built half second. A path that both halves carry is served with the committed bytes, and the script names every such path on each run.
+**One directory holds both halves, and `tools/assemble-site.sh` composes it.** The script copies the generated half into `.headwater/site-deploy` first and the hand-built half second. A path that both halves carry is served with the committed bytes, and the script names every such path on each run. [HW-DR-0048](0048-the-served-sitemap-is-derived-from-the-served-directory.md) names the one exception to that sentence. `sitemap.xml` is composed by the script from the assembled directory, because neither half holds the list of every served page.
 
 **Every Cloudflare Workers Builds configuration runs that script.** A build command names one file, `tools/cloudflare-build.sh`, which installs the pinned site toolchain, runs the build, and runs the assembly. This project holds two such configurations, one for the default branch and one for every other branch. Each carries a build command of its own. A dashboard field carries no commit and goes stale in silence, so every version this deploy installs moves in a reviewed change instead. `wrangler.jsonc` names `.headwater/site-deploy` as the asset directory and states what writes it.
 
