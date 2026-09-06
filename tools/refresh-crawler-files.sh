@@ -1,43 +1,49 @@
 #!/bin/sh
-# refresh-crawler-files.sh — write `site/llms.txt` and `site/robots.txt` from
-# the pages already committed under `site/`.
+# refresh-crawler-files.sh — write `site/llms.txt`, `site/robots.txt` and
+# `site/sitemap.xml` from the pages already committed under `site/`.
 #
 # WHAT THIS MEASURES, AND FROM WHERE
 #
-#   Every line either file carries comes from one source: the `<title>` and
-#   `<meta name="description">` of a page already committed under `site/`,
-#   read fresh on each run. Nothing here is typed by a person. A ninth page
-#   appearing under `site/` and not yet in `llms.txt` is exactly the drift
-#   `--check` exists to catch.
+#   Every line these files carry comes from one source: the `<title>`, the
+#   `<meta name="description">` and the path of a page already committed
+#   under `site/`, read fresh on each run. Nothing here is typed by a person.
+#   A ninth page appearing under `site/` and not yet in `llms.txt` is exactly
+#   the drift `--check` exists to catch.
 #
 # WHY THIS IS A SEPARATE SCRIPT, AND NOT PART OF refresh-figures.sh
 #
 #   `refresh-figures.sh` patches numeric spans inside already-authored HTML
 #   prose, and needs the full `check --json` / census / conformance pipeline
-#   to do it. This script writes two whole new files from a directory
+#   to do it. This script writes three whole new files from a directory
 #   listing of `site/`, and needs none of that. Coupling the two would make
-#   `llms.txt`/`robots.txt` regeneration depend on inputs it doesn't need.
+#   the regeneration of these three depend on inputs they don't need.
 #
-# WHAT `llms.txt` AND `robots.txt` ARE FOR HERE
+# WHAT `llms.txt`, `robots.txt` AND `sitemap.xml` ARE FOR HERE
 #
-#   Q16 (docs/spec/09-decisions.md#q16) disposes of both files in one line:
-#   ship them, and count them as nothing. Neither is referenced by, or
-#   relied on by, any claim elsewhere on the site — this script only writes
-#   the two files. `robots.txt` is a global allow-all: every crawler, AI
-#   crawlers included, may read this corpus. `llms.txt` is the curated
-#   index the `llms.txt` convention describes: an H1 title, a one-line
-#   summary, and a list of every page with its own title and description.
-#   No `Sitemap:` line in `robots.txt` — the only sitemap that exists
-#   (`.headwater/site-build/sitemap.xml`) belongs to the MkDocs half of this
-#   repository, which is not deployed, and a pointer into a 404 is exactly
-#   the kind of hand-typed, unbacked claim HW-DR-0037 forbids on a
-#   hand-built page.
+#   Q16 (docs/spec/09-decisions.md#q16) disposes of the first two in one
+#   line: ship them, and count them as nothing. Neither is referenced by, or
+#   relied on by, any claim elsewhere on the site. `robots.txt` is a global
+#   allow-all: every crawler, AI crawlers included, may read this corpus.
+#   `llms.txt` is the curated index the `llms.txt` convention describes: an
+#   H1 title, a one-line summary, and a list of every page with its own
+#   title and description. `sitemap.xml` is the list a search engine reads,
+#   and `tools/sitemap.py` derives it from the same directory listing.
+#   `robots.txt` carries a `Sitemap:` line, and it resolves on both sides of
+#   the switch HW-DR-0047 orders. While `wrangler.jsonc` names `./site`, the
+#   target is the `site/sitemap.xml` this script writes, which lists the
+#   hand-built pages. Once it names `.headwater/site-deploy`, the target is
+#   the sitemap `tools/assemble-site.sh` writes over the top of that one,
+#   which lists both halves. `tools/sitemap.py` derives both from a
+#   directory listing, so neither is a list a person typed and neither
+#   points into a 404. #554 is the report that put the third file here: the
+#   sitemap committed on 2026-09-06 was typed, and it already omitted
+#   `site/changelog/`.
 #
 # THE DISCIPLINE
 #
 #   Run this before any commit that adds, removes or retitles a page under
 #   `site/`, and read what it prints. `--check` writes nothing and exits
-#   non-zero when either committed file disagrees with a fresh run, which is
+#   non-zero when any committed file disagrees with a fresh run, which is
 #   the form to put in front of a reviewer. `--check` runs in CI, in the
 #   step named "The crawler files are what the committed pages say", so a
 #   stale file is a red build rather than something a person had to
@@ -79,6 +85,14 @@ mode = sys.argv[1]
 root = pathlib.Path.cwd()
 site = root / "site"
 base = "https://headwater.tools"
+
+# `tools/sitemap.py` is the one walk that derives a sitemap from a directory
+# of pages, and `tools/assemble-site.sh` calls the same module with the
+# assembled directory. Importing it here rather than repeating the walk is
+# what keeps the two sitemaps this repository writes from disagreeing about
+# what a page is.
+sys.path.insert(0, str(root / "tools"))
+import sitemap as sitemap_module  # noqa: E402
 
 title_re = re.compile(r"<title>([^<]*)</title>")
 desc_re = re.compile(r'<meta name="description" content="([^"]*)"')
@@ -132,9 +146,17 @@ robots_txt = (
     "# This file only says nothing here is disallowed.\n"
     "User-agent: *\n"
     "Allow: /\n"
+    "\n"
+    "Sitemap: %s/sitemap.xml\n" % base
 )
 
-targets = {"site/llms.txt": llms_txt, "site/robots.txt": robots_txt}
+sitemap_xml = sitemap_module.sitemap(site, base)
+
+targets = {
+    "site/llms.txt": llms_txt,
+    "site/robots.txt": robots_txt,
+    "site/sitemap.xml": sitemap_xml,
+}
 
 if mode == "print":
     for name, content in targets.items():

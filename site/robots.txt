@@ -3,3 +3,5 @@
 # This file only says nothing here is disallowed.
 User-agent: *
 Allow: /
+
+Sitemap: https://headwater.tools/sitemap.xml

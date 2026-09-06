@@ -104,9 +104,10 @@ else
 fi
 status=$?
 
-# `site/llms.txt` and `site/robots.txt` are derived from the `<title>` and the
-# `<meta name="description">` of every page committed under `site/`, so a page
-# added, removed or retitled makes both stale and nothing else notices.
+# `site/llms.txt`, `site/robots.txt` and `site/sitemap.xml` are derived from the
+# `<title>`, the `<meta name="description">` and the path of every page
+# committed under `site/`, so a page added, removed or retitled makes them stale
+# and nothing else notices.
 #
 # THE MEASUREMENT THAT PUT THIS HERE. Since the two files were introduced on
 # 2026-08-27, three commits moved a title, a description or the set of pages.
@@ -136,8 +137,9 @@ status=$?
 if [ "$status" -eq 0 ] && [ -z "${HEADWATER_SKIP_CRAWLER_CHECK:-}" ]; then
     if command -v python3 >/dev/null 2>&1; then
         if ! crawler=$(sh "$root/tools/refresh-crawler-files.sh" --check 2>&1); then
-            echo "headwater: \`site/llms.txt\` or \`site/robots.txt\` no longer matches the"
-            echo "  pages committed under \`site/\`. Neither file is written by hand."
+            echo "headwater: a derived file under \`site/\` no longer matches the pages"
+            echo "  committed there. \`llms.txt\`, \`robots.txt\` and \`sitemap.xml\` are all"
+            echo "  written by \`tools/refresh-crawler-files.sh\` and none of them by hand."
             printf '%s\n' "$crawler" | sed 's/^/    /'
             echo "  Regenerate and stage the result:"
             echo "        sh tools/refresh-crawler-files.sh"

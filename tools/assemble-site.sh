@@ -31,6 +31,29 @@
 #   for its own assertion (#428, #432); this script repeats it so that an
 #   assembly is complete on its own, without a CI step having run first.
 #
+# THE ONE FILE THIS SCRIPT COMPOSES RATHER THAN COPIES
+#
+#   `sitemap.xml`, written last, over whichever copy the two halves left
+#   there. It is the one file whose correct contents neither half knows: the
+#   assembled directory is the only place both halves exist together, so it
+#   is the only place a list of every served page can be derived.
+#   `tools/sitemap.py` walks the output and writes one `<loc>` per
+#   `index.html`, and `tools/refresh-crawler-files.sh` calls the same module
+#   with `site/` for the copy that is committed and served today.
+#
+#   Both halves carried a `sitemap.xml` and each was wrong on its own. The
+#   hand-built one was a list of seven URLs a person typed, and it already
+#   omitted `site/changelog/` on the day it was committed. The MkDocs one
+#   carries zero URLs, because `mkdocs.yml` sets no `site_url` and the MkDocs
+#   template emits a `<loc>` only from a canonical URL. So the rule at the
+#   top of this file — the hand-built half wins a collision — would have
+#   served the stale typed list, and reversing it would have served an empty
+#   `<urlset>`. #554 is the report, and this is the disposition it took.
+#
+#   `sitemap.xml.gz`, which `mkdocs build` writes beside its own sitemap, is
+#   removed rather than recomputed. Nothing links it, and a compressed second
+#   copy of a list is one more thing that can disagree with the list.
+#
 # WHAT THIS NEVER WRITES
 #
 #   Anything under `site/`. This script only reads that half. `--check` runs
@@ -111,6 +134,19 @@ collisions=$(LC_ALL=C comm -12 "$scratch/hand" "$scratch/generated")
 
 cp -R "$HAND"/. "$OUT"/
 
+# The sitemap of the whole site, derived from the whole site. This runs after
+# both halves are in place, because the directory is the input. Written to a
+# temporary file first, so a failing walk leaves the copied sitemap in place
+# rather than truncating the served one.
+if ! python3 "$root/tools/sitemap.py" "$OUT" >"$OUT/.sitemap.xml.new"; then
+  rm -f "$OUT/.sitemap.xml.new"
+  echo "assemble-site.sh: could not derive the sitemap from \`$OUT\`." >&2
+  exit 1
+fi
+mv "$OUT/.sitemap.xml.new" "$OUT/sitemap.xml"
+sitemap_urls=$(grep -c '<loc>' "$OUT/sitemap.xml")
+rm -f "$OUT/sitemap.xml.gz"
+
 generated=$(find "$BUILD" -type f | wc -l | tr -d ' ')
 handbuilt=$(find "$HAND" -type f | wc -l | tr -d ' ')
 served=$(find "$OUT" -type f | wc -l | tr -d ' ')
@@ -120,11 +156,18 @@ echo "  $generated files from the generated half (\`$BUILD\`)"
 echo "  $handbuilt files from the hand-built half (\`$HAND\`), copied last"
 echo "  $served files served"
 
-if [ -n "$collisions" ]; then
+echo "  $sitemap_urls URLs in \`sitemap.xml\`, derived from the output above"
+
+# `sitemap.xml` is carried by both halves and served with neither half's
+# bytes, so it is reported on its own line rather than counted as a shadowing.
+# Every other collision is the case the rule at the top of this file decides,
+# and it is named here so that the first one to appear is read by a person.
+shadowed=$(printf '%s\n' "$collisions" | grep -v '^$' | grep -vx 'sitemap.xml' || true)
+if [ -n "$shadowed" ]; then
   echo "  paths carried by both halves, served with the hand-built bytes:"
-  printf '%s\n' "$collisions" | sed 's/^/    /'
+  printf '%s\n' "$shadowed" | sed 's/^/    /'
 else
-  echo "  no path is carried by both halves"
+  echo "  no path is carried by both halves and shadowed"
 fi
 
 if [ "$MODE" = check ]; then

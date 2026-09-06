@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 347,
-      "carried": 347,
+      "in the graph": 349,
+      "carried": 349,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 569,
-      "carried": 569,
+      "in the graph": 573,
+      "carried": 573,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -1380,6 +1380,39 @@
               "tools/assemble-site.sh",
               "wrangler.jsonc",
               "site/_headers"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0048-the-served-sitemap-is-derived-from-the-served-directory.md",
+        "kind": "decision",
+        "id": "HW-DR-0048",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0048",
+          "status": "draft",
+          "status_since": "2026-09-06",
+          "summary": "The sitemap a reader gets is derived from the directory that is served, by one walk that both halves call. Nobody types a page list, and the assembled directory is the only place the union exists.",
+          "last_verified": "2026-09-06",
+          "title": "The served sitemap is derived from the served directory",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "constrains": [
+              "HW-DR-0047"
+            ],
+            "traces_to": [
+              "HW-DR-0037",
+              "HW-DR-0047"
+            ],
+            "governs": [
+              "tools/sitemap.py"
             ]
           }
         }
@@ -8025,6 +8058,11 @@
       },
       {
         "anchor_kind": "code_path",
+        "id": "tools/sitemap.py",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
         "id": "wrangler.jsonc",
         "resolver": "source-tree"
       }
@@ -9127,6 +9165,50 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "site/_headers",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0048-the-served-sitemap-is-derived-from-the-served-directory.md",
+        "relation": "constrains",
+        "written_as": "constrains",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0047",
+          "path": "docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0048-the-served-sitemap-is-derived-from-the-served-directory.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0037",
+          "path": "docs/decisions/0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0048-the-served-sitemap-is-derived-from-the-served-directory.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0047",
+          "path": "docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/decisions/0048-the-served-sitemap-is-derived-from-the-served-directory.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "tools/sitemap.py",
           "resolver": "source-tree"
         }
       },

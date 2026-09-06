@@ -36,7 +36,7 @@ Two halves make up `https://headwater.tools/`. `site/` holds the hand-built page
 
 ## Decision
 
-**One directory holds both halves, and `tools/assemble-site.sh` composes it.** The script copies the generated half into `.headwater/site-deploy` first and the hand-built half second. A path that both halves carry is served with the committed bytes, and the script names every such path on each run.
+**One directory holds both halves, and `tools/assemble-site.sh` composes it.** The script copies the generated half into `.headwater/site-deploy` first and the hand-built half second. A path that both halves carry is served with the committed bytes, and the script names every such path on each run. [HW-DR-0048](0048-the-served-sitemap-is-derived-from-the-served-directory.md) names the one exception to that sentence. `sitemap.xml` is composed by the script from the assembled directory, because neither half holds the list of every served page.
 
 **The Cloudflare Workers Builds build command runs that script.** The command installs the pinned MkDocs version, runs the build, and runs the assembly. `wrangler.jsonc` then names `.headwater/site-deploy` as the asset directory, and it carries the two acts in that order.
 

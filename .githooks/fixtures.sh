@@ -296,23 +296,24 @@ judge 'the escape-hatch case still names a page no document governs' 0 0 \
 
 # `HEADWATER_SKIP_CRAWLER_CHECK` is set here and nowhere else in this block,
 # and the reason is a collision worth stating rather than working around. The
-# only pages no document governs are `site/llms.txt` and `site/robots.txt`,
-# because HW-DR-0037 governs every hand-built page by name. Those two are also
-# the two the crawler clause protects, since both are derived from the pages
-# beside them. So the page this case needs and the page that clause guards are
-# the same page, and there is no third one to pick. This case is about the
-# site-delete clause, so it declares which clause it is testing and lets the
-# other one alone. The crawler clause has its own case below.
+# only files no document governs are `site/llms.txt`, `site/robots.txt` and
+# `site/sitemap.xml`, because HW-DR-0037 governs every hand-built page by name.
+# Those three are also exactly the three the crawler clause protects, since
+# each is derived from the pages beside them. So the file this case needs and
+# the files that clause guards are the same files, and there is no fourth one
+# to pick. This case is about the site-delete clause, so it declares which
+# clause it is testing and lets the other one alone. The crawler clause has
+# its own cases below.
 git -C "$scratch" rm -q "$hatch"
 out=$(cd "$scratch" && HEADWATER_ALLOW_SITE_DELETE=1 HEADWATER_SKIP_CRAWLER_CHECK=1 \
     sh .githooks/pre-commit 2>&1); status=$?
 judge 'the same removal with the named variable set is allowed through' 0 "$status" '' "$out"
 
-# The crawler clause. `site/llms.txt` and `site/robots.txt` are derived from the
-# title and description of every page under `site/`, and a retitled page makes
-# both stale with nothing else to notice. That happened once, in `0219db3`,
-# fourteen minutes after the two files were introduced, and cost a second commit
-# and issue #443 to repair.
+# The crawler clause. `site/llms.txt`, `site/robots.txt` and `site/sitemap.xml`
+# are derived from the title, the description and the path of every page under
+# `site/`, and a retitled page makes them stale with nothing else to notice.
+# That happened once, in `0219db3`, fourteen minutes after the first two files
+# were introduced, and cost a second commit and issue #443 to repair.
 reset
 sed -i 's|<title>|<title>RETITLED |' "$scratch/site/proof/index.html"
 out=$(gate); status=$?
@@ -322,6 +323,24 @@ judge 'and the refusal names the line that moved' 1 "$status" \
     'RETITLED' "$out"
 judge 'and it names the command that repairs it' 1 "$status" \
     'sh tools/refresh-crawler-files.sh' "$out"
+
+# The sitemap joined the derived files in #554, and it is the one of the three
+# that a retitle does not move: a title is not a URL. So the case that holds it
+# adds a page instead of retitling one. The clause reads the working tree
+# rather than the index, which is why nothing is staged here and why the case
+# above stages nothing either. The sitemap #535 committed listed seven URLs
+# where `site/` already held eight pages, and this is that drift refused.
+reset
+mkdir -p "$scratch/site/about"
+cat > "$scratch/site/about/index.html" <<'HTML'
+<title>About</title>
+<meta name="description" content="A page added to hold the sitemap case.">
+HTML
+out=$(gate); status=$?
+judge 'a page added under site/ whose sitemap is stale is refused' 1 "$status" \
+    'site/sitemap.xml' "$out"
+judge 'and the refusal names the URL the sitemap is missing' 1 "$status" \
+    'https://headwater.tools/about/' "$out"
 
 reset
 sed -i 's|<title>|<title>RETITLED |' "$scratch/site/proof/index.html"
