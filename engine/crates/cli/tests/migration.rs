@@ -106,12 +106,13 @@ const CANDIDATE: [(&[&str], &[&str]); 3] = [
 /// `addressability` stays preserved, the candidate resolves, and
 /// `classification` is the one dimension that reports a document. That was
 /// measured rather than assumed, and the opposite was written down first.
+///
+/// The second edit names the kind the shelf carries and nothing else on that
+/// line, for the reason [`address`] gives: an edit that quotes a whole shelf
+/// declaration breaks on a member added to it that the case is not about.
 const KIND: [(&[&str], &[&str]); 2] = [
     (&["  decision:"], &["  ruling:"]),
-    (
-        &["  decisions:      {path: docs/decisions/**,      homogeneous: true, kind: decision, layout: \"{seq:04d}-{slug}.md\"}"],
-        &["  decisions:      {path: docs/decisions/**,      homogeneous: true, kind: ruling, layout: \"{seq:04d}-{slug}.md\"}"],
-    ),
+    (&["kind: decision,"], &["kind: ruling,"]),
 ];
 
 /// The candidate that renames a kind one of the package's *bundles* declares.
