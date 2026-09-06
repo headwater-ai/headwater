@@ -31,7 +31,7 @@ relations:
 
 **A typed page list is what [HW-DR-0037](0037-q37-which-parts-of-the-site-are-hand-built-and-which-are-a-projection-of-this-corpus.md) forbids.** That record admits two forms where a number belongs on a hand-built page. The page links to the artifact that produced the number, or a build interpolates the number from a run. A list of URLs is a figure of the same kind, and it goes stale in the same silence. The changelog page carries no date for this reason.
 
-**Neither half knows the answer.** The hand-built half knows its own eight pages and nothing of the 285 pages the corpus renders. The generated half knows the reverse. The assembled directory is the only place where both exist together.
+**Neither half knows the answer.** The hand-built half knows its own eight pages and nothing of the 286 pages the corpus renders. The generated half knows the reverse. The assembled directory is the only place where both exist together.
 
 ## Decision
 
@@ -49,10 +49,10 @@ relations:
 
 **The commit gate holds the committed sitemap, and it held nothing before.** `.githooks/pre-commit` already refuses a commit whose `site/llms.txt` or `site/robots.txt` disagrees with a fresh run. `site/sitemap.xml` joins them as a third entry in the same table. A CI step of the same name reads the committed tree. `.githooks/fixtures.sh` drives both, and it carries a case that adds a page under `site/` and reads the refusal. A retitle does not move a sitemap, because a title is not a URL, so that case adds a page rather than retitling one.
 
-**The union is 293 URLs, and no step asserts the count.** 285 pages come from the generated half and 8 from the hand-built half, measured on 2026-09-06. The assembly prints the total on every run. A count in a CI step moves whenever a shelf gains a document. A step that a person re-blesses on ordinary work stops being read.
+**The union is 294 URLs, and no step asserts the count.** 286 pages come from the generated half and 8 from the hand-built half, measured on 2026-09-06. The assembly prints the total on every run. A count in a CI step moves whenever a shelf gains a document. A step that a person re-blesses on ordinary work stops being read.
 
 **The sitemap carries `<loc>` and nothing else.** A `<lastmod>` element needs a date. Two dates are available. One is a file modification time, which a fresh clone resets. The other is a date a person types, which is the failure this record answers. A search engine treats `<lastmod>` as a hint and never as a requirement.
 
-**`mkdocs.yml` still declares no `site_url`, and that absence costs more than a sitemap.** The same setting is what puts a `<link rel="canonical">` element on a generated page, and 0 of 286 rendered pages carry one. This record needs no canonical URL, because it derives the sitemap from a directory instead. Whether the generated half should declare one is a question about duplicate content, and [#556](https://github.com/headwater-ai/headwater/issues/556) carries it.
+**`mkdocs.yml` still declares no `site_url`, and that absence costs more than a sitemap.** The same setting is what puts a canonical link element on a generated page, and no generated page carries one. This paragraph names that element in words and not in its markup. A page of this corpus that spelled it out would answer a search for it. This record needs no canonical URL, because it derives the sitemap from a directory instead. Whether the generated half should declare one is a question about duplicate content, and [#556](https://github.com/headwater-ai/headwater/issues/556) carries it.
 
 **This record governs the script and not the three files it writes.** `site/llms.txt`, `site/robots.txt` and `site/sitemap.xml` stand outside every `governs` edge in this corpus. One case in `.githooks/fixtures.sh` needs a file under `site/` in exactly that position. It tests the escape hatch of the clause that refuses a deletion under `site/`. A governed path is refused a second time there, by a rule the engine already runs. So the three stay ungoverned on purpose. The edge here reaches `tools/sitemap.py`, which is where the rule lives.
