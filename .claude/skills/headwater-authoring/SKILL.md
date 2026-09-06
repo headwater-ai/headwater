@@ -33,7 +33,7 @@ The verb marks a field `hand entry` when no declaration determines it. Read its 
 
 **The provenance block.** No taxonomy declares one, so the verb writes none while every hand-typed document carries one — [HW-OBL-0030](../../../docs/obligations/0030-the-provenance-block-belongs-to-the-engine-and-nothing-states.md) holds that gap. Copy the shape from a sibling on the same shelf, and know that no check reads a single field of what you wrote.
 
-**The `accepted_by` line is the one you must not write on your own authority.** Stop rule 5 forbids it outright, and the shelf you are copying from breaks that rule in every case: almost every document here carries an `accepted_by` that the drafting agent typed, which is what [HW-OBL-0108](../../../docs/obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md) measures and asks a human to settle. Run `headwater taxonomy audit` and read the warrant section for the counts of the day. A figure written into this file is one that nothing re-derives. Until it is settled, write the line only for a document that goes into a pull request a named human will read, and say in the proposal that the stamp is what you are asking them to accept. Never write it for a document that nobody will review, and never move a `warrant` to `accepted` on a document that is already there.
+**The `accepted_by` line answers to the merge rather than to the byte you write.** [HW-DR-0034](../../../docs/decisions/0034-q34-whether-acceptance-means-merged-to-main-and-what-an-agent-may-write-before-that.md) rules that acceptance is the merge onto `main`, so a provenance block on a branch states a proposal and nothing more. You may write `accepted_by` and `warrant: accepted` on a document you draft, where that document goes into a pull request a named human reads before the merge. Say in the proposal that the stamp is part of what you are asking them to accept. Where nobody will read the document before it lands, and an autonomous run that merges its own request is that case, write `warrant: asserted` and no `accepted_by`. Both shapes are compliant and the ruling prefers neither. Never move a `warrant` to `accepted` on a document that is already on `main`, because that edits an accepted document rather than stamping a draft. [HW-OBL-0108](../../../docs/obligations/0108-an-agent-writes-the-acceptance-stamp-of-every-document-in-this-corpus.md) holds the count that raised the ruling and is discharged by it.
 
 ## Relations
 
@@ -53,7 +53,7 @@ These are the behaviors that pressure to be helpful breaks first, and spec 5 sta
 2. **No hand edit to a generated file.** Change the source and run `headwater generate`.
 3. **No new shelf, kind or facet invented in place.** That is a taxonomy change, and the `headwater-taxonomy` skill owns it.
 4. **No second copy of a fact that exists elsewhere.** Link to it. Where the target is hard to find, repair its summary.
-5. **No self-acceptance.** An agent drafts and marks what it drafted. A human accepts.
+5. **No self-acceptance.** Self-acceptance is a document that reaches `main` with no human review between the draft and the merge, and it is not a value an agent typed on a branch ([HW-DR-0034](../../../docs/decisions/0034-q34-whether-acceptance-means-merged-to-main-and-what-an-agent-may-write-before-that.md)). Write a stamp for a pull request a named human reads. Mark the document `asserted` where nothing stands between your draft and `main`.
 
 ## A refusal is a declaration to add, and never a retry
 
