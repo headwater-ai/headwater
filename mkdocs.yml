@@ -52,8 +52,19 @@ theme:
 #   LICENSE      carries no `.md` extension, so MkDocs would copy it as a
 #                static asset. The license text belongs to the hand-built half.
 #
-# None of these is excluded because the gate would otherwise fail. MkDocs 1.6
-# reports an unlisted file at `info`, and `--strict` does not fail on one.
+# None of these was excluded because the gate would otherwise fail, and that
+# was true of the tree the list was written against: MkDocs 1.6 reports an
+# unlisted file at `info`, and `--strict` did not fail on one.
+#
+# `validation.nav.omitted_files` below now raises that to `warn`, so this list
+# is part of the gate whatever it was written for. 374 markdown files sit under
+# `docs/`, `.headwater/nav.yml` names 287 of them, and every one of the
+# remaining 87 is under a directory named here. Narrowed to `LICENSE` alone,
+# the build exits 1 and names `doctrine/maturity-model.md`, `taxonomies/**` and
+# `w3id/README.md`. Measured on 2026-09-06.
+#
+# So a directory added here still has to earn its place on the four reasons
+# above, and a directory taken off this list has to reach the nav instead.
 exclude_docs: |
   taxonomies/
   doctrine/
