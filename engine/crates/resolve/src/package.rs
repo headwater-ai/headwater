@@ -481,8 +481,34 @@ fn shipped(
 ) -> Result<Vec<Source>, Vec<ResolveError>> {
     let mut out = vec![base];
 
-    let Some(bundles) = text(contents, "bundles") else {
+    let Some((at, names)) = bundle_names(root, directory, contents)? else {
         return Ok(out);
+    };
+    for name in names {
+        let path = at.join(name).join("bundle.yml");
+        out.push(Source::read(&path, &display(root, &path), Role::Overlay)?);
+    }
+    Ok(out)
+}
+
+/// The bundle root a `contents` block names, and every bundle under it, in name
+/// order.
+///
+/// `None` where the block names no bundle root, which is a package that ships
+/// no bundles and is not an error anywhere.
+///
+/// [`shipped`] is one caller and [`crate::selection`] is the other, and they
+/// share this rather than each reading `contents.bundles` for themselves. Two
+/// functions enumerating one declaration differently is
+/// [#581](https://github.com/headwater-ai/headwater/issues/581), which is live
+/// in this crate as this is written.
+pub(crate) fn bundle_names(
+    root: &Path,
+    directory: &Path,
+    contents: &Mapping,
+) -> Result<Option<(PathBuf, Vec<std::ffi::OsString>)>, Vec<ResolveError>> {
+    let Some(bundles) = text(contents, "bundles") else {
+        return Ok(None);
     };
     let at = directory.join(&bundles);
     let mut names: Vec<std::ffi::OsString> = std::fs::read_dir(&at)
@@ -500,12 +526,7 @@ fn shipped(
         .map(|entry| entry.file_name())
         .collect();
     names.sort();
-
-    for name in names {
-        let path = at.join(name).join("bundle.yml");
-        out.push(Source::read(&path, &display(root, &path), Role::Overlay)?);
-    }
-    Ok(out)
+    Ok(Some((at, names)))
 }
 
 /// The base with every bundle the package ships, resolved.

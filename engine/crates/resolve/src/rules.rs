@@ -546,8 +546,56 @@ impl<'a> View<'a> {
 /// resolver could not compute the dependent set of a `remove` for that reason.
 /// It does not have to: a `remove` that orphans a name leaves a declaration
 /// reading a name that nothing declares, and that is what this rule finds.
+///
+/// The traversal is [`dangling_names`] and this is the rendering of it. One
+/// traversal answers both questions a dangling name raises — the refusal a
+/// reader gets, and which other declaration would have supplied the name — so
+/// there is no second reading of the resolved taxonomy to drift against this
+/// one. See [`crate::selection`], which asks the second question.
 fn referential_integrity(view: &View, out: &mut Vec<ResolveError>) {
     const RULE: &str = "referential integrity";
+    for found in dangling_names(view) {
+        out.push(refusal(RULE, &found.at, found.message()));
+    }
+}
+
+/// A name a declaration reads that nothing in the resolved taxonomy declares.
+///
+/// The address, the sort of thing the name was read as, and the name itself,
+/// kept apart. [`referential_integrity`] renders these three into the sentence
+/// a reader gets, and that sentence is the only place they are joined: a
+/// consumer of this reading takes the fields, never the prose.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Dangling {
+    /// The address of the declaration that reads the name.
+    pub at: String,
+    /// What the position types the name as: `kind`, `purpose`, `facet`, and so
+    /// on. The message says "no {what} of that name is declared".
+    pub what: String,
+    /// The name that nothing declares.
+    pub name: String,
+}
+
+impl Dangling {
+    /// The sentence `referential_integrity` reports.
+    pub fn message(&self) -> String {
+        format!(
+            "reads `{}`, and no {} of that name is declared",
+            self.name, self.what
+        )
+    }
+}
+
+/// Every name a resolved taxonomy reads and does not declare.
+///
+/// The same traversal `taxonomy validate` refuses on, exposed for a caller that
+/// has a question about the names rather than about the verdict.
+pub fn dangling(taxonomy: &Mapping) -> Vec<Dangling> {
+    dangling_names(&View::new(taxonomy))
+}
+
+fn dangling_names(view: &View) -> Vec<Dangling> {
+    let mut out: Vec<Dangling> = Vec::new();
     let kinds = view.names("kinds");
     let facets = view.names("facets");
     let purposes = view.names("purposes");
@@ -561,11 +609,11 @@ fn referential_integrity(view: &View, out: &mut Vec<ResolveError>) {
 
     let mut reads = |at: String, what: &str, name: &str, declared: &BTreeSet<&str>| {
         if !declared.contains(name) {
-            out.push(refusal(
-                RULE,
-                &at,
-                format!("reads `{name}`, and no {what} of that name is declared"),
-            ));
+            out.push(Dangling {
+                at,
+                what: what.to_string(),
+                name: name.to_string(),
+            });
         }
     };
 
@@ -694,6 +742,8 @@ fn referential_integrity(view: &View, out: &mut Vec<ResolveError>) {
             reads(format!("{at}.to_kind"), "kind", target, &kinds);
         }
     }
+
+    out
 }
 
 /// One resolver per anchor kind, and one anchor kind per resolver namespace.
