@@ -111,13 +111,35 @@ const CATEGORIES: [Category; 3] = [
     Category {
         name: "change_narration",
         instead: "state the position that holds, and leave the change to the decision that made it",
+        // Two tiers, and the tier is a record of curation rather than a
+        // severity. Spec 3 rules that "posture per category comes from
+        // fixability and never from precision", so a less precise pattern
+        // reports at the same weight as a precise one or it does not ship.
+        //
+        // Tier one was measured against this corpus and every instance of each
+        // entry was change narration. Tier two plainly means a change in
+        // general English and has one false-positive mode here: a sentence that
+        // *defines* a change rather than narrating one, as in "a term that the
+        // corpus no longer uses". That is what the `false_positive` directive
+        // is for.
+        //
+        // Three candidates were measured and rejected, and the reason each one
+        // failed is why this set is curated against a corpus and not from
+        // intuition. `the retired` matched four sentences and none was a
+        // narration: "retired term" and "retired phrase" are this system's own
+        // vocabulary. `at one point` matched the positional sense, "worth
+        // making at one point in a text". `was replaced` matched three
+        // sentences that describe a measurement procedure, "every inline
+        // quotation was replaced by one word".
         patterns: &[
+            // Tier one.
             "we moved from",
             "we changed",
             "we renamed",
             "we replaced",
             "used to be",
             "used to have",
+            "used to",
             "was renamed",
             "were renamed",
             "has been renamed",
@@ -125,6 +147,16 @@ const CATEGORIES: [Category; 3] = [
             "unlike before",
             "in the old",
             "the previous version",
+            "an earlier version",
+            "there was no",
+            "there were no",
+            "did not exist",
+            "has since",
+            "formerly",
+            // Tier two.
+            "no longer",
+            "now that",
+            "previously",
         ],
     },
     Category {
@@ -204,10 +236,14 @@ impl Voice {
 
 impl DocumentCheck for Voice {
     const RULE: &'static str = self::RULE;
-    /// The first edition of this rule. Raise it when a pattern set changes,
-    /// because a changed pattern set is a changed verdict and the cache holds
-    /// the old one ([`crate::cache`]).
-    const VERSION: u32 = 1;
+    /// Raise this when a pattern set changes, because a changed pattern set is
+    /// a changed verdict and the cache holds the old one ([`crate::cache`]).
+    ///
+    /// Edition two widens `change_narration`. Edition one reported nothing over
+    /// this corpus on 258 instances, and not one of its forty patterns occurred
+    /// in a declarative document, so the set was saturated rather than
+    /// satisfied.
+    const VERSION: u32 = 2;
     /// The body, because the regime is about prose. This declaration is the
     /// access: without it [`DocumentView::body`] returns nothing.
     const NEEDS_BODY: bool = true;
@@ -337,5 +373,50 @@ mod tests {
         assert!(!contains_word("a goodwill better than", "will be"));
         assert!(!contains_word("at first-order logic", "at first"));
         assert!(contains_word("at first, it reads", "at first"));
+    }
+
+    /// The set that edition one missed. Each of these is a sentence this
+    /// corpus wrote under a declarative regime and edition one passed.
+    #[test]
+    fn edition_two_reports_the_shapes_edition_one_missed() {
+        let narration = &CATEGORIES[1];
+        assert_eq!(narration.name, "change_narration");
+        for sentence in [
+            "until the ruling there was no machine form of this verb",
+            "the emitter writes a routine that did not exist before",
+            "the table that the entry used to carry decided it on the wrong axis",
+            "that script has since retired into the check layer",
+            "an earlier version of the entry named a second field",
+            "the field is no longer read",
+            "the register was formerly a single file",
+        ] {
+            assert!(
+                narration
+                    .patterns
+                    .iter()
+                    .any(|pattern| contains_word(sentence, pattern)),
+                "no pattern matched `{sentence}`"
+            );
+        }
+    }
+
+    /// The three candidates measured and rejected, held here so that a later
+    /// widening does not readmit one. Each sentence is from this corpus.
+    #[test]
+    fn the_rejected_candidates_stay_out() {
+        let narration = &CATEGORIES[1];
+        for sentence in [
+            "the british spelling and the retired term are warnings",
+            "evidence that an author found a reference worth making at one point in a text",
+            "every inline quotation of five characters or more was replaced by one word",
+        ] {
+            assert!(
+                !narration
+                    .patterns
+                    .iter()
+                    .any(|pattern| contains_word(sentence, pattern)),
+                "a pattern matched `{sentence}`, which is not change narration"
+            );
+        }
     }
 }
