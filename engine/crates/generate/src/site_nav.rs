@@ -185,6 +185,61 @@ fn index_of(pattern: &str, written: &[String], documents: &[&str]) -> Option<Str
     found.first().map(|path| (*path).clone())
 }
 
+/// A double-quoted YAML scalar: `"` and `\` escaped, never written bare.
+///
+/// The one correctness-critical detail this emitter carries. A title in this
+/// corpus routinely holds a colon (`Q36 — Which of MkDocs...`) or a quote, and
+/// either breaks an unquoted scalar's shape one level up.
+fn quoted(scalar: &str) -> String {
+    let mut out = String::with_capacity(scalar.len() + 2);
+    out.push('"');
+    for ch in scalar.chars() {
+        match ch {
+            '"' | '\\' => {
+                out.push('\\');
+                out.push(ch);
+            }
+            _ => out.push(ch),
+        }
+    }
+    out.push('"');
+    out
+}
+
+fn render(output: &str, groups: &[Group], corpus_root: &str) -> String {
+    let mut out = String::new();
+    let mark = headwater_mark::marker(Kind::SiteNav.name(), output)
+        .unwrap_or_else(|| format!("<!-- {} -->", headwater_mark::MARKER));
+    out.push_str(&mark);
+    out.push_str("\n\n");
+    out.push_str("nav:\n");
+    for Group {
+        shelf,
+        index,
+        ordered,
+    } in groups
+    {
+        out.push_str(&format!("  - {}:\n", quoted(shelf)));
+        // The index first, so a reader who opens a group lands on the page
+        // that summarizes it before the first document of it.
+        if let Some(path) = index {
+            out.push_str(&format!(
+                "      - {}: {}\n",
+                quoted(INDEX_LABEL),
+                quoted(&crate::shelf_index::relative(corpus_root, path))
+            ));
+        }
+        for pointer in ordered {
+            out.push_str(&format!(
+                "      - {}: {}\n",
+                quoted(&crate::label(pointer)),
+                quoted(&crate::shelf_index::relative(corpus_root, &pointer.path))
+            ));
+        }
+    }
+    out
+}
+
 /// One case per condition of [`index_of`], because the corpus this engine runs
 /// over exercises two of the four and no fixture tree reaches the rest.
 ///
@@ -275,59 +330,4 @@ mod index_tests {
             Some("docs/decisions/README.md".to_string())
         );
     }
-}
-
-/// A double-quoted YAML scalar: `"` and `\` escaped, never written bare.
-///
-/// The one correctness-critical detail this emitter carries. A title in this
-/// corpus routinely holds a colon (`Q36 — Which of MkDocs...`) or a quote, and
-/// either breaks an unquoted scalar's shape one level up.
-fn quoted(scalar: &str) -> String {
-    let mut out = String::with_capacity(scalar.len() + 2);
-    out.push('"');
-    for ch in scalar.chars() {
-        match ch {
-            '"' | '\\' => {
-                out.push('\\');
-                out.push(ch);
-            }
-            _ => out.push(ch),
-        }
-    }
-    out.push('"');
-    out
-}
-
-fn render(output: &str, groups: &[Group], corpus_root: &str) -> String {
-    let mut out = String::new();
-    let mark = headwater_mark::marker(Kind::SiteNav.name(), output)
-        .unwrap_or_else(|| format!("<!-- {} -->", headwater_mark::MARKER));
-    out.push_str(&mark);
-    out.push_str("\n\n");
-    out.push_str("nav:\n");
-    for Group {
-        shelf,
-        index,
-        ordered,
-    } in groups
-    {
-        out.push_str(&format!("  - {}:\n", quoted(shelf)));
-        // The index first, so a reader who opens a group lands on the page
-        // that summarizes it before the first document of it.
-        if let Some(path) = index {
-            out.push_str(&format!(
-                "      - {}: {}\n",
-                quoted(INDEX_LABEL),
-                quoted(&crate::shelf_index::relative(corpus_root, path))
-            ));
-        }
-        for pointer in ordered {
-            out.push_str(&format!(
-                "      - {}: {}\n",
-                quoted(&crate::label(pointer)),
-                quoted(&crate::shelf_index::relative(corpus_root, &pointer.path))
-            ));
-        }
-    }
-    out
 }
