@@ -398,7 +398,10 @@ fn a_flattened_package_carries_the_conformance_rule_set_its_source_declared() {
     assert_eq!(code, Some(0), "{stderr}");
 
     let manifest = std::fs::read_to_string(out.join("package.yml")).expect("the manifest reads");
-    assert!(manifest.contains("conformance: conformance.yml"), "{manifest}");
+    assert!(
+        manifest.contains("conformance: conformance.yml"),
+        "{manifest}"
+    );
     assert!(
         out.join("conformance.yml").is_file(),
         "the manifest declares a conformance rule set the artifact does not carry"
