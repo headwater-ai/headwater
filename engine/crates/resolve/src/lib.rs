@@ -82,6 +82,7 @@ pub mod references;
 pub mod release;
 pub mod render;
 pub mod rules;
+pub mod selection;
 pub mod source;
 pub mod template;
 
