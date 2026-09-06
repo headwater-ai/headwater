@@ -164,10 +164,13 @@ fn register_payload(target: &str) -> String {
 fn address() -> Vec<(&'static [&'static str], &'static [&'static str])> {
     let mut edits: Vec<(&[&str], &[&str])> = CANDIDATE.to_vec();
     edits.push((&["  specification:"], &["  norm:"]));
-    edits.push((
-        &["  specifications: {path: docs/specifications/**, homogeneous: true, kind: specification}"],
-        &["  specifications: {path: docs/specifications/**, homogeneous: true, kind: norm}"],
-    ));
+    // The kind the shelf names, and nothing else on that line. An edit that
+    // quoted the whole `shelves.specifications` declaration is an edit that an
+    // unrelated member added to it breaks, with a failure that says nothing
+    // about why — #538 declaring a display name on every shelf broke exactly
+    // that, on eight cases at once. `kind: specification` appears once in the
+    // base and the edit above has already renamed the kind's own key.
+    edits.push((&["kind: specification"], &["kind: norm"]));
     edits
 }
 
