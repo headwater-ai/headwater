@@ -84,7 +84,7 @@ fi
 engine="$root/engine/target/release/headwater"
 if [ ! -x "$engine" ]; then
     echo "headwater: no built engine, so this commit is not checked for prose."
-    echo "  build it once: cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml"
+    echo "  build it once: cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked"
     exit 0
 fi
 

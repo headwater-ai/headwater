@@ -14,7 +14,7 @@ A **documentation governance system**: a typed, validated, self-describing corpu
 git clone https://github.com/headwater-ai/headwater.git
 cd headwater
 git checkout v0.1.0
-cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml
+cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked
 ```
 
 The binary lands at `engine/target/release/headwater`, and `headwater --version` prints the number the tag names. The GitHub release for that tag states one digest: the value of the `release.digest` field inside `packages/headwater-standard/release.yml`. It is not what `sha256sum` prints for that file, because the field covers the files the record lists and cannot cover the record itself. Pass the stated value to `headwater taxonomy vendor --expect <digest>`. The check then rests on a number published outside the artifact rather than on one read out of it.

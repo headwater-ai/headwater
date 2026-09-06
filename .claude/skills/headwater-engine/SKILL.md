@@ -11,7 +11,7 @@ The engine is a cargo workspace under `engine/`, and the corpus it reads is the 
 
 ## The invocation
 
-    cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml
+    cargo build --release -p headwater-cli --manifest-path engine/Cargo.toml --locked
     engine/target/release/headwater check --root .
 
 Build from the repository root with `--manifest-path`, or from `engine/` with neither flag. Both write the same binary. Pick one form and keep it for the session, because a relative path that was right in one directory is a missing file in the other.
