@@ -1,5 +1,5 @@
-394 files under the corpus root
-    282 typed
+395 files under the corpus root
+    283 typed
      11 generated
       2 untyped
      97 excluded
@@ -10,7 +10,7 @@
      13 typed design_spec
      19 typed evaluation
      19 typed interface_contract
-    162 typed obligation_record
+    163 typed obligation_record
       1 typed obligation_register
       4 typed probe
       1 typed requirement

@@ -265,6 +265,7 @@ nav:
       - "The generated half of the site loads highlight.js from a third party with no subresource integrity": "obligations/0160-the-generated-half-of-the-site-loads-highlight-js-from-a-third-party-with-no-subresource-integrity.md"
       - "The validation block of mkdocs.yml is a gate this repository owns and no fixture drives": "obligations/0161-the-validation-block-of-mkdocs-yml-is-a-gate-this-repository-owns-and-no-fixture-drives.md"
       - "Spec 7 prints a package version that no check compares with the recipe": "obligations/0162-spec-7-prints-a-package-version-that-no-check-compares-with-the-recipe.md"
+      - "Ten decision records claim a Q number the decision register does not carry": "obligations/0163-ten-decision-records-claim-a-q-number-the-decision-register-does-not-carry.md"
   - "probes":
       - "Index": "probes/README.md"
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"

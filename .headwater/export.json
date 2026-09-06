@@ -10,8 +10,8 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 360,
-      "carried": 360,
+      "in the graph": 361,
+      "carried": 361,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -6902,6 +6902,28 @@
           "last_verified": "2026-09-06",
           "title": "Spec 7 prints a package version that no check compares with the recipe",
           "waiting_on": "build",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          }
+        }
+      },
+      {
+        "path": "docs/obligations/0163-ten-decision-records-claim-a-q-number-the-decision-register-does-not-carry.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0163",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0163",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "Ten decision records name a Q number in their file name that docs/spec/09-decisions.md has no section for, and nothing reads either side of the pair.",
+          "last_verified": "2026-09-06",
+          "title": "Ten decision records claim a Q number the decision register does not carry",
+          "waiting_on": "ruling",
           "provenance": {
             "warrant": "asserted",
             "agency": "agent",
