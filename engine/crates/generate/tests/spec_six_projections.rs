@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Spec 6's projection-kinds block, held against [`headwater_generate::unbuilt`].
 //!
 //! # Why this file exists
