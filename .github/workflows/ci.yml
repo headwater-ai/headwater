@@ -621,6 +621,42 @@ jobs:
         # planted defect so that an empty offender list means something. It
         # builds nothing: its one cargo call is `metadata --no-deps --locked`.
         run: sh tools/build-declaration-fixtures.sh
+      - name: The first screen resolves, and says one true thing about its own tag
+        # Two properties of the root `README.md`, and NOT its prose. Nothing
+        # else here reads that file at all: `docs/` is the corpus root, so no
+        # engine rule sees it; `docs_dir: docs`, so `mkdocs build --strict`
+        # never sees it; and every `README` named in a workflow, a hook or
+        # another script under `tools/` is `engine/README.md` or
+        # `docs/interfaces/README.md`.
+        #
+        # What this step holds is the referential integrity of that page —
+        # every relative link and every fragment resolving — together with four
+        # claims the page makes about itself: the opening image at 1280 by 640
+        # under 1 MB, every GitHub URL naming the owner and repository the
+        # remote names, the exclusive or below, and no count of milestones.
+        #
+        # What it does NOT hold is the prose. A British spelling, a
+        # contraction, a hard-wrapped paragraph, a retired term and `headwater`
+        # lower case in running prose all pass, because the language regime
+        # binds kinds under the corpus root and this file is not a governed
+        # document. A second copy of a rule living in a script is what this
+        # repository refuses everywhere else, so this suite reimplements none
+        # of them.
+        #
+        # The case it exists for is the exclusive or between the pinned
+        # `git checkout` in the paste block and the sentence above the fence
+        # that says the tag is not cut. Cutting the tag without deleting that
+        # sentence leaves the first screen telling a stranger to omit a line
+        # that now works, and every other gate here stays green.
+        #
+        # It asks the configured remote whether the tag resolves, which is one
+        # `git ls-remote` and the only network any fixture suite performs. A
+        # remote it cannot read is reported red rather than skipped, because
+        # the exclusive or is then undecided and an undecided invariant is not
+        # a passing one. Every scratch arm stubs that remote with a local bare
+        # repository instead. It builds no engine and writes only under a
+        # temporary directory.
+        run: sh tools/readme-fixtures.sh
       - name: Every declared export profile is what this corpus produces
         # `export_plan()` is a separate code path from `plan()`: it re-filters
         # the declared projections by `--profile` rather than writing every

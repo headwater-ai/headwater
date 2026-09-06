@@ -23,7 +23,7 @@ The tutorial above builds whatever tree you cloned, which is the default branch 
 
 ## Status
 
-> **The engine runs, and two of its layers are unfinished.** M1 to M5 shipped, so this repository types its own corpus, checks it on every commit, and scaffolds, explains, routes, generates and exports it. Six milestones are open: distribution and the measurement layer are the two unfinished layers, and the canonical taxonomy library, ecosystem tooling, taxonomy expressiveness and this first release are the rest. Every efficacy claim in this repository is still marked unmeasured.
+> **The engine runs, and two of its layers are unfinished.** This repository types its own corpus, checks it on every commit, and scaffolds, explains, routes, generates and exports it. Distribution and the measurement layer are the unfinished layers, and the canonical taxonomy library, ecosystem tooling, taxonomy expressiveness and this first release are the rest of what is still open. Every efficacy claim in this repository is still marked unmeasured.
 
 ## What problem this solves
 
