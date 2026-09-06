@@ -16,14 +16,17 @@
 //! says so beside the key. That ruling stands and this module does not disturb
 //! it. Three measurements are why the label is not the answer here anyway.
 //!
-//! 1. **The label is unread, so it is unverified, so it has already drifted.**
-//!    HW-DR-0040 recorded on 2026-08-30 that `decision-record` declared
-//!    `requires: [design-spec]`. It declares `requires: [evidence-and-obligation]`
-//!    now. Nothing read the old value, nothing reported the move, and no rule
-//!    would have caught the new value being wrong either.
-//! 2. **The label is optional and most publishers leave it empty.** Three of the
-//!    six bundles this repository's own package ships declare `requires: []`. A
-//!    derivation works on a third-party package whose author never wrote the key.
+//! 1. **The label is optional, and most publishers leave it empty.** Four of the
+//!    six bundles this repository's own package ships declare `requires: []`:
+//!    `brd-prd`, `diataxis`, `evidence-and-obligation` and `standards-spec`.
+//!    Only `design-spec` and `decision-record` name anything. A derivation works
+//!    on a third-party package whose author never wrote the key.
+//! 2. **The label is unread, so no rule reports one that is wrong.** The two
+//!    values here are correct because a person keeps them so, with the reason
+//!    written at the point of each change: HW-DR-0044 moved `decision-record`
+//!    from `design-spec` to `evidence-and-obligation`, and the comment above the
+//!    key names the two addresses that moved. That is care rather than a
+//!    mechanism, and care does not reach a package this engine did not write.
 //! 3. **A derivation cannot disagree with the refusal it explains**, because it
 //!    is the same traversal. [`crate::rules::dangling`] produces the names, and
 //!    the same function run over a candidate's resolution says which of them the
@@ -129,6 +132,24 @@ impl Advice {
 /// a dangling name, where the package ships no unselected bundle, and where no
 /// unselected bundle declares any of the dangling names. The last of those is
 /// the case the message exists to stay quiet about.
+///
+/// # What this does not measure, and what a reader meets because of it
+///
+/// A candidate is judged on the names it **supplies** out of the current
+/// dangling set, and never on the names it **introduces**. So a bundle that
+/// declares the one name the reader is missing, and whose own declarations read
+/// a second name nothing declares, is reported as supplying 1 of the 1.
+///
+/// The reader adds it, runs again, and takes a fresh refusal on the new name
+/// with no advice under it, because nothing in the library supplies that one.
+/// **A reader is sent round twice and the second round is silent.** The counts
+/// are true at each step and the sequence is still worse than one refusal.
+///
+/// Nothing in `headwater/standard` reaches this: `evidence-and-obligation`
+/// supplies all four of the names the incomplete triple leaves dangling and
+/// introduces none. A third-party library can. Reporting what a candidate
+/// introduces means a second traversal per candidate and a message that carries
+/// two lists, and it is not built here.
 pub fn advice(root: &Path, consumer: &Consumer) -> Option<Advice> {
     let wanted = dangling(root, consumer)?;
     if wanted.is_empty() {
