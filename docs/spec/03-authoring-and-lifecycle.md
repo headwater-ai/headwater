@@ -6,6 +6,7 @@ last_verified: 2026-08-11
 summary: How a document starts, declares itself in front matter, records its provenance, and dies without loss of its lineage.
 doc_type: design_spec
 sequence: 3
+title: "Authoring and lifecycle"
 provenance:
   warrant: accepted
   agency: mixed

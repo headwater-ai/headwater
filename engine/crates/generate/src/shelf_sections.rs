@@ -293,12 +293,28 @@ fn render(shelf: &str, output: &str, sections: &[Section], front: Option<&str>) 
             .id
             .clone()
             .unwrap_or_else(|| crate::shelf_index::file_name(&section.pointer.path));
-        // The body is the shelf index's row, and the heading above it is the
-        // whole of what this kind adds. Written any other way the two emitters
-        // would come to disagree about how one document reads, and a corpus
-        // that declares both would say two things about one row. It also keeps
-        // this module out of the business of guessing whether a summary ends a
-        // sentence, which is punctuation that no facet states.
+        // The heading carries the name and this line carries the identifier,
+        // and the two together are what one row of this kind says. So this is
+        // the one emitter of the three that does not call [`crate::label`].
+        // `label` answers the question "one string for this document, and the
+        // caller has room for exactly one": [`crate::shelf_index`] writes a
+        // bullet and [`crate::site_nav`] writes a navigation entry, and each
+        // has room for one. This kind has room for two, because a heading is
+        // the address a citation lands on and the line under it is the link.
+        // Reading the name in both places would print it twice and drop the
+        // identifier from the only rendered surface that still shows one.
+        //
+        // The two emitters therefore differ in what they show and never in
+        // what they claim. `docs/decisions/README.md` renders a decision as
+        // `[Q1 — Implementation language](…)`, and
+        // `docs/spec/09-open-questions.md` renders the same decision as a
+        // heading `## Q1 — Implementation language` over `[HW-DR-0001](…)`.
+        // A reader of the second learns one more thing about the same row.
+        // The file name stays the fall-through for a document with no
+        // identifier, because a poor label is better than a missing link.
+        //
+        // It also keeps this module out of the business of guessing whether a
+        // summary ends a sentence, which is punctuation that no facet states.
         out.push_str(&format!("[{label}]({target})"));
         if let Some(summary) = &section.pointer.summary {
             out.push_str(&format!(" — {summary}"));

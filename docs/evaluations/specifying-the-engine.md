@@ -4,6 +4,7 @@ status: current
 status_since: 2026-08-16
 summary: "`docs/spec/` is a design-spec series and nothing types the engine as a thing under test, and three traditions each supply one part of what would."
 last_verified: 2026-08-16
+title: "Specifying the engine"
 provenance:
   warrant: accepted
   accepted_by: j.baxter

@@ -6,6 +6,7 @@ last_verified: 2026-08-11
 summary: How the corpus serves an agent at four moments, and how a probe measures whether any of it works.
 doc_type: design_spec
 sequence: 5
+title: "AI integration"
 provenance:
   warrant: accepted
   agency: mixed

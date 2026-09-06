@@ -4,6 +4,7 @@ status: current
 status_since: 2026-08-10
 last_verified: 2026-08-10
 summary: The Q1 evidence, which decides the implementation language on embedding, scope enforcement and sum types rather than on speed.
+title: "The implementation language — the evidence for Q1"
 provenance:
   warrant: accepted
   agency: mixed

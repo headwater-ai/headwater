@@ -6,6 +6,7 @@ last_verified: 2026-08-11
 summary: One line for every named concept in the specification, with a link to the section that defines it.
 doc_type: design_spec
 sequence: 14
+title: "Glossary"
 provenance:
   warrant: accepted
   agency: mixed

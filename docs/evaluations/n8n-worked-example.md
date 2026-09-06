@@ -4,6 +4,7 @@ status: current
 status_since: 2026-09-01
 last_verified: 2026-09-01
 summary: Eleven real governing documents from n8n, typed against two entries of the library, and what two runs and one coherence sweep found in a corpus that keeps its prose beside the code.
+title: "n8n as a worked instance — a corpus with no docs root"
 provenance:
   warrant: asserted
   agency: mixed
@@ -66,16 +67,19 @@ The entry assumed that a design specification belongs to a numbered series. A mo
 
 The [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#what-a-run-reports) carries the run in full, with the assembly that reproduces it. The summary:
 
-**83 files under the corpus root, 4 typed, 79 excluded, 4 checked, 42 check instances, 8 findings, all 8 of them errors.** `headwater check --strict` exits 1. The 79 excluded files are the vendored taxonomy package.
+**105 files under the corpus root, 4 typed, 101 excluded, 4 checked, 42 check instances, 12 findings, all 12 of them errors.** `headwater check --strict` exits 1. The 101 excluded files are the vendored taxonomy package.
 
-Two findings per document, and the same two on each one.
+Three findings per document, and the same three on each one.
 
 | Document | Rule | Severity |
 |---|---|---|
 | all four | `facet.required.missing` (`OB-FACET-1`), `sequence` not declared | error |
+| all four | `facet.required.missing` (`OB-FACET-1`), `title` not declared | error |
 | all four | `identifier.unusable` (`OB-ID-2`), a typed `design_spec` that declares no identifier | error |
 
-`identifier.unusable` is a second finding about the entry rather than about n8n. The design-spec entry declares five kinds and no identifier scheme for any of them. This repository mints `spec_id` in its own overlay, and an overlay is not an admitted library entry. So a corpus that takes the entry alone gets documents that can stand at neither end of a relation. The [diataxis fixture](../taxonomies/diataxis/fixtures/README.md) reported the same rule six times for the same reason.
+The run reported 8 findings until headwater/standard 4.0.0, which requires `title` on `design_spec`. None of these four upstream files declares one. This repository will not write four titles into somebody else's documents to make the number go down.
+
+`identifier.unusable` is a third finding about the entry rather than about n8n. The design-spec entry declares five kinds and no identifier scheme for any of them. This repository mints `spec_id` in its own overlay, and an overlay is not an admitted library entry. So a corpus that takes the entry alone gets documents that can stand at neither end of a relation. The [diataxis fixture](../taxonomies/diataxis/fixtures/README.md) reported the same rule six times for the same reason.
 
 ### Not one finding is about n8n's writing
 
@@ -97,7 +101,7 @@ This is the third Done-when bullet of [#492](https://github.com/headwater-ai/hea
 
 **First, a correction to how the issue states it.** n8n does have a root `docs/` directory, and it holds 272 files at the pin. 271 of them sit under `docs/generated/` and are `tbls` output produced from the database migrations. The 272nd is `docs/db.md`. It is an authored page, and its subject is how that output is generated and where to read it. No architecture document, no review rule and no skill is under `docs/`. The issue's claim is right in substance and wrong as literally written. The accurate statement is narrower. n8n has a `docs/` directory that carries generated output and one index page for it. Its governed prose lives elsewhere, scattered.
 
-**The design-spec entry as it ships types none of these documents.** Its one shelf is `spec_series` at `docs/spec/**`, and not one file of this corpus is under `docs/`. Run the same assembly with that shelf alone and the run reports **83 files, 0 typed, 4 untyped, 0 checked, 2 check instances, 0 findings**. `headwater check --strict` exits **0**.
+**The design-spec entry as it ships types none of these documents.** Its one shelf is `spec_series` at `docs/spec/**`, and not one file of this corpus is under `docs/`. Run the same assembly with that shelf alone and the run reports **105 files, 4 untyped, 101 excluded, 0 checked, 2 check instances, 0 findings**. `headwater check --strict` exits **0**.
 
 A green strict run over four real governing documents that no rule read is what the census crate calls *systematically green*. The engine is honest about it in the census, which carries four rows saying `no shelf pattern claims this path`. Nothing else says the corpus went unchecked.
 
@@ -107,15 +111,15 @@ Three properties, and each one was measured rather than assumed.
 
 **The corpus root is `packages` and not `docs`.** That forces an exclusion, because a taxonomy package is found under `packages/` and n8n's prose is under `packages/` too. A corpus root that reaches the second reaches the first. The three earlier fixtures of this library never met this, because each of them roots its corpus at `docs`.
 
-**The path pattern has to be `packages/**`, which fixes one segment out of 27,688 files.** The four documents share no directory. What they share is a filename, and the pattern language reads a path rather than a name. `packages/**/ARCHITECTURE.md` is legal and it claims **2 of the 4**, because the other two are named `architecture.md` and `ARCHITECTURE_CONNECTION_VS_SETTINGS.md`. That run reports 2 typed, 2 untyped, 22 check instances and 4 findings, and the two documents it misses report nothing at all.
+**The path pattern has to be `packages/**`, which fixes one segment out of 27,688 files.** The four documents share no directory. What they share is a filename, and the pattern language reads a path rather than a name. `packages/**/ARCHITECTURE.md` is legal and it claims **2 of the 4**, because the other two are named `architecture.md` and `ARCHITECTURE_CONNECTION_VS_SETTINGS.md`. That run reports 2 typed, 2 untyped, 22 check instances and 6 findings, and the two documents it misses report nothing at all.
 
 **The shelf has to be heterogeneous with one admitted kind, and that reads as a contradiction.** `kinds.design_spec` requires `doc_type`, because the entry's own shelf is heterogeneous and needs a discriminator. A homogeneous shelf refuses a document that restates the kind its placement already states. So a `design_spec` on a homogeneous shelf reports an error whichever way the front matter is written:
 
 | The shelf, and the front matter | Findings |
 |---|---|
-| `homogeneous: true`, with `doc_type: design_spec` | 12, adding `shelf.placement_is_primary` on all four |
-| `homogeneous: true`, with `doc_type` removed | 12, adding `facet.required.missing` for `doc_type` on all four |
-| `homogeneous: false`, `discriminator: doc_type`, `kinds: [design_spec]` | 8 |
+| `homogeneous: true`, with `doc_type: design_spec` | 16, adding `shelf.placement_is_primary` on all four |
+| `homogeneous: true`, with `doc_type` removed | 16, adding `facet.required.missing` for `doc_type` on all four |
+| `homogeneous: false`, `discriminator: doc_type`, `kinds: [design_spec]` | 12 |
 
 The third row is what the fixture commits. A one-kind heterogeneous shelf makes the discriminator carry no information at all. Every document writes the one value the shelf admits, and the key exists to satisfy a facet requirement rather than to tell two kinds apart.
 
@@ -133,7 +137,7 @@ The issue states that `lefthook.yml` runs `prettier --write` on every staged `.m
 
 That was verified rather than reasoned. A scratch directory with a `.prettierignore` of `**/*.md` and one badly formatted Markdown file: `prettier --check` reports `All matched files use Prettier code style` and exits 0. Remove the ignore file and change nothing else, and the same command reports a style issue on the same file.
 
-**So prettier catches 0 of the 8 findings, and 0 of anything else in these four files.**
+**So prettier catches 0 of the 12 findings, and 0 of anything else in these four files.**
 
 The counterfactual is worth one line, because it bounds the overlap. Run prettier over the four files with the ignore lifted and it rewrites three of them. Every change is blank lines around fenced blocks, table column alignment, and indentation inside a fenced block. None of it touches a heading, a facet, a link, a spelling or a sentence. **Even with the ignore lifted the overlap would be zero.**
 
@@ -151,18 +155,18 @@ The counterfactual is worth one line, because it bounds the overlap. Run prettie
 
 Not one pattern reaches `packages/@n8n/instance-ai/`, `packages/@n8n/expression-runtime/` or `packages/@n8n/local-gateway/`. Two further facts point the same way. Cubic reviews only the lines a pull request adds or modifies, and its `custom_instructions` block states the bar in terms of code rather than prose.
 
-**So cubic catches 0 of the 8.**
+**So cubic catches 0 of the 12.**
 
 ### The count itself
 
 | | Under the entry alone | Under the entry plus this repository's house regime |
 |---|---|---|
-| Findings raised | 8 | 162 |
+| Findings raised | 12 | 166 |
 | Already caught by `prettier` | 0 | 0 |
 | Already caught by `cubic` | 0 | 0 |
-| Caught by neither | 8 | 162 |
+| Caught by neither | 12 | 166 |
 | Of those, written by `headwater check --fix` | 0 | 1 |
-| Of those, needing a human rewrite or a declaration change | 8 | 161 |
+| Of those, needing a human rewrite or a declaration change | 12 | 165 |
 
 The second column is a probe and not a declaration, on the precedent the [brd-prd fixtures](../taxonomies/brd-prd/fixtures/README.md#what-the-bases-voice-regime-would-have-reported) set. It binds `regimes.language.ste_house` from this repository's own overlay onto `kinds.design_spec`, changes nothing else, and touches no document. The [fixture README](../taxonomies/design-spec/fixtures/n8n/README.md#what-this-repositorys-own-house-regime-would-have-reported) carries it per rule and per document.
 
@@ -172,9 +176,9 @@ The second column is a probe and not a declaration, on the precedent the [brd-pr
 
 **There is no British spelling anywhere in the four documents.** The rule that catches one ran on every document and found nothing. That contradicts what this work expected to find, and it is worth recording as a correction rather than quietly dropping.
 
-**Exactly one finding of the 162 is mechanically fixable.** `headwater check --fix` writes a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal link. One contraction, `doesn't`, is the whole of the intersection, and the report marks it as the only `fix (mechanical)` line. The 136 hard wraps are mechanical to a reader and carry no patch, and `engine/crates/check/src/source_form.rs` states why in its own comment. `headwater check --fix` was never run over this corpus.
+**Exactly one finding of the 166 is mechanically fixable.** `headwater check --fix` writes a British spelling, a contraction whose expansion is one word, a retired term that names a replacement, and a missing reciprocal link. One contraction, `doesn't`, is the whole of the intersection, and the report marks it as the only `fix (mechanical)` line. The 136 hard wraps are mechanical to a reader and carry no patch, and `engine/crates/check/src/source_form.rs` states why in its own comment. `headwater check --fix` was never run over this corpus.
 
-**What the count says.** Under the canonical library alone the honest total is 8. Every one of the 8 is about a declaration rather than about n8n, and every one is invisible to both of n8n's tools. Under a house language regime the total is 162, of which one is mechanically fixable and 136 are one editor's line-wrapping habit. Neither number is a claim that Headwater found 8 or 162 problems in n8n. The 8 are what a taxonomy learns about itself by meeting a corpus it did not author.
+**What the count says.** Under the canonical library alone the honest total is 12. Every one of the 12 is about a declaration rather than about n8n, and every one is invisible to both of n8n's tools. Under a house language regime the total is 166, of which one is mechanically fixable and 136 are one editor's line-wrapping habit. Neither number is a claim that Headwater found 12 or 166 problems in n8n. The 12 are what a taxonomy learns about itself by meeting a corpus it did not author.
 
 ## The review rules, a second corpus of the same repository
 
@@ -260,7 +264,7 @@ This is the fourth Done-when bullet of #508, and it is a `headwater sweep` job r
 
 **The British-spelling claim was wrong in both directions.** The design-spec run recorded that there is no British spelling anywhere in its four documents. There are four in this corpus: `behaviour`, `defence`, `colours` and `denormalised`. Three of them are in the typed set. **The rule reports one.** The engine's spelling table is closed at 24 words and holds `behaviour` and not `defence`, `colour` or `denormalise`. So a corpus-level count and a rule-level count differ here by a factor of three, and only the second is what a run measures.
 
-**Six findings of 143 are mechanically fixable, against one of 162 before.** Five contractions and one spelling are the whole intersection, and the report marks each with `fix (mechanical)`. The 87 hard wraps are mechanical to a reader and carry no patch. `headwater check --fix` was never run over this corpus.
+**Six findings of 143 are mechanically fixable, against one of 166 before.** Five contractions and one spelling are the whole intersection, and the report marks each with `fix (mechanical)`. The 87 hard wraps are mechanical to a reader and carry no patch. `headwater check --fix` was never run over this corpus.
 
 ## What this adds to criterion 4
 

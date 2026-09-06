@@ -5,6 +5,7 @@ status_since: 2026-08-05
 last_verified: 2026-08-08
 summary: An independent run of the core-concepts instrument, made without reading the existing findings first.
 doc_type: review_record
+title: "Core-concepts independent review"
 provenance:
   warrant: accepted
   agency: agent

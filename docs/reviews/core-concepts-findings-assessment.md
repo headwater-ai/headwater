@@ -5,6 +5,7 @@ status_since: 2026-08-05
 last_verified: 2026-08-08
 summary: An assessment of the first findings report, made against a later revision, with the places where it would revise them.
 doc_type: review_record
+title: "Assessment of the existing core-concepts findings"
 provenance:
   warrant: accepted
   agency: agent

@@ -42,13 +42,24 @@ use headwater_query::Surface;
 use headwater_yaml::Mapping;
 use std::path::{Path, PathBuf};
 
-/// The row of the `current` document. The brackets matter: the summary of one
-/// document names the identifier of the other in prose, so a bare identifier is
-/// not a test of what the index rows are.
-const CURRENT: &str = "[DR-FIX-0002]";
+/// The row of the `current` document, named by the link target rather than by
+/// the label. Two things make that the right handle. The parentheses matter for
+/// the reason the brackets used to: the summary of one document names the other
+/// in prose, so a bare string is not a test of what the rows are. And the link
+/// target is the one part of a row that no labeling decision moves.
+///
+/// It was `[DR-FIX-0002]` until #427, which is the identifier the row used to
+/// carry, and that reading tied this file to a choice it does not test. A shelf
+/// index labels a row with the facet in the `name` role from that change, so
+/// the assertion failed on a fixture corpus whose decisions all declare a title
+/// — and it failed in the two emitters unequally, because `shelf_sections`
+/// writes the name as a heading and still writes the identifier as link text.
+/// This file is about whether a declared filter reaches an emitter. It should
+/// not fail again the next time somebody changes what a row is called.
+const CURRENT: &str = "(0002-rebuild-the-graph.md)";
 
 /// The `superseded` document, which the `live` filter withholds.
-const SUPERSEDED: &str = "[DR-FIX-0001]";
+const SUPERSEDED: &str = "(0001-store-the-graph.md)";
 
 fn fixtures_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures")

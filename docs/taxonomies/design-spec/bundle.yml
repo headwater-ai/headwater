@@ -43,8 +43,22 @@ add:
     volatility: stable
 
   # --- kinds ----------------------------------------------------------------
-  # Every kind inherits the four core-bearing facets and the base relations
+  # Every kind inherits the five core-bearing facets and the base relations
   # from governed_document, which is what keeps this bundle add-only.
+  #
+  # Every kind here requires `title`, which headwater/standard declares in the
+  # `name` role from 4.0.0. A numbered series is the tradition that most needs
+  # it: the number is what orders the series and it is no name, so a rendered
+  # list of parts that reads the identifier reads `HW-SPEC-vision-and-scope`
+  # where "Vision and scope" belongs (#123, #427). The facet stood in the
+  # decision-record entry until 4.0.0 and could not reach here, and that entry's
+  # doctrine carried the reason as its finding 4.
+  #
+  # `title` is not the first heading of the body, and the two are allowed to
+  # differ. On this shelf they do: a part opens `# 0 — Vision and scope`,
+  # because a reader of the file wants the number, and its title is "Vision and
+  # scope", because `sequence` already carries the number and spec 2 refuses a
+  # second copy of a value the front matter holds.
 
   kinds.design_spec:
     is_a: governed_document
@@ -52,7 +66,7 @@ add:
     voice: declarative
     lifecycle: standard
     facets:
-      require: [doc_type, sequence]
+      require: [doc_type, sequence, title]
 
   kinds.decision_register:
     is_a: governed_document
@@ -60,7 +74,7 @@ add:
     voice: declarative
     lifecycle: standard
     facets:
-      require: [doc_type, sequence]
+      require: [doc_type, sequence, title]
 
   kinds.obligation_register:
     is_a: governed_document
@@ -68,7 +82,7 @@ add:
     voice: declarative
     lifecycle: standard
     facets:
-      require: [doc_type, sequence]
+      require: [doc_type, sequence, title]
 
   # `evaluation` moved to evidence-and-obligation with HW-DR-0044.
   # `cites_evidence` below still names it, and this bundle now requires the
@@ -80,7 +94,7 @@ add:
     voice: declarative
     lifecycle: standard
     facets:
-      require: [doc_type]
+      require: [doc_type, title]
     relations:
       expect:
         - id: instrument-applied
@@ -98,7 +112,7 @@ add:
     voice: narrative
     lifecycle: standard
     facets:
-      require: [doc_type]
+      require: [doc_type, title]
 
   # --- relations ------------------------------------------------------------
   # No relation here is created_by author. Each one has a mechanical proposer,

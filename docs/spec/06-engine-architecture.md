@@ -6,6 +6,7 @@ last_verified: 2026-08-11
 summary: One parse, one typed graph, and many consumers, with the pipeline, the library boundary, and the performance targets.
 doc_type: design_spec
 sequence: 6
+title: "Engine architecture"
 provenance:
   warrant: accepted
   agency: mixed

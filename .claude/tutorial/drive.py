@@ -305,12 +305,24 @@ def main():
                  'the version that the package itself declares')]:
             assert_true('step 4: what init wrote names ' + claim, token in declaration)
 
-        # Step 5. The tutorial names the line to change rather than a command.
+        # Step 5. The tutorial names the line to change rather than a command,
+        # so this makes the edit the reader would make by hand.
+        #
+        # The new line is read out of block 9, which is the output the page says
+        # `grep 'version:'` prints after the edit, and never typed here. A
+        # literal in this file would be a second copy of the package version,
+        # and #427 bumped the package to 4.0.0 and moved six mentions in the
+        # tutorial while this one stayed at 3.5.0, so every step from 5 to 16
+        # failed on a tutorial that was right.
         path = os.path.join(cwd['at'], '.headwater/taxonomy.yml')
         source = open(path).read()
         assert_true('step 5: the line the tutorial names is in the file',
                     '  version: 0.0.0' in source)
-        open(path, 'w').write(source.replace('  version: 0.0.0', '  version: 3.5.0'))
+        pinned = blocks[9].strip('\n')
+        assert_true('step 5: the page states the version to pin',
+                    pinned.startswith('  version: ') and pinned != '  version: 0.0.0',
+                    pinned)
+        open(path, 'w').write(source.replace('  version: 0.0.0', pinned))
         whole("step 5: grep 'version:'",
               run("grep 'version:' .headwater/taxonomy.yml").stdout, 9)
         result = run(blocks[10].strip())

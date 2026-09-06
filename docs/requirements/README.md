@@ -4,4 +4,4 @@
 
 1 document on this shelf, in the reading order this corpus derives.
 
-- [HW-REQ-0001](0001-the-engine-reaches-no-network-at-check-time.md) — The engine opens no network connection while it reads a corpus, so a check runs offline and a resolution result stays reproducible. (asserted, and no human has accepted it)
+- [The engine reaches no network at check time](0001-the-engine-reaches-no-network-at-check-time.md) — The engine opens no network connection while it reads a corpus, so a check runs offline and a resolution result stays reproducible. (asserted, and no human has accepted it)

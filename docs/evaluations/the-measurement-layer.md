@@ -4,6 +4,7 @@ status: current
 status_since: 2026-08-11
 last_verified: 2026-08-11
 summary: The Q8 and Q20 evidence, which is what a probe costs, when it runs, and whether the promised instruments can produce their measurements.
+title: "The measurement layer — the Q8 and Q20 evaluation"
 provenance:
   warrant: accepted
   agency: mixed

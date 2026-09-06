@@ -5,6 +5,7 @@ status_since: 2026-08-28
 summary: "Each of the 64 help strings that PR #335 carried whole out of the retired parser, run against the shipped binary: 60 true, 3 false, 1 not runnable."
 last_verified: 2026-08-28
 doc_type: review_record
+title: "The sixty-four restored help strings, checked against the binary"
 relations:
   traces_to:
     - engine/crates/cli/src/lib.rs

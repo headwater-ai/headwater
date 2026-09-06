@@ -6,6 +6,7 @@ summary: The ten capabilities a harness supplies at the four moments, stated onc
 last_verified: 2026-08-25
 doc_type: design_spec
 sequence: 16
+title: "Harness support"
 provenance:
   warrant: accepted
   agency: mixed

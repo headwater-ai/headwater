@@ -4,6 +4,7 @@ status: current
 status_since: 2026-08-10
 last_verified: 2026-08-10
 summary: The Q14, Q17 and Q7 evidence, which is what a corpus advertises, what it withholds, and what a tool may write back.
+title: "The serving boundary — what is advertised, what is withheld, what is written back"
 provenance:
   warrant: accepted
   agency: mixed

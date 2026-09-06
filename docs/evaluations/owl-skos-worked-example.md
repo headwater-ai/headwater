@@ -4,6 +4,7 @@ status: current
 status_since: 2026-08-12
 last_verified: 2026-08-12
 summary: The taxonomy emitted as OWL and SKOS, the corpus as instance triples, and what a reasoner makes of the result.
+title: "The taxonomy in OWL and SKOS — a worked example"
 provenance:
   warrant: accepted
   agency: mixed

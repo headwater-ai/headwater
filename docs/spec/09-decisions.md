@@ -6,6 +6,7 @@ last_verified: 2026-08-13
 summary: An index of the twenty-one design decisions and the ones that the build raised, where the record of each one lives, and the evidence that closed it.
 doc_type: decision_register
 sequence: 9
+title: "The decision register"
 provenance:
   warrant: accepted
   agency: mixed

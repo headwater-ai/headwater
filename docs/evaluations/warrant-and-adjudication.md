@@ -4,6 +4,7 @@ status: current
 status_since: 2026-08-10
 last_verified: 2026-08-10
 summary: The Q15, Q19 and Q18 evidence, which is what stands behind a document, who vouched for it, and how a disagreement is settled.
+title: "Warrant — what stands behind a document, and who vouched for it"
 provenance:
   warrant: accepted
   agency: mixed

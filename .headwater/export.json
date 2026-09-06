@@ -1394,6 +1394,7 @@
           "status_since": "2026-08-02",
           "last_verified": "2026-08-11",
           "summary": "Practitioner tools and standards that solve adjacent problems, and what this design specifies that somebody already built.",
+          "title": "Adjacent work and tooling",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -1430,6 +1431,7 @@
           "status_since": "2026-08-30",
           "last_verified": "2026-08-31",
           "summary": "The cross-bundle address inventory HW-DR-0044 asks for, and what it shows decision-record actually reaches inside design-spec.",
+          "title": "The capability-bundle address inventory",
           "provenance": {
             "warrant": "asserted",
             "agency": "mixed",
@@ -1450,6 +1452,7 @@
           "status_since": "2026-08-10",
           "last_verified": "2026-08-10",
           "summary": "The Q3 evidence, which wrote the base package out as real YAML and ran five adopters through their first day against it.",
+          "title": "What ships in the box — a first-run walkthrough",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -1481,6 +1484,7 @@
           "status_since": "2026-08-11",
           "last_verified": "2026-08-11",
           "summary": "The Q11, Q12 and Q16 evidence, which is the license, the migration path, and the public presence that a first reader meets.",
+          "title": "First contact — the Q11, Q12 and Q16 evaluation",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -1511,6 +1515,7 @@
           "status_since": "2026-08-10",
           "last_verified": "2026-08-10",
           "summary": "The Q6, Q13 and Q9 evidence, which is where the corpus graph lives, what it exports, and how a second repository consumes it.",
+          "title": "The graph, its export, and the tier above it",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -1543,6 +1548,7 @@
           "status_since": "2026-08-10",
           "last_verified": "2026-08-10",
           "summary": "The Q1 evidence, which decides the implementation language on embedding, scope enforcement and sum types rather than on speed.",
+          "title": "The implementation language — the evidence for Q1",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -1569,6 +1575,7 @@
           "status_since": "2026-08-10",
           "last_verified": "2026-08-10",
           "summary": "The results of the Q1 risk-retirement spike, which are four items, all passing, and three findings that the argument did not predict.",
+          "title": "The Q1 spike — results",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -1600,6 +1607,7 @@
           "status_since": "2026-08-02",
           "last_verified": "2026-08-11",
           "summary": "The Headwater taxonomy written out in LinkML, and the boundary where the standard stops covering what spec 2 declares.",
+          "title": "The Headwater taxonomy in LinkML — a worked example",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -1629,6 +1637,7 @@
           "status_since": "2026-09-01",
           "last_verified": "2026-09-01",
           "summary": "Eleven real governing documents from n8n, typed against two entries of the library, and what two runs and one coherence sweep found in a corpus that keeps its prose beside the code.",
+          "title": "n8n as a worked instance — a corpus with no docs root",
           "provenance": {
             "warrant": "asserted",
             "agency": "mixed",
@@ -1649,6 +1658,7 @@
           "status_since": "2026-08-12",
           "last_verified": "2026-08-12",
           "summary": "The taxonomy emitted as OWL and SKOS, the corpus as instance triples, and what a reasoner makes of the result.",
+          "title": "The taxonomy in OWL and SKOS — a worked example",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -1678,6 +1688,7 @@
           "status_since": "2026-08-10",
           "last_verified": "2026-08-10",
           "summary": "The Q4 evidence, which makes a relation instance an object in front matter and refuses the annotated prose link as a second edge syntax.",
+          "title": "Relation storage — the Q4 evaluation",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -1708,6 +1719,7 @@
           "status_since": "2026-08-10",
           "last_verified": "2026-08-10",
           "summary": "The Q2 evidence, a cognitive-dimensions walkthrough over five authoring scenarios, which chose YAML and found five defects in spec 2.",
+          "title": "Choosing the schema format — a cognitive-dimensions walkthrough",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -1735,6 +1747,7 @@
           "status_since": "2026-08-02",
           "last_verified": "2026-08-11",
           "summary": "The Headwater checks written out in SHACL, and the whole-graph line where the constraint language stops.",
+          "title": "The Headwater checks in SHACL — a worked example",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -1767,6 +1780,7 @@
           "status_since": "2026-08-16",
           "summary": "`docs/spec/` is a design-spec series and nothing types the engine as a thing under test, and three traditions each supply one part of what would.",
           "last_verified": "2026-08-16",
+          "title": "Specifying the engine",
           "provenance": {
             "warrant": "accepted",
             "accepted_by": "j.baxter",
@@ -1788,6 +1802,7 @@
           "status_since": "2026-08-11",
           "last_verified": "2026-08-11",
           "summary": "The Q8 and Q20 evidence, which is what a probe costs, when it runs, and whether the promised instruments can produce their measurements.",
+          "title": "The measurement layer — the Q8 and Q20 evaluation",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -1820,6 +1835,7 @@
           "status_since": "2026-08-10",
           "last_verified": "2026-08-10",
           "summary": "The Q14, Q17 and Q7 evidence, which is what a corpus advertises, what it withholds, and what a tool may write back.",
+          "title": "The serving boundary — what is advertised, what is withheld, what is written back",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -1855,6 +1871,7 @@
           "status_since": "2026-08-01",
           "last_verified": "2026-08-11",
           "summary": "Where the research literature confirms, sharpens, or contradicts the design, and what changed in the specification as a result.",
+          "title": "Theoretical foundations",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -1889,6 +1906,7 @@
           "status_since": "2026-08-10",
           "last_verified": "2026-08-10",
           "summary": "The Q15, Q19 and Q18 evidence, which is what stands behind a document, who vouched for it, and how a disagreement is settled.",
+          "title": "Warrant — what stands behind a document, and who vouched for it",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -1924,6 +1942,7 @@
           "status_since": "2026-08-11",
           "last_verified": "2026-08-11",
           "summary": "The Q5 and Q21 evidence, which measures what a lexical checker gets wrong on the checker that this repository already runs.",
+          "title": "What a check can know — the Q5 and Q21 evaluation",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -6693,6 +6712,7 @@
           "probe_category": "discovery",
           "expectation": "opened",
           "oracle": "none",
+          "title": "A cold agent reaches the governing document through the corpus descriptor",
           "provenance": {
             "warrant": "asserted",
             "agency": "mixed",
@@ -6724,6 +6744,7 @@
           "probe_category": "sufficiency",
           "expectation": "answered",
           "oracle": "none",
+          "title": "A counted tombstone separates a withheld answer from an absent answer",
           "provenance": {
             "warrant": "asserted",
             "agency": "mixed",
@@ -6752,6 +6773,7 @@
           "probe_category": "navigability",
           "expectation": "opened",
           "oracle": "none",
+          "title": "An agent reaches the adjudication from the document that lost it",
           "provenance": {
             "warrant": "asserted",
             "agency": "mixed",
@@ -6783,6 +6805,7 @@
           "probe_category": "discovery",
           "expectation": "opened",
           "oracle": "none",
+          "title": "The authoring skill reaches an agent that is about to write a governed document",
           "provenance": {
             "warrant": "asserted",
             "agency": "mixed",
@@ -6842,6 +6865,7 @@
           "last_verified": "2026-08-08",
           "summary": "An assessment of the first findings report, made against a later revision, with the places where it would revise them.",
           "doc_type": "review_record",
+          "title": "Assessment of the existing core-concepts findings",
           "provenance": {
             "warrant": "accepted",
             "agency": "agent",
@@ -6868,6 +6892,7 @@
           "last_verified": "2026-08-08",
           "summary": "An independent run of the core-concepts instrument, made without reading the existing findings first.",
           "doc_type": "review_record",
+          "title": "Core-concepts independent review",
           "provenance": {
             "warrant": "accepted",
             "agency": "agent",
@@ -6899,6 +6924,7 @@
           "last_verified": "2026-08-08",
           "summary": "Run two of the core-concepts instrument, made adversarially against the integration of run one by the reviewer who wrote it.",
           "doc_type": "review_record",
+          "title": "Core-concepts review: findings, second run",
           "provenance": {
             "warrant": "accepted",
             "agency": "agent",
@@ -6931,6 +6957,7 @@
           "last_verified": "2026-08-10",
           "summary": "Run one of the core-concepts instrument, with a verdict on each concept of spec 1 and seven arguments behind the cuts.",
           "doc_type": "review_record",
+          "title": "Core-concepts review: findings",
           "provenance": {
             "warrant": "accepted",
             "agency": "agent",
@@ -6963,6 +6990,7 @@
           "last_verified": "2026-08-08",
           "summary": "The instrument for the core-concepts review, with the deletion test, the two lenses, and the bar a finding must clear.",
           "doc_type": "review_prompt",
+          "title": "Review the core concepts of headwater: simplification and robustness",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -6995,6 +7023,7 @@
           "last_verified": "2026-08-10",
           "summary": "What the ASD-STE100 editorial pass found in the source content, and the terminology rulings that the glossary pass raised.",
           "doc_type": "review_record",
+          "title": "STE editorial pass — source findings to address",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -7035,6 +7064,7 @@
           "summary": "Each of the 64 help strings that PR #335 carried whole out of the retired parser, run against the shipped binary: 60 true, 3 false, 1 not runnable.",
           "last_verified": "2026-08-28",
           "doc_type": "review_record",
+          "title": "The sixty-four restored help strings, checked against the binary",
           "relations": {
             "traces_to": [
               "engine/crates/cli/src/lib.rs",
@@ -7057,6 +7087,7 @@
           "summary": "What Headwater is for, the three qualities it aims at, the eleven design principles, and what it refuses to build.",
           "doc_type": "design_spec",
           "sequence": "0",
+          "title": "Vision and scope",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -7092,6 +7123,7 @@
           "summary": "The vocabulary that the rest of the specification uses, from corpus and shelf to warrant, projection, and the TBox and ABox split.",
           "doc_type": "design_spec",
           "sequence": "1",
+          "title": "Conceptual model",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -7127,6 +7159,7 @@
           "summary": "The central design, which declares kinds, facets, relations, regimes, the immutable core, and customization by overlay.",
           "doc_type": "design_spec",
           "sequence": "2",
+          "title": "The taxonomy model",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -7166,6 +7199,7 @@
           "summary": "How a document starts, declares itself in front matter, records its provenance, and dies without loss of its lineage.",
           "doc_type": "design_spec",
           "sequence": "3",
+          "title": "Authoring and lifecycle",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -7199,6 +7233,7 @@
           "summary": "The assurance model, which holds the control postures, obligations, coverage without silent passes, and the places where efficacy is unmeasured.",
           "doc_type": "design_spec",
           "sequence": "4",
+          "title": "Assurance model",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -7238,6 +7273,7 @@
           "summary": "How the corpus serves an agent at four moments, and how a probe measures whether any of it works.",
           "doc_type": "design_spec",
           "sequence": "5",
+          "title": "AI integration",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -7283,6 +7319,7 @@
           "summary": "One parse, one typed graph, and many consumers, with the pipeline, the library boundary, and the performance targets.",
           "doc_type": "design_spec",
           "sequence": "6",
+          "title": "Engine architecture",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -7322,6 +7359,7 @@
           "summary": "How a publisher ships a taxonomy, how a consumer overlays it, and what the invariant core requires of the result.",
           "doc_type": "design_spec",
           "sequence": "7",
+          "title": "Distribution and federation",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -7358,6 +7396,7 @@
           "summary": "The ideas that this design adopts, and the eight recurrent failure modes of documentation tooling that it designs against.",
           "doc_type": "design_spec",
           "sequence": "8",
+          "title": "Design departures",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -7384,6 +7423,7 @@
           "summary": "An index of the twenty-one design decisions and the ones that the build raised, where the record of each one lives, and the evidence that closed it.",
           "doc_type": "decision_register",
           "sequence": "9",
+          "title": "The decision register",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -7444,6 +7484,7 @@
           "summary": "What a check is, how a scope constrains it, where it comes from, and what the check layer owes the engine.",
           "doc_type": "design_spec",
           "sequence": "12",
+          "title": "The check layer",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -7483,6 +7524,7 @@
           "summary": "The work that the closed decisions left behind, which is unmeasured claims, items that wait on an adopter, and unblocked design work.",
           "doc_type": "obligation_register",
           "sequence": "13",
+          "title": "Open obligations",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -7515,6 +7557,7 @@
           "last_verified": "2026-08-14",
           "doc_type": "design_spec",
           "sequence": "15",
+          "title": "The recorder contract",
           "provenance": {
             "warrant": "asserted",
             "agency": "mixed",
@@ -7542,6 +7585,7 @@
           "last_verified": "2026-08-25",
           "doc_type": "design_spec",
           "sequence": "16",
+          "title": "Harness support",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",
@@ -7573,6 +7617,7 @@
           "summary": "One line for every named concept in the specification, with a link to the section that defines it.",
           "doc_type": "design_spec",
           "sequence": "14",
+          "title": "Glossary",
           "provenance": {
             "warrant": "accepted",
             "agency": "mixed",

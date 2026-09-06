@@ -24,9 +24,9 @@
 release:
   format: 1
   package: headwater/standard
-  version: 3.5.0
+  version: 4.0.0
   requires_engine: ">=0.1 <2"
-  digest: sha256:6c0aa8b2552c04d4300e8a210f0f48bc1b03fce8994540d1444a4e65adfc7c86
+  digest: sha256:41e26a3c03a728b2cd4d0f91fad5913931ecfa790ce432058fb61c6f2d2269d3
   members:
     - path: bundles/README.md
       digest: sha256:3b244809dc209c67d00e360b2c91dc67497fa22eb18c11d3b51da9201db10717
@@ -55,9 +55,9 @@ release:
     - path: bundles/brd-prd/templates/prd.md
       digest: sha256:30779e8b59e168d2bafb522d3b9341dde18706493670004962f4d9c444df77d9
     - path: bundles/decision-record/bundle.yml
-      digest: sha256:63842bbaba1fa62557d4b26d9b2db02ff0954c21e45816a85e0049568609fad5
+      digest: sha256:f76c84ef44dabca905a7bb8539a5b3c99c39b4f871a2d9797b28f788fa5ae1a4
     - path: bundles/decision-record/doctrine.md
-      digest: sha256:ab6a2d0e9b66d0a3f5dd99f61c011362d15b3375796aa4cc53414f4e760ee13a
+      digest: sha256:e2bfef3c2436324e1eb4fcd8a2a8e3a89d15e36b003108e7a3bbcdea19f88a7b
     - path: bundles/decision-record/fixtures/README.md
       digest: sha256:9d5ca629ac8854cbff40e595f357c19d938f06b9844e73f21576bd894363f02a
     - path: bundles/decision-record/fixtures/corpus/docs/decisions/0001-deliver-at-least-once.md
@@ -85,9 +85,9 @@ release:
     - path: bundles/decision-record/templates/obligation_record.md
       digest: sha256:f1a0c17d6498ae281c9c2a224bcc6a0cc2ccadc427b431f12c5e0573511ab110
     - path: bundles/design-spec/bundle.yml
-      digest: sha256:0eee30500710c12c9aa035d1846ed447120291884ba21abc861f165a93f2669f
+      digest: sha256:41ff006478ac4a4f9b76e9e4af4fec7c1d6e522303fcd1563f4db0af9079ab51
     - path: bundles/design-spec/doctrine.md
-      digest: sha256:8655d615c9ab74ea6cbd4ee20ee59b3f5e17945a9a7b8bd23bc31022519506ab
+      digest: sha256:200499a1b6618b08b1cec70543a0011ad2296a132ecff72458fc264772292d26
     - path: bundles/design-spec/fixtures/README.md
       digest: sha256:009e327851462f0d3fabaf593398620974800d6ee5e356483014f58e594ecb3d
     - path: bundles/design-spec/fixtures/corpus/docs/evaluations/naming-survey.md
@@ -115,11 +115,11 @@ release:
     - path: bundles/design-spec/fixtures/n8n/.headwater/overlay.yml
       digest: sha256:976f9171b28731faeb2e5ffe45710edb9f7bfa2041845991e43d68a5869955a0
     - path: bundles/design-spec/fixtures/n8n/.headwater/taxonomy.yml
-      digest: sha256:bbd7ded9fdf3d0a9528085097086bb0b376afbc57d55270a858c6a15296a6068
+      digest: sha256:83ed47a6ece3ae7549838c2e2862fa4dc920a65435a5a4fd9c1efc427b44ddc1
     - path: bundles/design-spec/fixtures/n8n/LICENSE.md
       digest: sha256:d2f621f59aa4c10eab79b6333e59d9d3d5b53307dcfd16dbd75e40e679e84965
     - path: bundles/design-spec/fixtures/n8n/README.md
-      digest: sha256:cbcb04c960d64c83b0b33cf355e67c958c51265cdb60d0e7850d2730b6d351d4
+      digest: sha256:314c004777ca92650485c369917c18a3b7193336e0ee93c396edab3c54dd09d9
     - path: bundles/design-spec/fixtures/n8n/corpus/packages/@n8n/expression-runtime/ARCHITECTURE.md
       digest: sha256:5364510f71013ccc9722f4c36fe62cbf2982a6713584d93cdea72ed36cee566b
     - path: bundles/design-spec/fixtures/n8n/corpus/packages/@n8n/instance-ai/docs/architecture.md
@@ -159,9 +159,9 @@ release:
     - path: bundles/diataxis/fixtures/corpus/docs/specifications/why-delivery-is-at-least-once.md
       digest: sha256:e31287e426f06e0621b46f7276a38683ad55c08b24065da7476f58f9992cf882
     - path: bundles/evidence-and-obligation/bundle.yml
-      digest: sha256:c96810d45cc445a15576bed355e1fae8ef24960d0091a0da117871544a0cc84c
+      digest: sha256:c17fa7de909eda26f77fb9186df391093d5c5a05288d3d3deb0bfc07fc9f5710
     - path: bundles/evidence-and-obligation/doctrine.md
-      digest: sha256:d58963283b45e201ff280f0aa099baebb64aaf4c6fd07cf9ef1260631a134b25
+      digest: sha256:b3a8ebf4863485aec3522c74fc86f2e5e478df4144022c2874857de3ff6617d1
     - path: bundles/evidence-and-obligation/fixtures/README.md
       digest: sha256:d91166fca06452b93eb58d2afd084008d7fc98a50738884ad63c9e836779e20f
     - path: bundles/evidence-and-obligation/templates/evaluation.md
@@ -191,11 +191,11 @@ release:
     - path: bundles/standards-spec/fixtures/n8n/.headwater/overlay.yml
       digest: sha256:9726cdc5c64aef84ce788e53975082135dfaf27a910ab2d1145d3354f0c8d4d0
     - path: bundles/standards-spec/fixtures/n8n/.headwater/taxonomy.yml
-      digest: sha256:b3dc68b56f3d924e724146e89d0071be7209b0554997d120c0ce31836f208af4
+      digest: sha256:afffd1b93b58e532e99cbd23be01196e247db86bd07b95db8e44dbe6452dc98c
     - path: bundles/standards-spec/fixtures/n8n/LICENSE.md
       digest: sha256:d2f621f59aa4c10eab79b6333e59d9d3d5b53307dcfd16dbd75e40e679e84965
     - path: bundles/standards-spec/fixtures/n8n/README.md
-      digest: sha256:b783a05540a499d3c645a1efef5c9f759e0579ee68e311cb8662eb770f620618
+      digest: sha256:f1f2fb2cf4296852d89d75e9ff71bb6c6623058e52411035c4374f58c253e610
     - path: bundles/standards-spec/fixtures/n8n/corpus/.agents/review-rules/README.md
       digest: sha256:73c2048fde76a64c27b3d35ed8e9593d5d3260055a557d97fe887ad14869f2e5
     - path: bundles/standards-spec/fixtures/n8n/corpus/.agents/review-rules/db-migrations/conventions-and-tests.md
@@ -225,6 +225,6 @@ release:
     - path: conformance.yml
       digest: sha256:9ff0735e955bea021067c9949782bb01b5bd2ea46ef7be87c929d3fe9094f0db
     - path: package.yml
-      digest: sha256:866db29dd98c48d50b565a8414baada59f4fcd0a8331028816245c1a02b038e4
+      digest: sha256:ad06d05b8d6ba19586464119e3ee4033b2f24b2fd91e05a0445c8ea588e2fef9
     - path: taxonomy.yml
-      digest: sha256:85116778b93e300e5e639f09be8508546c5f0c35192eb87393a9ba0517b3adc2
+      digest: sha256:5fd3473412d79334f35cd19adb605f452d386d7b1fa6c77546e0f040e15d1ad1

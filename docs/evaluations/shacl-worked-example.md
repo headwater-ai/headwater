@@ -4,6 +4,7 @@ status: current
 status_since: 2026-08-02
 last_verified: 2026-08-11
 summary: The Headwater checks written out in SHACL, and the whole-graph line where the constraint language stops.
+title: "The Headwater checks in SHACL — a worked example"
 provenance:
   warrant: accepted
   agency: mixed

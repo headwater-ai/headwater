@@ -4,6 +4,7 @@ status: current
 status_since: 2026-08-10
 last_verified: 2026-08-10
 summary: The Q3 evidence, which wrote the base package out as real YAML and ran five adopters through their first day against it.
+title: "What ships in the box — a first-run walkthrough"
 provenance:
   warrant: accepted
   agency: mixed

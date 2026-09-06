@@ -44,6 +44,10 @@ The general rule that falls out: **purpose splits kinds, placement splits shelve
 
 Six concrete kinds, each one under the base's `governed_document` abstract kind. Each inherits the four core-bearing facets, and each joins `supersedes`, `governs` and `traces_to` with no endpoint edit.
 
+Each of the five that stayed here also requires `title`, which headwater/standard declares in the `name` role from 4.0.0. A numbered series is the tradition that needs a name most and states one least: the number orders the parts and names none of them, so a generated index and a site navigation both rendered `HW-SPEC-vision-and-scope` where "Vision and scope" belongs ([#123](https://github.com/headwater-ai/headwater/pull/123), [#427](https://github.com/headwater-ai/headwater/issues/427)). The facet stood in the decision-record entry until 4.0.0 and no `add` could reach these kinds from there, which is the finding that entry's doctrine carries as its own finding 1.
+
+**The title is not the first heading, and on this shelf the two differ on purpose.** A part opens `# 0 — Vision and scope`, because a reader who opens the file wants the number. Its title is "Vision and scope", because `sequence` already carries the number and [spec 2](../../spec/02-taxonomy-model.md#the-meta-schema) refuses a second copy of a value the front matter holds. A rendered label that read the heading would put the number in every sidebar entry and would take it from prose that no rule holds, which is the reading the owner refused when the alternative was put.
+
 | Kind | Purpose | Shelf | Why it is not the kind above it |
 |---|---|---|---|
 | `design_spec` | `behavior` | `docs/spec/**` | It states what the system is |
@@ -129,11 +133,13 @@ Criterion 4 asks for at least one real or realistic corpus that the entry types.
 
 **[Beacon](fixtures/README.md), a realistic corpus.** Documents on the `spec_series` and `reviews` shelves, with planted defects that the fixture README names one by one. Beacon is invented, and four entries of this library share it, so a reader can hold four traditions over one project.
 
-**[n8n](fixtures/n8n/README.md), a real one.** Four architecture documents from `n8n-io/n8n`, pinned at `b0550cb3cb4d1752546a69056c55eccfb9111a12` on `master`, copied with a front-matter block added and every body byte-identical. It is the first corpus this library has met that keeps its governed prose beside the code it governs, one document per package, with no collected documentation root. [HW-EVAL-n8n-worked-example](../../evaluations/n8n-worked-example.md) is the report, and two of its results belong here.
+**[n8n](fixtures/n8n/README.md), a real one.** Four architecture documents from `n8n-io/n8n`, pinned at `b0550cb3cb4d1752546a69056c55eccfb9111a12` on `master`, copied with a front-matter block added and every body byte-identical. It is the first corpus this library has met that keeps its governed prose beside the code it governs, one document per package, with no collected documentation root. [HW-EVAL-n8n-worked-example](../../evaluations/n8n-worked-example.md) is the report, and three of its results belong here.
 
 **This entry as it ships types none of that corpus, and the strict run over it exits 0.** The one shelf is `spec_series` at `docs/spec/**`, and no document of a monorepo is under `docs/`. Four real governing documents go untyped, no rule instantiates, and nothing but the census says so. The shelf that reaches them has to be rooted at `packages`, has to fix one path segment out of 27,688 files, and has to be heterogeneous with a single admitted kind. That last one is forced. `design_spec` requires `doc_type`, and a homogeneous shelf refuses a document that restates the kind its placement already states, so the kind cannot sit cleanly on a homogeneous shelf at all.
 
 **`sequence` has no value in a corpus that files one design specification per package.** The facet is required by three kinds of this entry and it means a position in a numbered series. n8n's architecture documents are one per package, and a package is not a position. Every one of the four reports `facet.required.missing`, and no number was invented to stop it. The assumption the entry made is that a design specification belongs to a series, and the first real corpus it met does not.
+
+**`title` has no value in a corpus that nobody here may edit, and that is the price of requiring it.** headwater/standard 4.0.0 requires the facet on all five kinds of this entry, for the reason the facet section above states. Each of the four n8n documents opens with a first heading, and a heading is body text that no facet reads. So each one reports `facet.required.missing` a second time, and the remedy would be to write four titles into somebody else's documents. The fixture refuses that, because a worked instance that this repository edits until it passes is evidence about this repository.
 
 ## Findings
 

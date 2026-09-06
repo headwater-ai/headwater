@@ -6,6 +6,7 @@ last_verified: 2026-08-11
 summary: The vocabulary that the rest of the specification uses, from corpus and shelf to warrant, projection, and the TBox and ABox split.
 doc_type: design_spec
 sequence: 1
+title: "Conceptual model"
 provenance:
   warrant: accepted
   agency: mixed
