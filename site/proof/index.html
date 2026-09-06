@@ -214,21 +214,21 @@
          rather than assuming it. `findings reported` and `findings suppressed`
          partition the findings the run raised. -->
     <div class="statgrid">
-      <div><div class="statnum" data-figure="census.seen">398</div><div class="statlab">files under the corpus root — the denominator for the four tiles that follow</div></div>
-      <div><div class="statnum" data-figure="census.typed">286</div><div class="statlab">of those typed, and all <span data-figure="census.checked">286</span> of them checked</div></div>
+      <div><div class="statnum" data-figure="census.seen">401</div><div class="statlab">files under the corpus root — the denominator for the four tiles that follow</div></div>
+      <div><div class="statnum" data-figure="census.typed">289</div><div class="statlab">of those typed, and all <span data-figure="census.checked">289</span> of them checked</div></div>
       <div><div class="statnum" data-figure="census.untyped">2</div><div class="statlab">of those untyped, and reported by name as such</div></div>
       <div><div class="statnum" data-figure="census.excluded">97</div><div class="statlab">of those excluded by a declared rule that states its reason</div></div>
       <div><div class="statnum" data-figure="census.unaccounted">2</div><div class="statlab">of those silently unaccounted for</div></div>
       <div><div class="statnum" data-figure="findings.reported">7</div><div class="statlab">findings reported, every one named and located</div></div>
     </div>
     <div class="runs">
-      <div>Those <b data-figure="census.seen">398</b> files partition exactly. <b data-figure="census.typed">286</b> typed, <b data-figure="census.generated">11</b> generated projections held by <code>headwater generate --check</code>, <b data-figure="census.untyped">2</b> untyped, <b data-figure="census.excluded">97</b> excluded, and <b data-figure="census.notdoc">2</b> that are not a Markdown file at all.</div>
+      <div>Those <b data-figure="census.seen">401</b> files partition exactly. <b data-figure="census.typed">289</b> typed, <b data-figure="census.generated">11</b> generated projections held by <code>headwater generate --check</code>, <b data-figure="census.untyped">2</b> untyped, <b data-figure="census.excluded">97</b> excluded, and <b data-figure="census.notdoc">2</b> that are not a Markdown file at all.</div>
       <div>The run raised <b data-figure="findings.raised">7</b> findings. <b data-figure="findings.reported">7</b> of them are reported and <b data-figure="findings.suppressed">0</b> are suppressed by <b data-figure="findings.directives">0</b> dated directives, each of which states a reason.</div>
       <div>Of the <b data-figure="findings.reported">7</b> reported, <b data-figure="findings.errors">0</b> are errors and <b data-figure="findings.advisory">7</b> are advisory. An advisory finding is one whose repair is a rewrite rather than a mechanical edit.</div>
-      <div><b data-figure="census.instances">5239</b> check instances ran over the <b data-figure="census.typed">286</b> classified documents. <b data-figure="rules.wired">29</b> rules are wired, and <b data-figure="rules.fired">1</b> of them found anything.</div>
+      <div><b data-figure="census.instances">5291</b> check instances ran over the <b data-figure="census.typed">289</b> classified documents. <b data-figure="rules.wired">29</b> rules are wired, and <b data-figure="rules.fired">1</b> of them found anything.</div>
       <div><b data-figure="oblig.total">34</b> obligations, of which <b data-figure="oblig.verified">31</b> are verified, <b data-figure="oblig.gap">2</b> are a gap and <b data-figure="oblig.unverifiable">1</b> is unverifiable. Each gap names its owner, and <b data-figure="oblig.nodisposition">0</b> carry no disposition at all.</div>
       <div>The taxonomy in force is <b data-figure="taxonomy.package">headwater/standard</b> <b data-figure="taxonomy.version">4.1.0</b>, and the lock a verdict came from is <b data-figure="taxonomy.lock">sha256:160f5275321b…</b></div>
-      <div>The command surface is <b data-figure="verbs.count">19</b> verbs in <b data-figure="verbs.groups">6</b> groups. <b data-figure="verbs.contracts">19</b> of them carry a written contract, and <b data-figure="verbs.nocontract">0</b> carry none.</div>
+      <div>The command surface is <b data-figure="verbs.count">20</b> verbs in <b data-figure="verbs.groups">7</b> groups. <b data-figure="verbs.contracts">20</b> of them carry a written contract, and <b data-figure="verbs.nocontract">0</b> carry none.</div>
     </div>
   </div>
 </section>
@@ -311,13 +311,13 @@
     </div>
     <p style="max-width: 46rem;">This is a self-assessment, and a self-assessment is the weakest form of evidence there is. We publish it under that name rather than as a proof, and this section says what would make it checkable.</p>
     <p style="max-width: 46rem;">Every figure above traces to one command over this repository. Each one is written into this page by <code>tools/refresh-figures.sh</code>, which reads <code>headwater check --json</code>, the obligation register, a generated verb index and the emitter enumeration of the engine source. Run with <code>--check</code>, that script writes nothing and fails when any figure on this page disagrees with a fresh run.</p>
-    <p style="max-width: 46rem; margin: 0;">What is still missing is the part we cannot supply on our own. The repository is not public, so you cannot run that script yourself yet, and nothing here asks you to take a number on trust in the meantime. That is why the benchmark row above is empty and labeled rather than filled with something reassuring.</p>
+    <p style="max-width: 46rem; margin: 0;">What is still missing is the part we cannot supply on our own. The repository is public, so you can run that script over it yourself, and nothing here asks you to take a number on trust. The benchmark row above stays empty and labeled, because a reading of this engine against a corpus that is not ours is one nobody has taken.</p>
   </div>
 </section>
 
 <footer>
   <div class="bar foot">
-    <p>There is no link to the source here, because the repository is not public. The project has decided that this repository becomes public, and the date belongs to the owner.</p>
+    <p>The source of this project is <a href="https://github.com/headwater-ai/headwater">github.com/headwater-ai/headwater</a>, under Apache-2.0. The engine, the taxonomy library and the corpus these pages describe are all in it.</p>
     <div class="footlinks">
       <a href="/">Home</a>
       <a href="/spec/">Specification</a>

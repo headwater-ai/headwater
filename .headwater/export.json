@@ -10,14 +10,14 @@
   "loss_set": [],
   "census": {
     "nodes": {
-      "in the graph": 364,
-      "carried": 364,
+      "in the graph": 368,
+      "carried": 368,
       "accounted for": 0,
       "unaccounted for": 0
     },
     "edges": {
-      "in the graph": 586,
-      "carried": 586,
+      "in the graph": 592,
+      "carried": 592,
       "accounted for": 0,
       "unaccounted for": 0
     },
@@ -711,7 +711,7 @@
           "status": "current",
           "status_since": "2026-08-30",
           "summary": "The namespace opens every identifier, and a published source declares no namespace at all, because any constant it wrote would be minted by every adopter of it at once.",
-          "last_verified": "2026-08-30",
+          "last_verified": "2026-09-06",
           "title": "Q25 — Where the namespace goes in an identifier, and who declares it",
           "provenance": {
             "warrant": "accepted",
@@ -878,8 +878,8 @@
           "id": "HW-DR-0031",
           "status": "current",
           "status_since": "2026-08-30",
-          "summary": "This repository becomes public on 2026-09-08. The owner sets the date, and the record stops each run from raising the schedule as an open question.",
-          "last_verified": "2026-08-30",
+          "summary": "This repository is public. The owner set 2026-09-08 and opened it on 2026-09-06, and the record stops each run from raising the schedule.",
+          "last_verified": "2026-09-06",
           "title": "Q31 — Whether this repository becomes public, and when",
           "provenance": {
             "warrant": "accepted",
@@ -1107,7 +1107,7 @@
           "status": "current",
           "status_since": "2026-08-30",
           "summary": "The interpolating form that HW-DR-0037 admits runs before the commit rather than after it, and a script writes every figure on a hand-built page from a run.",
-          "last_verified": "2026-08-30",
+          "last_verified": "2026-09-06",
           "title": "Q39 — How a figure reaches a hand-built page, now that a build interpolates one",
           "provenance": {
             "warrant": "accepted",
@@ -1556,6 +1556,34 @@
           "relations": {
             "traces_to": [
               "HW-DR-0021"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md",
+        "kind": "decision",
+        "id": "HW-DR-0055",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-DR-0055",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "A harness payload is read by a verb of this engine rather than by an interpreter a session does not otherwise require. The verb answers nothing about a corpus, which is what puts it outside the term that forbids a hook verb.",
+          "last_verified": "2026-09-06",
+          "title": "A hook reads a wire format through the engine and not through an interpreter",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "governs": [
+              ".claude/hooks/lib.sh",
+              ".claude/hooks/intent.sh",
+              ".claude/hooks/review.sh"
             ]
           }
         }
@@ -2391,6 +2419,25 @@
             "governs": [
               "engine/crates/cli/src/lib.rs",
               "engine/crates/cli/src/main.rs"
+            ]
+          }
+        }
+      },
+      {
+        "path": "docs/interfaces/headwater-json.md",
+        "kind": "interface_contract",
+        "id": "HW-IFACE-headwater-json",
+        "facets": {
+          "id": "HW-IFACE-headwater-json",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "How one member of the JSON object on standard input reaches a caller, and the one answer that stands for every way a read reaches no scalar.",
+          "last_verified": "2026-09-06",
+          "title": "headwater json",
+          "relations": {
+            "governs": [
+              "engine/crates/cli/src/main.rs",
+              "engine/crates/yaml/src/json.rs"
             ]
           }
         }
@@ -6203,11 +6250,11 @@
         "warrant": "asserted",
         "facets": {
           "id": "HW-OBL-0130",
-          "status": "current",
-          "status_since": "2026-08-27",
-          "summary": "Q31 originally left the publication date unset. The owner set 2026-09-08, and this record remains current until the repository is public.",
-          "last_verified": "2026-08-27",
-          "title": "The publication date of this repository is set, and the repository stays private until then",
+          "status": "discharged",
+          "status_since": "2026-09-06",
+          "summary": "Q31 originally left the publication date unset. The owner set 2026-09-08 and opened the repository on 2026-09-06, which discharges this record.",
+          "last_verified": "2026-09-06",
+          "title": "The publication date of this repository is set, and the repository is public",
           "waiting_on": "ruling",
           "provenance": {
             "warrant": "asserted",
@@ -6575,7 +6622,7 @@
         "warrant": "accepted",
         "facets": {
           "id": "HW-OBL-0146",
-          "status": "current",
+          "status": "discharged",
           "status_since": "2026-09-06",
           "last_verified": "2026-08-26",
           "title": "The Stop hook reads its re-entry guard with an interpreter it does not require, so a machine with no python3 re-blocks the same turn",
@@ -6959,6 +7006,33 @@
           "last_verified": "2026-09-06",
           "title": "A rendered-page gate greps for a string it requires and states no denominator, so an empty build passes it",
           "waiting_on": "adopter"
+        }
+      },
+      {
+        "path": "docs/obligations/0167-the-default-branch-requires-no-approving-review-which-is-the-condition-hw-dr-0034-named-as-reopening-it.md",
+        "kind": "obligation_record",
+        "id": "HW-OBL-0167",
+        "warrant": "asserted",
+        "facets": {
+          "id": "HW-OBL-0167",
+          "status": "current",
+          "status_since": "2026-09-06",
+          "summary": "The ruleset on the default branch requires zero approving reviews, which is the posture HW-DR-0034 named as the thing that erases its line. The corpus owes a ruling.",
+          "last_verified": "2026-09-06",
+          "title": "The default branch requires no approving review, which is the condition HW-DR-0034 named as reopening it",
+          "waiting_on": "ruling",
+          "provenance": {
+            "warrant": "asserted",
+            "agency": "agent",
+            "drafted_by": "claude-opus-5",
+            "activity": "measure+draft",
+            "evidence_basis": "evidenced"
+          },
+          "relations": {
+            "traces_to": [
+              "HW-DR-0034"
+            ]
+          }
         }
       },
       {
@@ -8225,6 +8299,11 @@
       {
         "anchor_kind": "code_path",
         "id": "engine/crates/verbs/src/lib.rs",
+        "resolver": "source-tree"
+      },
+      {
+        "anchor_kind": "code_path",
+        "id": "engine/crates/yaml/src/json.rs",
         "resolver": "source-tree"
       },
       {
@@ -9627,6 +9706,39 @@
         }
       },
       {
+        "source": "docs/decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/hooks/lib.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/hooks/intent.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": ".claude/hooks/review.sh",
+          "resolver": "source-tree"
+        }
+      },
+      {
         "source": "docs/evaluations/adjacent-work.md",
         "relation": "cites_evidence",
         "written_as": "cited_by",
@@ -10976,6 +11088,28 @@
           "bound": "anchor",
           "anchor_kind": "code_path",
           "id": "engine/crates/cli/src/main.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-json.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/cli/src/main.rs",
+          "resolver": "source-tree"
+        }
+      },
+      {
+        "source": "docs/interfaces/headwater-json.md",
+        "relation": "governs",
+        "written_as": "governs",
+        "target": {
+          "bound": "anchor",
+          "anchor_kind": "code_path",
+          "id": "engine/crates/yaml/src/json.rs",
           "resolver": "source-tree"
         }
       },
@@ -13187,6 +13321,17 @@
           "bound": "document",
           "id": "HW-DR-0047",
           "path": "docs/decisions/0047-how-the-two-halves-of-the-site-share-one-host.md",
+          "kind": "decision"
+        }
+      },
+      {
+        "source": "docs/obligations/0167-the-default-branch-requires-no-approving-review-which-is-the-condition-hw-dr-0034-named-as-reopening-it.md",
+        "relation": "traces_to",
+        "written_as": "traces_to",
+        "target": {
+          "bound": "document",
+          "id": "HW-DR-0034",
+          "path": "docs/decisions/0034-q34-whether-acceptance-means-merged-to-main-and-what-an-agent-may-write-before-that.md",
           "kind": "decision"
         }
       },

@@ -178,6 +178,59 @@ fn escape(text: &str, out: &mut String) {
     out.push('"');
 }
 
+/// One member of a JSON document, addressed by a path of keys.
+///
+/// `field(payload, ["tool_input", "file_path"])` reads `.tool_input.file_path`.
+/// The answer is the text of a scalar: a string as it stands with its escapes
+/// resolved, a number as it was written, and `true` or `false` for a boolean,
+/// which is what a caller reading a flag off a wire compares against.
+///
+/// `None` is every way the read does not reach a scalar, and a caller that
+/// distinguished them would be a caller acting on the shape of a message it
+/// did not write. The document will not parse, a step of the path is not a
+/// mapping, a key is absent, the member is an array or an object, or it
+/// resolves to null. A hook treats all six as "the harness said nothing", and
+/// the [hook contract](../../../../docs/spec/05-ai-integration.md#the-hook-contract-and-what-a-hook-cannot-bind)
+/// makes that silence an outcome rather than a failure.
+pub fn field(document: &str, path: &[String]) -> Option<String> {
+    let scalar = walk(document, path)?.value.as_scalar()?.clone();
+    match crate::core_schema::as_null(&scalar) {
+        true => None,
+        false => Some(scalar.text),
+    }
+}
+
+/// How many elements the array or the mapping at that path holds.
+///
+/// A caller reads this to tell an empty collection from one with something in
+/// it, which is a question `field` cannot answer and a caller cannot ask by
+/// indexing: an empty array and an absent member both give nothing back, and
+/// they are different facts about the message. `None` where the path reaches
+/// no collection, on the same six grounds as [`field`].
+pub fn count(document: &str, path: &[String]) -> Option<usize> {
+    let node = walk(document, path)?;
+    match &node.value {
+        crate::value::Value::Seq(items) => Some(items.len()),
+        crate::value::Value::Map(members) => Some(members.len()),
+        crate::value::Value::Scalar(_) => None,
+    }
+}
+
+/// The node a path of keys reaches, or `None`.
+///
+/// The reader is [`crate::load`], because JSON is a subset of the YAML 1.2 core
+/// schema that the loader already implements. This function is therefore the
+/// whole of the JSON reading this crate adds, and the escape table is
+/// `saphyr-parser`'s rather than one written here.
+fn walk(document: &str, path: &[String]) -> Option<crate::span::Spanned<crate::value::Value>> {
+    let mut node = crate::load(document).ok()?;
+    for key in path {
+        let next = node.value.as_map()?.get(key)?.clone();
+        node = next;
+    }
+    Some(node)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -225,5 +278,94 @@ mod tests {
                 .map(|scalar| scalar.text.as_str()),
             Some("7")
         );
+    }
+
+    /// The payload a harness puts on a hook's standard input, in the three
+    /// shapes the three positions read.
+    const PAYLOAD: &str = r#"{
+      "session_id": "abc",
+      "hook_event_name": "PreToolUse",
+      "stop_hook_active": true,
+      "prompt": "why is the hook reading JSON with an interpreter",
+      "tool_input": {
+        "file_path": "/home/a/docs/spec/05-ai-integration.md",
+        "command": "*** Begin Patch\n*** Update File: docs/spec/05-ai-integration.md\n"
+      },
+      "pointers": [],
+      "matched": [{"purpose": "rationale"}],
+      "waiting_on": null
+    }"#;
+
+    fn path(keys: &[&str]) -> Vec<String> {
+        keys.iter().map(|key| key.to_string()).collect()
+    }
+
+    #[test]
+    fn a_field_is_read_at_the_top_level_and_under_a_nested_member() {
+        assert_eq!(
+            field(PAYLOAD, &path(&["hook_event_name"])).as_deref(),
+            Some("PreToolUse")
+        );
+        assert_eq!(
+            field(PAYLOAD, &path(&["tool_input", "file_path"])).as_deref(),
+            Some("/home/a/docs/spec/05-ai-integration.md")
+        );
+    }
+
+    /// The flag the review position reads. The core schema resolves it, so the
+    /// caller compares against `true` rather than against a quoted literal.
+    #[test]
+    fn a_boolean_reads_as_the_word_a_caller_compares_against() {
+        assert_eq!(
+            field(PAYLOAD, &path(&["stop_hook_active"])).as_deref(),
+            Some("true")
+        );
+    }
+
+    /// An escape the harness wrote is resolved by the loader, so the value the
+    /// caller reads is the value the harness sent. The write position reads a
+    /// patch out of this member and its header lines are separated by one.
+    #[test]
+    fn an_escape_is_resolved_rather_than_handed_back() {
+        let command = field(PAYLOAD, &path(&["tool_input", "command"])).expect("it reads");
+        assert!(command.contains('\n'), "the newline is a newline");
+        assert!(command.contains("*** Update File: docs/spec/05-ai-integration.md"));
+    }
+
+    /// The six ways a read reaches no scalar, which a caller treats alike.
+    #[test]
+    fn every_way_a_read_reaches_no_scalar_is_one_answer() {
+        assert_eq!(field(PAYLOAD, &path(&["absent"])), None);
+        assert_eq!(field(PAYLOAD, &path(&["tool_input", "absent"])), None);
+        // A step of the path that is not a mapping.
+        assert_eq!(field(PAYLOAD, &path(&["session_id", "deeper"])), None);
+        // A member that is a collection rather than a scalar.
+        assert_eq!(field(PAYLOAD, &path(&["tool_input"])), None);
+        assert_eq!(field(PAYLOAD, &path(&["pointers"])), None);
+        // Null is absent, and not the word `null`.
+        assert_eq!(field(PAYLOAD, &path(&["waiting_on"])), None);
+        // A document that will not parse.
+        assert_eq!(field("{not json", &path(&["hook_event_name"])), None);
+    }
+
+    /// An empty array and an absent member are different facts about a message,
+    /// and the count is what tells them apart.
+    #[test]
+    fn a_count_tells_an_empty_collection_from_an_absent_one() {
+        assert_eq!(count(PAYLOAD, &path(&["pointers"])), Some(0));
+        assert_eq!(count(PAYLOAD, &path(&["matched"])), Some(1));
+        assert_eq!(count(PAYLOAD, &path(&["tool_input"])), Some(2));
+        assert_eq!(count(PAYLOAD, &path(&["absent"])), None);
+        assert_eq!(count(PAYLOAD, &path(&["session_id"])), None);
+    }
+
+    /// The writer and the reader are the two halves the hooks use, and a value
+    /// that survives both is a value a hook may put on the wire.
+    #[test]
+    fn a_quoted_value_reads_back_as_itself() {
+        let reason =
+            "`docs/a.md` is a new document — run `headwater new`.\n\tIt \"refuses\" first.";
+        let message = Json::object([("reason", Json::string(reason))]).render();
+        assert_eq!(field(&message, &path(&["reason"])).as_deref(), Some(reason));
     }
 }

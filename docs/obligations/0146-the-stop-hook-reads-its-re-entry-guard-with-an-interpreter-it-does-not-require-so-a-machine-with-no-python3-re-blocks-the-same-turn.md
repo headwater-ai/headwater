@@ -1,6 +1,6 @@
 ---
 id: HW-OBL-0146
-status: current
+status: discharged
 status_since: 2026-09-06
 last_verified: 2026-08-26
 title: "The Stop hook reads its re-entry guard with an interpreter it does not require, so a machine with no python3 re-blocks the same turn"
@@ -29,4 +29,10 @@ The interpreter is not required for the read itself. `engine/crates/yaml/src/jso
 
 ## Discharge
 
-This is discharged when `review.sh` decides the re-entry guard with no `python3` on `PATH`. A fixture must drive `review.sh` under the sabotaged `PATH` with `stop_hook_active` true and assert exit 0. A paired case drives the same setup with `stop_hook_active` false, over a tree the gate refuses, and asserts exit 2. The guard has to disappear only for the second stop, and stay in place for the first. Discharge also waits on `.claude/hooks/lib.sh` and the `CLAUDE.md` paragraph on the four hook positions, both brought into agreement with whatever the fix lands on. Each should name either the removed dependency or the residue it leaves behind. One decision stays open regardless of that fixture: which existing verb absorbs the read, and in what input form. Issue #319 asks the same question from the other side, and this document leaves it unsettled too.
+**This record is discharged, and no position of these hooks runs an interpreter.** [HW-DR-0055](../decisions/0055-a-hook-reads-a-wire-format-through-the-engine-and-not-through-an-interpreter.md) settled the decision this record left open. `headwater json` reads the harness payload. It answers nothing about a corpus, and it names no moment. The hook contract's third term therefore reaches it in neither of the two ways it forbids a verb.
+
+**The guard is decided by the engine, and a host without one ends the turn rather than stopping it twice.** `review.sh` reads `stop_hook_active` through `hw_field`, and it exits 0 before that read when there is no engine to make it. The loop this record was filed about therefore has no state it can start from.
+
+**The pair this record asked for is in `.claude/hooks/fixtures.sh`, and one case more than it asked for.** A `python3` that records every call stands first on `PATH` over the tree the gate refuses. A second stop exits 0, a first stop exits 2 and names the planted document, and the recording file is empty for both. A third case moves the engine away and asserts that the same first stop ends the turn. The same recorder covers the other three positions at full strength, so the claim is about all four rather than about one.
+
+The two files this record named are in agreement with what landed. `.claude/hooks/lib.sh` states that `sh` and the built engine are the whole of what a session needs. The `CLAUDE.md` paragraph on the four positions states the same and names the ruling.

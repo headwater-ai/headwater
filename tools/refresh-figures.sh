@@ -92,6 +92,12 @@
 #   them, and that claim stays true. Write mode rewrites all eight on every
 #   run, and counts them on a line of their own.
 #
+#   `run.date` is a UTC date and not the date of the machine that ran this.
+#   Measured on a host at CEST: `date +%F` read 2026-09-07 while the engine
+#   read 2026-09-06, because UTC had two hours left. So the figure rolls at UTC
+#   midnight, and an author between their own midnight and that one reads a
+#   page that disagrees with their calendar and agrees with the run.
+#
 # WHY THIS SCRIPT EXISTS AT ALL
 #
 #   HW-DR-0037 rules that a hand-built page states no figure a person typed, and
