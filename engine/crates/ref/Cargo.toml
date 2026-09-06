@@ -4,6 +4,7 @@ name = "headwater-ref"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [dependencies]
 # None, and that is the point. The sublanguage is a grammar over one string.

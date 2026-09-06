@@ -2,7 +2,7 @@
 
 # obligations
 
-164 documents on this shelf, in the reading order this corpus derives.
+166 documents on this shelf, in the reading order this corpus derives.
 
 - [The promotion fix has no reading of the assisted fraction](0001-the-promotion-fix-has-no-reading-of-the-assisted-fraction.md) — Q4 claims that the promotion fix raises author-attributable edges without more hand entry, and no run supports it.
 - [Declarative voice is called detectable at useful precision, and the sample is unreachable](0002-declarative-voice-is-called-detectable-at-useful-precision.md) — The three voice categories run over this corpus, and each one is an order of magnitude short of the sample the instrument asks for.
@@ -167,4 +167,6 @@
 - [The validation block of mkdocs.yml is a gate this repository owns and no fixture drives](0161-the-validation-block-of-mkdocs-yml-is-a-gate-this-repository-owns-and-no-fixture-drives.md) — Two raised severities in mkdocs.yml are the whole of two gates, and no case in this repository fails when either one is lowered
 - [Spec 7 prints a package version that no check compares with the recipe](0162-spec-7-prints-a-package-version-that-no-check-compares-with-the-recipe.md) — Spec 7's assembly example and the shipped recipe both pin one package version, and nothing compares them. The example was stale for four minor versions and no rule, no fixture and no CI job reported it. (asserted, and no human has accepted it)
 - [Ten decision records claim a Q number the decision register does not carry](0163-ten-decision-records-claim-a-q-number-the-decision-register-does-not-carry.md) — Ten decision records name a Q number in their file name that docs/spec/09-decisions.md has no section for, and nothing reads either side of the pair. (asserted, and no human has accepted it)
+- [The regeneration check tests byte equality before the marker, so a file the census stopped counting as generated still passes](0164-the-regeneration-check-tests-byte-equality-before-the-marker-so-a-file-the-census-stopped-counting-as-generated-still-passes.md) — `generate --check` reads byte equality before it reads the marker, so a generated file the census dropped from the generated set still passes it
+- [A rendered-page gate greps for a string it requires and states no denominator, so an empty build passes it](0165-a-rendered-page-gate-greps-for-a-string-it-requires-and-states-no-denominator-so-an-empty-build-passes-it.md) — The CI step that holds every rendered page to a corpus pointer exits 0 over a served directory with no page in it
 - [The default branch requires no approving review, which is the condition HW-DR-0034 named as reopening it](0167-the-default-branch-requires-no-approving-review-which-is-the-condition-hw-dr-0034-named-as-reopening-it.md) — The ruleset on the default branch requires zero approving reviews, which is the posture HW-DR-0034 named as the thing that erases its line. The corpus owes a ruling. (asserted, and no human has accepted it)

@@ -137,6 +137,73 @@ pub fn painted(command: Command, width: usize) -> Command {
     one
 }
 
+/// The same tree with every string put back on one line.
+///
+/// # What this undoes, and for whom
+///
+/// [`painted`] folds every `about` and every `help` in the tree, and a help
+/// screen is what that is for. A completion script is the other reader of the
+/// same tree and it wants the opposite: a shell shows a description in a
+/// listing it lays out itself, so a fold this engine chose arrives as a break
+/// at a width the shell did not pick. `main`'s `completions` runs this over the
+/// painted tree before handing it to `clap_complete`.
+///
+/// Folding and then flattening returns the source string, because [`fold_at`]
+/// breaks only at a space and rejoins words with one space. So the flag and
+/// subcommand descriptions do not move a byte, and only the positionals change
+/// — which is where the whole defect was.
+///
+/// # Why here rather than a tree built at no width
+///
+/// `command_at(usize::MAX)` folds nothing and produces the same bytes today,
+/// and it is the wrong answer. [`fold_at`]'s own contract is that "a newline in
+/// the source is a break the author asked for and survives", so that route
+/// leaves a completion script one authored newline in one help string away
+/// from the defect returning. This one removes the newline whatever put it
+/// there.
+///
+/// # Why the tree rather than the `zsh` writer
+///
+/// `clap_complete` flattens a flag and a subcommand description and does not
+/// flatten a positional one: its `zsh` generator escapes a positional by hand
+/// rather than through the `escape_help` its other two paths use, and that
+/// hand-written chain omits the newline. Its `bash`, `fish` and PowerShell
+/// generators write no positional description at all, so those three are clean
+/// for a reason this repository does not control. Flattening the tree is
+/// therefore the fix that survives a dependency bump, and
+/// `engine/crates/cli/tests/completions.rs` reads all four scripts for the same
+/// reason.
+pub fn flattened(command: Command) -> Command {
+    let mut one = command;
+    if let Some(about) = one.get_about().map(ToString::to_string) {
+        one = one.about(one_line(&about));
+    }
+    one = one.mut_args(|arg| {
+        let Some(help) = arg.get_help().map(ToString::to_string) else {
+            return arg;
+        };
+        arg.help(one_line(&help))
+    });
+    let names: Vec<String> = one
+        .get_subcommands()
+        .map(|inner| inner.get_name().to_string())
+        .collect();
+    for name in names {
+        one = one.mut_subcommand(name, flattened);
+    }
+    one
+}
+
+/// The words of a string, on one line, separated by one space each.
+///
+/// It splits on whitespace rather than replacing the newline, so a fold that
+/// left a space before its break cannot leave two spaces behind. Every help
+/// string of this binary is written as one logical line of single-spaced words,
+/// so over a folded string this returns the source exactly.
+fn one_line(text: &str) -> String {
+    text.split_whitespace().collect::<Vec<&str>>().join(" ")
+}
+
 /// The width of what `clap` appends after an argument's help, with its space.
 ///
 /// It is the `spec_vals` of `HelpTemplate`, measured rather than rendered. The

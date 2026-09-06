@@ -36,6 +36,24 @@ version = "0.1.0"
 edition = "2021"
 publish = false
 
+# The license, restated where a machine reads it. `LICENSE` at the repository
+# root is Apache 2.0, and every source file under `crates/` that is not a test
+# fixture opens with `// SPDX-License-Identifier: Apache-2.0`.
+# `publish = false` above is why cargo never demanded this field: it requires a
+# license only on a crate bound for a registry. So every one of those files
+# asserted a license that no manifest agreed with, until this line.
+#
+# A key here is an inheritance SOURCE and not an inheritance RULE. On its own
+# it changes nothing: every member still reports `license: null` to
+# `cargo metadata` until that member writes `license.workspace = true`, which
+# every crate here now does. The pair is self-guarding in one direction —
+# delete this line and every cargo command fails with
+# `error inheriting 'license' from workspace root manifest`, before it compiles
+# anything. The other direction, a crate added later that forgets the member
+# line, is what `tools/build-declaration-fixtures.sh` holds, along with the
+# SPDX headers the sentence above claims.
+license = "Apache-2.0"
+
 # The lint floor. Every crate inherits it with `[lints] workspace = true`, so a
 # rule is declared once here rather than repeated in twenty-two manifests or
 # remembered by whoever writes the next crate.

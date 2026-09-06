@@ -4,6 +4,7 @@ name = "headwater-audit"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [dependencies]
 # The classified rows and the document each one read. The audit is an ABox

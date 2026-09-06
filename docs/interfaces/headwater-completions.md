@@ -37,11 +37,11 @@ The selected shell must be available to the caller when the caller loads the scr
 |---|---|
 | `<shell>` | Select `bash`, `zsh`, `fish` or `powershell`. |
 | `--root <path>` | Accept the repository path for the global parser. Completion generation does not read it. |
-| `--wide` | Refused. Completion scripts use a fixed width and do not render help. |
+| `--wide` | Refused. A completion script renders no help, and it carries no layout of this engine. |
 | `--no-color` | Force plain text on both streams: bold and dim weight plus glyphs, no escape sequence. The default already senses whether each stream is a terminal, and renders color only there. |
 | `--no-banner` | Suppress the masthead: the line naming this binary and its version, that the root help screen alone prints. It is accepted here and does nothing, since only the root screen prints one. |
 
-The global `--help` and `--version` flags are answered before this command runs. The global `--root`, `--no-color` and `--no-banner` flags are accepted and have no effect: completion scripts carry no color and print no masthead of their own. `--wide` is refused because completion scripts use a fixed width. An option that belongs to another verb is refused.
+The global `--help` and `--version` flags are answered before this command runs. The global `--root`, `--no-color` and `--no-banner` flags are accepted and have no effect: completion scripts carry no color and print no masthead of their own. `--wide` is refused because a completion script renders no help. Each description reaches the shell on one line, and the shell lays out the listing it shows. An option that belongs to another verb is refused.
 
 ## Exit status
 
@@ -51,7 +51,7 @@ The global `--help` and `--version` flags are answered before this command runs.
 
 ## Environment
 
-No environment variable reaches the command. The script is generated from the command tree and a fixed help width.
+No environment variable reaches the command. The command tree is the only input, so the bytes of the script do not move with the terminal of the caller.
 
 ## Files
 

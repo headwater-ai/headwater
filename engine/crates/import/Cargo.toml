@@ -4,6 +4,7 @@ name = "headwater-import"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [dependencies]
 # The dialect. A committed snapshot is a YAML source on the Q2 rulings, read by

@@ -4,6 +4,7 @@ name = "headwater-lock"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [dependencies]
 # SHA-256. It used to be a module here, and it moved out when the census began
