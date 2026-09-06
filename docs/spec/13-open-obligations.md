@@ -231,7 +231,7 @@ This paragraph read eighteen for sixteen iterations, and the number is nineteen.
 
 ## What the engine found about itself
 
-Thirty-two items: HW-OBL-0131 through HW-OBL-0159, and HW-OBL-0161 through HW-OBL-0163. Each one names no decision, because nothing here derives from [9 — The decision register](09-decisions.md). Every one derives instead from running the engine, the suite or the gates over this repository during a build-order iteration. It finds a defect with no reader outside this repository to hand it to.
+Thirty-four items: HW-OBL-0131 through HW-OBL-0159, and HW-OBL-0161 through HW-OBL-0165. Each one names no decision, because nothing here derives from [9 — The decision register](09-decisions.md). Every one derives instead from running the engine, the suite or the gates over this repository during a build-order iteration. It finds a defect with no reader outside this repository to hand it to.
 
 This class did not exist before 2026-08-26. Before that date, such a finding was filed as a GitHub issue labeled `self-audit` and left open. The theory was that a defect nobody outside this repository can reach costs nothing to hold. The theory was half right. The label did keep such work out of an iteration's hands, but it never closed anything. Of 24 issues so labeled, three ever closed. The issue board as a whole ran net-positive on all but one of the eleven days that followed. [The value rule](../../.claude/commands/next-run.md#the-value-rule) now routes a self-audit finding here directly. These 21 are the backlog that rule found already sitting on the tracker, migrated in the same change that rewrote it.
 
@@ -267,6 +267,8 @@ This class did not exist before 2026-08-26. Before that date, such a finding was
 - [HW-OBL-0161](../obligations/0161-the-validation-block-of-mkdocs-yml-is-a-gate-this-repository-owns-and-no-fixture-drives.md) — The validation block of mkdocs.yml is a gate this repository owns and no fixture drives
 - [HW-OBL-0162](../obligations/0162-spec-7-prints-a-package-version-that-no-check-compares-with-the-recipe.md) — Spec 7 prints a package version that no check compares with the recipe
 - [HW-OBL-0163](../obligations/0163-ten-decision-records-claim-a-q-number-the-decision-register-does-not-carry.md) — Ten decision records claim a Q number the decision register does not carry
+- [HW-OBL-0164](../obligations/0164-the-regeneration-check-tests-byte-equality-before-the-marker-so-a-file-the-census-stopped-counting-as-generated-still-passes.md) — The regeneration check tests byte equality before the marker, so a file the census stopped counting as generated still passes
+- [HW-OBL-0165](../obligations/0165-a-rendered-page-gate-greps-for-a-string-it-requires-and-states-no-denominator-so-an-empty-build-passes-it.md) — A rendered-page gate greps for a string it requires and states no denominator, so an empty build passes it
 
 ## What the first typing of this corpus found
 

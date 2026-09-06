@@ -1734,8 +1734,11 @@ fn a_site_nav_opens_each_group_with_that_shelf_s_generated_index() {
             .as_sequence()
             .expect("the shelf's entries are a sequence");
 
-        // The first entry is the shelf's own generated index, under the label
-        // this emitter writes because a shelf declaration carries no name.
+        // The first entry is the shelf's own generated index, under the shelf
+        // it indexes. The label is what MkDocs serves as that page's `<title>`
+        // and as its search-index entry, so a constant here makes every shelf
+        // index indistinguishable in a browser tab, a bookmark and a search
+        // result. #567 is where that was measured over ten pages.
         let (first_label, first_path) = {
             let entry = entries
                 .first()
@@ -1754,8 +1757,8 @@ fn a_site_nav_opens_each_group_with_that_shelf_s_generated_index() {
             "{shelf_name} does not open with its own generated index"
         );
         assert_eq!(
-            first_label, "Index",
-            "{shelf_name}'s index entry is not labeled as the shelf's index"
+            first_label, shelf_name,
+            "{shelf_name}'s index entry is not labeled with the shelf it indexes"
         );
 
         // Everything after it is still the documents of the shelf, in the
