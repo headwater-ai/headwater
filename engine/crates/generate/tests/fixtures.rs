@@ -1624,33 +1624,76 @@ projections:
 ///
 /// `archive` is declared for the index and holds no document, so it produces
 /// neither an index nor a group: a shelf with no group gets no index entry.
+///
+/// **The nav is declared above the index, and that is not cosmetic.** The
+/// emitter reads the plan's other outputs, so `plan()` runs every `site_nav`
+/// in a second pass after every other declaration rather than in its own turn.
+/// `.headwater/overlay.yml` declares `site_nav` last, so a case written in
+/// that order passes whether the second pass is there or not — reverting it
+/// left all 70 cases of this crate green. Only a nav declared *above* the
+/// index it lists separates the two. The case asserts the property as well as
+/// the arrangement: two sources differing only in declaration order emit the
+/// same bytes.
 #[test]
 fn a_site_nav_opens_each_group_with_that_shelf_s_generated_index() {
     let (built, _root) = fixture_tree();
     let surface = built.surface();
-    let source = "\
-projections:
-  - kind: shelf_index
-    for: [decisions, guides, archive]
-    output: \"{shelf}/README.md\"
-  - kind: site_nav
-    output: nav.yml
-";
-    let root = headwater_yaml::load(source)
-        .expect("it loads")
-        .value
-        .as_map()
-        .expect("a mapping")
-        .clone();
-    let projections = Projections::read(&root).expect("the projections read");
-    let plan = plan(
-        &surface,
-        &built.census,
-        &projections,
-        &fixture_identity(),
-        &Runs::default(),
-        headwater_verbs::VERBS,
+    // Written with explicit newlines rather than a `"\` continuation, because
+    // that form strips the leading whitespace of every line it continues onto
+    // and a YAML sequence item needs its indentation.
+    let index = concat!(
+        "  - kind: shelf_index\n",
+        "    for: [decisions, guides, archive]\n",
+        "    output: \"{shelf}/README.md\"\n",
     );
+    let nav = concat!("  - kind: site_nav\n", "    output: nav.yml\n");
+    let build = |source: String| {
+        let root = headwater_yaml::load(&source)
+            .expect("it loads")
+            .value
+            .as_map()
+            .expect("a mapping")
+            .clone();
+        let projections = Projections::read(&root).expect("the projections read");
+        plan(
+            &surface,
+            &built.census,
+            &projections,
+            &fixture_identity(),
+            &Runs::default(),
+            headwater_verbs::VERBS,
+        )
+    };
+
+    // THE NAV IS DECLARED FIRST, WHICH IS WHAT HOLDS THE SECOND PASS
+    //
+    // `plan()` runs every `site_nav` after every other declaration, rather
+    // than in its own turn, so that this file is a function of the plan's
+    // outputs and not of the order the overlay lists its projections in.
+    // `.headwater/overlay.yml` happens to declare `site_nav` last, so a
+    // source that does the same holds nothing: an emitter that read the
+    // outputs in its declaration turn would find the same two indexes there
+    // and pass. This source declares the nav above the index it lists, which
+    // is the one arrangement where the two implementations disagree.
+    let plan = build(format!("projections:\n{nav}{index}"));
+
+    // And the property itself, rather than the one arrangement that shows it.
+    // Two sources that differ only in declaration order emit the same bytes.
+    let reversed = build(format!("projections:\n{index}{nav}"));
+    let bytes_of = |plan: &Plan| {
+        plan.outputs
+            .iter()
+            .find(|output| output.path == "nav.yml")
+            .expect("the declaration produced an output")
+            .bytes
+            .clone()
+    };
+    assert_eq!(
+        bytes_of(&plan),
+        bytes_of(&reversed),
+        "the emitted nav depends on the order the projections are declared in"
+    );
+
     let output = plan
         .outputs
         .iter()
