@@ -1,6 +1,6 @@
-276 nodes, 574 declared edge halves
+276 nodes, 575 declared edge halves
     447 to a document
-    127 to an anchor
+    128 to an anchor
 0 prose links that did not resolve
 
 anchors
@@ -74,6 +74,7 @@ anchors
       1 code_path `site/tutorial/index.html` via source-tree
       1 code_path `spike` via source-tree
       1 code_path `tools/assemble-site.sh` via source-tree
+      1 code_path `tools/cloudflare-build.sh` via source-tree
       1 code_path `tools/rdf-probe/emit.py` via source-tree
       1 code_path `tools/refresh-crawler-files.sh` via source-tree
       1 code_path `tools/refresh-figures.sh` via source-tree

@@ -110,6 +110,7 @@ No row below carries a count. A shelf gains and loses documents on ordinary chan
 | `/tutorial` | The tutorial's own page, mirroring `docs/tutorials/your-first-governed-corpus.md` | Hand-built, and distinct from the generated `/tutorials/your-first-governed-corpus/` below |
 | `/glossary` | The terms a reader meets before the specification | Hand-built |
 | `/ns` | Namespace documentation, and what `https://w3id.org/headwater/` redirects to | Hand-built. `_headers` gives it `Access-Control-Allow-Origin: *`, as it does the corpus descriptor |
+| `/changelog` | What a release carries, and what the tag names | Hand-built, and it carries no date, because a date typed here goes stale silently |
 | `llms.txt`, `robots.txt`, `sitemap.xml` | Q16: *"Ship it, and count it as nothing"* — 97% of llms.txt files go unread in a month. The sitemap joined them in #554, because the one #535 committed was a list of seven URLs a person typed where `site/` already held eight pages | Written by `tools/refresh-crawler-files.sh` from the committed pages under `site/`, never by hand |
 
 ### Generated projection

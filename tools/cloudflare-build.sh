@@ -21,6 +21,14 @@
 #
 #   and every dependency below moves in a reviewed commit instead.
 #
+#   TWO DASHBOARD FIELDS NAME THIS FILE, NOT ONE. Workers Builds keeps a
+#   build configuration for the default branch and a second one for every
+#   other branch, and each carries its own build command. The second is what
+#   runs on a pull request, and it deploys with `wrangler versions upload`
+#   rather than `wrangler deploy`. Both read `wrangler.jsonc`, so both need
+#   the asset directory that this script writes. A second field left empty
+#   costs the live site nothing and fails every pull request's build.
+#
 # THE PINS, AND WHY THEY ARE THE SAME PINS CI USES
 #
 #   `.github/workflows/ci.yml` installs this same set before it runs

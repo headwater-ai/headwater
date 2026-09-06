@@ -38,11 +38,11 @@ relations:
 
 **A sitemap is derived from a directory of pages, and never typed.** `tools/sitemap.py` walks a directory and writes one `<loc>` element for each `index.html` under it. The URL comes from the path. The module carries no list, and a page that is added, renamed or removed moves the output on the next run.
 
-**Two callers pass two directories, and there is one walk.** `tools/refresh-crawler-files.sh` passes `site/` and commits the result as `site/sitemap.xml`, beside the `llms.txt` and `robots.txt` it already derives from the same pages. `tools/assemble-site.sh` passes `.headwater/site-deploy` after it has copied both halves there, and it writes the union over whichever copy it finds. A reader gets the first while `wrangler.jsonc` names `./site`, and the second once that file names the assembled directory.
+**Two callers pass two directories, and there is one walk.** `tools/refresh-crawler-files.sh` passes `site/` and commits the result as `site/sitemap.xml`, beside the `llms.txt` and `robots.txt` it already derives from the same pages. `tools/assemble-site.sh` passes `.headwater/site-deploy` after it has copied both halves there, and it writes the union over whichever copy it finds. A reader gets the second, because `wrangler.jsonc` names the assembled directory. It named `./site` when this record was drafted, and [#558](https://github.com/headwater-ai/headwater/pull/558) made the switch HW-DR-0047 ordered. The first copy stays derived and stays committed, because it is what the `Sitemap:` line resolves to if that name ever moves back.
 
 **`sitemap.xml` is the one path the assembly composes rather than copies.** HW-DR-0047 rules that the hand-built half wins a collision. This record names one exception, and it is the only file whose correct contents neither half holds. The assembly reports the exception on a line of its own, and it still names every other collision as a shadowing.
 
-**`robots.txt` carries a `Sitemap:` line.** The target resolves on both sides of the switch HW-DR-0047 orders, because a sitemap stands at the root of each directory that is served. The line is derived like the rest of the file.
+**`robots.txt` carries a `Sitemap:` line.** The target resolves whichever directory is served, because a sitemap stands at the root of each of them. The line is derived like the rest of the file.
 
 **`sitemap.xml.gz` is removed from the assembled directory.** `mkdocs build` writes it beside its own sitemap. Nothing links it, and a compressed second copy of a list is one more thing that can disagree with the list.
 

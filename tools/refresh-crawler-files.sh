@@ -28,16 +28,21 @@
 #   H1 title, a one-line summary, and a list of every page with its own
 #   title and description. `sitemap.xml` is the list a search engine reads,
 #   and `tools/sitemap.py` derives it from the same directory listing.
-#   `robots.txt` carries a `Sitemap:` line, and it resolves on both sides of
-#   the switch HW-DR-0047 orders. While `wrangler.jsonc` names `./site`, the
-#   target is the `site/sitemap.xml` this script writes, which lists the
-#   hand-built pages. Once it names `.headwater/site-deploy`, the target is
-#   the sitemap `tools/assemble-site.sh` writes over the top of that one,
-#   which lists both halves. `tools/sitemap.py` derives both from a
-#   directory listing, so neither is a list a person typed and neither
-#   points into a 404. #554 is the report that put the third file here: the
-#   sitemap committed on 2026-09-06 was typed, and it already omitted
-#   `site/changelog/`.
+#   `robots.txt` carries a `Sitemap:` line, and it resolves whichever
+#   directory `wrangler.jsonc` names. It names `.headwater/site-deploy`
+#   today, so the target is the sitemap `tools/assemble-site.sh` composes
+#   from both halves. While it named `./site` the target was the
+#   `site/sitemap.xml` this script writes, which lists the hand-built pages
+#   alone. `tools/sitemap.py` derives both from a directory listing, so
+#   neither is a list a person typed and neither points into a 404. #554 is
+#   the report that put the third file here: the sitemap committed on
+#   2026-09-06 was typed, and it already omitted `site/changelog/`.
+#
+#   `site/sitemap.xml` is therefore no longer the file a crawler reads, and
+#   this script still writes it. It is what the `Sitemap:` line resolves to
+#   if the asset directory is ever named back at `./site`, and keeping it
+#   derived costs one entry in the table below. A committed file that a
+#   person would have to remember to update is the thing #554 was about.
 #
 # THE DISCIPLINE
 #
