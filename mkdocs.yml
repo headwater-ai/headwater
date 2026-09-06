@@ -60,6 +60,35 @@ exclude_docs: |
   w3id/
   LICENSE
 
+# THE HEADING ANCHOR, AND WHICH OF THE THREE RULES MOVED
+#
+# This corpus's prose writes in-repo fragment links: `09-decisions.md#q10--naming`.
+# Two rules already agree on what that anchor is, and both are GitHub's:
+#
+#   the prose  — the corpus is read on GitHub today, and every citation
+#                resolves there.
+#   the engine — `engine/crates/check/src/fragment.rs` derives the same slug,
+#                and its comment records that it was settled against GitHub's
+#                own `/markdown` endpoint rather than against a second reading
+#                of the rule.
+#
+# Python-Markdown's `toc` was the third rule and the only one that disagreed.
+# It collapses a run of separators, so `Q10 — Naming` loses the em dash and
+# then folds the two spaces the dash left into one hyphen: `q10-naming`, where
+# GitHub and this engine both give `q10--naming`. Measured over the 2577
+# headings under `docs/`, that rule disagreed with the engine's on 286 of them
+# and `pymdownx.slugs.slugify(case='lower')` disagrees on none.
+#
+# So the renderer is what moves here, and no source byte does. #431 records the
+# reasoning: the links are correct in the repository, and the defect is in the
+# projection of it.
+#
+# `pymdown-extensions` is pinned in the CI step beside `mkdocs==1.6.1`, as
+# #431's Done-when requires of any new pip dependency.
+markdown_extensions:
+  - toc:
+      slugify: !!python/object/apply:pymdownx.slugs.slugify {kwds: {case: lower}}
+
 validation:
   links:
     # Downgraded from the `warn` default, which `--strict` makes fatal. 18
@@ -78,3 +107,19 @@ validation:
     # detectable and it costs a future guard. It rises to `warn` when those
     # citations can point at resolvable URLs.
     not_found: info
+
+    # Raised from the MkDocs 1.6 default of `info`, which `--strict` does not
+    # fail on. That default is the whole reason #431 stood for three weeks
+    # with a green build: 335 links to an anchor no built page carried, each
+    # one printed to a log nobody reads, and an exit status of 0 over them.
+    #
+    # It is raised in the same change that empties the population, and not
+    # before, which is the order #431 asks for. A dead anchor now fails the
+    # build rather than being reported to nobody.
+    #
+    # This reads links between source documents. It does not read the theme's
+    # own table of contents, the navigation, or the hand-built half of the
+    # site, and it never opens the served directory.
+    # `tools/check-site-fragments.py` is the reader of that last step, and CI
+    # runs both.
+    anchors: warn
