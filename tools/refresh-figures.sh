@@ -43,7 +43,7 @@
 #   fail, because the page's claim is that these numbers came from a run on
 #   that date, and that claim is still true. The date is the timestamp of the
 #   act of measuring rather than a measurement of the corpus. Write mode
-#   rewrites the date on every run, as it always did.
+#   rewrites the date on every run, and counts it on a line of its own.
 #
 # WHY THIS SCRIPT EXISTS AT ALL
 #
@@ -385,12 +385,15 @@ if never:
           "skipping it, and this refuses the same thing for a figure.",
           file=sys.stderr)
 
+# The headline counts the measurements alone, and the run date is counted on
+# its own line beside it. So the two numbers add up to the lines above them, in
+# either mode, and neither one is silently folded into the other.
 print("%d figures measured, %d used across %d pages, %d stale, run of %s"
       % (len(fig), len(used), len(pages), len(stale_measured), fig["run.date"]))
-if mode == "check" and stale_clock:
-    print("%d of the pages carry a run date this run does not share. The date "
-          "of a run is the clock rather than a function of the tree, so it is "
-          "reported here and does not fail." % len(stale_clock))
+if stale_clock:
+    print("The run date differed on %d pages. The date of a run is the clock "
+          "rather than a function of the tree, so it is counted here and it "
+          "fails no check." % len(stale_clock))
 
 if unknown or drift or never:
     raise SystemExit(1)
