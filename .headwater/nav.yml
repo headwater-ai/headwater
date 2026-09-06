@@ -268,7 +268,7 @@ nav:
       - "Ten decision records claim a Q number the decision register does not carry": "obligations/0163-ten-decision-records-claim-a-q-number-the-decision-register-does-not-carry.md"
       - "The regeneration check tests byte equality before the marker, so a file the census stopped counting as generated still passes": "obligations/0164-the-regeneration-check-tests-byte-equality-before-the-marker-so-a-file-the-census-stopped-counting-as-generated-still-passes.md"
       - "A rendered-page gate greps for a string it requires and states no denominator, so an empty build passes it": "obligations/0165-a-rendered-page-gate-greps-for-a-string-it-requires-and-states-no-denominator-so-an-empty-build-passes-it.md"
-      - "The coverage report lists one path twice, so the self-assessment page publishes two unaccounted files where one exists": "obligations/0167-the-coverage-report-lists-one-path-twice-so-the-self-assessment-page-publishes-two-unaccounted-files-where-one-exists.md"
+      - "The coverage report lists one path twice, so the self-assessment page publishes two unaccounted files where one exists": "obligations/0168-the-coverage-report-lists-one-path-twice-so-the-self-assessment-page-publishes-two-unaccounted-files-where-one-exists.md"
   - "probes":
       - "probes": "probes/README.md"
       - "A cold agent reaches the governing document through the corpus descriptor": "probes/a-cold-agent-reaches-the-governing-document-through-the-corpus-descriptor.md"

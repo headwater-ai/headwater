@@ -1,5 +1,5 @@
 ---
-id: HW-OBL-0167
+id: HW-OBL-0168
 status: current
 status_since: 2026-09-06
 summary: "coverage.unaccounted reads ['.headwater/ids', '.headwater/ids'], so the self-assessment page publishes 2 under a label that names files nobody accounted for."

@@ -518,6 +518,41 @@ judge 'a renamed marker that leaves every figure on no page is refused' 1 "$stat
 judge 'and the refusal states the denominator it ran over' 1 "$status" \
     '0 used across 8 pages' "$out"
 
+# The two pages HW-DR-0037 governs by name, absent. Both checks used to be
+# guarded by `.exists()`, so renaming `site/tutorial/index.html` dropped 43
+# checked blocks in silence and renaming `site/index.html` dropped the
+# HW-DR-0037 quotation. Both are now an error, and these are what hold that.
+#
+# These two run the script rather than the gate, and the reason is worth
+# stating. Removing a page under `site/` raises `relation.target.unresolved`,
+# because HW-DR-0037 declares `governs` over each one, so `headwater check
+# --strict` fails and the figures clause never runs at all. The gate cannot
+# reach either guard, so a case written through it would assert a refusal that
+# came from somewhere else.
+reset
+mv "$scratch/site/tutorial/index.html" "$scratch/site/tutorial/away.html"
+out=$(cd "$scratch" && sh tools/refresh-figures.sh --check 2>&1); status=$?
+judge 'the tutorial page missing is an error rather than a skip' 1 "$status" \
+    'site/tutorial/index.html is not there' "$out"
+judge 'and the refusal says which record governs it by name' 1 "$status" \
+    'HW-DR-0037 governs that page by name' "$out"
+
+reset
+mv "$scratch/site/index.html" "$scratch/site/away.html"
+out=$(cd "$scratch" && sh tools/refresh-figures.sh --check 2>&1); status=$?
+judge 'the landing page missing is an error rather than a skip' 1 "$status" \
+    'site/index.html is not there' "$out"
+
+# The partition of the 34 figures into the 26 a gate compares and the 8 that
+# are a function of the clock is a list of key names, so it goes stale the
+# moment a key is renamed and the exemption then covers nothing. The script
+# holds its own list against the run, and this provokes that guard.
+reset
+sed -i 's/put("rules.fired"/put("rules.firedX"/' "$scratch/tools/refresh-figures.sh"
+out=$(cd "$scratch" && sh tools/refresh-figures.sh --check 2>&1); status=$?
+judge 'a clock-partition entry that no run measures is refused' 1 "$status" \
+    'the clock partition names rules.fired, which this run does not measure' "$out"
+
 # A finding whose location line lands on the width boundary, printed whole.
 #
 # #340 lays the report out at 80 columns, and the fill leaves a line alone when

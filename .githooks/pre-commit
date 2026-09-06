@@ -216,13 +216,19 @@ fi
 # calls it itself, so a host with no `mktemp` fails closed here, and the
 # script's own error is printed in the indented block below.
 #
-# COST, AND WHY IT IS WORTH IT. 2.89 seconds warm, against about 1.0 for the
-# rest of this hook and 0.13 for the crawler clause. The crawler clause was
-# adopted on a measured one-in-three miss rate. This one is measured at a
-# hundred percent over three weeks: nothing ran this check between 2026-08-26
-# and 2026-09-06, and every corpus-moving commit in that window staled a
-# figure. 59 figure occurrences and 11 verbatim tutorial blocks were adrift
-# when it was first run again.
+# COST, AND WHY IT IS WORTH IT. This clause runs the engine three times, so it
+# is the most expensive one in this file by a wide margin. No number is written
+# here on purpose: two measurements of it on one machine on one day, under
+# different loads, disagreed by a factor of six, and a timing with no load
+# beside it misleads. Measure it where you are, with
+# `time sh tools/refresh-figures.sh --check`.
+#
+# What justifies the cost is the miss rate rather than the seconds. The crawler
+# clause above was adopted on a measured one-in-three miss over the life of the
+# files it guards. This one is measured at a hundred percent over three weeks:
+# nothing ran this check between 2026-08-26 and 2026-09-06, every corpus-moving
+# commit in that window staled a figure, and 59 figure occurrences and 11
+# verbatim tutorial blocks were adrift when it was first run again.
 if [ "$status" -eq 0 ]; then
     if [ -n "${HEADWATER_SKIP_FIGURE_CHECK:-}" ]; then
         # A skip nobody can see is a skip nobody counts. The hook cannot write

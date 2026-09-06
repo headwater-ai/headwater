@@ -34,16 +34,63 @@
 #   reason, and HW-DR-0050 rules it: a page that opts out of the register is
 #   refused rather than skipped.
 #
+#   WHAT THAT DENOMINATOR STILL DOES NOT CATCH, measured on 2026-09-06:
+#
+#     `used` is a union across pages, so a figure lost on ONE page is invisible
+#     while any other page still carries it. Renaming the marker attribute on
+#     `site/how-it-works/index.html` alone gives exit 0 at `34 used across 8
+#     pages, 0 stale`; renaming it on all eight refuses. Five of the eight
+#     pages carry no figure at all, and nothing here notices which page holds
+#     which key. The fix is a declaration of what each page owes, which this
+#     script has nowhere to read.
+#
+#     The element pattern requires the text to hold no `<`, so a figure with a
+#     nested child element is not matched at all. `<b data-figure="rules.wired"
+#     ><b>99</b></b>` serves 99 where the run says 29, at exit 0, and it is not
+#     even reported as an unknown key. An off-shape key such as `rules.wired2`
+#     matches nothing for the same reason and is equally silent. A count of
+#     `data-figure` occurrences in the file, held against the count the pattern
+#     matched, is what would catch both.
+#
 # WHAT `--check` COMPARES, AND WHAT IT DOES NOT
 #
-#   `--check` compares the figures that are functions of the tree. One figure
-#   is not: `run.date` is `check --json .clock`, which is the system date, and
-#   three pages carry it. A tree nobody touched therefore disagrees with a
-#   fresh run every midnight. A date-only difference is reported and does not
-#   fail, because the page's claim is that these numbers came from a run on
-#   that date, and that claim is still true. The date is the timestamp of the
-#   act of measuring rather than a measurement of the corpus. Write mode
-#   rewrites the date on every run, and counts it on a line of its own.
+#   `--check` compares the 26 figures that are a function of the corpus and the
+#   lock. Eight are a function of the clock as well, and those are reported and
+#   never failed. `headwater generate` already states this rule of its own
+#   `coverage_report` projection, in the sentence it prints on every run:
+#
+#     "its content is a function of the clock as well as of the corpus and the
+#      lock, because a migration task lapses and a suppression expires on a
+#      date. A committed copy would fail this check on a morning when nothing
+#      changed."
+#
+#   The eight are `run.date` and the seven that read the findings list:
+#   `findings.raised`, `findings.reported`, `findings.suppressed`,
+#   `findings.errors`, `findings.advisory`, `findings.directives` and
+#   `rules.fired`. Two dated mechanisms move a finding between reported and
+#   suppressed with no file touched, and both are in this engine:
+#   `check/src/adoption.rs` retires a migration task at `task.until < now`, and
+#   `check/src/suppression.rs` expires an escape directive at
+#   `suppression.until < now`.
+#
+#   Measured on 2026-09-06, each arm on a tree that nothing else touched:
+#
+#     the clock at 2027-07-01, past `AD-1`'s `until: 2027-06-30`
+#       `findings.errors` 0->1, `findings.raised` 7->8,
+#       `findings.reported` 7->8, `rules.fired` 1->2
+#     one escape directive, live today and lapsed the day after its `until`
+#       `findings.reported` 6->7, `findings.suppressed` 1->0,
+#       `findings.advisory` 6->7, `findings.directives` 1->0
+#
+#   The second arm is the one that matters, because `headwater check --strict`
+#   exits 0 on both sides of it. So on the morning a directive lapses, a gate
+#   over these figures is the only thing that goes red, on a tree nobody
+#   touched, saying a page disagrees with a run. `until` is required on every
+#   directive, so every directive reaches that morning.
+#
+#   The page's claim is that these numbers came from a run on the date beside
+#   them, and that claim stays true. Write mode rewrites all eight on every
+#   run, and counts them on a line of their own.
 #
 # WHY THIS SCRIPT EXISTS AT ALL
 #
@@ -286,10 +333,30 @@ for page in pages:
     if mode == "write" and after != before:
         page.write_text(after)
 
-# `run.date` is the clock of the run rather than a measurement of the corpus,
-# so a page that differs from a fresh run in the date alone is not stale. See
-# WHAT `--check` COMPARES above.
-CLOCK_KEYS = {"run.date"}
+# The partition. A figure is gateable where it is a function of the corpus and
+# the lock, and these eight are not: each one reads the clock, or reads the
+# findings list, and two dated mechanisms move a finding between reported and
+# suppressed with the tree untouched. An adoption task lapses
+# (`check/src/adoption.rs`, `task.until < now`) and an escape directive expires
+# (`check/src/suppression.rs`, `suppression.until < now`). `rules.fired` counts
+# distinct rule names among the findings, so it moves with them.
+#
+# The other 26 keys are gateable. See WHAT `--check` COMPARES above for the
+# measurement behind this list, and why it is eight rather than one.
+CLOCK_KEYS = {
+    "run.date",
+    "findings.raised", "findings.reported", "findings.suppressed",
+    "findings.errors", "findings.advisory", "findings.directives",
+    "rules.fired",
+}
+
+# The partition names keys, so it goes stale the moment one is renamed. This is
+# that list held against the run rather than trusted, the same way the page
+# denominator below is.
+missing = sorted(CLOCK_KEYS - set(fig))
+if missing:
+    sys.exit("refresh-figures.sh: the clock partition names %s, which this run "
+             "does not measure" % ", ".join(missing))
 stale_measured = [s for s in stale if s[1] not in CLOCK_KEYS]
 stale_clock = [s for s in stale if s[1] in CLOCK_KEYS]
 
@@ -301,7 +368,7 @@ for page, key, was, now in stale_measured:
     print("%s %s in %s: %s -> %s" % (verb, key, rel(page), was, now),
           file=sys.stderr)
 for page, key, was, now in stale_clock:
-    verb = "rewrote" if mode == "write" else "date only"
+    verb = "rewrote" if mode == "write" else "clock only"
     print("%s %s in %s: %s -> %s" % (verb, key, rel(page), was, now),
           file=sys.stderr)
 
@@ -391,9 +458,10 @@ if never:
 print("%d figures measured, %d used across %d pages, %d stale, run of %s"
       % (len(fig), len(used), len(pages), len(stale_measured), fig["run.date"]))
 if stale_clock:
-    print("The run date differed on %d pages. The date of a run is the clock "
-          "rather than a function of the tree, so it is counted here and it "
-          "fails no check." % len(stale_clock))
+    print("%d further occurrences differ in a figure that is a function of the "
+          "clock. A lapsed adoption task, an expired escape directive and the "
+          "run date each move one without the tree moving, so they are counted "
+          "here and they fail no check." % len(stale_clock))
 
 if unknown or drift or never:
     raise SystemExit(1)
