@@ -244,7 +244,11 @@ An arrow into the assembly identifies a recipe input, not a package dependency. 
 
 **A composer consumes the recipe inputs.** The consumer pins the source package and lists the bundles it wants. The consumer may take the assembly overlay or write a local overlay instead. This form preserves control over the selected parts and their upgrades.
 
-**A batteries-included consumer takes a flattened package.** The publisher resolves the recipe and emits a complete taxonomy source under the assembly package identity. The package declares no bundle directory, and its consumer selects no bundles. The publisher copies the selected doctrine and templates into namespaced paths in the artifact. Every other member the source declares keeps the relative path the source names. The conformance rule set takes that path, so a flattened consumer reads the same rules.
+**A batteries-included consumer takes a flattened package.** The publisher resolves the recipe and emits a complete taxonomy source under the assembly package identity. The package declares no bundle directory, and its consumer selects no bundles. The publisher copies the selected doctrine and templates into namespaced paths in the artifact.
+
+**A flattened manifest drops three keys.** `bundles` and `assemblies` are absorbed: the publisher resolves the selected bundles into the generated taxonomy, and it records the recipe under `distribution.derived_from`. `migrations` is discarded, and nothing in the artifact represents it. `headwater taxonomy diff` selects a payload by the ranges that payload declares, so one written for the source version line has no reader here. The publisher names a discarded key on standard error and says nothing about an absorbed one. Every other member keeps the relative path the source names, and the conformance rule set is one of them.
+
+A flattened package therefore carries no migration payload, including one for its own version line. Nothing writes `contents.migrations` into a generated manifest, and a recipe declares no payload of its own.
 
 The flattened package is generated output and never an independently authored taxonomy. Its manifest declares `distribution.form: flattened` and records the recipe under `distribution.derived_from`. The record names the source package version, the selected bundles, the assembly overlay, and their digests. These fields state provenance and create no runtime dependency.
 

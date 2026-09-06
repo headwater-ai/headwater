@@ -191,13 +191,24 @@ enum Arm {
     Sound,
     /// The recipe names a bundle the package does not ship.
     UnselectableBundle,
-    /// `contents.doctrine` names a directory that exists and holds no file.
+    /// Three declared directories exist and hold no file: `doctrine`,
+    /// `templates`, and `glossary`, which is a key no table in this engine
+    /// names.
     ///
     /// This is the state a *correct* stager still produces, on both publish
-    /// paths: `reachable` passes it, because the directory is there and it is a
+    /// paths: `reachable` passes it, because each directory is there and is a
     /// directory, and the walk that carries bytes then carries none. The
-    /// manifest reaches a consumer naming a path the artifact does not hold.
-    EmptyDoctrine,
+    /// manifest reaches a consumer naming three paths the artifact does not
+    /// hold.
+    ///
+    /// **Three keys rather than one, deliberately.** Two guarding cases over
+    /// `doctrine` alone would pass a `carried` narrowed to the two keys this
+    /// issue happened to be about, so nothing would hold the generality the
+    /// issue asks for. `templates` is a second key `required_kind` names,
+    /// `glossary` is a key it does not, and the pair of them is what makes
+    /// "every key the manifest declares" a measurement. It also pins that every
+    /// bad key is reported and not the first.
+    UnwrittenMembers,
 }
 
 /// A source package with one named assembly, small enough to make the publish
@@ -209,16 +220,23 @@ enum Arm {
 /// `the_shipped_starter_recipe_publishes_vendors_and_resolves` is the case that
 /// runs the same verb over the real source.
 ///
-/// **It declares `contents.conformance`, and that is deliberate.** Until #581
-/// no fixture in this file declared a file-valued `contents` key beyond
-/// `taxonomy`, so nothing here ever asked whether a flattened artifact carries
-/// one. `headwater/standard` declares one and the flattened starter did not
-/// carry it.
+/// **It declares `contents.conformance` and `contents.glossary`, and both are
+/// deliberate.** Until #581 no fixture in this file declared a file-valued
+/// `contents` key beyond `taxonomy`, so nothing here ever asked whether a
+/// flattened artifact carries one; `headwater/standard` declares one and the
+/// flattened starter did not carry it. `glossary` is a key **no table in this
+/// engine names** — `required_kind` returns `None` for it — so it is what holds
+/// the claim that a flattened package carries every declared member rather than
+/// the members somebody listed in Rust.
 fn assembly_source(root: &Root, arm: Arm) -> PathBuf {
     let source = root.path().join("source/acme-fixture");
     write(
         &source.join("package.yml"),
-        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  conformance: conformance.yml\n  bundles: bundles\n  assemblies: assemblies\n  doctrine: doctrine\n  templates: templates\n",
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  conformance: conformance.yml\n  glossary: glossary.yml\n  bundles: bundles\n  assemblies: assemblies\n  doctrine: doctrine\n  templates: templates\n",
+    );
+    write(
+        &source.join("glossary.yml"),
+        "glossary:\n  headwater: the system this fixture is a fixture of\n",
     );
     write(
         &source.join("conformance.yml"),
@@ -238,7 +256,7 @@ fn assembly_source(root: &Root, arm: Arm) -> PathBuf {
     );
     let selected = match arm {
         Arm::UnselectableBundle => "[alpha, missing]",
-        Arm::Sound | Arm::EmptyDoctrine => "[alpha, beta]",
+        Arm::Sound | Arm::UnwrittenMembers => "[alpha, beta]",
     };
     write(
         &source.join("assemblies/starter/assembly.yml"),
@@ -251,15 +269,25 @@ fn assembly_source(root: &Root, arm: Arm) -> PathBuf {
         "add:\n  relations.connects:\n    family: derivation\n    from: [alpha]\n    to: [beta]\n    nucleus: from\n    inverse: connected_by\n    reciprocal: required\n    created_by: scaffold\n",
     );
     match arm {
-        Arm::EmptyDoctrine => {
-            std::fs::create_dir_all(source.join("doctrine"))
-                .expect("the empty doctrine directory is made");
+        Arm::UnwrittenMembers => {
+            for key in ["doctrine", "templates", "glossary"] {
+                std::fs::create_dir_all(source.join(key))
+                    .expect("the empty declared directory is made");
+            }
+            // The scalar has to name the directory rather than the file the
+            // sound arm writes, or `reachable` refuses this arm for the kind
+            // rather than `carried` refusing it for the absence, and the case
+            // would report on the wrong rule.
+            write(
+                &source.join("package.yml"),
+                "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  conformance: conformance.yml\n  glossary: glossary\n  bundles: bundles\n  assemblies: assemblies\n  doctrine: doctrine\n  templates: templates\n",
+            );
         }
         Arm::Sound | Arm::UnselectableBundle => {
             write(&source.join("doctrine/guide.md"), "# Fixture doctrine\n");
+            write(&source.join("templates/decision.md"), "# Decision\n");
         }
     }
-    write(&source.join("templates/decision.md"), "# Decision\n");
     source
 }
 
@@ -406,31 +434,53 @@ fn a_flattened_package_carries_the_conformance_rule_set_its_source_declared() {
         out.join("conformance.yml").is_file(),
         "the manifest declares a conformance rule set the artifact does not carry"
     );
-    let record = std::fs::read_to_string(out.join("release.yml")).expect("the release reads");
+    // The key no table in this engine names. `required_kind` returns `None` for
+    // it, so nothing in the fix knows what a `glossary` is, and it travels
+    // anyway. That is the difference between "every declared member" and "the
+    // members somebody remembered to list".
+    assert!(manifest.contains("glossary: glossary.yml"), "{manifest}");
     assert!(
-        record.contains("conformance.yml"),
-        "the release record names no conformance rule set: {record}"
+        out.join("glossary.yml").is_file(),
+        "a `contents` key no table names did not travel, so the fix is a list rather than a rule"
     );
+    let record = std::fs::read_to_string(out.join("release.yml")).expect("the release reads");
+    for member in ["conformance.yml", "glossary.yml"] {
+        assert!(
+            record.contains(member),
+            "the release record does not name {member}: {record}"
+        );
+    }
 }
 
 /// A declared directory with no file in it is the case a correct stager still
 /// produces, and it is why the guard is general rather than a second key check.
 ///
-/// `reachable` admits `contents.doctrine` here: the directory is there and it is
-/// a directory. The walk that carries bytes then carries none, because a
-/// directory with no file in it has nothing to copy. Both these cases were
-/// measured at exit 0 before #581, with the manifest naming a path the artifact
-/// did not hold, on both publish paths.
+/// `reachable` admits each of these: the directory is there and it is a
+/// directory. The walk that carries bytes then carries none, because a directory
+/// with no file in it has nothing to copy. Both these cases were measured at
+/// exit 0 before #581, with the manifest naming a path the artifact did not
+/// hold, on both publish paths.
+///
+/// **Three keys are asserted, and `glossary` is the one that matters most.**
+/// `required_kind` names `doctrine` and `templates` and does not name
+/// `glossary`, so a guard narrowed to the keys this issue was about would pass a
+/// case over `doctrine` alone. Asserting all three at once also pins that every
+/// bad key is reported rather than the first.
 #[test]
 fn a_flattened_manifest_may_not_name_a_member_the_artifact_does_not_carry() {
-    let root = Root::scratch("assembly-empty-doctrine");
-    let source = assembly_source(&root, Arm::EmptyDoctrine);
+    let root = Root::scratch("assembly-unwritten");
+    let source = assembly_source(&root, Arm::UnwrittenMembers);
     let out = root.path().join("release");
 
     let (code, _stdout, stderr) = publish_assembly_from(root.path(), &source, &out);
     assert_eq!(code, Some(1), "{stderr}");
-    assert!(stderr.contains("`contents.doctrine`"), "{stderr}");
+    for key in ["doctrine", "templates", "glossary"] {
+        assert!(stderr.contains(&format!("`contents.{key}`")), "{stderr}");
+    }
+    // The namespaced form, which is what the flattened manifest declares and
+    // what a consumer would have opened.
     assert!(stderr.contains("doctrine/starter"), "{stderr}");
+    assert!(stderr.contains("templates/starter"), "{stderr}");
     assert!(
         !out.exists(),
         "the refused run left partial output at {out:?}"
@@ -439,17 +489,113 @@ fn a_flattened_manifest_may_not_name_a_member_the_artifact_does_not_carry() {
 
 #[test]
 fn a_published_manifest_may_not_name_a_member_the_artifact_does_not_carry() {
-    let root = Root::scratch("plain-empty-doctrine");
-    let source = assembly_source(&root, Arm::EmptyDoctrine);
+    let root = Root::scratch("plain-unwritten");
+    let source = assembly_source(&root, Arm::UnwrittenMembers);
     let out = root.path().join("release");
 
     let (code, _stdout, stderr) = publish_plain_from(root.path(), &source, &out);
     assert_eq!(code, Some(1), "{stderr}");
-    assert!(stderr.contains("`contents.doctrine`"), "{stderr}");
-    assert!(stderr.contains("doctrine"), "{stderr}");
+    for key in ["doctrine", "templates", "glossary"] {
+        assert!(stderr.contains(&format!("`contents.{key}`")), "{stderr}");
+    }
     assert!(
         !out.exists(),
         "the refused run left partial output at {out:?}"
+    );
+}
+
+/// A key a flattened manifest drops is a key the publisher is told about.
+///
+/// `flatten::DROPPED` is the ruling — `bundles`, `assemblies` and `migrations`
+/// state the source package's composition and version line, and a flattened
+/// package inherits neither. The ruling is not in question here. What this pins
+/// is that the loss is **reported**, because a publisher who declared
+/// `migrations` and receives an artifact without it has lost something they
+/// asked for, and #581 is the issue that refuses exactly that in the other
+/// direction.
+///
+/// The source carries a real payload, so the case fails if the drop ever becomes
+/// a silent one again: before this, the identical source produced an artifact
+/// byte-identical to one declaring no migrations at all.
+#[test]
+fn a_flattened_publish_names_every_contents_key_it_drops() {
+    let root = Root::scratch("assembly-drops");
+    let source = assembly_source(&root, Arm::Sound);
+    write(
+        &source.join("package.yml"),
+        "package: acme/fixture\nversion: 1.0.0\ncontents:\n  taxonomy: taxonomy.yml\n  conformance: conformance.yml\n  glossary: glossary.yml\n  bundles: bundles\n  assemblies: assemblies\n  migrations: migrations\n  doctrine: doctrine\n  templates: templates\n",
+    );
+    write(
+        &source.join("migrations/0-to-1.yml"),
+        "migration:\n  format: 1\n  from: \">=0 <1\"\n  to: \">=1 <2\"\n\nsteps:\n  - subject: overlay_address\n    from: purposes.gone\n    to: [purposes.behavior]\n    because: the case is about what a flattened manifest drops\n",
+    );
+    let out = root.path().join("release");
+
+    let (code, _stdout, stderr) = publish_assembly_from(root.path(), &source, &out);
+    assert_eq!(code, Some(0), "{stderr}");
+
+    let manifest = std::fs::read_to_string(out.join("package.yml")).expect("the manifest reads");
+    // The `contents` block alone. `distribution.derived_from` carries a
+    // `bundles:` of its own — the selection this package was flattened from —
+    // and that one is provenance rather than a path, so a search over the whole
+    // manifest would read it as a declaration and never fail.
+    let contents = manifest
+        .split_once("contents:")
+        .and_then(|(_, rest)| rest.split_once("\ndistribution:"))
+        .map(|(block, _)| block.to_string())
+        .unwrap_or_else(|| panic!("the flattened manifest has no contents block: {manifest}"));
+    for key in ["bundles", "assemblies", "migrations"] {
+        assert!(
+            !contents.contains(&format!("{key}:")),
+            "the flattened `contents` declares `{key}`: {contents}"
+        );
+        assert!(
+            !out.join(key).exists(),
+            "the flattened artifact carries `{key}`, which the manifest does not declare"
+        );
+    }
+
+    // `migrations` is the one the publisher is told about, because it is the one
+    // nothing in the artifact represents. `bundles` is resolved into
+    // `taxonomy.yml` and `assemblies` is recorded under
+    // `distribution.derived_from`, so both are absorbed rather than lost.
+    assert!(
+        stderr.contains("`contents.migrations`"),
+        "the publish dropped a declared payload and said nothing: {stderr}"
+    );
+    assert!(
+        stderr.contains("has no reader here"),
+        "the message does not say why the payload was dropped: {stderr}"
+    );
+
+    // The absorbed keys stay quiet. A line printed by every flattening publish —
+    // and every assembly source declares `bundles`, or there would be no
+    // assembly — is a line nobody reads on the publish that loses something.
+    for key in ["bundles", "assemblies"] {
+        assert!(
+            !stderr.contains(&format!("`contents.{key}`")),
+            "an absorbed key was reported as a loss: {stderr}"
+        );
+    }
+}
+
+/// The publish that loses nothing says nothing.
+///
+/// The companion to the case above, and the one that makes its signal worth
+/// anything. This repository's own starter recipe is published from a source
+/// declaring `bundles` and `assemblies` and no `migrations`, which is the
+/// ordinary shape, and its standard error carries no drop notice at all.
+#[test]
+fn a_flattened_publish_that_loses_nothing_reports_no_drop() {
+    let root = Root::scratch("assembly-no-drops");
+    let source = assembly_source(&root, Arm::Sound);
+    let out = root.path().join("release");
+
+    let (code, _stdout, stderr) = publish_assembly_from(root.path(), &source, &out);
+    assert_eq!(code, Some(0), "{stderr}");
+    assert!(
+        !stderr.contains("nothing in the flattened package carries it"),
+        "a publish that loses nothing printed a drop notice: {stderr}"
     );
 }
 
@@ -515,6 +661,11 @@ fn a_flattened_assembly_is_pinned_vendored_and_resolved_without_bundle_selection
         taxonomy: std::fs::read_to_string(installed.join("taxonomy.yml"))
             .expect("the installed taxonomy reads"),
         assets: Vec::new(),
+        // `equivalent` compares taxonomy declarations and reads neither of
+        // these. This value is read back off an installed artifact rather than
+        // produced by a publish, so there is no run behind it whose dropped keys
+        // this could name.
+        dropped: Vec::new(),
     };
     assert!(
         flatten::equivalent(&source_resolution, &installed_flattened, &recipe),

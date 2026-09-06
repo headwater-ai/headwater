@@ -981,7 +981,7 @@ pub fn publish_assembly(
     name: &str,
     assembly: &str,
     out: &Path,
-) -> Result<Release, Vec<ResolveError>> {
+) -> Result<Flattening, Vec<ResolveError>> {
     let (directory, manifest) = find(root, name)?;
     publish_assembly_at(root, &directory, &manifest, assembly, out)
 }
@@ -993,7 +993,7 @@ pub fn publish_assembly_from(
     directory: &Path,
     assembly: &str,
     out: &Path,
-) -> Result<Release, Vec<ResolveError>> {
+) -> Result<Flattening, Vec<ResolveError>> {
     let manifest = manifest_at(directory)?;
     publish_assembly_at(root, directory, &manifest, assembly, out)
 }
@@ -1011,7 +1011,7 @@ fn publish_assembly_at(
     manifest: &Mapping,
     assembly: &str,
     out: &Path,
-) -> Result<Release, Vec<ResolveError>> {
+) -> Result<Flattening, Vec<ResolveError>> {
     let declared = manifest_name(root, directory);
     let contents = contents_of(manifest);
     reachable(root, &declared, directory, &contents)?;
@@ -1034,12 +1034,30 @@ fn publish_assembly_at(
         });
 
     match written {
-        Ok(record) => Ok(record),
+        Ok(release) => Ok(Flattening {
+            release,
+            dropped: flattened.dropped,
+        }),
         Err(errors) => {
             found.unwind(out);
             Err(errors)
         }
     }
+}
+
+/// What a flattening publish produced.
+///
+/// The release record, and the `contents` keys the flattened manifest does not
+/// declare although the source did. The second half travels out of the run that
+/// decided it rather than being re-derived by whoever reports it: two functions
+/// answering one question separately is the defect
+/// [#581](https://github.com/headwater-ai/headwater/issues/581) exists for, and
+/// a reporter that drifted from [`crate::flatten::DROPPED`] would tell a
+/// publisher the artifact carries something it does not. `dropped` is empty for
+/// every source that declares none of those keys.
+pub struct Flattening {
+    pub release: Release,
+    pub dropped: Vec<String>,
 }
 
 /// The publish sequence shared by [`publish`] and [`publish_from`], once each

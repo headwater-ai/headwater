@@ -26,6 +26,22 @@ pub struct Flattened {
     pub taxonomy: String,
     /// Package-owned prose and templates, under assembly-namespaced paths.
     pub assets: Vec<Asset>,
+    /// The `contents` keys the source declared that nothing in this package
+    /// represents, in the order the source declared them.
+    ///
+    /// A publisher who declared one of these asked for something the artifact
+    /// does not carry, so the verb names them. That is the same defect
+    /// [#581](https://github.com/headwater-ai/headwater/issues/581) refuses in
+    /// the other direction — a manifest naming a member the artifact lacks —
+    /// and an artifact quietly lacking a member the source named is the same
+    /// loss wearing the other face. [`DROPPED`] is the rule and this is what one
+    /// run of it decided, so nothing downstream re-derives the list.
+    ///
+    /// A key [`DROPPED`] marks [`Fate::Absorbed`] is **not** here, because
+    /// flattening is that transformation rather than a loss. A message that
+    /// fired on every publish would be a message nobody reads on the one publish
+    /// that loses something.
+    pub dropped: Vec<String>,
 }
 
 /// One non-taxonomy file a flattened package carries.
@@ -45,8 +61,9 @@ pub struct Asset {
 /// digest. Assets declared as doctrine or templates move below a directory
 /// named for the assembly, so two flattened packages can live side by side.
 /// Every other declared member travels at the relative path the source names,
-/// unchanged. [`members`] is the one enumeration the generated manifest and the
-/// carried bytes both come from, and its doc comment carries the arms.
+/// unchanged, except the keys [`DROPPED`] names. [`members`] is the one
+/// enumeration the generated manifest, the carried bytes and
+/// [`Flattened::dropped`] all come from, and its doc comment carries the arms.
 pub fn materialize(
     root: &Path,
     directory: &Path,
@@ -55,14 +72,15 @@ pub fn materialize(
 ) -> Result<Flattened, Vec<ResolveError>> {
     let resolution = assembly::resolve(root, directory, source_manifest, recipe)?;
     let sources = assembly_sources(root, directory, source_manifest, recipe)?;
-    let members = members(directory, source_manifest, recipe, &recipe.at)?;
-    let manifest = manifest(source_manifest, recipe, &sources, &members)?;
+    let contents = members(directory, source_manifest, recipe, &recipe.at)?;
+    let manifest = manifest(source_manifest, recipe, &sources, &contents.members)?;
     let taxonomy = taxonomy(&resolution, recipe);
-    let assets = assets(&members, &recipe.at)?;
+    let assets = assets(&contents.members, &recipe.at)?;
     let flattened = Flattened {
         manifest,
         taxonomy,
         assets,
+        dropped: contents.dropped,
     };
     if equivalent(&resolution, &flattened, recipe) {
         Ok(flattened)
@@ -146,6 +164,74 @@ fn manifest(
     Ok(Mapping::new(entries))
 }
 
+/// What became of a `contents` key the source declared and the flattened
+/// manifest does not.
+///
+/// The distinction is whether the artifact still represents the thing, and it is
+/// the difference between a transformation and a loss. Only [`Fate::Discarded`]
+/// is worth a publisher's attention, which is why this is a fate and not a
+/// second list of keys kept somewhere a reporter can drift from.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Fate {
+    /// The key is gone and what it named is still in the artifact, by another
+    /// route. Flattening *is* this transformation, so nothing is lost and
+    /// nothing is said.
+    Absorbed,
+    /// The key is gone and nothing in the artifact represents what it named.
+    /// The publisher asked for something they did not receive, so the verb says
+    /// so.
+    Discarded,
+}
+
+/// The `contents` keys a flattened manifest does not declare, whatever the
+/// source declared, and what became of each.
+///
+/// All three state the **source package's composition or its version line**, and
+/// a flattened package inherits neither: it takes a new identity and a new
+/// version. `taxonomy`, `conformance`, `doctrine` and `templates` state the
+/// taxonomy's *content*, which a flattened package does inherit, so none of them
+/// is here.
+///
+/// - **`bundles` is absorbed.** Flattening resolves the selected bundles into
+///   the generated `taxonomy.yml`, so every declaration they added is in the
+///   artifact. Spec 7 states the consequence a consumer sees: the package
+///   declares no bundle directory and its consumer selects no bundles.
+/// - **`assemblies` is absorbed.** The recipe that produced this package is
+///   recorded under `distribution.derived_from`, by digest. A flattened package
+///   is not itself a source anybody publishes a recipe over.
+/// - **`migrations` is discarded, and it is the only one.** `taxonomy diff`
+///   selects a payload by the ranges that payload declares, so a payload written
+///   for `headwater/standard` 3 to 4 has no reader against a starter version
+///   line. Nothing in the artifact represents it, and a publisher who wrote one
+///   receives an artifact without it.
+///
+/// **A flattened package therefore carries no migration payload at all today**,
+/// including one for its own version line, because nothing writes a
+/// `contents.migrations` into a generated manifest and a recipe has no field for
+/// one. That is a gap in what a flattening publisher can express. It is not a
+/// gap this table creates: before
+/// [#581](https://github.com/headwater-ai/headwater/issues/581) the key was
+/// copied into the flattened manifest and the payload was never carried, so the
+/// artifact made the claim and broke it.
+///
+/// **This table is the rule and it has one reader.** [`members`] walks it and
+/// records the discarded keys on [`Flattened::dropped`], which the CLI prints. A
+/// second function deciding the same thing separately is the defect #581 exists
+/// for, which is why the keys travel out of the run that dropped them rather
+/// than being re-derived by whoever reports them.
+pub const DROPPED: [(&str, Fate); 3] = [
+    (BUNDLES, Fate::Absorbed),
+    (ASSEMBLIES, Fate::Absorbed),
+    (crate::migration::CONTENTS_KEY, Fate::Discarded),
+];
+
+/// One walk of a source `contents` block: what the flattened manifest declares,
+/// and what it leaves behind.
+struct Contents {
+    members: Vec<Member>,
+    dropped: Vec<String>,
+}
+
 /// One `contents` key of a flattened package: what the generated manifest
 /// declares for it, and where the bytes it names come from.
 struct Member {
@@ -173,14 +259,10 @@ struct Member {
 ///
 /// - **`taxonomy` is declared at the artifact root and has no source file.**
 ///   [`crate::package::stage_flattened`] writes the rendered resolution there.
-/// - **`bundles`, `assemblies` and `migrations` are dropped.** All three are
-///   statements about the source package's composition and its version line,
-///   and a flattened package inherits neither: it takes a new identity and a
-///   new version, and `taxonomy diff` selects a migration payload by the
-///   version ranges it declares. A payload written for `headwater/standard`
-///   3 to 4 means nothing against a starter version line. `taxonomy`,
-///   `conformance`, `doctrine` and `templates` are statements about the
-///   taxonomy's content, which a flattened package does inherit.
+/// - **Every key in [`DROPPED`] is dropped, and recorded as dropped.** That
+///   constant carries the reason and the consequence. The key goes onto
+///   [`Contents::dropped`] rather than being skipped in silence, because a
+///   publisher who declared it asked for something the artifact will not carry.
 /// - **`doctrine` and `templates` are namespaced under the recipe name.** The
 ///   module header states the reason: two flattened packages derived from one
 ///   source can then hold their prose side by side.
@@ -196,7 +278,7 @@ fn members(
     source: &Mapping,
     recipe: &Assembly,
     at: &Path,
-) -> Result<Vec<Member>, Vec<ResolveError>> {
+) -> Result<Contents, Vec<ResolveError>> {
     let source_contents = source
         .get("contents")
         .and_then(|node| node.value.as_map())
@@ -206,18 +288,23 @@ fn members(
                 "the source package manifest has no mapping at `contents`",
             )
         })?;
-    let mut out = vec![Member {
-        key: "taxonomy".to_string(),
-        declared: "taxonomy.yml".to_string(),
-        from: None,
-    }];
+    let mut out = Contents {
+        members: vec![Member {
+            key: "taxonomy".to_string(),
+            declared: "taxonomy.yml".to_string(),
+            from: None,
+        }],
+        dropped: Vec::new(),
+    };
     for found in source_contents {
         let key = found.key.value.as_str();
-        if key == "taxonomy"
-            || key == BUNDLES
-            || key == ASSEMBLIES
-            || key == crate::migration::CONTENTS_KEY
-        {
+        if key == "taxonomy" {
+            continue;
+        }
+        if let Some((_, fate)) = DROPPED.iter().find(|(dropped, _)| *dropped == key) {
+            if *fate == Fate::Discarded {
+                out.dropped.push(key.to_string());
+            }
             continue;
         }
         // A value that is not a scalar and an empty value are both refused by
@@ -236,7 +323,7 @@ fn members(
             package::DOCTRINE | package::TEMPLATES => format!("{key}/{}", recipe.name),
             _ => declared.to_string(),
         };
-        out.push(Member {
+        out.members.push(Member {
             key: key.to_string(),
             declared,
             from: Some(from),

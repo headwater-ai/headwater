@@ -1203,12 +1203,17 @@ fn publish(
         );
     }
 
+    // Both halves of the pair come from the run that produced them. A plain
+    // publish drops no `contents` key, so its half is empty by construction
+    // rather than by a second reading of anything.
     let published = match from {
         Some(directory) => match assembly {
             Some(name) => {
                 headwater_resolve::package::publish_assembly_from(root, directory, name, out)
+                    .map(|done| (done.release, done.dropped))
             }
-            None => headwater_resolve::package::publish_from(root, directory, out),
+            None => headwater_resolve::package::publish_from(root, directory, out)
+                .map(|release| (release, Vec::new())),
         },
         None => {
             let name = match package {
@@ -1233,20 +1238,50 @@ fn publish(
             match assembly {
                 Some(assembly) => {
                     headwater_resolve::package::publish_assembly(root, &name, assembly, out)
+                        .map(|done| (done.release, done.dropped))
                 }
-                None => headwater_resolve::package::publish(root, &name, out),
+                None => headwater_resolve::package::publish(root, &name, out)
+                    .map(|release| (release, Vec::new())),
             }
         }
     };
 
-    let record = match published {
-        Ok(record) => record,
+    let (record, dropped) = match published {
+        Ok(pair) => pair,
         Err(errors) => {
             eprintln!("headwater: {}", err("nothing was published"));
             eprint!("{}", indent(&err(&render_errors(&errors))));
             return ExitCode::FAILURE;
         }
     };
+
+    // On standard error, and before the `--json` return, so a publisher reads it
+    // in both output modes and the JSON document on standard output stays one
+    // document. A key here is something the publisher asked for that nothing in
+    // the artifact represents, which is the loss #581 refuses in the other
+    // direction, so it is said rather than left for whoever opens the artifact.
+    // `flatten::DROPPED` decides what reaches this: the keys flattening absorbs
+    // rather than discards are not here, because a line printed by every publish
+    // is a line nobody reads on the publish that loses something.
+    if !dropped.is_empty() {
+        eprintln!(
+            "headwater: the source declared {}, and nothing in the flattened package carries it",
+            dropped
+                .iter()
+                .map(|key| format!("`contents.{key}`"))
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+        eprintln!(
+            "{}",
+            indent(
+                "A migration payload states how one version line moves to the next, and a \
+                 flattened package takes a new identity and a new version, so a payload written \
+                 for the source package has no reader here. Publish the source package to ship \
+                 it, or take the key out of the source manifest."
+            )
+        );
+    }
 
     if json {
         print!(
